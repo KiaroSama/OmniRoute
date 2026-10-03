@@ -49,6 +49,10 @@ const EXPECTED: Record<InventoryKind, Record<string, number>> = {
     // of the retirement-check one hoisted before enforceApiKeyPolicy) was
     // removed as dead redundant code, 6->5. #12653 added combo target
     // resolution with the same shape as imageCombo, 5->6.
+    // Firefly/combo selection moved to editDispatch; native Antigravity/Codex Images
+    // add two route calls. All eight retain the policy connection allowlist and
+    // preflight selector's unleased occupancy filter (class B, not managed dispatch).
+    "src/app/api/v1/images/edits/editDispatch.ts": 2,
     "src/app/api/v1/images/edits/route.ts": 6,
     "src/app/api/v1/images/generations/route.ts": 3,
     "src/app/api/v1/images/upscale/route.ts": 1,

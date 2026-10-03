@@ -18,7 +18,6 @@
 // so concurrent test processes never collide. Tests that set DATA_DIR explicitly keep
 // winning — this only fills in an isolated default when none was chosen.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 
 // File logger worker threads can outlive a test's temporary DATA_DIR cleanup and then
@@ -27,8 +26,18 @@ import path from "node:path";
 process.env.APP_LOG_TO_FILE ||= "false";
 
 if (!process.env.DATA_DIR) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-test-"));
-  process.env.DATA_DIR = dir;
+  const workspace = path.resolve(".ci-work");
+  fs.mkdirSync(workspace, { recursive: true });
+  const dir = fs.mkdtempSync(path.join(workspace, "isolated-"));
+  for (const name of ["data", "home", "appdata", "localappdata", "temp"]) {
+    fs.mkdirSync(path.join(dir, name));
+  }
+  Object.assign(process.env, {
+    DATA_DIR: path.join(dir, "data"),
+    HOME: path.join(dir, "home"), USERPROFILE: path.join(dir, "home"),
+    APPDATA: path.join(dir, "appdata"), LOCALAPPDATA: path.join(dir, "localappdata"),
+    TEMP: path.join(dir, "temp"), TMP: path.join(dir, "temp"), TMPDIR: path.join(dir, "temp"),
+  });
 
   // Best-effort cleanup so a long suite run does not leak hundreds of temp DBs.
   process.on("exit", () => {

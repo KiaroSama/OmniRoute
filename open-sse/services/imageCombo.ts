@@ -24,6 +24,10 @@ import { toJsonErrorPayload } from "@/shared/utils/upstreamError";
 import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
 import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
 import * as logger from "@/sse/utils/logger";
+import { isCodexImagesModel } from "@omniroute/open-sse/handlers/codexImages.ts";
+import { refreshSelectedCodexImageCredentials } from "@/sse/services/selectedCodexImageCredentials";
+import { resolveProxyForConnection } from "@/lib/db/settings";
+import { runWithProxyContext } from "@omniroute/open-sse/utils/proxyFetch.ts";
 
 /**
  * Caller-facing shape of handleImageGeneration(). The handler is untyped and
@@ -45,6 +49,7 @@ export interface ImageComboDispatchResult {
   data?: unknown;
   status?: number;
   error?: unknown;
+  retryable?: boolean;
 }
 
 /**
@@ -130,6 +135,12 @@ export async function runImageComboTargets<T extends ImageComboTarget>(
       continue;
     }
 
+    if (typeof credentials === "object" && "blockedByKeyPolicy" in credentials) {
+      return { outcome: "terminal", provider, status: 403, error: "Image connection is not allowed by API key policy", fallbackCount };
+    }
+    if (typeof credentials === "object" && "allExpired" in credentials) {
+      return { outcome: "terminal", provider, status: 401, error: "No usable image account credentials", fallbackCount };
+    }
     if (isRateLimited(credentials)) {
       lastError = {
         status: 429,
@@ -158,7 +169,7 @@ export async function runImageComboTargets<T extends ImageComboTarget>(
 
     // Terminal failures (400 bad model, 403 banned, etc.) — stop iterating
     // Non-terminal failures (429, 5xx) — try next target
-    if (status === 400 || status === 403 || status === 401) {
+    if (result.retryable === false || status === 400 || status === 403 || status === 401) {
       return { outcome: "terminal", provider, status, error, fallbackCount };
     }
 
@@ -183,7 +194,7 @@ export async function executeImageCombo(
   body: Record<string, unknown>,
   auth: {
     request: Request;
-    policy: { apiKeyInfo?: { id?: string; name?: string } | null };
+    policy: { apiKeyInfo?: { id?: string; name?: string; allowedConnections?: string[] } | null };
   },
   startTime: number,
   log: typeof logger
@@ -221,14 +232,34 @@ export async function executeImageCombo(
   //    /v1/images/edits can reuse the exact same iteration semantics (#12547).
   const run = await runImageComboTargets(imageTargets, {
     resolveProvider: (target) => parseImageModel(target.modelStr),
-    resolveCredentials: (provider) => getProviderCredentialsWithQuotaPreflight(provider),
-    dispatch: async ({ target, credentials }) =>
-      (await handleImageGeneration({
-        body: { ...body, model: target.modelStr },
-        credentials,
-        log,
-        signal: auth.request?.signal || null,
-      })) as ImageGenerationResult,
+    resolveCredentials: (provider, target) => getProviderCredentialsWithQuotaPreflight(
+      provider, null, auth.policy.apiKeyInfo?.allowedConnections?.length ? auth.policy.apiKeyInfo.allowedConnections : null, target.modelStr
+    ),
+    dispatch: async ({ target, provider, model, credentials }) => {
+      if (provider === "codex" && isCodexImagesModel(model)) {
+        const refreshed = await refreshSelectedCodexImageCredentials(credentials, auth.request.signal);
+        if (refreshed.success === false) return refreshed;
+        const selected = refreshed.credentials;
+        try {
+          const proxyInfo = selected.connectionId ? await resolveProxyForConnection(selected.connectionId) : null;
+          const result = await runWithProxyContext(proxyInfo?.proxy || null, () => handleImageGeneration({
+            body: { ...body, model: target.modelStr }, credentials: selected, log, signal: auth.request.signal,
+          }));
+          return {
+            success: result.success,
+            data: "data" in result ? result.data : undefined,
+            status: "status" in result ? result.status : undefined,
+            error: "error" in result ? result.error : undefined,
+            retryable: "retryable" in result ? result.retryable : undefined,
+          };
+        } catch {
+          return { success: false, status: 503, error: "Codex Images combo transport failed; do not resubmit an unknown outcome", retryable: false };
+        }
+      }
+      return (await handleImageGeneration({
+        body: { ...body, model: target.modelStr }, credentials, log, signal: auth.request?.signal || null,
+      })) as ImageGenerationResult;
+    },
     onSuccess: async (credentials) => {
       await clearRecoveredProviderState(credentials as never);
     },

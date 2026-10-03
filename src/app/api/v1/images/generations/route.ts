@@ -40,6 +40,8 @@ import { getSpecialtyModelsResponse } from "@/app/api/v1/_shared/specialtyCatalo
 import { enforceClientApiRouteAuth } from "@/shared/utils/clientApiRouteAuth";
 import { runWithCallLogApiKeyContext } from "@/lib/usage/callLogApiKeyContext";
 import { executeImageWithCredentialFallback } from "@/sse/services/imageCredentialRetry";
+import { refreshSelectedCodexImageCredentials } from "@/sse/services/selectedCodexImageCredentials";
+import { isCodexImagesModel } from "@omniroute/open-sse/handlers/codexImages.ts";
 import { AUTHZ_HEADER_PEER_LOCALITY } from "@/server/authz/headers";
 import {
   assertCommonChatGptWebModelAvailable,
@@ -253,13 +255,15 @@ async function postHandler(request, context) {
     );
   }
 
+  // Keep account selection inside the API key's connection allowlist.
+  const allowedConnections = policy.apiKeyInfo?.allowedConnections?.length ? policy.apiKeyInfo.allowedConnections : null;
   // Get credentials — skip for local providers (authType: "none")
   let credentials = null;
   if (providerConfig && providerConfig.authType !== "none") {
     credentials = await getProviderCredentialsWithQuotaPreflight(
       provider,
       null,
-      null,
+      allowedConnections,
       requestedModel
     );
     if (!credentials) {
@@ -304,7 +308,7 @@ async function postHandler(request, context) {
     const localCredentials = await getProviderCredentialsWithQuotaPreflight(
       provider,
       null,
-      null,
+      allowedConnections,
       requestedModel
     );
     if (localCredentials && !isAllRateLimitedCredentials(localCredentials)) {
@@ -312,16 +316,14 @@ async function postHandler(request, context) {
     }
   }
 
-  const execution = await executeImageWithCredentialFallback({
-    provider,
-    requestedModel,
-    credentials,
-    execute: async (attemptCredentials) => {
+  const dedicatedCodexImages = provider === "codex" && isCodexImagesModel(requestedModel);
+  const executeImage = async (attemptCredentials) => {
       let proxyInfo = null;
       if (attemptCredentials?.connectionId) {
         try {
           proxyInfo = await resolveProxyForConnection(attemptCredentials.connectionId);
         } catch {
+          if (dedicatedCodexImages) return { success: false, status: 503, error: "Codex Images proxy resolution failed", retryable: false };
           log.debug("PROXY", `Failed to resolve proxy for image provider: ${provider}`);
         }
       }
@@ -352,12 +354,20 @@ async function postHandler(request, context) {
       return attemptCredentials?.connectionId
         ? runWithProxyContext(proxyInfo?.proxy || null, generateImage).catch((err: any) => ({
             success: false,
-            status: err.statusCode || 500,
-            error: err.message,
+            status: dedicatedCodexImages ? 503 : err.statusCode || 500,
+            error: dedicatedCodexImages ? "Codex Images proxy or transport failed; do not resubmit an unknown outcome" : err.message,
+            ...(dedicatedCodexImages ? { retryable: false } : {}),
           }))
         : generateImage();
-    },
-  });
+  };
+  const executeSelectedCodexImages = async () => {
+    const selected = await refreshSelectedCodexImageCredentials(credentials, request.signal);
+    if (selected.success === false) return { credentials, result: selected };
+    return { credentials: selected.credentials, result: await executeImage(selected.credentials) };
+  };
+  const execution = dedicatedCodexImages
+    ? await executeSelectedCodexImages()
+    : await executeImageWithCredentialFallback({ provider, requestedModel, credentials, execute: executeImage });
   credentials = execution.credentials;
   const result = execution.result;
 
