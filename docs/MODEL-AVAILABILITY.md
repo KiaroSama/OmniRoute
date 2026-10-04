@@ -88,6 +88,24 @@ it was not automatically resubmitted. Working Flash, Sol and dedicated Sunburst 
 observations are recorded separately in [CODEX-IMAGES.md](CODEX-IMAGES.md). They do
 not resolve Pro availability. No selected model or account was substituted.
 
+## Configured model order versus current behavior
+
+The checked configuration orders Flash first, Gemini Pro second and Sol third;
+the preview-spelled Pro entry is a fourth alias candidate. A configured menu entry
+is not proof of gateway image-registry membership or upstream availability.
+
+- **Second, `antigravity/gemini-3-pro-image`:** the current reference-edit failure
+  is explained by exact catalog admission: only Flash is registered for this
+  Antigravity image contract. The older generation `NOT_FOUND` has a different
+  failure boundary and its account/project root cause remains unverified.
+- **Third, `cx/gpt-6.1-sol`:** reference editing now succeeds after its exact image
+  registry entry and dispatch were repaired. The remaining observed failure is
+  deterministic native resolution, not inability to produce or edit an image.
+  See the Codex OAuth size diagnosis in [CODEX-IMAGES.md](CODEX-IMAGES.md).
+- **Preview spelling:** the existing alias map is not evidence that renaming a
+  request enables Pro. Do not switch identity or bypass admission to manufacture
+  a successful result.
+
 ## Verification scope
 
 The original diagnosis was read-only source and public-documentation analysis.

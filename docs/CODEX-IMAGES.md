@@ -38,6 +38,32 @@ original output dimensions to establish what was returned. In particular, a
 request for `3840x2160` does not establish a 4K result. The historical Sol request
 returned 1672x941; it must not be described as native 4K.
 
+## Why Sol does not establish native 4K
+
+Checked 2026-10-04. The repaired Codex provider forwards a supplied `size` into
+`tools[0].size` and a supplied quality into the hosted image tool. It does not
+resize the returned image. `gpt-6.1-sol` is the orchestration model; the Codex
+backend selects the image engine when no explicit tool engine is requested.
+
+Open [Codex issue 28723](https://github.com/openai/codex/issues/28723) reports the
+OAuth-backed image path accepting explicit dimensions but returning automatic,
+smaller outputs. Its controlled A/B report includes both the Responses tool and
+the dedicated Codex Images endpoint. This is independently reported upstream
+behavior consistent with our 1672 × 941 and 1254 × 1254 observations, not proof
+that every account behaves identically. Our saved outputs prove the returned
+pixels; without retained response tool metadata, a specific backend rewrite for
+our account remains unverified. Changing the mainline model name or repeating
+paid requests is not a verified resolution fix.
+
+The current public [OpenAI image guide](https://developers.openai.com/api/docs/guides/image-generation#customize-image-output)
+documents custom sizes for Sunburst/Flare: dimensions divisible by 16, aspect ratio
+between 1:3 and 3:1, neither edge above 3840, and at most 8,294,400 pixels.
+Resolutions above 2560 × 1440 are experimental. Consequently **4096 × 4096 is not
+a valid public GPT Image 4K request**; 3840 × 2160 fits the documented constraints.
+These public API limits do not guarantee the separate Codex OAuth backend honors
+an otherwise valid requested size. Gemini's verified 4096 × 4096 output belongs
+to a different provider contract.
+
 ## Antigravity edits
 
 The registered Flash image route forwards one validated original reference as
