@@ -283,16 +283,24 @@ async function verifyBuild() {
       await fs.rm(file);
     }
   }
+  const violations = [];
   for (const entry of await fs.readdir(standalone, { recursive: true, withFileTypes: true })) {
     const name = entry.name;
     const relative = path.relative(standalone, path.join(entry.parentPath, name));
+    try {
     assert.ok(!entry.isSymbolicLink(), `Artifact contains a symlink: ${relative}`);
-    assert.ok(!/(?:^|\/)(?:\.ai|\.specify|specs|\.claude|\.codex|\.kiro|\.cursor|\.cline|\.agents|\.codebase-memory|graphify-out|\.git|\.ci-work|logs|\.omniroute|_tasks)(?:\/|$)/.test(relative),
+    const runtimeRoute = /^(?:\.build\/next\/(?:static\/chunks\/app|server\/app)|src\/app)\/api\/logs(?:\/|$)/.test(relative);
+    assert.ok(!/(?:^|\/)(?:\.ai|\.specify|specs|\.claude|\.codex|\.kiro|\.cursor|\.cline|\.agents|\.codebase-memory|graphify-out|\.git|\.ci-work|\.omniroute|_tasks)(?:\/|$)/.test(relative)
+      && (runtimeRoute || !/(?:^|\/)logs(?:\/|$)/.test(relative)),
       `Artifact contains private state: ${relative}`);
     assert.ok(!/^(?:secrets\.md|explain-AI\.md|reference\.md|AGENTS\.md|CLAUDE\.md|\.ignoreme|runtime\.env|credentials(?:\.json)?|.*\.(?:sqlite(?:-wal|-shm)?|db(?:-wal|-shm)?|log|key))$/i.test(name),
       `Artifact contains excluded state: ${relative}`);
     assert.ok(!name.startsWith(".env") || name === ".env.example", `Artifact contains environment state: ${relative}`);
+    } catch (error) {
+      violations.push(error.message);
+    }
   }
+  assert.equal(violations.length, 0, violations.join("\n"));
   log("INFO", "verified standalone server, BUILD_ID, image route manifests and artifact exclusions");
 }
 
