@@ -112,6 +112,7 @@ export async function handleAdobeFireflyEditRequest(params: {
   }
 
   if ("allRateLimited" in credentials) return errorResponse(503, "Image provider credentials unavailable");
+  if ("leaseUnavailable" in credentials) return errorResponse(429, "Selected image account is already leased; try again later");
   // Prefer multi-image list when present; fall back to the primary imageBytes.
   const dataUrls = buildAdobeFireflyEditDataUrls(images, imageBytes, imageMime);
   if (dataUrls.length === 0) {
