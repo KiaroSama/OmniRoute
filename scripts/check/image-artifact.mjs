@@ -29,6 +29,16 @@ export async function verifyImageArtifact(root) {
       console.error("Excluded build-time environment file from portable artifact");
     }
   }
+  const tracedWork = path.join(standalone, ".ci-work");
+  const tracedWorkStat = await fs.lstat(tracedWork).catch((error) => {
+    if (error.code === "ENOENT") return null;
+    throw error;
+  });
+  if (tracedWorkStat) {
+    assert.ok(tracedWorkStat.isDirectory() && !tracedWorkStat.isSymbolicLink(), "Unexpected traced CI state type");
+    await fs.readdir(tracedWork);
+    await fs.rm(tracedWork, { recursive: true });
+  }
   const dependencyRoot = path.join(standalone, "node_modules");
   for (const entry of await fs.readdir(dependencyRoot, { recursive: true, withFileTypes: true })) {
     if (entry.isDirectory() && [".bin", ".claude", ".codex", ".kiro", ".cursor", ".cline", ".agents", ".ai", "graphify-out", ".codebase-memory"].includes(entry.name)) {
@@ -54,8 +64,10 @@ export async function verifyImageArtifact(root) {
     assert.ok(!entry.isSymbolicLink(), `Artifact contains a symlink: ${relative}`);
     const routePath = relative.replace(/^(?:\.build\/next\/(?:static\/chunks\/app|server\/app)|src\/app)\//, "");
     const logSegment = routePath.split("/").indexOf("logs");
+    const sourceLogPath = routePath.split("/").slice(0, logSegment + 1).join("/");
     const runtimeRoute = routePath !== relative && logSegment >= 0
-      && (await fs.stat(path.join(root, "src/app", ...routePath.split("/").slice(0, logSegment + 1))).catch(() => null))?.isDirectory();
+      && ((await fs.stat(path.join(root, "src/app", sourceLogPath)).catch(() => null))?.isDirectory()
+        || (sourceLogPath.startsWith("dashboard/") && (await fs.stat(path.join(root, "src/app/(dashboard)", sourceLogPath)).catch(() => null))?.isDirectory()));
     assert.ok(!/(?:^|\/)(?:\.ai|\.specify|specs|\.claude|\.codex|\.kiro|\.cursor|\.cline|\.agents|\.codebase-memory|graphify-out|\.git|\.ci-work|\.omniroute|_tasks)(?:\/|$)/.test(relative)
       && (runtimeRoute || !/(?:^|\/)logs(?:\/|$)/.test(relative)),
       `Artifact contains private state: ${relative}`);
@@ -71,4 +83,3 @@ export async function verifyImageArtifact(root) {
   assert.equal(violations.length, 0, violations.join("\n"));
   console.error("Verified standalone server, BUILD_ID, image route manifests and artifact exclusions");
 }
-
