@@ -58,3 +58,10 @@ option forwarding and terminal outcomes. They do not establish live entitlement,
 image quality or actual native 4K. Hosted CI/build results must refer to the exact
 repair commit. The existing gateway, owner credentials and private state are not
 included in the fork or CI artifacts.
+
+The hosted image bucket drains asynchronous call-log saves between fixture cases
+and closes its artifact workers before fixture database teardown. It retains a
+240-second bucket limit, two isolated workers and failing exit codes; it does not
+force-exit passing assertions or run a duplicate local CI pass. Antigravity size
+fixtures correlate newly created log IDs, verify `prompt_chars` and assert that
+raw `prompt` is absent. Unsupported-size warnings do not echo caller values.

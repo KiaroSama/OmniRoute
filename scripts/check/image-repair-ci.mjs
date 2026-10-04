@@ -197,6 +197,15 @@ async function focusedTests(roots) {
   const args = ["--import", "tsx/esm", "--import", "./tests/_setup/isolateDataDir.ts",
     "--import", "./open-sse/utils/setupPolyfill.ts", "--test", "--test-timeout=120000",
     "--test-concurrency=1", "--test-reporter=spec"];
+  const lifecycleSuites = new Set([
+    "10197-openrouter-image-edits-route.test.ts", "combo/image-combo.test.ts",
+    "combo/image-combo-empty-200-fallback.test.ts", "fal-image-edit.test.ts",
+    "fal-image-generation-default.test.ts", "image-combo-edits-fallback-12547.test.ts",
+    "image-edits-multipart-3273.test.ts", "image-generation-fetch-timeout.test.ts",
+    "image-generation-handler.test.ts", "image-generation-route-auth.test.ts",
+    "image-generation-route.test.ts", "image-generation-size-and-payload-guard.test.ts",
+    "image-routes-combo-edits-3214-3215.test.ts",
+  ].map((file) => `tests/unit/${file}`));
   // A preload also runs in the native parent. One file per invocation prevents its
   // DATA_DIR from being inherited by multiple workers; run at most two invocations.
   const workspace = path.join(root, ".ci-work");
@@ -206,10 +215,12 @@ async function focusedTests(roots) {
     for (let index = 0; index < files.length; index += 2) {
       const remaining = Math.ceil((deadline - Date.now()) / 1000);
       if (remaining <= 0) throw new Error("Focused image bucket exceeded wall timeout of 240s");
-      const results = await Promise.allSettled(files.slice(index, index + 2).map((file) =>
-        run(file, ...offline("/usr/bin/env", ["-u", "DATA_DIR", process.execPath, ...args, file]),
-          remaining, 60)
-      ));
+      const results = await Promise.allSettled(files.slice(index, index + 2).map((file) => {
+        const lifecycle = lifecycleSuites.has(file)
+          ? ["--import", "./tests/_setup/imageCallLogLifecycle.ts"] : [];
+        return run(file, ...offline("/usr/bin/env", ["-u", "DATA_DIR", process.execPath,
+          ...args, ...lifecycle, file]), remaining, 60);
+      }));
       const failed = results.filter((result) => result.status === "rejected");
       if (failed.length) throw new AggregateError(failed.map((result) => result.reason),
         failed.map((result) => result.reason.message).join("; "));
