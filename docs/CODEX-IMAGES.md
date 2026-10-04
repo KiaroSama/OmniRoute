@@ -51,6 +51,17 @@ account request follows an ambiguous outcome.
 uses base64 original bytes and their MIME type. This contract is distinct from
 account availability; see [MODEL-AVAILABILITY.md](MODEL-AVAILABILITY.md).
 
+## Recoverable Windows rollout
+
+The backend-only Ubuntu artifact is a routing verification artifact, not a full
+Windows desktop/dashboard replacement. The Windows packaging job runs the full
+canonical build including postbuild worker co-location, verifies native Windows
+modules, worker ESM scopes, dashboard assets and portable paths, and excludes
+private runtime state before upload. Keep the previous installed runtime and
+private state recoverable before switching the selected service. Live image
+acceptance must preserve selected models and original references; missing account
+entitlement is reported, never replaced with a different model or local resize.
+
 ## Verification limits
 
 Offline fixtures establish routing, original-byte preservation, negative guards,
