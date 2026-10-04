@@ -43,6 +43,7 @@ test("handleImageGeneration treats a 200 whose only item has a blank url as a re
   try {
     const result = await handleImageGeneration(usableImageRequest);
     assert.equal(result.success, false);
+    assert.ok("status" in result && "error" in result);
     assert.equal(result.status, 502);
     assert.match(String(result.error), /without an image payload/);
   } finally {
@@ -56,6 +57,7 @@ test("handleImageGeneration treats a 200 whose only item is not an object as a r
   try {
     const result = await handleImageGeneration(usableImageRequest);
     assert.equal(result.success, false);
+    assert.ok("status" in result && "error" in result);
     assert.equal(result.status, 502);
     // LEDGER-66 (same run): pin the message so this case proves `isJsonObject(item)` rejected
     // the item rather than any 502 the outer catch would also produce.
@@ -74,7 +76,8 @@ test("handleImageGeneration keeps a well-formed 200 image payload as success", a
   try {
     const result = await handleImageGeneration(usableImageRequest);
     assert.equal(result.success, true);
-    assert.equal(result.status, undefined);
+    assert.ok("data" in result);
+    assert.equal("status" in result ? result.status : undefined, undefined);
     assert.deepEqual(result.data, { created: 123, data: [{ url: "" }, { b64_json: "ZmFrZQ==" }] });
   } finally {
     globalThis.fetch = originalFetch;
@@ -132,7 +135,7 @@ async function captureAntigravityImageRequest(extraBody: Record<string, unknown>
     },
   };
   let captured;
-  globalThis.fetch = async (_url, options = {}) => {
+  globalThis.fetch = async (_url, options: RequestInit = {}) => {
     captured = JSON.parse(String(options.body || "{}"));
     // LEDGER-47: a REAL success payload, so these cases fail when the request/response wiring
     // breaks rather than only when the envelope changes.
@@ -154,8 +157,11 @@ async function captureAntigravityImageRequest(extraBody: Record<string, unknown>
       log,
     });
     assert.equal(result.success, true);
-    assert.equal(result.data.data.length, 1);
-    assert.equal(result.data.data[0].b64_json, "ZmFrZQ==");
+    assert.ok("data" in result);
+    const images = result.data.data;
+    assert.ok(Array.isArray(images));
+    assert.equal(images.length, 1);
+    assert.equal(images[0].b64_json, "ZmFrZQ==");
 
     assert.ok(await waitForCallLogSaves(5_000), "call-log save did not settle");
     const rows = await getCallLogs({ provider: "antigravity", limit: 50 });
