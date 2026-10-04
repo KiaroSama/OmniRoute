@@ -124,8 +124,6 @@ const EXPECTED: Record<InventoryKind, Record<string, number>> = {
     "open-sse/services/combo/executeTargetGates.ts": 1,
     "open-sse/services/combo/providerWildcard.ts": 1,
     "open-sse/services/tokenRefresh.ts": 1,
-    "src/lib/providers/volcPlanAutoSyncBackfill.ts": 1,
-    "src/lib/providers/volcenginePlanBinding.ts": 1,
     "src/app/(dashboard)/dashboard/tools/agent-bridge/page.tsx": 1,
     "src/app/api/cloud/auth/route.ts": 1,
     "src/app/api/cloud/credentials/update/route.ts": 1,

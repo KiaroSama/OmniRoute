@@ -112,6 +112,7 @@ test("Antigravity reference edit rejects URL response format before submission",
   const result = await handleImageGeneration({ body: { model, prompt: "make it blue", image: DATA_URL, response_format: "url" }, credentials, log: null });
   assert.equal(result.success, false);
   assert.ok(result.success === false);
+  assert.ok("status" in result);
   assert.equal(result.status, 400);
   assert.equal(submissions, 0);
 });
@@ -129,6 +130,7 @@ test("Antigravity submitted reference edit failures are never retryable", { time
     const result = await handleImageGeneration({ body: { model, prompt: "make it blue", image: DATA_URL }, credentials, log: null });
     assert.equal(result.success, false, mode);
     assert.ok(result.success === false, mode);
+    assert.ok("retryable" in result, mode);
     assert.equal(result.retryable, false, mode);
     assert.equal(submissions, 1, mode);
   }
