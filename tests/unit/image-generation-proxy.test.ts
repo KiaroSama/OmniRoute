@@ -87,7 +87,7 @@ test.after(() => {
   fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
-test("v1 image generation POST resolves proxy and executes with proxy context when credentials.connectionId exists", async () => {
+test("v1 image generation POST resolves proxy and executes with proxy context when credentials.connectionId exists", { timeout: 5_000 }, async () => {
   // Create a connection — it gets an auto-generated id used as credentials.connectionId
   const connection = await seedConnection("openai", { apiKey: "image-proxy-key" });
 
@@ -100,26 +100,34 @@ test("v1 image generation POST resolves proxy and executes with proxy context wh
 
   // #9100 non-blocking probe: keep the request in flight so the fast-fail can
   // abort it with the proxy-specific 503 (see the edit-route case above).
-  globalThis.fetch = async (_url, options: RequestInit = {}) => new Promise<Response>((_resolve, reject) => {
-    const abort = () => reject(new DOMException("Fixture request aborted", "AbortError"));
-    if (options.signal?.aborted) abort();
-    else options.signal?.addEventListener("abort", abort, { once: true });
+  let releaseFetch: () => void;
+  const fetchSettled = new Promise<void>((resolve) => {
+    globalThis.fetch = async () => {
+      await new Promise<void>((release) => { releaseFetch = release; });
+      resolve();
+      throw new DOMException("Fixture request aborted", "AbortError");
+    };
   });
 
-  const response = await imageRoute.POST(
-    new Request("http://localhost/api/v1/images/generations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "openai/gpt-image-2",
-        prompt: "proxy test image",
-      }),
-    })
-  );
+  try {
+    const response = await imageRoute.POST(
+      new Request("http://localhost/api/v1/images/generations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "openai/gpt-image-2",
+          prompt: "proxy test image",
+        }),
+      })
+    );
 
-  assert.equal(response.status, 503);
-  const body = (await response.json()) as ErrorResponseBody;
-  assert.match(body.error.message, /unreachable/i);
+    assert.equal(response.status, 503);
+    const body = (await response.json()) as ErrorResponseBody;
+    assert.match(body.error.message, /unreachable/i);
+  } finally {
+    releaseFetch?.();
+    await fetchSettled;
+  }
 });
 
 test("v1 image generation POST executes directly when proxy resolution fails gracefully", async () => {
