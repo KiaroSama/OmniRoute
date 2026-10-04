@@ -75,9 +75,23 @@ submission, switch accounts/models, upload a reference elsewhere or resize local
 manufacture success. Account availability remains **unverified** until that evidence
 exists.
 
+## Authorized rollout observation — 2026-10-04
+
+A subsequent authorized reference-edit request selecting the exact native Pro ID
+returned HTTP 400 with no saved image. The repaired dispatcher rejects the
+unregistered Pro edit model before provider dispatch, as described above. This is
+not a reproduction of the historical generation 404 and does not establish OAuth
+entitlement or a replacement model ID.
+
+Numera conservatively records the failed operation's generation outcome as unknown;
+it was not automatically resubmitted. Working Flash, Sol and dedicated Sunburst edit
+observations are recorded separately in [CODEX-IMAGES.md](CODEX-IMAGES.md). They do
+not resolve Pro availability. No selected model or account was substituted.
+
 ## Verification scope
 
-This document is a read-only source and public-documentation diagnosis. Existing
-fixture tests prove local reference dispatch and guards, not Pro availability or
-paid-provider success. No runtime, full suite, deployment or live model check was run
-for this document. No source behavior or chosen model was changed.
+The original diagnosis was read-only source and public-documentation analysis.
+Subsequent hosted fixtures, recoverable deployment and the bounded live observation
+above add evidence for repaired admission, not upstream Pro availability. The exact
+Pro generation 404 remains historical and was not repeated. No Pro-enabling source
+behavior was added.

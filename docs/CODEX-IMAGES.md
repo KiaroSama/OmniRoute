@@ -62,6 +62,33 @@ private state recoverable before switching the selected service. Live image
 acceptance must preserve selected models and original references; missing account
 entitlement is reported, never replaced with a different model or local resize.
 
+## Verified rollout observations — 2026-10-04
+
+Hosted run [37219170454](https://github.com/KiaroSama/OmniRoute/actions/runs/37219170454)
+passed both jobs for repair commit
+`6d4c14f3958155c5db50ea718f7d1c0961dc754d`: 39 discovered image test files,
+243 passing tests, no failures, cancellations or skips, and full Windows packaging.
+That Windows artifact was installed recoverably; service health returned HTTP 200,
+the login page rendered, and the connected Numera health probe succeeded.
+No duplicate local CI or build was run.
+
+Live reference operations on the preceding routing-equivalent build returned:
+
+| Selected route | Operation | Original returned pixels | Result |
+| --- | --- | --- | --- |
+| `antigravity/gemini-3.1-flash-image` | Reference edit | 1024 × 1024 | Completed; connected MCP edit also completed |
+| `antigravity/gemini-3.1-flash-image` | Native upscale | 4096 × 4096 | Completed; original JPEG bytes verified, no local resize |
+| `cx/gpt-6.1-sol` | Reference edit | 1254 × 1254 | Completed; orchestration route, not engine identity proof |
+| `cx/gpt-image-2.5-sunburst` | Reference edit | 1254 × 1254 | Completed; forwarded identifier does not prove served engine |
+| `cx/gpt-image-2.5-sunburst` | Requested 4096 × 4096 upscale | 1254 × 1254 | Partial; not native 4K |
+| `antigravity/gemini-3-pro-image` | Reference edit | None | HTTP 400; unsupported edit admission, not entitlement proof |
+
+The final artifact change normalizes escaped Windows build paths only; paid image
+operations were not repeated for that packaging-only deployment. Numera conservatively
+records the failed Pro operation as an unknown generation outcome. Do not resubmit
+it automatically, even though inspected gateway source rejects that unregistered
+edit model before provider dispatch.
+
 ## Verification limits
 
 Offline fixtures establish routing, original-byte preservation, negative guards,
