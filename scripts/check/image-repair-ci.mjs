@@ -268,7 +268,7 @@ async function verifyBuild() {
   }
   const dependencyRoot = path.join(standalone, "node_modules");
   for (const entry of await fs.readdir(dependencyRoot, { recursive: true, withFileTypes: true })) {
-    if (entry.isDirectory() && [".claude", ".codex", ".kiro", ".cursor", ".cline", ".agents", ".ai", "graphify-out", ".codebase-memory"].includes(entry.name)) {
+    if (entry.isDirectory() && [".bin", ".claude", ".codex", ".kiro", ".cursor", ".cline", ".agents", ".ai", "graphify-out", ".codebase-memory"].includes(entry.name)) {
       const dir = path.join(entry.parentPath, entry.name);
       // Dependency package copies can carry upstream development-only metadata.
       // Inspect its manifest before dropping that non-runtime subtree.
