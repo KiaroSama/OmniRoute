@@ -255,6 +255,17 @@ async function verifyBuild() {
       assert.ok((await fs.stat(path.join(path.dirname(manifestPath), manifest[route]))).size > 0);
     }
   }
+  // Next copies build-time dotenv files independently of NFT exclusions. They are
+  // generated CI configuration, never part of the portable artifact.
+  for (const name of await fs.readdir(standalone)) {
+    if (name.startsWith(".env") && name !== ".env.example") {
+      const file = path.join(standalone, name);
+      assert.ok((await fs.lstat(file)).isFile(), "Unexpected environment artifact type");
+      await fs.readFile(file, "utf8");
+      await fs.rm(file);
+      log("INFO", "excluded build-time environment file from portable artifact");
+    }
+  }
   for (const entry of await fs.readdir(standalone, { recursive: true, withFileTypes: true })) {
     const name = entry.name;
     const relative = path.relative(standalone, path.join(entry.parentPath, name));
