@@ -277,6 +277,13 @@ async function verifyBuild() {
     }
   }
   for (const entry of await fs.readdir(standalone, { recursive: true, withFileTypes: true })) {
+    if (entry.isFile() && /^(?:AGENTS\.md|CLAUDE\.md|explain-AI\.md|reference\.md)$/i.test(entry.name)) {
+      const file = path.join(entry.parentPath, entry.name);
+      await fs.readFile(file, "utf8");
+      await fs.rm(file);
+    }
+  }
+  for (const entry of await fs.readdir(standalone, { recursive: true, withFileTypes: true })) {
     const name = entry.name;
     const relative = path.relative(standalone, path.join(entry.parentPath, name));
     assert.ok(!entry.isSymbolicLink(), `Artifact contains a symlink: ${relative}`);
