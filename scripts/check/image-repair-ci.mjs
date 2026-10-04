@@ -301,7 +301,8 @@ async function main() {
         "config/quality/eslint-suppressions.json", "--pass-on-unpruned-suppressions", ...roots], 240, 120);
     await focusedTests(roots);
     await run("backend standalone build", ...offline(process.execPath,
-      ["scripts/build/build-next-isolated.mjs"]), 900, 180);
+      // Hosted cold builds measured260-394s and webpack can be quiet during compilation.
+      ["scripts/build/build-next-isolated.mjs"]), 900, 450);
     await verifyBuild();
   } finally {
     await fs.rm(work, { recursive: true, force: true });
