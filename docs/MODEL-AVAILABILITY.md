@@ -33,12 +33,15 @@ performed for this diagnosis.
    upstream without being an advertised image-catalog entry. See
    [pinned parser](https://github.com/diegosouzapw/OmniRoute/blob/c1e30b7676975feb298b49eff6ff58923c04b89e/open-sse/config/imageRegistry.ts) and
    [pinned image generator, lines 1098–1119](https://github.com/diegosouzapw/OmniRoute/blob/c1e30b7676975feb298b49eff6ff58923c04b89e/open-sse/handlers/imageGeneration.ts#L1098-L1119).
-4. The local repair preserves the selected native ID and envelope. Reference edits
-   require exact image-catalog membership, so the unregistered Pro model is rejected
-   locally with 400 before submission. That guard is not a claim that Google lacks
-   the model; it says this checkout has not established that edit route. Relevant
-   local contracts are `open-sse/handlers/geminiImage.ts`,
-   `open-sse/config/imageProviderCatalog.ts` and
+4. The earlier repair retained a Flash-only image catalog, so Pro reference edits
+   were rejected locally with 400 before submission. The follow-up registers the
+   exact stable Pro model and resolves the same-provider preview alias to that
+   canonical ID before generation/edit admission. Original references, selected
+   credentials and negative guards remain intact. This fixes local admission and
+   preview wire spelling; it does not establish Cloud Code OAuth availability or
+   explain an upstream 404 for the already-canonical native generation request.
+   Relevant contracts are `open-sse/config/providers/registry/antigravity/imageModels.ts`,
+   `open-sse/config/imageRegistry.ts`, `open-sse/handlers/geminiImage.ts` and
    `src/app/api/v1/images/edits/editDispatch.ts`.
 
 ## Public model existence is not OAuth availability
@@ -94,17 +97,23 @@ The checked configuration orders Flash first, Gemini Pro second and Sol third;
 the preview-spelled Pro entry is a fourth alias candidate. A configured menu entry
 is not proof of gateway image-registry membership or upstream availability.
 
-- **Second, `antigravity/gemini-3-pro-image`:** the current reference-edit failure
-  is explained by exact catalog admission: only Flash is registered for this
-  Antigravity image contract. The older generation `NOT_FOUND` has a different
-  failure boundary and its account/project root cause remains unverified.
+- **Second, `antigravity/gemini-3-pro-image`:** the earlier reference-edit failure
+  was exact catalog admission. The follow-up registers Pro as text/image-capable;
+  its upstream generation `NOT_FOUND` has a different failure boundary and the
+  account/project root cause remains unverified.
 - **Third, `cx/gpt-6.1-sol`:** reference editing now succeeds after its exact image
   registry entry and dispatch were repaired. The remaining observed failure is
   deterministic native resolution, not inability to produce or edit an image.
   See the Codex OAuth size diagnosis in [CODEX-IMAGES.md](CODEX-IMAGES.md).
-- **Preview spelling:** the existing alias map is not evidence that renaming a
-  request enables Pro. Do not switch identity or bypass admission to manufacture
-  a successful result.
+- **Fourth, preview spelling:** image parsing now resolves the same-provider
+  preview alias to the stable Pro ID before admission, as the existing native
+  alias contract does. Both paths target Pro, never Flash. Canonicalization fixes
+  local wire consistency, not the selected account's upstream entitlement.
+
+Current [Antigravity model documentation](https://antigravity.google/docs/models)
+identifies Nano Banana 2 as its generative image tool; it does not promise Pro
+image availability. Successful deterministic fixtures must not be represented as
+working Pro generation on the operator's OAuth account.
 
 ## Verification scope
 

@@ -12,6 +12,7 @@ import { AI_HORDE_IMAGE_PROVIDER } from "./providers/registry/aihorde/imageModel
 
 import type { ImageProviderConfig } from "./imageRegistryTypes.ts";
 import { CODEX_IMAGE_PROVIDER } from "./providers/registry/codex/imageModels.ts";
+import { ANTIGRAVITY_IMAGE_PROVIDER } from "./providers/registry/antigravity/imageModels.ts";
 
 export const IMAGE_PROVIDERS: Record<string, ImageProviderConfig> = {
   agnes: {
@@ -212,15 +213,7 @@ export const IMAGE_PROVIDERS: Record<string, ImageProviderConfig> = {
     supportedSizes: ["1024x1024", "512x512"],
   },
 
-  antigravity: {
-    id: "antigravity",
-    baseUrl: "https://daily-cloudcode-pa.googleapis.com/v1internal:generateContent",
-    authType: "oauth",
-    authHeader: "bearer",
-    format: "gemini-image", // Special format: uses Gemini generateContent API
-    models: [{ id: "gemini-3.1-flash-image", name: "Gemini 3.1 Flash Image" }],
-    supportedSizes: ["1024x1024"],
-  },
+  antigravity: ANTIGRAVITY_IMAGE_PROVIDER,
 
   //Curruntly no models serving
   nebius: {

@@ -66,25 +66,50 @@ test("Antigravity public generator forwards original reference with selected nat
   assert.deepEqual(captured.request.generationConfig.imageConfig, { aspectRatio: "16:9", imageSize: "4K" });
 });
 
+test("Pro model aliases preserve the canonical Pro identity at registry and generator seams", { timeout: 5000 }, async () => {
+  const { parseImageModel, getImageModelEntry } = await import("../../open-sse/config/imageRegistry.ts");
+  for (const selected of ["antigravity/gemini-3-pro-image", "antigravity/gemini-3-pro-image-preview"]) {
+    assert.deepEqual(parseImageModel(selected), { provider: "antigravity", model: "gemini-3-pro-image" });
+    assert.equal(getImageModelEntry(selected)?.model, "gemini-3-pro-image");
+    for (const editing of [false, true]) {
+      let submissions = 0;
+      globalThis.fetch = async (_url, init) => {
+        submissions++;
+        const request = JSON.parse(String(init?.body)) as CapturedImageRequest;
+        assert.equal(request.model, "gemini-3-pro-image");
+        assert.equal(request.project, "fixture-project");
+        assert.deepEqual(request.request.generationConfig.imageConfig, { aspectRatio: "1:1", imageSize: "4K" });
+        assert.equal(request.request.contents[0].parts.length, editing ? 2 : 1);
+        if (editing) assert.deepEqual(request.request.contents[0].parts[1], { inlineData: { mimeType: "image/png", data: PNG.toString("base64") } });
+        return Response.json({ response: { candidates: [{ content: { parts: [{ inlineData: { mimeType: "image/png", data: PNG.toString("base64") } }] } }] } });
+      };
+      const result = await handleImageGeneration({ body: { model: selected, prompt: "Pro fixture", size: "1024x1024", image_size: "4K", ...(editing ? { image: DATA_URL } : {}) }, credentials, log: null });
+      assert.equal(result.success, true);
+      assert.equal(submissions, 1);
+    }
+  }
+});
+
 test("Antigravity HTTP edit preserves reference, ratio and tier for JSON and multipart", { timeout: 5000 }, async () => {
   await providers.createProviderConnection({ provider: "antigravity", authType: "oauth", name: "fixture", accessToken: "fixture-token", isActive: true, testStatus: "active", providerSpecificData: { projectId: "fixture-project" } });
-  for (const multipart of [false, true]) {
+  for (const [selected, multipart] of [[model, false], [model, true], ["antigravity/gemini-3-pro-image", false], ["antigravity/gemini-3-pro-image-preview", true]] as const) {
     let captured: CapturedImageRequest;
     globalThis.fetch = async (_url, init) => {
       captured = JSON.parse(String(init?.body));
       return Response.json({ response: { candidates: [{ content: { parts: [{ inlineData: { mimeType: "image/png", data: PNG.toString("base64") } }] } }] } });
     };
     const form = new FormData();
-    form.set("model", model); form.set("prompt", "make it blue");
+    form.set("model", selected); form.set("prompt", "make it blue");
     form.set("aspect_ratio", "16:9"); form.set("image_size", "4K");
     form.set("image", new Blob([PNG], { type: "image/png" }), "reference.png");
     const request = new Request("http://localhost/api/v1/images/edits", {
       method: "POST",
       ...(multipart ? {} : { headers: { "content-type": "application/json" } }),
-      body: multipart ? form : JSON.stringify({ model, prompt: "make it blue", image: DATA_URL, aspect_ratio: "16:9", image_size: "4K" }),
+      body: multipart ? form : JSON.stringify({ model: selected, prompt: "make it blue", image: DATA_URL, aspect_ratio: "16:9", image_size: "4K" }),
     });
     const response = await POST(request);
     assert.equal(response.status, 200, JSON.stringify(await response.clone().json()));
+    assert.equal(captured.model, selected.includes("gemini-3-pro-image") ? "gemini-3-pro-image" : "gemini-3.1-flash-image");
     assert.deepEqual(captured.request.contents[0].parts[1], { inlineData: { mimeType: "image/png", data: PNG.toString("base64") } });
     assert.deepEqual(captured.request.generationConfig.imageConfig, { aspectRatio: "16:9", imageSize: "4K" });
   }

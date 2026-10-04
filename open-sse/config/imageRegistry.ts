@@ -33,6 +33,12 @@ interface ImageCatalogModelEntry {
 }
 
 const IMAGE_MODEL_ALIASES: Record<string, ImageModelAliasEntry> = {
+  "gemini-3-pro-image-preview": {
+    provider: "antigravity",
+    model: "gemini-3-pro-image",
+    name: "Gemini 3 Pro Image",
+    listInCatalog: false,
+  },
   "gemini-3.1-flash-image-preview": {
     provider: "antigravity",
     model: "gemini-3.1-flash-image",

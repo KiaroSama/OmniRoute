@@ -64,6 +64,22 @@ These public API limits do not guarantee the separate Codex OAuth backend honors
 an otherwise valid requested size. Gemini's verified 4096 × 4096 output belongs
 to a different provider contract.
 
+## Manually adding a Codex model does not create native 4K or 8K
+
+OmniRoute's provider Custom Models UI and `/api/provider-models` support adding
+routing entries, including an images endpoint designation. This changes routing
+metadata, not the remote model or its entitlement. Image edit admission still
+requires a verified registered image contract. A custom name containing `4k` or
+`8k` cannot make the Codex backend produce that resolution.
+
+The explicit registered Codex image engines in this repair are `gpt-image-2` and
+`gpt-image-2.5-sunburst`; Sol entries orchestrate a hosted tool. The public image
+API documents experimental 3840 × 2160 support, but existing Codex OAuth evidence
+shows smaller output even through the dedicated endpoint. No verified ready-made
+or manually added Codex route in this investigation establishes native 8K; the
+current public GPT Image maximum edge/pixel limits exclude it. Native generation
+and later enlargement must be named separately.
+
 ## Antigravity edits
 
 The registered Flash image route forwards one validated original reference as
