@@ -266,6 +266,16 @@ async function verifyBuild() {
       log("INFO", "excluded build-time environment file from portable artifact");
     }
   }
+  const dependencyRoot = path.join(standalone, "node_modules");
+  for (const entry of await fs.readdir(dependencyRoot, { recursive: true, withFileTypes: true })) {
+    if (entry.isDirectory() && [".claude", ".codex", ".kiro", ".cursor", ".cline", ".agents", ".ai", "graphify-out", ".codebase-memory"].includes(entry.name)) {
+      const dir = path.join(entry.parentPath, entry.name);
+      // Dependency package copies can carry upstream development-only metadata.
+      // Inspect its manifest before dropping that non-runtime subtree.
+      await fs.readdir(dir);
+      await fs.rm(dir, { recursive: true });
+    }
+  }
   for (const entry of await fs.readdir(standalone, { recursive: true, withFileTypes: true })) {
     const name = entry.name;
     const relative = path.relative(standalone, path.join(entry.parentPath, name));
