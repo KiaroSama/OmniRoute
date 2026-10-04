@@ -7,6 +7,8 @@ import test from "node:test";
 for (const key of ["DATA_DIR", "HOME", "USERPROFILE", "APPDATA", "LOCALAPPDATA"]) {
   assert.ok(process.env[key]?.includes(`${path.sep}isolated-`), `${key} must be isolated`);
 }
+process.env.API_KEY_SECRET = "native-codex-image-fixture-only";
+await import("../_setup/imageCallLogLifecycle.ts");
 const originalFetch = globalThis.fetch;
 const core = await import("../../src/lib/db/core.ts");
 const providers = await import("../../src/lib/db/providers.ts");
