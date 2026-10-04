@@ -61,6 +61,15 @@ try {
   await run("full build with canonical postbuild", ["run", "build"], 1800, 600);
   const out = path.join(root, ".build/next/standalone");
   assemblePathSanitize(root, out, ".build/next");
+  // Generated JSON embeds Windows paths with escaped separators; the canonical
+  // sanitizer handles slash paths only. Keep the portable artifact relocatable.
+  const escapedRoot = JSON.stringify(root).slice(1, -1);
+  for (const relative of ["server.js", ".build/next/required-server-files.json"]) {
+    const file = path.join(out, relative);
+    const text = (await fs.readFile(file, "utf8")).replaceAll(escapedRoot, ".");
+    assert.ok(!text.includes(escapedRoot), "Build-machine path remains in portable artifact");
+    await fs.writeFile(file, text, "utf8");
+  }
   await fs.writeFile(path.join(out, "BUILD_SHA"), process.env.GITHUB_SHA ?? "unknown", "utf8");
   const workers = ["src/lib/db/healthCheckWorker.js", "src/lib/usage/callLogArtifactWorker.js", "open-sse/services/compression/compressionWorker.js"];
   for (const worker of workers) {
