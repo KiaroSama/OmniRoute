@@ -8,7 +8,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const baseline = "c1e30b7676975feb298b49eff6ff58923c04b89e";
+const baseline = "23a11484862b3bb589a55e85b00e4ac53ffeb234";
 const work = path.join(root, ".ci-work/image-repair");
 const home = path.join(work, "isolated-home");
 const temp = path.join(work, "isolated-temp");

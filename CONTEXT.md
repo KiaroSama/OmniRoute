@@ -7,4 +7,7 @@
 - **Requested resolution**: The pixel dimensions or resolution tier requested by the operator.
 - **Actual resolution**: Pixel dimensions verified by decoding the saved native output.
 - **Account availability**: Whether the selected account can use a model and operation at the time checked.
+- **Model alias**: An alternate label for the same canonical model, not permission to substitute another model family.
+- **Custom model entry**: A configured routing name; adding it does not create a provider model or grant a capability.
+- **Receipt artifact**: A saved copy of an operation result, distinct from the durable request record that prevents repeated paid submission.
 - **Isolated gateway**: A separate runtime with its own writable artifacts, listener and state, independent of the active gateway.
