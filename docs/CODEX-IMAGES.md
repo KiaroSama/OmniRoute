@@ -30,7 +30,8 @@ Masks, remote reference URLs, file IDs and unimplemented output controls are
 rejected rather than discarded. Selected account policy, proxy and cancellation
 remain in effect. Refresh failure terminates before image submission. A selected
 account already held by an exclusive lease returns 429 without forwarding its
-credential sentinel to an image adapter.
+credential sentinel to an image adapter. Other diagnostic selection results and
+empty or non-string API keys/access tokens are rejected before adapter dispatch.
 
 A numeric `size` is forwarded, not enforced by local resampling. Inspect decoded
 original output dimensions to establish what was returned. In particular, a

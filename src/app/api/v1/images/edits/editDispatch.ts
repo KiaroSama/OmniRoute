@@ -11,6 +11,7 @@ import { getComboByName, getCombos } from "@/lib/db/combos";
 import { resolveComboTargets } from "@omniroute/open-sse/services/combo.ts";
 import { runImageComboTargets, type ImageComboDispatchResult } from "@omniroute/open-sse/services/imageCombo.ts";
 import { isAllRateLimitedCredentials } from "@/app/api/v1/_shared/rateLimit";
+import { isUsableImageCredentials } from "@/sse/services/imageCredentials";
 import * as log from "@/sse/utils/logger";
 import { toJsonErrorPayload } from "@/shared/utils/upstreamError";
 
@@ -113,7 +114,7 @@ export async function handleAdobeFireflyEditRequest(params: {
 
   if ("allRateLimited" in credentials) return errorResponse(503, "Image provider credentials unavailable");
   if ("leaseUnavailable" in credentials) return errorResponse(429, "Selected image account is already leased; try again later");
-  if (!("apiKey" in credentials) && !("accessToken" in credentials)) return errorResponse(401, "Image credential selection did not return usable credentials");
+  if (!isUsableImageCredentials(credentials)) return errorResponse(401, "Image credential selection did not return usable credentials");
   // Prefer multi-image list when present; fall back to the primary imageBytes.
   const dataUrls = buildAdobeFireflyEditDataUrls(images, imageBytes, imageMime);
   if (dataUrls.length === 0) {

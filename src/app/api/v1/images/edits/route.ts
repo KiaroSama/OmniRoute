@@ -6,6 +6,7 @@ import { parseImageModel, getImageProvider, getImageModelEntry } from "@omnirout
 import { errorResponse, unavailableResponse } from "@omniroute/open-sse/utils/error.ts";
 import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
 import { isAllRateLimitedCredentials } from "@/app/api/v1/_shared/rateLimit";
+import { isUsableImageCredentials } from "@/sse/services/imageCredentials";
 import { getComboByName } from "@/lib/db/combos";
 
 
@@ -183,7 +184,7 @@ async function postHandler(request: Request, _context?: unknown) {
     if (isAllRateLimitedCredentials(credentials)) return unavailableResponse(429, "All Antigravity accounts rate limited", credentials.retryAfter, credentials.retryAfterHuman);
     if ("allRateLimited" in credentials) return errorResponse(503, "Image provider credentials unavailable");
     if ("leaseUnavailable" in credentials) return errorResponse(429, "Selected image account is already leased; try again later");
-    if (!("apiKey" in credentials) && !("accessToken" in credentials)) return errorResponse(401, "Image credential selection did not return usable credentials");
+    if (!isUsableImageCredentials(credentials)) return errorResponse(401, "Image credential selection did not return usable credentials");
     const result = await dispatchAntigravityEdit({ parsed, providerConfig, modelStr: resolvedModel }, credentials, { prompt, size, responseFormat, images, aspectRatio, imageSize, hasMask, request });
     if (result.success) { await clearRecoveredProviderState(credentials); return jsonResponse(result.data); }
     return jsonResponse(toJsonErrorPayload(result.error, "Image edit provider error"), result.status);
@@ -199,7 +200,7 @@ async function postHandler(request: Request, _context?: unknown) {
     if (isAllRateLimitedCredentials(credentials)) return unavailableResponse(429, "All Codex accounts rate limited", credentials.retryAfter, credentials.retryAfterHuman);
     if ("allRateLimited" in credentials) return errorResponse(503, "Image provider credentials unavailable");
     if ("leaseUnavailable" in credentials) return errorResponse(429, "Selected image account is already leased; try again later");
-    if (!("apiKey" in credentials) && !("accessToken" in credentials)) return errorResponse(401, "Image credential selection did not return usable credentials");
+    if (!isUsableImageCredentials(credentials)) return errorResponse(401, "Image credential selection did not return usable credentials");
     const result = await dispatchCodexImagesEdit({ parsed, providerConfig, modelStr: resolvedModel }, credentials, ctx);
     if (result.success) { await clearRecoveredProviderState(credentials); return jsonResponse(result.data); }
     return jsonResponse(toJsonErrorPayload(result.error, "Codex Images edit provider error"), result.status);
@@ -241,7 +242,7 @@ async function postHandler(request: Request, _context?: unknown) {
     }
     if ("allRateLimited" in credentials) return errorResponse(503, "Image provider credentials unavailable");
     if ("leaseUnavailable" in credentials) return errorResponse(429, "Selected image account is already leased; try again later");
-    if (!("apiKey" in credentials) && !("accessToken" in credentials)) return errorResponse(401, "Image credential selection did not return usable credentials");
+    if (!isUsableImageCredentials(credentials)) return errorResponse(401, "Image credential selection did not return usable credentials");
     const credentialDetails = credentials;
     if (isCodexFreePlan("providerSpecificData" in credentialDetails ? credentialDetails.providerSpecificData : undefined)) {
       return errorResponse(
@@ -320,7 +321,7 @@ async function postHandler(request: Request, _context?: unknown) {
 
     if ("allRateLimited" in credentials) return errorResponse(503, "Image provider credentials unavailable");
     if ("leaseUnavailable" in credentials) return errorResponse(429, "Selected image account is already leased; try again later");
-    if (!("apiKey" in credentials) && !("accessToken" in credentials)) return errorResponse(401, "Image credential selection did not return usable credentials");
+    if (!isUsableImageCredentials(credentials)) return errorResponse(401, "Image credential selection did not return usable credentials");
     const result = await handleFalAIImageEdit({
       provider: parsed.provider,
       model: parsed.model,
@@ -391,7 +392,7 @@ async function postHandler(request: Request, _context?: unknown) {
 
     if ("allRateLimited" in credentials) return errorResponse(503, "Image provider credentials unavailable");
     if ("leaseUnavailable" in credentials) return errorResponse(429, "Selected image account is already leased; try again later");
-    if (!("apiKey" in credentials) && !("accessToken" in credentials)) return errorResponse(401, "Image credential selection did not return usable credentials");
+    if (!isUsableImageCredentials(credentials)) return errorResponse(401, "Image credential selection did not return usable credentials");
     const result = await handleOpenRouterImageEdit({
       provider: parsed.provider,
       model: parsed.model,
@@ -460,7 +461,7 @@ async function postHandler(request: Request, _context?: unknown) {
 
   if ("allRateLimited" in credentials) return errorResponse(503, "Image provider credentials unavailable");
   if ("leaseUnavailable" in credentials) return errorResponse(429, "Selected image account is already leased; try again later");
-  if (!("apiKey" in credentials) && !("accessToken" in credentials)) return errorResponse(401, "Image credential selection did not return usable credentials");
+  if (!isUsableImageCredentials(credentials)) return errorResponse(401, "Image credential selection did not return usable credentials");
   const result = await handleOpenAIImageEdit({
     provider: customProviderId,
     model: customModel,
