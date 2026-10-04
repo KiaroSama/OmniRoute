@@ -19,7 +19,7 @@ import { resolveImageModelPrefix, validateCodexImageEditReferences } from "@/lib
 
 import { resolveProxyForConnection } from "@/lib/db/settings";
 import { runWithProxyContext } from "@omniroute/open-sse/utils/proxyFetch.ts";
-import { isCodexFreePlan } from "@omniroute/open-sse/executors/codex/tools.ts";
+import { isCodexFreePlan } from "@omniroute/open-sse/config/codexPlan.ts";
 import { refreshSelectedCodexImageCredentials } from "@/sse/services/selectedCodexImageCredentials";
 
 

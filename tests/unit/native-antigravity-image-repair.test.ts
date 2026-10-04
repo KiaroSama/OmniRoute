@@ -24,6 +24,16 @@ const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR
 const DATA_URL = `data:image/png;base64,${PNG.toString("base64")}`;
 const model = "antigravity/gemini-3.1-flash-image";
 const credentials = { accessToken: "fixture-token", projectId: "fixture-project" };
+type CapturedImageRequest = {
+  model: string;
+  project: string;
+  requestType: string;
+  userAgent: string;
+  request: {
+    contents: { parts: unknown[] }[];
+    generationConfig: { imageConfig: { aspectRatio: string; imageSize: string } };
+  };
+};
 
 test.after(async () => {
   globalThis.fetch = originalFetch;
@@ -35,7 +45,7 @@ test.after(async () => {
 
 test("Antigravity public generator forwards original reference with selected native settings", { timeout: 5000 }, async () => {
   let calls = 0;
-  let captured: any;
+  let captured: CapturedImageRequest;
   globalThis.fetch = async (_url, init) => {
     calls++;
     captured = JSON.parse(String(init?.body));
@@ -59,7 +69,7 @@ test("Antigravity public generator forwards original reference with selected nat
 test("Antigravity HTTP edit preserves reference, ratio and tier for JSON and multipart", { timeout: 5000 }, async () => {
   await providers.createProviderConnection({ provider: "antigravity", authType: "oauth", name: "fixture", accessToken: "fixture-token", isActive: true, testStatus: "active", providerSpecificData: { projectId: "fixture-project" } });
   for (const multipart of [false, true]) {
-    let captured: any;
+    let captured: CapturedImageRequest;
     globalThis.fetch = async (_url, init) => {
       captured = JSON.parse(String(init?.body));
       return Response.json({ response: { candidates: [{ content: { parts: [{ inlineData: { mimeType: "image/png", data: PNG.toString("base64") } }] } }] } });

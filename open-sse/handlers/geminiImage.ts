@@ -180,8 +180,6 @@ export async function handleGeminiImageGeneration({ model, providerConfig, body,
     if (!response.ok) {
       const errorText = await response.text();
       const safeError = sanitizeImageProviderError(errorText);
-      const safeErrorLog =
-        typeof safeError === "string" ? safeError : JSON.stringify(safeError ?? {});
       if (log) {
         log.error("IMAGE", `antigravity error ${response.status}`);
       }

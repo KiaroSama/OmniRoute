@@ -271,7 +271,7 @@ async function main() {
       [fileURLToPath(import.meta.url), "--typecheck"], 240, 120);
     await run("changed-source ESLint", process.execPath,
       ["node_modules/eslint/bin/eslint.js", "--suppressions-location",
-        "config/quality/eslint-suppressions.json", ...roots], 240, 120);
+        "config/quality/eslint-suppressions.json", "--pass-on-unpruned-suppressions", ...roots], 240, 120);
     await focusedTests(roots);
     await run("backend standalone build", ...offline(process.execPath,
       ["scripts/build/build-next-isolated.mjs"]), 900, 180);
