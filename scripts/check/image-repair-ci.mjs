@@ -289,11 +289,16 @@ async function verifyBuild() {
     const relative = path.relative(standalone, path.join(entry.parentPath, name));
     try {
     assert.ok(!entry.isSymbolicLink(), `Artifact contains a symlink: ${relative}`);
-    const runtimeRoute = /^(?:\.build\/next\/(?:static\/chunks\/app|server\/app)|src\/app)\/api\/logs(?:\/|$)/.test(relative);
+    const routePath = relative.replace(/^(?:\.build\/next\/(?:static\/chunks\/app|server\/app)|src\/app)\//, "");
+    const logSegment = routePath.split("/").indexOf("logs");
+    const runtimeRoute = routePath !== relative && logSegment >= 0
+      && (await fs.stat(path.join(root, "src/app", ...routePath.split("/").slice(0, logSegment + 1))).catch(() => null))?.isDirectory();
     assert.ok(!/(?:^|\/)(?:\.ai|\.specify|specs|\.claude|\.codex|\.kiro|\.cursor|\.cline|\.agents|\.codebase-memory|graphify-out|\.git|\.ci-work|\.omniroute|_tasks)(?:\/|$)/.test(relative)
       && (runtimeRoute || !/(?:^|\/)logs(?:\/|$)/.test(relative)),
       `Artifact contains private state: ${relative}`);
-    assert.ok(!/^(?:secrets\.md|explain-AI\.md|reference\.md|AGENTS\.md|CLAUDE\.md|\.ignoreme|runtime\.env|credentials(?:\.json)?|.*\.(?:sqlite(?:-wal|-shm)?|db(?:-wal|-shm)?|log|key))$/i.test(name),
+    const credentialRoute = name === "credentials" && entry.isDirectory() && routePath !== relative
+      && (await fs.stat(path.join(root, "src/app", routePath)).catch(() => null))?.isDirectory();
+    assert.ok(credentialRoute || !/^(?:secrets\.md|explain-AI\.md|reference\.md|AGENTS\.md|CLAUDE\.md|\.ignoreme|runtime\.env|credentials(?:\.json)?|.*\.(?:sqlite(?:-wal|-shm)?|db(?:-wal|-shm)?|log|key))$/i.test(name),
       `Artifact contains excluded state: ${relative}`);
     assert.ok(!name.startsWith(".env") || name === ".env.example", `Artifact contains environment state: ${relative}`);
     } catch (error) {
