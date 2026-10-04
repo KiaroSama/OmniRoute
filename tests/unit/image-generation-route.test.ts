@@ -66,7 +66,7 @@ function createCodexEditForm(
   formData.set("model", options.model ?? "codex/gpt-5.6-sol");
   formData.set(
     "image",
-    new File([options.bytes ?? VALID_PNG_BYTES], "reference.png", {
+    new File([new Uint8Array(options.bytes ?? VALID_PNG_BYTES)], "reference.png", {
       type: options.mime ?? "image/png",
     })
   );

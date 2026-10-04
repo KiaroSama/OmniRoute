@@ -150,7 +150,9 @@ async function typecheck() {
   const config = ts.readConfigFile(configPath, ts.sys.readFile);
   if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, "\n"));
   const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, root);
-  const program = ts.createProgram(files.map((file) => path.join(root, file)), {
+  const declarations = [...parsed.fileNames.filter((file) => file.endsWith(".d.ts")),
+    path.join(root, "open-sse/types.d.ts")];
+  const program = ts.createProgram([...files.map((file) => path.join(root, file)), ...declarations], {
     ...parsed.options, noCheck: false, noEmit: true, incremental: false,
   });
   const diagnostics = [...parsed.errors, ...ts.getPreEmitDiagnostics(program)];
@@ -170,6 +172,7 @@ const regressionFiles = [
   "codex-free-plan-image-generation.test.ts",
   "codex-spark-image-generation.test.ts",
   "hard-session-lease-bypass-inventory.test.ts",
+  "proxySubscription.parse.test.ts",
   "image-normalize.test.ts",
   "t42-image-size-to-aspect-ratio.test.ts",
   "fal-image-edit.test.ts",
