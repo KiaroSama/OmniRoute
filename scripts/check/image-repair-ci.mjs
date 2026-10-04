@@ -203,7 +203,8 @@ async function focusedTests(roots) {
     "fal-image-generation-default.test.ts", "image-combo-edits-fallback-12547.test.ts",
     "image-edits-multipart-3273.test.ts", "image-generation-fetch-timeout.test.ts",
     "image-generation-handler.test.ts", "image-generation-route-auth.test.ts",
-    "image-generation-route.test.ts", "image-generation-size-and-payload-guard.test.ts",
+    "image-generation-route.test.ts", "image-generation-proxy.test.ts",
+    "image-generation-size-and-payload-guard.test.ts",
     "image-routes-combo-edits-3214-3215.test.ts",
   ].map((file) => `tests/unit/${file}`));
   // A preload also runs in the native parent. One file per invocation prevents its
