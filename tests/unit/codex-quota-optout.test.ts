@@ -31,6 +31,7 @@ test.before(async () => {
     accessToken: "fixture-access", isActive: true, testStatus: "active",
     providerSpecificData: {},
   });
+  assert.ok(typeof connection.id === "string");
   connectionId = connection.id;
 });
 
@@ -66,7 +67,8 @@ test("Codex combined opt-out preserves observations and bypasses cached/live quo
     const selected = await getProviderCredentialsWithQuotaPreflight(
       "codex", null, [connectionId], "gpt-6.1-sol"
     );
-    assert.equal(selected?.connectionId, connectionId);
+    assert.ok(selected && "connectionId" in selected);
+    assert.equal(selected.connectionId, connectionId);
   });
 
 test("Partial, malformed and other-provider settings retain exhausted-window filtering",
@@ -105,7 +107,8 @@ test("Restoring filtering and terminal account protection remain effective",
     const restored = await getProviderCredentialsWithQuotaPreflight(
       "codex", null, [connectionId], "gpt-6.1-sol"
     );
-    assert.equal(restored?.allRateLimited, true);
+    assert.ok(restored && "allRateLimited" in restored);
+    assert.equal(restored.allRateLimited, true);
 
     await providers.updateProviderConnection(connectionId, {
       providerSpecificData: optedOut, testStatus: "banned",
@@ -114,5 +117,5 @@ test("Restoring filtering and terminal account protection remain effective",
     const banned = await getProviderCredentialsWithQuotaPreflight(
       "codex", null, [connectionId], "gpt-6.1-sol"
     );
-    assert.notEqual(banned?.connectionId, connectionId);
+    assert.ok(!banned || !("connectionId" in banned) || banned.connectionId !== connectionId);
   });
