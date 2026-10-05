@@ -28,6 +28,8 @@ export const codexProvider: RegistryEntry = {
     tokenUrl: "https://auth.openai.com/oauth/token",
   },
   models: [
+    // Sol 6.1 is also a chat Responses model; image admission must not make it image-only.
+    { id: "gpt-6.1-sol", name: "GPT 6.1 Sol" },
     // Astra shares GPT-5.6's Codex limits: the live OAuth catalog reports
     // max_context_window=872000 (context_window=272000 is the pricing tier).
     { id: "gpt-6-astra", name: "GPT 6 Astra", ...GPT_5_6_CODEX_CAPABILITIES },

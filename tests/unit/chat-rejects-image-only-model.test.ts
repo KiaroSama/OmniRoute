@@ -24,8 +24,8 @@ test.beforeEach(async () => {
   await resetStorage();
 });
 
-test.after(() => {
-  harness.cleanup?.();
+test.after(async () => {
+  await harness.cleanup?.();
 });
 
 test("POST /v1/chat/completions with a HuggingFace image model returns 400 + generations hint (#6457)", async () => {
@@ -102,21 +102,23 @@ test("POST /v1/chat/completions routes a stored chat combo whose name is an imag
 });
 
 test("POST /v1/chat/completions allows a model registered for both chat and image generation", async () => {
-  const request = buildRequest({
-    body: {
-      model: "codex/gpt-5.6-sol",
-      messages: [{ role: "user", content: "hi" }],
-    },
-  });
+  for (const model of ["codex/gpt-5.6-sol", "codex/gpt-6.1-sol", "cx/gpt-6.1-sol"]) {
+    const request = buildRequest({
+      body: {
+        model,
+        messages: [{ role: "user", content: "hi" }],
+      },
+    });
 
-  const res = await handleChat(request);
-  if (res.status === 400) {
-    const body = (await res.json()) as { error?: { message?: string } };
-    const msg = body?.error?.message || JSON.stringify(body);
-    assert.doesNotMatch(
-      msg,
-      /image-generation model/i,
-      "a model present in the chat catalog must not trip the image-only guard"
-    );
+    const res = await handleChat(request);
+    if (res.status === 400) {
+      const body = (await res.json()) as { error?: { message?: string } };
+      const msg = body?.error?.message || JSON.stringify(body);
+      assert.doesNotMatch(
+        msg,
+        /image-generation model/i,
+        `${model} must remain usable on the chat endpoint`
+      );
+    }
   }
 });

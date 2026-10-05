@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { getModelsByProviderId } from "../../open-sse/config/providerModels.ts";
 
 import {
   getAllImageModels,
@@ -66,6 +67,10 @@ test("Codex admission rejects lookalikes and unknown image engines", { timeout: 
 });
 
 test("Codex catalog separates hosted chat identities from dedicated image engines", { timeout: 1000 }, () => {
+  const chatModels = getModelsByProviderId("codex");
+  assert.ok(chatModels.some((model) => model.id === "gpt-6.1-sol"));
+  assert.equal(chatModels.some((model) => model.id === "gpt-image-2"), false);
+  assert.equal(chatModels.some((model) => model.id === "gpt-image-2.5-sunburst"), false);
   const catalog = getAllImageModels().filter((entry) => entry.provider === "codex");
   assert.deepEqual(catalog.map((entry) => entry.id), [
     "codex/gpt-5.6-sol-image",
