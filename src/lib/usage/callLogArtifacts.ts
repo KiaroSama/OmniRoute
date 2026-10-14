@@ -18,6 +18,26 @@ const DATA_DIR = resolveDataDir({ isCloud });
 export const CALL_LOGS_DIR = isCloud ? null : path.join(DATA_DIR, "call_logs");
 export const MAX_CALL_LOG_ARTIFACT_BYTES = 512 * 1024;
 
+// Artifacts hold full request/response bodies (prompts, tool output): keep them
+// owner-only regardless of the process umask, as defense in depth on top of the
+// private DATA_DIR (bind-mounted or externally created DATA_DIRs skip that chmod).
+const PRIVATE_DIR_MODE = 0o700;
+const PRIVATE_FILE_MODE = 0o600;
+let callLogsRootTightened = false;
+
+function ensurePrivateArtifactDir(rootDir: string, dir: string) {
+  fs.mkdirSync(dir, { recursive: true, mode: PRIVATE_DIR_MODE });
+  if (callLogsRootTightened) return;
+  try {
+    // Tighten a root created before this hardening; only the subtree OmniRoute owns,
+    // never the operator-configured DATA_DIR itself.
+    fs.chmodSync(rootDir, PRIVATE_DIR_MODE);
+  } catch {
+    // Best effort (e.g. a root owned by another UID): the artifact file itself is still 0600.
+  }
+  callLogsRootTightened = true;
+}
+
 // Re-exported for backward compatibility: consumers (completedRequestDetails.ts)
 // import this marker check from here. Definition now lives in the shared
 // constants module so the client-side detail view can use the exact same check
@@ -227,7 +247,9 @@ function buildSizeLimitStages(artifact: CallLogArtifact): Array<() => unknown> {
   const omitBodies = <T extends object>(value: T, keepResponse = false) => ({
     ...value,
     requestBody: OMITTED_FOR_SIZE_LIMIT,
-    responseBody: keepResponse ? (value as { responseBody: unknown }).responseBody : OMITTED_FOR_SIZE_LIMIT,
+    responseBody: keepResponse
+      ? (value as { responseBody: unknown }).responseBody
+      : OMITTED_FOR_SIZE_LIMIT,
     error: preserveErrorForSizeLimit(artifact.error),
   });
 
@@ -301,8 +323,9 @@ export function writeCallArtifact(
     // so artifact bookkeeping is not treated as password hashing by static analysis.
     const fileChecksum = computeArtifactChecksum(serialized);
 
-    fs.mkdirSync(path.dirname(absPath), { recursive: true });
-    fs.writeFileSync(tmpPath, serialized);
+    ensurePrivateArtifactDir(CALL_LOGS_DIR, path.dirname(absPath));
+    // The mode is applied at creation and survives the atomic rename.
+    fs.writeFileSync(tmpPath, serialized, { mode: PRIVATE_FILE_MODE });
     fs.renameSync(tmpPath, absPath);
 
     return {

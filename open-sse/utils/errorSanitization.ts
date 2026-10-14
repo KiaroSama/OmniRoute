@@ -543,6 +543,7 @@ function isSensitiveUrlQueryKey(key: string): boolean {
     normalized === "signature" ||
     normalized === "key" ||
     normalized === "apikey" ||
+    normalized === "auth" ||
     normalized === "token" ||
     normalized === "accesstoken" ||
     normalized === "refreshtoken" ||
@@ -573,10 +574,27 @@ function redactUrlSegment(segment: string): string {
     redacted = `${segment.slice(0, schemeEnd)}[REDACTED]@${segment.slice(userInfoEnd + 1)}`;
   }
 
+  return redactUrlQueryParams(redacted);
+}
+
+function redactUrlQueryParams(value: string): string {
   URL_QUERY_PARAM_RE.lastIndex = 0;
-  return redacted.replace(URL_QUERY_PARAM_RE, (match, separator: string, key: string) =>
+  return value.replace(URL_QUERY_PARAM_RE, (match, separator: string, key: string) =>
     isSensitiveUrlQueryKey(key) ? `${separator}redacted=[REDACTED]` : match
   );
+}
+
+const ABSOLUTE_URL_PREFIX_RE = /^[a-z][a-z0-9+.-]{0,31}:\/\//i;
+
+/**
+ * Redact credentials carried by a single URL (userinfo and credential-style query params
+ * such as `key`, `api_key`, `access_token`, `auth`, `sig`) so it can be persisted in
+ * request-capture logs. Uses the same sensitive-key set as error sanitization; a URL with
+ * nothing to redact is returned byte-identical.
+ */
+export function redactUrlQuerySecrets(url: string): string {
+  if (!url) return url;
+  return ABSOLUTE_URL_PREFIX_RE.test(url) ? redactUrlSegment(url) : redactUrlQueryParams(url);
 }
 
 function redactSensitiveUrlCredentials(value: string): string {

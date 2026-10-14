@@ -53,6 +53,7 @@ import {
   buildSyntheticResponsesFailedEvent,
 } from "../utils/responsesSequence.ts";
 import { hasCodexSsePeekProgress } from "./codex/ssePeekProgress.ts";
+import * as overloadedOutput from "./codex/sseOverloadedOutput.ts";
 import { normalizeCodexResponsesInput } from "../utils/responsesInputNormalization.ts";
 import * as prl from "../utils/providerRequestLogging.ts";
 import { createRequire } from "module";
@@ -558,34 +559,6 @@ const CODEX_SSE_TRANSIENT_ERROR_PATTERNS = [
 // buffer before giving up and passing the stream through unchanged.
 const CODEX_SSE_PEEK_MAX_BYTES = 8192;
 
-/**
- * Best-effort extraction of the human-readable error message from a peeked SSE
- * chunk, so the resulting 503 body carries something more useful than the raw
- * pattern that matched. Falls back to the matched pattern when no structured
- * `data:` payload could be parsed.
- */
-function extractCodexSseErrorMessage(text: string, fallback: string): string {
-  for (const line of text.split(/\r?\n/)) {
-    if (!line.startsWith("data:")) continue;
-    const data = line.slice("data:".length).trim();
-    if (!data || data === "[DONE]") continue;
-    try {
-      const parsed = JSON.parse(data) as Record<string, unknown>;
-      const directError = parsed.error as Record<string, unknown> | undefined;
-      const nestedError = (parsed.response as Record<string, unknown> | undefined)?.error as
-        Record<string, unknown> | undefined;
-      const message =
-        (typeof directError?.message === "string" && directError.message) ||
-        (typeof nestedError?.message === "string" && nestedError.message) ||
-        (typeof parsed.message === "string" && parsed.message);
-      if (message) return message;
-    } catch {
-      // Non-JSON SSE data line — keep scanning subsequent lines.
-    }
-  }
-  return fallback;
-}
-
 type CodexSseTransientErrorPeek =
   | { matched: string; message: string; replacementBody: null; timedOut?: false }
   | {
@@ -640,6 +613,10 @@ export async function peekCodexSseTransientError(
         matched = hit;
         break;
       }
+      // Fake-200 overload delivered as output text (decolua/9router#3232).
+      const overloadStep = overloadedOutput.codexOverloadedOutputPeekStep(text);
+      if (overloadStep === "settled") break;
+      if (overloadStep === "wait") continue;
       // Hand off actual text/reasoning/tool progress, but retain the early
       // error window across lifecycle-only frames such as response.created.
       if (hasCodexSsePeekProgress(text)) {
@@ -654,13 +631,15 @@ export async function peekCodexSseTransientError(
     );
   }
 
+  matched ??= overloadedOutput.matchCodexOverloadedOutput(text);
   if (matched) {
     try {
       await reader.cancel();
     } catch {
       // Upstream socket may already be closing; nothing to clean up.
     }
-    return { matched, message: extractCodexSseErrorMessage(text, matched), replacementBody: null };
+    const message = overloadedOutput.extractCodexSseErrorMessage(text, matched);
+    return { matched, message, replacementBody: null };
   }
 
   // Re-assemble the stream: peeked prefix chunks, then continue draining the

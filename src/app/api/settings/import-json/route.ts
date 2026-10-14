@@ -8,6 +8,16 @@ import { runJsonMigration, type LegacyJsonData } from "@/lib/db/jsonMigration";
 import { getSettings } from "@/lib/db/settings";
 import { setSystemPromptConfig } from "@omniroute/open-sse/services/systemPrompt.ts";
 import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { SECURITY_IMPACTING_SETTINGS_KEYS } from "@/shared/constants/securityImpactingSettings";
+
+/** Drops the password and every key PATCH only accepts after password re-auth. */
+function stripSecurityImpactingSettings(settings: object): Record<string, unknown> {
+  const safeSettings: Record<string, unknown> = { ...settings };
+  for (const key of ["password", ...SECURITY_IMPACTING_SETTINGS_KEYS]) {
+    delete safeSettings[key];
+  }
+  return safeSettings;
+}
 
 /**
  * POST /api/settings/import-json
@@ -16,7 +26,10 @@ import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
  * database.  Accepts either multipart/form-data (file field) or a raw JSON body.
  *
  * 🔒 Auth-guarded.
- * 🔒 Zero-Trust: password and requireLogin keys are stripped before insertion.
+ * 🔒 Zero-Trust: password plus every key `PATCH /api/settings` only accepts after
+ *    password re-auth (SECURITY_IMPACTING_SETTINGS_KEYS: requireLogin, the LOCAL_ONLY
+ *    manage-scope bypass list/kill-switch, OIDC login keys) are stripped before insertion —
+ *    an import must not be a way around that re-auth.
  * 🔒 A pre-import backup is created automatically before any data is written.
  */
 export async function POST(request: Request) {
@@ -56,10 +69,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // 🔒 Zero-Trust: strip authentication config before migration
-    if (data.settings) {
-      const { password: _pw, requireLogin: _rl, ...safeSettings } = data.settings;
-      data = { ...data, settings: safeSettings };
+    // 🔒 Zero-Trust: strip authentication + security-impacting config before migration
+    if (data.settings && typeof data.settings === "object") {
+      data = { ...data, settings: stripSecurityImpactingSettings(data.settings) };
     }
 
     const db = getDbInstance();

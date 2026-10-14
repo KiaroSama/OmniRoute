@@ -8,6 +8,7 @@ import {
 } from "@/lib/db/settings";
 import { getRuntimePorts } from "@/lib/runtime/ports";
 import { updateSettingsSchema } from "@/shared/validation/settingsSchemas";
+import { SECURITY_IMPACTING_SETTINGS_KEYS } from "@/shared/constants/securityImpactingSettings";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { getConsistentMachineId } from "@/shared/utils/machineId";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
@@ -107,32 +108,6 @@ function parseExpectedRevision(
   }
   return undefined;
 }
-
-/**
- * Settings keys whose change broadens attack surface. Spec §Security:
- * password re-auth is required when any of these is present in a PATCH body.
- *
- * - `localOnlyManageScopeBypassEnabled` / `localOnlyManageScopeBypassPrefixes`:
- *   T-011 bypass kill-switch + per-prefix list. Operator must re-confirm
- *   before broadening the LOCAL_ONLY carve-out.
- * - `requireLogin`: dashboard login enforcement toggle.
- * - `newPassword`: password rotation (existing). Handled by the same gate so
- *   the password-verify only fires ONCE per PATCH.
- *
- * Note: `mcpEnabled` is NOT gated server-side — the dedicated MCP page
- * (/dashboard/mcp) toggles it via patchSetting() without a currentPassword
- * prompt. The Authz section can still prompt client-side for consistency,
- * but the server accepts the change without re-auth.
- */
-const SECURITY_IMPACTING_KEYS = [
-  "localOnlyManageScopeBypassEnabled",
-  "localOnlyManageScopeBypassPrefixes",
-  "requireLogin",
-  "newPassword",
-  "oidcEnabled",
-  "oidcDisablePasswordLogin",
-  "oidcClientSecret",
-] as const;
 
 /**
  * Derive an audit actor string from the inbound request. Falls back to
@@ -373,7 +348,9 @@ export async function PATCH(request: Request) {
     // key is present, require currentPassword + verify against the stored
     // bcrypt hash. Dedupes with the previous inline newPassword reauth — the
     // password is verified at most once per PATCH.
-    const touchedSecurityKeys = SECURITY_IMPACTING_KEYS.filter((k) => k in validation.data);
+    const touchedSecurityKeys = SECURITY_IMPACTING_SETTINGS_KEYS.filter(
+      (k) => k in validation.data
+    );
     if (touchedSecurityKeys.length > 0) {
       const settings = await getSettings();
       // Lazy-hash any plaintext INITIAL_PASSWORD migration BEFORE we read the
@@ -449,7 +426,7 @@ export async function PATCH(request: Request) {
 
     // Password rotation: hash the new value AFTER the gate has accepted the
     // currentPassword (or the cold-boot exception fired). The gate already
-    // included `newPassword` in SECURITY_IMPACTING_KEYS, so no separate
+    // included `newPassword` in SECURITY_IMPACTING_SETTINGS_KEYS, so no separate
     // verify happens here — strictly hashing + body rewriting.
     // A password change also ends every dashboard session issued before it, so a copy of the
     // old cookie cannot outlive the password it was issued under.

@@ -9,7 +9,10 @@
 
 import { getDbInstance } from "../db/core";
 import { normalizePayloadForLog, protectPayloadForLog } from "../logPayloads";
-import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/errorSanitization.ts";
+import {
+  redactUrlQuerySecrets,
+  sanitizeErrorMessage,
+} from "@omniroute/open-sse/utils/errorSanitization.ts";
 import {
   accumulateLatencySample,
   asRecord,
@@ -109,7 +112,9 @@ function normalizePendingMetadata(metadata?: PendingRequestMetadata): PendingReq
     normalized.clientEndpoint = toStringOrNull(metadata.clientEndpoint) || null;
   }
   if (metadata.providerUrl !== undefined) {
-    normalized.providerUrl = toStringOrNull(metadata.providerUrl) || null;
+    // Live pending detail is served to the dashboard: never retain `?key=`-style credentials.
+    const providerUrl = toStringOrNull(metadata.providerUrl);
+    normalized.providerUrl = providerUrl ? redactUrlQuerySecrets(providerUrl) : null;
   }
   if (metadata.stage !== undefined) {
     normalized.stage = toStringOrNull(metadata.stage) || null;

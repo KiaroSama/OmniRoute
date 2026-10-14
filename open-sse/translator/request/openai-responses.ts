@@ -17,6 +17,7 @@ import { collectResponsesTools } from "./openai-responses/additionalTools.ts";
 import { flattenNamespaceToolName } from "./openai-responses/namespaceFlatten.ts";
 import { mergeHistoricalToolIdentities } from "./openai-responses/historyToolIdentity.ts";
 import { openaiToOpenAIResponsesRequest } from "./openai-responses/toResponses.ts";
+import { coerceToolCallArguments } from "../helpers/toolArguments.ts";
 import {
   JsonRecord,
   RESPONSES_STORE_MARKER,
@@ -120,8 +121,7 @@ function normalizeRoleBasedToolCalls(toolCalls: unknown): JsonRecord[] {
           type: "function",
           function: {
             name,
-            arguments:
-              typeof fn.arguments === "string" ? fn.arguments : JSON.stringify(fn.arguments ?? {}),
+            arguments: coerceToolCallArguments(fn.arguments),
           },
         };
       })
@@ -426,10 +426,9 @@ export function openaiResponsesToOpenAIRequest(
         type: "function",
         function: {
           name: fnName,
-          arguments:
-            typeof item.arguments === "string"
-              ? item.arguments
-              : JSON.stringify(item.arguments ?? {}),
+          // Codex replays raw streamed args verbatim; partial fragments / freeform
+          // text must become valid JSON or strict Chat upstreams 400 the request.
+          arguments: coerceToolCallArguments(item.arguments),
         },
       });
       currentAssistantMsg.tool_calls = toolCalls;

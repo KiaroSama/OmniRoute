@@ -31,6 +31,7 @@ import {
 } from "../responseSanitizer.ts";
 import { isStripReasoningRequested } from "./headers.ts";
 import { applyClientUsageBuffer } from "./clientUsageBuffer.ts";
+import { storeClaudeThinkingFromResponse } from "../../services/claudeThinkingStore.ts";
 import { resolveRequestToolIdentity } from "../../translator/response/openai-responses/requestToolIdentity.ts";
 import { plaintextCollaborationFields } from "../../translator/response/openai-responses/collaborationPlaintextMarker.ts";
 
@@ -68,6 +69,22 @@ export function translateNonStreamingClientResponse(
   // ── Extract tool schemas for schema-aware translation ──────────────────────
   const finalBody = requestBody as Record<string, unknown> | null;
   const responseToolSchemas = extractToolSchemaMap(finalBody || responseBody);
+
+  // ── Claude signed-thinking continuity ─────────────────────────────────────
+  // A non-Claude client never holds the signed thinking blocks of this tool turn;
+  // keep them server-side so openai-to-claude can restore them next turn.
+  // Never retained for a response that may echo video transcript cues.
+  if (
+    responsePayloadFormat === FORMATS.CLAUDE &&
+    clientResponseFormat !== FORMATS.CLAUDE &&
+    !input.videoTranscriptSensitive
+  ) {
+    try {
+      storeClaudeThinkingFromResponse(responseBody, { provider, model });
+    } catch {
+      // Continuity capture is best-effort — never block the response
+    }
+  }
 
   // ── Translate response to client's expected format ─────────────────────────
   let translatedResponse = needsTranslation(responsePayloadFormat, clientResponseFormat)

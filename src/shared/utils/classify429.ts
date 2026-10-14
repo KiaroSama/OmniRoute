@@ -228,9 +228,14 @@ const TERMINAL_QUOTA_PATTERNS: ReadonlyArray<RegExp> = [
   /insufficient balance/i,
 ];
 
+// Mirror of retryAfterJson's COMPOUND_DURATION_RE ("151h58m18.015s", "2h7m",
+// "45m3s") — anchored and bounded (ReDoS rule); see parseDelaySeconds below.
+const COMPOUND_DURATION_RE =
+  /^(?:(\d{1,9})h(\d{1,9})m(?:(\d{1,9}(?:\.\d{1,12})?)s)?|(\d{1,9})h(\d{1,9}(?:\.\d{1,12})?)s|(\d{1,9})m(\d{1,9}(?:\.\d{1,12})?)s)$/i;
+
 /**
  * Parse an upstream delay string ("38s", "26.66s", "1500ms", "2m", "1h",
- * or a bare number of seconds) into seconds.
+ * compound Go-style "2h7m23s", or a bare number of seconds) into seconds.
  *
  * Deliberately mirrors `parseDelayString` in
  * open-sse/services/retryAfterJson.ts (#7940) rather than importing it:
@@ -249,6 +254,13 @@ function parseDelaySeconds(value: unknown): number | null {
   if (min) return Number.parseFloat(min[1]) * 60;
   const hr = /^(\d+(?:\.\d+)?)\s*h$/i.exec(str);
   if (hr) return Number.parseFloat(hr[1]) * 3600;
+  const compound = COMPOUND_DURATION_RE.exec(str);
+  if (compound) {
+    const hours = Number(compound[1] ?? compound[4] ?? 0);
+    const minutes = Number(compound[2] ?? compound[6] ?? 0);
+    const seconds = Number.parseFloat(compound[3] ?? compound[5] ?? compound[7] ?? "0");
+    return hours * 3600 + minutes * 60 + seconds;
+  }
   const bare = Number.parseFloat(str);
   return Number.isFinite(bare) ? bare : null;
 }

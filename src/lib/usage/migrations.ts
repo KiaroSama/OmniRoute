@@ -112,9 +112,19 @@ function containsLegacyCallLogLayout(dirPath: string | null): boolean {
   return false;
 }
 
+// Archives zip whole request-log trees (prompts, responses): owner-only, like call-log
+// artifacts, regardless of the process umask.
+const PRIVATE_ARCHIVE_DIR_MODE = 0o700;
+const PRIVATE_ARCHIVE_FILE_MODE = 0o600;
+
 function ensureArchiveDir() {
   if (!LOG_ARCHIVES_DIR) return;
-  fs.mkdirSync(LOG_ARCHIVES_DIR, { recursive: true });
+  fs.mkdirSync(LOG_ARCHIVES_DIR, { recursive: true, mode: PRIVATE_ARCHIVE_DIR_MODE });
+  try {
+    fs.chmodSync(LOG_ARCHIVES_DIR, PRIVATE_ARCHIVE_DIR_MODE);
+  } catch {
+    // Best effort (e.g. a directory owned by another UID); archive files stay 0600.
+  }
 }
 
 /**
@@ -206,7 +216,7 @@ function createLegacyArchive(targets: ArchiveTarget[]): Promise<string> {
     const archiveFilename = `${timestamp}_legacy-request-logs.zip`;
     const archivePath = path.join(LOG_ARCHIVES_DIR, archiveFilename);
     const zipFile = new ZipFile();
-    const output = fs.createWriteStream(archivePath);
+    const output = fs.createWriteStream(archivePath, { mode: PRIVATE_ARCHIVE_FILE_MODE });
 
     let settled = false;
     // yazl detects a stat->stream size mismatch (a file growing while being zipped, e.g.
@@ -254,7 +264,8 @@ function writeLegacyLayoutMarker(archiveFilename: string) {
       },
       null,
       2
-    )
+    ),
+    { mode: PRIVATE_ARCHIVE_FILE_MODE }
   );
 }
 
