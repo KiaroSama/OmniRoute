@@ -254,6 +254,13 @@ omniroute tokens scopes               # explain the three scopes
 `tokens` commands require an **admin** credential. You can also manage tokens in
 the dashboard under **Settings → Access Tokens** (create, revoke, copy-once).
 
+A token can never be minted with more privilege than its creator holds. An
+`admin` token can only be created by the operator — the dashboard session, the
+local CLI on the server itself, `omniroute connect` with the password, or an
+instance with login disabled. Machine credentials (an `admin` access token,
+or an API key with the `manage`/`admin` scope) can mint `write` and `read`
+tokens only; asking them for `--scope admin` returns `403`.
+
 ---
 
 ## Configuring a coding CLI from the remote catalog

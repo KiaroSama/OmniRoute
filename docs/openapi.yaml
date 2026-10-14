@@ -4274,7 +4274,10 @@ paths:
         "200":
           description: Token created (token returned once)
         "403":
-          description: Insufficient scope
+          description: >-
+            Insufficient scope, or an `admin` token was requested by a machine credential
+            (API key or access token). Admin tokens require the dashboard session or the
+            local CLI; machine credentials can mint `write`/`read` only.
 
   /api/cli/tokens/{id}:
     delete:
