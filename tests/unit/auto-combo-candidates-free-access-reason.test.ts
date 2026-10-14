@@ -49,7 +49,6 @@ async function seedConnection() {
 
 test.beforeEach(async () => {
   await resetStorage();
-  await settingsDb.updateSettings({ excludeTosAvoid: false });
 });
 
 test.after(async () => {
