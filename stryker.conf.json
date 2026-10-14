@@ -43,6 +43,10 @@
   "tap": {
     "testFiles": [
       "tests/unit/account-weighted-runtime-16459.test.ts",
+      "tests/unit/codex-reasoning-replay-retry.test.ts",
+      "tests/unit/authz/local-only-bypass-spawn-denylist.test.ts",
+      "tests/unit/request-logger-url-secret-masking.test.ts",
+      "tests/unit/claude-thinking-continuity.test.ts",
       "tests/unit/repo-checks-isolate-datadir.test.ts",
       "tests/unit/characterization-oauth.test.ts",
       "tests/unit/measure-boundary.test.ts",
