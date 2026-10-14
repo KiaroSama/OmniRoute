@@ -249,10 +249,16 @@ test("Responses -> Chat filters orphan tool outputs and supports role-based mess
     null
   );
 
-  assert.equal((result as any).messages.length, 3);
+  // An orphan output is never sent as `role:"tool"`; its content is kept as labelled
+  // user context (same label the Claude reconciliation uses) instead of being dropped.
+  assert.equal((result as any).messages.length, 4);
   assert.equal((result as any).messages[0].role, "user");
-  assert.equal((result as any).messages[1].tool_calls[0].id, "call_2");
-  (assert as any).deepEqual((result as any).messages[2], {
+  assert.deepEqual((result as { messages: unknown[] }).messages[1], {
+    role: "user",
+    content: "[Unpaired tool result orphan]\nskip",
+  });
+  assert.equal((result as any).messages[2].tool_calls[0].id, "call_2");
+  (assert as any).deepEqual((result as any).messages[3], {
     role: "tool",
     tool_call_id: "call_2",
     content: "found",

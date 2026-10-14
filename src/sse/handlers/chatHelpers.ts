@@ -760,6 +760,11 @@ function asShadowedCompatibleNode(
   return { id, name: trimmedString(record.name) || null, prefix };
 }
 
+// The status-table defaults read as "your OmniRoute API key is invalid" (401) or
+// "unknown model" (404); the actual fix is connecting an account in the dashboard.
+// Only the code is overridden so the status/type pairing SDKs rely on is kept.
+const PROVIDER_NOT_CONFIGURED = { code: "provider_not_configured" } as const;
+
 export function handleNoCredentials(
   credentials: any,
   excludeConnectionId: string | null,
@@ -883,13 +888,15 @@ export function handleNoCredentials(
           : HTTP_STATUS.SERVICE_UNAVAILABLE;
       return errorResponse(
         singleModelStatus,
-        `No active credentials for provider: ${provider}.${hint}`
+        `No active credentials for provider: ${provider}.${hint}`,
+        singleModelStatus === HTTP_STATUS.UNAUTHORIZED ? PROVIDER_NOT_CONFIGURED : undefined
       );
     }
 
     return errorResponse(
       HTTP_STATUS.NOT_FOUND,
-      `No active credentials for provider: ${provider}.${hint}`
+      `No active credentials for provider: ${provider}.${hint}`,
+      PROVIDER_NOT_CONFIGURED
     );
   }
   log.warn("CHAT", "No more accounts available", { provider });

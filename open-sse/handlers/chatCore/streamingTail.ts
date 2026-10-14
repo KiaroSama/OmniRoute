@@ -11,6 +11,7 @@ import {
   STREAM_RECOVERY,
 } from "../../config/constants.ts";
 import { incrementTokenUsage } from "../../services/geminiRateLimitTracker.ts";
+import { forgetClaudeThinkingForClientResponse } from "../../services/claudeThinkingStore.ts";
 import { requestTtftMs, streamEmittedOutput } from "../../utils/streamTiming.ts";
 import { clearPostOutputFailureStreak } from "../../services/accountFallback/postOutputFailureStreak.ts";
 import {
@@ -374,6 +375,12 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
         providerSpecificData: credentials?.providerSpecificData,
         log,
       });
+    }
+
+    // The stream translator stores Claude signed thinking per tool call as it goes;
+    // a turn that may echo video transcript cues must not be retained at all.
+    if (videoBridgeObserved && streamResponseBody) {
+      forgetClaudeThinkingForClientResponse(streamResponseBody);
     }
 
     if (normalizedStreamStatus === 200 && streamResponseBody) {

@@ -124,7 +124,7 @@ import { createPreparedRequestLogger } from "../utils/providerRequestLogging.ts"
 import { summarizeToolSources } from "../utils/toolSources.ts";
 import { applyResponsesPreviousResponseIdPolicy } from "../utils/responsesStatePolicy.ts";
 import { applyClaudeEffortVariant } from "./chatCore/claudeEffortVariant.ts";
-import { DEFAULT_THINKING_CLAUDE_SIGNATURE } from "../config/defaultThinkingSignature.ts";
+import { sanitizeAnthropicPassthroughHistory } from "./chatCore/anthropicPassthroughHistory.ts";
 import {
   getStripTypesForProviderModel,
   stripIncompatibleMessageContent,
@@ -2383,9 +2383,9 @@ async function handleChatCoreInner({
       // Only Anthropic's first-party API validates these signatures (token-bound); third-party
       // Claude-shape providers do not. See redactPassthroughThinkingSignatures + issue #2454.
       if (provider === "claude") {
-        translatedBody.messages = redactPassthroughThinkingSignatures(
-          translatedBody.messages,
-          DEFAULT_THINKING_CLAUDE_SIGNATURE
+        // Also drops foreign server_tool_use ids (z.ai `call_…`) that fail ^srvtoolu_ (9router#3685).
+        translatedBody.messages = sanitizeAnthropicPassthroughHistory(
+          translatedBody.messages
         ) as typeof translatedBody.messages;
 
         stripClaudeRejectedTopLevelFields(translatedBody, clientRawRequest?.headers);

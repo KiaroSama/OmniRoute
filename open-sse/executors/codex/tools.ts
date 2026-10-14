@@ -2,6 +2,7 @@
 // Extracted verbatim from codex.ts. Self-contained (console.debug only).
 
 import { stripUnsupportedRegexPatterns } from "../../translator/helpers/schemaCoercion.ts";
+import { coerceSchemaValueShapes } from "../../translator/helpers/schemaValueShapes.ts";
 
 // Responses-API hosted tool types that OpenAI/Codex executes server-side.
 // These arrive shaped as `{ type, ...params }` with no `function` object and no `name` —
@@ -175,6 +176,9 @@ export function normalizeCodexTools(
             const subTool = st as Record<string, unknown>;
             const name = typeof subTool.name === "string" ? subTool.name.trim().slice(0, 128) : "";
             if (name) validToolNames.add(name);
+            if (isPlainObject(subTool.parameters)) {
+              subTool.parameters = coerceSchemaValueShapes(subTool.parameters);
+            }
           }
         }
       }
@@ -261,8 +265,10 @@ export function normalizeCodexTools(
     // Codex/OpenAI Responses API rejects `pattern` fields using regex lookaround
     // (e.g. `^(?=.*@).+$`) with a 400 "regex lookaround is not supported" error.
     // Strip those before the schema reaches upstream (9router#1556).
+    // Bare type names / tuple `items` fail the Responses validator for every
+    // account ("'object' is not of type 'object', 'boolean'"), so coerce first.
     const sanitizedParameters = stripRedundantOneOfConstEnum(
-      stripUnsupportedRegexPatterns(parameters)
+      stripUnsupportedRegexPatterns(coerceSchemaValueShapes(parameters))
     );
 
     // Rewrite in-place to Responses format

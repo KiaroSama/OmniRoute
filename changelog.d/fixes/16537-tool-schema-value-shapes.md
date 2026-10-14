@@ -1,0 +1,1 @@
+- **fix(translator):** coerce non-object tool-schema shapes (array `properties`, primitive property values, shorthand string sub-schemas, tuple `items`) for Gemini/Antigravity and Codex instead of failing every account with a 400 ([#16537](https://github.com/diegosouzapw/OmniRoute/pull/16537)) — thanks @AnandkumarMall, @coozgan, @bayhnf

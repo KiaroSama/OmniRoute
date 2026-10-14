@@ -1,0 +1,1 @@
+- **fix(quality):** prevent cancelled, failed, or incomplete complexity measurements from appearing as passing release-green metrics; retain advisory classification for complete, measured ratchet drift without changing baselines or CI workflows.

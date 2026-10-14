@@ -1,6 +1,7 @@
 import { getPendingById } from "@/lib/usage/usageHistory";
 import { getChatLogMaxDepth, getChatLogArrayTailItems } from "@/lib/logEnv";
 import { sanitizeErrorMessage } from "./error.ts";
+import { redactUrlQuerySecrets } from "./errorSanitization.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -94,6 +95,8 @@ function maskSensitiveHeaders(headers: HeaderInput): Record<string, unknown> {
     "apikey",
     "cookie",
     "token",
+    "secret",
+    "password",
     "runtimekey",
     "storage-state",
     "storagestate",
@@ -125,6 +128,17 @@ function maskSensitiveHeaders(headers: HeaderInput): Record<string, unknown> {
   }
 
   return masked;
+}
+
+/**
+ * Provider URLs can carry the credential in the query string (Vertex Express / Google
+ * media `?key=`, search providers' `api_key=`). Captured URLs are persisted to call-log
+ * artifacts, so mask those params before storing; anything else passes through as-is.
+ */
+function maskUrlSecrets(url: unknown): unknown {
+  if (typeof url === "string") return redactUrlQuerySecrets(url);
+  if (url instanceof URL) return redactUrlQuerySecrets(url.toString());
+  return url;
 }
 
 function createEmptyStreamChunks() {
@@ -451,7 +465,7 @@ export async function createRequestLogger(
     logTargetRequest(url, headers, body) {
       payloads.providerRequest = {
         timestamp: new Date().toISOString(),
-        url,
+        url: maskUrlSecrets(url),
         headers: maskSensitiveHeaders(headers),
         body: cloneBoundedForLog(body),
       };

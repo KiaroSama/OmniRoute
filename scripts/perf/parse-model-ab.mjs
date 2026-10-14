@@ -41,9 +41,8 @@ try {
     // Alternate order each round to avoid systematic first/second bias.
     const order = r % 2 === 0 ? ["baseline", "fixed"] : ["fixed", "baseline"];
     for (const variant of order) {
-      const res = spawnSync(process.execPath, ["--import", "tsx/esm", child], {
+      const res = spawnSync(process.execPath, ["--import", "tsx/esm", child, variant], {
         cwd: root,
-        env: { ...process.env, MODEL_VARIANT: variant },
         encoding: "utf8",
       });
       const line = (res.stderr || "").trim().split("\n").pop() || "";

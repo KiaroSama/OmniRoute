@@ -25,6 +25,7 @@ import { getAuthzBypassSnapshot } from "@/lib/config/runtimeSettings";
 import {
   SPAWN_CAPABLE_PREFIXES,
   SPAWN_CAPABLE_PATTERNS,
+  isSpawnCapableBypassPrefix,
 } from "@/shared/constants/spawnCapablePrefixes";
 import { VNC_ROUTE_PREFIX } from "@/lib/vncSession/manifest";
 
@@ -366,9 +367,10 @@ export function isLocalOnlyPath(path: string, method?: string): boolean {
  *   - returns false if the global kill-switch is off
  *     (`localOnlyManageScopeBypassEnabled === false`),
  *   - returns true iff `path` matches one of the live bypass prefixes AND
- *     that prefix is not in `SPAWN_CAPABLE_PREFIXES` (defence-in-depth: the
- *     zod schema already rejects spawn-capable entries, but a malformed DB
- *     row should not be able to grant a bypass).
+ *     that prefix does not overlap `SPAWN_CAPABLE_PREFIXES` /
+ *     `SPAWN_CAPABLE_PATTERN_ANCESTORS` (defence-in-depth: the zod schema and
+ *     the snapshot loader already reject spawn-capable entries, but a
+ *     malformed DB row should not be able to grant a bypass).
  *
  * O(1) (no I/O, no async). Hot-reload SLA: <50 ms — satisfied structurally.
  */
@@ -384,17 +386,13 @@ export function isLocalOnlyBypassableByManageScope(path: string): boolean {
   if (!snapshot.enabled) return false;
   return snapshot.prefixes.some((p) => {
     // Defence-in-depth: reject a bypass prefix that is the same as, child of,
-    // OR PARENT of any spawn-capable prefix. The parent case catches e.g.
-    // `/api/cli-tools/` (parent of `/api/cli-tools/runtime/`) — a request to
-    // `/api/cli-tools/runtime/foo` would otherwise satisfy `path.startsWith(p)`
-    // and reach the spawn-capable surface without a loopback check.
-    if (
-      SPAWN_CAPABLE_PREFIXES.some(
-        (spawn) => p === spawn || p.startsWith(spawn) || spawn.startsWith(p)
-      )
-    ) {
-      return false;
-    }
+    // OR PARENT of any spawn-capable prefix (or pattern ancestor). The parent
+    // case catches e.g. `/api/cli-tools/` (parent of `/api/cli-tools/runtime/`)
+    // — a request to `/api/cli-tools/runtime/foo` would otherwise satisfy
+    // `path.startsWith(p)` and reach the spawn-capable surface without a
+    // loopback check. `normalizeAuthzBypass` already drops these entries when
+    // the snapshot is built; this re-check covers any other snapshot writer.
+    if (isSpawnCapableBypassPrefix(p)) return false;
     return path === p || path.startsWith(p);
   });
 }

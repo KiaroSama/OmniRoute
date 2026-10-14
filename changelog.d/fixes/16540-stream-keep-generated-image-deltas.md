@@ -1,0 +1,1 @@
+- **fix(sse):** generated images (Gemini `inlineData` → `delta.images`) are no longer dropped from OpenAI-format streams ([#16540](https://github.com/diegosouzapw/OmniRoute/pull/16540)) — thanks @ntdatt812

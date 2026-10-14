@@ -235,6 +235,7 @@ const SAFE_PUBLIC_ERROR_IDENTIFIERS = new Set([
   "provider_circuit_open",
   "provider_deprecated",
   "provider_error",
+  "provider_not_configured",
   "provider_retired",
   "provider_unavailable",
   "proxy_family_unavailable",

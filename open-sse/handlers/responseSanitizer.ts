@@ -1185,6 +1185,8 @@ export function sanitizeStreamingChunk(parsed: unknown): unknown {
           }
           if (deltaRecord.function_call !== undefined)
             delta.function_call = stripZeroWidthFunctionArguments(deltaRecord.function_call);
+          // Generated-image deltas (gemini-to-openai inlineData) must survive the allow-list.
+          if (Array.isArray(deltaRecord.images)) delta.images = deltaRecord.images;
           c.delta = delta;
         } else {
           c.delta = choiceRecord.delta;

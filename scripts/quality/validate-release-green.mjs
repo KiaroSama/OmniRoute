@@ -255,6 +255,59 @@ export function parseCognitiveCount(out) {
   return m ? Number(m[1]) : null;
 }
 
+/** Translate the shared complexity walk into the two metric records. */
+export function evaluateComplexityRun({ code, out }, cogBase) {
+  // The shared walk emits both machine counts followed by both ratchet verdicts.
+  // Do not use the legacy generic "N violações" fallback here: a partial walk
+  // containing only the cyclomatic summary would masquerade as cognitive data.
+  const cogMatch = /^cognitiveComplexity=(\d+)\r?$/m.exec(out);
+  const cycMatch = /^complexity=(\d+)\r?$/m.exec(out);
+  const cogSummary = /^\[cognitive-complexity\] (OK|REGRESSÃO) — (\d+) violações /m.exec(out);
+  const cycSummary = /^\[complexity\] (OK|REGRESSÃO) — (\d+) violações /m.exec(out);
+  const cogCurrent = cogMatch ? Number(cogMatch[1]) : null;
+  const cycCurrent = cycMatch ? Number(cycMatch[1]) : null;
+  const cogOver = isDrift(cogCurrent, cogBase);
+  const cycRegressed = cycSummary?.[1] === "REGRESSÃO";
+  const measured =
+    [cogCurrent, cycCurrent, cogBase].every((count) => Number.isSafeInteger(count) && count >= 0) &&
+    Number(cogSummary?.[2]) === cogCurrent &&
+    Number(cycSummary?.[2]) === cycCurrent &&
+    (cogSummary?.[1] === "REGRESSÃO") === cogOver;
+  // Exit 1 is expected only for a complete, measured ratchet regression. A
+  // cancelled/crashed tool or missing metrics is execution failure, not drift.
+  const measuredDrift = code === 1 && measured && (cogOver || cycRegressed);
+  if (!measured || (code !== 0 && !measuredDrift)) {
+    return [
+      {
+        id: "complexity",
+        label: "Complexity measurement",
+        kind: "hard",
+        ok: false,
+        detail:
+          code !== 0
+            ? `Complexity process exited ${code}: ${firstFailureLine(out)}`
+            : "Complexity process did not report complete finite metrics and baseline",
+      },
+    ];
+  }
+  return [
+    {
+      id: "cognitive-complexity",
+      label: "Cognitive complexity (ratchet)",
+      kind: "drift",
+      ok: !cogOver,
+      detail: `${cogCurrent} vs baseline ${cogBase}${cogOver ? ` (+${cogCurrent - cogBase} drift → rebaseline at release)` : ""}`,
+    },
+    {
+      id: "complexity",
+      label: "Cyclomatic complexity (ratchet)",
+      kind: "drift",
+      ok: !cycRegressed,
+      detail: `complexity=${cycCurrent} (shared walk with cognitive)${cycRegressed ? " REGRESSED" : ""}`,
+    },
+  ];
+}
+
 /**
  * Drift verdict for a ratchet: a metric that grew past its committed baseline is
  * "drift" (reported, never blocking). `direction:"down"` metrics (warnings,
@@ -593,42 +646,11 @@ async function main() {
   // Complexity + cognitive (one ESLint walk; both still recorded as drift)
   {
     announce("Complexity + cognitive ratchets (shared ESLint walk)");
-    const { out } = await run(npmCmd, ["run", "check:complexity-ratchets"]);
-    saveGateLog("complexity-ratchets", out);
-    const cogCurrent = parseCognitiveCount(out);
-    const cogBase = baselineValue("cognitiveComplexity");
-    const cogOver = isDrift(cogCurrent, cogBase);
-    const cycMatch = /(?:^|\n)complexity=(\d+)/.exec(out);
-    const cycOkMatch = /\[complexity\] OK — (\d+)/.exec(out);
-    const cycRegMatch = /\[complexity\] REGRESSÃO — (\d+)/.exec(out);
-    const cycCurrent = cycMatch
-      ? Number(cycMatch[1])
-      : cycOkMatch
-        ? Number(cycOkMatch[1])
-        : cycRegMatch
-          ? Number(cycRegMatch[1])
-          : null;
-    const cycRegressed = /\[complexity\] REGRESSÃO/.test(out);
-    record({
-      id: "cognitive-complexity",
-      label: "Cognitive complexity (ratchet)",
-      kind: "drift",
-      ok: !cogOver,
-      detail:
-        cogCurrent == null
-          ? "could not parse count"
-          : `${cogCurrent} vs baseline ${cogBase}${cogOver ? ` (+${cogCurrent - cogBase} drift → rebaseline at release)` : ""}`,
-    });
-    record({
-      id: "complexity",
-      label: "Cyclomatic complexity (ratchet)",
-      kind: "drift",
-      ok: !cycRegressed,
-      detail:
-        cycCurrent == null
-          ? firstFailureLine(out) || "measured via check:complexity-ratchets"
-          : `complexity=${cycCurrent} (shared walk with cognitive)${cycRegressed ? " REGRESSED" : ""}`,
-    });
+    const result = await run(npmCmd, ["run", "check:complexity-ratchets"]);
+    saveGateLog("complexity-ratchets", result.out);
+    for (const metric of evaluateComplexityRun(result, baselineValue("cognitiveComplexity"))) {
+      record(metric);
+    }
   }
 
   // file-size (drift)

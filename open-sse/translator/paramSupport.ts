@@ -37,6 +37,10 @@ const MAX_OUTPUT_TOKEN_KEYS = ["max_tokens", "max_completion_tokens", "max_outpu
 const STRIP_RULES: StripRule[] = [
   // claude-opus-4 series: temperature is deprecated (Anthropic returns 400). #1748
   { match: /claude-opus-4/i, drop: ["temperature"] },
+  // All Claude models: newer Claude Code clients send a top-level `diagnostics`
+  // telemetry object gated behind a beta OmniRoute does not advertise, so
+  // Anthropic 400s with "diagnostics: Extra inputs are not permitted".
+  { match: /claude/i, drop: ["diagnostics"] },
   // GitHub Copilot gpt-5.4: temperature unsupported.
   { provider: "github", match: /gpt-5\.4/i, drop: ["temperature"] },
   // OpenAI GPT-5.0 family (gpt-5, gpt-5-mini, gpt-5-nano, dated snapshots) always

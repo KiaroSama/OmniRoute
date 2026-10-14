@@ -351,6 +351,7 @@
       "tests/unit/gemini-web-missing-browser-3516.test.ts",
       "tests/unit/github-model-not-supported-lockout.test.ts",
       "tests/unit/grok-cli-oauth.test.ts",
+      "tests/unit/guardrail-pipeline-characterization.test.ts",
       "tests/unit/guardrails-api-3496.test.ts",
       "tests/unit/guardrails/combo-vision-provider-id-12112.test.ts",
       "tests/unit/guardrails/visionBridge-responses-9597.test.ts",

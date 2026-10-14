@@ -14,6 +14,7 @@ import { handleGoogleFlowVideoGeneration } from "./videoGeneration/googleFlowHan
 import { handleDeepinfraVideoGeneration } from "./videoGeneration/deepinfraHandler.ts";
 import { handleLeonardoVideoGeneration } from "./videoGeneration/leonardoHandler.ts";
 import { handleDashscopeVideoGeneration } from "./videoGeneration/dashscopeHandler.ts";
+import { handleMinimaxVideoGeneration } from "./videoGeneration/minimaxHandler.ts";
 import { handleNovitaVideoGeneration } from "./videoGeneration/novitaHandler.ts";
 import { handleXaiVideoGeneration } from "./videoGeneration/xaiGrokImagineHandler.ts";
 import { handleSegmindVideoGeneration } from "./videoGeneration/providers/segmind.ts";
@@ -303,6 +304,17 @@ export async function handleVideoGeneration({ body, credentials, log, resolvedPr
 
   if (providerConfig.format === "dashscope-video") {
     return handleDashscopeVideoGeneration({
+      model,
+      provider,
+      providerConfig,
+      body,
+      credentials,
+      log,
+    });
+  }
+
+  if (providerConfig.format === "minimax-video") {
+    return handleMinimaxVideoGeneration({
       model,
       provider,
       providerConfig,

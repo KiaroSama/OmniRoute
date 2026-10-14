@@ -12,12 +12,15 @@ import {
   getModelInfoCore,
   splitSyncedEffortSuffix,
   stripContextWindowSuffix,
+  resolveProviderAlias,
+  isKnownCatalogModelId,
 } from "@omniroute/open-sse/services/model.ts";
 import { getLearnedReasoningEffortForModel } from "@omniroute/open-sse/services/learnedReasoningEffortCaps.ts";
 import { REGISTRY } from "@omniroute/open-sse/config/providerRegistry.ts";
 import { ANTIGRAVITY_MODEL_ALIASES } from "@omniroute/open-sse/config/antigravityModelAliases.ts";
 import { getRegisteredProviderEffortBaseModelId } from "@omniroute/open-sse/utils/registeredEffortVariants.ts";
 import { getReservedProviderPrefixes } from "@/shared/constants/reservedProviderPrefixes";
+import { getProviderByAlias } from "@/shared/constants/providers";
 import {
   assertMicrosoftDesignerWebProviderAvailable,
   isMicrosoftDesignerWebProviderRetiredError,
@@ -708,6 +711,66 @@ export async function getCombo(modelStr) {
     return combo;
   }
 
+  return await getComboByClientNamespacedName(modelStr);
+}
+
+/**
+ * True when `segment` names a provider the router would dispatch to: a built-in
+ * registry id/alias (incl. retired tombstones), a provider-catalog id/alias, a manual
+ * alias (`xiaomi`, `llamacpp`, …) or a custom compatible-node prefix/internal id.
+ * Compared as typed and lowercased, so `OpenAI/…` is still treated as a provider pin.
+ */
+async function isKnownProviderSegment(segment: string): Promise<boolean> {
+  const candidates = Array.from(new Set([segment, segment.toLowerCase()]));
+  const reserved = getReservedProviderPrefixes();
+  for (const candidate of candidates) {
+    if (reserved.has(candidate)) return true;
+    if (getProviderByAlias(candidate)) return true;
+    if (resolveProviderAlias(candidate) !== candidate) return true;
+  }
+  const nodes = await getCachedProviderNodes();
+  return nodes.some(
+    (node) =>
+      !!node && candidates.some((candidate) => node.prefix === candidate || node.id === candidate)
+  );
+}
+
+/**
+ * Last-resort combo lookup for client-namespaced names (`<namespace>/<comboName>`):
+ * clients such as OpenCode register an OmniRoute combo under their own provider key
+ * and send `<thatKey>/<comboName>`. The bare name (after the last `/`) is tried only
+ * when NO namespace segment is a known provider and the full string is not a
+ * catalogued model id — an explicit `provider/model` pin always reaches the provider,
+ * even when a combo shares the model's bare name (#6940 per-model fallback combos).
+ * `combo/<name>` or a model-combo mapping remain the way to target a combo under a
+ * provider-named namespace.
+ */
+async function getComboByClientNamespacedName(modelStr: unknown) {
+  if (typeof modelStr !== "string") return null;
+  const lastSlash = modelStr.lastIndexOf("/");
+  if (lastSlash <= 0) return null;
+  const baseName = modelStr.slice(lastSlash + 1).trim();
+  if (!baseName) return null;
+  if (isKnownCatalogModelId(modelStr)) return null;
+
+  const namespaceSegments = modelStr
+    .slice(0, lastSlash)
+    .split("/")
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+  if (namespaceSegments.length === 0) return null;
+  for (const segment of namespaceSegments) {
+    if (await isKnownProviderSegment(segment)) return null;
+  }
+
+  let combo = await getComboByName(baseName);
+  if (!combo || !Array.isArray(combo.models) || combo.models.length === 0) {
+    combo = await getComboByNameInsensitive(baseName);
+  }
+  if (combo && Array.isArray(combo.models) && combo.models.length > 0) {
+    console.info(`[MODEL] "${modelStr}" → combo "${combo.name}" (client namespace stripped)`);
+    return combo;
+  }
   return null;
 }
 

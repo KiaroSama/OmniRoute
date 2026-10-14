@@ -71,6 +71,15 @@ for (const [aliasOrId, models] of Object.entries(PROVIDER_MODELS)) {
   }
 }
 const KNOWN_MODEL_IDS = new Set(MODEL_TO_PROVIDERS.keys());
+
+/**
+ * True when `modelId` is a model id some static provider catalog exposes verbatim
+ * (including slash-bearing ids such as `meta-llama/...`). Used by the combo resolver
+ * so a catalogued model id is never re-read as `<client-namespace>/<combo>`.
+ */
+export function isKnownCatalogModelId(modelId: string | null | undefined): boolean {
+  return typeof modelId === "string" && KNOWN_MODEL_IDS.has(modelId);
+}
 // Bare Codex CLI defaults must always route to the `codex` provider (chatgpt.com
 // OAuth) even when other providers that also catalog the model id (e.g.
 // `agentrouter`, `openai`) are active. The Codex cookie quota on the user's

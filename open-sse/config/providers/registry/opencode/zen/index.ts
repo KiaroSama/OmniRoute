@@ -79,8 +79,11 @@ export const opencode_zenProvider: RegistryEntry = {
     { id: "gemini-3-flash", name: "Gemini 3 Flash" },
 
     // ── Grok ───────────────────────────────────────────────────
-    { id: "grok-build-0.1", name: "Grok Build 0.1" },
-    { id: "grok-4.6", name: "Grok 4.6" },
+    // The Zen endpoint table (opencode.ai/docs/zen) serves every Grok model on
+    // /responses only; without the declaration they fall through to
+    // /chat/completions, which the upstream rejects for this family.
+    { id: "grok-build-0.1", name: "Grok Build 0.1", targetFormat: "openai-responses" },
+    { id: "grok-4.6", name: "Grok 4.6", targetFormat: "openai-responses" },
 
     // ── Muse ───────────────────────────────────────────────────
     // Muse Spark is served by OpenCode Zen only on the OpenAI Responses API

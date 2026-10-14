@@ -344,8 +344,8 @@ test("PATCH with ONLY the unrelated /api/mcp/ prefix still succeeds (no regressi
 
 test("Defence-in-depth: even if a malformed snapshot lists /api/cli-tools/runtime/, the runtime predicate rejects it", async () => {
   // applyRuntimeSettings wires the snapshot through normalizeAuthzBypass,
-  // which does not filter spawn-capable entries (zod is the gate). The
-  // routeGuard predicate must still refuse them at runtime.
+  // which now drops spawn-capable entries itself; the routeGuard predicate
+  // must refuse them at runtime regardless.
   await runtime.applyRuntimeSettings({
     localOnlyManageScopeBypassEnabled: true,
     localOnlyManageScopeBypassPrefixes: ["/api/cli-tools/runtime/"],

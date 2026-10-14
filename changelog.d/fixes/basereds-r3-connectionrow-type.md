@@ -1,0 +1,1 @@
+- dashboard: declare `rateLimitAutoProtected` on `ConnectionRowConnection` so the auto-protected rate-limit badge from #b16bf50f type-checks (base-red #15306).

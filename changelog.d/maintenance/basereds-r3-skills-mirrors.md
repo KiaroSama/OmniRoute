@@ -1,0 +1,1 @@
+- skills: regenerate 22 drifted `skills/**` mirrors from `docs/openapi.yaml` so `check:agent-skills-sync` passes again (base-red #15306).

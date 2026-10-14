@@ -1,7 +1,7 @@
 {
   "sources": {
     "AGENTS.md": {
-      "source_hash": "ea703be88fa1cb8d8c7bbe1def8681d6181bd8cdc464492e4ab61bda016a8556",
+      "source_hash": "11f594633e5da430218e0daa714db66a88395ff6e0876d123383094d8a73c354",
       "locales": {
         "bs": {
           "source_hash": "ea703be88fa1cb8d8c7bbe1def8681d6181bd8cdc464492e4ab61bda016a8556",
@@ -14169,7 +14169,7 @@
       }
     },
     "docs/architecture/RESILIENCE_GUIDE.md": {
-      "source_hash": "6d17a90665bb72854fe6a0169033f4b569521170f745d3e1af499d4e4df068f8",
+      "source_hash": "b8114876d2f8bc49851783fe8e255aaf4f3d902440d8b8ee9cdc32062b6de835",
       "locales": {
         "pl": {
           "source_hash": "6d17a90665bb72854fe6a0169033f4b569521170f745d3e1af499d4e4df068f8",
@@ -71523,7 +71523,7 @@
       }
     },
     "docs/reference/ENVIRONMENT.md": {
-      "source_hash": "74c86057fc36376fcd0299a79bb6d8b446be914846160d2890ae5ebb1b58d553",
+      "source_hash": "8d74a7424d1f5f16fae0ce27d188bec2725ad4482c5a2f4c435a2e55455a8f89",
       "locales": {
         "ar": {
           "source_hash": "74c86057fc36376fcd0299a79bb6d8b446be914846160d2890ae5ebb1b58d553",
@@ -79285,7 +79285,7 @@
       }
     },
     "docs/routing/AUTO-COMBO.md": {
-      "source_hash": "073330cd74b227dc26c592c3bfb2fc1b126d063105e552654216566b93da9acf",
+      "source_hash": "f654e2f1b55f770713f193f7a96bfca627fff0bcbe5f5b55f49b08d65d0acea5",
       "locales": {
         "ar": {
           "source_hash": "073330cd74b227dc26c592c3bfb2fc1b126d063105e552654216566b93da9acf",
@@ -86549,7 +86549,7 @@
       }
     },
     "docs/security/GUARDRAILS.md": {
-      "source_hash": "76d87d4b932ff22a644dfcc999023e462258be815f96020c41b034b635e91d29",
+      "source_hash": "981b564b85bbef9859f0c75be924acd93c9ef83ae565d9234f3bf64912f8c453",
       "locales": {
         "pl": {
           "source_hash": "76d87d4b932ff22a644dfcc999023e462258be815f96020c41b034b635e91d29",
@@ -87554,7 +87554,7 @@
       }
     },
     "docs/security/ROUTE_GUARD_TIERS.md": {
-      "source_hash": "0ddd67335f83435009773dfe38eb9f75dd82840714fae2627fc2016a5649f085",
+      "source_hash": "18becfe80d054921ee9f80c13eef15d5c4eb1ee19f7ad7b635b890f0bf0f36f5",
       "locales": {
         "pl": {
           "source_hash": "0ddd67335f83435009773dfe38eb9f75dd82840714fae2627fc2016a5649f085",

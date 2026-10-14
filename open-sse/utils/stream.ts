@@ -4,6 +4,7 @@ import { appendRequestLog } from "@/lib/usageDb";
 import { clearPendingRequestOnce } from "./pendingRequestCleanup.ts";
 import { resolveTrailingUsageSummary } from "./passthroughTrailingUsage.ts";
 import { createByteLengthQueueStrategies } from "./byteQueueStrategy.ts";
+import { initTranslateStreamState } from "./streamTranslateState.ts";
 import {
   extractUsage,
   hasValidUsage,
@@ -861,10 +862,9 @@ export function createSSEStream(options: StreamOptions = {}) {
   const state: TranslateState | null =
     mode === STREAM_MODE.TRANSLATE
       ? {
-          ...(initState(sourceFormat) as TranslateState),
+          ...(initTranslateStreamState(sourceFormat, connectionId, model) as TranslateState),
           provider,
           toolNameMap,
-          signatureNamespace: connectionId,
           copilotCompatibleReasoning,
           suppressThinkClose,
           requestedThinking,
