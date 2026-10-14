@@ -8,6 +8,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
 import dns from "node:dns";
+import { Socket } from "node:net";
 import { Agent, type Dispatcher } from "undici";
 
 import { dispatchGuarded } from "../../open-sse/executors/dispatchPin.ts";
@@ -104,6 +105,30 @@ async function withHttpServer(fn: (port: number, requests: () => number) => Prom
     await new Promise<void>((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));
     });
+  }
+}
+
+async function withConnectionAttempts(fn: (attempts: () => number) => Promise<void>) {
+  const originalConnect = Socket.prototype.connect;
+  const sockets = new Set<Socket>();
+  let attempts = 0;
+  const onAttempt = (address: string) => {
+    attempts++;
+    // Node emits this before TCP connect; fail closed if a broken guard reaches real metadata.
+    assert.notEqual(address, "169.254.169.254", "fixture must never contact cloud metadata");
+  };
+  Socket.prototype.connect = function (this: Socket, ...args: unknown[]): Socket {
+    if (!sockets.has(this)) {
+      sockets.add(this);
+      this.on("connectionAttempt", onAttempt);
+    }
+    return Reflect.apply(originalConnect, this, args);
+  };
+  try {
+    await fn(() => attempts);
+  } finally {
+    Socket.prototype.connect = originalConnect;
+    for (const socket of sockets) socket.off("connectionAttempt", onAttempt);
   }
 }
 
@@ -260,45 +285,66 @@ test("dispatchGuarded does NOT touch the transport under the explicit direct-fet
   assert.equal(fetchStub.seen[0].dispatcher, undefined);
 });
 
-test("REAL fetch: an operator host that rebinds to a metadata address is refused at connect time", async () => {
-  const dnsStub = stubDnsLookup("169.254.169.254");
-  try {
-    await withEnv({}, async () => {
-      await assert.rejects(
-        () => dispatchGuarded("openai", "http://rebind-host.invalid:81/v1", {}, OPERATOR),
-        (error: unknown) => {
-          const cause = (error as { cause?: { code?: string } }).cause;
-          assert.equal(cause?.code, CONNECT_GUARD_BLOCKED_CODE);
-          return true;
-        }
-      );
-    });
-  } finally {
-    dnsStub.restore();
-  }
-  assert.ok(dnsStub.calls() >= 1, "the connection's own lookup was the one validated");
-});
-
-test("REAL fetch: an operator host resolving to an allowed address connects through the guarded dispatcher", async () => {
-  const dnsStub = stubDnsLookup("127.0.0.1");
-  try {
-    // Default guard is block-metadata (local-first): loopback is allowed, only IMDS is blocked.
-    await withEnv({}, async () => {
-      await withHttpServer(async (port) => {
-        const res = await dispatchGuarded(
-          "openai",
-          `http://allowed-host.invalid:${port}/v1`,
-          {},
-          OPERATOR
-        );
-        assert.equal(res.status, 200);
-        assert.equal(await res.text(), "guarded-dispatch-response");
+test(
+  "REAL fetch: an operator host that rebinds to a metadata address is refused at connect time",
+  { timeout: 5_000 },
+  async () => {
+    const dnsStub = stubDnsLookup("169.254.169.254");
+    try {
+      await withEnv({}, async () => {
+        await withConnectionAttempts(async (attempts) => {
+          await assert.rejects(
+            () =>
+              dispatchGuarded(
+                "openai",
+                "http://rebind-host.invalid:81/v1",
+                { signal: AbortSignal.timeout(2_000) },
+                OPERATOR
+              ),
+            (error: unknown) => {
+              const cause = (error as { cause?: { code?: string } }).cause;
+              assert.equal(cause?.code, CONNECT_GUARD_BLOCKED_CODE);
+              return true;
+            }
+          );
+          assert.equal(attempts(), 0, "metadata refusal precedes every TCP connection attempt");
+        });
       });
-    });
-  } finally {
-    dnsStub.restore();
+    } finally {
+      dnsStub.restore();
+    }
+    assert.ok(dnsStub.calls() >= 1, "the connection's own lookup was the one validated");
   }
-});
+);
+
+test(
+  "REAL fetch: an operator host resolving to an allowed address connects through the guarded dispatcher",
+  { timeout: 5_000 },
+  async () => {
+    const dnsStub = stubDnsLookup("127.0.0.1");
+    try {
+      // Default guard is block-metadata (local-first): loopback is allowed, only IMDS is blocked.
+      await withEnv({}, async () => {
+        await withConnectionAttempts(async (attempts) => {
+          await withHttpServer(async (port, requests) => {
+            const res = await dispatchGuarded(
+              "openai",
+              `http://allowed-host.invalid:${port}/v1`,
+              { signal: AbortSignal.timeout(2_000) },
+              OPERATOR
+            );
+            assert.equal(res.status, 200);
+            assert.equal(await res.text(), "guarded-dispatch-response");
+            assert.equal(requests(), 1, "modern client sends exactly one physical request");
+          });
+          assert.equal(attempts(), 1, "the connection observer sees a real loopback connection");
+        });
+      });
+    } finally {
+      dnsStub.restore();
+    }
+  }
+);
 
 test(
   "native fetch after an ambient reset preserves guarded success and metadata refusal",
@@ -309,18 +355,21 @@ test(
     const dnsStub = stubDnsLookup("127.0.0.1");
     try {
       await withEnv({}, async () => {
-        await withHttpServer(async (port, requests) => {
-          const response = await dispatchGuarded(
-            "openai",
-            `http://native-host.invalid:${port}/v1`,
-            {
-              signal: AbortSignal.timeout(2_000),
-            },
-            OPERATOR
-          );
-          assert.equal(response.status, 200);
-          assert.equal(await response.text(), "guarded-dispatch-response");
-          assert.equal(requests(), 1);
+        await withConnectionAttempts(async (attempts) => {
+          await withHttpServer(async (port, requests) => {
+            const response = await dispatchGuarded(
+              "openai",
+              `http://native-host.invalid:${port}/v1`,
+              {
+                signal: AbortSignal.timeout(2_000),
+              },
+              OPERATOR
+            );
+            assert.equal(response.status, 200);
+            assert.equal(await response.text(), "guarded-dispatch-response");
+            assert.equal(requests(), 1, "native client sends exactly one physical request");
+          });
+          assert.equal(attempts(), 1, "the connection observer sees the native client's socket");
         });
       });
     } finally {
@@ -331,24 +380,28 @@ test(
     globalThis.fetch = getOriginalFetch();
     try {
       await withEnv({}, async () => {
-        await assert.rejects(
-          () =>
-            dispatchGuarded(
-              "openai",
-              "http://native-metadata.invalid:81/v1",
-              {
-                signal: AbortSignal.timeout(2_000),
-              },
-              OPERATOR
-            ),
-          (error: unknown) => {
-            assert.equal(
-              (error as { cause?: { code?: string } }).cause?.code,
-              CONNECT_GUARD_BLOCKED_CODE
-            );
-            return true;
-          }
-        );
+        await withConnectionAttempts(async (attempts) => {
+          await assert.rejects(
+            () =>
+              dispatchGuarded(
+                "openai",
+                "http://native-metadata.invalid:81/v1",
+                {
+                  signal: AbortSignal.timeout(2_000),
+                },
+                OPERATOR
+              ),
+            (error: unknown) => {
+              assert.equal(
+                (error as { cause?: { code?: string } }).cause?.code,
+                CONNECT_GUARD_BLOCKED_CODE
+              );
+              return true;
+            }
+          );
+          assert.equal(attempts(), 0, "native metadata refusal precedes every TCP attempt");
+          assert.ok(metadataDns.calls() >= 1, "native refusal exercised the guarded lookup");
+        });
       });
     } finally {
       metadataDns.restore();
