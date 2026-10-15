@@ -1,0 +1,452 @@
+name: Manual contribution validation
+run-name: Validate ${{ inputs.candidate_sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_sha:
+        description: Explicit40hex commit SHA
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: manual-contribution-${{ inputs.candidate_sha }}
+  cancel-in-progress: false
+
+env:
+  CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+  CI: "true"
+  NEXT_TELEMETRY_DISABLED: "1"
+  APP_LOG_TO_FILE: "false"
+  DISABLE_SQLITE_AUTO_BACKUP: "true"
+  OMNIROUTE_SKIP_SYSTEM_TRUST: "1"
+  OMNIROUTE_SKIP_DNS_WRITE: "1"
+  ADOBE_FIREFLY_BROWSER_REFRESH: "0"
+  HOOKMAKER_MAX_TEST_WORKERS: "1"
+  JWT_SECRET: ci-test-secret-with-sufficient-length-for-validation
+  API_KEY_SECRET: ci-test-api-key-secret-long
+
+jobs:
+  validate:
+    if: github.repository == 'KiaroSama/OmniRoute' && github.event_name == 'workflow_dispatch'
+    name: Validate (${{ matrix.lane }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        lane: [static, types, build-check, integration-1, integration-2, vitest-mcp, vitest-ui, ecosystem, protocols, regression, unit-1, unit-2, unit-3, unit-4, unit-5, unit-6, unit-7, unit-8]
+    env:
+      LANE: ${{ matrix.lane }}
+    steps:
+      - name: Validate immutable input before checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo '::error::Expected a lowercase40hex candidate SHA'; exit 1; }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact candidate and isolated paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          git merge-base --is-ancestor 2c06e3c0cb68464379dfdc9a828a1e9868887aaf HEAD
+          owned="$RUNNER_TEMP/manual-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-$LANE"
+          mkdir -m 700 "$owned"
+          mkdir -m 700 "$owned/tmp" "$owned/data" "$owned/plugins" "$owned/evidence"
+          {
+            echo "OWNED_ROOT=$owned"
+            echo "TMPDIR=$owned/tmp"
+            echo "TMP=$owned/tmp"
+            echo "TEMP=$owned/tmp"
+            echo "DATA_DIR=$owned/data"
+            echo "OMNIROUTE_PLUGINS_DIR=$owned/plugins"
+            echo "NPM_CONFIG_CACHE=$owned/npm-cache"
+          } >> "$GITHUB_ENV"
+          printf 'Candidate: `%s`\nWorkflow: `%s` (`%s`)\nRun: %s/%s/actions/runs/%s\n' \
+            "$CANDIDATE_SHA" "$GITHUB_WORKFLOW_REF" "$GITHUB_WORKFLOW_SHA" \
+            "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Run bounded canonical checks
+        timeout-minutes: 39
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { execFileSync } from 'node:child_process';
+          import { runGateProcess } from './scripts/quality/gate-process.mjs';
+          import { readManifest, resolveProfile } from './scripts/quality/gate-manifest.mjs';
+
+          const root = process.cwd();
+          const owned = process.env.OWNED_ROOT;
+          const lane = process.env.LANE;
+          const receipts = [];
+          let active;
+          let sequence = 0;
+          let failed = false;
+          let cancelled = false;
+          const cancel = () => { cancelled = true; active?.abort(); };
+          process.on('SIGINT', cancel);
+          process.on('SIGTERM', cancel);
+          const git = (...args) => execFileSync('git', args, { encoding: 'utf8', timeout: 10_000 });
+          const save = () => fs.writeFileSync(path.join(owned, 'evidence', 'receipt.json'), JSON.stringify({
+            candidate: process.env.CANDIDATE_SHA,
+            workflow: process.env.GITHUB_WORKFLOW_REF,
+            workflowSha: process.env.GITHUB_WORKFLOW_SHA,
+            run: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
+            lane, receipts, failed, completedAt: new Date().toISOString(),
+          }, null, 2) + '\n', 'utf8');
+          async function run(name, command, args, wallSeconds = 120, idleSeconds = 45, env = {}) {
+            assert.ok(!cancelled, 'Batch cancelled; no further subprocess may start');
+            active = new AbortController();
+            const result = await runGateProcess(command, args, {
+              cwd: root, env: {
+                ...process.env,
+                PATH: `${path.join(root, 'node_modules', '.bin')}${path.delimiter}${process.env.PATH}`,
+                ...env,
+              },
+              logPath: path.join(owned, 'evidence', `${++sequence}-${name}.log`),
+              timeout: wallSeconds * 1000, heartbeatMs: 5000, signal: active.signal,
+              onHeartbeat: ({ elapsedMs, lastOutputAt }) => {
+                console.log(`[${lane}/${name}] elapsed=${elapsedMs} lastOutput=${lastOutputAt}`);
+                if (Date.now() - Date.parse(lastOutputAt) > idleSeconds * 1000) active.abort();
+              },
+            });
+            active = undefined;
+            receipts.push({ name, ...result.receipt, code: result.code });
+            save();
+            console.log(result.out.slice(-16000));
+            return result;
+          }
+          async function check(name, command, args, wall = 120, idle = 45, env = {}) {
+            const result = await run(name, command, args, wall, idle, env);
+            if (result.code !== 0) failed = true;
+            return result;
+          }
+          try {
+            const installed = await check('install', 'npm', ['ci', '--no-audit', '--no-fund'], 600, 120);
+            assert.equal(installed.code, 0, 'Deterministic installation failed; no checks executed');
+            const runtime = await check('runtime', 'npm', ['run', 'check:node-runtime']);
+            assert.equal(runtime.code, 0, 'Unsupported runtime');
+            if (lane === 'static') {
+              const { manifest, scripts } = readManifest();
+              for (const gate of resolveProfile(manifest, scripts, 'quality-scan')) {
+                await check(gate.name.replaceAll(':', '-'), gate.cmd[0], gate.cmd.slice(1), 240, 90);
+              }
+              await check('mutation-discovery', 'npm', ['run', 'check:mutation-test-coverage']);
+              await check('lint', 'npm', ['run', 'lint:json'], 300, 180, {
+                ESLINT_RESULTS_JSON: path.join(owned, 'evidence', 'eslint-results.json'),
+              });
+              const changed = git('diff', '--name-only', '2c06e3c0cb68464379dfdc9a828a1e9868887aaf...HEAD').trim().split('\n');
+              for (const file of changed) {
+                if (!fs.existsSync(file)) continue;
+                new TextDecoder('utf-8', { fatal: true }).decode(fs.readFileSync(file));
+              }
+              const formatted = changed.filter((file) => /\.(ts|json|md)$/.test(file) && fs.existsSync(file));
+              await check('format', 'node', ['node_modules/prettier/bin/prettier.cjs', '--check', ...formatted]);
+            } else if (lane === 'types') {
+              await check('core', 'npm', ['run', 'typecheck:core'], 300, 180);
+              await check('noimplicit', 'npm', ['run', 'typecheck:noimplicit:core'], 300, 180);
+            } else if (lane === 'build-check') {
+              // Compile-only evidence: no distribution artifact, signing claim or deployment.
+              await check('next-compile', 'npm', ['run', 'build'], 1800, 180, {
+                OMNIROUTE_USE_TURBOPACK: '1', NODE_OPTIONS: '--max-old-space-size=8192',
+              });
+            } else if (lane.startsWith('integration-')) {
+              const shard = Number(lane.slice('integration-'.length));
+              assert.ok(shard === 1 || shard === 2);
+              const { scripts } = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+              const canonical = scripts['test:integration:ci'];
+              assert.equal((canonical.match(/--test /g) || []).length, 1);
+              const bounded = canonical.replace('--test ', '--test --test-timeout=60000 ');
+              await check('integration', 'bash', ['-euo', 'pipefail', '-c', bounded], 900, 120, {
+                TEST_SHARD: `${shard}/2`, INITIAL_PASSWORD: 'ci-test-password-for-integration',
+                DATA_DIR: '', OMNIROUTE_PLUGINS_DIR: '',
+              });
+            } else if (lane.startsWith('vitest-')) {
+              const alias = lane === 'vitest-mcp' ? 'test:vitest' : 'test:vitest:ui';
+              await check(alias.replaceAll(':', '-'), 'npm', ['run', alias, '--', '--maxWorkers=1', '--maxConcurrency=1', '--no-file-parallelism', '--testTimeout=5000', '--hookTimeout=10000'], 1800, 120);
+            } else if (lane === 'ecosystem' || lane === 'protocols') {
+              const alias = lane === 'ecosystem' ? 'test:ecosystem' : 'test:protocols:e2e';
+              await check(lane, 'npm', ['run', alias], 900, 120, {
+                HOST: '127.0.0.1', OMNIROUTE_DISABLE_BACKGROUND_SERVICES: 'true',
+                OMNIROUTE_API_KEY: '', OMNIROUTE_E2E_BOOTSTRAP_MODE: 'open',
+              });
+            } else if (lane.startsWith('unit-')) {
+              const shard = Number(lane.slice(5));
+              assert.ok(Number.isInteger(shard) && shard >= 1 && shard <= 8);
+              const { scripts } = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+              const canonical = scripts['test:unit:ci:shard'];
+              assert.equal((canonical.match(/--test-concurrency=\d+/g) || []).length, 3, 'Native collector contract changed');
+              assert.equal((canonical.match(/--test /g) || []).length, 3, 'Native timeout insertion must cover all buckets');
+              // Keep every canonical glob, dashboard loader and serial bucket; only bound concurrency/time.
+              const bounded = canonical.replace(/--test-concurrency=\d+/g, '--test-concurrency=1').replace(/--test /g, '--test --test-timeout=30000 ');
+              fs.writeFileSync(path.join(owned, 'evidence', 'native-command.txt'), bounded + '\n', 'utf8');
+              const buckets = bounded.split(' && ');
+              assert.equal(buckets.length, 3, 'All native collectors must execute independently');
+              fs.mkdirSync('coverage-shard', { recursive: true });
+              for (const [index, bucket] of buckets.entries()) {
+                await check(`native-bucket-${index + 1}`, 'bash', ['-euo', 'pipefail', '-c', bucket], index === 0 ? 1200 : 300, 120, {
+                  TEST_SHARD: `${shard}/8`, NODE_OPTIONS: '--max-old-space-size=8192',
+                  DATA_DIR: '', OMNIROUTE_PLUGINS_DIR: '',
+                  NODE_V8_COVERAGE: path.join(root, 'coverage-shard'),
+                });
+              }
+            } else if (lane === 'regression') {
+              const base = '2c06e3c0cb68464379dfdc9a828a1e9868887aaf';
+              const combo = 'open-sse/services/combo/comboErrorAggregation.ts';
+              const identifiers = 'open-sse/utils/publicErrorIdentifiers.ts';
+              const originals = new Map([combo, identifiers].map((file) => [file, fs.readFileSync(file)]));
+              let red;
+              try {
+                const oldError = git('show', `${base}:open-sse/utils/error.ts`);
+                const start = oldError.indexOf('const PUBLIC_ERROR_IDENTIFIER =');
+                const end = oldError.indexOf('\n/**\n * Build OpenAI-compatible error response body.', start);
+                assert.ok(start >= 0 && end > start, 'Pinned identifier extraction markers changed');
+                const oldIdentifiers = oldError.slice(start, end);
+                assert.ok(!oldIdentifiers.toLowerCase().includes('freetiererror'));
+                fs.writeFileSync(combo, git('show', `${base}:${combo}`), 'utf8');
+                fs.writeFileSync(identifiers, oldIdentifiers + '\nexport { isSafePublicErrorIdentifier };\n', 'utf8');
+                red = await run('expected-old-boundary-red', process.execPath, ['--test', '--test-reporter=tap', '--test-timeout=30000', '--test-concurrency=1', 'tests/unit/opencode-free-tier-diagnostics.test.ts'], 60, 20);
+              } finally {
+                for (const [file, bytes] of originals) fs.writeFileSync(file, bytes);
+                for (const [file, bytes] of originals) assert.deepEqual(fs.readFileSync(file), bytes);
+              }
+              assert.equal(red.receipt.outcome, 'FAIL', 'RED must be an assertion failure, not timeout/setup/cancellation');
+              assert.match(red.out, /not ok 1 - OpenCode free-tier refusal is displayed/);
+              assert.match(red.out, /ERR_ASSERTION/);
+              assert.match(red.out, /access restriction/);
+              assert.match(red.out, /not ok 2 - known refusal identity survives/);
+              assert.match(red.out, /not ok 4 - homogeneous explicit refusals retain/);
+              assert.doesNotMatch(red.out, /ERR_MODULE_NOT_FOUND|SyntaxError|TransformError|testTimeoutFailure/);
+              assert.equal(git('diff', '--exit-code', '--', combo, identifiers), '');
+              fs.writeFileSync(path.join(owned, 'evidence', 'baseline-proof.txt'), `Expected assertions failed against ${base}; exact candidate bytes restored. Final GREEN belongs to native shards, not a duplicate fixture run.\n`, 'utf8');
+            } else throw new Error('Unknown lane');
+          } catch (error) {
+            failed = true;
+            console.error(error);
+          } finally {
+            save();
+            process.removeListener('SIGINT', cancel);
+            process.removeListener('SIGTERM', cancel);
+          }
+          process.exitCode = failed ? 1 : 0;
+          NODE
+      - name: Upload raw native coverage
+        if: always() && startsWith(matrix.lane, 'unit-')
+        timeout-minutes: 3
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-${{ matrix.lane }}
+          path: coverage-shard/*.json
+          if-no-files-found: error
+          retention-days: 7
+      - &owned_cleanup
+        name: Confirm no owned test process survived
+        if: always() && env.OWNED_ROOT != ''
+        timeout-minutes: 1
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I - <<'PY'
+          import os, pathlib, signal
+          root = os.environ['OWNED_ROOT'].encode()
+          protected = set()
+          current = os.getpid()
+          while current > 0 and current not in protected:
+              protected.add(current)
+              stat = pathlib.Path(f'/proc/{current}/stat').read_text(encoding='utf-8').rsplit(')', 1)[1].split()
+              current = int(stat[1])
+          survivors, denied = [], []
+          for entry in pathlib.Path('/proc').iterdir():
+              if not entry.name.isdecimal() or int(entry.name) in protected:
+                  continue
+              try:
+                  env = (entry / 'environ').read_bytes().split(b'\0')
+                  if b'OWNED_ROOT=' + root not in env:
+                      continue
+                  survivors.append(int(entry.name))
+                  os.kill(int(entry.name), signal.SIGKILL)
+              except (FileNotFoundError, ProcessLookupError):
+                  pass
+              except PermissionError:
+                  if entry.stat().st_uid == os.getuid():
+                      denied.append(int(entry.name))
+          import json, time
+          deadline = time.monotonic() + 3
+          remaining = survivors[:]
+          while remaining and time.monotonic() < deadline:
+              remaining = [pid for pid in remaining if pathlib.Path(f'/proc/{pid}').exists()]
+              if remaining:
+                  time.sleep(0.02)
+          evidence = pathlib.Path(os.environ['OWNED_ROOT']) / 'evidence' / 'cleanup.json'
+          evidence.write_text(json.dumps({'survivorsKilled': survivors, 'remaining': remaining, 'unreadableOwnedUserProcesses': denied, 'clean': not survivors and not denied}) + '\n', encoding='utf-8')
+          if survivors or denied:
+              raise SystemExit(f'Cleanup failed: killed={survivors}, remaining={remaining}, unreadable={denied}')
+          print('No owned process survived')
+          PY
+      - name: Upload synthetic receipts and cleanup evidence
+        if: always() && env.OWNED_ROOT != ''
+        timeout-minutes: 3
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: validation-${{ matrix.lane }}
+          path: ${{ env.OWNED_ROOT }}/evidence/
+          if-no-files-found: error
+          retention-days: 7
+
+  coverage:
+    name: Merged coverage and ratchet
+    needs: validate
+    if: ${{ !cancelled() && github.repository == 'KiaroSama/OmniRoute' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Validate candidate before checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          persist-credentials: false
+      - name: Verify candidate and isolated coverage paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          owned="$RUNNER_TEMP/manual-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT-coverage"
+          mkdir -m 700 "$owned"
+          mkdir -m 700 "$owned/tmp" "$owned/data" "$owned/plugins" "$owned/evidence"
+          {
+            echo "OWNED_ROOT=$owned"
+            echo "TMPDIR=$owned/tmp"
+            echo "TMP=$owned/tmp"
+            echo "TEMP=$owned/tmp"
+            echo "DATA_DIR=$owned/data"
+            echo "OMNIROUTE_PLUGINS_DIR=$owned/plugins"
+            echo "NPM_CONFIG_CACHE=$owned/npm-cache"
+          } >> "$GITHUB_ENV"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: coverage-unit-*
+          path: coverage-downloads
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: validation-unit-*
+          path: unit-receipts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: validation-static
+          path: static-receipts
+      - name: Merge original eight shards and enforce existing ratchet
+        timeout-minutes: 25
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { runGateProcess } from './scripts/quality/gate-process.mjs';
+          const receipts = [];
+          let failed = false;
+          assert.ok(process.env.OWNED_ROOT, 'Coverage paths must be isolated before setup');
+          fs.mkdirSync('coverage', { recursive: true });
+          fs.mkdirSync('coverage-shards', { recursive: true });
+          async function check(name, command, args, wall, idle) {
+            const controller = new AbortController();
+            const abort = () => controller.abort();
+            process.once('SIGINT', abort);
+            process.once('SIGTERM', abort);
+            try {
+              const result = await runGateProcess(command, args, {
+                cwd: process.cwd(), env: { ...process.env, NODE_OPTIONS: '--max-old-space-size=8192' },
+                logPath: `coverage/${name}.log`, timeout: wall * 1000, heartbeatMs: 5000,
+                signal: controller.signal,
+                onHeartbeat: ({ lastOutputAt, elapsedMs }) => {
+                  console.log(`[coverage/${name}] elapsed=${elapsedMs}`);
+                  if (Date.now() - Date.parse(lastOutputAt) > idle * 1000) controller.abort();
+                },
+              });
+              receipts.push({ name, code: result.code, ...result.receipt });
+              console.log(result.out.slice(-16000));
+              assert.equal(result.code, 0, `${name} failed`);
+            } finally {
+              process.removeListener('SIGINT', abort);
+              process.removeListener('SIGTERM', abort);
+            }
+          }
+          try {
+            const staticReceipt = JSON.parse(fs.readFileSync('static-receipts/receipt.json', 'utf8'));
+            assert.equal(staticReceipt.candidate, process.env.CANDIDATE_SHA);
+            for (let shard = 1; shard <= 8; shard++) {
+              const receipt = JSON.parse(fs.readFileSync(`unit-receipts/validation-unit-${shard}/receipt.json`, 'utf8'));
+              assert.equal(receipt.candidate, process.env.CANDIDATE_SHA);
+              assert.equal(receipt.workflowSha, process.env.GITHUB_WORKFLOW_SHA);
+              assert.equal(receipt.failed, false, `Native shard ${shard} failed; partial coverage is not acceptance`);
+              const buckets = receipt.receipts.filter((item) => item.name.startsWith('native-bucket-'));
+              assert.equal(buckets.length, 3);
+              assert.ok(buckets.every((item) => item.outcome === 'PASS'), `Incomplete native shard ${shard}`);
+              const cleanup = JSON.parse(fs.readFileSync(`unit-receipts/validation-unit-${shard}/cleanup.json`, 'utf8'));
+              assert.equal(cleanup.clean, true, `Unverified cleanup in shard ${shard}`);
+              const dir = `coverage-downloads/coverage-unit-${shard}`;
+              const files = fs.readdirSync(dir).filter((file) => file.endsWith('.json'));
+              assert.ok(files.length, `No raw coverage for shard ${shard}`);
+              for (const file of files) fs.copyFileSync(path.join(dir, file), `coverage-shards/${shard}-${file}`);
+            }
+            await check('install', 'npm', ['ci', '--no-audit', '--no-fund'], 600, 120);
+            await check('merged-report', 'node', ['node_modules/c8/bin/c8.js', 'report', '--temp-directory=coverage-shards', '--reports-dir=coverage', '--merge-async', '--reporter=text-summary', '--reporter=json-summary', '--reporter=lcov', '--exclude=tests/**', '--exclude=**/*.test.*', '--check-coverage', '--statements=60', '--lines=60', '--functions=60', '--branches=60'], 900, 180);
+            await check('metrics', 'npm', ['run', 'quality:collect'], 120, 60);
+            await check('ratchet', 'npm', ['run', 'quality:ratchet'], 120, 60);
+          } catch (error) {
+            failed = true;
+            console.error(error);
+          } finally {
+            fs.writeFileSync('coverage/receipt.json', JSON.stringify({ candidate: process.env.CANDIDATE_SHA, workflowSha: process.env.GITHUB_WORKFLOW_SHA, receipts, failed }, null, 2) + '\n', 'utf8');
+          }
+          process.exitCode = failed ? 1 : 0;
+          NODE
+        env:
+          ESLINT_RESULTS_JSON: static-receipts/eslint-results.json
+      - *owned_cleanup
+      - name: Preserve coverage cleanup receipt
+        if: always() && env.OWNED_ROOT != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p coverage
+          cp "$OWNED_ROOT/evidence/cleanup.json" coverage/cleanup.json
+      - name: Upload merged coverage evidence only
+        if: always()
+        timeout-minutes: 3
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: merged-coverage
+          path: |
+            coverage/coverage-summary.json
+            coverage/lcov.info
+            coverage/receipt.json
+            coverage/cleanup.json
+            coverage/*.log*
+          if-no-files-found: error
+          retention-days: 7
