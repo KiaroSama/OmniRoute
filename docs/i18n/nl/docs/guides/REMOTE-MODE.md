@@ -254,6 +254,8 @@ omniroute tokens scopes               # de drie bereiken uitleggen
 `tokens`-opdrachten vereisen een **admin**-referentie. Je kunt tokens ook beheren in
 het dashboard onder **Instellingen → Toegangstokens** (aanmaken, intrekken, eenmalig kopiëren).
 
+Een token kan nooit worden aangemaakt met meer rechten dan de maker bezit. Alleen de beheerder kan een `admin`-token aanmaken: via de dashboardsessie, de lokale CLI op de server zelf, `omniroute connect` met het wachtwoord of een instantie waarbij aanmelden is uitgeschakeld. Machinegegevens (een `admin`-toegangstoken of een API-sleutel met het bereik `manage`/`admin`) kunnen alleen `write`- en `read`-tokens aanmaken; een verzoek met `--scope admin` geeft daarmee `403` terug.
+
 ---
 
 ## Een programmeer-CLI configureren vanuit de externe catalogus

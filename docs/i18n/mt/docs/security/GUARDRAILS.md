@@ -84,6 +84,10 @@ Fluss:
 Modi sfurzati short-circuit **qabel** ma taħdem l-ewristika awtomatika; l-imġieba `auto`
 hija identika byte b'byte għall-guardrail ta' qabel PR-1.
 
+#### Ambitu taċ-ċavetta API (`visionBridgeKeyScope.ts`)
+
+Jekk iċ-ċavetta API tillimita konnessjonijiet, gruppi ta' kwoti jew mudelli (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), id-direzzjoni mill-ġdid u d-deskrizzjoni jagħżlu biss mudelli u konnessjonijiet permessi għal dik iċ-ċavetta. Id-deskrizzjoni dejjem tgħaddi mil-loop intern ta' OmniRoute bil-header `x-omniroute-self-loop-key-id`, biex il-politika tal-konnessjonijiet u l-mudelli tiġi infurzata mill-ġdid. `enforceApiKeyPolicy()` taċċetta l-header biss mat-token bearer tal-loop: jista' biss inaqqas l-aċċess, u ID mhux magħruf jiġi miċħud. Jekk ma hemm ebda mudell viżiv permess, id-deskrizzjoni tinqabeż u t-talba tibqa' l-istess, bħal meta l-protezzjoni tkun mitfija (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Talbiet mingħajr ċavetta u ċwievet mingħajr dawn ir-restrizzjonijiet jaħdmu bħal qabel.
+
 #### Prompt ta' deskrizzjoni konxju mill-kompitu (`modalityBridgeVisionTaskAware`)
 
 Default **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) iżżid

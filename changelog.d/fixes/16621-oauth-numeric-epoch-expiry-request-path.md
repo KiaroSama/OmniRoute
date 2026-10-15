@@ -1,0 +1,1 @@
+- **fix(oauth):** parse numeric-epoch `expiresAt` (seconds or ms, number or string) on the request-time refresh path, so the proactive refresh fires, epoch-seconds values no longer refresh on every request, and a still-valid rotated DB token is reused ([#16621](https://github.com/diegosouzapw/OmniRoute/pull/16621)) — thanks @elielsousa-pathbit

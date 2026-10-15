@@ -12,6 +12,7 @@ import type { ModelCooldownErrorPayload } from "@/types";
 import { buildPassthroughErrorResponse } from "./upstreamErrorPassthrough.ts";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 import { resolveRetryAfterInstant } from "./retryAfterInstant.ts";
+import { parseAntigravityRetryTime, parseProseRetryDelayMs } from "./proseRetryDelay.ts";
 
 import {
   isSafePublicErrorIdentifier,
@@ -20,6 +21,7 @@ import {
 export { projectPublicErrorIdentifier } from "./publicErrorIdentifiers.ts";
 
 export { parseRetryAfterHeader, resolveRetryAfterInstant } from "./retryAfterInstant.ts";
+export { parseAntigravityRetryTime, parseProseRetryDelayMs };
 
 export { redactSensitiveErrorText, sanitizeErrorMessage, sanitizeUpstreamDetails };
 
@@ -209,8 +211,7 @@ export function sanitizeRecoveryHint(
   if (!r || typeof r !== "object") return undefined;
   const action = typeof r.action === "string" ? (r.action as ComboRecoveryAction) : null;
   if (!action || !RECOVERY_ACTIONS.has(action)) return undefined;
-  // Reject empty OR whitespace-only next_step — the value must render usefully as a
-  // header and as a body field. A whitespace-only string would print as a blank hint.
+  // Reject empty/whitespace-only next_step: it must render as a non-blank header + body hint.
   const next_step = clampRecoveryStr(r.next_step, 200).trim();
   if (!next_step) return undefined;
   const hint: ComboRecoveryHint = { action, next_step };
@@ -425,57 +426,6 @@ function projectPublicRetryTimestamp(value: unknown): string | null {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(timestamp)) return null;
   const parsed = Date.parse(timestamp);
   return Number.isFinite(parsed) && new Date(parsed).toISOString() === timestamp ? timestamp : null;
-}
-
-/**
- * Parse Antigravity error message to extract retry time
- * Example: "You have exhausted your capacity on this model. Your quota will reset after 2h7m23s."
- * @param {string} message - Error message
- * @returns {number|null} Retry time in milliseconds, or null if not found
- */
-export function parseAntigravityRetryTime(message: unknown): number | null {
-  if (typeof message !== "string") return null;
-
-  // Match patterns like: 2h7m23s, 5m30s, 45s, 1h20m, etc.
-  const match = message.match(/reset after (\d+h)?(\d+m)?(\d+s)?/i);
-  if (!match) return null;
-
-  let totalMs = 0;
-
-  // Extract hours
-  if (match[1]) {
-    const hours = parseInt(match[1]);
-    totalMs += hours * 60 * 60 * 1000;
-  }
-
-  // Extract minutes
-  if (match[2]) {
-    const minutes = parseInt(match[2]);
-    totalMs += minutes * 60 * 1000;
-  }
-
-  // Extract seconds
-  if (match[3]) {
-    const seconds = parseInt(match[3]);
-    totalMs += seconds * 1000;
-  }
-
-  return totalMs > 0 ? totalMs : null;
-}
-
-const MAX_PROSE_RETRY_MS = 24 * 60 * 60 * 1000;
-
-/**
- * Retry delay in ms from upstream error prose (Antigravity "reset after 2h7m23s",
- * generic "retry after 30s"), capped at 24h; null when the text carries no hint.
- */
-export function parseProseRetryDelayMs(text: unknown): number | null {
-  if (typeof text !== "string" || text === "") return null;
-  const antigravityMs = parseAntigravityRetryTime(text);
-  if (antigravityMs) return Math.min(antigravityMs, MAX_PROSE_RETRY_MS);
-  const m = /retry\s+after\s+(\d{1,9})\s*s/i.exec(text);
-  const ms = m ? Number.parseInt(m[1], 10) * 1000 : 0;
-  return ms > 0 ? Math.min(ms, MAX_PROSE_RETRY_MS) : null;
 }
 
 /**

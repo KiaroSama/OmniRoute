@@ -34,6 +34,13 @@ import { applyClientUsageBuffer } from "./clientUsageBuffer.ts";
 import { storeClaudeThinkingFromResponse } from "../../services/claudeThinkingStore.ts";
 import { resolveRequestToolIdentity } from "../../translator/response/openai-responses/requestToolIdentity.ts";
 import { plaintextCollaborationFields } from "../../translator/response/openai-responses/collaborationPlaintextMarker.ts";
+import { finalizeResponsesTerminalStatus } from "../../translator/helpers/responsesTerminalStatus.ts";
+import {
+  canonicalizeDeclaredToolName,
+  collectDeclaredToolNames,
+  mergeDeclaredToolNames,
+  toolNameSideChannelNames,
+} from "../../translator/response/openai-responses/declaredToolName.ts";
 
 export type { NonStreamingClientTranslateInput, NonStreamingClientTranslateResult };
 
@@ -135,8 +142,28 @@ export function translateNonStreamingClientResponse(
   }
   // ── Sanitize response for SDK compatibility ────────────────────────────────
   if (clientResponseFormat === FORMATS.OPENAI_RESPONSES) {
+    // A Chat body's truncation or filter must reach the client as status
+    // "incomplete", as the streaming path does (#14806).
+    const chatFinishReason = translatedResponse?.choices?.[0]?.finish_reason;
     translatedResponse = sanitizeResponsesApiResponse(translatedResponse);
+    if (chatFinishReason) finalizeResponsesTerminalStatus(translatedResponse, chatFinishReason);
     const sanitizedOutput = translatedResponse?.output;
+    // Map provider-injected prefixes (`functions.exec`) back to a declared tool
+    // name — same rule as the streaming translator. Runs before custom
+    // classification and identity restore, which both key on declared names.
+    if (responsePayloadFormat !== FORMATS.OPENAI_RESPONSES && Array.isArray(sanitizedOutput)) {
+      const declaredToolNames = mergeDeclaredToolNames(
+        collectDeclaredToolNames(finalBody),
+        customToolNames,
+        toolNameSideChannelNames(requestToolIdentityMap),
+        toolNameSideChannelNames(responseToolNameMap)
+      );
+      for (const item of sanitizedOutput) {
+        if (item?.type !== "function_call" || typeof item.name !== "string") continue;
+        if (resolveRequestToolIdentity(requestToolIdentityMap, item.name)) continue;
+        item.name = canonicalizeDeclaredToolName(item.name, declaredToolNames).name;
+      }
+    }
     if (customToolNames && Array.isArray(sanitizedOutput)) {
       for (const item of sanitizedOutput) {
         if (item?.type !== "function_call" || !customToolNames.has(item.name)) continue;

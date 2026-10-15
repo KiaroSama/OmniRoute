@@ -84,6 +84,10 @@ Daloy:
 Ang mga pinilit na mode ay short-circuit **bago** tumakbo ang auto heuristic; ang pag-uugali ng `auto`
 ay byte-identical sa pre-PR-1 guardrail.
 
+#### Saklaw ng API key (`visionBridgeKeyScope.ts`)
+
+Kung nililimitahan ng API key ang mga koneksiyon, quota pool o modelo (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), mga modelo at koneksiyong pinapayagan sa key lamang ang pipiliin sa paglilipat ng ruta at paglalarawan. Laging dumaraan ang paglalarawan sa sariling loop ng OmniRoute kasama ang header na `x-omniroute-self-loop-key-id`, kaya muling ipinapatupad ang patakaran sa koneksiyon at modelo. Tinatanggap lamang ng `enforceApiKeyPolicy()` ang header kapag kasama ang bearer token ng loop: maaari lamang nitong paliitin ang access, at tinatanggihan ang hindi kilalang ID. Kung walang pinapayagang vision model, nilalaktawan ang paglalarawan at hindi binabago ang kahilingan, gaya kapag naka-off ang proteksiyon (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Walang pagbabago sa mga kahilingang walang key at mga key na walang ganitong limitasyon.
+
 #### Task-aware describe prompt (`modalityBridgeVisionTaskAware`)
 
 Default **true**. Ang `composeVisionPrompt()` (`visionBridgeHelpers.ts`) ay nagdaragdag

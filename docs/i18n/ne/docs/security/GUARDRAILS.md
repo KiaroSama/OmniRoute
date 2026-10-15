@@ -80,6 +80,10 @@ fromModel, toModel, imagesKept }` सहित फर्काउँछ।
 बाध्य मोडहरू `auto` हेरिस्टिक चल्नु **अघि** सर्ट-सर्किट हुन्छन्; `auto` व्यवहार
 PR-1 अघिको गार्डरेलसँग बाइट-समान छ।
 
+#### API कुञ्जीको दायरा (`visionBridgeKeyScope.ts`)
+
+API कुञ्जीले जडान, कोटा समूह वा मोडेल सीमित गरेमा (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), पुनःरूटिङ र वर्णनले त्यस कुञ्जीलाई अनुमति भएका मोडेल र जडान मात्र छान्छन्। वर्णन सधैँ `x-omniroute-self-loop-key-id` हेडरसहित OmniRoute को आफ्नै लूपबाट जान्छ, जसले जडान र मोडेल नीति फेरि लागू गर्छ। `enforceApiKeyPolicy()` ले सो लूपको bearer टोकनसँग मात्र हेडर स्वीकार्छ: यसले पहुँच घटाउन मात्र सक्छ र अज्ञात आईडी अस्वीकार हुन्छ। अनुमति भएको भिजन मोडेल नभए वर्णन छोडिन्छ र निष्क्रिय सुरक्षाजस्तै अनुरोध अपरिवर्तित अघि जान्छ (meta `{ skipped: true, reason: "no_permitted_vision_model" }`)। कुञ्जीबिनाका अनुरोध र यी प्रतिबन्ध नभएका कुञ्जी पहिलेझैँ काम गर्छन्।
+
 #### कार्य-सचेत वर्णन प्रम्प्ट (`modalityBridgeVisionTaskAware`)
 
 पूर्वनिर्धारित **true**। `composeVisionPrompt()` (`visionBridgeHelpers.ts`) ले

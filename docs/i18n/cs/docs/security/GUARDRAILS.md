@@ -84,6 +84,10 @@ Tok:
 Vynucené režimy se zkracují **před** spuštěním automatické heuristiky; chování
 `auto` je bitově identické s před-PR-1 zábranou.
 
+#### Rozsah klíče API (`visionBridgeKeyScope.ts`)
+
+Pokud klíč API omezuje připojení, fondy kvót nebo modely (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), přesměrování i popis vybírají pouze modely a připojení povolené tomuto klíči. Popis vždy prochází vlastní smyčkou OmniRoute s hlavičkou `x-omniroute-self-loop-key-id`, která znovu uplatní zásady připojení a modelů. `enforceApiKeyPolicy()` uzná hlavičku pouze s bearer tokenem této smyčky: přístup může jen zúžit a neznámý identifikátor odmítne. Není-li povolen žádný vizuální model, popis se přeskočí a požadavek projde beze změny jako při vypnuté ochraně (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Požadavky bez klíče a klíče bez těchto omezení fungují jako dříve.
+
 #### Prompt pro popis s ohledem na úkol (`modalityBridgeVisionTaskAware`)
 
 Výchozí **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) připojí

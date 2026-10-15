@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS-begränsning:** HTTPS-`CONNECT`-tunnlar samlas som standard endast in som metadata (värd, port, tidsuppgifter) — TLS-innehållet dekrypteras inte. Aktivera reglaget ”Dekryptera HTTPS i proxyläge” (valfritt, kräver att AgentBridge-certifikatet är betrott) för fullständig granskning av innehållet.
+**TLS-begränsning:** HTTPS-`CONNECT`-tunnlar samlas som standard endast in som metadata (värd, port, tidsuppgifter) — TLS-innehållet dekrypteras inte.
 
 **Portkonflikt:** Om port 8080 används returnerar AgentBridge 409 med ett strukturerat fel. Ändra porten via miljövariabeln `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -464,12 +464,11 @@ Bassökväg: `/api/tools/traffic-inspector/`
 
 ### Insamlingslägen
 
-| Metod | Sökväg                         | Beskrivning                                                                                         |
-| ----- | ------------------------------ | --------------------------------------------------------------------------------------------------- |
-| GET   | `/capture-modes`               | Status för lägena AgentBridge/anpassade värdar/HTTP_PROXY/systemproxy samt reglaget `tls-intercept` |
-| POST  | `/capture-modes/http-proxy`    | Starta/stoppa HTTP_PROXY-lyssnaren (`{action: "start"\|"stop"}`)                                    |
-| POST  | `/capture-modes/system-proxy`  | Tillämpa/återställ systemomfattande proxy (`{action: "apply"\|"revert"}`)                           |
-| POST  | `/capture-modes/tls-intercept` | Växla dekryptering av HTTPS-innehåll i proxyläge (`{enabled: boolean}`)                             |
+| Metod | Sökväg                        | Beskrivning                                                               |
+| ----- | ----------------------------- | ------------------------------------------------------------------------- |
+| GET   | `/capture-modes`              | Status för lägena AgentBridge/anpassade värdar/HTTP_PROXY/systemproxy     |
+| POST  | `/capture-modes/http-proxy`   | Starta/stoppa HTTP_PROXY-lyssnaren (`{action: "start"\|"stop"}`)          |
+| POST  | `/capture-modes/system-proxy` | Tillämpa/återställ systemomfattande proxy (`{action: "apply"\|"revert"}`) |
 
 > **TPROXY-dekryptering** (insamlingsläge 5) styrs av en **separat** rutt under
 > AgentBridge-prefixet — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — inte

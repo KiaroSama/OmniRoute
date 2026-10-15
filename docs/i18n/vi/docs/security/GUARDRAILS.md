@@ -55,6 +55,10 @@ Luồng:
 
 Các chế độ bắt buộc sẽ ngắt mạch **trước khi** thuật toán heuristic tự động chạy; hành vi `auto` giống hệt từng byte với guardrail trước PR-1.
 
+#### Phạm vi của khóa API (`visionBridgeKeyScope.ts`)
+
+Nếu khóa API giới hạn kết nối, nhóm hạn mức hoặc mô hình (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), việc định tuyến lại và tạo mô tả chỉ chọn mô hình cùng kết nối được phép cho khóa đó. Lệnh gọi mô tả luôn đi qua vòng lặp nội bộ OmniRoute với header `x-omniroute-self-loop-key-id`, để áp dụng lại chính sách kết nối và mô hình. `enforceApiKeyPolicy()` chỉ chấp nhận header khi đi kèm token bearer của vòng lặp: nó chỉ có thể thu hẹp quyền truy cập và từ chối ID không xác định. Nếu không có mô hình thị giác được phép, bước mô tả bị bỏ qua và yêu cầu đi tiếp không đổi, như khi tắt lớp bảo vệ (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Yêu cầu không có khóa và khóa không có các giới hạn này vẫn hoạt động như trước.
+
 #### Lời nhắc mô tả nhận biết tác vụ (`modalityBridgeVisionTaskAware`)
 
 Mặc định là **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) nối văn bản của **tin nhắn người dùng cuối cùng** (cắt ngắn còn 500 ký tự) vào lời nhắc mô tả cơ bản, hướng mô tả đến những gì người dùng thực sự hỏi (mẫu codex-vision-proxy) và yêu cầu mô hình thị giác phiên âm văn bản hiển thị. Khi cờ này tắt — hoặc không có văn bản người dùng — lời nhắc cơ bản được sử dụng không thay đổi.

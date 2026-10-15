@@ -534,7 +534,7 @@ test("usage service covers Claude OAuth success, legacy fallback and permissions
 
   globalThis.fetch = async (url) => {
     if (String(url).includes("/api/oauth/usage")) {
-      return new Response("fallback", { status: 500 });
+      return new Response("fallback", { status: 404 }); // only 404/405 -> legacy fallback
     }
     if (String(url).endsWith("/v1/settings")) {
       return new Response(
@@ -562,7 +562,7 @@ test("usage service covers Claude OAuth success, legacy fallback and permissions
 
   globalThis.fetch = async (url) => {
     if (String(url).includes("/api/oauth/usage")) {
-      return new Response("fallback", { status: 500 });
+      return new Response("fallback", { status: 404 });
     }
     return new Response("denied", { status: 403 });
   };
@@ -596,7 +596,7 @@ test("usage service covers Claude default-plan fallback, legacy org denial and f
 
   globalThis.fetch = async (url) => {
     if (String(url).includes("/api/oauth/usage")) {
-      return new Response("fallback", { status: 500 });
+      return new Response("fallback", { status: 404 });
     }
     if (String(url).endsWith("/v1/settings")) {
       return new Response(

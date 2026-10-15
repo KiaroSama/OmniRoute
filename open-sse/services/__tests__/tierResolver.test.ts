@@ -160,11 +160,9 @@ describe("TierResolver", () => {
 
   describe("classifyTier - caching", () => {
     it("returns cached result on second call", () => {
-      classifyTier("openai", "gpt-4o");
-      const t0 = performance.now();
-      classifyTier("openai", "gpt-4o");
-      const elapsed = performance.now() - t0;
-      expect(elapsed, "cache hit should be <0.1ms").toBeLessThan(0.1);
+      const first = classifyTier("openai", "gpt-4o");
+      const second = classifyTier("openai", "gpt-4o");
+      expect(second).toBe(first);
     });
 
     it("clearTierCache() forces re-classification", () => {

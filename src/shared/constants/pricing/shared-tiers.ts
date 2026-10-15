@@ -299,3 +299,41 @@ export const GLM_PRICING = {
     cache_creation: 0.2,
   },
 };
+
+type TokenPricingRow = {
+  input: number;
+  output: number;
+  cached: number;
+  reasoning: number;
+  cache_creation: number;
+};
+
+/**
+ * Optional long-context override on a pricing row, applied by the cost calculator when the
+ * (cache-inclusive) prompt exceeds `threshold` — or reaches it when `inclusive` is true.
+ */
+export type LongContextPricingTier = Partial<TokenPricingRow> & {
+  threshold: number;
+  inclusive?: boolean;
+};
+
+/**
+ * OpenAI: prompts with more than 272K input tokens are priced at 2x input and cache rates and
+ * 1.5x output for the full request (https://developers.openai.com/api/docs/models/gpt-5.5,
+ * https://developers.openai.com/api/docs/models/gpt-6-sol).
+ */
+export function withOpenAiLongContextTier<T extends TokenPricingRow>(
+  row: T
+): T & { long_context: LongContextPricingTier } {
+  return {
+    ...row,
+    long_context: {
+      threshold: 272_000,
+      input: row.input * 2,
+      cached: row.cached * 2,
+      cache_creation: row.cache_creation * 2,
+      output: row.output * 1.5,
+      reasoning: row.reasoning * 1.5,
+    },
+  };
+}

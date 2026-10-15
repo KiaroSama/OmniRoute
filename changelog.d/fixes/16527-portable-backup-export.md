@@ -1,0 +1,1 @@
+- fix(backup): use relative tar archive paths for Windows Git Bash compatibility and clean partial exports after failures or timeouts (#16527).

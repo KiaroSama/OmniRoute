@@ -194,6 +194,8 @@ Automātisko kombināciju dzinis katram pieprasījumam dinamiski atlasa labāko 
 | `quality`             | 0.03              | Uz atsauksmēm balstīts izvades kvalitātes signāls no maršrutēšanas notikumu kvalitātes izsekotāja; kandidāti bez novērojumiem saņem neitrālu vērtējumu 0.5                                                                          |
 | `reliability`         | 0.00              | Novērotais sekmīgo izpildžu īpatsvars, `1 - failureRate`, no 24 stundu lietojuma vēstures ar vismaz desmit paraugiem (pretējā gadījumā — reāllaika metrika); kandidātiem bez novērojumiem vērtība ir 1.0. Pēc noklusējuma atspējots |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Summa:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, kā deklarēts struktūrā `DEFAULT_WEIGHTS`; lietotāja konfigurētie svari pirms vērtēšanas tiek atkārtoti normalizēti sadalījumā ar `normalizeScoringWeights()`.
 
 ## Režīmu pakotnes

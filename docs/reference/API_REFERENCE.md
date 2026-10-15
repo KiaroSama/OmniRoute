@@ -1108,14 +1108,18 @@ curl -X PATCH "$OMNIROUTE_URL/api/keys/$KEY_ID" \
 
 ### Backup & Export/Import
 
-| Endpoint                    | Method | Description                             |
-| --------------------------- | ------ | --------------------------------------- |
-| `/api/db-backups`           | GET    | List available backups                  |
-| `/api/db-backups`           | PUT    | Create a manual backup                  |
-| `/api/db-backups`           | POST   | Restore from a specific backup          |
-| `/api/db-backups/export`    | GET    | Download database as .sqlite file       |
-| `/api/db-backups/import`    | POST   | Upload .sqlite file to replace database |
-| `/api/db-backups/exportAll` | GET    | Download full backup as .tar.gz archive |
+| Endpoint                    | Method | Description                                                             |
+| --------------------------- | ------ | ----------------------------------------------------------------------- |
+| `/api/db-backups`           | GET    | List available backups                                                  |
+| `/api/db-backups`           | PUT    | Create a manual backup                                                  |
+| `/api/db-backups`           | POST   | Restore from a specific backup                                          |
+| `/api/db-backups/export`    | GET    | Download database as .sqlite file                                       |
+| `/api/db-backups/import`    | POST   | Upload .sqlite file to replace database (`?dryRun=true` validates only) |
+| `/api/db-backups/exportAll` | GET    | Download full backup as .tar.gz archive                                 |
+
+`/api/db-backups/export`, `/api/db-backups/exportAll` and `/api/settings/export-json` hand out
+every stored credential, so they require the dashboard session or the local CLI (or login
+disabled). API keys of any scope and `oma_` access tokens get `403`.
 
 ### Cloud Sync
 

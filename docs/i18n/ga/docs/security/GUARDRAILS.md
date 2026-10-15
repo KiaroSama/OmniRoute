@@ -51,6 +51,10 @@ Sreabhadh:
 
 Gearrchiorcaíonn móid éigeantacha **roimh** an heuraistic `auto`; tá iompar `auto` comhionann ó thaobh beart de leis an ráille cosanta roimh PR-1.
 
+#### Raon na heochrach API (`visionBridgeKeyScope.ts`)
+
+Má chuireann an eochair API srianta ar naisc, ar linnte cuóta nó ar mhúnlaí (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), ní roghnaíonn athródú ná cur síos ach múnlaí agus naisc atá ceadaithe don eochair. Téann an cur síos trí lúb inmheánach OmniRoute i gcónaí leis an gceanntásc `x-omniroute-self-loop-key-id`, agus cuirtear an beartas nasc agus múnlaí i bhfeidhm arís. Ní ghlacann `enforceApiKeyPolicy()` leis an gceanntásc ach le comhartha bearer na lúibe: ní féidir leis ach rochtain a chúngú, agus diúltaítear d'aitheantas anaithnid. Mura bhfuil múnla físe ceadaithe, fágtar an cur síos ar lár agus téann an t-iarratas tríd gan athrú, mar a bheadh an chosaint múchta (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Oibríonn iarratais gan eochair agus eochracha gan na srianta seo mar a rinne siad roimhe.
+
 #### Pras cur síos tasc-fheasach (`modalityBridgeVisionTaskAware`)
 
 Réamhshocrú **fíor**. Cuireann `composeVisionPrompt()` (`visionBridgeHelpers.ts`) téacs an **teachtaireacht úsáideora dheireanach** (gearrtha go 500 carachtar) le bunphras an chur síos, ag stiúradh an chur síos i dtreo an ruda a d'iarr an t-úsáideoir i ndáiríre (patrún codex-vision-proxy) agus ag iarraidh ar an múnla fís téacs infheicthe a thras-scríobh. Agus an bratach as — nó gan aon téacs úsáideora — úsáidtear an bunphras gan athrú.

@@ -78,6 +78,10 @@ Potek:
 Prisilni načini se izvedejo **pred** zagonom avtomatske hevristike; obnašanje `auto`
 je bitno enako varovalu pred PR-1.
 
+#### Obseg ključa API (`visionBridgeKeyScope.ts`)
+
+Če ključ API omejuje povezave, skupine kvot ali modele (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), preusmerjanje in opis izbereta le modele in povezave, dovoljene temu ključu. Opis vedno poteka skozi notranjo zanko OmniRoute z glavo `x-omniroute-self-loop-key-id`, zato se pravila povezav in modelov ponovno uveljavijo. `enforceApiKeyPolicy()` upošteva glavo samo skupaj z bearer žetonom zanke: lahko le zoži dostop, neznan identifikator pa zavrne. Če ni dovoljenega vidnega modela, se opis preskoči in zahteva ostane nespremenjena, kot pri izključeni zaščiti (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Zahteve brez ključa in ključi brez teh omejitev delujejo kot prej.
+
 #### Poziv za opis, ki upošteva nalogo (`modalityBridgeVisionTaskAware`)
 
 Privzeto **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) doda

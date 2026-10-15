@@ -731,21 +731,12 @@ jobs:
           # PR acceleration is not release-candidate provenance.
           cache: ${{ github.event_name == 'pull_request' }}
       - run: npm run check:node-runtime
-      # NOTE: the webpack `.build/next/cache` actions/cache step was removed with the
-      # Turbopack switch below — Turbopack does not read/write the webpack cache dir
-      # (its persistent FS cache is still experimental and intentionally NOT enabled),
-      # so restoring the old ~0.5 GB webpack cache would only waste download time.
-      # Rolling back to webpack = revert this commit (cache step comes back with it).
-      #
-      # Turbopack production build (Next 16, stable): benchmarked 1.9× faster than the
-      # webpack pass (9min0s vs 17min15s on a 32-core box; multi-core Rust vs webpack's
-      # single-threaded compile). Standalone output smoke-validated (server boots,
-      # /api/monitoring/health 200). Downstream jobs (e2e ×9, package-artifact,
-      # electron-package-smoke) consume this artifact, so a green run here validates
-      # the Turbopack artifact end-to-end.
+      # Use the existing webpack fallback on hosted runners, matching limited Docker builders.
+      # Keep the benchmarked Turbopack build on the dedicated omni-build runner.
+      # Both produce the standalone artifact consumed by downstream smoke checks.
       - run: npm run build
         env:
-          OMNIROUTE_USE_TURBOPACK: "1"
+          OMNIROUTE_USE_TURBOPACK: ${{ (vars.USE_VPS_RUNNER == 'true' && github.event_name != 'merge_group' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && '1' || '0' }}
       - name: Verify colocated compression worker
         run: node --import tsx/esm --test tests/integration/compression-worker-standalone.int.test.ts
         env:
@@ -982,7 +973,7 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=8192
         run: |
           rm -rf coverage-shard coverage-shard-report
-          npx c8 \
+          npx c8 --merge-async \
             --temp-directory=coverage-shard \
             --reports-dir=coverage-shard-report \
             --reporter=json \

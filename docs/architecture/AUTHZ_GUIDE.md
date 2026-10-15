@@ -75,6 +75,21 @@ supplemented:
   login issues (`src/app/api/auth/login/route.ts`), so the rest of the
   dashboard session pipeline (auto-refresh, cookie flags) is unchanged —
   OIDC only replaces how the cookie gets minted, not what it grants.
+- Every `oidc*` setting (`oidcEnabled`, `oidcDisablePasswordLogin`,
+  `oidcIssuer`, `oidcClientId`, `oidcClientSecret`, `oidcAllowedSubjects`,
+  `oidcRedirectPath`, `oidcScopes`) is in `SECURITY_IMPACTING_SETTINGS_KEYS`
+  (`src/shared/constants/securityImpactingSettings.ts`): `PATCH /api/settings`
+  answers `400 PASSWORD_REQUIRED` unless the body carries the management
+  password as `currentPassword` (`401 PASSWORD_MISMATCH` when it is wrong).
+  `oidcDisablePasswordLogin` refuses password _login_ (`POST /api/auth/login`)
+  but keeps the stored password hash, and re-auth still checks
+  `currentPassword` against it.
+- `POST /api/settings/import-json` skips that re-auth, so it drops every key in
+  `IMPORT_STRIPPED_SETTINGS_KEYS` (same file) before writing: the password and
+  `currentPassword`, every `SECURITY_IMPACTING_SETTINGS_KEYS` entry, and the
+  dashboard session state (`sessionsValidAfter`, `revokedDashboardSessions`).
+  Importing an older backup therefore cannot revive a session that a password
+  change or a sign-out already ended.
 
 ## Route Classes
 
@@ -85,6 +100,14 @@ supplemented:
 | `PUBLIC`     | Explicitly safe routes — login, logout, status, init, health, onboarding bootstrap.                                                                  | None                                                                    |
 | `CLIENT_API` | Model-serving endpoints — `/api/v1/*`, `/api/v1beta/*`, plus aliases `/v1/*`, `/v1beta/*`, `/chat/completions`, `/responses`, `/models`, `/codex/*`. | Bearer key when the effective `REQUIRE_API_KEY` feature flag is enabled |
 | `MANAGEMENT` | Dashboard pages, settings, providers, keys, admin and diagnostics endpoints.                                                                         | Dashboard session OR Bearer with `manage` scope                         |
+
+A few `MANAGEMENT` actions are **operator-only**: a `manage` key is not enough. Exporting stored
+credentials (`GET /api/settings/export-json`, `GET /api/db-backups/export`,
+`GET /api/db-backups/exportAll`), issuing a sync token (`POST /api/sync/tokens`) and minting an
+`admin` CLI access token (`POST /api/cli/tokens`) require a dashboard session, the local CLI
+subject, or login disabled; API keys of any scope and `oma_` access tokens get `403`. The check
+lives in `src/lib/api/operatorCredential.ts` (`resolveOperatorCredential()` /
+`requireOperatorCredential()`).
 
 ## Pipeline
 

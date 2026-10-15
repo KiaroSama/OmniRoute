@@ -160,7 +160,7 @@ export async function getUsageForProvider(
         options
       );
     case "claude":
-      return await getClaudeUsage(accessToken);
+      return await getClaudeUsage(accessToken, { forceRefresh: options.forceRefresh === true });
     case "codex":
       // /me/status and the quota-cache refresh reach this fetch with no
       // caller-side pacing. Gate the start here so those paths, and any later

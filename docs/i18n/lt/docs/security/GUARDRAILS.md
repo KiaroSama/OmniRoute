@@ -60,6 +60,10 @@ Eiga:
 
 Priverstiniai režimai trumpina grandinę **prieš** automatinės heuristikos paleidimą; `auto` elgesys yra identiškas prieš PR-1 apsaugos priemonei.
 
+#### API rakto taikymo sritis (`visionBridgeKeyScope.ts`)
+
+Jei API raktas riboja ryšius, kvotų grupes arba modelius (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), peradresavimas ir aprašymas pasirenka tik tam raktui leidžiamus modelius bei ryšius. Aprašymas visada vykdomas per vidinę OmniRoute kilpą su antrašte `x-omniroute-self-loop-key-id`, todėl ryšių ir modelių politika taikoma dar kartą. `enforceApiKeyPolicy()` priima antraštę tik kartu su kilpos bearer žetonu: ji gali tik siaurinti prieigą, o neatpažintas ID atmetamas. Nesant leidžiamo regos modelio, aprašymas praleidžiamas, o užklausa lieka nepakeista, kaip išjungus apsaugą (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Užklausos be rakto ir raktai be šių apribojimų veikia kaip anksčiau.
+
 #### Užduotį atitinkantis aprašymo raginimas (`modalityBridgeVisionTaskAware`)
 
 Numatytasis **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) prideda **paskutinio vartotojo pranešimo** tekstą (sutrumpintą iki 500 simbolių) prie bazinio aprašymo raginimo, nukreipdamas aprašymą link to, ko vartotojas iš tikrųjų prašė (codex-vision-proxy modelis) ir prašydamas vizijos modelio transkribuoti matomą tekstą. Išjungus vėliavėlę – arba be vartotojo teksto – bazinis raginimas naudojamas nepakeistas.

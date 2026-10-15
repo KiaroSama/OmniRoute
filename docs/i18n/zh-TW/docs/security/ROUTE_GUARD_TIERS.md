@@ -123,6 +123,8 @@ Tunnel、Tailscale、Ngrok）後方執行 OmniRoute，回送位址檢查仍會�
   整個 `/api/providers/` 前綴才能捕捉這些路由，這會過度擴大限制範圍，
   影響遠端儀表板合理用於提供者 CRUD 的路由樹。
 
+  執行階段快照載入器也會從已儲存的設定列中移除這些項目，而舊版 JSON 匯入（`/api/settings/import-json`）絕不會寫入繞過防護的鍵。`LOCAL_ONLY_API_PREFIXES` 的每個項目都必須位於拒絕清單中，或經過審查確認可以繞過防護。 (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **存取稽核** — 若要驗證沒有任何來自主機外部的存取正觸及這些路由：
 
 - 開啟 `/dashboard/settings/security` 上的 **授權清單**：它會顯示即時的 LOCAL_ONLY 前綴清單、哪些前綴可被略過，以及編譯時期所定義、具程序啟動能力（「不可設為可略過」）的集合。

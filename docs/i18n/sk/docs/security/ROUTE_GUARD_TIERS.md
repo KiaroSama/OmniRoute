@@ -144,6 +144,8 @@ povinnosti prevádzkovateľa:
   celý prefix `/api/providers/`, čím by príliš rozšírilo obmedzenie na strom trás,
   ktorý vzdialené ovládacie panely oprávnene používajú na operácie CRUD s poskytovateľmi.
 
+  Načítavač snímok behu takéto položky odstraňuje aj z uloženého riadka nastavení a starší import JSON (`/api/settings/import-json`) nikdy nezapisuje kľúče na obídenie ochrany. Každá položka `LOCAL_ONLY_API_PREFIXES` musí byť na zozname zákazov alebo po kontrole schválená ako vhodná na obídenie. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Auditovanie prístupu** — ak chcete overiť, že sa k týmto trasám nepristupuje mimo hostiteľa:
 
 - Otvorte **Inventár autorizácie** na `/dashboard/settings/security`: zobrazuje

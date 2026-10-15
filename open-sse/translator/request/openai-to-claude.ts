@@ -156,7 +156,8 @@ export function openaiToClaudeRequest(model, body, stream, credentials = null) {
     _toolNameMap?: Map<string, string>;
   } = {
     model: model,
-    max_tokens: adjustMaxTokens(body),
+    // An explicit OpenAI cap is a hard limit (e.g. 1-token prompt-cache warm requests).
+    max_tokens: adjustMaxTokens(body, { honorExplicitCap: true }),
     stream: stream,
     messages: [],
   };

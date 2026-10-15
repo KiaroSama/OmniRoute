@@ -15,6 +15,7 @@ import { PROVIDERS } from "../config/constants.ts";
 import { getCodexAuthIdentityHeaders } from "../config/codexClient.ts";
 import { runWithProxyContext } from "../utils/proxyFetch.ts";
 import { serializeRefresh } from "./refreshSerializer.ts";
+import { parseTokenExpiryMs } from "@/lib/tokenHealthCheckExpiry";
 import {
   extractOAuthErrorCode,
   isUnrecoverableRefreshError,
@@ -709,7 +710,7 @@ async function _refreshWithFreshCredentials(provider, credentials, log, proxyCon
       const dbConnection = await getProviderConnectionById(credentials.connectionId);
       if (dbConnection && dbConnection.refreshToken) {
         const now = Date.now();
-        const dbExpiresAt = dbConnection.expiresAt ? new Date(dbConnection.expiresAt).getTime() : 0;
+        const dbExpiresAt = parseTokenExpiryMs(dbConnection.expiresAt);
 
         if (dbConnection.refreshToken !== credentials.refreshToken) {
           log?.info?.(

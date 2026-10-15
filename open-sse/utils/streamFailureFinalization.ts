@@ -6,6 +6,26 @@ import {
 import { HTTP_STATUS } from "../config/constants.ts";
 import { buildErrorBody } from "./error.ts";
 import { sanitizeErrorMessage } from "./errorSanitization.ts";
+import type { PartialStreamUsage } from "./streamPartialUsage.ts";
+
+/** Token aggregate accepted by the failure usage row (chatCore/failureUsage.ts shape). */
+export type PartialFailureUsageAggregate = {
+  prompt_tokens: number;
+  completion_tokens: number;
+  cache_read_input_tokens?: number;
+  cache_creation_input_tokens?: number;
+  reasoning_tokens?: number;
+};
+
+function toPartialFailureAggregate(usage: PartialStreamUsage): PartialFailureUsageAggregate {
+  return {
+    prompt_tokens: usage.prompt_tokens,
+    completion_tokens: usage.completion_tokens,
+    cache_read_input_tokens: usage.cache_read_input_tokens,
+    cache_creation_input_tokens: usage.cache_creation_input_tokens,
+    reasoning_tokens: usage.reasoning_tokens,
+  };
+}
 
 export type StreamCompletionPayload = {
   status: number;
@@ -16,6 +36,13 @@ export type StreamCompletionPayload = {
   error?: string | null;
   errorCode?: string | null;
   ttft?: number | null;
+  /**
+   * Tokens already generated when a stream ended early (client disconnect / mid-stream
+   * failure): provider-reported, or estimated from the streamed output (`estimated: true`).
+   * Kept apart from `usage` so a failed stream does not trigger the success-only usage row,
+   * cost and calibration side effects; the call log reads it for its token columns.
+   */
+  partialUsage?: PartialStreamUsage;
 };
 
 export type StreamFailurePayload = {
@@ -195,18 +222,38 @@ export function createStreamFailureFinalizers({
   persistFailureUsage,
   onStreamFailure,
   hasEmittedOutput = () => false,
+  readPartialUsage = () => null,
 }: {
   isFailureCompletionRecorded: () => boolean;
   isStreamCompletionRecorded?: () => boolean;
   onStreamComplete: (payload: StreamCompletionPayload) => void;
-  persistFailureUsage: (status: number, errorCode?: string) => void;
+  persistFailureUsage: (
+    status: number,
+    errorCode?: string,
+    aggregate?: PartialFailureUsageAggregate
+  ) => void;
   onStreamFailure?: ((failure: StreamFailurePayload) => void) | null;
   hasEmittedOutput?: () => boolean;
+  /** Usage the stream accumulated before it ended early (see streamPartialUsage.ts). */
+  readPartialUsage?: () => PartialStreamUsage | null;
 }) {
+  const readPartialUsageSafely = (): PartialStreamUsage | null => {
+    try {
+      return readPartialUsage() ?? null;
+    } catch {
+      return null; // best-effort accounting must never block finalization
+    }
+  };
+
   const handleStreamFailure = (failure: StreamFailurePayload) => {
     if (isStreamCompletionRecorded()) {
       return true;
     }
+
+    // The client hung up / the upstream died mid-answer: the provider already generated (and
+    // billed) these tokens. Status and success semantics stay as they are — only the token
+    // counts of the failure records stop being zero.
+    const partialUsage = readPartialUsageSafely();
 
     const status = failure.status || HTTP_STATUS.BAD_GATEWAY;
     const message = failure.message || "Upstream stream error";
@@ -225,10 +272,15 @@ export function createStreamFailureFinalizers({
         error: message,
         errorCode: projectedCode,
         ttft: 0,
+        ...(partialUsage ? { partialUsage } : {}),
       });
     }
 
-    persistFailureUsage(status, projectedCode);
+    if (partialUsage) {
+      persistFailureUsage(status, projectedCode, toPartialFailureAggregate(partialUsage));
+    } else {
+      persistFailureUsage(status, projectedCode);
+    }
     try {
       onStreamFailure?.({ ...failure, outputEmitted: hasEmittedOutput() });
     } catch {

@@ -4090,6 +4090,9 @@
     "showingTopCostRows": "A mostrar {shown} de {total} linhas correspondentes (top 50)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Destino da sincronização na nuvem (não das cópias de segurança locais):",
+    "cloudUploadWarning": "A sincronização na nuvem está desativada por predefinição nas novas instalações. Ao ativá-la, as chaves de API dos fornecedores, os tokens de acesso e de atualização OAuth, as chaves de API do OmniRoute e a configuração são enviados para o destino acima, agora e nas sincronizações futuras. Isto é separado das cópias de segurança locais de Armazenamento. Ative apenas se confiar nesse servidor.",
+    "cloudUploadConsent": "Compreendo e autorizo o envio das minhas credenciais para este destino.",
     "title": "Ponto final da API",
     "subtitle": "Utilize o endpoint compatível com OpenAI na maioria dos SDKs e ferramentas.",
     "testEndpoint": "Testar endpoint →",
@@ -8683,6 +8686,7 @@
     "cliproxyapiPort": "Porto",
     "qdrantHost": "Anfitrião",
     "qdrantCollection": "Coleção",
+    "catalogVisibilityHint": "Os IDs de modelos ocultos continuam a poder ser invocados com as mesmas permissões de acesso.",
     "catalogScopeTitle": "Listagem da API de modelos",
     "catalogScopeDesc": "O que GET /v1/models anuncia para esta chave. Restringir a lista nunca altera o que a chave pode chamar.",
     "catalogScopeAll": "Ambos",

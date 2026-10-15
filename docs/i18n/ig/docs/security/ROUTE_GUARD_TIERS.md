@@ -144,6 +144,8 @@ ka dịịrị onye na-ahụ maka sistemụ:
   prefix `/api/providers/` niile iji jide ha, nke ga-eme ka osisi ụzọ
   ndị dashboard dị anya ji eme CRUD provider gbasaa karịa oke kwesịrị ekwesị.
 
+  Loader nke snapshot oge ọrụ na-ewepụkwa ụdị ntinye ndị a n'ahịrị ntọala echekwara, mbubata JSON ochie (`/api/settings/import-json`) anaghịkwa ede igodo ịgafe nchebe. Ntinye ọ bụla na `LOCAL_ONLY_API_PREFIXES` ga-adị na ndepụta mmachibido iwu ma ọ bụ bụrụ nke a nyochara ma kwado maka ịgafe nchebe. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Nnyocha ndekọ ohere** — iji nyochaa na ọ dịghị ihe si n'èzí host na-eru ụzọ ndị a:
 
 - Mepee **Ndepụta Ikike** dị na `/dashboard/settings/security`: ọ na-egosi ndepụta prefix LOCAL_ONLY dị ugbu a,

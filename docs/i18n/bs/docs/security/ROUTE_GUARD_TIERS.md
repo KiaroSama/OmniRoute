@@ -147,6 +147,8 @@ ostaju:
   `/api/providers/` prefiks da bi ih uhvatio, preširoko proširujući stablo
   ruta koje udaljene nadzorne ploče legitimno koriste za CRUD pružatelja.
 
+  Učitavač snimaka izvršavanja također odbacuje takve stavke iz sačuvanog reda postavki, a naslijeđeni JSON uvoz (`/api/settings/import-json`) nikada ne upisuje ključeve za zaobilaženje. Svaka stavka `LOCAL_ONLY_API_PREFIXES` mora biti na listi zabrana ili nakon pregleda odobrena za zaobilaženje. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Revizija pristupa** — za provjeru da ništa izvan hosta ne doseže ove rute:
 
 - Otvorite **Inventar autorizacije** na `/dashboard/settings/security`: prikazuje

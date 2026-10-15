@@ -82,6 +82,10 @@ export const SPAWN_CAPABLE_PREFIXES: ReadonlyArray<string> = [
   "/dashboard/providers/services/", // reverse proxy into embedded service UIs — Hard Rule #17 pairs it with /api/services/
   "/api/discovery/", // not a spawn, but declared strict-loopback with no manage-scope bypass (outbound provider probes, SSRF-adjacent)
   "/api/issue-agent/", // local triage executor surface, held loopback/LAN "until sandbox + audit hardening is complete" — not opt-in remote until then
+  // Host-credential reads: no spawn, but the handler reads credential files from the host's
+  // home directory and imports them, so a manage-scoped key must never reach it remotely
+  // either. Held to the same never-bypassable bar as the spawn routes above.
+  "/api/oauth/kiro/auto-import", // reads kiro-cli data.sqlite3, ~/.aws/sso/cache and the Kiro profile.json
 ];
 
 /**
@@ -120,6 +124,7 @@ export const SPAWN_CAPABLE_PATTERN_ANCESTORS: ReadonlyArray<string> = ["/api/pro
 
 /**
  * Single source of truth for "may this candidate bypass prefix ever be honoured?".
+ * (Covers the few non-spawn entries above too, e.g. the Kiro host-credential import.)
  * Returns true when `prefix` overlaps a spawn-capable route in EITHER direction:
  *   - it equals or sits under a spawn-capable prefix (`/api/middleware/hooks`), or
  *   - it is a parent that would cover one (`/api/`, `/api/cli-tools/`, `/api/middleware`),

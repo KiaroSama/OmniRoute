@@ -213,6 +213,8 @@ De Auto-Combo Engine selecteert voor elke aanvraag dynamisch de beste provider e
 | `quality`             | 0.03             | Door feedback gestuurd signaal voor de uitvoerkwaliteit vanuit de kwaliteitstracker voor routeringsgebeurtenissen; kandidaten zonder waarnemingen krijgen een neutrale score van 0.5                                                                     |
 | `reliability`         | 0.00             | Waargenomen succespercentage, `1 - failureRate`, op basis van 24 uur gebruiksgeschiedenis met een minimum van tien steekproeven (anders realtime metrische gegevens); kandidaten zonder waarnemingen krijgen een waarde van 1.0. Standaard uitgeschakeld |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Som:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, zoals gedeclareerd in `DEFAULT_WEIGHTS`; door de gebruiker geconfigureerde gewichten worden vóór de scoreberekening door `normalizeScoringWeights()` opnieuw genormaliseerd tot een verdeling.
 
 ## Moduspakketten

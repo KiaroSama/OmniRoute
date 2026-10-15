@@ -193,6 +193,8 @@ curl -X POST http://localhost:20128/v1/chat/completions \
 | `quality`             | 0.03        | 라우팅 이벤트 품질 추적기에서 제공하는 피드백 기반 출력 품질 신호. 관측값이 없는 후보는 중립 점수인 0.5를 받음                                                                        |
 | `reliability`         | 0.00        | 최소 10개 샘플 기준을 충족하는 24시간 사용 기록에서 계산된 관측 성공 비율 `1 - failureRate`(그 외에는 실시간 메트릭 사용). 관측값이 없는 후보는 1.0으로 처리됨. 기본적으로 비활성화됨 |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **합계:** `DEFAULT_WEIGHTS`에 선언된 대로 `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`이며, 사용자 구성 가중치는 점수를 계산하기 전에 `normalizeScoringWeights()`를 통해 분포로 다시 정규화됩니다.
 
 ## 모드 팩

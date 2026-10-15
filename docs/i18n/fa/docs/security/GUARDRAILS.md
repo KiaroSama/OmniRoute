@@ -83,6 +83,10 @@ OmniRoute و ارائهدهندگان بالادستی اعمال میکنند. 
 حالتهای اجباری **قبل** از اجرای اکتشافی خودکار، مدار کوتاه میشوند؛ رفتار
 `auto` با گاردریل قبل از PR-1 کاملاً یکسان است.
 
+#### دامنهٔ کلید API (`visionBridgeKeyScope.ts`)
+
+اگر کلید API اتصال‌ها، مخزن‌های سهمیه یا مدل‌ها را محدود کند (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`)، تغییر مسیر و توصیف فقط مدل‌ها و اتصال‌های مجاز برای همان کلید را انتخاب می‌کنند. توصیف همیشه از حلقهٔ داخلی OmniRoute با سرآیند `x-omniroute-self-loop-key-id` می‌گذرد تا سیاست اتصال و مدل دوباره اعمال شود. `enforceApiKeyPolicy()` سرآیند را فقط همراه توکن bearer همان حلقه می‌پذیرد؛ سرآیند فقط می‌تواند دسترسی را محدودتر کند و شناسهٔ ناشناخته رد می‌شود. اگر مدل بینایی مجازی وجود نداشته باشد، توصیف کنار گذاشته می‌شود و درخواست مانند حالت حفاظت غیرفعال بدون تغییر عبور می‌کند (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). درخواست‌های بدون کلید و کلیدهای بدون این محدودیت‌ها مانند قبل رفتار می‌کنند.
+
 #### پرامپت توصیف آگاه از وظیفه (`modalityBridgeVisionTaskAware`)
 
 پیشفرض **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) متن

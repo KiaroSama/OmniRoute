@@ -87,6 +87,8 @@ OmniRouteን ከኋላ ተገላቢጦሽ ፕሮክሲ ወይም ዋሻ (nginx, 
 - **403ን የደንበኛውን IP እንደ loopback በማስመሰል "አያስተካክሉ"።** `X-Forwarded-For: 127.0.0.1`ን ማዘጋጀት፣ ወይም የመነሻ አድራሻውን ወደ loopback የሚጽፍ ፕሮክሲ፣ ይህ ደረጃ የሚዘጋውን የRCE ክፍል በትክክል እንደገና ይከፍታል። ዳሽቦርዱን/APIውን በፕሮክሲ በኩል ያጋልጡ — የመፍጠር አቅም ያላቸውን መንገዶች በጭራሽ አያጋልጡ።
 - **የአስተዳደር-ስፋት ማለፊያን አነስተኛ ያድርጉ።** `/api/mcp/` ብቻ ነው ማለፍ የሚቻለው፣ እና በ`manage`-ስፋት ባለው API ቁልፍ ብቻ። `SPAWN_CAPABLE_PREFIXES` በጭራሽ ወደ ማለፊያ ዝርዝር ውስጥ ሊጨመሩ አይችሉም — የzod schema ውድቅ ያደርጋቸዋል እና `isLocalOnlyBypassableByManageScope` በሩጫ ጊዜ ይከለክላቸዋል (ጥልቅ መከላከያ)፣ ይህም ዳሽቦርዱ "ማለፍ የማይቻል" ሲል የሚያመለክተው ነው። በ`/api/providers/` ስር ያሉ ተለዋዋጭ-ክፍል እና የማይንቀሳቀስ-መንገድ የመፍጠር አቅም ያላቸው መንገዶች (ለምሳሌ `/login`, `/refresh-cursor`) በ`src/shared/constants/spawnCapablePrefixes.ts` ውስጥ ባለው በregex ላይ የተመሰረተ `SPAWN_CAPABLE_PATTERNS` / `SPAWN_CAPABLE_PATTERN_ANCESTORS` ተጓዳኝ የተሸፈኑ ናቸው፣ እንጂ በጠፍጣፋው `SPAWN_CAPABLE_PREFIXES` ድርድር አይደለም — ጠፍጣፋው ድርድር እነሱን ለመያዝ ሙሉውን `/api/providers/` ቅድመ ቅጥያ መሸፈን ይኖርበታል፣ ይህም የርቀት ዳሽቦርዶች ለአቅራቢ CRUD በህጋዊ መንገድ የሚጠቀሙበትን የመንገድ ዛፍ ከመጠን በላይ ያሰፋል።
 
+  የሩጫ ጊዜ ሁኔታ ምስል ጫኚው እነዚህን ግቤቶች ከተቀመጠ የቅንብር ረድፍም ያስወግዳል፤ የቆየው JSON ማስመጫ (`/api/settings/import-json`) የማለፊያ ቁልፎችን ፈጽሞ አይጽፍም። እያንዳንዱ የ `LOCAL_ONLY_API_PREFIXES` ግቤት በክልከላ ዝርዝር ውስጥ መሆን ወይም ተመርምሮ ለማለፍ ብቁ መባል አለበት። (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **መዳረሻን ማረጋገጥ** — ከሆስት ውጪ ምንም ነገር እነዚህን መንገዶች እንደማይደርስ ለማረጋገጥ:
 
 - በ`/dashboard/settings/security` ላይ ያለውን **የፍቃድ ክምችት** ይክፈቱ: የቀጥታውን `LOCAL_ONLY` ቅድመ-ቅጥያ ዝርዝር፣ የትኞቹ ቅድመ-ቅጥያዎች ሊታለፉ እንደሚችሉ፣ እና በኮምፓይል ጊዜ ሊፈጠሩ የሚችሉትን ("ሊታለፉ የማይችሉ") ስብስብ ያሳያል።

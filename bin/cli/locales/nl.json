@@ -1169,32 +1169,18 @@
   "sync": {
     "description": "Configuratie synchroniseren tussen OmniRoute-instanties",
     "push": {
-      "description": "Configuratie naar de cloud of externe instantie pushen",
-      "target": "Doel (cloud of context:name)",
-      "bundle": "Te synchroniseren onderdelen van de bundel",
-      "dryRun": "Voorbeeld bekijken zonder toe te passen"
+      "description": "Configuratie naar de cloud of externe instantie pushen"
     },
     "pull": {
-      "description": "Configuratie ophalen uit de cloud of externe instantie",
-      "source": "Bron (cloud of context:name)",
-      "merge": "Samenvoegen met bestaande configuratie",
-      "replace": "Bestaande configuratie vervangen",
-      "dryRun": "Voorbeeld bekijken zonder toe te passen"
-    },
-    "diff": {
-      "source": "Broncontext",
-      "target": "Doelcontext"
+      "description": "Configuratie ophalen uit de cloud of externe instantie"
     },
     "bundle": {
       "description": "Configuratie exporteren als bundelbestand",
-      "include": "Op te nemen onderdelen (komma-gescheiden)"
+      "token": "Sync token (from `sync tokens create`); defaults to OMNIROUTE_SYNC_TOKEN"
     },
     "import": {
       "description": "Een bundelbestand importeren",
       "dryRun": "Valideren zonder toe te passen"
-    },
-    "initialize": {
-      "fromCloud": "Initialiseren vanuit cloudback-up"
     },
     "tokens": {
       "description": "Synchronisatietokens beheren",
@@ -1206,9 +1192,6 @@
       "revoke": {
         "yes": "Bevestiging overslaan"
       }
-    },
-    "resolve": {
-      "description": "Synchronisatieconflicten interactief oplossen"
     }
   },
   "config": {

@@ -4090,6 +4090,9 @@
     "showingTopCostRows": "Rāda {shown} no {total} atbilstošajām rindām (50 lielākās)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Mākoņa sinhronizācijas galamērķis (nevis vietējo dublējumkopiju):",
+    "cloudUploadWarning": "Jaunās instalācijās mākoņa sinhronizācija pēc noklusējuma ir izslēgta. To ieslēdzot, pakalpojumu sniedzēju API atslēgas, OAuth piekļuves un atsvaidzināšanas marķieri, OmniRoute API atslēgas un konfigurācija tiek augšupielādēti iepriekš norādītajā galamērķī tagad un turpmākajās sinhronizācijās. Šī funkcija ir atsevišķa no vietējām dublējumkopijām sadaļā Krātuve. Ieslēdziet to tikai tad, ja uzticaties šim serverim.",
+    "cloudUploadConsent": "Es saprotu un atļauju augšupielādēt savus akreditācijas datus šajā galamērķī.",
     "title": "API galapunkts",
     "subtitle": "Izmantojiet ar OpenAI saderīgu galapunktu ar vairumu SDK un rīku.",
     "testEndpoint": "Testēt galapunktu →",
@@ -8683,6 +8686,7 @@
     "cliproxyapiPort": "Ports",
     "qdrantHost": "Resursdators",
     "qdrantCollection": "Kolekcija",
+    "catalogVisibilityHint": "Slēptos modeļu ID joprojām var izsaukt ar tām pašām piekļuves atļaujām.",
     "catalogScopeTitle": "Models API saraksts",
     "catalogScopeDesc": "Ko GET /v1/models uzrāda šai atslēgai. Saraksta sašaurināšana nekad nemaina to, ko atslēga var izsaukt.",
     "catalogScopeAll": "Abi",
@@ -14526,7 +14530,7 @@
     "errorImportFailed": "Importēšana neizdevās",
     "title": "Izveidot savienojumu ar Trae SOLO",
     "authorizeDescription": "Autorizējieties, izmantojot <code>trae.ai</code> uznirstošajā logā. Pēc pilnvaras importēšanas uznirstošais logs tiks automātiski aizvērts.",
-    "authorizeImportant": "<strong>Svarīgi:</strong> vispirms šajā pārlūkprogrammā jums ir jāpiesakās <code>trae.ai</code>. Autorizācijas lapa tikai apstiprina esošu sesiju — tā nevar jūs pieteikt. Ja redzat “Pieteikšanās neizdevās”, noklikšķiniet uz “Atvērt solo.trae.ai”, piesakieties un pēc tam atgriezieties šeit.",
+    "authorizeImportant": "<strong>Svarīgi:</strong> vispirms šajā <em>pārlūkprogrammā</em> jums ir jāpiesakās <code>trae.ai</code>. Autorizācijas lapa tikai apstiprina esošu sesiju — tā nevar jūs pieteikt. Ja redzat “Pieteikšanās neizdevās”, noklikšķiniet uz “Atvērt solo.trae.ai”, piesakieties un pēc tam atgriezieties šeit.",
     "waitingForAuthorization": "Gaida trae.ai…",
     "authorizeWithBrowser": "Autorizēt, izmantojot pārlūkprogrammu",
     "openSoloTrae": "Atvērt solo.trae.ai",

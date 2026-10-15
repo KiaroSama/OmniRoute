@@ -213,6 +213,8 @@ Auto-Combo Engine ń yan olùpèsè/àwòṣe tó dára jù lọ fún ìbéèrè
 | `quality`             | 0.03          | Àmì dídára àbájáde tó dá lórí èsì láti ọ̀dọ̀ olùtọpa dídára routing-event; àwọn olùdíje tí kò ní àkíyèsí gba iye àárín gbùngbùn 0.5                                                                                   |
 | `reliability`         | 0.00          | Ìpín àṣeyọrí tí a ṣàkíyèsí, `1 - failureRate`, láti inú ìtàn lílo wákàtí 24 lẹ́yìn ààlà ìsàlẹ̀ àpẹẹrẹ mẹ́wàá (àwọn ìwọ̀n àkókò-gidi bí bẹ́ẹ̀ kọ́); àwọn olùdíje tí kò ní àkíyèsí ni a kà sí 1.0. A ti pa á nípasẹ̀ àìyípadà |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Àpapọ̀:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` gẹ́gẹ́ bí a ṣe kéde rẹ̀ nínú `DEFAULT_WEIGHTS`; `normalizeScoringWeights()` máa ń tún àwọn ìwọ̀n tí aṣàmúlò ṣètò ṣe sí ìpínkiri tó péye kí ìṣírò tó bẹ̀rẹ̀.
 
 ## Àkójọpọ̀ Módù

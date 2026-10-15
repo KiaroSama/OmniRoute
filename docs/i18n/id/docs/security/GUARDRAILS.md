@@ -86,6 +86,10 @@ imagesKept }`.
 Mode paksa memotong **sebelum** heuristik otomatis berjalan; perilaku `auto`
 sama persis dengan guardrail pra-PR-1.
 
+#### Cakupan kunci API (`visionBridgeKeyScope.ts`)
+
+Jika kunci API membatasi koneksi, kumpulan kuota, atau model (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), pengalihan dan deskripsi hanya memilih model serta koneksi yang diizinkan untuk kunci itu. Deskripsi selalu melalui loop internal OmniRoute dengan header `x-omniroute-self-loop-key-id`, sehingga kebijakan koneksi dan model diterapkan lagi. `enforceApiKeyPolicy()` hanya menerima header bersama token bearer loop tersebut: akses hanya dapat dipersempit, dan ID yang tidak dikenal ditolak. Jika tidak ada model visi yang diizinkan, deskripsi dilewati dan permintaan tetap utuh, seperti saat pelindung dinonaktifkan (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Permintaan tanpa kunci dan kunci tanpa batasan ini tetap berperilaku seperti sebelumnya.
+
 #### Prompt deskripsi yang sadar tugas (`modalityBridgeVisionTaskAware`)
 
 Default **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) menambahkan

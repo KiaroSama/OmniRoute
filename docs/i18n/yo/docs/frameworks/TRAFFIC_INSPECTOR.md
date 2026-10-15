@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**Ìdíwọ́ TLS:** Àwọn oju eefin HTTPS `CONNECT` ni a máa ń gba gẹ́gẹ́ bí metadata nìkan (olùgbàlejò, port, àkókò) — a kì í ṣe ìtúpalẹ̀ àkóónú TLS ní àìyípadà. Tan aṣàyàn "Ṣe ìtúpalẹ̀ HTTPS ní ipò proxy" (a gbọ́dọ̀ yàn án, ó sì nílò kí ìjẹ́rìí AgentBridge jẹ́ ìgbẹ́kẹ̀lé) fún àyẹ̀wò àkóónú ní kíkún.
+**Ìdíwọ́ TLS:** Àwọn oju eefin HTTPS `CONNECT` ni a máa ń gba gẹ́gẹ́ bí metadata nìkan (olùgbàlejò, port, àkókò) — a kì í ṣe ìtúpalẹ̀ àkóónú TLS ní àìyípadà.
 
 **Ìtakora port:** Tí port 8080 bá wà ní lílò, AgentBridge máa dá 409 padà pẹ̀lú àṣìṣe tó ní ìgbékalẹ̀. Yí port náà padà nípasẹ̀ àyípadà àyíká `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -462,12 +462,11 @@ Ipá-ọ̀nà ìpìlẹ̀: `/api/tools/traffic-inspector/`
 
 ### Àwọn módù ìgbàsílẹ̀
 
-| Ọ̀nà  | Ipá-ọ̀nà                        | Àpèjúwe                                                                                         |
-| ---- | ------------------------------ | ----------------------------------------------------------------------------------------------- |
-| GET  | `/capture-modes`               | Ipò àwọn módù AgentBridge / àwọn host àkànṣe / HTTP_PROXY / aṣojú ẹ̀rọ + ìyípadà `tls-intercept` |
-| POST | `/capture-modes/http-proxy`    | Bẹ̀rẹ̀/dá olùgbọ́ HTTP_PROXY dúró (`{action: "start"\|"stop"}`)                                    |
-| POST | `/capture-modes/system-proxy`  | Lo/dá aṣojú gbogbo ẹ̀rọ padà (`{action: "apply"\|"revert"}`)                                     |
-| POST | `/capture-modes/tls-intercept` | Yí ìtúpalẹ̀ àkóónú HTTPS padà nínú módù aṣojú (`{enabled: boolean}`)                             |
+| Ọ̀nà  | Ipá-ọ̀nà                       | Àpèjúwe                                                               |
+| ---- | ----------------------------- | --------------------------------------------------------------------- |
+| GET  | `/capture-modes`              | Ipò àwọn módù AgentBridge / àwọn host àkànṣe / HTTP_PROXY / aṣojú ẹ̀rọ |
+| POST | `/capture-modes/http-proxy`   | Bẹ̀rẹ̀/dá olùgbọ́ HTTP_PROXY dúró (`{action: "start"\|"stop"}`)          |
+| POST | `/capture-modes/system-proxy` | Lo/dá aṣojú gbogbo ẹ̀rọ padà (`{action: "apply"\|"revert"}`)           |
 
 > **Ìtúpalẹ̀ TPROXY** (módù ìgbàsílẹ̀ 5) ni ipa-ọ̀nà **ọ̀tọ̀** kan lábẹ́
 > ìṣáájú AgentBridge ń darí — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — kì í ṣe

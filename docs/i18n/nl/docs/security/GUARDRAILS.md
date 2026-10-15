@@ -84,6 +84,10 @@ Stroom:
 Geforceerde modi kortsluiten **voordat** de auto-heuristiek wordt uitgevoerd;
 `auto`-gedrag is byte-identiek aan de pre-PR-1 guardrail.
 
+#### Bereik van de API-sleutel (`visionBridgeKeyScope.ts`)
+
+Als de API-sleutel verbindingen, quotapools of modellen beperkt (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), kiezen omleiding en beschrijving alleen modellen en verbindingen die voor die sleutel zijn toegestaan. De beschrijving loopt altijd via de interne lus van OmniRoute met de header `x-omniroute-self-loop-key-id`, zodat het verbindings- en modelbeleid opnieuw wordt afgedwongen. `enforceApiKeyPolicy()` erkent de header alleen samen met het bearer-token van de lus: deze kan toegang uitsluitend beperken; een onbekende ID wordt geweigerd. Zonder toegestaan visiemodel wordt de beschrijving overgeslagen en blijft het verzoek ongewijzigd, net als bij uitgeschakelde beveiliging (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Verzoeken zonder sleutel en sleutels zonder deze beperkingen werken zoals voorheen.
+
 #### Taakbewuste beschrijvingsprompt (`modalityBridgeVisionTaskAware`)
 
 Standaard **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) voegt

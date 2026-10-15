@@ -54,6 +54,7 @@ import {
 } from "../utils/responsesSequence.ts";
 import { hasCodexSsePeekProgress } from "./codex/ssePeekProgress.ts";
 import * as overloadedOutput from "./codex/sseOverloadedOutput.ts";
+import * as modelUnavailable from "./codex/sseModelUnavailable.ts";
 import { normalizeCodexResponsesInput } from "../utils/responsesInputNormalization.ts";
 import * as prl from "../utils/providerRequestLogging.ts";
 import { createRequire } from "module";
@@ -560,12 +561,19 @@ const CODEX_SSE_TRANSIENT_ERROR_PATTERNS = [
 const CODEX_SSE_PEEK_MAX_BYTES = 8192;
 
 type CodexSseTransientErrorPeek =
-  | { matched: string; message: string; replacementBody: null; timedOut?: false }
+  | {
+      matched: string;
+      message: string;
+      replacementBody: null;
+      timedOut?: false;
+      modelUnavailable?: boolean;
+    }
   | {
       matched: null;
       message: null;
       replacementBody: ReadableStream<Uint8Array> | null;
       timedOut?: boolean;
+      modelUnavailable?: false;
     };
 
 /**
@@ -609,10 +617,8 @@ export async function peekCodexSseTransientError(
       text += decoder.decode(value, { stream: true });
       const lower = text.toLowerCase();
       const hit = CODEX_SSE_TRANSIENT_ERROR_PATTERNS.find((pattern) => lower.includes(pattern));
-      if (hit) {
-        matched = hit;
-        break;
-      }
+      matched = hit ?? modelUnavailable.matchCodexSseModelUnavailable(text);
+      if (matched) break;
       // Fake-200 overload delivered as output text (decolua/9router#3232).
       const overloadStep = overloadedOutput.codexOverloadedOutputPeekStep(text);
       if (overloadStep === "settled") break;
@@ -631,7 +637,9 @@ export async function peekCodexSseTransientError(
     );
   }
 
-  matched ??= overloadedOutput.matchCodexOverloadedOutput(text);
+  matched ??=
+    modelUnavailable.matchCodexSseModelUnavailable(text, true) ??
+    overloadedOutput.matchCodexOverloadedOutput(text);
   if (matched) {
     try {
       await reader.cancel();
@@ -639,7 +647,8 @@ export async function peekCodexSseTransientError(
       // Upstream socket may already be closing; nothing to clean up.
     }
     const message = overloadedOutput.extractCodexSseErrorMessage(text, matched);
-    return { matched, message, replacementBody: null };
+    const isModelUnavailable = modelUnavailable.isCodexSseModelUnavailableMatch(matched);
+    return { matched, message, replacementBody: null, modelUnavailable: isModelUnavailable };
   }
 
   // Re-assemble the stream: peeked prefix chunks, then continue draining the
@@ -815,7 +824,18 @@ export class CodexExecutor extends BaseExecutor {
       const resp = (httpResult as { response?: Response }).response;
       if (resp) {
         const peek = await peekCodexSseTransientError(resp);
-        if (peek.matched) {
+        if (peek.modelUnavailable) {
+          // Model + account scoped: a 400 lets isModelScoped400 lock the model on this
+          // connection and advance the combo; a 503 would feed the provider breaker.
+          input.log?.warn?.(
+            "FALLBACK",
+            `CODEX | 200-OK SSE reported model unavailable "${peek.matched}" — converting to 400`
+          );
+          (httpResult as { response: Response }).response = errorResponse(
+            HTTP_STATUS.BAD_REQUEST,
+            peek.message
+          );
+        } else if (peek.matched) {
           input.log?.warn?.(
             "RETRY",
             `CODEX | 200-OK SSE carried transient error "${peek.matched}" — converting to 503 for account fallback`

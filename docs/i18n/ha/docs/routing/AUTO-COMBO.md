@@ -213,6 +213,8 @@ Injin Auto-Combo yana zaɓar mafi kyawun mai samarwa/samfuri a kai a kai ga kowa
 | `quality`             | 0.03         | Alamar ingancin fitarwa bisa ra'ayoyin masu amfani daga mai bin diddigin ingancin routing-event; 'yan takarar da ba su da bayanan lura suna karɓar matsakaicin 0.5                                                                                                   |
 | `reliability`         | 0.00         | Adadin nasarar da aka lura, `1 - failureRate`, daga tarihin amfani na awa 24 bayan cika mafi ƙarancin samfura goma (in ba haka ba ana amfani da ma'aunin ainihin lokaci); 'yan takarar da ba su da bayanan lura ana ɗaukarsu a matsayin 1.0. A kashe yake ta tsohuwa |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Jimilla:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` kamar yadda aka ayyana a cikin `DEFAULT_WEIGHTS`; ana sake daidaita nauye-nauyen da mai amfani ya saita zuwa rabon ƙididdiga ta hanyar `normalizeScoringWeights()` kafin a ƙididdige maki.
 
 ## Fakitin Yanayi

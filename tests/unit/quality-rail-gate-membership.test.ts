@@ -49,10 +49,29 @@ test("lint-guard carries the quality-ratchet engine (collect → ratchet → req
 test("fast-gates carries the deterministic ratchets and security scanners from the main rail", () => {
   const block = jobBlock("fast-gates");
   // #8542: all gates run inside a single aggregation step's bash loop.
-  // Check that the gate names appear in the arrays or the loop body.
+  const gateNames = new Set(
+    [...block.matchAll(/(?:^|\n)\s*(?:ratchet_)?gates=\(([\s\S]*?)\)/g)].flatMap((match) =>
+      match[1]
+        .replace(/#[^\n]*/g, "")
+        .trim()
+        .split(/\s+/)
+    )
+  );
+  for (const gate of [
+    "cycles",
+    "lockfile",
+    "duplication",
+    "dead-code",
+    "type-coverage",
+    "compression-budget",
+    "secrets",
+    "vuln-ratchet",
+    "workflows",
+    "openapi-breaking",
+  ]) {
+    assert.ok(gateNames.has(gate), `fast-gates must run "${gate}"`);
+  }
   for (const needle of [
-    "cycles lockfile duplication dead-code type-coverage compression-budget",
-    "secrets vuln-ratchet workflows openapi-breaking",
     "typecheck:core",
     "check:dashboard-typecheck",
     "check:ts7-diagnostics-ratchet",

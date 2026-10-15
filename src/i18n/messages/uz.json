@@ -4090,6 +4090,9 @@
     "showingTopCostRows": "Mos keluvchi {total} ta qatordan {shown} tasi ko‘rsatilmoqda (eng katta 50 ta)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Bulut sinxronlash manzili (mahalliy zaxira nusxalar uchun emas):",
+    "cloudUploadWarning": "Yangi o‘rnatishlarda bulut sinxronlash sukut bo‘yicha o‘chirilgan. Uni yoqsangiz, provayderlarning API kalitlari, OAuth kirish va yangilash tokenlari, OmniRoute API kalitlari va sozlamalar yuqoridagi manzilga hozir va keyingi sinxronlashlar davomida yuklanadi. Bu Saqlash bo‘limidagi mahalliy zaxira nusxalardan alohida. Faqat o‘sha serverga ishonsangiz yoqing.",
+    "cloudUploadConsent": "Buni tushunaman va hisobga kirish ma’lumotlarimni ushbu manzilga yuklashga ruxsat beraman.",
     "title": "API endpointi",
     "subtitle": "Ko‘pchilik SDK va vositalar bilan OpenAI bilan mos endpointdan foydalaning.",
     "testEndpoint": "Endpointni sinash →",
@@ -8683,6 +8686,7 @@
     "cliproxyapiPort": "Port",
     "qdrantHost": "Xost",
     "qdrantCollection": "Toʻplam",
+    "catalogVisibilityHint": "Yashirilgan model identifikatorlarini bir xil kirish ruxsatlari bilan chaqirish mumkin.",
     "catalogScopeTitle": "Models API roʻyxati",
     "catalogScopeDesc": "GET /v1/models ushbu kalit uchun nimalarni koʻrsatishi. Roʻyxatni qisqartirish kalit qaysi modellarni chaqira olishiga taʼsir qilmaydi.",
     "catalogScopeAll": "Ikkalasi ham",

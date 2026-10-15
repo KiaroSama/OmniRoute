@@ -261,6 +261,8 @@ omniroute tokens scopes               # uchta qamrovni tushuntirish
 panelidagi **Sozlamalar → Kirish tokenlari** bo‘limida ham boshqarishingiz mumkin
 (yaratish, bekor qilish, bir marta nusxalash).
 
+Token hech qachon uni yaratuvchining vakolatlaridan kengroq vakolatlar bilan yaratilmaydi. `admin` tokenini faqat operator yaratishi mumkin: boshqaruv paneli sessiyasi, serverning o‘zidagi mahalliy CLI, parol bilan `omniroute connect` yoki tizimga kirish o‘chirilgan instansiya orqali. Mashina autentifikatsiya ma’lumotlari (`admin` kirish tokeni yoki `manage`/`admin` doirasidagi API kaliti) faqat `write` va `read` tokenlarini yarata oladi; ular bilan `--scope admin` so‘rash `403` qaytaradi.
+
 ---
 
 ## Masofaviy katalogdan dasturlash CLI’sini sozlash

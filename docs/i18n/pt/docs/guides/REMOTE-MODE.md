@@ -251,6 +251,8 @@ omniroute tokens scopes               # explicar os três âmbitos
 Os comandos `tokens` exigem uma credencial de **administrador**. Também pode gerir tokens no
 painel, em **Settings → Access Tokens** (criar, revogar, copiar uma única vez).
 
+Um token nunca pode ser criado com mais privilégios do que o seu criador possui. Só o operador pode criar um token `admin`: através da sessão do painel, da CLI local no próprio servidor, de `omniroute connect` com a palavra-passe ou numa instância com o início de sessão desativado. As credenciais de máquina (um token de acesso `admin` ou uma chave de API com âmbito `manage`/`admin`) só podem criar tokens `write` e `read`; pedir `--scope admin` com essas credenciais devolve `403`.
+
 ---
 
 ## Configurar uma CLI de programação a partir do catálogo remoto

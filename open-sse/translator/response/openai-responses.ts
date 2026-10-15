@@ -27,6 +27,12 @@ import {
 import { createEventEmitter } from "./openai-responses/eventEmitter.ts";
 import { buildResponsesToolCallItem } from "./responsesToolItem.ts";
 import { resolveRequestToolIdentity } from "./openai-responses/requestToolIdentity.ts";
+import {
+  canonicalizeDeclaredToolName,
+  mergeDeclaredToolNames,
+  toolNameSideChannelNames,
+} from "./openai-responses/declaredToolName.ts";
+import { logger } from "../../utils/logger.ts";
 import { applyFunctionCallIdentity } from "./openai-responses/functionCallIdentity.ts";
 import { resolveLocalToolCallIndex } from "./openai-responses/toolCallLocalIndex.ts";
 import {
@@ -594,6 +600,43 @@ function toolCallOutputIndexBase(state) {
   return state.msgItemAdded[msgIdx] ? msgIdx + 1 : msgIdx;
 }
 
+const declaredToolNameLog = logger("RESPONSES");
+
+// Names this request declared, built once per stream from the state's own
+// request-scoped sources (never a module-level/global table).
+function getDeclaredToolNames(state) {
+  if (state.declaredToolNameSet === undefined) {
+    state.declaredToolNameSet = mergeDeclaredToolNames(
+      state.declaredToolNames,
+      state.toolSchemas instanceof Map ? state.toolSchemas.keys() : null,
+      state.customToolNames,
+      toolNameSideChannelNames(state.requestToolIdentityMap),
+      toolNameSideChannelNames(state.toolNameMap)
+    );
+  }
+  return state.declaredToolNameSet;
+}
+
+// Some Chat upstreams echo a prefix the client never declared (`functions.exec`
+// for a declared `exec`); Responses clients reject the undeclared name. Map it
+// back by exact dotted-suffix match against the declared names. A name the
+// #7936 identity ledger already resolves is left alone.
+function canonicalizeEmittedToolName(state, name) {
+  if (!name || resolveRequestToolIdentity(state.requestToolIdentityMap, name)) return name;
+  const result = canonicalizeDeclaredToolName(name, getDeclaredToolNames(state));
+  if (result.unresolved) {
+    if (!state.warnedToolNames) state.warnedToolNames = new Set();
+    if (!state.warnedToolNames.has(name)) {
+      state.warnedToolNames.add(name);
+      declaredToolNameLog.warn("unresolved tool-call name forwarded unchanged", {
+        emitted: name,
+        declaredCount: getDeclaredToolNames(state)?.size ?? 0,
+      });
+    }
+  }
+  return result.name;
+}
+
 function emitToolCall(state, emit, tc) {
   const tcIdx = tc.index ?? 0;
   const outputIndex = toolCallOutputIndexBase(state) + resolveLocalToolCallIndex(state, tcIdx);
@@ -619,7 +662,7 @@ function emitToolCall(state, emit, tc) {
     delete state.funcArgsEscapeState?.[tcIdx];
   }
 
-  if (funcName) state.funcNames[tcIdx] = funcName;
+  if (funcName) state.funcNames[tcIdx] = canonicalizeEmittedToolName(state, funcName);
 
   // Custom tools are surfaced as custom_tool_call items and stream raw input instead of the
   // function_call_arguments.* events used for regular function tools. (#1007)

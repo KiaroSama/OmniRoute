@@ -321,6 +321,11 @@ function readUsageCounters(usage) {
       promptDetails?.cache_creation_tokens ?? inputDetails?.cache_creation_tokens
     ),
     writeInPrompt: (promptDetails ?? inputDetails)?.cache_creation_in_prompt !== false,
+    reasoningTokens: firstNumber(
+      usage.completion_tokens_details?.reasoning_tokens ??
+        usage.output_tokens_details?.reasoning_tokens ??
+        usage.reasoning_tokens
+    ),
   };
 }
 
@@ -328,8 +333,14 @@ function readUsageCounters(usage) {
 // usage-only chunks that carry `choices: []` (#11817).
 function trackUsageFromChunk(chunk, state) {
   if (!chunk.usage || typeof chunk.usage !== "object") return;
-  const { promptTokens, outputTokens, cacheReadTokens, cacheCreateTokens, writeInPrompt } =
-    readUsageCounters(chunk.usage);
+  const {
+    promptTokens,
+    outputTokens,
+    cacheReadTokens,
+    cacheCreateTokens,
+    writeInPrompt,
+    reasoningTokens,
+  } = readUsageCounters(chunk.usage);
 
   // #2215 reports cache creation outside prompt_tokens.
   const inputTokens = Math.max(
@@ -352,8 +363,22 @@ function trackUsageFromChunk(chunk, state) {
     state.usage.cache_creation_input_tokens = cacheCreateTokens;
   }
 
-  // Note: completion_tokens_details.reasoning_tokens is already included in output_tokens
-  // No need to add separately as Claude expects total output_tokens
+  // Reasoning is already included in output_tokens — never add it on top. Keep the
+  // count on the shared state so streaming usage accounting (tokens_reasoning) does
+  // not lose it on this pivot; message_delta strips it from the client payload.
+  if (reasoningTokens > 0) {
+    state.usage.reasoning_tokens = reasoningTokens;
+  }
+}
+
+// Client-facing Claude usage: the accounting-only reasoning_tokens is not part of
+// the Anthropic usage shape.
+function toClaudeClientUsage(usage) {
+  if (!usage) return { input_tokens: 0, output_tokens: 0 };
+  if (usage.reasoning_tokens === undefined) return usage;
+  const clientUsage = { ...usage };
+  delete clientUsage.reasoning_tokens;
+  return clientUsage;
 }
 
 // Convert OpenAI stream chunk to Claude format
@@ -759,9 +784,15 @@ export function openaiToClaudeResponse(chunk, state) {
     // dropped the held text silently — for a single-chunk response whose block
     // never closes, that is the ENTIRE answer replaced by an empty message.
     // Release whatever is still held before the terminal blocks are emitted.
+    // The same goes for an unclosed <invoke>/<tool_call> tag and the DSML holdback:
+    // no further chunk can complete them, so they were prose and must reach the client.
     const flushedPreamble =
       (state._directiveStripper?.flush?.() ?? "") +
-      (state._systemPreambleStripper?.flush?.() ?? "");
+      (state._systemPreambleStripper?.flush?.() ?? "") +
+      (state._xmlInvokeBuffer ?? "") +
+      (state._dsmlHoldback ?? "");
+    state._xmlInvokeBuffer = "";
+    state._dsmlHoldback = undefined;
     if (flushedPreamble) {
       if (!state.textBlockStarted || state.textBlockClosed) {
         state.textBlockIndex = state.nextBlockIndex++;
@@ -873,7 +904,7 @@ export function openaiToClaudeResponse(chunk, state) {
     state.finishReason = overrideFinishReason;
 
     // Use tracked usage (will be estimated in stream.js if not valid)
-    const finalUsage = state.usage || { input_tokens: 0, output_tokens: 0 };
+    const finalUsage = toClaudeClientUsage(state.usage);
     results.push({
       type: "message_delta",
       delta: { stop_reason: convertFinishReason(overrideFinishReason) },
@@ -885,8 +916,9 @@ export function openaiToClaudeResponse(chunk, state) {
   return results.length > 0 ? results : null;
 }
 
-// Convert OpenAI finish_reason to Claude stop_reason
-function convertFinishReason(reason) {
+// Convert OpenAI finish_reason to Claude stop_reason. Shared with the
+// non-streaming translator so both paths give a Claude client the same value.
+export function convertFinishReason(reason) {
   switch (reason) {
     case "stop":
       return "end_turn";
@@ -894,6 +926,10 @@ function convertFinishReason(reason) {
       return "max_tokens";
     case "tool_calls":
       return "tool_use";
+    case "content_filter":
+      // Claude's own name for a blocked turn; a clean end_turn would read as a
+      // complete answer.
+      return "refusal";
     default:
       // Gemini/Antigravity abort reasons (e.g. MALFORMED_FUNCTION_CALL,
       // UNEXPECTED_TOOL_CALL — see isAbortFinishReason) reach here unrecognized

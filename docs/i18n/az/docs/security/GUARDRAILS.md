@@ -55,6 +55,10 @@ Axın:
 
 Məcburi rejimlər avtomatik heuristika işə düşməzdən **əvvəl** qısaqapanma edir; `auto` davranışı PR-1-dən əvvəlki mühafizə mexanizmi ilə bayt-identikdir.
 
+#### API açarının əhatəsi (`visionBridgeKeyScope.ts`)
+
+API açarı bağlantıları, kvota hovuzlarını və ya modelləri məhdudlaşdırırsa (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), yönləndirmə və təsvir yalnız həmin açara icazə verilən model və bağlantıları seçir. Təsvir həmişə `x-omniroute-self-loop-key-id` başlığı ilə OmniRoute öz-dövrəsindən keçir və bağlantı/model siyasətini yenidən tətbiq edir. `enforceApiKeyPolicy()` başlığı yalnız həmin dövrənin bearer tokeni ilə qəbul edir: o, girişi yalnız daralda bilər, tapılmayan identifikator rədd edilir. İcazəli görmə modeli yoxdursa, təsvir ötürülür və sorğu söndürülmüş qoruyucuda olduğu kimi dəyişməz qalır (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Açarsız sorğular və bu məhdudiyyətləri olmayan açarlar əvvəlki kimi işləyir.
+
 #### Tapşırığa uyğun təsvir sorğusu (`modalityBridgeVisionTaskAware`)
 
 Varsayılan **doğru**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) **son istifadəçi mesajının** mətnini (500 simvola qədər qısaldılmış) əsas təsvir sorğusuna əlavə edir, təsviri istifadəçinin əslində nə soruşduğuna (codex-vision-proxy nümunəsi) yönəldir və görmə modelindən görünən mətni transkripsiya etməsini xahiş edir. Bayraq söndürüldükdə — və ya istifadəçi mətni olmadıqda — əsas sorğu dəyişdirilmədən istifadə olunur.

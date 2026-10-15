@@ -213,6 +213,8 @@ Auto-Combo-motorn väljer dynamiskt den bästa leverantören/modellen för varje
 | `quality`             | 0.03         | Återkopplingsdriven signal för utdatakvalitet från kvalitetsmätaren för routningshändelser; kandidater utan observationer får neutrala 0.5                                                                               |
 | `reliability`         | 0.00         | Observerad andel lyckade anrop, `1 - failureRate`, från 24 timmars användningshistorik med ett golv på tio stickprov (annars realtidsmätvärden); kandidater utan observationer avläses som 1.0. Inaktiverad som standard |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Summa:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` enligt deklarationen i `DEFAULT_WEIGHTS`; användarkonfigurerade vikter normaliseras om till en fördelning av `normalizeScoringWeights()` före poängberäkningen.
 
 ## Lägespaket

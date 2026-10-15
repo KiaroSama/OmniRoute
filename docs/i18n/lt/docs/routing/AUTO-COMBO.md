@@ -215,6 +215,8 @@ Automatinių derinių variklis dinamiškai parenka geriausią paslaugų teikėj�
 | `quality`             | 0.03               | Grįžtamuoju ryšiu pagrįstas išvesties kokybės signalas iš maršruto parinkimo įvykių kokybės stebėjimo priemonės; kandidatai, neturintys stebėjimų, gauna neutralų 0.5 įvertį                                                                                                               |
 | `reliability`         | 0.00               | Stebėta sėkmingų rezultatų dalis, `1 - failureRate`, apskaičiuota pagal 24 val. naudojimo istoriją, taikant mažiausiai dešimties imčių ribą (kitu atveju naudojami realiojo laiko rodikliai); laikoma, kad kandidatų be stebėjimų reikšmė yra 1.0. Pagal numatytuosius nustatymus išjungta |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Suma:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, kaip deklaruota `DEFAULT_WEIGHTS`; naudotojo sukonfigūruoti svoriai prieš vertinimą iš naujo normalizuojami į skirstinį naudojant `normalizeScoringWeights()`.
 
 ## Režimų paketai

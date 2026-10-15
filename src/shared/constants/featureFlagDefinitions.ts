@@ -886,6 +886,18 @@ export const FEATURE_FLAG_DEFINITIONS: FeatureFlagDefinition[] = [
     requiresRestart: false,
     warningLevel: "caution",
   },
+  {
+    key: "KIRO_TOOL_CALL_REPAIR_ENABLED",
+    label: "Kiro Tool Call Repair",
+    description:
+      "When a streaming Kiro response emits a malformed tool_call wrapper (missing input.name or input.arguments) before any visible output, suppress it and re-send the request once with a corrective instruction instead of ending the turn with invalid_kiro_tool_call. The retry costs one extra Kiro request; a second failure ends the turn with kiro_tool_call_repair_retry_failed. On by default. Set to false to fail the turn on the first malformed wrapper.",
+    descriptionI18nKey: "featureFlagKiroToolCallRepairEnabledDescription",
+    category: "runtime",
+    defaultValue: "true",
+    type: "boolean",
+    requiresRestart: false,
+    warningLevel: "info",
+  },
 
   // ──────────────── CLI (5) ────────────────
   {

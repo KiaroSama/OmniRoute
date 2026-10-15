@@ -192,6 +192,8 @@ Auto-Combo Engine প্রতিটি অনুরোধের জন্য �
 | `quality`             | 0.03          | routing-event quality tracker থেকে প্রাপ্ত feedback-চালিত output-quality signal; observation-বিহীন candidate-গুলো নিরপেক্ষ 0.5 পায়                                                                                        |
 | `reliability`         | 0.00          | দশটি sample-এর ন্যূনতম সীমা সাপেক্ষে ২৪ ঘণ্টার usage history থেকে পর্যবেক্ষিত সফলতার অংশ, `1 - failureRate` (অন্যথায় real-time metrics); observation-বিহীন candidate-গুলোর মান 1.0 হিসেবে গণ্য হয়। ডিফল্টভাবে নিষ্ক্রিয় |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **যোগফল:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, যেমনটি `DEFAULT_WEIGHTS`-এ ঘোষিত হয়েছে; ব্যবহারকারী-কনফিগার করা weight-গুলো scoring-এর আগে `normalizeScoringWeights()` দ্বারা একটি distribution-এ পুনরায় স্বাভাবিকীকরণ করা হয়।
 
 ## মোড প্যাকসমূহ

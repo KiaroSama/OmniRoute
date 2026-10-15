@@ -250,6 +250,8 @@ omniroute tokens scopes               # ሦስቱን scopes ያብራራል
 የ`tokens` ትዕዛዞች **admin** credential ያስፈልጋቸዋል። Tokensን በዳሽቦርዱ ውስጥ
 በ**Settings → Access Tokens** ስርም ማስተዳደር ይችላሉ (መፍጠር፣ መሻር፣ አንድ-ጊዜ-መቅዳት)።
 
+ቶከን ከፈጣሪው የበለጠ ፈቃድ ኖሮት ፈጽሞ ሊፈጠር አይችልም። `admin` ቶከን ሊፈጥር የሚችለው ኦፕሬተሩ ብቻ ነው፦ በዳሽቦርድ ክፍለ ጊዜ፣ በአገልጋዩ ራሱ ላይ ባለው የአካባቢ CLI፣ በይለፍ ቃል ከ `omniroute connect` ጋር፣ ወይም መግባት በተሰናከለበት ኢንስታንስ። የማሽን ማረጋገጫዎች (`admin` የመዳረሻ ቶከን ወይም `manage`/`admin` ወሰን ያለው API ቁልፍ) `write` እና `read` ቶከኖችን ብቻ ሊፈጥሩ ይችላሉ፤ በእነሱ `--scope admin` መጠየቅ `403` ይመልሳል።
+
 ---
 
 ## Coding CLIን ከርቀት catalog ማዋቀር

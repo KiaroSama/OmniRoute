@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS-i piirang:** HTTPS-i `CONNECT`-tunnelitest hõivatakse vaikimisi ainult metaandmed (host, port, ajastus) — TLS-i sisu ei dekrüptita. Sisu täielikuks kontrollimiseks lülitage sisse „HTTPS-i dekrüptimine proksirežiimis“ (valikuline, nõuab AgentBridge'i sertifikaadi usaldamist).
+**TLS-i piirang:** HTTPS-i `CONNECT`-tunnelitest hõivatakse vaikimisi ainult metaandmed (host, port, ajastus) — TLS-i sisu ei dekrüptita.
 
 **Pordikonflikt:** Kui port 8080 on kasutusel, tagastab AgentBridge struktureeritud veaga vastuse 409. Muutke porti keskkonnamuutuja `INSPECTOR_HTTP_PROXY_PORT` kaudu.
 
@@ -465,12 +465,11 @@ Baastee: `/api/tools/traffic-inspector/`
 
 ### Hõiverežiimid
 
-| Meetod | Tee                            | Kirjeldus                                                                                                |
-| ------ | ------------------------------ | -------------------------------------------------------------------------------------------------------- |
-| GET    | `/capture-modes`               | AgentBridge'i / kohandatud hostide / HTTP_PROXY / süsteemiproksi režiimide olek + `tls-intercept` lüliti |
-| POST   | `/capture-modes/http-proxy`    | HTTP_PROXY kuulaja käivitamine/peatamine (`{action: "start"\|"stop"}`)                                   |
-| POST   | `/capture-modes/system-proxy`  | Süsteemiülese proksi rakendamine/ennistamine (`{action: "apply"\|"revert"}`)                             |
-| POST   | `/capture-modes/tls-intercept` | HTTPS-i sisu dekrüptimise ümberlülitamine proksirežiimis (`{enabled: boolean}`)                          |
+| Meetod | Tee                           | Kirjeldus                                                                       |
+| ------ | ----------------------------- | ------------------------------------------------------------------------------- |
+| GET    | `/capture-modes`              | AgentBridge'i / kohandatud hostide / HTTP_PROXY / süsteemiproksi režiimide olek |
+| POST   | `/capture-modes/http-proxy`   | HTTP_PROXY kuulaja käivitamine/peatamine (`{action: "start"\|"stop"}`)          |
+| POST   | `/capture-modes/system-proxy` | Süsteemiülese proksi rakendamine/ennistamine (`{action: "apply"\|"revert"}`)    |
 
 > **TPROXY dekrüptimist** (hõiverežiim 5) juhib **eraldi** marsruut
 > AgentBridge'i prefiksi all — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` —, mitte

@@ -268,6 +268,11 @@ const EXPECTED: Record<InventoryKind, Record<string, number>> = {
     // ACTIVE exclusive lease defers redemption (409 exclusive_lease_active).
     "src/lib/usage/grokResetCredits.ts": 1,
     "src/lib/usage/providerLimits.ts": 4,
+    // #4305 port: after a confirmed reset-credit redemption (whose caller already passed
+    // the auxiliary-lease gate) the row is re-read only to check its terminal/codex-scope
+    // state before lifting the local quota cooldown — a state read, never connection
+    // selection or dispatch, so class C.
+    "src/lib/usage/resetCreditCooldownRelease.ts": 1,
     "src/lib/usage/resilienceExplain.ts": 1,
     "src/lib/usage/usageStats.ts": 1,
     "src/lib/vncSession/service.ts": 2,

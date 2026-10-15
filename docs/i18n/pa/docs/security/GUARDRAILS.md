@@ -77,6 +77,10 @@ Guardrails, OmniRoute ਅਤੇ ਅੱਪਸਟ੍ਰੀਮ ਪ੍ਰਦਾਤ�
 ਫੋਰਸਡ ਮੋਡ ਆਟੋ ਹੀਊਰਿਸਟਿਕ ਚੱਲਣ ਤੋਂ **ਪਹਿਲਾਂ** ਸ਼ਾਰਟ-ਸਰਕਟ ਕਰਦੇ ਹਨ; `auto` ਵਿਵਹਾਰ
 ਪ੍ਰੀ-PR-1 ਗਾਰਡਰੇਲ ਦੇ ਬਾਈਟ-ਆਈਡੈਂਟਿਕਲ ਹੈ।
 
+#### API ਕੁੰਜੀ ਦਾ ਦਾਇਰਾ (`visionBridgeKeyScope.ts`)
+
+ਜੇ API ਕੁੰਜੀ ਕਨੈਕਸ਼ਨਾਂ, ਕੋਟਾ ਪੂਲਾਂ ਜਾਂ ਮਾਡਲਾਂ ਨੂੰ ਸੀਮਿਤ ਕਰਦੀ ਹੈ (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), ਤਾਂ ਮੁੜ-ਰੂਟਿੰਗ ਅਤੇ ਵਰਣਨ ਸਿਰਫ਼ ਉਸ ਕੁੰਜੀ ਲਈ ਮਨਜ਼ੂਰ ਮਾਡਲ ਅਤੇ ਕਨੈਕਸ਼ਨ ਚੁਣਦੇ ਹਨ। ਵਰਣਨ ਹਮੇਸ਼ਾਂ `x-omniroute-self-loop-key-id` ਹੈਡਰ ਨਾਲ OmniRoute ਦੇ ਆਪਣੇ ਲੂਪ ਰਾਹੀਂ ਜਾਂਦਾ ਹੈ, ਤਾਂ ਜੋ ਕਨੈਕਸ਼ਨ ਅਤੇ ਮਾਡਲ ਨੀਤੀ ਮੁੜ ਲਾਗੂ ਹੋਵੇ। `enforceApiKeyPolicy()` ਸਿਰਫ਼ ਉਸ ਲੂਪ ਦੇ bearer ਟੋਕਨ ਨਾਲ ਹੈਡਰ ਮੰਨਦੀ ਹੈ: ਇਹ ਪਹੁੰਚ ਘਟਾ ਹੀ ਸਕਦਾ ਹੈ ਅਤੇ ਅਣਜਾਣ ਆਈਡੀ ਰੱਦ ਹੁੰਦੀ ਹੈ। ਮਨਜ਼ੂਰ ਵਿਜ਼ਨ ਮਾਡਲ ਨਾ ਹੋਵੇ ਤਾਂ ਵਰਣਨ ਛੱਡਿਆ ਜਾਂਦਾ ਹੈ ਅਤੇ ਬੰਦ ਸੁਰੱਖਿਆ ਵਾਂਗ ਬੇਨਤੀ ਬਿਨਾਂ ਤਬਦੀਲੀ ਲੰਘਦੀ ਹੈ (meta `{ skipped: true, reason: "no_permitted_vision_model" }`)। ਕੁੰਜੀ ਤੋਂ ਬਿਨਾਂ ਬੇਨਤੀਆਂ ਅਤੇ ਇਨ੍ਹਾਂ ਪਾਬੰਦੀਆਂ ਤੋਂ ਬਿਨਾਂ ਕੁੰਜੀਆਂ ਪਹਿਲਾਂ ਵਾਂਗ ਕੰਮ ਕਰਦੀਆਂ ਹਨ।
+
 #### ਕਾਰਜ-ਜਾਗਰੂਕ ਵਰਣਨ ਪ੍ਰੋਂਪਟ (`modalityBridgeVisionTaskAware`)
 
 ਡਿਫੌਲਟ **ਸੱਚ**। `composeVisionPrompt()` (`visionBridgeHelpers.ts`)

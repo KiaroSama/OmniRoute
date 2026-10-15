@@ -257,6 +257,8 @@ Nangangailangan ang mga command na `tokens` ng **admin** credential. Maaari mo r
 pamahalaan ang mga token sa dashboard sa ilalim ng **Settings → Access Tokens**
 (gumawa, mag-revoke, kopyahin nang isang beses).
 
+Hindi kailanman maaaring gumawa ng token na may mas malawak na pribilehiyo kaysa sa gumawa nito. Ang operator lamang ang maaaring gumawa ng `admin` token: sa sesyon ng dashboard, sa lokal na CLI sa mismong server, sa `omniroute connect` gamit ang password, o sa isang instance na naka-disable ang login. Ang mga kredensyal ng makina (isang `admin` access token o API key na may saklaw na `manage`/`admin`) ay maaari lamang gumawa ng `write` at `read` token; ang paghingi ng `--scope admin` gamit ang mga ito ay nagbabalik ng `403`.
+
 ---
 
 ## Pag-configure ng coding CLI mula sa remote catalog

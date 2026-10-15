@@ -4,15 +4,26 @@
  * Extracted from services/usage.ts (god-file decomposition): the Claude family — the API
  * config, the plan-label picker, the OAuth usage fetcher (getClaudeUsage) with its legacy
  * settings/org fallback (getClaudeUsageLegacy). Depends only on the sibling scalar/quota
- * leaves + Claude identity/cooldown helpers + safePercentage — no host coupling — so it
- * lives as a co-located provider leaf. usage.ts imports getClaudeUsage (dispatcher) +
- * getClaudePlanLabel (__testing). Behavior-preserving move.
+ * leaves + Claude identity/cooldown helpers + the shared boundedMap — no host coupling — so
+ * it lives as a co-located provider leaf. usage.ts imports getClaudeUsage (dispatcher) +
+ * getClaudePlanLabel (__testing).
  */
 
-import { getClaudeCodeVersion, fetchClaudeBootstrap } from "../../executors/claudeIdentity.ts";
-import { isClaudeOauthUsageCoolingDown, markClaudeOauthUsage429 } from "../claudeUsageCooldown.ts";
+import {
+  getClaudeCodeVersion,
+  fetchClaudeBootstrap,
+  type ClaudeBootstrap,
+} from "../../executors/claudeIdentity.ts";
+import {
+  computeClaudeUsageRetryMs,
+  hashClaudeCredential,
+  isClaudeOauthUsageCoolingDown,
+  markClaudeOauthUsage429,
+} from "../claudeUsageCooldown.ts";
+import { boundedMap } from "../../../src/lib/quota/boundedMap.ts";
+import { sanitizeErrorMessage } from "../../utils/errorSanitization.ts";
 import { toRecord } from "./scalars.ts";
-import { normalizeClaudeUsageQuotas } from "./claudeQuota.ts";
+import { normalizeClaudeUsageQuotas, type NormalizedClaudeUsageQuotas } from "./claudeQuota.ts";
 
 // Claude API config
 const CLAUDE_CONFIG = {
@@ -21,6 +32,42 @@ const CLAUDE_CONFIG = {
   settingsUrl: "https://api.anthropic.com/v1/settings",
   apiVersion: "2023-06-01",
 };
+
+/** A successful OAuth usage read is reused for this long before polling again. */
+export const CLAUDE_USAGE_SUCCESS_TTL_MS = 65_000;
+/** Cap on remembered credentials and on concurrent distinct polls. */
+const CLAUDE_USAGE_CACHE_MAX = 128;
+
+const RATE_LIMITED_MESSAGE = "Claude usage is rate limited (429). Retry later.";
+const RATE_LIMITED_STALE_REASON =
+  "Claude usage endpoint is rate limited (429); showing the last known quota.";
+
+export interface ClaudeUsageResult {
+  plan?: unknown;
+  organization?: unknown;
+  quotas?: NormalizedClaudeUsageQuotas["quotas"] | Record<string, unknown>;
+  modelQuotas?: NormalizedClaudeUsageQuotas["modelQuotas"];
+  extraUsage?: unknown;
+  message?: string;
+  bootstrap: ClaudeBootstrap | null;
+  /** Set when the quota is the last known value served during a 429 cooldown. */
+  _stale?: boolean;
+  _staleSince?: string;
+  _staleReason?: string;
+}
+
+interface CachedClaudeUsage {
+  value: ClaudeUsageResult;
+  fetchedAt: number;
+}
+
+// Keyed by sha256(accessToken) — raw tokens never sit as map keys.
+const lastSuccessfulUsage = boundedMap<CachedClaudeUsage>(
+  "claude-oauth-usage",
+  CLAUDE_USAGE_CACHE_MAX,
+  "lru"
+);
+const inFlightUsage = new Map<string, Promise<ClaudeUsageResult>>();
 
 export function getClaudePlanLabel(...candidates: Array<string | null | undefined>): string | null {
   for (const candidate of candidates) {
@@ -38,28 +85,89 @@ export function getClaudePlanLabel(...candidates: Array<string | null | undefine
   return null;
 }
 
+// Keep the sanitized transport detail: providerLimits reads markers such as "fetch failed" /
+// "ECONNREFUSED" from this message to decide on its proxy fail-closed / direct-retry path.
+function unableToFetchMessage(error: unknown): string {
+  return `Claude connected. Unable to fetch usage: ${sanitizeErrorMessage((error as Error)?.message)}`;
+}
+
+function staleFromCache(cached: CachedClaudeUsage): ClaudeUsageResult {
+  return {
+    ...cached.value,
+    _stale: true,
+    _staleSince: new Date(cached.fetchedAt).toISOString(),
+    _staleReason: RATE_LIMITED_STALE_REASON,
+  };
+}
+
 /**
- * Claude Usage - Try to fetch from Anthropic API
+ * Claude Usage — OAuth `/api/oauth/usage` (Claude Code consumer tokens).
+ *
+ * Polling policy per credential:
+ *  - concurrent callers share one in-flight request;
+ *  - a success is reused for CLAUDE_USAGE_SUCCESS_TTL_MS (`forceRefresh` skips this);
+ *  - a 429 starts a Retry-After-aware cooldown during which the last known quota is
+ *    served flagged `_stale` (or a rate-limit message when nothing is cached yet);
+ *  - 401 reports expired authentication; only 404/405 fall back to the legacy
+ *    settings/org endpoints.
  */
-export async function getClaudeUsage(accessToken?: string) {
+export function getClaudeUsage(
+  accessToken?: string,
+  options: { forceRefresh?: boolean } = {}
+): Promise<ClaudeUsageResult> {
   if (!accessToken) {
-    return { message: "Claude connected. Access token not available.", bootstrap: null };
+    return Promise.resolve({
+      message: "Claude connected. Access token not available.",
+      bootstrap: null,
+    });
+  }
+
+  const key = hashClaudeCredential(accessToken);
+  const cached = lastSuccessfulUsage.get(key);
+  if (
+    cached &&
+    !options.forceRefresh &&
+    Date.now() - cached.fetchedAt < CLAUDE_USAGE_SUCCESS_TTL_MS
+  ) {
+    return Promise.resolve(cached.value);
+  }
+
+  const pending = inFlightUsage.get(key);
+  if (pending) return pending;
+  if (inFlightUsage.size >= CLAUDE_USAGE_CACHE_MAX) {
+    return Promise.resolve({
+      message: "Claude usage refresh is busy. Retry shortly.",
+      bootstrap: null,
+    });
+  }
+
+  const request: Promise<ClaudeUsageResult> = fetchClaudeUsage(accessToken, key).finally(() => {
+    if (inFlightUsage.get(key) === request) inFlightUsage.delete(key);
+  });
+  inFlightUsage.set(key, request);
+  return request;
+}
+
+async function fetchClaudeUsage(accessToken: string, key: string): Promise<ClaudeUsageResult> {
+  // Skip the OAuth usage call while this token is cooling down from a recent 429
+  // (chat with the same token still works — only the quota endpoint is throttled).
+  if (isClaudeOauthUsageCoolingDown(accessToken)) {
+    const cached = lastSuccessfulUsage.get(key);
+    if (cached) return staleFromCache(cached);
+    return {
+      message: RATE_LIMITED_MESSAGE,
+      bootstrap: await fetchClaudeBootstrap(accessToken).catch(() => null),
+    };
   }
 
   // Refresh bootstrap in parallel; best-effort, failure non-fatal.
   const bootstrapPromise = fetchClaudeBootstrap(accessToken).catch(() => null);
-  // Skip OAuth usage call while this token is cooling down from a recent 429
-  // (chat with the same token still works — only the quota endpoint is throttled).
-  if (isClaudeOauthUsageCoolingDown(accessToken)) {
-    const legacy = await getClaudeUsageLegacy(accessToken);
-    return { ...legacy, bootstrap: await bootstrapPromise };
-  }
   try {
     // Real CLI uses axios here, not Stainless — UA is `claude-code/<version>`
     // (not `claude-cli/...`) and the shape is simpler than /v1/messages.
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 10_000);
-    let oauthResponse;
+    let oauthResponse: Response;
     try {
       oauthResponse = await fetch(CLAUDE_CONFIG.oauthUsageUrl, {
         method: "GET",
@@ -90,32 +198,63 @@ export async function getClaudeUsage(accessToken?: string) {
           bootstrap?.organization_rate_limit_tier
         ) ?? undefined;
 
-      return {
+      const value: ClaudeUsageResult = {
         ...(plan ? { plan } : {}),
         quotas,
         modelQuotas,
         extraUsage: data.extra_usage ?? null,
         bootstrap,
       };
+      lastSuccessfulUsage.set(key, { value, fetchedAt: Date.now() });
+      return value;
     }
 
-    // Cool down OAuth usage polling after a 429 (quota endpoint only — chat is unaffected).
+    // Cool down OAuth usage polling after a 429 (quota endpoint only — chat is unaffected)
+    // and keep serving the last known quota instead of hitting the legacy endpoints,
+    // which a consumer OAuth token cannot use anyway.
     if (oauthResponse.status === 429) {
-      markClaudeOauthUsage429(accessToken);
+      const now = Date.now();
+      markClaudeOauthUsage429(
+        accessToken,
+        now,
+        computeClaudeUsageRetryMs(oauthResponse.headers, now)
+      );
+      const cached = lastSuccessfulUsage.get(key);
+      if (cached) return staleFromCache(cached);
+      return { message: RATE_LIMITED_MESSAGE, bootstrap: await bootstrapPromise };
     }
 
-    // Fallback: OAuth endpoint returned non-OK, try legacy settings/org endpoint
-    console.warn(
-      `[Claude Usage] OAuth endpoint returned ${oauthResponse.status}, falling back to legacy`
-    );
-    const legacy = await getClaudeUsageLegacy(accessToken);
-    return { ...legacy, bootstrap: await bootstrapPromise };
-  } catch (error) {
+    // The legacy endpoints would reject the same expired token too.
+    if (oauthResponse.status === 401) {
+      return {
+        message: "Claude authentication expired (401). Re-authorize or refresh the connection.",
+        bootstrap: await bootstrapPromise,
+      };
+    }
+
+    // Only a missing/unsupported OAuth usage endpoint means "not a consumer token":
+    // try the legacy settings/org endpoints (API key / org admin).
+    if (oauthResponse.status === 404 || oauthResponse.status === 405) {
+      console.warn(
+        `[Claude Usage] OAuth endpoint returned ${oauthResponse.status}, falling back to legacy`
+      );
+      const legacy = await getClaudeUsageLegacy(accessToken);
+      return { ...legacy, bootstrap: await bootstrapPromise };
+    }
+
     return {
-      message: `Claude connected. Unable to fetch usage: ${(error as Error).message}`,
+      message: `Claude connected. Usage endpoint returned HTTP ${oauthResponse.status}.`,
       bootstrap: await bootstrapPromise,
     };
+  } catch (error) {
+    return { message: unableToFetchMessage(error), bootstrap: await bootstrapPromise };
   }
+}
+
+/** Test-only: clear the success cache and in-flight polls. */
+export function _resetClaudeUsagePollingState(): void {
+  lastSuccessfulUsage.clear();
+  inFlightUsage.clear();
 }
 
 /**
@@ -168,6 +307,6 @@ async function getClaudeUsageLegacy(accessToken?: string) {
 
     return { message: "Claude connected. Usage API requires admin permissions." };
   } catch (error) {
-    return { message: `Claude connected. Unable to fetch usage: ${(error as Error).message}` };
+    return { message: unableToFetchMessage(error) };
   }
 }

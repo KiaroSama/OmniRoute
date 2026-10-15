@@ -52,6 +52,29 @@ function urlImagePart(url) {
   return { fileData: { fileUri: url, mimeType: "image/*" } };
 }
 
+type ToolUseOccurrence = { name: string; signature: string | null };
+
+/**
+ * A `tool_use.id` is only unique within one assistant turn: long agent sessions can reuse
+ * one id for different tools across turns. A conversation-wide `id → name` map (last wins)
+ * then names an earlier turn's functionResponse after a later tool, and Gemini rejects the
+ * whole request with 400 INVALID_ARGUMENT on every following turn. So each tool_use is
+ * queued per id in arrival order, and each tool_result consumes the oldest unconsumed one.
+ */
+function createToolUseOccurrenceQueue() {
+  const pending = new Map<unknown, ToolUseOccurrence[]>();
+  return {
+    push(id: unknown, occurrence: ToolUseOccurrence) {
+      const queue = pending.get(id);
+      if (queue) queue.push(occurrence);
+      else pending.set(id, [occurrence]);
+    },
+    consume(id: unknown): ToolUseOccurrence | undefined {
+      return pending.get(id)?.shift();
+    },
+  };
+}
+
 /**
  * Direct Claude → Gemini request translator.
  * Converts Claude Messages API body directly to Gemini format,
@@ -144,6 +167,9 @@ export function claudeToGeminiRequest(model, body, stream, credentials = null) {
   // available; otherwise represent history as context text.
   const toolUseNames: Record<string, string> = {};
   const resolvedSignatures = new Map<string, string>();
+  // Same signatures keyed by the tool_use block itself, so a reused id keeps each
+  // occurrence's own signature (the id-keyed map above is only a fallback).
+  const toolUseSignatures = new Map<object, string>();
   if (body.messages && Array.isArray(body.messages)) {
     for (const msg of body.messages) {
       if (msg.role === "assistant" && Array.isArray(msg.content)) {
@@ -160,6 +186,7 @@ export function claudeToGeminiRequest(model, body, stream, credentials = null) {
             );
             if (typeof resolved === "string" && resolved.length > 0) {
               resolvedSignatures.set(block.id, resolved);
+              toolUseSignatures.set(block, resolved);
             }
           }
         }
@@ -172,6 +199,7 @@ export function claudeToGeminiRequest(model, body, stream, credentials = null) {
     // Tool-ids whose functionCall was omitted (no stored thought_signature) so the
     // matching tool_result becomes text instead of a Gemini-400'd functionResponse.
     const omittedToolCallIds = new Set<string>();
+    const toolUseOccurrences = createToolUseOccurrenceQueue();
     for (const msg of body.messages) {
       const parts = [];
       // Images returned inside tool_result blocks go right after the last tool response,
@@ -194,7 +222,13 @@ export function claudeToGeminiRequest(model, body, stream, credentials = null) {
               break;
 
             case "tool_use": {
-              const signatureForToolCall = resolvedSignatures.get(block.id);
+              const signatureForToolCall = toolUseSignatures.get(block);
+              if (block.id) {
+                toolUseOccurrences.push(block.id, {
+                  name: block.name ? sanitizeToolName(block.name) : "unknown",
+                  signature: signatureForToolCall ?? null,
+                });
+              }
               // Signature-less historical tool_use → omit native functionCall
               // (context mode). Matching tool_result becomes context text below.
               if (!signatureForToolCall) {
@@ -245,12 +279,20 @@ export function claudeToGeminiRequest(model, body, stream, credentials = null) {
                   (hasImage ? "[tool returned an image; see attached]" : "");
               }
               const toolUseId = block.tool_use_id;
-              const name = toolUseNames[toolUseId] || "unknown";
+              // Pair with this id's oldest unconsumed tool_use; the id-keyed maps
+              // are only a fallback when no such tool_use preceded the result.
+              const pairedToolUse = toolUseOccurrences.consume(toolUseId);
+              const name = pairedToolUse
+                ? pairedToolUse.name
+                : toolUseNames[toolUseId] || "unknown";
+              const hasSignedToolUse = pairedToolUse
+                ? pairedToolUse.signature !== null
+                : resolvedSignatures.has(toolUseId);
 
               // Signature-less history: represent as context text so Gemini 3+
               // does not reject a native functionResponse without a matching
               // signed functionCall (#8979 / #3688).
-              if (!resolvedSignatures.has(toolUseId)) {
+              if (!hasSignedToolUse) {
                 parts.push({
                   text: buildHistoricalToolResultContext(name, content),
                 });

@@ -209,6 +209,13 @@ import {
   getOAuthSessionAvailability,
   reserveOAuthSession,
 } from "@omniroute/open-sse/services/oauthSessionOccupancy.ts";
+import {
+  logCredentialPoolState,
+  formatConnectionPrefixesForLog,
+  buildConnectionRestrictionFailure,
+  createNoAuthRefusalLogger,
+  type ConnectionRestrictionSource,
+} from "./credentialSelectionDiagnostics.ts";
 
 type JsonRecord = Record<string, unknown>;
 interface RecoverableConnectionState {
@@ -768,30 +775,32 @@ async function maybeSyntheticNoAuthFallback(
   excludedConnectionIds: Set<string>,
   allowedConnections: string[] | null = null,
   pauseAsCooldown = false,
-  requestedModelForPause?: string | null
+  requestedModelForPause?: string | null,
+  restrictionSources?: readonly ConnectionRestrictionSource[]
 ) {
   if (!providerCanUseSyntheticNoAuthFallback(providerId)) return null;
-  // #9057: a restricted key must NOT reach free providers (OpenCode Free, etc.) through the
-  // synthetic "noauth" connection unless its allowedConnections names it.
-  if (!allowlistPermitsSyntheticNoAuth(allowedConnections)) return null;
-  if (excludedConnectionIds.has(SYNTHETIC_NOAUTH_CONNECTION_ID)) return null;
+  const refuse = createNoAuthRefusalLogger(providerId, allowedConnections, restrictionSources);
+  // Restricted callers must explicitly admit the synthetic connection.
+  if (!allowlistPermitsSyntheticNoAuth(allowedConnections)) return refuse("allowlist");
+  if (excludedConnectionIds.has(SYNTHETIC_NOAUTH_CONNECTION_ID)) return refuse("excluded");
   if (pauseAsCooldown) {
     const paused = pauseCooldownIfPaused(
       providerId,
       SYNTHETIC_NOAUTH_CONNECTION_ID,
       requestedModelForPause
     );
-    if (paused) return paused;
+    if (paused) {
+      refuse("paused");
+      return paused;
+    }
   } else if (isOpencodeFreeTierSkipped(providerId, Date.now(), requestedModelForPause)) {
-    log.info("AUTH", `${providerId} | no-auth fallback skipped (OpenCode free-tier pause)`); // #14313
-    return null;
+    return refuse("paused");
   }
   if (
     isAnonymousFallbackOnlyProvider(providerId) &&
     (await isAnonymousFallbackDisabledBySettings(providerId))
   ) {
-    log.info("AUTH", `${providerId} | anonymous no-auth fallback disabled by settings`);
-    return null;
+    return refuse("disabled");
   }
   // #4954: hydrate per-account proxy/rotation config off the connection row so
   // no-auth executors (opencode, mimocode) actually honor configured proxies.
@@ -817,13 +826,6 @@ function normalizeExcludedConnectionIds(
   }
 
   return normalized;
-}
-function formatConnectionPrefixesForLog(ids: Iterable<string>, max = 6): string {
-  const prefixes = Array.from(ids)
-    .filter((id) => typeof id === "string" && id.length > 0)
-    .slice(0, max)
-    .map((id) => `${id.slice(0, 8)}...`);
-  return prefixes.length > 0 ? prefixes.join(",") : "none";
 }
 function buildPeakHourProtectionRateLimitedResult(
   provider: string,
@@ -1132,9 +1134,10 @@ export async function getProviderCredentials(
         return await maybeSyntheticNoAuthFallback(
           resolvedId,
           excludedForNoAuth,
-          null,
+          allowedConnections,
           true,
-          requestedModel
+          requestedModel,
+          options.connectionRestrictionSources
         );
       }
     }
@@ -1282,20 +1285,14 @@ export async function getProviderCredentials(
       connections = connections.filter(qoderSupportsCallerTools);
     }
     const activeConnectionsCount = connections.length;
-    const rawConnectionsCount = connectionsRaw.length;
-    const blockedByForcedConnection = forcedConnectionId
-      ? rawConnectionsCount - connections.length
-      : 0;
-    const blockedByAllowedConnections =
-      allowedConnections && allowedConnections.length > 0
-        ? Math.max(0, rawConnectionsCount - connections.length - blockedByForcedConnection)
-        : 0;
-    const forcedIdForLog = forcedConnectionId ? `${forcedConnectionId.slice(0, 8)}...` : "none";
-
-    log.debug(
-      "AUTH",
-      `${provider} | active=${activeConnectionsCount}, excluded=${excludedConnectionIds.size} (${formatConnectionPrefixesForLog(excludedConnectionIds)}), forcedId=${forcedIdForLog}, blocked_forced=${blockedByForcedConnection}, blocked_allowed=${blockedByAllowedConnections}`
-    );
+    logCredentialPoolState(provider, {
+      active: activeConnectionsCount,
+      raw: connectionsRaw.length,
+      forcedConnectionId,
+      excludedConnectionIds,
+      allowedConnections,
+      sources: options.connectionRestrictionSources,
+    });
     if (provider === "antigravity" && (forcedConnectionId || allowedConnections?.length)) {
       const reasons: string[] = [];
       if (forcedConnectionId) reasons.push(`forcedConnectionId kept ${connections.length}`);
@@ -1377,7 +1374,8 @@ export async function getProviderCredentials(
             excludedConnectionIds,
             allowedConnections,
             false,
-            requestedModel
+            requestedModel,
+            options.connectionRestrictionSources
           );
           if (syntheticFallback) return syntheticFallback;
           return buildAllExpiredCredentials(terminalConnections);
@@ -1388,7 +1386,8 @@ export async function getProviderCredentials(
         excludedConnectionIds,
         allowedConnections,
         false,
-        requestedModel
+        requestedModel,
+        options.connectionRestrictionSources
       );
       if (syntheticFallback) return syntheticFallback;
       const jinaEnvCredentials = buildJinaEnvCredentials(resolvedId, {
@@ -1411,14 +1410,12 @@ export async function getProviderCredentials(
       }
       invalidateManagedLease(options, "CONNECTION_INELIGIBLE");
       if (blockedByKeyPolicyCount > 0 && keyPolicyDeniesTarget) {
-        // #13832: the pool is empty only because the calling key's allowlist /
-        // quota scope removed every connection. Say so instead of returning the
-        // bare null that becomes "No active credentials for provider: X".
-        log.warn(
-          "AUTH",
-          `${provider} | ${blockedByKeyPolicyCount} connection(s) hidden by the API key's allowed_connections/quota scope`
+        return buildConnectionRestrictionFailure(
+          provider,
+          blockedByKeyPolicyCount,
+          allowedConnections,
+          options.connectionRestrictionSources
         );
-        return { blockedByKeyPolicy: true, blockedCount: blockedByKeyPolicyCount };
       }
       log.debug("AUTH", `No credentials for ${provider}`);
       return null;
@@ -1654,7 +1651,8 @@ export async function getProviderCredentials(
         excludedConnectionIds,
         allowedConnections,
         false,
-        requestedModel
+        requestedModel,
+        options.connectionRestrictionSources
       );
       if (syntheticFallback) return syntheticFallback;
 
@@ -3467,7 +3465,7 @@ type AuthRequestLike = {
   headers?: AuthRequestHeaders | null;
   url?: string | null;
 };
-function readNonEmptyUrlToken(request: AuthRequestLike): string | null {
+export function readNonEmptyUrlToken(request: AuthRequestLike): string | null {
   if (typeof request?.url !== "string" || request.url.trim().length === 0) return null;
 
   try {

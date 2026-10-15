@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS 제한 사항:** HTTPS `CONNECT` 터널은 기본적으로 메타데이터(호스트, 포트, 타이밍)만 캡처되며 TLS 본문은 복호화되지 않습니다. 전체 본문을 검사하려면 "프록시 모드에서 HTTPS 복호화" 토글을 활성화하세요(옵트인이며 AgentBridge 인증서를 신뢰해야 함).
+**TLS 제한 사항:** HTTPS `CONNECT` 터널은 기본적으로 메타데이터(호스트, 포트, 타이밍)만 캡처되며 TLS 본문은 복호화되지 않습니다.
 
 **포트 충돌:** 포트 8080이 사용 중이면 AgentBridge가 구조화된 오류와 함께 409를 반환합니다. `INSPECTOR_HTTP_PROXY_PORT` 환경 변수를 사용하여 포트를 변경하세요.
 
@@ -459,12 +459,11 @@ netsh winhttp reset proxy
 
 ### 캡처 모드
 
-| 메서드 | 경로                           | 설명                                                                                             |
-| ------ | ------------------------------ | ------------------------------------------------------------------------------------------------ |
-| GET    | `/capture-modes`               | AgentBridge / 사용자 지정 호스트 / HTTP_PROXY / 시스템 프록시 모드의 상태와 `tls-intercept` 토글 |
-| POST   | `/capture-modes/http-proxy`    | HTTP_PROXY 리스너 시작/중지(`{action: "start"\|"stop"}`)                                         |
-| POST   | `/capture-modes/system-proxy`  | 시스템 전체 프록시 적용/되돌리기(`{action: "apply"\|"revert"}`)                                  |
-| POST   | `/capture-modes/tls-intercept` | 프록시 모드에서 HTTPS 본문 복호화 전환(`{enabled: boolean}`)                                     |
+| 메서드 | 경로                          | 설명                                                                      |
+| ------ | ----------------------------- | ------------------------------------------------------------------------- |
+| GET    | `/capture-modes`              | AgentBridge / 사용자 지정 호스트 / HTTP_PROXY / 시스템 프록시 모드의 상태 |
+| POST   | `/capture-modes/http-proxy`   | HTTP_PROXY 리스너 시작/중지(`{action: "start"\|"stop"}`)                  |
+| POST   | `/capture-modes/system-proxy` | 시스템 전체 프록시 적용/되돌리기(`{action: "apply"\|"revert"}`)           |
 
 > **TPROXY 복호화**(캡처 모드 5)는
 > AgentBridge 접두사 아래의 **별도** 라우트인 `GET / POST / DELETE /api/tools/agent-bridge/tproxy`를 통해 제어되며,

@@ -213,6 +213,8 @@ Auto-Combo-motoren velger dynamisk den beste leverandøren/modellen for hver for
 | `quality`             | 0.03         | Tilbakemeldingsdrevet signal for utdatakvalitet fra kvalitetsmåleren for rutingshendelser; kandidater uten observasjoner får en nøytral verdi på 0.5                                                                                       |
 | `reliability`         | 0.00         | Observert andel vellykkede forespørsler, `1 - failureRate`, basert på 24 timers brukshistorikk med en nedre grense på ti målinger (ellers brukes sanntidsmålinger); kandidater uten observasjoner får verdien 1.0. Deaktivert som standard |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Sum:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, som deklarert i `DEFAULT_WEIGHTS`; brukerkonfigurerte vekter normaliseres på nytt til en fordeling av `normalizeScoringWeights()` før poengberegningen.
 
 ## Moduspakker

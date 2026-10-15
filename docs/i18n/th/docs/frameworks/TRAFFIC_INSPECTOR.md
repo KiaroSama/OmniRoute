@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**ข้อจำกัดของ TLS:** อุโมงค์ HTTPS `CONNECT` จะถูกจับเป็นข้อมูลเมตาเท่านั้น (โฮสต์ พอร์ต และเวลา) — เนื้อหา TLS จะไม่ถูกถอดรหัสโดยค่าเริ่มต้น เปิดสวิตช์ "ถอดรหัส HTTPS ในโหมดพร็อกซี" (ต้องเลือกเปิดเองและกำหนดให้เชื่อถือใบรับรอง AgentBridge) เพื่อตรวจสอบเนื้อหาทั้งหมด
+**ข้อจำกัดของ TLS:** อุโมงค์ HTTPS `CONNECT` จะถูกจับเป็นข้อมูลเมตาเท่านั้น (โฮสต์ พอร์ต และเวลา) — เนื้อหา TLS จะไม่ถูกถอดรหัสโดยค่าเริ่มต้น
 
 **พอร์ตขัดแย้ง:** หากพอร์ต 8080 ถูกใช้งานอยู่ AgentBridge จะส่งคืน 409 พร้อมข้อผิดพลาดที่มีโครงสร้าง เปลี่ยนพอร์ตผ่านตัวแปรสภาพแวดล้อม `INSPECTOR_HTTP_PROXY_PORT`
 
@@ -464,12 +464,11 @@ netsh winhttp reset proxy
 
 ### โหมดการจับข้อมูล
 
-| เมธอด | พาธ                            | คำอธิบาย                                                                                       |
-| ----- | ------------------------------ | ---------------------------------------------------------------------------------------------- |
-| GET   | `/capture-modes`               | สถานะของโหมด AgentBridge / custom-hosts / HTTP_PROXY / system-proxy และตัวสลับ `tls-intercept` |
-| POST  | `/capture-modes/http-proxy`    | เริ่ม/หยุดตัวรับฟัง HTTP_PROXY (`{action: "start"\|"stop"}`)                                   |
-| POST  | `/capture-modes/system-proxy`  | ใช้งาน/คืนค่าพร็อกซีทั่วทั้งระบบ (`{action: "apply"\|"revert"}`)                               |
-| POST  | `/capture-modes/tls-intercept` | สลับการถอดรหัสเนื้อหา HTTPS ในโหมดพร็อกซี (`{enabled: boolean}`)                               |
+| เมธอด | พาธ                           | คำอธิบาย                                                            |
+| ----- | ----------------------------- | ------------------------------------------------------------------- |
+| GET   | `/capture-modes`              | สถานะของโหมด AgentBridge / custom-hosts / HTTP_PROXY / system-proxy |
+| POST  | `/capture-modes/http-proxy`   | เริ่ม/หยุดตัวรับฟัง HTTP_PROXY (`{action: "start"\|"stop"}`)        |
+| POST  | `/capture-modes/system-proxy` | ใช้งาน/คืนค่าพร็อกซีทั่วทั้งระบบ (`{action: "apply"\|"revert"}`)    |
 
 > **การถอดรหัส TPROXY** (โหมดการจับข้อมูล 5) ควบคุมผ่าน route **แยกต่างหาก** ภายใต้
 > คำนำหน้า AgentBridge — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — ไม่ได้อยู่

@@ -7,6 +7,7 @@ import { getSyncedAutoAliases } from "@/lib/providerModels/syncedAutoAliases.ts"
 import { getActiveSyncedCatalog } from "@/lib/db/models/activeSyncedCatalog";
 import { getModelCompatOverrides } from "@/lib/db/models/compat";
 import { getNoAuthHydrationProviderIds } from "./noAuthProviderSiblings";
+import { inferGithubUnsyncedTargetFormat } from "./githubResponsesFallback";
 import {
   parseModel,
   getModelInfoCore,
@@ -475,6 +476,10 @@ async function lookupModelMeta(
       compatOverrideMatch
     );
     if (effort) metadata.resolvedThinkingEffort = effort;
+    if (!metadata.targetFormat && !syncedMatch && !registryMatch) {
+      const inferredTargetFormat = inferGithubUnsyncedTargetFormat(providerId, resolvedModelId);
+      if (inferredTargetFormat) metadata.targetFormat = inferredTargetFormat;
+    }
 
     return { modelId: resolvedModelId, metadata, available };
   } catch {

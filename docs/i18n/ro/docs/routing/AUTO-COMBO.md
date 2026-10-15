@@ -213,6 +213,8 @@ Motorul Auto-Combo selectează dinamic cel mai bun furnizor/model pentru fiecare
 | `quality`             | 0.03              | Semnal privind calitatea rezultatului, bazat pe feedback de la instrumentul de urmărire a calității evenimentelor de rutare; candidații fără observații primesc valoarea neutră 0.5                                                                                  |
 | `reliability`         | 0.00              | Proporția observată de reușite, `1 - failureRate`, din istoricul de utilizare pe 24h, cu un prag minim de zece eșantioane (în caz contrar, se folosesc metrici în timp real); candidații fără observații sunt considerați ca având valoarea 1.0. Dezactivat implicit |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Sumă:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, așa cum este declarat în `DEFAULT_WEIGHTS`; ponderile configurate de utilizator sunt renormalizate într-o distribuție de `normalizeScoringWeights()` înainte de calcularea scorului.
 
 ## Pachete de moduri

@@ -180,6 +180,8 @@ curl -X POST http://localhost:20128/v1/chat/completions \
 | `quality`             | 0.03     | 来自路由事件质量跟踪器、由反馈驱动的输出质量信号；没有观测数据的候选项会获得中性值 0.5                                                                |
 | `reliability`         | 0.00     | 基于过去 24 小时使用历史记录，在至少十个样本的门槛下计算观测成功占比 `1 - failureRate`（否则使用实时指标）；没有观测数据的候选项视为 1.0。默认禁用    |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **总和：** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`，与 `DEFAULT_WEIGHTS` 中的声明一致；用户配置的权重在评分前会由 `normalizeScoringWeights()` 重新归一化为一个分布。
 
 ## 模式包

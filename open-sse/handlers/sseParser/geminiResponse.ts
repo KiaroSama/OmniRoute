@@ -130,10 +130,13 @@ function applyUsageMetadata(parsed: Record<string, unknown>, acc: GeminiSSEAccum
   const response = parsed.response as Record<string, unknown> | undefined;
   const um = response?.usageMetadata as Record<string, unknown> | undefined;
   if (!um) return;
+  const promptTokens = Number(um.promptTokenCount) || 0;
+  const completionTokens = Number(um.candidatesTokenCount) || 0;
   acc.usage = {
-    prompt_tokens: um.promptTokenCount || 0,
-    completion_tokens: um.candidatesTokenCount || 0,
-    total_tokens: um.totalTokenCount || 0,
+    prompt_tokens: promptTokens,
+    completion_tokens: completionTokens,
+    // Gemini may omit totalTokenCount; derive it instead of reporting 0.
+    total_tokens: Number(um.totalTokenCount) || promptTokens + completionTokens,
   };
 }
 

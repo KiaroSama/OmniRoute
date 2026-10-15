@@ -292,6 +292,14 @@ export async function PATCH(request: Request) {
       { status: 400 }
     );
   }
+  if (!rawBody || typeof rawBody !== "object" || Array.isArray(rawBody)) {
+    // Valid JSON that is not an object (`null`, a string, a number): nothing to read keys from.
+    emitSettingsFailureAudit(request, actor, "INVALID_BODY", []);
+    return NextResponse.json(
+      { error: { code: "INVALID_BODY", message: "Request body must be a JSON object" } },
+      { status: 400 }
+    );
+  }
   const attemptedKeys = attemptedKeysOf(rawBody);
   const expectedRevision = parseExpectedRevision(request, rawBody);
 

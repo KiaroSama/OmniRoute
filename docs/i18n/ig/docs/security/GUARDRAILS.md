@@ -83,6 +83,10 @@ Usoro:
 Ụdị amanyere na-agbanye obere oge **tupu** usoro nyocha akpaaka agba; omume `auto`
 bụ otu byte na nchedo tupu PR-1.
 
+#### Oke igodo API (`visionBridgeKeyScope.ts`)
+
+Ọ bụrụ na igodo API machibidoro njikọ, otu oke ojiji ma ọ bụ ụdị (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), ntụgharị ụzọ na nkọwa na-ahọrọ naanị ụdị na njikọ e nyere igodo ahụ ikike iji. Nkọwa na-aga mgbe niile site n'okirikiri ime OmniRoute na nkụnye `x-omniroute-self-loop-key-id`, ka iwu njikọ na ụdị rụọ ọrụ ọzọ. `enforceApiKeyPolicy()` na-anabata nkụnye ahụ naanị na token bearer nke okirikiri ahụ: ọ pụrụ naanị ibelata ikike, a na-ajụkwa ID a na-amaghị. Ọ bụrụ na enweghị ụdị ọhụụ e nyere ikike, a na-awụfe nkọwa, arịrịọ agafee n'enweghị mgbanwe dịka mgbe nchebe agbanyụrụ (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Arịrịọ na-enweghị igodo na igodo na-enweghị mmachibido ndị a na-arụ ọrụ dịka mbụ.
+
 #### Ngwa ngwa nkọwa ọrụ (`modalityBridgeVisionTaskAware`)
 
 Nke ndabere **eziokwu**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) na-agbakwunye

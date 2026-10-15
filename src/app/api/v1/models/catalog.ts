@@ -670,11 +670,15 @@ async function buildUnifiedModelsResponseCore(
       const maxInputTokens = isPositiveFiniteNumber(canonical.limits.maxInputTokens)
         ? canonical.limits.maxInputTokens
         : contextLength;
-      const maxOutputTokens = isPositiveFiniteNumber(synced?.limit_output)
-        ? synced.limit_output
-        : isPositiveFiniteNumber(spec?.maxOutputTokens)
-          ? spec.maxOutputTokens
-          : undefined;
+      // #16515: canonical.limits.maxOutputTokens already applies an operator's
+      // max_output_tokens override, as the per-model catalog entry does.
+      const maxOutputTokens = isPositiveFiniteNumber(canonical.limits.maxOutputTokens)
+        ? canonical.limits.maxOutputTokens
+        : isPositiveFiniteNumber(synced?.limit_output)
+          ? synced.limit_output
+          : isPositiveFiniteNumber(spec?.maxOutputTokens)
+            ? spec.maxOutputTokens
+            : undefined;
 
       const syncedVision =
         typeof synced?.attachment === "boolean"

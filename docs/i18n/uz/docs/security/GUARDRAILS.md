@@ -50,6 +50,10 @@ Oqim:
 
 Majburiy rejimlar avtomatik evristika ishga tushishidan **oldin** qisqa tutashuv qiladi; `auto` xulq-atvori PR-1 dan oldingi himoya vositasiga bayt-identikdir.
 
+#### API kalitining doirasi (`visionBridgeKeyScope.ts`)
+
+API kaliti ulanishlar, kvota guruhlari yoki modellarni cheklasa (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), qayta yo‘naltirish va tavsiflash faqat shu kalitga ruxsat etilgan model va ulanishlarni tanlaydi. Tavsiflash doimo `x-omniroute-self-loop-key-id` sarlavhasi bilan OmniRoute ichki halqasidan o‘tib, ulanish va model siyosatini qayta qo‘llaydi. `enforceApiKeyPolicy()` sarlavhani faqat o‘sha halqaning bearer tokeni bilan qabul qiladi: u kirishni faqat toraytirishi mumkin, topilmagan identifikator esa rad etiladi. Ruxsat etilgan ko‘rish modeli bo‘lmasa, tavsiflash o‘tkazib yuboriladi va so‘rov himoya o‘chirilgandagi kabi o‘zgarmasdan o‘tadi (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Kalitsiz so‘rovlar va bu cheklovlarsiz kalitlar avvalgidek ishlaydi.
+
 #### Vazifaga yoʻnaltirilgan tavsif soʻrovi (`modalityBridgeVisionTaskAware`)
 
 Standart **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) **oxirgi foydalanuvchi xabarining** matnini (500 belgiga qisqartirilgan) asosiy tavsif soʻroviga qoʻshadi, tavsifni foydalanuvchi aslida nima soʻraganiga (codex-vision-proxy namunasi) yoʻnaltiradi va koʻrish modelidan koʻrinadigan matnni transkripsiya qilishni soʻraydi. Agar bayroq oʻchirilgan boʻlsa — yoki foydalanuvchi matni boʻlmasa — asosiy soʻrov oʻzgarishsiz ishlatiladi.

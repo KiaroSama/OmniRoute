@@ -28,3 +28,11 @@ test("runner isolation still blocks fork code from the self-hosted build slot", 
   assert.match(workflow.jobs.build["runs-on"], /\["self-hosted","omni-build"\]/);
   assert.match(workflow.jobs.build["runs-on"], /\|\| 'ubuntu-latest'/);
 });
+
+test("the existing webpack fallback follows the hosted build runner", () => {
+  const step = workflow.jobs.build.steps.find(
+    (item: { run?: string }) => item.run === "npm run build"
+  );
+  const runnerCondition = workflow.jobs.build["runs-on"].split(" && fromJSON(")[0];
+  assert.equal(step.env.OMNIROUTE_USE_TURBOPACK, `${runnerCondition} && '1' || '0' }}`);
+});

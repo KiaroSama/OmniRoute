@@ -53,6 +53,10 @@
 
 強制模式會在自動啟發式方法執行**之前**進行短路 (short-circuit)；`auto` 行為與 PR-1 之前的護欄位元組完全相同。
 
+#### API 金鑰作用範圍 (`visionBridgeKeyScope.ts`)
+
+如果 API 金鑰限制了連線、配額集區或模型（`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`），重新路由和描述產生只會選擇該金鑰獲准使用的模型與連線。描述呼叫一律經由 OmniRoute 自我迴路，並帶有 `x-omniroute-self-loop-key-id` 標頭，以再次執行連線與模型政策。`enforceApiKeyPolicy()` 僅在同時提供該迴路的 bearer 權杖時接受此標頭：它只能縮小存取範圍，無法解析的 ID 會遭拒絕。若金鑰沒有獲准使用的視覺模型，就略過描述產生，像防護功能停用時一樣讓請求保持不變地通過（meta `{ skipped: true, reason: "no_permitted_vision_model" }`）。不含金鑰的請求及沒有這些限制的金鑰維持原有行為。
+
 #### 任務感知描述提示詞 (`modalityBridgeVisionTaskAware`)
 
 預設為 **true**。`composeVisionPrompt()` (`visionBridgeHelpers.ts`) 會將**最後一則使用者訊息**的文字（截斷至 500 個字元）附加到基礎描述提示詞後面，引導描述朝向使用者實際詢問的內容（codex-vision-proxy 模式），並要求視覺模型轉錄可見文字。當此旗標關閉 — 或沒有使用者文字時 — 則會直接使用未修改的基礎提示詞。

@@ -147,6 +147,8 @@ operátori felelősség marad:
   túlságosan kiszélesítve egy útvonalfát, amelyet a távoli műszerfalak
   jogszerűen használnak a szolgáltató CRUD-hoz.
 
+  A futásidejű pillanatkép betöltője a mentett beállítássorból is elveti ezeket a bejegyzéseket, és a régi JSON-import (`/api/settings/import-json`) soha nem írja a megkerülési kulcsokat. A `LOCAL_ONLY_API_PREFIXES` minden bejegyzésének a tiltólistán kell szerepelnie, vagy ellenőrzés után megkerülésre jóváhagyottnak kell lennie. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Hozzáférés auditálása** — annak ellenőrzésére, hogy semmi sem éri el ezeket az útvonalakat a gazdagépen kívülről:
 
 - Nyissa meg az **Engedélyezési leltárt** a `/dashboard/settings/security` címen: ez megjeleníti az élő LOCAL_ONLY előtaglistát, mely előtagok megkerülhetők, valamint a fordítási idejű, indítható ("nem tehető megkerülhetővé") halmazt.

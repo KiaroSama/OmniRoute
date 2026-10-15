@@ -84,6 +84,10 @@ Kogi (Flow):
 Yanayin da aka tilasta suna gajerun hanyoyi **kafin** tsarin auto ya fara aiki; halayyar
 `auto` tana daidai da byte tare da guardrail kafin PR-1.
 
+#### Iyakokin maɓallin API (`visionBridgeKeyScope.ts`)
+
+Idan maɓallin API ya taƙaita haɗin kai, rukunin ƙididdiga ko samfura (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), sauya hanya da bayani suna zaɓar samfura da haɗin kai da aka yarda wa maɓallin kawai. Bayani koyaushe yana bi ta madaukin cikin OmniRoute tare da taken `x-omniroute-self-loop-key-id`, domin a sake aiwatar da dokar haɗin kai da samfuri. `enforceApiKeyPolicy()` tana karɓar taken ne kawai tare da token bearer na madaukin: yana iya rage izini kawai, kuma ana ƙin ID da ba a gane ba. Idan babu samfurin gani da aka yarda, ana tsallake bayani kuma buƙatar tana wucewa ba tare da canji ba, kamar kariyar da aka kashe (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Buƙatun marasa maɓalli da maɓallan da ba su da waɗannan ƙuntatawa suna aiki kamar da.
+
 #### Saƙon bayyanawa mai dacewa da aiki (`modalityBridgeVisionTaskAware`)
 
 Tsohuwa **gaskiya (true)**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) yana ƙara

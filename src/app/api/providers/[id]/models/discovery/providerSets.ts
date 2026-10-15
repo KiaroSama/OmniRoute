@@ -78,7 +78,9 @@ export const NAMED_OPENAI_STYLE_PROVIDERS = new Set([
   "openference-api",
   // Typhoon (SCB 10X, Thailand) and Inception Labs (Mercury diffusion models) are
   // OpenAI-compatible providers whose /v1/models endpoint exists and is used for
-  // catalog discovery/key validation (verified 2026-07-22).
+  // catalog discovery (verified 2026-07-22). Inception's /v1/models is public (200 for
+  // any key), so its key validation probes the chat route instead
+  // (src/lib/providers/validation/inception.ts).
   "typhoon",
   "inception",
   // Sarvam AI (India), Writer Palmyra, and PLaMo (Preferred Networks, Japan) are

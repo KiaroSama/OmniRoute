@@ -255,6 +255,8 @@ omniroute tokens scopes               # selgitab kolme ulatust
 `tokens`-käsud nõuavad **administraatori** identimisteavet. Pääsmikke saab hallata ka
 juhtpaneeli jaotises **Seaded → Juurdepääsupääsmikud** (loomine, tühistamine, ühekordne kopeerimine).
 
+Tokenit ei saa kunagi luua suuremate õigustega kui selle loojal. Ainult operaator saab luua `admin`-tokeni: juhtpaneeli seansi, serveris endas töötava kohaliku CLI, parooliga `omniroute connect` käsu või keelatud sisselogimisega instantsi kaudu. Masina autentimisandmed (`admin`-pääsutoken või API-võti ulatusega `manage`/`admin`) saavad luua ainult `write`- ja `read`-tokeneid; nendega `--scope admin` taotlemine tagastab `403`.
+
 ---
 
 ## Kodeerimise CLI konfigureerimine kaugkataloogist

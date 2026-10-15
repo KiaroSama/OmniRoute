@@ -43,7 +43,14 @@ test("known refusal identity survives the bounded public projector", { timeout: 
 });
 
 test("public identifier fallback stays bounded and case preserving", { timeout: 5_000 }, () => {
-  for (const identifier of ["403", "599", "HTTP_451", "http_403", "INVALID_API_KEY"]) {
+  for (const identifier of [
+    "403",
+    "599",
+    "HTTP_451",
+    "http_403",
+    "INVALID_API_KEY",
+    "kiro_tool_call_repair_retry_failed",
+  ]) {
     assert.equal(projectPublicErrorIdentifier(identifier, "error"), identifier);
   }
   for (const identifier of [

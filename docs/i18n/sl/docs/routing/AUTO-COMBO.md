@@ -213,6 +213,8 @@ Mehanizem samodejnih kombinacij za vsako zahtevo dinamično izbere najboljšega 
 | `quality`             | 0.03          | Signal kakovosti izhoda, ki temelji na povratnih informacijah sledilnika kakovosti dogodkov usmerjanja; kandidati brez opazovanj prejmejo nevtralno vrednost 0.5                                      |
 | `reliability`         | 0.00          | Opaženi delež uspešnosti, `1 - failureRate`, iz 24-urne zgodovine uporabe z najmanj desetimi vzorci (sicer sprotne metrike); kandidati brez opazovanj imajo vrednost 1.0. Privzeto onemogočeno        |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Vsota:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, kot je navedeno v `DEFAULT_WEIGHTS`; uporabniško nastavljene uteži se pred točkovanjem s funkcijo `normalizeScoringWeights()` ponovno normalizirajo v porazdelitev.
 
 ## Paketi načinov

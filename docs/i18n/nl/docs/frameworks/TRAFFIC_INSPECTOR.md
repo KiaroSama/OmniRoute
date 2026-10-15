@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS-beperking:** HTTPS-`CONNECT`-tunnels worden alleen als metadata vastgelegd (host, poort, timing) — de TLS-inhoud wordt standaard niet ontsleuteld. Schakel de optie "HTTPS ontsleutelen in proxymodus" in (opt-in, vereist dat het AgentBridge-certificaat wordt vertrouwd) om de volledige inhoud te inspecteren.
+**TLS-beperking:** HTTPS-`CONNECT`-tunnels worden alleen als metadata vastgelegd (host, poort, timing) — de TLS-inhoud wordt standaard niet ontsleuteld.
 
 **Poortconflict:** Als poort 8080 in gebruik is, retourneert AgentBridge een 409 met een gestructureerde foutmelding. Wijzig de poort via de omgevingsvariabele `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -467,12 +467,11 @@ Basispad: `/api/tools/traffic-inspector/`
 
 ### Opnamemodi
 
-| Methode | Pad                            | Beschrijving                                                                                                 |
-| ------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| GET     | `/capture-modes`               | Status van de AgentBridge-/aangepaste-hosts-/HTTP_PROXY-/systeemproxymodi en de schakeloptie `tls-intercept` |
-| POST    | `/capture-modes/http-proxy`    | HTTP_PROXY-listener starten/stoppen (`{action: "start"\|"stop"}`)                                            |
-| POST    | `/capture-modes/system-proxy`  | Systeembrede proxy toepassen/terugzetten (`{action: "apply"\|"revert"}`)                                     |
-| POST    | `/capture-modes/tls-intercept` | Ontsleuteling van HTTPS-inhoud in proxymodus in- of uitschakelen (`{enabled: boolean}`)                      |
+| Methode | Pad                           | Beschrijving                                                              |
+| ------- | ----------------------------- | ------------------------------------------------------------------------- |
+| GET     | `/capture-modes`              | Status van de AgentBridge-/aangepaste-hosts-/HTTP_PROXY-/systeemproxymodi |
+| POST    | `/capture-modes/http-proxy`   | HTTP_PROXY-listener starten/stoppen (`{action: "start"\|"stop"}`)         |
+| POST    | `/capture-modes/system-proxy` | Systeembrede proxy toepassen/terugzetten (`{action: "apply"\|"revert"}`)  |
 
 > **TPROXY-ontsleuteling** (opnamemodus 5) wordt aangestuurd via een **afzonderlijke** route onder het
 > AgentBridge-voorvoegsel — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — en niet

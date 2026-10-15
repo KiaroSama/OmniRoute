@@ -131,6 +131,8 @@ ikki masʼuliyati saqlanib qoladi:
   masofaviy boshqaruv panellari provayder CRUD amallari uchun qonuniy ravishda
   foydalanadigan marshrutlar daraxtini haddan tashqari keng cheklab qoʻyardi.
 
+  Ish vaqti holati nusxasini yuklovchi bunday yozuvlarni saqlangan sozlamalar qatoridan ham chiqarib tashlaydi; eski JSON importi (`/api/settings/import-json`) esa chetlab o‘tish kalitlarini hech qachon yozmaydi. Har bir `LOCAL_ONLY_API_PREFIXES` yozuvi taqiqlash ro‘yxatida bo‘lishi yoki tekshiruvdan so‘ng chetlab o‘tishga yaroqli deb tasdiqlanishi kerak. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Kirishni audit qilish** — xost tashqarisidan hech narsa ushbu marshrutlarga yetib bormayotganini tekshirish uchun:
 
 - `/dashboard/settings/security` sahifasida **Authorization Inventory** bo‘limini oching: unda

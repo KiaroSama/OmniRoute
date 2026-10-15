@@ -124,6 +124,7 @@ const SAFE_PUBLIC_ERROR_IDENTIFIERS = new Set([
   "invalid_trailer",
   "key_allows_all_combos",
   "key_allows_all_models",
+  "kiro_tool_call_repair_retry_failed",
   "lease_action_invalid",
   "lease_api_key_invalid",
   "lease_authentication_required",

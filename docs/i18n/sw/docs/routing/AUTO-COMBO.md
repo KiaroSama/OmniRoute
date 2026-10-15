@@ -213,6 +213,8 @@ Auto-Combo Engine huchagua kwa nguvu mtoa huduma/modeli bora kwa kila ombi kwa k
 | `quality`             | 0.03               | Ishara ya ubora wa towe inayoongozwa na maoni kutoka kwa kifuatiliaji cha ubora wa matukio ya uelekezaji; wagombea wasio na uchunguzi hupokea alama ya kati ya 0.5                                                                                               |
 | `reliability`         | 0.00               | Sehemu ya mafanikio iliyozingatiwa, `1 - failureRate`, kutoka saa 24 za historia ya matumizi baada ya kufikia kiwango cha chini cha sampuli kumi (vinginevyo vipimo vya wakati halisi); wagombea wasio na uchunguzi husomwa kama 1.0. Kimezimwa kwa chaguomsingi |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Jumla:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` kama ilivyotangazwa katika `DEFAULT_WEIGHTS`; uzani uliosanidiwa na mtumiaji husawazishwa upya kuwa mgawanyo na `normalizeScoringWeights()` kabla ya ukadiriaji.
 
 ## Vifurushi vya Modi

@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS apribojimas:** HTTPS `CONNECT` tuneliuose pagal numatytąją nuostatą fiksuojami tik metaduomenys (pagrindinis kompiuteris, prievadas, laiko informacija) — TLS turinys neiššifruojamas. Norėdami tikrinti visą turinį, įjunkite perjungiklį „Iššifruoti HTTPS tarpinio serverio režimu“ (pasirenkama nuostata, reikia pasitikėti AgentBridge sertifikatu).
+**TLS apribojimas:** HTTPS `CONNECT` tuneliuose pagal numatytąją nuostatą fiksuojami tik metaduomenys (pagrindinis kompiuteris, prievadas, laiko informacija) — TLS turinys neiššifruojamas.
 
 **Prievado konfliktas:** Jei 8080 prievadas naudojamas, AgentBridge grąžina 409 su struktūrizuota klaida. Pakeiskite prievadą naudodami `INSPECTOR_HTTP_PROXY_PORT` aplinkos kintamąjį.
 
@@ -467,12 +467,11 @@ Bazinis kelias: `/api/tools/traffic-inspector/`
 
 ### Fiksavimo režimai
 
-| Metodas | Kelias                         | Aprašymas                                                                                                                                   |
-| ------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET     | `/capture-modes`               | AgentBridge / pasirinktinių pagrindinių kompiuterių / HTTP_PROXY / sistemos tarpinio serverio režimų būsena ir `tls-intercept` perjungiklis |
-| POST    | `/capture-modes/http-proxy`    | Paleisti / sustabdyti HTTP_PROXY klausyklę (`{action: "start"\|"stop"}`)                                                                    |
-| POST    | `/capture-modes/system-proxy`  | Taikyti / atkurti visos sistemos tarpinio serverio nuostatas (`{action: "apply"\|"revert"}`)                                                |
-| POST    | `/capture-modes/tls-intercept` | Perjungti HTTPS turinio iššifravimą tarpinio serverio režimu (`{enabled: boolean}`)                                                         |
+| Metodas | Kelias                        | Aprašymas                                                                                                   |
+| ------- | ----------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| GET     | `/capture-modes`              | AgentBridge / pasirinktinių pagrindinių kompiuterių / HTTP_PROXY / sistemos tarpinio serverio režimų būsena |
+| POST    | `/capture-modes/http-proxy`   | Paleisti / sustabdyti HTTP_PROXY klausyklę (`{action: "start"\|"stop"}`)                                    |
+| POST    | `/capture-modes/system-proxy` | Taikyti / atkurti visos sistemos tarpinio serverio nuostatas (`{action: "apply"\|"revert"}`)                |
 
 > **TPROXY iššifravimas** (5 fiksavimo režimas) valdomas **atskiru** maršrutu su
 > AgentBridge prefiksu — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — o ne

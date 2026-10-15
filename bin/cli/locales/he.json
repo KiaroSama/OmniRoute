@@ -1169,32 +1169,18 @@
   "sync": {
     "description": "סנכרון התצורה בין מופעי OmniRoute",
     "push": {
-      "description": "דחיפת התצורה לענן או למופע מרוחק",
-      "target": "יעד (cloud או context:name)",
-      "bundle": "חלקי חבילה לסנכרון",
-      "dryRun": "תצוגה מקדימה ללא החלה"
+      "description": "דחיפת התצורה לענן או למופע מרוחק"
     },
     "pull": {
-      "description": "משיכת תצורה מהענן או ממקור מרוחק",
-      "source": "מקור (ענן או context:name)",
-      "merge": "מיזוג עם התצורה הקיימת",
-      "replace": "החלפת התצורה הקיימת",
-      "dryRun": "תצוגה מקדימה ללא החלה"
-    },
-    "diff": {
-      "source": "הקשר מקור",
-      "target": "הקשר יעד"
+      "description": "משיכת תצורה מהענן או ממקור מרוחק"
     },
     "bundle": {
       "description": "ייצוא התצורה כקובץ חבילה",
-      "include": "חלקים להכללה (מופרדים בפסיקים)"
+      "token": "Sync token (from `sync tokens create`); defaults to OMNIROUTE_SYNC_TOKEN"
     },
     "import": {
       "description": "ייבוא קובץ חבילה",
       "dryRun": "אימות ללא החלה"
-    },
-    "initialize": {
-      "fromCloud": "אתחול מגיבוי בענן"
     },
     "tokens": {
       "description": "ניהול אסימוני סנכרון",
@@ -1206,9 +1192,6 @@
       "revoke": {
         "yes": "דילוג על אישור"
       }
-    },
-    "resolve": {
-      "description": "פתרון התנגשויות סנכרון באופן אינטראקטיבי"
     }
   },
   "config": {

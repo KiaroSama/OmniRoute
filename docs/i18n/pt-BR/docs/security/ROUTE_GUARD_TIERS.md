@@ -143,6 +143,8 @@ responsabilidades do operador permanecem:
   prefixo `/api/providers/` para capturá-las, ampliando excessivamente uma árvore de rotas
   que dashboards remotos usam legitimamente para operações CRUD de provedores.
 
+  O carregador de snapshots de execução também descarta essas entradas de uma linha de configurações armazenada, e a importação JSON legada (`/api/settings/import-json`) nunca grava as chaves de bypass. Cada entrada de `LOCAL_ONLY_API_PREFIXES` deve estar na lista de negação ou ter sido revisada como elegível para bypass. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Auditoria de acesso** — para verificar se nada fora do host está acessando essas rotas:
 
 - Abra o **Inventário de Autorização** em `/dashboard/settings/security`: ele exibe a

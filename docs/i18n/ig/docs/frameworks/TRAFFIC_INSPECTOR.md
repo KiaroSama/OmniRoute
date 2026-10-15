@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**Mmachi TLS:** A na-ejide ọwara HTTPS `CONNECT` dịka metadata naanị (onye nnabata, port, oge) — anaghị emeghe ezoro ezo nke ahụ TLS na ndabara. Gbanye nhọrọ "Mepee ezoro ezo HTTPS n'ụdị proxy" (a ga-ahọrọ ya n'onwe gị, ọ chọrọ ka a tụkwasị asambodo AgentBridge obi) iji nyochaa ahụ niile.
+**Mmachi TLS:** A na-ejide ọwara HTTPS `CONNECT` dịka metadata naanị (onye nnabata, port, oge) — anaghị emeghe ezoro ezo nke ahụ TLS na ndabara.
 
 **Esemokwu port:** Ọ bụrụ na a na-eji port 8080 eme ihe, AgentBridge na-eweghachi 409 nwere njehie ahaziri ahazi. Gbanwee port ahụ site na mgbanwe gburugburu `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -464,12 +464,11 @@ Mgbe buffer ruru `INSPECTOR_BUFFER_SIZE` (ndabara bụ 1000), ndenye ọhụrụ
 
 ### Ọnọdụ njide
 
-| Usoro | Ụzọ                            | Nkọwa                                                                                         |
-| ----- | ------------------------------ | --------------------------------------------------------------------------------------------- |
-| GET   | `/capture-modes`               | Ọnọdụ nke AgentBridge / custom-hosts / HTTP_PROXY / system-proxy yana ngbanwe `tls-intercept` |
-| POST  | `/capture-modes/http-proxy`    | Malite/kwụsị listener HTTP_PROXY (`{action: "start"\|"stop"}`)                                |
-| POST  | `/capture-modes/system-proxy`  | Tinye/weghachite proxy nke sistemụ niile (`{action: "apply"\|"revert"}`)                      |
-| POST  | `/capture-modes/tls-intercept` | Gbanyụọ ma ọ bụ gbanye mmepechi ahụ HTTPS na ọnọdụ proxy (`{enabled: boolean}`)               |
+| Usoro | Ụzọ                           | Nkọwa                                                                    |
+| ----- | ----------------------------- | ------------------------------------------------------------------------ |
+| GET   | `/capture-modes`              | Ọnọdụ nke AgentBridge / custom-hosts / HTTP_PROXY / system-proxy         |
+| POST  | `/capture-modes/http-proxy`   | Malite/kwụsị listener HTTP_PROXY (`{action: "start"\|"stop"}`)           |
+| POST  | `/capture-modes/system-proxy` | Tinye/weghachite proxy nke sistemụ niile (`{action: "apply"\|"revert"}`) |
 
 > **TPROXY decrypt** (ọnọdụ njide 5) na-eji ụzọ **dị iche** dị n'okpuru
 > prefix AgentBridge — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — ọ bụghị

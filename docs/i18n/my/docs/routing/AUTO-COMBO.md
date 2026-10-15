@@ -193,6 +193,8 @@ Auto-Combo Engine သည် request တစ်ခုချင်းစီအတ�
 | `quality`             | 0.03       | routing-event quality tracker မှ feedback အခြေခံ output-quality signal; observation မရှိသော candidate များသည် ကြားနေတန်ဖိုး 0.5 ရရှိသည်                                                                                                |
 | `reliability`         | 0.00       | အနည်းဆုံး sample ဆယ်ခု လိုအပ်ချက်အောက်ရှိ 24h usage history မှ တွေ့ရှိထားသော အောင်မြင်မှုအချိုး `1 - failureRate` (ထိုသို့မဟုတ်ပါက real-time metrics); observation မရှိသော candidate များကို 1.0 ဟု သတ်မှတ်သည်။ မူလအားဖြင့် ပိတ်ထားသည် |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **စုစုပေါင်း:** `DEFAULT_WEIGHTS` တွင် ကြေညာထားသည့်အတိုင်း `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` ဖြစ်သည်။ အသုံးပြုသူ သတ်မှတ်ထားသော weight များကို scoring မလုပ်မီ `normalizeScoringWeights()` ဖြင့် distribution တစ်ခုအဖြစ် ပြန်လည်စံသတ်မှတ်သည်။
 
 ## Mode Pack များ

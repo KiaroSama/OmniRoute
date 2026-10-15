@@ -209,6 +209,8 @@ Die Auto-Combo-Engine wählt mithilfe einer **Bewertungsfunktion mit 16 Faktoren
 | `quality`             | 0.03               | Feedbackgesteuertes Signal für die Ausgabequalität aus dem Qualitäts-Tracker für Routing-Ereignisse; Kandidaten ohne Beobachtungen erhalten den neutralen Wert 0.5                                                                                       |
 | `reliability`         | 0.00               | Beobachteter Erfolgsanteil, `1 - failureRate`, aus dem Nutzungsverlauf der letzten 24 Stunden ab einer Mindestanzahl von zehn Stichproben (andernfalls Echtzeitmetriken); Kandidaten ohne Beobachtungen erhalten den Wert 1.0. Standardmäßig deaktiviert |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Summe:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, wie in `DEFAULT_WEIGHTS` deklariert; benutzerdefinierte Gewichtungen werden vor der Bewertung durch `normalizeScoringWeights()` neu zu einer Verteilung normalisiert.
 
 ## Modus-Pakete

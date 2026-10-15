@@ -219,6 +219,8 @@ O Mecanismo de Combo Automático seleciona dinamicamente o melhor provedor/model
 | `quality`             | 0.03        | Sinal de qualidade da saída orientado por feedback, proveniente do rastreador de qualidade de eventos de roteamento; candidatos sem observações recebem um valor neutro de 0.5                                                            |
 | `reliability`         | 0.00        | Proporção de sucessos observada, `1 - failureRate`, com base em 24h de histórico de uso e um mínimo de dez amostras (caso contrário, métricas em tempo real); candidatos sem observações são considerados como 1.0. Desativada por padrão |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Soma:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, conforme declarado em `DEFAULT_WEIGHTS`; pesos configurados pelo usuário são renormalizados em uma distribuição por `normalizeScoringWeights()` antes do cálculo da pontuação.
 
 ## Pacotes de modo

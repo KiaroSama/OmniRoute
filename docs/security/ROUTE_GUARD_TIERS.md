@@ -132,7 +132,10 @@ operator responsibilities remain:
   only with a `manage`-scoped API key. The `SPAWN_CAPABLE_PREFIXES` can never be
   added to the bypass list — the zod schema rejects them and
   `isLocalOnlyBypassableByManageScope` denies them at runtime (defence-in-depth),
-  which is what the dashboard means by "cannot be made bypassable". The runtime
+  which is what the dashboard means by "cannot be made bypassable". The same
+  deny-list also holds a few LOCAL_ONLY routes that do not spawn but must never be
+  remotely reachable either — `/api/oauth/kiro/auto-import` (reads host-local Kiro
+  credential files), `/api/discovery/` and `/api/issue-agent/`. The runtime
   snapshot loader also drops such entries from a stored settings row, and the
   legacy JSON import (`/api/settings/import-json`) never writes the bypass keys.
   Every `LOCAL_ONLY_API_PREFIXES` entry must be either in the deny-list or
@@ -183,6 +186,17 @@ and echoes freshly minted Basic credentials, `DELETE` rotates them, and the pare
 the Obsidian REST API token. GHSA-62vw only masked the `GET` password reveal; the issuance was
 still on the fail-open tier (GHSA-7pq4-8pvv-rx7r). `enableObsidianVaultSync()` additionally
 refuses a vault that is, sits inside, or contains the data directory.
+
+#### Credential exports are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. Sync token issuance (`POST /api/sync/tokens`) uses the
+same helper, plus the trusted loopback internal-service token.
 
 ### Fresh-install bootstrap is loopback-only — by real peer, not `Host`
 

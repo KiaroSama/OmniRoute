@@ -260,6 +260,8 @@ Perintah `tokens` memerlukan kelayakan **pentadbir**. Anda juga boleh mengurus
 token dalam papan pemuka di bawah **Tetapan → Token Akses** (cipta, batalkan,
 salin sekali).
 
+Token tidak boleh dicipta dengan keistimewaan yang melebihi penciptanya. Hanya pengendali boleh mencipta token `admin`: melalui sesi papan pemuka, CLI setempat pada pelayan itu sendiri, `omniroute connect` dengan kata laluan atau instans yang log masuknya dinyahdayakan. Kelayakan mesin (token akses `admin` atau kunci API dengan skop `manage`/`admin`) hanya boleh mencipta token `write` dan `read`; permintaan `--scope admin` menggunakan kelayakan tersebut mengembalikan `403`.
+
 ---
 
 ## Mengkonfigurasi CLI pengekodan daripada katalog jauh

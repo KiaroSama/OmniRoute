@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**מגבלת TLS:** מנהרות `CONNECT` של HTTPS נלכדות כמטא-נתונים בלבד (מארח, יציאה ותזמון) — גוף ה-TLS אינו מפוענח כברירת מחדל. הפעילו את המתג "פענוח HTTPS במצב proxy" (הצטרפות מפורשת, דורש מתן אמון באישור של AgentBridge) כדי לבדוק את הגוף במלואו.
+**מגבלת TLS:** מנהרות `CONNECT` של HTTPS נלכדות כמטא-נתונים בלבד (מארח, יציאה ותזמון) — גוף ה-TLS אינו מפוענח כברירת מחדל.
 
 **התנגשות יציאות:** אם יציאה 8080 נמצאת בשימוש, AgentBridge מחזיר 409 עם שגיאה מובנית. שנו את היציאה באמצעות משתנה הסביבה `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -464,12 +464,11 @@ netsh winhttp reset proxy
 
 ### מצבי לכידה
 
-| שיטה | נתיב                           | תיאור                                                                                                     |
-| ---- | ------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| GET  | `/capture-modes`               | מצב המצבים AgentBridge / מארחים מותאמים אישית / HTTP_PROXY / proxy של המערכת, יחד עם המתג `tls-intercept` |
-| POST | `/capture-modes/http-proxy`    | הפעלה/עצירה של מאזין HTTP_PROXY (`{action: "start"\|"stop"}`)                                             |
-| POST | `/capture-modes/system-proxy`  | החלה/ביטול של proxy כלל-מערכתי (`{action: "apply"\|"revert"}`)                                            |
-| POST | `/capture-modes/tls-intercept` | הפעלה או השבתה של פענוח גוף HTTPS במצב proxy (`{enabled: boolean}`)                                       |
+| שיטה | נתיב                          | תיאור                                                                        |
+| ---- | ----------------------------- | ---------------------------------------------------------------------------- |
+| GET  | `/capture-modes`              | מצב המצבים AgentBridge / מארחים מותאמים אישית / HTTP_PROXY / proxy של המערכת |
+| POST | `/capture-modes/http-proxy`   | הפעלה/עצירה של מאזין HTTP_PROXY (`{action: "start"\|"stop"}`)                |
+| POST | `/capture-modes/system-proxy` | החלה/ביטול של proxy כלל-מערכתי (`{action: "apply"\|"revert"}`)               |
 
 > **פענוח TPROXY** (מצב לכידה 5) מופעל באמצעות נתיב **נפרד** תחת
 > התחילית של AgentBridge — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — ולא

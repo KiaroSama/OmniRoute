@@ -84,6 +84,10 @@ Tijek (Flow):
 Prisilni načini rada rade kratki spoj **prije** nego što se pokrene auto heuristika; `auto` ponašanje
 je identično u bajt guardrailu prije PR-1.
 
+#### Opseg API ključa (`visionBridgeKeyScope.ts`)
+
+Ako API ključ ograničava veze, skupine kvota ili modele (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), preusmjeravanje i opis biraju samo modele i veze dopuštene tom ključu. Opis uvijek prolazi kroz internu petlju OmniRoutea sa zaglavljem `x-omniroute-self-loop-key-id`, pa se pravila za veze i modele ponovno provode. `enforceApiKeyPolicy()` prihvaća zaglavlje samo uz bearer token te petlje: može samo suziti pristup, a nepoznat identifikator se odbija. Ako nema dopuštenog vizualnog modela, opis se preskače i zahtjev ostaje nepromijenjen, kao uz isključenu zaštitu (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Zahtjevi bez ključa i ključevi bez tih ograničenja rade kao prije.
+
 #### Prompt za opisivanje svjestan zadatka (`modalityBridgeVisionTaskAware`)
 
 Zadano **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) dodaje

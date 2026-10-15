@@ -15,6 +15,16 @@ import {
 } from "../config/providerHeaderProfiles.ts";
 import { sanitizeResponsesInputItems } from "../services/responsesInputSanitizer.ts";
 import { stripUnsupportedParams } from "../translator/paramSupport.ts";
+import {
+  COPILOT_AUTO_API_VERSION,
+  COPILOT_AUTO_TIMEOUT_MS,
+  buildAutoSessionKey,
+  copilotAutoSessions,
+  extractAutoPrompt,
+  hasAutoImageInput,
+  parseAutoDecision,
+  type CopilotAutoDecision,
+} from "./github/autoModel.ts";
 
 /** Correlation-id fallback for runtimes without crypto.randomUUID — still CSPRNG-backed. */
 function randomIdFallback(): string {
@@ -42,6 +52,11 @@ export interface RefreshedCopilotCredentials {
 }
 
 type GithubExecutorConfig = ProviderConfig & Record<string, unknown>;
+
+/** Outcome of a Copilot `/auto` model selection (see ./github/autoModel.ts). */
+export type CopilotAutoResolution =
+  | { ok: true; decision: CopilotAutoDecision; cached: boolean }
+  | { ok: false; status: number; message: string };
 
 export class GithubExecutor extends BaseExecutor {
   constructor(provider = "github", config?: GithubExecutorConfig) {
@@ -397,7 +412,98 @@ export class GithubExecutor extends BaseExecutor {
       headers["copilot-vision-request"] = "true";
     }
 
+    // Copilot "auto": a request whose model was picked by /auto must carry the
+    // session token that decision returned, on the API version that issued it.
+    const sessionToken = (credentials as { copilotSessionToken?: unknown }).copilotSessionToken;
+    if (typeof sessionToken === "string" && sessionToken) {
+      headers["Copilot-Session-Token"] = sessionToken;
+      headers["x-github-api-version"] = COPILOT_AUTO_API_VERSION;
+    }
+
     return headers;
+  }
+
+  /** Copilot's `/auto` endpoint lives next to /chat/completions on the same host. */
+  getAutoUrl(): string {
+    const base = this.config.baseUrl || "https://api.githubcopilot.com/chat/completions";
+    return base.replace(/\/chat\/completions\/?$/, "/auto");
+  }
+
+  /**
+   * Ask Copilot which concrete model should serve an `auto` request. Decisions are
+   * cached per (account, conversation) until shortly before their session token
+   * expires, and re-resolved when an image turn arrives on a non-vision pick.
+   */
+  async resolveAutoModel({
+    body,
+    credentials,
+    sessionKey,
+    signal,
+    log,
+  }: {
+    body: unknown;
+    credentials: ProviderCredentials;
+    sessionKey?: string | null;
+    signal?: AbortSignal | null;
+    log?: { info?: (tag: string, message: string) => void } | null;
+  }): Promise<CopilotAutoResolution> {
+    const cacheKey = buildAutoSessionKey(credentials as Record<string, unknown>, sessionKey);
+    const hasImage = hasAutoImageInput(body);
+    const cached = copilotAutoSessions.getUsable(cacheKey, hasImage);
+    if (cached) return { ok: true, decision: cached, cached: true };
+
+    const prompt = extractAutoPrompt(body);
+    if (!prompt) {
+      return { ok: false, status: 400, message: "GitHub Copilot auto requires a user text prompt" };
+    }
+    const url = this.getAutoUrl();
+    this.assertOutboundUrlAllowed(url);
+    const headers = this.buildHeaders(credentials, false);
+    headers["x-github-api-version"] = COPILOT_AUTO_API_VERSION;
+    const timeout = AbortSignal.timeout(COPILOT_AUTO_TIMEOUT_MS);
+    const requestSignal = signal ? AbortSignal.any([signal, timeout]) : timeout;
+
+    let response: Response;
+    try {
+      response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(hasImage ? { prompt, has_image: true } : { prompt }),
+        signal: requestSignal,
+      });
+    } catch (error) {
+      const timedOut = timeout.aborted && !signal?.aborted;
+      return {
+        ok: false,
+        status: timedOut ? 504 : 502,
+        message: `GitHub Copilot auto model selection failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      };
+    }
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => "");
+      return {
+        ok: false,
+        status: response.status,
+        message: `GitHub Copilot auto model selection failed (${response.status})${
+          detail ? `: ${detail}` : ""
+        }`,
+      };
+    }
+
+    const decision = parseAutoDecision(await response.json().catch(() => null));
+    if (!decision) {
+      return {
+        ok: false,
+        status: 502,
+        message: "GitHub Copilot auto returned no selected model or session token",
+      };
+    }
+    copilotAutoSessions.set(cacheKey, decision);
+    log?.info?.("GITHUB", `Copilot auto selected ${decision.model}`);
+    return { ok: true, decision, cached: false };
   }
 
   // Case-insensitive read of a single client header value. Client header maps

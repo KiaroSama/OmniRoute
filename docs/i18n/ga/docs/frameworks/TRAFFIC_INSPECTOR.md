@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**Teorainn TLS:** Ní ghabhtar tolláin HTTPS `CONNECT` ach mar mheiteashonraí (óstach, port, uainiú) — ní dhíchriptítear corp TLS de réir réamhshocraithe. Cumasaigh an scorán "Díchriptigh HTTPS i mód seachfhreastalaí" (rogha isteach, ní mór muinín a bheith as teastas AgentBridge) chun an corp iomlán a iniúchadh.
+**Teorainn TLS:** Ní ghabhtar tolláin HTTPS `CONNECT` ach mar mheiteashonraí (óstach, port, uainiú) — ní dhíchriptítear corp TLS de réir réamhshocraithe.
 
 **Coinbhleacht poirt:** Má tá port 8080 in úsáid, seolann AgentBridge 409 ar ais le hearráid struchtúrtha. Athraigh an port tríd an athróg timpeallachta `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -466,12 +466,11 @@ Bunchonair: `/api/tools/traffic-inspector/`
 
 ### Móid gabhála
 
-| Modh | Conair                         | Cur síos                                                                                                           |
-| ---- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| GET  | `/capture-modes`               | Staid mhóid AgentBridge / óstaigh shaincheaptha / HTTP_PROXY / seachfhreastalaí córais + an scorán `tls-intercept` |
-| POST | `/capture-modes/http-proxy`    | Tosaigh/stop éisteoir HTTP_PROXY (`{action: "start"\|"stop"}`)                                                     |
-| POST | `/capture-modes/system-proxy`  | Cuir seachfhreastalaí uile-chórais i bhfeidhm/ar ais (`{action: "apply"\|"revert"}`)                               |
-| POST | `/capture-modes/tls-intercept` | Scoránaigh díchriptiú corp HTTPS i mód seachfhreastalaí (`{enabled: boolean}`)                                     |
+| Modh | Conair                        | Cur síos                                                                               |
+| ---- | ----------------------------- | -------------------------------------------------------------------------------------- |
+| GET  | `/capture-modes`              | Staid mhóid AgentBridge / óstaigh shaincheaptha / HTTP_PROXY / seachfhreastalaí córais |
+| POST | `/capture-modes/http-proxy`   | Tosaigh/stop éisteoir HTTP_PROXY (`{action: "start"\|"stop"}`)                         |
+| POST | `/capture-modes/system-proxy` | Cuir seachfhreastalaí uile-chórais i bhfeidhm/ar ais (`{action: "apply"\|"revert"}`)   |
 
 > Tá **díchriptiú TPROXY** (mód gabhála 5) á rialú ag bealach **ar leith** faoin
 > réimír AgentBridge — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — ní

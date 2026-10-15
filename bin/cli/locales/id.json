@@ -1169,32 +1169,18 @@
   "sync": {
     "description": "Sinkronkan konfigurasi antarinstans OmniRoute",
     "push": {
-      "description": "Kirim konfigurasi ke cloud atau instans jarak jauh",
-      "target": "Target (cloud atau context:name)",
-      "bundle": "Bagian bundel yang akan disinkronkan",
-      "dryRun": "Pratinjau tanpa menerapkan"
+      "description": "Kirim konfigurasi ke cloud atau instans jarak jauh"
     },
     "pull": {
-      "description": "Ambil konfigurasi dari cloud atau instans jarak jauh",
-      "source": "Sumber (cloud atau context:name)",
-      "merge": "Gabungkan dengan konfigurasi yang ada",
-      "replace": "Ganti konfigurasi yang ada",
-      "dryRun": "Pratinjau tanpa menerapkan"
-    },
-    "diff": {
-      "source": "Konteks sumber",
-      "target": "Konteks target"
+      "description": "Ambil konfigurasi dari cloud atau instans jarak jauh"
     },
     "bundle": {
       "description": "Ekspor konfigurasi sebagai file bundel",
-      "include": "Bagian yang akan disertakan (dipisahkan koma)"
+      "token": "Sync token (from `sync tokens create`); defaults to OMNIROUTE_SYNC_TOKEN"
     },
     "import": {
       "description": "Impor file bundel",
       "dryRun": "Validasi tanpa menerapkan"
-    },
-    "initialize": {
-      "fromCloud": "Inisialisasi dari cadangan cloud"
     },
     "tokens": {
       "description": "Kelola token sinkronisasi",
@@ -1206,9 +1192,6 @@
       "revoke": {
         "yes": "Lewati konfirmasi"
       }
-    },
-    "resolve": {
-      "description": "Selesaikan konflik sinkronisasi secara interaktif"
     }
   },
   "config": {

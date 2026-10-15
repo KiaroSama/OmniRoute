@@ -85,6 +85,10 @@ Flyt:
 Tvungne moduser kortslutter **før** auto-heuristikken kjører; `auto`-oppførselen
 er byte-identisk med sikkerhetsbarrieren før PR-1.
 
+#### API-nøkkelens omfang (`visionBridgeKeyScope.ts`)
+
+Hvis API-nøkkelen begrenser tilkoblinger, kvotegrupper eller modeller (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), velger omruting og beskrivelse bare modeller og tilkoblinger som nøkkelen har tilgang til. Beskrivelsen går alltid gjennom OmniRoutes interne sløyfe med headeren `x-omniroute-self-loop-key-id`, slik at tilkoblings- og modellreglene håndheves på nytt. `enforceApiKeyPolicy()` godtar headeren bare sammen med sløyfens bearer-token: den kan kun begrense tilgangen, og en ukjent ID avvises. Uten en tillatt synsmodell hoppes beskrivelsen over, og forespørselen forblir uendret, som ved deaktivert beskyttelse (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Forespørsler uten nøkkel og nøkler uten disse begrensningene fungerer som før.
+
 #### Oppgavebevisst beskrivelsesprompt (`modalityBridgeVisionTaskAware`)
 
 Standard **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) legger til

@@ -145,6 +145,8 @@ responsabbiltajiet għall-operatur:
   prefiss kollu `/api/providers/` biex jaqbadhom, u b’hekk iwessa’ żżejjed siġra ta’ rotot
   li d-dashboards remoti jużaw b’mod leġittimu għal CRUD tal-fornituri.
 
+  Il-loader tal-istampa tal-istat waqt l-eżekuzzjoni jneħħi wkoll dawn l-entrati minn ringiela ta’ settings maħżuna, u l-importazzjoni JSON l-antika (`/api/settings/import-json`) qatt ma tikteb iċ-ċwievet tal-bypass. Kull entrata ta’ `LOCAL_ONLY_API_PREFIXES` trid tkun fil-lista ta’ ċaħda jew tkun ġiet riveduta u approvata għall-bypass. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Awditjar tal-aċċess** — biex tivverifika li xejn minn barra l-host mhu qed jilħaq dawn ir-rotot:
 
 - Iftaħ l-**Inventarju tal-Awtorizzazzjoni** fuq `/dashboard/settings/security`: dan juri l-lista attiva ta' prefissi LOCAL_ONLY, liema prefissi jistgħu jiġu evitati, u s-sett iddeterminat waqt il-kompilazzjoni li jista' joħloq proċessi ("ma jistax isir evitabbli").

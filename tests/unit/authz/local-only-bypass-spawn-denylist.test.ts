@@ -65,6 +65,9 @@ const CODE_EXEC_ROUTES: ReadonlyArray<{ prefix: string; sample: string }> = [
   { prefix: "/api/providers/validate", sample: "/api/providers/validate" },
   { prefix: "/api/providers/import", sample: "/api/providers/import" },
   { prefix: "/api/providers/bulk", sample: "/api/providers/bulk" },
+  // Not a spawn: reads host-local Kiro credential files (kiro-cli SQLite, ~/.aws/sso/cache).
+  // Held to the same never-bypassable bar so a manage-scoped key cannot read them remotely.
+  { prefix: "/api/oauth/kiro/auto-import", sample: "/api/oauth/kiro/auto-import" },
 ];
 
 function schemaRejectsBypassPrefix(prefix: string): boolean {
@@ -95,7 +98,14 @@ for (const { prefix, sample } of CODE_EXEC_ROUTES) {
 }
 
 test("schema refuses a parent prefix that would cover a spawn-capable route", () => {
-  for (const parent of ["/api/", "/api/cli-tools/", "/api/acp/", "/api/middleware", "/"]) {
+  for (const parent of [
+    "/api/",
+    "/api/cli-tools/",
+    "/api/acp/",
+    "/api/middleware",
+    "/api/oauth/kiro/",
+    "/",
+  ]) {
     assert.equal(schemaRejectsBypassPrefix(parent), true, parent);
   }
 });
@@ -185,7 +195,6 @@ const REVIEWED_BYPASS_ELIGIBLE = new Map<string, string>([
   ["/api/copilot/", "in-process LLM driver; documented opt-in remote access"],
   ["/api/jobs", "JobRegistry admin; runs only built-in job handlers"],
   ["/api/jobs/", "JobRegistry admin children"],
-  ["/api/oauth/kiro/auto-import", "reads host-local Kiro credential files; no spawn"],
   ["/api/resilience/connections", "per-account resilience state"],
 ]);
 

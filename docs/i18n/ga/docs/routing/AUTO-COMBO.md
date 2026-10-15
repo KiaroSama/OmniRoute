@@ -195,6 +195,8 @@ Roghnaíonn an tInneall Uath-Theaglama go dinimiciúil an soláthraí/samhail is
 | `quality`             | 0.03                 | Comhartha cáilíochta aschuir atá bunaithe ar aiseolas ó rianaire cáilíochta na dteagmhas ródúcháin; faigheann iarrthóirí nach bhfuil aon bhreathnuithe acu luach neodrach 0.5                                                               |
 | `reliability`         | 0.00                 | Cion na n-éachtaí breathnaithe, `1 - failureRate`, ó 24 uair an chloig de stair úsáide faoi réir íosmhéid deich sampla (méadrachtaí fíor-ama murach sin); léitear 1.0 d'iarrthóirí gan bhreathnuithe. Díchumasaithe de réir réamhshocraithe |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Suim:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` mar a dhearbhaítear in `DEFAULT_WEIGHTS`; déanann `normalizeScoringWeights()` ualuithe atá cumraithe ag an úsáideoir a athnormalú ina ndáileadh roimh an scóráil.
 
 ## Pacáistí Móid

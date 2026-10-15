@@ -249,6 +249,8 @@ omniroute tokens scopes               # bayyana scopes guda uku
 Umarnin `tokens` suna buƙatar credential na **admin**. Haka kuma za ka iya sarrafa tokens a cikin
 dashboard ƙarƙashin **Saituna → Access Tokens** (ƙirƙira, sokewa, kwafewa sau ɗaya).
 
+Ba za a taɓa ƙirƙirar token da izini fiye da na wanda ya ƙirƙire shi ba. Mai gudanarwa kaɗai zai iya ƙirƙirar token na `admin`: ta zaman dashboard, CLI na cikin uwar garken da kanta, `omniroute connect` da kalmar sirri, ko a wata instance da aka kashe shiga cikinta. Bayanan shaidar na'ura (token na samun dama na `admin` ko maɓallin API mai iyakar `manage`/`admin`) za su iya ƙirƙirar token na `write` da `read` kawai; neman `--scope admin` da su yana mayar da `403`.
+
 ---
 
 ## Saita CLI na coding daga catalog na nesa

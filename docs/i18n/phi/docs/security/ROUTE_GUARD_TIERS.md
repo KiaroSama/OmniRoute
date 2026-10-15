@@ -145,6 +145,8 @@ responsibilidad ang operator:
   buong `/api/providers/` prefix upang mahuli ang mga ito, na magiging labis na pagpapalawak sa isang route tree
   na lehitimong ginagamit ng mga remote dashboard para sa provider CRUD.
 
+  Inaalis din ng loader ng runtime snapshot ang ganitong mga entry mula sa nakaimbak na hanay ng settings, at hindi kailanman isinusulat ng lumang JSON import (`/api/settings/import-json`) ang mga bypass key. Ang bawat entry sa `LOCAL_ONLY_API_PREFIXES` ay dapat nasa deny-list o nasuri at naaprubahan para sa bypass. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Pag-audit ng access** — upang matiyak na walang nakakaabot sa mga route na ito mula sa labas ng host:
 
 - Buksan ang **Imbentaryo ng Awtorisasyon** sa `/dashboard/settings/security`: ipinapakita nito ang

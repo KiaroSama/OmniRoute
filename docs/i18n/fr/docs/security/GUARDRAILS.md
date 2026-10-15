@@ -84,6 +84,10 @@ Flux:
 Les modes forcés court-circuitent **avant** l'exécution de l'heuristique automatique; le comportement
 `auto` est identique au garde-fou pré-PR-1.
 
+#### Périmètre de la clé API (`visionBridgeKeyScope.ts`)
+
+Si la clé API restreint les connexions, les pools de quotas ou les modèles (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), la redirection et la description ne choisissent que les modèles et connexions autorisés pour cette clé. La description passe toujours par la boucle interne d'OmniRoute avec l'en-tête `x-omniroute-self-loop-key-id`, qui réapplique les politiques de connexion et de modèle. `enforceApiKeyPolicy()` n'accepte cet en-tête qu'avec le jeton bearer de la boucle : il peut uniquement réduire l'accès, et un identifiant inconnu est rejeté. Sans modèle visuel autorisé, la description est ignorée et la requête reste intacte, comme lorsque la protection est désactivée (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Les requêtes sans clé et les clés sans ces restrictions conservent leur comportement antérieur.
+
 #### Invite de description sensible à la tâche (`modalityBridgeVisionTaskAware`)
 
 Par défaut **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) ajoute

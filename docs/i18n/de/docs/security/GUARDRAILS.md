@@ -56,6 +56,10 @@ Ablauf:
 
 Erzwungene Modi schalten **vor** der Ausführung der Auto-Heuristik kurz; das `auto`-Verhalten ist byte-identisch mit der Guardrail vor PR-1.
 
+#### Geltungsbereich des API-Schlüssels (`visionBridgeKeyScope.ts`)
+
+Beschränkt der API-Schlüssel Verbindungen, Kontingent-Pools oder Modelle (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), wählen Umleitung und Beschreibung nur für diesen Schlüssel zulässige Modelle und Verbindungen. Die Beschreibung läuft immer über die OmniRoute-Selbstschleife mit dem Header `x-omniroute-self-loop-key-id`, sodass die Verbindungs- und Modellrichtlinie erneut greift. `enforceApiKeyPolicy()` berücksichtigt den Header nur zusammen mit dem Bearer-Token der Selbstschleife: Er kann den Zugriff nur einschränken; eine unbekannte ID wird abgewiesen. Ohne zulässiges Vision-Modell entfällt die Beschreibung, und die Anfrage bleibt wie bei deaktivierter Schutzfunktion unverändert (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Anfragen ohne Schlüssel und Schlüssel ohne diese Einschränkungen verhalten sich wie zuvor.
+
 #### Aufgabenbewusster Beschreibungsprompt (`modalityBridgeVisionTaskAware`)
 
 Standardmäßig **wahr**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) hängt den Text der **letzten Benutzernachricht** (auf 500 Zeichen gekürzt) an den Basis-Beschreibungsprompt an, lenkt die Beschreibung auf das, was der Benutzer tatsächlich gefragt hat (Codex-Vision-Proxy-Muster), und fordert das Vision-Modell auf, sichtbaren Text zu transkribieren. Wenn das Flag deaktiviert ist – oder kein Benutzertext vorhanden ist – wird der Basis-Prompt unverändert verwendet.

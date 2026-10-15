@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS کی حد:** HTTPS `CONNECT` ٹنلز کو صرف میٹا ڈیٹا (ہوسٹ، پورٹ، وقت) کی صورت میں کیپچر کیا جاتا ہے — ڈیفالٹ طور پر TLS باڈی کو ڈکرپٹ نہیں کیا جاتا۔ باڈی کے مکمل معائنے کے لیے "پراکسی موڈ میں HTTPS ڈکرپٹ کریں" ٹوگل فعال کریں (اختیاری، AgentBridge سرٹیفکیٹ کا قابلِ اعتماد ہونا ضروری ہے)۔
+**TLS کی حد:** HTTPS `CONNECT` ٹنلز کو صرف میٹا ڈیٹا (ہوسٹ، پورٹ، وقت) کی صورت میں کیپچر کیا جاتا ہے — ڈیفالٹ طور پر TLS باڈی کو ڈکرپٹ نہیں کیا جاتا۔
 
 **پورٹ کا ٹکراؤ:** اگر پورٹ 8080 استعمال میں ہو تو AgentBridge ایک منظم ایرر کے ساتھ 409 واپس کرتا ہے۔ `INSPECTOR_HTTP_PROXY_PORT` ماحولیاتی متغیر کے ذریعے پورٹ تبدیل کریں۔
 
@@ -464,12 +464,11 @@ netsh winhttp reset proxy
 
 ### کیپچر موڈز
 
-| طریقہ | پاتھ                           | وضاحت                                                                                         |
-| ----- | ------------------------------ | --------------------------------------------------------------------------------------------- |
-| GET   | `/capture-modes`               | AgentBridge / حسبِ ضرورت ہوسٹس / HTTP_PROXY / سسٹم پراکسی موڈز کی حالت + `tls-intercept` ٹوگل |
-| POST  | `/capture-modes/http-proxy`    | HTTP_PROXY لسنر شروع/بند کریں (`{action: "start"\|"stop"}`)                                   |
-| POST  | `/capture-modes/system-proxy`  | سسٹم گیر پراکسی لاگو/واپس بحال کریں (`{action: "apply"\|"revert"}`)                           |
-| POST  | `/capture-modes/tls-intercept` | پراکسی موڈ میں HTTPS باڈی ڈکرپشن ٹوگل کریں (`{enabled: boolean}`)                             |
+| طریقہ | پاتھ                          | وضاحت                                                                  |
+| ----- | ----------------------------- | ---------------------------------------------------------------------- |
+| GET   | `/capture-modes`              | AgentBridge / حسبِ ضرورت ہوسٹس / HTTP_PROXY / سسٹم پراکسی موڈز کی حالت |
+| POST  | `/capture-modes/http-proxy`   | HTTP_PROXY لسنر شروع/بند کریں (`{action: "start"\|"stop"}`)            |
+| POST  | `/capture-modes/system-proxy` | سسٹم گیر پراکسی لاگو/واپس بحال کریں (`{action: "apply"\|"revert"}`)    |
 
 > **TPROXY ڈکرپٹ** (کیپچر موڈ 5) کو AgentBridge سابقے کے تحت ایک **علیحدہ** روٹ چلاتا ہے —
 > `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — یہ

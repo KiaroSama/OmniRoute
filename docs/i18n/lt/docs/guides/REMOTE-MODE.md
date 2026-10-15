@@ -258,6 +258,8 @@ omniroute tokens scopes               # paaiškinti tris aprėptis
 pat galite valdyti valdymo skydelio skiltyje **Nustatymai → Prieigos raktai**
 (sukurti, atšaukti, nukopijuoti vieną kartą).
 
+Žetono niekada negalima sukurti su didesnėmis teisėmis, nei turi jo kūrėjas. Tik operatorius gali sukurti `admin` žetoną: per valdymo skydelio seansą, vietinę CLI pačiame serveryje, `omniroute connect` su slaptažodžiu arba egzemplioriuje, kuriame prisijungimas išjungtas. Mašininiai kredencialai (`admin` prieigos žetonas arba API raktas su `manage`/`admin` aprėptimi) gali kurti tik `write` ir `read` žetonus; jais pateikta užklausa `--scope admin` grąžina `403`.
+
 ---
 
 ## Programavimo CLI konfigūravimas iš nuotolinio katalogo

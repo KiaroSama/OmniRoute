@@ -579,7 +579,7 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  if (!Array.isArray(body.ids) || body.ids.length === 0) {
+  if (!body || typeof body !== "object" || !Array.isArray(body.ids) || body.ids.length === 0) {
     return NextResponse.json(
       { error: "ids must be a non-empty array of connection IDs" },
       { status: 400 }

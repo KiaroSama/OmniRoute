@@ -421,7 +421,8 @@ export function geminiToClaudeResponse(chunk, state) {
     } else if (reason === "max_tokens" || reason === "length") {
       stopReason = "max_tokens";
     } else if (reason === "safety" || reason === "recitation" || reason === "blocklist") {
-      stopReason = "end_turn";
+      // Claude's own name for a blocked turn; end_turn would read as complete.
+      stopReason = "refusal";
     } else if (isAbortFinishReason(reason)) {
       stopReason = "tool_use";
     } else {

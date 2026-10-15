@@ -216,6 +216,8 @@ Mechanizm Auto-Combo dynamicznie wybiera najlepszego dostawcę/model dla każdeg
 | `quality`             | 0.03          | Sygnał jakości wyników oparty na informacjach zwrotnych z modułu śledzenia jakości zdarzeń routingu; kandydaci bez obserwacji otrzymują neutralną wartość 0.5                                                                                                              |
 | `reliability`         | 0.00          | Zaobserwowany udział sukcesów, `1 - failureRate`, obliczany na podstawie 24 godzin historii użycia z minimalnym progiem dziesięciu próbek (w przeciwnym razie używane są metryki czasu rzeczywistego); kandydaci bez obserwacji otrzymują wartość 1.0. Domyślnie wyłączone |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Suma:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, zgodnie z deklaracją w `DEFAULT_WEIGHTS`; przed obliczeniem punktacji wagi skonfigurowane przez użytkownika są ponownie normalizowane do rozkładu przez `normalizeScoringWeights()`.
 
 ## Pakiety trybów

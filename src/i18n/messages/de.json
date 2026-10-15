@@ -4090,6 +4090,9 @@
     "showingTopCostRows": "Zeige {shown} von {total} passenden Zeilen (Top 50)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Ziel der Cloud-Synchronisierung (nicht der lokalen Sicherungen):",
+    "cloudUploadWarning": "Die Cloud-Synchronisierung ist bei neuen Installationen standardmäßig deaktiviert. Wenn Sie sie aktivieren, werden API-Schlüssel der Anbieter, OAuth-Zugriffs- und Aktualisierungstokens, OmniRoute-API-Schlüssel und die Konfiguration an das oben angegebene Ziel hochgeladen, jetzt und bei künftigen Synchronisierungen. Diese Funktion ist von den lokalen Sicherungen unter „Lagerung“ getrennt. Aktivieren Sie sie nur, wenn Sie diesem Server vertrauen.",
+    "cloudUploadConsent": "Ich verstehe dies und erlaube das Hochladen meiner Zugangsdaten an dieses Ziel.",
     "title": "API-Endpunkt",
     "subtitle": "Verwenden Sie den OpenAI-kompatiblen Endpunkt mit den meisten SDKs und Tools.",
     "testEndpoint": "Endpunkt testen →",
@@ -8683,6 +8686,7 @@
     "cliproxyapiPort": "Port",
     "qdrantHost": "Host",
     "qdrantCollection": "Sammlung",
+    "catalogVisibilityHint": "Ausgeblendete Modell-IDs bleiben mit denselben Zugriffsrechten aufrufbar.",
     "catalogScopeTitle": "Auflistung der Models API",
     "catalogScopeDesc": "Was GET /v1/models für diesen Schlüssel ausgibt. Eine Einschränkung der Liste ändert niemals, welche Modelle der Schlüssel aufrufen kann.",
     "catalogScopeAll": "Beides",
@@ -14526,7 +14530,7 @@
     "errorImportFailed": "Import fehlgeschlagen",
     "title": "Verbinde Trae SOLO",
     "authorizeDescription": "Autorisieren Sie sich über <code>trae.ai</code> in einem Popup. Das Popup schließt sich, sobald das Token importiert wurde.",
-    "authorizeImportant": "<strong>Wichtig:</strong> Sie müssen in diesem Browser bei <code>trae.ai</code> angemeldet sein. Die Autorisierungsseite bestätigt nur eine bestehende Sitzung — sie kann Sie nicht anmelden. Wenn Sie \"Anmeldung fehlgeschlagen\" sehen, klicken Sie auf \"Öffnen Sie solo.trae.ai\", melden Sie sich an und kehren Sie dann hierher zurück.",
+    "authorizeImportant": "<strong>Wichtig:</strong> Sie müssen in <em>diesem</em> Browser bei <code>trae.ai</code> angemeldet sein. Die Autorisierungsseite bestätigt nur eine bestehende Sitzung — sie kann Sie nicht anmelden. Wenn Sie \"Anmeldung fehlgeschlagen\" sehen, klicken Sie auf \"Öffnen Sie solo.trae.ai\", melden Sie sich an und kehren Sie dann hierher zurück.",
     "waitingForAuthorization": "Warten auf trae.ai…",
     "authorizeWithBrowser": "Mit Browser autorisieren",
     "openSoloTrae": "Öffne solo.trae.ai",

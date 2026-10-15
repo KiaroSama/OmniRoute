@@ -8,6 +8,7 @@ import {
   pickCacheCreationInPrompt,
 } from "../utils/pickCacheCreationTokens.ts";
 import { normalizeOpenAICompatibleFinishReasonString } from "../utils/finishReason.ts";
+import { computeFinishReason } from "../translator/response/openai-responses/synthesizeCompletedToolCalls.ts";
 import { containsTextualToolCallMarker } from "../utils/textualToolCall.ts";
 import { stripObfuscationZeroWidth } from "../utils/zeroWidth.ts";
 import { getAnyReasoningValue } from "../utils/reasoningFields.ts";
@@ -19,6 +20,7 @@ import { restoreClaudeToolName } from "../services/claudeCodeToolRemapper.ts";
 import { extractReplayableResponsesReasoningText } from "../services/reasoningInputPolicy.ts";
 import { sanitizeToolId } from "../translator/helpers/schemaCoercion.ts";
 import { stripEmptyOptionalToolArgs } from "../translator/response/openai-responses/pureHelpers.ts";
+import { convertFinishReason } from "../translator/response/openai-to-claude.ts";
 import {
   extractThinkingFromContent,
   shouldParseTextualReasoningTags,
@@ -309,7 +311,12 @@ export function translateNonStreamingResponse(
 
     const createdAt = toNumber(response.created_at, Math.floor(Date.now() / 1000));
     const model = toString(response.model || responseRoot.model, "openai-responses");
-    const finishReason = toolCalls.length > 0 ? "tool_calls" : "stop";
+    // Same rule as the streaming path (#15867): an incomplete response is a
+    // truncated or filtered turn, not a clean stop.
+    const finishReason = computeFinishReason({
+      toolCallIndex: toolCalls.length,
+      incompleteReason: toRecord(response.incomplete_details).reason,
+    });
 
     const result: JsonRecord = {
       id: `chatcmpl-${toString(response.id, String(Date.now()))}`,
@@ -554,7 +561,8 @@ export function translateNonStreamingResponse(
         result.usage = {
           prompt_tokens: promptTokens,
           completion_tokens: completionTokens,
-          total_tokens: toNumber(usage.totalTokenCount, 0),
+          // Gemini may omit totalTokenCount; derive it instead of reporting 0.
+          total_tokens: toNumber(usage.totalTokenCount, 0) || promptTokens + completionTokens,
         };
         if (reasoningTokens > 0) {
           (result.usage as JsonRecord).completion_tokens_details = {
@@ -647,13 +655,11 @@ export function translateNonStreamingResponse(
         message.content = "";
       }
 
-      let finishReason = toString(root.stop_reason, "stop");
-      if (finishReason === "end_turn") finishReason = "stop";
-      if (finishReason === "tool_use") finishReason = "tool_calls";
-      // Streaming claude-to-openai already maps this (convertStopReason). Leaving
-      // the raw spelling here makes a truncated completion look like an unknown
-      // finish to the chat empty-output check.
-      if (finishReason === "max_tokens") finishReason = "length";
+      // Same mapping as the streaming claude-to-openai path (convertStopReason):
+      // refusal -> content_filter, max_tokens and model_context_window_exceeded ->
+      // length, stop_sequence and pause_turn -> stop. A raw spelling here reached
+      // non-OpenAI clients unmapped (a Gemini client saw a refusal as STOP).
+      const finishReason = normalizeOpenAICompatibleFinishReasonString(root.stop_reason, "stop");
 
       const result: JsonRecord = {
         id: `chatcmpl-${toString(root.id, String(Date.now()))}`,
@@ -847,9 +853,7 @@ function convertOpenAINonStreamingToClaude(
     }
   }
 
-  let stopReason = toString(choiceObj.finish_reason, "end_turn");
-  if (stopReason === "stop") stopReason = "end_turn";
-  if (stopReason === "tool_calls") stopReason = "tool_use";
+  const stopReason = convertFinishReason(toString(choiceObj.finish_reason, "stop"));
 
   const usageSrc = toRecord(openaiResponse.usage);
   const promptTokens = toNumber(usageSrc.prompt_tokens, 0);

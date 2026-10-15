@@ -100,8 +100,8 @@ import {
   stopProtectedPriorityTarget,
 } from "./executeTargetClassify.ts";
 import type { CompressionMode } from "../compression/types.ts";
-import type { AttemptLoopDeps, AttemptLoopState, ExecuteTargetResult } from "./attemptLoopTypes.ts";
-import type { ComboErrorBody, ComboRetryAfter, ResolvedComboTarget } from "./types.ts";
+import type { ExecuteTargetResult, ExecuteTargetAttemptOptions } from "./attemptLoopTypes.ts";
+import type { ComboErrorBody, ComboRetryAfter } from "./types.ts";
 import type { ResponseValidationConfig } from "./responseValidation.ts";
 import { resolveComboDailyReset } from "./comboDailyResetClock.ts";
 import type { ProtectedPriorityStopCause } from "./protectedPriorityStopStatus.ts";
@@ -109,14 +109,9 @@ import { isProviderProbeResponse } from "../../../src/shared/utils/providerProbe
 import { recordLocalCircuitRefusal } from "./localCircuitRefusal.ts";
 import { getStrategyTraits } from "./strategyRegistry.ts";
 
-export async function executeTargetAttempt(opts: {
-  index: number;
-  state: AttemptLoopState;
-  deps: AttemptLoopDeps;
-  targetForAttempt: ResolvedComboTarget;
-  profile: unknown;
-  protectedPriorityTarget: boolean;
-}): Promise<ExecuteTargetResult> {
+export async function executeTargetAttempt(
+  opts: ExecuteTargetAttemptOptions
+): Promise<ExecuteTargetResult> {
   const { index: i, state, deps, targetForAttempt, protectedPriorityTarget } = opts;
   const profile = opts.profile as ProviderProfile | undefined;
   const target = state.orderedTargets[i];

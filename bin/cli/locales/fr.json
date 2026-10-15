@@ -1169,32 +1169,18 @@
   "sync": {
     "description": "Synchroniser la configuration entre les instances OmniRoute",
     "push": {
-      "description": "Envoyer la configuration vers le cloud ou une instance distante",
-      "target": "Cible (cloud ou context:name)",
-      "bundle": "Éléments du bundle à synchroniser",
-      "dryRun": "Prévisualiser sans appliquer"
+      "description": "Envoyer la configuration vers le cloud ou une instance distante"
     },
     "pull": {
-      "description": "Récupérer la configuration depuis le cloud ou une instance distante",
-      "source": "Source (cloud ou context:name)",
-      "merge": "Fusionner avec la configuration existante",
-      "replace": "Remplacer la configuration existante",
-      "dryRun": "Prévisualiser sans appliquer"
-    },
-    "diff": {
-      "source": "Contexte source",
-      "target": "Contexte cible"
+      "description": "Récupérer la configuration depuis le cloud ou une instance distante"
     },
     "bundle": {
       "description": "Exporter la configuration sous forme de fichier bundle",
-      "include": "Éléments à inclure (séparés par des virgules)"
+      "token": "Sync token (from `sync tokens create`); defaults to OMNIROUTE_SYNC_TOKEN"
     },
     "import": {
       "description": "Importer un fichier bundle",
       "dryRun": "Valider sans appliquer"
-    },
-    "initialize": {
-      "fromCloud": "Initialiser à partir d’une sauvegarde cloud"
     },
     "tokens": {
       "description": "Gérer les jetons de synchronisation",
@@ -1206,9 +1192,6 @@
       "revoke": {
         "yes": "Ignorer la confirmation"
       }
-    },
-    "resolve": {
-      "description": "Résoudre les conflits de synchronisation de manière interactive"
     }
   },
   "config": {

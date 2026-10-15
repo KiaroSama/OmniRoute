@@ -133,6 +133,11 @@ const QUOTA_PATTERNS: ReadonlyArray<RegExp> = [
   /使用上限/,
   /限额将在/,
   /已达?到.*上限/,
+  // GLM/z.ai out of credit (code 1113): "余额不足或无可用资源包,请充值。" — a
+  // long-period signal, so apikey-category 429s keep their credits classification.
+  /\[1113\]/,
+  /余额不足/,
+  /无可用资源包/,
 
   // Kimi/Moonshot: "您的账户额度已用尽，请充值后重试。"
   /额度已用尽/,

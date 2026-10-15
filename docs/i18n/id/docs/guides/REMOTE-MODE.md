@@ -254,6 +254,8 @@ omniroute tokens scopes               # menjelaskan ketiga cakupan
 Perintah `tokens` memerlukan kredensial **admin**. Anda juga dapat mengelola token
 di dasbor pada **Settings → Access Tokens** (buat, cabut, salin-sekali).
 
+Token tidak pernah dapat dibuat dengan hak istimewa yang melebihi pembuatnya. Hanya operator yang dapat membuat token `admin`: melalui sesi dasbor, CLI lokal pada server itu sendiri, `omniroute connect` dengan kata sandi, atau instans dengan login dinonaktifkan. Kredensial mesin (token akses `admin` atau kunci API dengan cakupan `manage`/`admin`) hanya dapat membuat token `write` dan `read`; meminta `--scope admin` dengan kredensial tersebut mengembalikan `403`.
+
 ---
 
 ## Mengonfigurasi CLI pemrograman dari katalog jarak jauh

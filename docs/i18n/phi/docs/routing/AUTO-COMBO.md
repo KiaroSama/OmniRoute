@@ -213,6 +213,8 @@ Dinamikong pinipili ng Auto-Combo Engine ang pinakamahusay na provider/model par
 | `quality`             | 0.03              | Signal ng kalidad ng output na hinihimok ng feedback mula sa quality tracker ng routing event; nakatatanggap ng neutral na 0.5 ang mga candidate na walang observation                                                                                |
 | `reliability`         | 0.00              | Naobserbahang bahagi ng tagumpay, `1 - failureRate`, mula sa 24h ng history ng paggamit sa likod ng minimum na sampung sample (real-time metrics kung hindi); itinuturing na 1.0 ang mga candidate na walang observation. Naka-disable bilang default |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Kabuuan:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` gaya ng idineklara sa `DEFAULT_WEIGHTS`; muling ninonormalisa ang mga weight na kino-configure ng user upang maging isang distribution ng `normalizeScoringWeights()` bago ang scoring.
 
 ## Mga Mode Pack

@@ -1169,32 +1169,18 @@
   "sync": {
     "description": "Synkronisera konfiguration mellan OmniRoute-instanser",
     "push": {
-      "description": "Skicka konfiguration till molnet eller en fjärrinstans",
-      "target": "Mål (cloud eller context:name)",
-      "bundle": "Paketdelar att synkronisera",
-      "dryRun": "Förhandsgranska utan att tillämpa"
+      "description": "Skicka konfiguration till molnet eller en fjärrinstans"
     },
     "pull": {
-      "description": "Hämta konfiguration från molnet eller en fjärrinstans",
-      "source": "Källa (cloud eller context:name)",
-      "merge": "Slå samman med befintlig konfiguration",
-      "replace": "Ersätt befintlig konfiguration",
-      "dryRun": "Förhandsgranska utan att tillämpa"
-    },
-    "diff": {
-      "source": "Källkontext",
-      "target": "Målkontext"
+      "description": "Hämta konfiguration från molnet eller en fjärrinstans"
     },
     "bundle": {
       "description": "Exportera konfiguration som en paketfil",
-      "include": "Delar som ska inkluderas (kommaseparerade)"
+      "token": "Sync token (from `sync tokens create`); defaults to OMNIROUTE_SYNC_TOKEN"
     },
     "import": {
       "description": "Importera en paketfil",
       "dryRun": "Validera utan att tillämpa"
-    },
-    "initialize": {
-      "fromCloud": "Initiera från molnsäkerhetskopia"
     },
     "tokens": {
       "description": "Hantera synkroniseringstoken",
@@ -1206,9 +1192,6 @@
       "revoke": {
         "yes": "Hoppa över bekräftelse"
       }
-    },
-    "resolve": {
-      "description": "Lös synkroniseringskonflikter interaktivt"
     }
   },
   "config": {

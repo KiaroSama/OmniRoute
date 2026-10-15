@@ -228,6 +228,8 @@ Avtomatik Kombinasiya Mühərriki **16 amilli qiymətləndirmə funksiyasından*
 | `quality`             | 0.03          | Marşrutlaşdırma hadisələrinin keyfiyyət izləyicisindən alınan, rəyə əsaslanan çıxış keyfiyyəti siqnalı; müşahidəsi olmayan namizədlər neytral 0.5 alır                                                                                                                 |
 | `reliability`         | 0.00          | On nümunəlik minimum hədd nəzərə alınmaqla 24 saatlıq istifadə tarixçəsindən əldə edilən müşahidə olunmuş uğur payı, `1 - failureRate` (əks halda real vaxt metrikaları); müşahidəsi olmayan namizədlər üçün bu göstərici 1.0 hesab olunur. Standart olaraq deaktivdir |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Cəm:** `DEFAULT_WEIGHTS` daxilində elan edildiyi kimi `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`; istifadəçi tərəfindən konfiqurasiya edilmiş çəkilər qiymətləndirmədən əvvəl `normalizeScoringWeights()` vasitəsilə paylanma şəklində yenidən normallaşdırılır.
 
 ## Rejim Paketləri

@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**Giới hạn TLS:** Các đường hầm HTTPS `CONNECT` chỉ được thu thập dưới dạng siêu dữ liệu (máy chủ, cổng, thời gian) — nội dung TLS không được giải mã theo mặc định. Bật tùy chọn "Giải mã HTTPS ở chế độ proxy" (tùy chọn tham gia, yêu cầu chứng chỉ AgentBridge phải được tin cậy) để kiểm tra toàn bộ nội dung.
+**Giới hạn TLS:** Các đường hầm HTTPS `CONNECT` chỉ được thu thập dưới dạng siêu dữ liệu (máy chủ, cổng, thời gian) — nội dung TLS không được giải mã theo mặc định.
 
 **Xung đột cổng:** Nếu cổng 8080 đang được sử dụng, AgentBridge trả về mã 409 cùng lỗi có cấu trúc. Thay đổi cổng thông qua biến môi trường `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -465,12 +465,11 @@ Tất cả các tuyến đều là `LOCAL_ONLY` (chỉ loopback) và `SPAWN_CAPA
 
 ### Chế độ ghi nhận
 
-| Phương thức | Đường dẫn                      | Mô tả                                                                                                              |
-| ----------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| GET         | `/capture-modes`               | Trạng thái của các chế độ AgentBridge / máy chủ tùy chỉnh / HTTP_PROXY / proxy hệ thống + tùy chọn `tls-intercept` |
-| POST        | `/capture-modes/http-proxy`    | Khởi động/dừng trình lắng nghe HTTP_PROXY (`{action: "start"\|"stop"}`)                                            |
-| POST        | `/capture-modes/system-proxy`  | Áp dụng/khôi phục proxy toàn hệ thống (`{action: "apply"\|"revert"}`)                                              |
-| POST        | `/capture-modes/tls-intercept` | Bật/tắt giải mã nội dung HTTPS trong chế độ proxy (`{enabled: boolean}`)                                           |
+| Phương thức | Đường dẫn                     | Mô tả                                                                                   |
+| ----------- | ----------------------------- | --------------------------------------------------------------------------------------- |
+| GET         | `/capture-modes`              | Trạng thái của các chế độ AgentBridge / máy chủ tùy chỉnh / HTTP_PROXY / proxy hệ thống |
+| POST        | `/capture-modes/http-proxy`   | Khởi động/dừng trình lắng nghe HTTP_PROXY (`{action: "start"\|"stop"}`)                 |
+| POST        | `/capture-modes/system-proxy` | Áp dụng/khôi phục proxy toàn hệ thống (`{action: "apply"\|"revert"}`)                   |
 
 > **Giải mã TPROXY** (chế độ ghi nhận 5) được điều khiển bởi một tuyến **riêng biệt** bên dưới
 > tiền tố AgentBridge — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — không nằm

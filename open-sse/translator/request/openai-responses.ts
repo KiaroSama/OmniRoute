@@ -18,6 +18,7 @@ import { flattenNamespaceToolName } from "./openai-responses/namespaceFlatten.ts
 import { mergeHistoricalToolIdentities } from "./openai-responses/historyToolIdentity.ts";
 import { openaiToOpenAIResponsesRequest } from "./openai-responses/toResponses.ts";
 import { coerceToolCallArguments } from "../helpers/toolArguments.ts";
+import { chatStrictFrom } from "../helpers/toolStrict.ts";
 import {
   JsonRecord,
   RESPONSES_STORE_MARKER,
@@ -371,7 +372,7 @@ export function openaiResponsesToOpenAIRequest(
           if (currentAssistantMsg) {
             messages.push(currentAssistantMsg);
           }
-          for (const toolCall of roleBasedToolCalls) pendingCallIds.push(toolCall.id);
+          for (const toolCall of roleBasedToolCalls) pendingCallIds.push(toString(toolCall.id));
           currentAssistantMsg = {
             role,
             content,
@@ -676,7 +677,7 @@ export function openaiResponsesToOpenAIRequest(
                           type: "object",
                           properties: {},
                         }),
-                  strict: sub.strict,
+                  ...chatStrictFrom(sub),
                 },
               };
             });
@@ -771,7 +772,7 @@ export function openaiResponsesToOpenAIRequest(
                 required: ["input"],
                 additionalProperties: false,
               },
-              strict: tool.strict,
+              ...chatStrictFrom(tool),
             },
           };
         }
@@ -781,7 +782,7 @@ export function openaiResponsesToOpenAIRequest(
             name,
             description: toString(tool.description),
             parameters: tool.parameters,
-            strict: tool.strict,
+            ...chatStrictFrom(tool),
           },
         };
       });

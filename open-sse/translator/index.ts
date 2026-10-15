@@ -35,6 +35,7 @@ import { getResolvedModelCapabilities, supportsReasoning } from "../services/mod
 import { normalizeRoles } from "../services/roleNormalizer.ts";
 import { hoistLeadingSystemMessage } from "./helpers/strictSystemHoist.ts";
 import { ensurePoeUserTurnHasText } from "./helpers/poeImageOnlyUserTurn.ts";
+import { acceptsInlineToolAdditions, hoistToolAdditions } from "./helpers/claudeDeferredTools.ts";
 import {
   buildAssistantMessageCacheKey,
   lookupReasoning,
@@ -246,6 +247,13 @@ function replayOpenAIReasoningMessage(
   ) {
     message.reasoning_content = message.reasoning;
   }
+  // Serde-based upstreams (z-ai GLM, Moonshot Kimi) alias `reasoning` to
+  // `reasoning_content`, so a turn carrying both is rejected with 400
+  // "duplicate field `reasoning_content`" (9router#4841). Once
+  // `reasoning_content` holds the text it is the canonical carrier.
+  if (typeof message.reasoning === "string" && hasNonEmptyReasoningContent(message)) {
+    delete message.reasoning;
+  }
 
   const toolCalls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
   const hasToolCalls = toolCalls.length > 0;
@@ -360,7 +368,15 @@ export function translateRequest(
     copilotClient?: boolean;
   }
 ) {
-  let result = normalizeReasoningRequest(body, provider);
+  // Claude Code inline-tools `tool_addition` blocks only reach Anthropic-native targets;
+  // everywhere else their definitions move into tools[] (copy-on-write).
+  const hoistDeferredTools =
+    sourceFormat === FORMATS.CLAUDE &&
+    !(targetFormat === FORMATS.CLAUDE && acceptsInlineToolAdditions(provider));
+  let result = normalizeReasoningRequest(
+    hoistDeferredTools ? hoistToolAdditions(body) : body,
+    provider
+  );
   const use9CharId = options?.normalizeToolCallId === true;
   const preserveDeveloperRole = options?.preserveDeveloperRole;
   const connectionCacheOverride = resolveConnectionCacheOverride(

@@ -126,3 +126,12 @@ export type GateDecision =
       profile: unknown;
       protectedPriorityTarget: boolean;
     };
+
+export interface ExecuteTargetAttemptOptions {
+  index: number;
+  state: AttemptLoopState;
+  deps: AttemptLoopDeps;
+  targetForAttempt: ResolvedComboTarget;
+  profile: unknown;
+  protectedPriorityTarget: boolean;
+}

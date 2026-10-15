@@ -63,6 +63,7 @@ import {
   modelSupportsContext1mBeta,
 } from "../services/claudeCodeCompatible.ts";
 import { getClaudeCodeCompatibleRequestDefaults } from "@/lib/providers/requestDefaults";
+import { parseTokenExpiryMs } from "@/lib/tokenHealthCheckExpiry";
 import {
   cloakThirdPartyToolNames,
   remapToolNamesInRequest,
@@ -620,8 +621,9 @@ export class BaseExecutor {
   }
 
   needsRefresh(credentials?: ProviderCredentials | null) {
-    if (!credentials?.expiresAt) return false;
-    const expiresAtMs = new Date(credentials.expiresAt).getTime();
+    // Numeric epochs (s/ms, incl. the TEXT-column string form) and ISO; 0 = unknown.
+    const expiresAtMs = parseTokenExpiryMs(credentials?.expiresAt);
+    if (expiresAtMs <= 0) return false;
     // Use the provider-specific lead time (REFRESH_LEAD_MS) so rotating-token
     // providers like Codex refresh proactively far ahead of expiry. Keeping the
     // refresh_token "warm" prevents Auth0 from marking it as stale and revoking

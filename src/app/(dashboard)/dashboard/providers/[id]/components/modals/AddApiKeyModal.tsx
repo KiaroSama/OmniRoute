@@ -24,7 +24,6 @@ import {
   normalizeAndValidateHttpBaseUrl,
   extractCommandCodeCredentialInput,
   combineModalCredential,
-  defaultValidationModelIdForProvider,
   providerText,
   validationBadgeProps,
   type CommandCodeAuthFlowState,
@@ -36,10 +35,10 @@ import HarImportButton from "../HarImportButton";
 import CcCompatibleRequestDefaultsFields from "./CcCompatibleRequestDefaultsFields";
 import { buildAddProviderSpecificData } from "./connectionProviderSpecificData";
 import { getCommandCodeAuthPhaseLabel } from "./commandCodeAuthPhase";
-import { computeConnectionDefaultName } from "./computeConnectionDefaultName";
+import { createInitialAddApiKeyFormData } from "./addApiKeyInitialFormData";
 import AgentrouterConsoleFields from "./AgentrouterConsoleFields";
-import QuotaScrapingFields, { EMPTY_QUOTA_SCRAPING_FIELDS } from "./QuotaScrapingFields";
-import GlmTeamQuotaFields, { EMPTY_GLM_TEAM_QUOTA_FIELDS } from "./GlmTeamQuotaFields";
+import QuotaScrapingFields from "./QuotaScrapingFields";
+import GlmTeamQuotaFields from "./GlmTeamQuotaFields";
 import * as ProviderRegion from "./AlibabaProviderRegionField";
 export interface AddApiKeyModalProps {
   isOpen: boolean;
@@ -114,39 +113,16 @@ export default function AddApiKeyModal({
   const apiKeyOptional =
     providerAllowsOptionalApiKey(provider) || Boolean(isNoAuthWebSessionCredential);
   const commandCodeAuthPhaseLabel = getCommandCodeAuthPhaseLabel(commandCodeAuthState);
-  const [formData, setFormData] = useState({
-    name: computeConnectionDefaultName(existingConnectionNames),
-    apiKey: "",
-    tokenSecret: "", // #5446 — Modal Token Secret (joined with apiKey as id:secret)
-    defaultModel: "",
-    priority: 1,
-    baseUrl: initialBaseUrl || defaultBaseUrl,
-    cx: "",
-    region: showsRegion ? defaultRegion : "",
-    awsAccessKeyId: "",
-    awsSessionToken: "",
-    apiRegion: "international",
-    validationModelId: defaultValidationModelIdForProvider(provider), // #5446 item 4 — Modal probe model pre-fill
-    routingTags: "",
-    excludedModels: "",
-    customUserAgent: "",
-    huggingfaceBillTo: "",
-    accountId: "",
-    consoleApiKey: "",
-    newApiUserId: "",
-    newApiAggregatorBalance: false,
-    quotaPerUnit: "",
-    ...EMPTY_GLM_TEAM_QUOTA_FIELDS,
-    ...EMPTY_QUOTA_SCRAPING_FIELDS,
-    ccCompatibleContext1m: false,
-    ccCompatibleRedactThinking: false,
-    ccCompatibleSummarizeThinking: false,
-    passthroughModels: false,
-    importFreeModelsOnly: false,
-    tunnelId: "",
-    runtimeKey: "",
-    connectorName: CHATGPT_WEB_CODEX_CONNECTOR_NAME,
-  });
+  const [formData, setFormData] = useState(() =>
+    createInitialAddApiKeyFormData({
+      provider,
+      existingConnectionNames,
+      initialBaseUrl,
+      defaultBaseUrl,
+      showsRegion,
+      defaultRegion,
+    })
+  );
   const [validating, setValidating] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
   const [validationCapabilities, setValidationCapabilities] = useState<Record<
@@ -157,22 +133,47 @@ export default function AddApiKeyModal({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [copiedCommandCodeField, setCopiedCommandCodeField] = useState<string | null>(null);
+  const resetOpenRouterPreset = openRouterPreset.setValue;
   const wasOpenRef = useRef(false);
   useEffect(() => {
     const wasOpen = wasOpenRef.current;
     wasOpenRef.current = isOpen;
     if (!isOpen || wasOpen) return;
-    // On open, reset baseUrl and assign a unique default name so a second API key
-    // for the same provider doesn't reuse "main" and trigger the backend
-    // name-based upsert that would silently overwrite the first connection (#6499, #11033).
-    setFormData((current) => ({
-      ...current,
-      name: computeConnectionDefaultName(existingConnectionNames),
-      baseUrl: initialBaseUrl || defaultBaseUrl,
-    }));
+    // On open, start from a fresh form: the modal stays mounted between opens, so
+    // without this the previous key, bulk text and tab survived a close/save. The
+    // fresh form also carries a unique default name so a second API key for the
+    // same provider doesn't reuse "main" and trigger the backend name-based upsert
+    // that would silently overwrite the first connection (#6499, #11033).
+    setFormData(
+      createInitialAddApiKeyFormData({
+        provider,
+        existingConnectionNames,
+        initialBaseUrl,
+        defaultBaseUrl,
+        showsRegion,
+        defaultRegion,
+      })
+    );
     setValidationResult(null);
+    setValidationCapabilities(null);
     setSaveError(null);
-  }, [defaultBaseUrl, initialBaseUrl, isOpen, existingConnectionNames]);
+    setShowAdvanced(false);
+    setMode("single");
+    setBulkText("");
+    setBulkValidateKeys(false);
+    setBulkResult(null);
+    setBulkWarnings([]);
+    resetOpenRouterPreset("");
+  }, [
+    defaultBaseUrl,
+    defaultRegion,
+    existingConnectionNames,
+    initialBaseUrl,
+    isOpen,
+    provider,
+    resetOpenRouterPreset,
+    showsRegion,
+  ]);
   const bulkSupported = supportsBulkApiKey(provider);
   const [mode, setMode] = useState<"single" | "bulk">("single");
   const [bulkText, setBulkText] = useState("");

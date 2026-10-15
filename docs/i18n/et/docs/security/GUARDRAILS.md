@@ -56,6 +56,10 @@ Voog:
 
 Sunnitud režiimid lühistavad **enne** automaatse heuristika käivitumist; `auto` käitumine on bait-identne PR-1 eelse kaitsepiirdega.
 
+#### API-võtme ulatus (`visionBridgeKeyScope.ts`)
+
+Kui API-võti piirab ühendusi, kvoodirühmi või mudeleid (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), valivad ümbersuunamine ja kirjeldamine ainult sellele võtmele lubatud mudelid ja ühendused. Kirjeldus läbib alati OmniRoute'i enesesilmuse päisega `x-omniroute-self-loop-key-id`, rakendades ühenduse- ja mudelipoliitikat uuesti. `enforceApiKeyPolicy()` arvestab päist ainult koos silmuse bearer-tokeniga: see saab juurdepääsu üksnes kitsendada ning tundmatu ID lükatakse tagasi. Lubatud nägemismudeli puudumisel jäetakse kirjeldamine vahele ja päring jääb muutmata, nagu keelatud kaitse korral (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Võtmeta päringud ja nende piiranguteta võtmed toimivad nagu varem.
+
 #### Ülesandeteadlik kirjeldamise viip (`modalityBridgeVisionTaskAware`)
 
 Vaikimisi **tõene**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) lisab **viimase kasutajasõnumi** teksti (lühendatud 500 tähemärgini) baaskirjeldamise viibale, suunates kirjelduse selle poole, mida kasutaja tegelikult küsis (codex-vision-proxy muster) ja paludes nägemismudelil transkribeerida nähtavat teksti. Kui lipp on välja lülitatud — või puudub kasutajatekst — kasutatakse baasviipa muutmata kujul.

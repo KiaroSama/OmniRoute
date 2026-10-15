@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS sınırlaması:** HTTPS `CONNECT` tünellerinde varsayılan olarak yalnızca meta veriler (host, port, zamanlama) yakalanır; TLS gövdesinin şifresi çözülmez. Gövdenin tamamını incelemek için "Proxy modunda HTTPS şifresini çöz" seçeneğini etkinleştirin (isteğe bağlıdır ve AgentBridge sertifikasına güvenilmesini gerektirir).
+**TLS sınırlaması:** HTTPS `CONNECT` tünellerinde varsayılan olarak yalnızca meta veriler (host, port, zamanlama) yakalanır; TLS gövdesinin şifresi çözülmez.
 
 **Port çakışması:** 8080 numaralı port kullanımdaysa AgentBridge, yapılandırılmış bir hatayla birlikte 409 yanıtı döndürür. Portu `INSPECTOR_HTTP_PROXY_PORT` ortam değişkeni aracılığıyla değiştirin.
 
@@ -466,12 +466,11 @@ Temel yol: `/api/tools/traffic-inspector/`
 
 ### Yakalama modları
 
-| Yöntem | Yol                            | Açıklama                                                                                                       |
-| ------ | ------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| GET    | `/capture-modes`               | AgentBridge / özel ana bilgisayarlar / HTTP_PROXY / sistem proxy modlarının durumu ve `tls-intercept` anahtarı |
-| POST   | `/capture-modes/http-proxy`    | HTTP_PROXY dinleyicisini başlatır/durdurur (`{action: "start"\|"stop"}`)                                       |
-| POST   | `/capture-modes/system-proxy`  | Sistem genelindeki proxy'yi uygular/geri alır (`{action: "apply"\|"revert"}`)                                  |
-| POST   | `/capture-modes/tls-intercept` | Proxy modunda HTTPS gövde şifre çözümünü açar/kapatır (`{enabled: boolean}`)                                   |
+| Yöntem | Yol                           | Açıklama                                                                           |
+| ------ | ----------------------------- | ---------------------------------------------------------------------------------- |
+| GET    | `/capture-modes`              | AgentBridge / özel ana bilgisayarlar / HTTP_PROXY / sistem proxy modlarının durumu |
+| POST   | `/capture-modes/http-proxy`   | HTTP_PROXY dinleyicisini başlatır/durdurur (`{action: "start"\|"stop"}`)           |
+| POST   | `/capture-modes/system-proxy` | Sistem genelindeki proxy'yi uygular/geri alır (`{action: "apply"\|"revert"}`)      |
 
 > **TPROXY şifre çözme** (yakalama modu 5), AgentBridge öneki altında bulunan
 > **ayrı** bir rota tarafından yönetilir — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` —

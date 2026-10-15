@@ -1169,32 +1169,18 @@
   "sync": {
     "description": "Sinchronizuoti konfigūraciją tarp OmniRoute egzempliorių",
     "push": {
-      "description": "Nusiųsti konfigūraciją į debesiją arba nuotolinį egzempliorių",
-      "target": "Paskirties vieta (cloud arba context:name)",
-      "bundle": "Sinchronizuojamos paketo dalys",
-      "dryRun": "Peržiūrėti nepritaikant"
+      "description": "Nusiųsti konfigūraciją į debesiją arba nuotolinį egzempliorių"
     },
     "pull": {
-      "description": "Gauti konfigūraciją iš debesijos arba nuotolinio egzemplioriaus",
-      "source": "Šaltinis (cloud arba context:name)",
-      "merge": "Sujungti su esama konfigūracija",
-      "replace": "Pakeisti esamą konfigūraciją",
-      "dryRun": "Peržiūrėti netaikant"
-    },
-    "diff": {
-      "source": "Šaltinio kontekstas",
-      "target": "Paskirties kontekstas"
+      "description": "Gauti konfigūraciją iš debesijos arba nuotolinio egzemplioriaus"
     },
     "bundle": {
       "description": "Eksportuoti konfigūraciją kaip paketo failą",
-      "include": "Įtrauktinos dalys (atskirtos kableliais)"
+      "token": "Sync token (from `sync tokens create`); defaults to OMNIROUTE_SYNC_TOKEN"
     },
     "import": {
       "description": "Importuoti paketo failą",
       "dryRun": "Patikrinti netaikant"
-    },
-    "initialize": {
-      "fromCloud": "Inicijuoti iš atsarginės kopijos debesyje"
     },
     "tokens": {
       "description": "Tvarkyti sinchronizavimo prieigos raktus",
@@ -1206,9 +1192,6 @@
       "revoke": {
         "yes": "Praleisti patvirtinimą"
       }
-    },
-    "resolve": {
-      "description": "Interaktyviai spręsti sinchronizavimo konfliktus"
     }
   },
   "config": {

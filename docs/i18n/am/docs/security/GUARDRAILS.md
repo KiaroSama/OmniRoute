@@ -56,6 +56,10 @@ Guardrails በOmniRoute እና በላይኛ ደረጃ አቅራቢዎች መካ�
 
 የግዳጅ ሁነታዎች የራስ-ሰር ሂዩሪስቲክ ከመሰራቱ **በፊት** አጭር-ዑደት ያደርጋሉ፤ `auto` ባህሪ ከPR-1 በፊት ከነበረው ጠባቂ ጋር ባይት-ተመሳሳይ ነው።
 
+#### የAPI ቁልፍ ወሰን (`visionBridgeKeyScope.ts`)
+
+የAPI ቁልፉ ግንኙነቶችን፣ የኮታ ቡድኖችን ወይም ሞዴሎችን ከገደበ (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`)፣ ማዞርና መግለጽ ለዚያ ቁልፍ የተፈቀዱ ሞዴሎችንና ግንኙነቶችን ብቻ ይመርጣሉ። መግለጫው ሁልጊዜ በOmniRoute የራስ ዙር በ`x-omniroute-self-loop-key-id` ራስጌ ያልፋል፣ የግንኙነትና የሞዴል ፖሊሲውም እንደገና ይፈጸማል። `enforceApiKeyPolicy()` ራስጌውን የሚቀበለው ከዚያ ዙር bearer ቶከን ጋር ብቻ ነው፤ መዳረሻን ሊያጠብ ብቻ ይችላል፣ የማይታወቅ መለያም ይከለከላል። የተፈቀደ የእይታ ሞዴል ከሌለ፣ መግለጫው ይዘለላል እና ጥያቄው ጥበቃው እንደተሰናከለ ሳይቀየር ያልፋል (meta `{ skipped: true, reason: "no_permitted_vision_model" }`)። ቁልፍ የሌላቸው ጥያቄዎችና እነዚህ ገደቦች የሌሉባቸው ቁልፎች እንደበፊቱ ይሠራሉ።
+
 #### ተግባር-ተኮር የማብራሪያ ጥያቄ (`modalityBridgeVisionTaskAware`)
 
 ነባሪ **እውነት**። `composeVisionPrompt()` (`visionBridgeHelpers.ts`) የ**የመጨረሻውን የተጠቃሚ መልእክት** ጽሑፍ (እስከ 500 ቁምፊዎች የተቆረጠ) ከመሠረታዊ የማብራሪያ ጥያቄ ጋር ያያይዘዋል፣ መግለጫውን ተጠቃሚው በትክክል ወደጠየቀው ነገር (ኮዴክስ-ቪዥን-ፕሮክሲ ስርዓተ-ጥለት) ይመራል እና የቪዥን ሞዴሉን የሚታየውን ጽሑፍ እንዲገለብጥ ይጠይቃል። ባንዲራው ከጠፋ — ወይም የተጠቃሚ ጽሑፍ ከሌለ — መሠረታዊው ጥያቄ ሳይለወጥ ጥቅም ላይ ይውላል።

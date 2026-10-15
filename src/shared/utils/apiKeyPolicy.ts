@@ -9,6 +9,7 @@
  */
 
 import { extractApiKey } from "@/sse/services/auth";
+import { resolveClientApiKey } from "@/sse/services/clientApiKeyResolver";
 import { getApiKeyMetadata, isModelAllowedForKey, getApiKeyById } from "@/lib/db/apiKeys";
 import { getComboByName } from "@/lib/db/combos";
 import { isDashboardSessionAuthenticated } from "./apiAuth";
@@ -821,13 +822,17 @@ function extractUngatedClientApiKey(request: Request): string | null {
 }
 
 /**
- * The API key the policy layer evaluates for a request. A real bearer key wins;
- * then a bare x-api-key/x-goog-api-key that auth accepted but extractApiKey()
- * gates out; otherwise an authenticated dashboard playground may test a specific
- * key's policy by id (resolved server-side, secret never sent).
+ * The API key the policy layer evaluates for a request. The credential that
+ * actually validated wins (a stale Bearer sent next to a valid x-api-key must
+ * not hide that key's policy); then a real bearer key; then a bare
+ * x-api-key/x-goog-api-key that auth accepted but extractApiKey() gates out;
+ * otherwise an authenticated dashboard playground may test a specific key's
+ * policy by id (resolved server-side, secret never sent).
  */
 export async function resolvePolicyApiKey(request: Request): Promise<string | null> {
+  const resolved = await resolveClientApiKey(request);
   return (
+    (resolved.valid ? resolved.apiKey : null) ||
     extractApiKey(request) ||
     extractUngatedClientApiKey(request) ||
     (await resolvePlaygroundTestKey(request))

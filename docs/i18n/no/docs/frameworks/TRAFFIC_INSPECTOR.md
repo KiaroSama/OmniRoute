@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS-begrensning:** HTTPS-`CONNECT`-tunneler registreres som standard bare som metadata (vert, port, tidsbruk) – TLS-innholdet dekrypteres ikke. Aktiver bryteren «Dekrypter HTTPS i proxymodus» (valgfritt, krever at AgentBridge-sertifikatet er klarert) for full inspeksjon av innholdet.
+**TLS-begrensning:** HTTPS-`CONNECT`-tunneler registreres som standard bare som metadata (vert, port, tidsbruk) – TLS-innholdet dekrypteres ikke.
 
 **Portkonflikt:** Hvis port 8080 er i bruk, returnerer AgentBridge en 409-feil med strukturert feilinformasjon. Endre porten via miljøvariabelen `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -465,12 +465,11 @@ Basisbane: `/api/tools/traffic-inspector/`
 
 ### Opptaksmoduser
 
-| Metode | Bane                           | Beskrivelse                                                                                                         |
-| ------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/capture-modes`               | Tilstanden til modusene AgentBridge / egendefinerte verter / HTTP_PROXY / systemproxy samt `tls-intercept`-bryteren |
-| POST   | `/capture-modes/http-proxy`    | Start/stopp HTTP_PROXY-lytteren (`{action: "start"\|"stop"}`)                                                       |
-| POST   | `/capture-modes/system-proxy`  | Bruk/tilbakestill systemomfattende proxy (`{action: "apply"\|"revert"}`)                                            |
-| POST   | `/capture-modes/tls-intercept` | Slå dekryptering av HTTPS-innhold i proxymodus av eller på (`{enabled: boolean}`)                                   |
+| Metode | Bane                          | Beskrivelse                                                                           |
+| ------ | ----------------------------- | ------------------------------------------------------------------------------------- |
+| GET    | `/capture-modes`              | Tilstanden til modusene AgentBridge / egendefinerte verter / HTTP_PROXY / systemproxy |
+| POST   | `/capture-modes/http-proxy`   | Start/stopp HTTP_PROXY-lytteren (`{action: "start"\|"stop"}`)                         |
+| POST   | `/capture-modes/system-proxy` | Bruk/tilbakestill systemomfattende proxy (`{action: "apply"\|"revert"}`)              |
 
 > **TPROXY-dekryptering** (opptaksmodus 5) styres av en **separat** rute under
 > AgentBridge-prefikset — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — ikke

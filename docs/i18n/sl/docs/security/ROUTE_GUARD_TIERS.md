@@ -146,6 +146,8 @@ dve odgovornosti upravljavca:
   celotno predpono `/api/providers/`, kar bi prekomerno razširilo omejitev na drevo poti,
   ki ga oddaljene nadzorne plošče upravičeno uporabljajo za operacije CRUD ponudnikov.
 
+  Nalagalnik posnetkov izvajanja takšne vnose odstrani tudi iz shranjene vrstice nastavitev, starejši uvoz JSON (`/api/settings/import-json`) pa nikoli ne zapisuje ključev za obhod. Vsak vnos `LOCAL_ONLY_API_PREFIXES` mora biti na seznamu prepovedi ali po pregledu odobren za obhod. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Revidiranje dostopa** — da preverite, ali karkoli zunaj gostitelja dostopa do teh poti:
 
 - Odprite **Authorization Inventory** na `/dashboard/settings/security`: prikazuje

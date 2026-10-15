@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS ကန့်သတ်ချက်:** HTTPS `CONNECT` tunnel များကို metadata (host, port, timing) အဖြစ်သာ ဖမ်းယူသည် — ပုံမှန်အားဖြင့် TLS body ကို decrypt မလုပ်ပါ။ Body အပြည့်အစုံကို စစ်ဆေးရန် "Proxy မုဒ်တွင် HTTPS ကို Decrypt လုပ်ရန်" toggle ကို ဖွင့်ပါ (ကိုယ်တိုင်ရွေးချယ်ဖွင့်ရပြီး AgentBridge cert ကို ယုံကြည်ထားရန် လိုအပ်သည်)။
+**TLS ကန့်သတ်ချက်:** HTTPS `CONNECT` tunnel များကို metadata (host, port, timing) အဖြစ်သာ ဖမ်းယူသည် — ပုံမှန်အားဖြင့် TLS body ကို decrypt မလုပ်ပါ။
 
 **Port ပဋိပက္ခ:** port 8080 ကို အသုံးပြုနေပါက AgentBridge သည် ဖွဲ့စည်းထားသော error တစ်ခုနှင့်အတူ 409 ကို ပြန်ပေးသည်။ `INSPECTOR_HTTP_PROXY_PORT` environment variable မှတစ်ဆင့် port ကို ပြောင်းပါ။
 
@@ -463,12 +463,11 @@ Route အားလုံးသည် `LOCAL_ONLY` (loopback မှသာ ဝင�
 
 ### ဖမ်းယူမှု mode များ
 
-| နည်းလမ်း | Path                           | ဖော်ပြချက်                                                                                               |
-| -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------- |
-| GET      | `/capture-modes`               | AgentBridge / custom-hosts / HTTP_PROXY / system-proxy mode များ၏ အခြေအနေ + `tls-intercept` အဖွင့်/အပိတ် |
-| POST     | `/capture-modes/http-proxy`    | HTTP_PROXY listener ကို စတင်ခြင်း/ရပ်တန့်ခြင်း (`{action: "start"\|"stop"}`)                             |
-| POST     | `/capture-modes/system-proxy`  | System-wide proxy ကို အသုံးချခြင်း/မူလအခြေအနေသို့ ပြန်ထားခြင်း (`{action: "apply"\|"revert"}`)           |
-| POST     | `/capture-modes/tls-intercept` | Proxy mode တွင် HTTPS body ကို ကုဒ်ဖြည်ခြင်းအား အဖွင့်/အပိတ် ပြောင်းခြင်း (`{enabled: boolean}`)         |
+| နည်းလမ်း | Path                          | ဖော်ပြချက်                                                                                     |
+| -------- | ----------------------------- | ---------------------------------------------------------------------------------------------- |
+| GET      | `/capture-modes`              | AgentBridge / custom-hosts / HTTP_PROXY / system-proxy mode များ၏ အခြေအနေ                      |
+| POST     | `/capture-modes/http-proxy`   | HTTP_PROXY listener ကို စတင်ခြင်း/ရပ်တန့်ခြင်း (`{action: "start"\|"stop"}`)                   |
+| POST     | `/capture-modes/system-proxy` | System-wide proxy ကို အသုံးချခြင်း/မူလအခြေအနေသို့ ပြန်ထားခြင်း (`{action: "apply"\|"revert"}`) |
 
 > **TPROXY ကုဒ်ဖြည်ခြင်း** (ဖမ်းယူမှု mode 5) ကို AgentBridge prefix အောက်ရှိ
 > **သီးခြား** route — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — က ထိန်းချုပ်ပြီး
