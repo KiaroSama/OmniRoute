@@ -103,7 +103,11 @@ export function isCredentialHealthy(connectionId: string): boolean | undefined {
 
   if (status.status === "active") return true;
   // A failed probe is not proof of bad credentials: timeouts, quota and outages are inconclusive.
-  if (status.status === "error" && INVALID_CREDENTIAL_DIAGNOSES.has(status.lastErrorType))
+  if (
+    status.status === "error" &&
+    typeof status.lastErrorType === "string" &&
+    INVALID_CREDENTIAL_DIAGNOSES.has(status.lastErrorType)
+  )
     return false;
 
   return undefined;

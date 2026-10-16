@@ -28,6 +28,7 @@ const INCONCLUSIVE_FAILURES = [
   "validation_error",
   "unsupported",
   "unknown",
+  "",
   undefined,
 ];
 
