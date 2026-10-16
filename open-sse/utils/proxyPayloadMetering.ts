@@ -54,22 +54,23 @@ export async function meterPayloadAttempt(
     note({ failedAttempts: 1 });
     throw error;
   }
-  if (!response.body) {
+  const body = response.body;
+  if (!body) {
     note({ completedDownloads: 1 });
     return response;
   }
   const signal =
     options.signal ??
     (typeof Request !== "undefined" && input instanceof Request ? input.signal : undefined);
-  return trackPayloadResponse(response, signal, note);
+  return trackPayloadResponse(response, body, signal, note);
 }
 
 function trackPayloadResponse(
   response: Response,
+  body: ReadableStream<Uint8Array>,
   signal: AbortSignal | null | undefined,
   note: (delta: PayloadDelta) => void
 ): Response {
-  const body = response.body;
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
   let settled = false;
   let cancelled = false;

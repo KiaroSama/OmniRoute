@@ -6,6 +6,26 @@ import {
 } from "../../open-sse/utils/proxyPayloadMetering.ts";
 
 // Pure transport seam: no network, timers, database, processes or credentials.
+test("null bodies complete without wrapping the original response", { timeout: 1000 }, async () => {
+  for (const status of [200, 204, 304]) {
+    const upstream = new Response(null, { status, headers: { "x-fixture": "no-body" } });
+    const deltas: Array<Record<string, number>> = [];
+    const response = await meterPayloadAttempt(
+      async () => upstream,
+      "fixture",
+      {},
+      (delta) => deltas.push(delta)
+    );
+    assert.equal(response, upstream);
+    assert.equal(response.body, null);
+    assert.equal(response.headers.get("x-fixture"), "no-body");
+    assert.deepEqual(deltas, [
+      { attempts: 1, uploadBytes: 0, knownUploadAttempts: 1 },
+      { completedDownloads: 1 },
+    ]);
+  }
+});
+
 test(
   "submitted upload uses UTF-8 bytes and does not inspect unknown streams",
   { timeout: 1000 },
