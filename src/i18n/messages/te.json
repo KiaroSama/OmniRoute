@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "ఫిల్టర్‌లను తీసివేయండి",
     "disableNonPublicModels": "పబ్లిక్ కాని మోడల్‌లను నిలిపివేయండి",
     "disableNonPublicModelsDesc": "ప్రొవైడర్ కేటలాగ్‌లో కనుగొనబడని లేదా పబ్లిక్‌గా గుర్తించబడని మోడల్‌ల కోసం అభ్యర్థనలను తిరస్కరించండి",
+    "forcedModel": "బలవంతపు మోడల్",
+    "forcedModelDesc": "ఈ కీతో చేసే ప్రతి చాట్ అభ్యర్థనను, క్లయింట్ ఏ మోడల్ అడిగినా (లేదా ఏదీ పంపకపోయినా), ఈ మోడల్ లేదా కాంబోకు పంపండి. కీ యొక్క మోడల్, కాంబో మరియు బడ్జెట్ పరిమితులు ఇంకా వర్తిస్తాయి.",
+    "forcedModelPlaceholder": "బలవంతం లేదు: క్లయింట్ అడిగిన మోడల్‌ను ఉపయోగించండి",
     "normalKeysSection": "సాధారణ కీలు",
     "quotaKeysSection": "కోటా కీలు",
     "bypassProviderQuota": "ప్రొవైడర్ కోటా పరిమితులను దాటవేయండి",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — OpenAI-అనుకూల ప్రొవైడర్ మద్దతుతో స్వయంగా మెరుగుపడే RLM కోడింగ్ హార్నెస్",
       "warp": "కస్టమ్ ప్రొవైడర్ సపోర్ట్‌తో Warp AI టెర్మినల్",
       "agent-deck": "Agent Deck మల్టీ-ఏజెంట్ ఆర్కెస్ట్రేటర్",
-      "5dive": "5dive — స్వీయ-హోస్టెడ్ కోడింగ్ ఏజెంట్ల సముదాయం; ఒక auth ప్రొఫైల్ అన్నింటినీ OmniRoute వైపు మళ్లిస్తుంది"
+      "5dive": "5dive — స్వీయ-హోస్టెడ్ కోడింగ్ ఏజెంట్ల సముదాయం; ఒక auth ప్రొఫైల్ అన్నింటినీ OmniRoute వైపు మళ్లిస్తుంది",
+      "zed": "Zed కోడ్ ఎడిటర్ — OpenAI-అనుకూల ప్రొవైడర్ ద్వారా అంతర్నిర్మిత ఏజెంట్"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "ఆపై VS Codeని రీలోడ్ చేసి, ఇన్‌పుట్ ప్రాంప్ట్‌లో API కీని సెట్ చేయండి.",
     "wireApiChatCompletions": "చాట్ పూర్తిలు (/చాట్/పూర్తి)",
     "wireApiResponses": "ప్రతిస్పందనల API (/స్పందనలు)",
+    "codexModelCatalog": "Codex యొక్క /model పికర్‌లో OmniRoute మోడల్‌లను చూపించు",
+    "codexModelCatalogHint": "ఇన్‌స్టాల్ చేసిన Codex స్వంత మోడల్ కేటలాగ్ నుండి ~/.codex/omniroute-models.json ను రాస్తుంది (ఒక్కో మోడల్‌కు సుమారు 60 KB). Codex ను అప్‌గ్రేడ్ చేసిన తర్వాత మళ్లీ వర్తింపజేయండి.",
+    "codexCatalogWarning": "Codex యొక్క /model పికర్ అప్‌డేట్ కాలేదు: ఇన్‌స్టాల్ చేసిన Codex మోడల్ కేటలాగ్‌ను OmniRoute చదవలేకపోయింది.",
     "cliproxyapiActionFailed": "చర్య విఫలమైంది",
     "cliproxyapiActionSucceeded": "చర్య విజయవంతమైంది",
     "cliproxyapiCheckUpdates": "అప్‌డేట్స్‌ను తనిఖీ చేయండి",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "సంక్షిప్త CJK (文言)",
         "description": "క్లాసికల్-చైనీస్ అల్ట్రా-సంక్షిప్త శైలి (చైనీస్ కోసం మాత్రమే అందుబాటులో ఉంది)."
+      },
+      "antislop-ui": {
+        "label": "Antislop UI ఫిల్టర్",
+        "description": "ఉద్దేశం పరీక్షించిన విజువల్స్: సాధారణ గ్రేడియంట్‌లు, టెంప్లేట్ లేఅవుట్‌లు లేదా పనిచేయని కంట్రోల్స్ ఉండవు."
+      },
+      "antislop-copy": {
+        "label": "Antislop టెక్స్ట్ మరియు మానవ ఫిల్టర్",
+        "description": "నిజాయితీ గల టెక్స్ట్ మరియు మనుషుల కోసం నియమాలు: AI ఆనవాళ్లు లేవు, WCAG AA కాంట్రాస్ట్, కీబోర్డ్, స్థితులు, మొబైల్ రీఫ్లో."
       }
     },
     "resilienceWaitForCooldown": "కూల్‌డౌన్ కోసం వేచి ఉండండి",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "ఈ కోటా అడ్డు వరుసను దాచు",
     "showQuotaRow": "ఈ కోటా అడ్డు వరుసను చూపించు",
     "hiddenQuotaRowsLabel": "దాచబడింది:",
+    "quotaSpeedTitle": "ఈ ఖాతాలో ఇటీవలి డీకోడ్ వేగం (చివరి {count} విజయవంతమైన అభ్యర్థనలు)",
+    "quotaSpeedLine": "{model}: {avg} tok/s సగటు · చివరి {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s సగటు · చివరి {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "కోటా దృశ్యమానతను నవీకరించడం విఫలమైంది",
     "account": "ఖాతా",
     "modelQuotas": "మోడల్ కోటాలు",
@@ -14501,7 +14519,10 @@
     "importing": "ఆమోదిస్తున్నాం...",
     "apiKeyPlaceholder": "మీ {providerLabel} API కీని పేస్ట్ చేయండి...",
     "apiKeyStoredDescription": "దీర్ఘకాలిక బేరర్ క్రెడెన్షియల్‌గా సంకేతీకరించబడింది. పునరుద్ధరణ ప్రవాహం లేదు.",
-    "apiKeyRegionDescription": "కీ కోసం AWS ప్రాంతం (డిఫాల్ట్: us-east-1)",
+    "apiKeyRegionAuto": "స్వయంచాలకంగా గుర్తించు (సిఫార్సు చేయబడింది)",
+    "apiKeyRegionUsEast1": "యుఎస్ ఈస్ట్ (ఉత్తర వర్జీనియా)",
+    "apiKeyRegionEuCentral1": "యూరప్ (ఫ్రాంక్‌ఫర్ట్)",
+    "apiKeyRegionAutoDescription": "స్వయంచాలక గుర్తింపు ముందుగా యుఎస్ ఈస్ట్, తర్వాత యూరప్ (ఫ్రాంక్‌ఫర్ట్) ప్రయత్నించి, కీ పనిచేసే ప్రాంతాన్ని సేవ్ చేస్తుంది.",
     "validating": "చూసుకుంటున్నాం...",
     "validateAndSaveApiKey": "API కీని ధృవీకరించండి మరియు సేవ్ చేయండి",
     "errorAutoDetect": "టోకెన్‌ను ఆటో-డిటెక్ట్ చేయలేకపోయింది",

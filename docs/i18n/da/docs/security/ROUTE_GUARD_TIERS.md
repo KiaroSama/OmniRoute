@@ -171,6 +171,23 @@ Disse ruter er destruktive eller irreversible. At tillade dem i en "ingen-adgang
 
 `/api/settings/obsidian` dækker sin `/webdav` underordnede: `POST` peger WebDAV-filtjenesten — serveret af det brugerdefinerede Node-lag før Next.js, uden for denne pipeline — mod en kalder-valgt rod og gentager friskoprettede Basic-legitimationsoplysninger, `DELETE` roterer dem, og den overordnede `POST` gemmer Obsidian REST API-tokenet. GHSA-62vw maskerede kun `GET` adgangskodeafsløringen; udstedelsen var stadig på fail-open-niveauet (GHSA-7pq4-8pvv-rx7r). `enableObsidianVaultSync()` afviser desuden en vault, der er, sidder inde i, eller indeholder datamappen.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### Bootstrap ved frisk installation er kun loopback — via ægte peer, ikke `Host`
 
 Uden en konfigureret administrationsadgangskode (og ingen `INITIAL_PASSWORD`) holder `isAuthRequired()` i `src/shared/utils/apiAuth.ts` den anonyme bootstrap åben **kun for loopback-peers**. Loopback afgøres ud fra de betroede peer-signaler, i rækkefølge: den token-stemplede ægte TCP-peer (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, hvad politikken ser), pipelinens egen `AUTHZ_HEADER_PEER_LOCALITY` dom (hvad rutehandlere ser, kun betroet mens `OMNIROUTE_PEER_STAMP_TOKEN` er sat), eller en ægte socket-peer for direkte kaldere. `Host` / `nextUrl.hostname` konsulteres aldrig, og den første adgangskode-skrivning (`POST /api/settings/require-login`) er under den samme begrænsning i stedet for at være åben for enhver netværks-peer (GHSA-7pq4-8pvv-rx7r). `managementPolicy` videregiver sin egen `peerContext` dom eksplicit, så den ORIGINALE (før-strip) anmodnings headers aldrig afgør det.

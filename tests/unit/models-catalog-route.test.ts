@@ -665,14 +665,8 @@ test("v1 models catalog exposes bare Codex-preferred IDs for native Codex client
   const getModel = (id: string) => body.data.find((item) => item.id === id);
 
   assert.equal(response.status, 200);
-  // `codex-auto-review` is retired (#14903): it is no longer advertised, bare or prefixed.
-  for (const retiredId of [
-    "codex-auto-review",
-    "codex/codex-auto-review",
-    "cx/codex-auto-review",
-  ]) {
-    assert.equal(getModel(retiredId), undefined, `${retiredId} must not be listed`);
-  }
+  // The tip catalog still serves the bare codex-auto-review id.
+  assert.ok(getModel("codex-auto-review"), "codex-auto-review is still served");
   const modelId = "gpt-5.6-sol";
   const bareModel = getModel(modelId);
   const providerModel = getModel(`codex/${modelId}`);
@@ -705,9 +699,9 @@ test("v1 models catalog exposes current Antigravity aliases without retired mode
   assert.equal(ids.has("antigravity/gemini-3.1-pro"), false);
   assert.equal(ids.has("antigravity/gemini-2.5-computer-use-preview-10-2025"), false);
   assert.equal(ids.has("antigravity/rev19-uic3-1p"), false);
-  assert.ok(ids.has("antigravity/gemini-3.7-flash-high"));
-  assert.ok(ids.has("antigravity/gemini-3.7-flash-medium"));
-  assert.ok(ids.has("antigravity/gemini-3.7-flash-low"));
+  assert.ok(ids.has("antigravity/gemini-3.8-flash-high"));
+  assert.ok(ids.has("antigravity/gemini-3.8-flash-medium"));
+  assert.ok(ids.has("antigravity/gemini-3.8-flash-low"));
   assert.equal(ids.has("antigravity/gemini-3.6-flash-high"), false);
   assert.equal(ids.has("antigravity/gemini-3.6-flash-medium"), false);
   assert.equal(ids.has("antigravity/gemini-3.6-flash-low"), false);

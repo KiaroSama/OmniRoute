@@ -13,6 +13,7 @@ import {
   clampToLearned,
   REASONING_EFFORT_ORDER,
 } from "../../services/learnedReasoningEffortCaps.ts";
+import { isBasetenReasoningModel, mapBasetenReasoningParams } from "./basetenReasoning.ts";
 
 /**
  * Sanitize reasoning_effort for providers that don't accept all values.
@@ -325,6 +326,9 @@ export function sanitizeReasoningEffortForProvider(
 ): unknown {
   if (isNvidiaGlm52(provider, model)) {
     return mapNvidiaGlm52ReasoningParams(body, provider, model, log);
+  }
+  if (isBasetenReasoningModel(provider, model)) {
+    return mapBasetenReasoningParams(body, provider, model, log);
   }
 
   if (!body || typeof body !== "object" || Array.isArray(body)) return body;

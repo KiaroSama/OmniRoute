@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Notīrīt filtrus",
     "disableNonPublicModels": "Atspējot nepubliskos modeļus",
     "disableNonPublicModelsDesc": "Noraidīt pieprasījumus modeļiem, kas nav atrasti vai nodrošinātāja katalogā nav atzīmēti kā publiski",
+    "forcedModel": "Piespiedu modelis",
+    "forcedModelDesc": "Novirza katru ar šo atslēgu veikto tērzēšanas pieprasījumu uz šo modeli vai kombināciju neatkarīgi no tā, kādu modeli pieprasa klients (vai ja tas nesūta nevienu). Atslēgas modeļu, kombināciju un budžeta ierobežojumi joprojām ir spēkā.",
+    "forcedModelPlaceholder": "Nav piespiedu: izmantot klienta pieprasīto modeli",
     "normalKeysSection": "Standarta atslēgas",
     "quotaKeysSection": "Kvotas atslēgas",
     "bypassProviderQuota": "Apiet nodrošinātāja kvotas robežvērtības",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — sevi pilnveidojošs RLM kodēšanas rīks ar OpenAI saderīgu pakalpojumu sniedzēju atbalstu",
       "warp": "Warp AI terminālis ar pielāgotu pakalpojumu sniedzēju atbalstu",
       "agent-deck": "Agent Deck vairāku aģentu orķestrētājs",
-      "5dive": "5dive — pašmitināta kodēšanas aģentu flote; viens autentifikācijas profils tos visus novirza uz OmniRoute"
+      "5dive": "5dive — pašmitināta kodēšanas aģentu flote; viens autentifikācijas profils tos visus novirza uz OmniRoute",
+      "zed": "Zed koda redaktors — iebūvēts aģents, izmantojot ar OpenAI saderīgu nodrošinātāju"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Pēc tam pārlādējiet VS Code un ievades uzvednē iestatiet API atslēgu.",
     "wireApiChatCompletions": "Tērzēšanas pabeigšana (/chat/completions)",
     "wireApiResponses": "Atbilžu API (/responses)",
+    "codexModelCatalog": "Rādīt OmniRoute modeļus Codex /model atlasītājā",
+    "codexModelCatalogHint": "Ieraksta ~/.codex/omniroute-models.json no instalētā Codex paša modeļu kataloga (aptuveni 60 KB uz modeli). Pēc Codex atjaunināšanas lietojiet vēlreiz.",
+    "codexCatalogWarning": "Codex /model atlasītājs netika atjaunināts: OmniRoute neizdevās nolasīt instalētā Codex modeļu katalogu.",
     "cliproxyapiActionFailed": "Darbība neizdevās",
     "cliproxyapiActionSucceeded": "Darbība veiksmīga",
     "cliproxyapiCheckUpdates": "Pārbaudīt atjauninājumu pieejamību",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "Lakonisks CJK (文言)",
         "description": "Klasiskās ķīniešu valodas īpaši lakonisks stils (pieejams tikai ķīniešu valodai)."
+      },
+      "antislop-ui": {
+        "label": "Antislop UI filtrs",
+        "description": "Vizuāļi ar pārbaudītu mērķi: bez vispārīgiem gradientiem, veidņu izkārtojumiem vai nedarbīgām vadīklām."
+      },
+      "antislop-copy": {
+        "label": "Antislop teksta un cilvēku filtrs",
+        "description": "Godīgs teksts un noteikumi cilvēkiem: bez MI pazīmēm, WCAG AA kontrasts, tastatūra, stāvokļi, mobilā pārkārtošana."
       }
     },
     "resilienceWaitForCooldown": "Gaidīt nogaidīšanas perioda beigas",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Slēpt šo kvotas rindu",
     "showQuotaRow": "Rādīt šo kvotas rindu",
     "hiddenQuotaRowsLabel": "Slēptās:",
+    "quotaSpeedTitle": "Nesenais dekodēšanas ātrums šajā kontā (pēdējie {count} veiksmīgie pieprasījumi)",
+    "quotaSpeedLine": "{model}: {avg} tok/s vid. · pēdējais {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s vid. · pēdējais {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Neizdevās atjaunināt kvotas redzamību",
     "account": "Konts",
     "modelQuotas": "Modeļu kvotas",
@@ -14501,7 +14519,10 @@
     "importing": "Notiek importēšana...",
     "apiKeyPlaceholder": "Ielīmējiet savu {providerLabel} API atslēgu...",
     "apiKeyStoredDescription": "Tā tiek glabāta šifrētā veidā kā ilglaicīga nesējpilnvara. Atsvaidzināšanas procesa nav.",
-    "apiKeyRegionDescription": "AWS reģions atslēgai (noklusējums: us-east-1)",
+    "apiKeyRegionAuto": "Automātiska noteikšana (ieteicams)",
+    "apiKeyRegionUsEast1": "ASV austrumi (Ziemeļvirdžīnija)",
+    "apiKeyRegionEuCentral1": "Eiropa (Frankfurte)",
+    "apiKeyRegionAutoDescription": "Automātiskā noteikšana vispirms izmēģina ASV austrumus, pēc tam Eiropu (Frankfurte) un saglabā reģionu, kurā atslēga darbojas.",
     "validating": "Notiek validēšana...",
     "validateAndSaveApiKey": "Validēt un saglabāt API atslēgu",
     "errorAutoDetect": "Pilnvaru neizdevās automātiski noteikt",

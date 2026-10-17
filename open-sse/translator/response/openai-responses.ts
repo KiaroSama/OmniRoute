@@ -24,6 +24,7 @@ import {
   normalizeOutputIndex,
   normalizeUpstreamFailure,
   getVisibleResponsesReasoningSummaryText,
+  resolveResponsesDoneEventType,
 } from "./openai-responses/pureHelpers.ts";
 import { createEventEmitter } from "./openai-responses/eventEmitter.ts";
 import { buildResponsesToolCallItem } from "./responsesToolItem.ts";
@@ -1043,8 +1044,11 @@ function openaiResponsesToOpenAIResponseStream(chunk, state) {
   }
 
   // Handle different event types from Responses API
-  const eventType = chunk.type || chunk.event;
+  const rawEventType = chunk.type || chunk.event;
   const data = chunk.data || chunk;
+  // A response.done that trails an already-handled terminal must not re-fire it.
+  if (rawEventType === "response.done" && state.finishReasonSent) return null;
+  const eventType = resolveResponsesDoneEventType(rawEventType, data);
 
   if (!state.model) {
     const upstreamModel =

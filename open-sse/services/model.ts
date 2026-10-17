@@ -47,7 +47,7 @@ const CROSS_PROXY_MODEL_ALIASES: Record<string, string> = {
   "deepseek-v3-2": "deepseek-v3.2",
   "qwen3-coder:480b": "Qwen/Qwen3-Coder-480B-A35B-Instruct",
   "claude-opus-4.5": "claude-opus-4-5-20251101",
-  "anthropic/claude-opus-4.5": "claude-opus-4-5-20251101",
+  "anthropic/claude-opus-4.5": "anthropic/claude-opus-4-5",
 };
 
 const CROSS_PROXY_MODEL_ALIASES_LOWER = Object.fromEntries(

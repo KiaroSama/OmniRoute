@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Filtreleri temizle",
     "disableNonPublicModels": "Herkese Açık Olmayan Modelleri Devre Dışı Bırak",
     "disableNonPublicModelsDesc": "Sağlayıcı kataloğunda keşfedilmemiş veya herkese açık olarak işaretlenmemiş modeller için istekleri reddet",
+    "forcedModel": "Zorunlu model",
+    "forcedModelDesc": "Bu anahtarla yapılan her sohbet isteğini, istemci hangi modeli isterse istesin (veya hiç göndermediğinde) bu modele ya da komboya yönlendirir. Anahtarın model, kombo ve bütçe sınırları yine geçerlidir.",
+    "forcedModelPlaceholder": "Zorunlu değil: istemcinin istediği modeli kullan",
     "normalKeysSection": "Normal anahtarlar",
     "quotaKeysSection": "Kota anahtarları",
     "bypassProviderQuota": "Sağlayıcı kota sınırlarını atla",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — OpenAI uyumlu sağlayıcı desteğine sahip, kendini geliştiren RLM kodlama altyapısı",
       "warp": "Özel sağlayıcı desteğine sahip Warp AI terminali",
       "agent-deck": "Agent Deck çoklu aracı orkestratörü",
-      "5dive": "5dive — kendi sunucunuzda çalışan kodlama aracıları filosu; tek bir auth profili hepsini OmniRoute'a yönlendirir"
+      "5dive": "5dive — kendi sunucunuzda çalışan kodlama aracıları filosu; tek bir auth profili hepsini OmniRoute'a yönlendirir",
+      "zed": "Zed kod düzenleyicisi — OpenAI uyumlu bir sağlayıcı üzerinden yerleşik ajan"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Ardından VS Code'u yeniden yükleyin ve giriş isteminde API anahtarını ayarlayın.",
     "wireApiChatCompletions": "Sohbet Tamamlamaları (/sohbet/tamamlamalar)",
     "wireApiResponses": "Yanıtlar API'si (/yanıtlar)",
+    "codexModelCatalog": "OmniRoute modellerini Codex'in /model seçicisinde listele",
+    "codexModelCatalogHint": "Yüklü Codex'in kendi model kataloğundan ~/.codex/omniroute-models.json dosyasını yazar (model başına yaklaşık 60 KB). Codex'i yükselttikten sonra yeniden uygulayın.",
+    "codexCatalogWarning": "Codex'in /model seçicisi güncellenmedi: OmniRoute yüklü Codex model kataloğunu okuyamadı.",
     "cliproxyapiActionFailed": "Eylem başarısız oldu",
     "cliproxyapiActionSucceeded": "İşlem başarılı oldu",
     "cliproxyapiCheckUpdates": "Güncellemeleri Kontrol Et",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "Kısa ve öz CJK (文言)",
         "description": "Klasik Çince ultra kısa ve öz stil (yalnızca Çince için kullanılabilir)."
+      },
+      "antislop-ui": {
+        "label": "Antislop UI filtresi",
+        "description": "Amacı test edilmiş görseller: jenerik gradyanlar, şablon düzenler veya ölü kontroller yok."
+      },
+      "antislop-copy": {
+        "label": "Antislop metin ve insan filtresi",
+        "description": "Dürüst metin ve insanlar için kurallar: yapay zekâ izi yok, WCAG AA kontrastı, klavye, durumlar, mobil yeniden akış."
       }
     },
     "resilienceWaitForCooldown": "Bekleme Süresini Bekleyin",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Bu kota satırını gizle",
     "showQuotaRow": "Bu kota satırını göster",
     "hiddenQuotaRowsLabel": "Gizli:",
+    "quotaSpeedTitle": "Bu hesaptaki son kod çözme hızı (son {count} başarılı istek)",
+    "quotaSpeedLine": "{model}: {avg} tok/s ort. · son {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s ort. · son {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Kota görünürlüğü güncellenemedi",
     "account": "Hesap",
     "modelQuotas": "Model Kotaları",
@@ -14501,7 +14519,10 @@
     "importing": "İçe Aktarılıyor...",
     "apiKeyPlaceholder": "{providerLabel} API anahtarınızı yapıştırın...",
     "apiKeyStoredDescription": "Uzun ömürlü bir taşıyıcı kimlik bilgisi olarak şifrelenmiş olarak saklandı. Yenileme akışı yoktur.",
-    "apiKeyRegionDescription": "Anahtar için AWS bölgesi (varsayılan: us-east-1)",
+    "apiKeyRegionAuto": "Otomatik algıla (önerilir)",
+    "apiKeyRegionUsEast1": "ABD Doğu (Kuzey Virginia)",
+    "apiKeyRegionEuCentral1": "Avrupa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Otomatik algılama önce ABD Doğu'yu, ardından Avrupa'yı (Frankfurt) dener ve anahtarın çalıştığı bölgeyi kaydeder.",
     "validating": "Geçerlilik kontrol ediliyor...",
     "validateAndSaveApiKey": "API Anahtarını Doğrula ve Kaydet",
     "errorAutoDetect": "Token otomatik olarak tespit edilemedi",

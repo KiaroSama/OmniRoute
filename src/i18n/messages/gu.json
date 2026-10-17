@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "ફિલ્ટર્સ સાફ કરો",
     "disableNonPublicModels": "બિન-જાહેર મોડલ્સ નિષ્ક્રિય કરો",
     "disableNonPublicModelsDesc": "પ્રદાતા કેટલોગમાં શોધાયેલ ન હોય અથવા જાહેર તરીકે ચિહ્નિત ન હોય તેવા મોડેલો માટેની વિનંતીઓ નકારો",
+    "forcedModel": "ફરજિયાત મોડેલ",
+    "forcedModelDesc": "આ કી વડે થતી દરેક ચેટ વિનંતીને આ મોડેલ અથવા કોમ્બો પર મોકલો, ભલે ક્લાયન્ટ કોઈપણ મોડેલ માંગે (અથવા કોઈ ન મોકલે). કીની મોડેલ, કોમ્બો અને બજેટ મર્યાદાઓ હજુ પણ લાગુ પડે છે.",
+    "forcedModelPlaceholder": "ફરજિયાત નથી: ક્લાયન્ટ જે મોડેલ માંગે તે વાપરો",
     "normalKeysSection": "સામાન્ય કી",
     "quotaKeysSection": "ક્વોટા કી",
     "bypassProviderQuota": "પ્રદાતા ક્વોટા કટઓફ બાયપાસ કરો",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — OpenAI-સુસંગત પ્રદાતા સપોર્ટ સાથે સ્વ-સુધારણા કરતું RLM કોડિંગ હાર્નેસ",
       "warp": "કસ્ટમ પ્રોવાઇડર સપોર્ટ સાથે Warp AI ટર્મિનલ",
       "agent-deck": "Agent Deck મલ્ટિ-એજન્ટ ઓર્કેસ્ટ્રેટર",
-      "5dive": "5dive — સ્વ-હોસ્ટેડ કોડિંગ એજન્ટ્સનો કાફલો; એક auth પ્રોફાઇલ બધાને OmniRoute તરફ દોરે છે"
+      "5dive": "5dive — સ્વ-હોસ્ટેડ કોડિંગ એજન્ટ્સનો કાફલો; એક auth પ્રોફાઇલ બધાને OmniRoute તરફ દોરે છે",
+      "zed": "Zed કોડ એડિટર — OpenAI-સુસંગત પ્રદાતા દ્વારા બિલ્ટ-ઇન એજન્ટ"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "પછી VS Code ફરીથી લોડ કરો અને ઇનપુટ પ્રોમ્પ્ટમાં API કી સેટ કરો.",
     "wireApiChatCompletions": "ચેટ પૂર્ણતા (/ચેટ/પૂર્ણતા)",
     "wireApiResponses": "પ્રતિભાવ API (/પ્રતિસાદો)",
+    "codexModelCatalog": "Codex ના /model પિકરમાં OmniRoute મોડલ્સ બતાવો",
+    "codexModelCatalogHint": "ઇન્સ્ટોલ કરેલા Codex ના પોતાના મોડલ કેટલોગમાંથી ~/.codex/omniroute-models.json લખે છે (દરેક મોડલ માટે આશરે 60 KB). Codex અપગ્રેડ કર્યા પછી ફરીથી લાગુ કરો.",
+    "codexCatalogWarning": "Codex નો /model પિકર અપડેટ થયો નથી: OmniRoute ઇન્સ્ટોલ કરેલા Codex મોડલ કેટલોગને વાંચી શક્યું નથી.",
     "cliproxyapiActionFailed": "ક્રિયા નિષ્ફળ ગઈ",
     "cliproxyapiActionSucceeded": "ક્રિયા સફળ થઈ ગઈ",
     "cliproxyapiCheckUpdates": "અપડેટ્સ તપાસો",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "સંક્ષિપ્ત CJK (文言)",
         "description": "ક્લાસિકલ-ચાઇનીઝ અલ્ટ્રા-સંક્ષિપ્ત શૈલી (ફક્ત ચાઇનીઝ માટે ઉપલબ્ધ)."
+      },
+      "antislop-ui": {
+        "label": "Antislop UI ફિલ્ટર",
+        "description": "હેતુ-ચકાસાયેલ વિઝ્યુઅલ: કોઈ સામાન્ય ગ્રેડિયન્ટ, ટેમ્પલેટ લેઆઉટ કે નકામા કંટ્રોલ નહીં."
+      },
+      "antislop-copy": {
+        "label": "Antislop કોપી અને માનવ ફિલ્ટર",
+        "description": "પ્રામાણિક કોપી અને લોકો માટેના નિયમો: AIના નિશાન નહીં, WCAG AA કોન્ટ્રાસ્ટ, કીબોર્ડ, સ્થિતિઓ, મોબાઇલ રિફ્લો."
       }
     },
     "resilienceWaitForCooldown": "કૂલડાઉન માટે રાહ જુઓ",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "આ ક્વોટા રો છુપાવો",
     "showQuotaRow": "આ ક્વોટા રો બતાવો",
     "hiddenQuotaRowsLabel": "છુપાયેલ:",
+    "quotaSpeedTitle": "આ એકાઉન્ટ પર તાજેતરની ડીકોડ ઝડપ (છેલ્લી {count} સફળ વિનંતીઓ)",
+    "quotaSpeedLine": "{model}: {avg} tok/s સરેરાશ · છેલ્લું {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s સરેરાશ · છેલ્લું {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "ક્વોટા દૃશ્યતા અપડેટ કરવામાં નિષ્ફળ",
     "account": "એકાઉન્ટ",
     "modelQuotas": "મોડેલ ક્વોટા",
@@ -14501,7 +14519,10 @@
     "importing": "આયાત કરી રહ્યા છીએ...",
     "apiKeyPlaceholder": "તમારો {providerLabel} API કી પેસ્ટ કરો...",
     "apiKeyStoredDescription": "લાંબા સમય સુધી ચાલનારા બેરર ક્રેડેંશિયલ તરીકે સંગ્રહિત એન્ક્રિપ્ટેડ. રિફ્રેશ ફ્લો નથી.",
-    "apiKeyRegionDescription": "કી માટે AWS પ્રદેશ (ડિફોલ્ટ: us-east-1)",
+    "apiKeyRegionAuto": "આપમેળે શોધો (ભલામણ કરેલ)",
+    "apiKeyRegionUsEast1": "યુએસ ઈસ્ટ (ઉત્તર વર્જિનિયા)",
+    "apiKeyRegionEuCentral1": "યુરોપ (ફ્રેન્કફર્ટ)",
+    "apiKeyRegionAutoDescription": "આપમેળે શોધ પહેલા યુએસ ઈસ્ટ, પછી યુરોપ (ફ્રેન્કફર્ટ) અજમાવે છે અને જ્યાં કી કામ કરે છે તે પ્રદેશ સાચવે છે.",
     "validating": "માન્યતા કરી રહ્યા છીએ...",
     "validateAndSaveApiKey": "API કી માન્ય કરો અને સાચવો",
     "errorAutoDetect": "ટોકન આપોઆપ ઓળખી શક્યું નથી",

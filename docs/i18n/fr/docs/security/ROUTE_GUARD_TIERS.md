@@ -132,6 +132,23 @@ Ces routes sont destructrices ou irréversibles. Les autoriser dans une installa
 
 `/api/settings/obsidian` couvre son enfant `/webdav` : `POST` pointe le service de fichiers WebDAV — servi par la couche Node personnalisée avant Next.js, en dehors de ce pipeline — vers une racine choisie par l'appelant et renvoie des identifiants Basic fraîchement créés, `DELETE` les fait pivoter, et le `POST` parent stocke le jeton de l'API REST d'Obsidian. GHSA-62vw n'a masqué que la révélation du mot de passe `GET` ; l'émission était toujours au niveau "fail-open" (GHSA-7pq4-8pvv-rx7r). `enableObsidianVaultSync()` refuse en outre un coffre-fort qui est, se trouve à l'intérieur, ou contient le répertoire de données.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### Le démarrage d'une nouvelle installation est en boucle locale uniquement — par pair réel, pas par `Host`
 
 Sans mot de passe de gestion configuré (et sans `INITIAL_PASSWORD`), `isAuthRequired()` dans `src/shared/utils/apiAuth.ts` maintient le démarrage anonyme ouvert **uniquement pour les pairs en boucle locale**. La boucle locale est décidée à partir des signaux de pair de confiance, dans l'ordre : le pair TCP réel estampillé par jeton (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, ce que la politique voit), le verdict `AUTHZ_HEADER_PEER_LOCALITY` propre au pipeline (ce que les gestionnaires de route voient, fiable uniquement tant que `OMNIROUTE_PEER_STAMP_TOKEN` est défini), ou un pair de socket réel pour les appelants directs. `Host` / `nextUrl.hostname` ne sont jamais consultés, et l'écriture du premier mot de passe (`POST /api/settings/require-login`) est soumise à la même contrainte plutôt que d'être ouverte à chaque pair réseau (GHSA-7pq4-8pvv-rx7r). `managementPolicy` transmet explicitement son propre verdict `peerContext`, de sorte que les en-têtes de la requête ORIGINALE (avant suppression) ne le décident jamais.

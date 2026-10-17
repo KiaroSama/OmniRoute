@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Filters wissen",
     "disableNonPublicModels": "Niet-openbare modellen uitschakelen",
     "disableNonPublicModelsDesc": "Verzoeken weigeren voor modellen die niet zijn ontdekt of niet als openbaar zijn gemarkeerd in de providercatalogus",
+    "forcedModel": "Afgedwongen model",
+    "forcedModelDesc": "Stuur elk chatverzoek met deze sleutel naar dit model of deze combo, ongeacht welk model de client vraagt (of als hij er geen meestuurt). De model-, combo- en budgetlimieten van de sleutel blijven gelden.",
+    "forcedModelPlaceholder": "Niet afgedwongen: gebruik het model dat de client vraagt",
     "normalKeysSection": "Normale sleutels",
     "quotaKeysSection": "Quotasleutels",
     "bypassProviderQuota": "Quotalimieten van provider omzeilen",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — zelfverbeterende RLM-codeeromgeving met ondersteuning voor OpenAI-compatibele providers",
       "warp": "Warp AI-terminal met ondersteuning voor aangepaste providers",
       "agent-deck": "Agent Deck multi-agent-orchestrator",
-      "5dive": "5dive — zelf gehoste vloot van codeeragents; één auth-profiel wijst ze allemaal naar OmniRoute"
+      "5dive": "5dive — zelf gehoste vloot van codeeragents; één auth-profiel wijst ze allemaal naar OmniRoute",
+      "zed": "Zed-code-editor — ingebouwde agent via een OpenAI-compatibele provider"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Herlaad vervolgens VS Code en stel de API-sleutel in bij de invoerprompt.",
     "wireApiChatCompletions": "Chatvoltooiingen (/chat/voltooiingen)",
     "wireApiResponses": "Reacties-API (/reacties)",
+    "codexModelCatalog": "OmniRoute-modellen tonen in de /model-kiezer van Codex",
+    "codexModelCatalogHint": "Schrijft ~/.codex/omniroute-models.json op basis van de eigen modelcatalogus van de geïnstalleerde Codex (ongeveer 60 KB per model). Pas opnieuw toe na een Codex-upgrade.",
+    "codexCatalogWarning": "De /model-kiezer van Codex is niet bijgewerkt: OmniRoute kon de modelcatalogus van de geïnstalleerde Codex niet lezen.",
     "cliproxyapiActionFailed": "Actie mislukt",
     "cliproxyapiActionSucceeded": "Actie geslaagd",
     "cliproxyapiCheckUpdates": "Controleer op updates",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "Beknopt CJK (文言)",
         "description": "Klassiek-Chinese ultra-beknopte stijl (alleen beschikbaar voor Chinees)."
+      },
+      "antislop-ui": {
+        "label": "Antislop UI-filter",
+        "description": "Doelgeteste visuals: geen generieke kleurverlopen, sjabloonlay-outs of dode bedieningselementen."
+      },
+      "antislop-copy": {
+        "label": "Antislop tekst- en mensfilter",
+        "description": "Eerlijke tekst plus regels voor mensen: geen AI-kenmerken, WCAG AA-contrast, toetsenbord, statussen, mobiele herschikking."
       }
     },
     "resilienceWaitForCooldown": "Wacht op afkoelen",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Deze quotarij verbergen",
     "showQuotaRow": "Deze quotarij tonen",
     "hiddenQuotaRowsLabel": "Verborgen:",
+    "quotaSpeedTitle": "Recente decodeersnelheid op dit account (laatste {count} geslaagde verzoeken)",
+    "quotaSpeedLine": "{model}: {avg} tok/s gem. · laatste {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s gem. · laatste {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Bijwerken van quotazichtbaarheid mislukt",
     "account": "Rekening",
     "modelQuotas": "Modelquota",
@@ -14501,7 +14519,10 @@
     "importing": "Importeren...",
     "apiKeyPlaceholder": "Plak uw {providerLabel} API-sleutel...",
     "apiKeyStoredDescription": "Opgeslagen versleuteld als een langlevende draagbare referentie. Er is geen verversingsstroom.",
-    "apiKeyRegionDescription": "AWS-regio voor de sleutel (standaard: us-east-1)",
+    "apiKeyRegionAuto": "Automatisch detecteren (aanbevolen)",
+    "apiKeyRegionUsEast1": "VS Oost (Noord-Virginia)",
+    "apiKeyRegionEuCentral1": "Europa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Automatische detectie probeert eerst VS Oost, daarna Europa (Frankfurt), en slaat de regio op waar de sleutel werkt.",
     "validating": "Bezig met valideren...",
     "validateAndSaveApiKey": "Valideer en Sla API-sleutel Op",
     "errorAutoDetect": "Kon token niet automatisch detecteren",

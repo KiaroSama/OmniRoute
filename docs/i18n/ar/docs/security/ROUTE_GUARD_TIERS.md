@@ -153,6 +153,23 @@
 
 يغطي `/api/settings/obsidian` ابنه `/webdav`: تشير `POST` إلى خدمة ملفات WebDAV — التي يقدمها طبقة Node المخصصة قبل Next.js، خارج هذا المسار — إلى جذر يختاره المتصل وتكرر بيانات اعتماد Basic التي تم إصدارها حديثًا، وتقوم `DELETE` بتدويرها، وتخزن `POST` الأصلية رمز Obsidian REST API. قامت GHSA-62vw فقط بإخفاء كشف كلمة مرور `GET`؛ كان الإصدار لا يزال على مستوى الفشل المفتوح (GHSA-7pq4-8pvv-rx7r). ترفض `enableObsidianVaultSync()` بالإضافة إلى ذلك قبوًا يكون، أو يقع داخل، أو يحتوي على دليل البيانات.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### التمهيد للتثبيت الجديد هو loopback-only — بواسطة نظير حقيقي، وليس `Host`
 
 مع عدم تكوين كلمة مرور للإدارة (ولا `INITIAL_PASSWORD`)، يحافظ `isAuthRequired()` في `src/shared/utils/apiAuth.ts` على التمهيد المجهول مفتوحًا **فقط لنظراء loopback**. يتم تحديد Loopback من إشارات النظير الموثوق بها، بالترتيب: نظير TCP الحقيقي المختوم بالرمز (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`، ما تراه السياسة)، حكم `AUTHZ_HEADER_PEER_LOCALITY` الخاص بالمسار (ما تراه معالجات المسار، موثوق به فقط عندما يتم تعيين `OMNIROUTE_PEER_STAMP_TOKEN`)، أو نظير مقبس حقيقي للمتصلين المباشرين. لا يتم استشارة `Host` / `nextUrl.hostname` أبدًا، وكتابة كلمة المرور الأولى (`POST /api/settings/require-login`) تخضع لنفس القيد بدلاً من أن تكون مفتوحة لكل نظير شبكة (GHSA-7pq4-8pvv-rx7r). يمرر `managementPolicy` حكم `peerContext` الخاص به بشكل صريح، لذلك لا تحدد رؤوس الطلب الأصلي (قبل التجريد) ذلك أبدًا.

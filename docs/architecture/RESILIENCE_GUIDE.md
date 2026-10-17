@@ -98,6 +98,17 @@ Regression guard: `tests/unit/provider-cooldown-window-gate.test.ts`.
 
 **Anti-thundering-herd guard:** prevents concurrent failures from over-extending cooldown or double-incrementing `backoffLevel`.
 
+**Concurrency-limit 429s do not climb the backoff ladder.** A `429` whose body reports a
+concurrency limit ("too many concurrent requests", "concurrency limit", "parallel request
+limit", GLM `并发数过高`) means the account is healthy but busy.
+`checkFallbackError()` returns reason `concurrency_limited`: fail over to the next
+connection now, cool this one for a fixed `CONCURRENCY_LIMIT_COOLDOWN_MS` (1s) or the
+upstream retry hint, keep `backoffLevel` unchanged, and set `skipProviderBreaker`.
+An explicit quota body still wins, so a body that also matches a quota pattern stays a quota
+verdict. Detection: `looksLikeConcurrencyLimit()` in `src/shared/utils/classify429.ts`;
+verdict: `open-sse/services/accountFallback/concurrencyLimit429.ts`. `classify429()` (the
+breaker's `FailureKind`) is unchanged and still reads `rate_limit` for these bodies.
+
 **Stream content stalls do not cool the account.** When the content-stall watchdog
 (`open-sse/utils/streamHandler.ts`) gives up on a stream that sent no model output in
 time, `markAccountUnavailable()` records the error on the connection but sets no

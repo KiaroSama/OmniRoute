@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Șterge filtrele",
     "disableNonPublicModels": "Dezactivează modelele non-publice",
     "disableNonPublicModelsDesc": "Respinge cererile pentru modelele care nu sunt descoperite sau nu sunt marcate ca publice în catalogul furnizorului",
+    "forcedModel": "Model impus",
+    "forcedModelDesc": "Direcționează fiecare cerere de chat făcută cu această cheie către acest model sau combo, indiferent ce model cere clientul (sau când nu trimite niciunul). Limitele de modele, combo și buget ale cheii se aplică în continuare.",
+    "forcedModelPlaceholder": "Neimpus: folosește modelul cerut de client",
     "normalKeysSection": "Chei normale",
     "quotaKeysSection": "Chei de cotă",
     "bypassProviderQuota": "Ocolește limitele de cotă ale furnizorului",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — sistem RLM de programare cu auto-îmbunătățire și compatibilitate cu furnizori compatibili cu OpenAI",
       "warp": "Terminal Warp AI cu suport pentru furnizori personalizați",
       "agent-deck": "Orchestrator multi-agent Agent Deck",
-      "5dive": "5dive — flotă auto-găzduită de agenți de codare; un profil de autentificare îi îndreaptă pe toți către OmniRoute"
+      "5dive": "5dive — flotă auto-găzduită de agenți de codare; un profil de autentificare îi îndreaptă pe toți către OmniRoute",
+      "zed": "Editorul de cod Zed — agent integrat printr-un furnizor compatibil cu OpenAI"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Apoi reîncărcați VS Code și setați cheia API în câmpul de introducere.",
     "wireApiChatCompletions": "Finalizări de chat (/chat/completions)",
     "wireApiResponses": "API-ul Responses (/responses)",
+    "codexModelCatalog": "Afișează modelele OmniRoute în selectorul /model din Codex",
+    "codexModelCatalogHint": "Scrie ~/.codex/omniroute-models.json pe baza catalogului de modele al Codex instalat (aproximativ 60 KB per model). Aplicați din nou după actualizarea Codex.",
+    "codexCatalogWarning": "Selectorul /model din Codex nu a fost actualizat: OmniRoute nu a putut citi catalogul de modele al Codex instalat.",
     "cliproxyapiActionFailed": "Acțiunea a eșuat",
     "cliproxyapiActionSucceeded": "Acțiune reușită",
     "cliproxyapiCheckUpdates": "Verifică actualizările",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK concis (文言)",
         "description": "Stil ultra-concis în chineza clasică (disponibil doar pentru chineză)."
+      },
+      "antislop-ui": {
+        "label": "Filtru Antislop pentru UI",
+        "description": "Elemente vizuale cu scop verificat: fără degradeuri generice, layouturi șablon sau controale moarte."
+      },
+      "antislop-copy": {
+        "label": "Filtru Antislop pentru text și oameni",
+        "description": "Text onest plus reguli pentru oameni: fără urme de AI, contrast WCAG AA, tastatură, stări, rearanjare pe mobil."
       }
     },
     "resilienceWaitForCooldown": "Așteptați răcirea",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Ascunde acest rând de cotă",
     "showQuotaRow": "Afișează acest rând de cotă",
     "hiddenQuotaRowsLabel": "Ascuns:",
+    "quotaSpeedTitle": "Viteza recentă de decodare pe acest cont (ultimele {count} cereri reușite)",
+    "quotaSpeedLine": "{model}: {avg} tok/s medie · ultima {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s medie · ultima {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Nu s-a putut actualiza vizibilitatea cotei",
     "account": "Cont",
     "modelQuotas": "Cote model",
@@ -14501,7 +14519,10 @@
     "importing": "Importare...",
     "apiKeyPlaceholder": "Lipește cheia ta API {providerLabel}...",
     "apiKeyStoredDescription": "Stocat criptat ca un credential de tip bearer cu o durată lungă de viață. Nu există un flux de reîmprospătare.",
-    "apiKeyRegionDescription": "Regiunea AWS pentru cheie (implicit: us-east-1)",
+    "apiKeyRegionAuto": "Detectare automată (recomandat)",
+    "apiKeyRegionUsEast1": "SUA Est (Virginia de Nord)",
+    "apiKeyRegionEuCentral1": "Europa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Detectarea automată încearcă mai întâi SUA Est, apoi Europa (Frankfurt), și salvează regiunea în care funcționează cheia.",
     "validating": "Validare...",
     "validateAndSaveApiKey": "Validează și Salvează Cheia API",
     "errorAutoDetect": "Nu s-a putut detecta automat tokenul",

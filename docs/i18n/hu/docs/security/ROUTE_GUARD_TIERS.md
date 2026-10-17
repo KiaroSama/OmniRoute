@@ -176,6 +176,23 @@ Ezek az útvonalak destruktívak vagy visszafordíthatatlanok. Ha engedélyezzü
 
 A `/api/settings/obsidian` lefedi a `/webdav` gyermekét: a `POST` a WebDAV fájlszolgáltatást — amelyet a Next.js előtt egy egyedi Node réteg szolgál ki, ezen a pipeline-on kívül — egy hívó által választott gyökérre irányítja, és frissen generált Basic hitelesítő adatokat ad vissza, a `DELETE` rotálja azokat, a szülő `POST` pedig tárolja az Obsidian REST API tokent. A GHSA-62vw csak a `GET` jelszó felfedését maszkolta; a kibocsátás továbbra is a fail-open szinten volt (GHSA-7pq4-8pvv-rx7r). Az `enableObsidianVaultSync()` emellett elutasít egy olyan tárolót, amely a adatkönyvtárban van, azon belül helyezkedik el, vagy azt tartalmazza.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### Friss telepítésű bootstrap csak loopback-en keresztül — valós peer által, nem `Host`
 
 Ha nincs konfigurálva felügyeleti jelszó (és nincs `INITIAL_PASSWORD`), az `isAuthRequired()` a `src/shared/utils/apiAuth.ts` fájlban **csak loopback peerek számára** tartja nyitva az anonim bootstrap-et. A loopback a megbízható peer jelek alapján dől el, sorrendben: a token-nel ellátott valós TCP peer (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, amit a szabályzat lát), a pipeline saját `AUTHZ_HEADER_PEER_LOCALITY` ítélete (amit az útvonalkezelők látnak, csak akkor megbízható, ha az `OMNIROUTE_PEER_STAMP_TOKEN` be van állítva), vagy egy valós socket peer a közvetlen hívók számára. A `Host` / `nextUrl.hostname` soha nem kerül konzultálásra, és az első jelszó írása (`POST /api/settings/require-login`) ugyanazon korlátozás alá esik, ahelyett, hogy minden hálózati peer számára nyitva állna (GHSA-7pq4-8pvv-rx7r). A `managementPolicy` explicit módon továbbítja a saját `peerContext` ítéletét, így az EREDETI (strip előtti) kérés fejlécei soha nem döntenek erről.

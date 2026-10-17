@@ -11,6 +11,8 @@ import { sanitizeErrorMessage, sanitizeUpstreamDetails } from "../../utils/error
 import { isJsonObject } from "../../utils/kieTask.ts";
 import { stringifyImageErrorForLog } from "../imageErrorLog.ts";
 import { buildImageEndpointSuccess, type ImageEndpointResult } from "./result.ts";
+
+export { saveCallLog, fetchUntrustedRemoteImage, fetchWithTimeout, FetchTimeoutError };
 /**
  * Resolve the upstream images endpoint for a custom (OpenAI-compatible) image
  * provider node (#3205).

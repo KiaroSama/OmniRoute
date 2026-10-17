@@ -1,0 +1,1 @@
+- **fix(translator):** qualify a namespaced Responses `tool_choice` (and namespaced `allowed_tools` entries) to the flattened Chat tool name instead of the bare leaf ([#16917](https://github.com/diegosouzapw/OmniRoute/pull/16917)) — thanks @JessenReinhart

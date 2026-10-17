@@ -21,7 +21,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { runBuildTool } from "../build/buildToolRunner.mjs";
+import { runScopedTypecheck } from "./run-scoped-typecheck.mjs";
 import { diffAgainstBaseline, parseTscOutput } from "./typecheckBaseline.mjs";
 
 export { diffAgainstBaseline, parseTscOutput } from "./typecheckBaseline.mjs";
@@ -30,22 +30,6 @@ const ROOT = process.cwd();
 const TSCONFIG = path.join(ROOT, "open-sse", "tsconfig.json");
 const BASELINE_PATH = path.join(ROOT, "config/quality/open-sse-typecheck-baseline.json");
 const UPDATE = process.argv.includes("--update");
-
-function runTsc() {
-  try {
-    const stdout = runBuildTool(
-      "typescript",
-      "tsc",
-      ["--pretty", "false", "--noEmit", "-p", TSCONFIG],
-      { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, cwd: ROOT }
-    );
-    return stdout;
-  } catch (err) {
-    // tsc exits non-zero when there are type errors — stdout still has the report.
-    if (err.stdout) return String(err.stdout);
-    throw err;
-  }
-}
 
 function loadBaseline() {
   if (!fs.existsSync(BASELINE_PATH)) return {};
@@ -63,7 +47,7 @@ function main() {
   }
 
   console.log("[open-sse-typecheck] Running tsc scoped to open-sse/ workspace…");
-  const stdout = runTsc();
+  const stdout = runScopedTypecheck(ROOT, TSCONFIG);
   const live = parseTscOutput(stdout);
   const baseline = loadBaseline();
   const { regressions, improvements } = diffAgainstBaseline(live, baseline);

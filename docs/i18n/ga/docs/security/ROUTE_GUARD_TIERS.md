@@ -154,6 +154,23 @@ Tá na bealaí seo millteach nó dochúlaithe. Dá gceadófaí iad i suiteáil "
 
 Clúdaíonn `/api/settings/obsidian` a leanbh `/webdav`: `POST` dírithe ar an tseirbhís comhad WebDAV — a fhreastalaíonn an ciseal saincheaptha Node roimh Next.js, lasmuigh den phíblíne seo — ag fréamh roghnaithe ag an nglaoiteoir agus a fhilleann dintiúir Bhunúsacha nua-chruthaithe, déanann `DELETE` iad a rothlú, agus stórálann an tuismitheoir `POST` an comhartha API REST Obsidian. Níor cheilt GHSA-62vw ach an nochtadh pasfhocail `GET`; bhí an eisiúint fós ar an gciseal teip-oscailte (GHSA-7pq4-8pvv-rx7r). Diúltaíonn `enableObsidianVaultSync()` freisin do chruinneachán atá, a shuíonn laistigh de, nó a bhfuil an eolaire sonraí ann.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### Níl an tosaithe suiteála úire ach loopback — ag fíor-chomhghleacaí, ní `Host`
 
 Gan aon phasfhocal bainistíochta cumraithe (agus gan aon `INITIAL_PASSWORD`), coinníonn `isAuthRequired()` i `src/shared/utils/apiAuth.ts` an tosaithe anaithnid oscailte **do chomhghleacaithe loopback amháin**. Déantar loopback a chinneadh ó na comharthaí comhghleacaí iontaofa, in ord: an fíor-chomhghleacaí TCP le comhartha (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, an méid a fheiceann an polasaí), breithiúnas `AUTHZ_HEADER_PEER_LOCALITY` an phíblíne féin (an méid a fheiceann láimhseálaithe bealaigh, iontaofa ach amháin nuair a bhíonn `OMNIROUTE_PEER_STAMP_TOKEN` socraithe), nó fíor-chomhghleacaí soicéad do ghlaoiteoirí díreacha. Ní dhéantar comhairliúchán riamh ar `Host` / `nextUrl.hostname`, agus tá an chéad scríobh pasfhocail (`POST /api/settings/require-login`) faoin srian céanna seachas a bheith oscailte do gach comhghleacaí líonra (GHSA-7pq4-8pvv-rx7r). Cuireann `managementPolicy` a bhreithiúnas `peerContext` féin síos go sainráite, mar sin ní chinneann ceanntásca an iarratais BHUNAIDH (réamh-stiallta) é riamh.

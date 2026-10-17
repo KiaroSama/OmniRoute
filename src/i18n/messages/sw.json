@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Futa vichujio",
     "disableNonPublicModels": "Zima Mifano Isiyo ya Umma",
     "disableNonPublicModelsDesc": "Kataa maombi ya mifano ambayo haijagunduliwa au haijawekewa alama kama ya umma kwenye katalogi ya mtoa huduma",
+    "forcedModel": "Modeli ya lazima",
+    "forcedModelDesc": "Elekeza kila ombi la gumzo linalofanywa kwa ufunguo huu kwenda kwenye modeli au combo hii, bila kujali modeli ambayo mteja anaomba (au anapokosa kutuma yoyote). Vikomo vya modeli, combo na bajeti vya ufunguo bado vinatumika.",
+    "forcedModelPlaceholder": "Si ya lazima: tumia modeli ambayo mteja anaomba",
     "normalKeysSection": "Funguo za kawaida",
     "quotaKeysSection": "Funguo za kiwango",
     "bypassProviderQuota": "Pita vizuizi vya kiwango cha mtoa huduma",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — mfumo wa uandishi wa msimbo wa RLM unaojiboresha wenye usaidizi wa watoa huduma wanaooana na OpenAI",
       "warp": "Terminal ya Warp AI yenye usaidizi wa mtoa huduma maalum",
       "agent-deck": "Mratibu wa mawakala wengi wa Agent Deck",
-      "5dive": "5dive — kundi la mawakala wa uandishi wa msimbo unaojipangisha; wasifu mmoja wa auth huwaelekeza wote kwa OmniRoute"
+      "5dive": "5dive — kundi la mawakala wa uandishi wa msimbo unaojipangisha; wasifu mmoja wa auth huwaelekeza wote kwa OmniRoute",
+      "zed": "Kihariri cha msimbo cha Zed — wakala aliyejengewa ndani kupitia mtoa huduma anayeendana na OpenAI"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Kisha pakia upya VS Code na uweke ufunguo wa API kwenye kidokezo cha kuingiza.",
     "wireApiChatCompletions": "Kukamilika kwa Gumzo (/kuzungumza/kukamilika)",
     "wireApiResponses": "API ya majibu (/majibu)",
+    "codexModelCatalog": "Onyesha miundo ya OmniRoute kwenye kiteuzi cha /model cha Codex",
+    "codexModelCatalogHint": "Huandika ~/.codex/omniroute-models.json kutoka kwenye katalogi ya miundo ya Codex iliyosakinishwa (takriban 60 KB kwa kila muundo). Tumia tena baada ya kusasisha Codex.",
+    "codexCatalogWarning": "Kiteuzi cha /model cha Codex hakikusasishwa: OmniRoute haikuweza kusoma katalogi ya miundo ya Codex iliyosakinishwa.",
     "cliproxyapiActionFailed": "Kitendo kimefeli",
     "cliproxyapiActionSucceeded": "Kitendo kimefanikiwa",
     "cliproxyapiCheckUpdates": "Angalia Sasisho",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK Fupi (文言)",
         "description": "Mtindo mfupi zaidi wa Kichina cha Kale (inapatikana kwa Kichina pekee)."
+      },
+      "antislop-ui": {
+        "label": "Kichujio cha UI cha Antislop",
+        "description": "Picha zilizojaribiwa kwa madhumuni: hakuna gradient za kawaida, mpangilio wa violezo wala vidhibiti visivyofanya kazi."
+      },
+      "antislop-copy": {
+        "label": "Kichujio cha maandishi na binadamu cha Antislop",
+        "description": "Maandishi ya kweli pamoja na kanuni kwa watu: hakuna dalili za AI, utofautishaji wa WCAG AA, kibodi, hali, upangaji upya wa simu."
       }
     },
     "resilienceWaitForCooldown": "Subiri hadi Kupunguza joto",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Ficha safu mlalo hii ya mgawo",
     "showQuotaRow": "Onyesha safu mlalo hii ya mgawo",
     "hiddenQuotaRowsLabel": "Imefichwa:",
+    "quotaSpeedTitle": "Kasi ya hivi karibuni ya usimbuaji kwenye akaunti hii (maombi {count} ya mwisho yaliyofaulu)",
+    "quotaSpeedLine": "{model}: {avg} tok/s wastani · mwisho {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s wastani · mwisho {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Imeshindwa kusasisha mwonekano wa mgawo",
     "account": "Akaunti",
     "modelQuotas": "Migao ya Modeli",
@@ -14501,7 +14519,10 @@
     "importing": "Inakabiliwa na uagizaji...",
     "apiKeyPlaceholder": "Bandika funguo yako ya API ya {providerLabel}...",
     "apiKeyStoredDescription": "Imehifadhiwa kwa njia ya usimbaji kama akidi ya kubeba inayodumu kwa muda mrefu. Hakuna mchakato wa kusasisha.",
-    "apiKeyRegionDescription": "Eneo la AWS kwa funguo (chaguo-msingi: us-east-1)",
+    "apiKeyRegionAuto": "Gundua kiotomatiki (inapendekezwa)",
+    "apiKeyRegionUsEast1": "Mashariki ya Marekani (Virginia Kaskazini)",
+    "apiKeyRegionEuCentral1": "Ulaya (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Ugunduzi wa kiotomatiki hujaribu Mashariki ya Marekani kwanza, kisha Ulaya (Frankfurt), na huhifadhi eneo ambalo ufunguo unafanya kazi.",
     "validating": "Inathibitisha...",
     "validateAndSaveApiKey": "Thibitisha na Hifadhi Funguo la API",
     "errorAutoDetect": "Haiwezekani kugundua token kiotomatiki",

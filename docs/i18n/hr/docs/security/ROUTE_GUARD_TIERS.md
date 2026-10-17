@@ -134,6 +134,23 @@ Ove su rute destruktivne ili nepovratne. Dopuštanje istih u instalaciji "bez lo
 
 `/api/settings/obsidian` pokriva svoj podređeni `/webdav`: `POST` usmjerava WebDAV uslugu datoteka — koju poslužuje prilagođeni Node sloj prije Next.js-a, izvan ovog cjevovoda — na korijen koji odabere pozivatelj i vraća svježe generirane Basic vjerodajnice, `DELETE` ih rotira, a nadređeni `POST` pohranjuje Obsidian REST API token. GHSA-62vw je samo maskirao otkrivanje lozinke putem `GET` metode; izdavanje je i dalje bilo na razini "fail-open" (GHSA-7pq4-8pvv-rx7r). `enableObsidianVaultSync()` dodatno odbija trezor koji se nalazi, unutar je, ili sadrži direktorij podataka.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### Pokretanje svježe instalacije je samo za loopback — putem stvarnog peer-a, a ne `Host`-a
 
 Bez konfigurirane administratorske lozinke (i bez `INITIAL_PASSWORD`), `isAuthRequired()` u `src/shared/utils/apiAuth.ts` drži anonimno pokretanje otvorenim **samo za loopback peer-ove**. Loopback se određuje iz pouzdanih peer signala, redom: stvarni TCP peer s tokenom (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, što politika vidi), vlastita presuda cjevovoda `AUTHZ_HEADER_PEER_LOCALITY` (što rukovatelji ruta vide, pouzdano samo dok je `OMNIROUTE_PEER_STAMP_TOKEN` postavljen), ili stvarni socket peer za izravne pozivatelje. `Host` / `nextUrl.hostname` se nikada ne konzultiraju, a pisanje prve lozinke (`POST /api/settings/require-login`) podliježe istom ograničenju, umjesto da je otvoreno za svaki mrežni peer (GHSA-7pq4-8pvv-rx7r). `managementPolicy` eksplicitno prosljeđuje svoju vlastitu `peerContext` presudu, tako da zaglavlja ORIGINALNOG (prije skidanja) zahtjeva nikada ne odlučuju o tome.

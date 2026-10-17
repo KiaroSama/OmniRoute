@@ -1,6 +1,7 @@
 import {
   handleAdobeFireflyImageGeneration,
   handleSyntxImageGeneration,
+  handleImageGeneration,
   handleCodexImageEdit,
   handleOpenAIImageEdit,
   handleOpenRouterImageEdit,
@@ -15,6 +16,7 @@ import {
   getProviderCredentialsWithQuotaPreflight,
   clearRecoveredProviderState,
 } from "@/sse/services/auth";
+import { executeImageWithCredentialFallback } from "@/sse/services/imageCredentialRetry";
 import {
   parseImageModel,
   getImageProvider,
@@ -105,7 +107,7 @@ async function selectImageEditCredentials(params: {
   return { credentials };
 }
 
-export async function handleSyntxEditRequest(params: {
+interface SingleImageEditRequest {
   parsed: ReturnType<typeof parseImageModel>;
   providerConfig: NonNullable<ReturnType<typeof getImageProvider>>;
   allowedConnections: string[] | null;
@@ -117,7 +119,65 @@ export async function handleSyntxEditRequest(params: {
   imageBytes: Buffer | null;
   imageMime: string | null;
   accounting: Pick<ImageRequestAccounting, "apiKeyInfo" | "startTime">;
-}): Promise<Response> {
+}
+
+export async function handleMuseEditRequest(
+  params: SingleImageEditRequest & { request: Request; hasMask: boolean }
+): Promise<Response> {
+  if (params.hasMask) return errorResponse(400, "Muse Image edits do not support masks");
+  const selection = await selectImageEditCredentials(params);
+  if ("response" in selection) return selection.response;
+  const { credentials: finalCredentials, result } = await executeImageWithCredentialFallback({
+    provider: params.parsed.provider,
+    requestedModel: params.resolvedModel,
+    credentials: selection.credentials,
+    selectNextCredentials: async (provider, model, excluded) => {
+      const next = await getProviderCredentialsWithQuotaPreflight(
+        provider,
+        null,
+        params.allowedConnections,
+        model,
+        { excludeConnectionIds: [...excluded] }
+      );
+      return isUsableImageCredentials(next) ? next : null;
+    },
+    execute: (credentials) =>
+      runImageRequestWithAccounting(
+        {
+          ...params.accounting,
+          endpoint: "/v1/images/edits",
+          provider: params.parsed.provider,
+          model: params.parsed.model,
+          credentials,
+        },
+        () =>
+          handleImageGeneration({
+            body: {
+              model: params.resolvedModel,
+              prompt: params.prompt,
+              size: params.size ?? undefined,
+              response_format: params.responseFormat ?? undefined,
+              n: 1,
+              imageBytes: params.imageBytes,
+              imageMime: params.imageMime,
+            },
+            credentials,
+            log,
+            signal: params.request.signal,
+          })
+      ),
+  });
+  if (result.success) {
+    if (finalCredentials) await clearRecoveredProviderState(finalCredentials);
+    return jsonResponse(result.data);
+  }
+  return jsonResponse(
+    toJsonErrorPayload(result.error, "Image edit provider error"),
+    result.status ?? HTTP_STATUS.BAD_GATEWAY
+  );
+}
+
+export async function handleSyntxEditRequest(params: SingleImageEditRequest): Promise<Response> {
   const { parsed, providerConfig, prompt, size, responseFormat, images, imageBytes, imageMime } =
     params;
 

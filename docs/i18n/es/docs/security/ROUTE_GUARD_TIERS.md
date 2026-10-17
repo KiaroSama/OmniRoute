@@ -134,6 +134,23 @@ Estas rutas son destructivas o irreversibles. Permitirlas en una instalación "s
 
 `/api/settings/obsidian` cubre su hijo `/webdav`: `POST` apunta el servicio de archivos WebDAV — servido por la capa Node personalizada antes de Next.js, fuera de este pipeline — a una raíz elegida por el llamador y devuelve credenciales Basic recién generadas, `DELETE` las rota, y el `POST` padre almacena el token de la API REST de Obsidian. GHSA-62vw solo enmascaró la revelación de contraseña `GET`; la emisión todavía estaba en el nivel de "fail-open" (GHSA-7pq4-8pvv-rx7r). `enableObsidianVaultSync()` además rechaza una bóveda que es, se encuentra dentro o contiene el directorio de datos.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### El arranque de una instalación nueva es solo de bucle invertido — por par real, no por `Host`
 
 Sin una contraseña de administración configurada (y sin `INITIAL_PASSWORD`), `isAuthRequired()` en `src/shared/utils/apiAuth.ts` mantiene el arranque anónimo abierto **solo para pares de bucle invertido**. El bucle invertido se decide a partir de las señales de pares de confianza, en orden: el par TCP real con token (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, lo que ve la política), el veredicto `AUTHZ_HEADER_PEER_LOCALITY` propio del pipeline (lo que ven los manejadores de ruta, confiable solo mientras `OMNIROUTE_PEER_STAMP_TOKEN` esté configurado), o un par de socket real para llamadores directos. `Host` / `nextUrl.hostname` nunca se consultan, y la primera escritura de contraseña (`POST /api/settings/require-login`) está bajo la misma restricción en lugar de estar abierta a cualquier par de red (GHSA-7pq4-8pvv-rx7r). `managementPolicy` pasa explícitamente su propio veredicto `peerContext`, por lo que los encabezados de la solicitud ORIGINAL (pre-eliminación) nunca lo deciden.

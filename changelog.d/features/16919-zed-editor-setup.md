@@ -1,0 +1,1 @@
+- **feat(cli):** `omniroute setup-zed` adds OmniRoute as an OpenAI-compatible provider in Zed (key stays in `OMNIROUTE_API_KEY`), plus a Zed card in the CLI catalog ([#16919](https://github.com/diegosouzapw/OmniRoute/pull/16919)) — thanks @YoannDev90

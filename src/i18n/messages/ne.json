@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "फिल्टरहरू हटाउनुहोस्",
     "disableNonPublicModels": "गैर-सार्वजनिक मोडेलहरू अक्षम पार्नुहोस्",
     "disableNonPublicModelsDesc": "प्रदायक क्याटलगमा फेला नपरेका वा सार्वजनिक भनी चिन्ह नलगाइएका मोडेलहरूका अनुरोध अस्वीकार गर्नुहोस्",
+    "forcedModel": "बाध्यकारी मोडेल",
+    "forcedModelDesc": "यो कुञ्जीबाट गरिएका हरेक च्याट अनुरोधलाई क्लाइन्टले जुनसुकै मोडेल मागे पनि (वा कुनै नपठाए पनि) यो मोडेल वा कम्बोमा पठाउनुहोस्। कुञ्जीका मोडेल, कम्बो र बजेट सीमाहरू अझै लागू हुन्छन्।",
+    "forcedModelPlaceholder": "बाध्यकारी छैन: क्लाइन्टले मागेको मोडेल प्रयोग गर्नुहोस्",
     "normalKeysSection": "सामान्य कुञ्जीहरू",
     "quotaKeysSection": "कोटा कुञ्जीहरू",
     "bypassProviderQuota": "प्रदायकको कोटा कटअफ बाइपास गर्नुहोस्",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — OpenAI-सङ्गत प्रदायक समर्थनसहितको आफैँ सुधार हुने RLM कोडिङ हार्नेस",
       "warp": "कस्टम प्रदायक समर्थनसहितको Warp AI टर्मिनल",
       "agent-deck": "Agent Deck बहु-एजेन्ट संयोजक",
-      "5dive": "5dive — स्व-होस्ट गरिएको कोडिङ एजेन्टहरूको समूह; एउटै प्रमाणीकरण प्रोफाइलले ती सबैलाई OmniRoute तर्फ निर्देशित गर्छ"
+      "5dive": "5dive — स्व-होस्ट गरिएको कोडिङ एजेन्टहरूको समूह; एउटै प्रमाणीकरण प्रोफाइलले ती सबैलाई OmniRoute तर्फ निर्देशित गर्छ",
+      "zed": "Zed कोड सम्पादक — OpenAI-अनुकूल प्रदायक मार्फत बिल्ट-इन एजेन्ट"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "त्यसपछि VS Code पुनः लोड गर्नुहोस् र इनपुट प्रम्प्टमा API कुञ्जी सेट गर्नुहोस्।",
     "wireApiChatCompletions": "च्याट पूर्णताहरू (/chat/completions)",
     "wireApiResponses": "प्रतिक्रिया एपीआई (/responses)",
+    "codexModelCatalog": "Codex को /model पिकरमा OmniRoute मोडेलहरू देखाउनुहोस्",
+    "codexModelCatalogHint": "स्थापित Codex को आफ्नै मोडेल क्याटलगबाट ~/.codex/omniroute-models.json लेख्छ (प्रति मोडेल लगभग 60 KB)। Codex अपग्रेड गरेपछि फेरि लागू गर्नुहोस्।",
+    "codexCatalogWarning": "Codex को /model पिकर अद्यावधिक भएन: OmniRoute ले स्थापित Codex को मोडेल क्याटलग पढ्न सकेन।",
     "cliproxyapiActionFailed": "कार्य असफल भयो",
     "cliproxyapiActionSucceeded": "कार्य सफल भयो",
     "cliproxyapiCheckUpdates": "अद्यावधिकहरू जाँच गर्नुहोस्",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "संक्षिप्त CJK (文言)",
         "description": "शास्त्रीय-चिनियाँ अति-संक्षिप्त शैली (चिनियाँका लागि मात्र उपलब्ध)।"
+      },
+      "antislop-ui": {
+        "label": "Antislop UI फिल्टर",
+        "description": "उद्देश्य जाँचिएका दृश्यहरू: सामान्य ग्रेडियन्ट, टेम्प्लेट लेआउट वा काम नगर्ने नियन्त्रणहरू छैनन्।"
+      },
+      "antislop-copy": {
+        "label": "Antislop पाठ र मानव फिल्टर",
+        "description": "इमानदार पाठ र मानिसहरूका लागि नियमहरू: AI का छाप छैनन्, WCAG AA कन्ट्रास्ट, किबोर्ड, अवस्थाहरू, मोबाइल रिफ्लो।"
       }
     },
     "resilienceWaitForCooldown": "कूलडाउन समाप्त हुन पर्खनुहोस्",
@@ -9864,6 +9879,9 @@
     "hideQuotaRow": "यो कोटा पङ्क्ति लुकाउनुहोस्",
     "showQuotaRow": "यो कोटा पङ्क्ति देखाउनुहोस्",
     "hiddenQuotaRowsLabel": "लुकाइएको:",
+    "quotaSpeedTitle": "यस खातामा हालको डिकोड गति (अन्तिम {count} सफल अनुरोधहरू)",
+    "quotaSpeedLine": "{model}: {avg} tok/s औसत · अन्तिम {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s औसत · अन्तिम {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "कोटा दृश्यता अद्यावधिक गर्न असफल भयो",
     "account": "खाता",
     "modelQuotas": "मोडेल कोटाहरू",
@@ -14501,7 +14519,10 @@
     "importing": "आयात गरिँदै...",
     "apiKeyPlaceholder": "आफ्नो {providerLabel} API कुञ्जी टाँस्नुहोस्...",
     "apiKeyStoredDescription": "लामो समयसम्म मान्य रहने बेयरर क्रेडेन्सियलका रूपमा इन्क्रिप्ट गरी भण्डारण गरिन्छ। यसमा रिफ्रेस प्रक्रिया छैन।",
-    "apiKeyRegionDescription": "कुञ्जीका लागि AWS क्षेत्र (पूर्वनिर्धारित: us-east-1)",
+    "apiKeyRegionAuto": "स्वतः पत्ता लगाउनुहोस् (सिफारिस गरिएको)",
+    "apiKeyRegionUsEast1": "यूएस ईस्ट (उत्तरी भर्जिनिया)",
+    "apiKeyRegionEuCentral1": "युरोप (फ्र्याङ्कफर्ट)",
+    "apiKeyRegionAutoDescription": "स्वतः पहिचानले पहिले यूएस ईस्ट, त्यसपछि युरोप (फ्र्याङ्कफर्ट) प्रयास गर्छ र कुञ्जीले काम गर्ने क्षेत्र सुरक्षित गर्छ।",
     "validating": "वैधता जाँच गरिँदै...",
     "validateAndSaveApiKey": "API कुञ्जीको वैधता जाँच गरी सुरक्षित गर्नुहोस्",
     "errorAutoDetect": "टोकन स्वतः पत्ता लगाउन सकिएन",

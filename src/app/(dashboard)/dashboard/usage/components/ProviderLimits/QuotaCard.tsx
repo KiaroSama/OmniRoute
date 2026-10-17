@@ -44,6 +44,7 @@ interface QuotaCardProps {
           billing?: ProviderBillingStatus | null;
           quotaGroups?: Array<Record<string, unknown>>;
           paidCredits?: CodexPaidCredits;
+          speed?: unknown;
         };
         stale?: { since?: string; reason?: string } | null;
       }
@@ -181,6 +182,7 @@ export default function QuotaCard({
         hiddenQuotaRows={hiddenQuotaRows}
         onHideQuota={onHideQuota}
         onShowQuota={onShowQuota}
+        speed={quota?.raw?.speed}
         canEditCutoff={canEditCutoff}
         hasCutoffOverrides={hasOverrides}
         canRedeemResetCredit={canRedeemResetCredit}

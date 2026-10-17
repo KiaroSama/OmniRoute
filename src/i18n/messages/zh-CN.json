@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "清除筛选",
     "disableNonPublicModels": "禁用非公开模型",
     "disableNonPublicModelsDesc": "拒绝对未发现或未标记为公共的模型在供应商目录中的请求",
+    "forcedModel": "强制模型",
+    "forcedModelDesc": "将使用此密钥发出的每个聊天请求路由到此模型或组合,无论客户端请求哪个模型(或未发送模型时也是如此)。该密钥的模型、组合和预算限制仍然有效。",
+    "forcedModelPlaceholder": "未强制:使用客户端请求的模型",
     "normalKeysSection": "普通键",
     "quotaKeysSection": "配额密钥",
     "bypassProviderQuota": "绕过服务商配额限制",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — 支持 OpenAI 兼容提供者的自我改进型 RLM 编码工具框架",
       "warp": "支持自定义提供者的 Warp AI 终端",
       "agent-deck": "Agent Deck 多智能体编排器",
-      "5dive": "5dive — 自托管的编码智能体集群；一个认证配置即可将全部指向 OmniRoute"
+      "5dive": "5dive — 自托管的编码智能体集群；一个认证配置即可将全部指向 OmniRoute",
+      "zed": "Zed 代码编辑器 — 通过 OpenAI 兼容提供商使用内置智能体"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "然后重新加载 VS Code 并在输入提示框中设置 API 密钥。",
     "wireApiChatCompletions": "聊天完成 (/chat/completions)",
     "wireApiResponses": "响应 API (/responses)",
+    "codexModelCatalog": "在 Codex 的 /model 选择器中列出 OmniRoute 模型",
+    "codexModelCatalogHint": "根据已安装 Codex 自带的模型目录写入 ~/.codex/omniroute-models.json（每个模型约 60 KB）。升级 Codex 后请重新应用。",
+    "codexCatalogWarning": "未更新 Codex 的 /model 选择器：OmniRoute 无法读取已安装 Codex 的模型目录。",
     "cliproxyapiActionFailed": "操作失败",
     "cliproxyapiActionSucceeded": "操作成功",
     "cliproxyapiCheckUpdates": "检查更新",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "精简 CJK (文言)",
         "description": "文言文极简风格 (仅适用于中文)。"
+      },
+      "antislop-ui": {
+        "label": "反 AI 套路 UI 过滤器",
+        "description": "经过目的检验的视觉：不用泛泛的渐变、模板布局或无效控件。"
+      },
+      "antislop-copy": {
+        "label": "反 AI 套路文案与人本过滤器",
+        "description": "真诚的文案加上以人为本的规则：没有 AI 腔调、WCAG AA 对比度、键盘、状态、移动端重排。"
       }
     },
     "resilienceWaitForCooldown": "等待冷却",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "隐藏此配额行",
     "showQuotaRow": "显示此配额行",
     "hiddenQuotaRowsLabel": "已隐藏：",
+    "quotaSpeedTitle": "此账号最近的解码速度（最近 {count} 次成功请求）",
+    "quotaSpeedLine": "{model}: {avg} tok/s 平均 · 最近 {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s 平均 · 最近 {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "更新配额可见性失败",
     "account": "账户",
     "modelQuotas": "模型配额",
@@ -14501,7 +14519,10 @@
     "importing": "导入中...",
     "apiKeyPlaceholder": "粘贴您的 {providerLabel} API 密钥...",
     "apiKeyStoredDescription": "以长期持有的凭证形式存储加密信息。没有刷新流程。",
-    "apiKeyRegionDescription": "密钥的 AWS 区域（默认：us-east-1）",
+    "apiKeyRegionAuto": "自动检测（推荐）",
+    "apiKeyRegionUsEast1": "美国东部（弗吉尼亚北部）",
+    "apiKeyRegionEuCentral1": "欧洲（法兰克福）",
+    "apiKeyRegionAutoDescription": "自动检测会先尝试美国东部，再尝试欧洲（法兰克福），并保存密钥可用的区域。",
     "validating": "验证中...",
     "validateAndSaveApiKey": "验证并保存 API 密钥",
     "errorAutoDetect": "无法自动检测令牌",

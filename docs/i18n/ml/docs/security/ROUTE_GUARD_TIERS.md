@@ -163,6 +163,23 @@ Tunnel, Tailscale, Ngrok) പിന്നിൽ പ്രവർത്തിപ�
 
 `/api/settings/obsidian` അതിന്റെ `/webdav` ചൈൽഡിനെയും ഉൾക്കൊള്ളുന്നു: `POST`, ഈ pipeline-ന് പുറത്തായി Next.js-ന് മുമ്പ് കസ്റ്റം Node layer നൽകുന്ന WebDAV ഫയൽ സർവീസിനെ, കോളർ തിരഞ്ഞെടുക്കുന്ന root-ലേക്ക് ചൂണ്ടുകയും പുതുതായി സൃഷ്ടിച്ച Basic credentials തിരികെ നൽകുകയും ചെയ്യുന്നു; `DELETE` അവ rotate ചെയ്യുന്നു; parent `POST` Obsidian REST API token സംഭരിക്കുന്നു. GHSA-62vw, `GET` വഴിയുള്ള പാസ്വേഡ് വെളിപ്പെടുത്തൽ മാത്രമാണ് മറച്ചത്; credentials നൽകുന്ന സംവിധാനം അപ്പോഴും fail-open ടയറിലായിരുന്നു (GHSA-7pq4-8pvv-rx7r). കൂടാതെ `enableObsidianVaultSync()`, data directory തന്നെയായതോ അതിനുള്ളിലുള്ളതോ അതിനെ ഉൾക്കൊള്ളുന്നതോ ആയ vault നിരസിക്കുന്നു.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### പുതിയ ഇൻസ്റ്റാളേഷന്റെ bootstrap loopback-ൽ മാത്രം — `Host` അടിസ്ഥാനമാക്കിയല്ല, യഥാർഥ peer അടിസ്ഥാനമാക്കി
 
 management password കോൺഫിഗർ ചെയ്തിട്ടില്ലാത്തപ്പോൾ (`INITIAL_PASSWORD` ഇല്ലാതെയും), `src/shared/utils/apiAuth.ts`-ലെ `isAuthRequired()` അജ്ഞാത bootstrap **loopback peers-ന് മാത്രം** തുറന്നുവെക്കുന്നു. വിശ്വസനീയമായ peer signals-ൽനിന്ന് ഇനിപ്പറയുന്ന ക്രമത്തിലാണ് loopback നിർണയിക്കുന്നത്: token-stamp ചെയ്ത യഥാർഥ TCP peer (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, policy കാണുന്നത്), pipeline-ന്റെ സ്വന്തം `AUTHZ_HEADER_PEER_LOCALITY` വിധി (route handlers കാണുന്നത്; `OMNIROUTE_PEER_STAMP_TOKEN` സജ്ജീകരിച്ചിരിക്കുമ്പോൾ മാത്രം വിശ്വസനീയം), അല്ലെങ്കിൽ നേരിട്ടുള്ള callers-ന്റെ യഥാർഥ socket peer. `Host` / `nextUrl.hostname` ഒരിക്കലും പരിശോധിക്കപ്പെടുന്നില്ല; ആദ്യത്തെ password write (`POST /api/settings/require-login`) എല്ലാ network peer-കൾക്കും തുറന്നുകൊടുക്കുന്നതിന് പകരം ഇതേ നിയന്ത്രണത്തിന് കീഴിലാണ് (GHSA-7pq4-8pvv-rx7r). `managementPolicy` സ്വന്തം `peerContext` വിധി വ്യക്തമായി താഴേക്ക് കൈമാറുന്നതിനാൽ, ORIGINAL (strip ചെയ്യുന്നതിന് മുമ്പുള്ള) request-ന്റെ headers ഒരിക്കലും അത് നിർണയിക്കുന്നില്ല.

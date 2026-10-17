@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Ryd filtre",
     "disableNonPublicModels": "Deaktiver ikke-offentlige modeller",
     "disableNonPublicModelsDesc": "Afvis anmodninger om modeller, der ikke er registreret eller ikke er markeret som offentlige i udbyderkataloget",
+    "forcedModel": "Gennemtvunget model",
+    "forcedModelDesc": "Send alle chatanmodninger med denne nøgle til denne model eller combo, uanset hvilken model klienten beder om (eller når den ikke sender nogen). Nøglens model-, combo- og budgetgrænser gælder stadig.",
+    "forcedModelPlaceholder": "Ikke gennemtvunget: brug den model, klienten anmoder om",
     "normalKeysSection": "Normale nøgler",
     "quotaKeysSection": "Kvotenøgler",
     "bypassProviderQuota": "Omgå udbyderens kvotegrænser",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — selvforbedrende RLM-kodningsramme med understøttelse af OpenAI-kompatible providere",
       "warp": "Warp AI-terminal med understøttelse af brugerdefineret udbyder",
       "agent-deck": "Agent Deck multi-agent-orkestrator",
-      "5dive": "5dive — selv-hostet flåde af kodningsagenter; én auth-profil peger dem alle mod OmniRoute"
+      "5dive": "5dive — selv-hostet flåde af kodningsagenter; én auth-profil peger dem alle mod OmniRoute",
+      "zed": "Zed-kodeeditor — indbygget agent via en OpenAI-kompatibel udbyder"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Genstart derefter VS Code, og angiv API-nøglen i inputfeltet.",
     "wireApiChatCompletions": "Chatafslutninger (/chat/afslutninger)",
     "wireApiResponses": "Svar-API (/responses)",
+    "codexModelCatalog": "Vis OmniRoute-modeller i Codex' /model-vælger",
+    "codexModelCatalogHint": "Skriver ~/.codex/omniroute-models.json ud fra den installerede Codex' egen modelkatalog (ca. 60 KB pr. model). Anvend igen efter opgradering af Codex.",
+    "codexCatalogWarning": "Codex' /model-vælger blev ikke opdateret: OmniRoute kunne ikke læse den installerede Codex' modelkatalog.",
     "cliproxyapiActionFailed": "Handlingen mislykkedes",
     "cliproxyapiActionSucceeded": "Handlingen lykkedes",
     "cliproxyapiCheckUpdates": "Tjek Opdateringer",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "Kortfattet CJK (文言)",
         "description": "Klassisk kinesisk ultra-kortfattet stil (kun tilgængelig for kinesisk)."
+      },
+      "antislop-ui": {
+        "label": "Antislop UI-filter",
+        "description": "Formålstestede visuelle elementer: ingen generiske gradienter, skabelonlayouts eller døde kontroller."
+      },
+      "antislop-copy": {
+        "label": "Antislop tekst- og menneskefilter",
+        "description": "Ærlig tekst og regler for mennesker: ingen AI-tegn, WCAG AA-kontrast, tastatur, tilstande, mobil ombrydning."
       }
     },
     "resilienceWaitForCooldown": "Vent på nedkøling",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Skjul denne kvoterække",
     "showQuotaRow": "Vis denne kvoterække",
     "hiddenQuotaRowsLabel": "Skjult:",
+    "quotaSpeedTitle": "Seneste afkodningshastighed på denne konto (seneste {count} vellykkede anmodninger)",
+    "quotaSpeedLine": "{model}: {avg} tok/s gns. · seneste {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s gns. · seneste {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Kunne ikke opdatere kvotesynlighed",
     "account": "Konto",
     "modelQuotas": "Modelkvoter",
@@ -14501,7 +14519,10 @@
     "importing": "Importerer...",
     "apiKeyPlaceholder": "Indsæt din {providerLabel} API-nøgle...",
     "apiKeyStoredDescription": "Lagrer krypteret som en langvarig bærerlegitimation. Der er ingen opdateringsflow.",
-    "apiKeyRegionDescription": "AWS-region for nøglen (standard: us-east-1)",
+    "apiKeyRegionAuto": "Automatisk registrering (anbefalet)",
+    "apiKeyRegionUsEast1": "USA Øst (N. Virginia)",
+    "apiKeyRegionEuCentral1": "Europa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Automatisk registrering prøver først USA Øst, derefter Europa (Frankfurt), og gemmer den region, hvor nøglen virker.",
     "validating": "Validerer...",
     "validateAndSaveApiKey": "Valider og Gem API-nøgle",
     "errorAutoDetect": "Kunne ikke automatisk registrere token",

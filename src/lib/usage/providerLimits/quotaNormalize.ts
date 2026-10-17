@@ -2,7 +2,7 @@ import {
   isUserCallableAntigravityModelId,
   toClientAntigravityModelId,
 } from "@omniroute/open-sse/config/antigravityModelAliases.ts";
-import { isDiscoverableAgyModelId } from "@omniroute/open-sse/config/agyModels.ts";
+import { isUserVisibleAgyQuotaModelId } from "@omniroute/open-sse/config/agyModels.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -39,7 +39,7 @@ export function isUsageQuotaKeyAllowed(
   if (ANTIGRAVITY_FAMILY_QUOTA_KEYS.has(quotaKey)) return true;
   if (liveModelIds?.has(quotaKey)) return true;
   if (provider === "antigravity") return isUserCallableAntigravityModelId(quotaKey);
-  return isDiscoverableAgyModelId(quotaKey);
+  return isUserVisibleAgyQuotaModelId(quotaKey);
 }
 
 export function normalizeUsageQuotaKey(

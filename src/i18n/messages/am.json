@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "ማጣሪያዎችን አጽዳ",
     "disableNonPublicModels": "ይፋዊ ያልሆኑ ሞዴሎችን አሰናክል",
     "disableNonPublicModelsDesc": "በአቅራቢው ካታሎግ ውስጥ ያልተገኙ ወይም ይፋዊ እንደሆኑ ምልክት ያልተደረገባቸው ሞዴሎችን የሚጠይቁ ጥያቄዎችን ውድቅ አድርግ",
+    "forcedModel": "የተገደደ ሞዴል",
+    "forcedModelDesc": "በዚህ ቁልፍ የሚደረጉ ሁሉንም የቻት ጥያቄዎች ደንበኛው የትኛውንም ሞዴል ቢጠይቅ (ወይም ምንም ባይልክ) ወደዚህ ሞዴል ወይም ጥምረት ያስተላልፉ። የቁልፉ የሞዴል፣ የጥምረት እና የበጀት ገደቦች አሁንም ይተገበራሉ።",
+    "forcedModelPlaceholder": "አልተገደደም፦ ደንበኛው የሚጠይቀውን ሞዴል ተጠቀም",
     "normalKeysSection": "መደበኛ ቁልፎች",
     "quotaKeysSection": "የኮታ ቁልፎች",
     "bypassProviderQuota": "የአቅራቢ ኮታ ማቋረጫዎችን ማለፍ",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — ራሱን የሚያሻሽል RLM የኮድ ማዕቀፍ፣ ከOpenAI ጋር ተኳኋኝ የሆኑ አቅራቢዎችን የሚደግፍ",
       "warp": "Warp AI ተርሚናል ከብጁ አቅራቢ ድጋፍ ጋር",
       "agent-deck": "Agent Deck የብዙ ወኪሎች አስተባባሪ",
-      "5dive": "5dive — በራስ አገልጋይ ላይ የሚስተናገድ የኮድ ወኪሎች ስብስብ፤ አንድ የማንነት ማረጋገጫ መገለጫ ሁሉንም ወደ OmniRoute ያመራል"
+      "5dive": "5dive — በራስ አገልጋይ ላይ የሚስተናገድ የኮድ ወኪሎች ስብስብ፤ አንድ የማንነት ማረጋገጫ መገለጫ ሁሉንም ወደ OmniRoute ያመራል",
+      "zed": "Zed የኮድ አርታዒ — አብሮ የተሰራ ወኪል በOpenAI-ተኳሃኝ አቅራቢ በኩል"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "ከዚያ VS Codeን ዳግም ያስጀምሩ እና በግቤት መጠየቂያው ውስጥ የAPI ቁልፉን ያስገቡ።",
     "wireApiChatCompletions": "የውይይት ማጠናቀቂያዎች (/chat/completions)",
     "wireApiResponses": "የምላሾች API (/responses)",
+    "codexModelCatalog": "የOmniRoute ሞዴሎችን በCodex /model መምረጫ ውስጥ ዘርዝር",
+    "codexModelCatalogHint": "ከተጫነው Codex የራሱ የሞዴል ካታሎግ ~/.codex/omniroute-models.json ይጽፋል (በአንድ ሞዴል 60 KB ገደማ)። Codexን ካሻሻሉ በኋላ እንደገና ይተግብሩ።",
+    "codexCatalogWarning": "የCodex /model መምረጫ አልዘመነም፦ OmniRoute የተጫነውን የCodex ሞዴል ካታሎግ ማንበብ አልቻለም።",
     "cliproxyapiActionFailed": "እርምጃው አልተሳካም",
     "cliproxyapiActionSucceeded": "እርምጃው ተሳክቷል",
     "cliproxyapiCheckUpdates": "ዝማኔዎችን ይፈትሹ",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "አጭር CJK (文言)",
         "description": "እጅግ አጭር የጥንታዊ ቻይንኛ ዘይቤ (ለቻይንኛ ብቻ ይገኛል)።"
+      },
+      "antislop-ui": {
+        "label": "Antislop የUI ማጣሪያ",
+        "description": "ዓላማ የተፈተነ እይታ፦ አጠቃላይ ግራዲየንቶች፣ የአብነት አቀማመጦች ወይም የማይሰሩ መቆጣጠሪያዎች የሉም።"
+      },
+      "antislop-copy": {
+        "label": "Antislop የጽሑፍና የሰው ማጣሪያ",
+        "description": "ታማኝ ጽሑፍ እና የሰዎች ደንቦች፦ የAI ምልክቶች የሉም፣ WCAG AA ንፅፅር፣ ቁልፍ ሰሌዳ፣ ሁኔታዎች፣ የሞባይል አቀማመጥ።"
       }
     },
     "resilienceWaitForCooldown": "የማቀዝቀዝ ጊዜውን ጠብቅ",
@@ -9864,6 +9879,9 @@
     "hideQuotaRow": "ይህን የኮታ ረድፍ ደብቅ",
     "showQuotaRow": "ይህን የኮታ ረድፍ አሳይ",
     "hiddenQuotaRowsLabel": "የተደበቀ፦",
+    "quotaSpeedTitle": "በዚህ መለያ ላይ የቅርብ ጊዜ የዲኮድ ፍጥነት (የመጨረሻዎቹ {count} የተሳኩ ጥያቄዎች)",
+    "quotaSpeedLine": "{model}: {avg} tok/s አማካይ · የመጨረሻ {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s አማካይ · የመጨረሻ {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "የኮታ ታይነትን ማዘመን አልተሳካም",
     "account": "መለያ",
     "modelQuotas": "የሞዴል ኮታዎች",
@@ -14501,7 +14519,10 @@
     "importing": "በማስመጣት ላይ...",
     "apiKeyPlaceholder": "የ{providerLabel} API ቁልፍዎን ይለጥፉ...",
     "apiKeyStoredDescription": "እንደ ረጅም ጊዜ bearer ማረጋገጫ በተመሰጠረ መልኩ ይቀመጣል። የማደሻ ሂደት የለም።",
-    "apiKeyRegionDescription": "ለቁልፉ የAWS ክልል (ነባሪ፦ us-east-1)",
+    "apiKeyRegionAuto": "በራስ-ሰር ፈልግ (የሚመከር)",
+    "apiKeyRegionUsEast1": "ዩኤስ ምስራቅ (ሰሜን ቨርጂኒያ)",
+    "apiKeyRegionEuCentral1": "አውሮፓ (ፍራንክፈርት)",
+    "apiKeyRegionAutoDescription": "በራስ-ሰር ፍለጋ መጀመሪያ ዩኤስ ምስራቅን፣ ከዚያም አውሮፓን (ፍራንክፈርት) ይሞክራል፣ እና ቁልፉ የሚሰራበትን ክልል ያስቀምጣል።",
     "validating": "በማረጋገጥ ላይ...",
     "validateAndSaveApiKey": "API ቁልፉን ያረጋግጡና ያስቀምጡ",
     "errorAutoDetect": "ቶከንን በራስ-ሰር ማግኘት አልተቻለም",

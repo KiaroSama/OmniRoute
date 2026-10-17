@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Tyhjennä suodattimet",
     "disableNonPublicModels": "Poista ei-julkiset mallit käytöstä",
     "disableNonPublicModelsDesc": "Hylkää pyynnöt malleille, joita ei ole löydetty tai joita ei ole merkitty julkisiksi tarjoajan luettelossa",
+    "forcedModel": "Pakotettu malli",
+    "forcedModelDesc": "Ohjaa jokaisen tällä avaimella tehdyn chat-pyynnön tähän malliin tai yhdistelmään riippumatta siitä, mitä mallia asiakas pyytää (tai jos se ei lähetä mitään). Avaimen malli-, yhdistelmä- ja budjettirajat ovat edelleen voimassa.",
+    "forcedModelPlaceholder": "Ei pakotettu: käytä asiakkaan pyytämää mallia",
     "normalKeysSection": "Normaalit avaimet",
     "quotaKeysSection": "Kiintiöavaimet",
     "bypassProviderQuota": "Ohita tarjoajan kiintiörajat",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — itseään kehittävä RLM-koodauskehys, joka tukee OpenAI-yhteensopivia palveluntarjoajia",
       "warp": "Warp AI -terminaali mukautetun palveluntarjoajan tuella",
       "agent-deck": "Agent Deck -moniagenttiorkestraattori",
-      "5dive": "5dive — itse isännöity koodausagenttien laivue; yksi auth-profiili ohjaa ne kaikki OmniRouteen"
+      "5dive": "5dive — itse isännöity koodausagenttien laivue; yksi auth-profiili ohjaa ne kaikki OmniRouteen",
+      "zed": "Zed-koodieditori — sisäänrakennettu agentti OpenAI-yhteensopivan palveluntarjoajan kautta"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Käynnistä sitten VS Code uudelleen ja aseta API-avain syötekehotteessa.",
     "wireApiChatCompletions": "Keskustelun päättymiset (/chat/completions)",
     "wireApiResponses": "Responses API (/responses)",
+    "codexModelCatalog": "Näytä OmniRoute-mallit Codexin /model-valitsimessa",
+    "codexModelCatalogHint": "Kirjoittaa tiedoston ~/.codex/omniroute-models.json asennetun Codexin omasta mallikatalogista (noin 60 KB mallia kohden). Ota uudelleen käyttöön Codexin päivityksen jälkeen.",
+    "codexCatalogWarning": "Codexin /model-valitsinta ei päivitetty: OmniRoute ei voinut lukea asennetun Codexin mallikatalogia.",
     "cliproxyapiActionFailed": "Toiminto epäonnistui",
     "cliproxyapiActionSucceeded": "Toiminto onnistui",
     "cliproxyapiCheckUpdates": "Tarkista päivitykset",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "Tiivis CJK (文言)",
         "description": "Klassisen kiinan ultra-tiivis tyyli (saatavilla vain kiinaksi)."
+      },
+      "antislop-ui": {
+        "label": "Antislop-käyttöliittymäsuodatin",
+        "description": "Tarkoituksensa läpäisseet visuaalit: ei geneerisiä liukuvärejä, mallipohjaisia asetteluja tai kuolleita ohjaimia."
+      },
+      "antislop-copy": {
+        "label": "Antislop-teksti- ja ihmissuodatin",
+        "description": "Rehellinen teksti ja säännöt ihmisille: ei tekoälyn tunnusmerkkejä, WCAG AA -kontrasti, näppäimistö, tilat, mobiilin uudelleenasettelu."
       }
     },
     "resilienceWaitForCooldown": "Odota jäähdytystä",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Piilota tämä kiintiörivi",
     "showQuotaRow": "Näytä tämä kiintiörivi",
     "hiddenQuotaRowsLabel": "Piilotettu:",
+    "quotaSpeedTitle": "Tämän tilin viimeaikainen dekoodausnopeus (viimeiset {count} onnistunutta pyyntöä)",
+    "quotaSpeedLine": "{model}: {avg} tok/s ka. · viimeisin {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s ka. · viimeisin {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Kiintiön näkyvyyden päivittäminen epäonnistui",
     "account": "Tili",
     "modelQuotas": "Mallikiintiöt",
@@ -14501,7 +14519,10 @@
     "importing": "Tuodaan...",
     "apiKeyPlaceholder": "Liitä {providerLabel} API-avain...",
     "apiKeyStoredDescription": "Tallennettu salattuna pitkäaikaisena käyttöoikeustodistuksena. Uudistamisprosessia ei ole.",
-    "apiKeyRegionDescription": "AWS-alue avaimelle (oletus: us-east-1)",
+    "apiKeyRegionAuto": "Automaattinen tunnistus (suositeltu)",
+    "apiKeyRegionUsEast1": "USA itä (Pohjois-Virginia)",
+    "apiKeyRegionEuCentral1": "Eurooppa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Automaattinen tunnistus kokeilee ensin USA itä -aluetta, sitten Eurooppaa (Frankfurt), ja tallentaa alueen, jolla avain toimii.",
     "validating": "Vahvistetaan...",
     "validateAndSaveApiKey": "Vahvista ja Tallenna API-avain",
     "errorAutoDetect": "Ei voitu automaattisesti tunnistaa tokenia",

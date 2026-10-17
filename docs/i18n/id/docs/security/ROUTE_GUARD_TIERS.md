@@ -170,6 +170,23 @@ Rute-rute ini bersifat merusak atau tidak dapat dibatalkan. Mengizinkannya dalam
 
 `/api/settings/obsidian` mencakup anak `/webdav`-nya: `POST` mengarahkan layanan file WebDAV — yang disajikan oleh lapisan Node kustom sebelum Next.js, di luar pipeline ini — ke root yang dipilih pemanggil dan menggemakan kredensial Basic yang baru dicetak, `DELETE` merotasinya, dan `POST` induk menyimpan token API REST Obsidian. GHSA-62vw hanya menutupi pengungkapan kata sandi `GET`; penerbitan masih berada di tingkat fail-open (GHSA-7pq4-8pvv-rx7r). `enableObsidianVaultSync()` juga menolak vault yang berada, terletak di dalam, atau berisi direktori data.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### Bootstrap instalasi baru hanya loopback — oleh peer nyata, bukan `Host`
 
 Tanpa kata sandi manajemen yang dikonfigurasi (dan tanpa `INITIAL_PASSWORD`), `isAuthRequired()` di `src/shared/utils/apiAuth.ts` menjaga bootstrap anonim tetap terbuka **hanya untuk peer loopback**. Loopback diputuskan dari sinyal peer tepercaya, secara berurutan: peer TCP nyata yang diberi stempel token (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, apa yang dilihat kebijakan), putusan `AUTHZ_HEADER_PEER_LOCALITY` dari pipeline itu sendiri (apa yang dilihat penangan rute, hanya dipercaya saat `OMNIROUTE_PEER_STAMP_TOKEN` diatur), atau peer soket nyata untuk pemanggil langsung. `Host` / `nextUrl.hostname` tidak pernah dikonsultasikan, dan penulisan kata sandi pertama (`POST /api/settings/require-login`) berada di bawah batasan yang sama daripada terbuka untuk setiap peer jaringan (GHSA-7pq4-8pvv-rx7r). `managementPolicy` secara eksplisit meneruskan putusan `peerContext`-nya sendiri, sehingga header permintaan ASLI (pra-strip) tidak pernah menentukannya.

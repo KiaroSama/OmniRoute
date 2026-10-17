@@ -244,6 +244,8 @@ curl http://localhost:20128/api/settings \
 
 Update settings
 
+Security-policy keys (`requireLogin`, `newPassword`, every `oidc*` key, `corsOrigins`, `bruteForceProtection`, the LOCAL_ONLY bypass list) need `currentPassword` and an operator credential (dashboard session, local CLI, or login disabled); API keys of any scope and `oma_` access tokens get 403 on them. Ordinary settings stay writable for a manage-scoped key or an `admin` access token. Every mutation needs the `admin` access-token scope.
+
 ```bash
 curl -X PATCH http://localhost:20128/api/settings \
   -H "Authorization: Bearer $OMNIROUTE_TOKEN" \
@@ -382,7 +384,9 @@ curl -X POST http://localhost:20128/api/settings/proxy/test \
 
 ### POST /api/settings/require-login
 
-Toggle login requirement
+Set the management password and/or toggle the login requirement
+
+Open without a credential only during the first-run bootstrap window (no password configured yet). Afterwards the write is operator-only: a dashboard session, the local CLI, or an instance with login disabled. API keys of any scope and `oma_` access tokens are refused with 403. A dashboard session must send `currentPassword` to replace an existing password; the local CLI may reset it without one (recovery path).
 
 ```bash
 curl -X POST http://localhost:20128/api/settings/require-login \

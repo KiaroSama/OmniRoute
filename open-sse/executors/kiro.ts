@@ -21,7 +21,11 @@ import {
 } from "./kiroThinking.ts";
 import { ByteQueue, TEXT_ENCODER, parseEventFrame } from "./kiro/eventstream.ts";
 import { readKiroReasoningText } from "./kiro/reasoning.ts";
-import { kiroRuntimeHost, resolveKiroRuntimeRegion } from "../services/kiroRegion.ts";
+import {
+  kiroApiKeyRuntimeHost,
+  kiroRuntimeHost,
+  resolveKiroRuntimeRegion,
+} from "../services/kiroRegion.ts";
 import {
   KIRO_TOOL_CALL_WRAPPER,
   appendBufferedKiroToolInput,
@@ -396,20 +400,24 @@ export class KiroExecutor extends BaseExecutor {
     // Center accounts (e.g. eu-central-1) are rejected by the default us-east-1 host; only the
     // regional endpoint accepts the region-bound token + profileArn.
     const region = resolveKiroRegion(credentials);
-    const regionalUrl = `${kiroRuntimeHost(region)}/generateAssistantResponse`;
+    const authMethod =
+      typeof credentials.providerSpecificData?.authMethod === "string"
+        ? credentials.providerSpecificData.authMethod
+        : undefined;
+    // Long-lived API keys only work on the regional Amazon Q host (q.<region>), including
+    // us-east-1 where codewhisperer.us-east-1 rejects API-key payloads with
+    // REQUEST_BODY_INVALID. One persisted region, no surface rotation.
+    const runtimeHost =
+      authMethod === "api_key" ? kiroApiKeyRuntimeHost(region) : kiroRuntimeHost(region);
+    const regionalUrl = `${runtimeHost}/generateAssistantResponse`;
 
     // The Kiro IDE's own branded gateway (runtime.*.kiro.dev) only exists for
     // us-east-1 and only accepts Kiro OIDC/social tokens — it rejects
     // TokenType=API_KEY and external-IdP/IdC SSO tokens outright (403 "bearer
     // token invalid"), so those auth methods go straight to the region-resolved
-    // CodeWhisperer/Amazon Q surface (mirrors 9router's getOrderedBaseUrls in
-    // open-sse/executors/kiro.js). For everything else, try the branded gateway
+    // CodeWhisperer/Amazon Q surface. For everything else, try the branded gateway
     // first — it is the surface the native Kiro IDE itself talks to — and fall
     // back to the raw AWS host on an auth/profile-shaped failure.
-    const authMethod =
-      typeof credentials.providerSpecificData?.authMethod === "string"
-        ? credentials.providerSpecificData.authMethod
-        : undefined;
     const isCodeWhispererOnly =
       authMethod === "api_key" || authMethod === "idc" || isExternalIdpAuthMethod(authMethod);
     const candidateUrls =

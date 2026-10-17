@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Glan na scagairí",
     "disableNonPublicModels": "Díchumasaigh Múnlaí Neamhphoiblí",
     "disableNonPublicModelsDesc": "Diúltaigh d'iarratais ar mhúnlaí nach bhfuil aimsithe nó nach bhfuil marcáilte mar phoiblí i gcatalóg an tsoláthraí",
+    "forcedModel": "Samhail fhorfheidhmithe",
+    "forcedModelDesc": "Seol gach iarratas comhrá a dhéantar leis an eochair seo chuig an tsamhail nó an teaglaim seo, is cuma cén tsamhail a iarrann an cliant (nó nuair nach seolann sé ceann ar bith). Bíonn teorainneacha samhla, teaglama agus buiséid na heochrach i bhfeidhm fós.",
+    "forcedModelPlaceholder": "Gan forfheidhmiú: úsáid an tsamhail a iarrann an cliant",
     "normalKeysSection": "Gnátheochracha",
     "quotaKeysSection": "Eochracha cuóta",
     "bypassProviderQuota": "Seachain teorainneacha cuóta an tsoláthraí",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — creat códaithe RLM a fhéinfheabhsaíonn, le tacaíocht do sholáthraithe atá comhoiriúnach le OpenAI",
       "warp": "teirminéal AI Warp le tacaíocht do sholáthraí saincheaptha",
       "agent-deck": "comhordaitheoir ilghníomhairí Agent Deck",
-      "5dive": "5dive — cabhlach féinóstáilte de ghníomhairí códaithe; díríonn próifíl fíordheimhnithe amháin iad go léir ar OmniRoute"
+      "5dive": "5dive — cabhlach féinóstáilte de ghníomhairí códaithe; díríonn próifíl fíordheimhnithe amháin iad go léir ar OmniRoute",
+      "zed": "Eagarthóir cóid Zed — gníomhaire ionsuite trí sholáthraí atá comhoiriúnach le OpenAI"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Ansin athlódáil VS Code agus socraigh an eochair API sa leid ionchuir.",
     "wireApiChatCompletions": "Comhlánuithe Comhrá (/chat/completions)",
     "wireApiResponses": "API Freagairtí (/responses)",
+    "codexModelCatalog": "Taispeáin samhlacha OmniRoute i roghnóir /model Codex",
+    "codexModelCatalogHint": "Scríobhann sé ~/.codex/omniroute-models.json ó chatalóg samhlacha an Codex suiteáilte féin (thart ar 60 KB in aghaidh na samhla). Cuir i bhfeidhm arís tar éis Codex a uasghrádú.",
+    "codexCatalogWarning": "Níor nuashonraíodh roghnóir /model Codex: níorbh fhéidir le OmniRoute catalóg samhlacha an Codex suiteáilte a léamh.",
     "cliproxyapiActionFailed": "Theip ar an ngníomh",
     "cliproxyapiActionSucceeded": "D'éirigh leis an ngníomh",
     "cliproxyapiCheckUpdates": "Seiceáil nuashonruithe",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK gonta (文言)",
         "description": "Stíl fhíorghonta na Sínise Clasaicí (ar fáil don tSínis amháin)."
+      },
+      "antislop-ui": {
+        "label": "Scagaire Antislop don UI",
+        "description": "Amhairc a ndearnadh tástáil chuspóra orthu: gan grádáin ghinearálta, leagan amach teimpléid ná rialuithe marbha."
+      },
+      "antislop-copy": {
+        "label": "Scagaire Antislop do théacs agus do dhaoine",
+        "description": "Téacs macánta agus rialacha do dhaoine: gan comharthaí AI, codarsnacht WCAG AA, méarchlár, staideanna, athshreabhadh móibíleach."
       }
     },
     "resilienceWaitForCooldown": "Fan go mbeidh an tréimhse fuaraithe thart",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Folaigh an ró cuóta seo",
     "showQuotaRow": "Taispeáin an ró cuóta seo",
     "hiddenQuotaRowsLabel": "Folaithe:",
+    "quotaSpeedTitle": "Luas díchódaithe le déanaí ar an gcuntas seo (na {count} iarratas rathúla is déanaí)",
+    "quotaSpeedLine": "{model}: {avg} tok/s meán · is déanaí {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s meán · is déanaí {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Theip ar infheictheacht an chuóta a nuashonrú",
     "account": "Cuntas",
     "modelQuotas": "Cuótaí Múnla",
@@ -14501,7 +14519,10 @@
     "importing": "Ag iompórtáil...",
     "apiKeyPlaceholder": "Greamaigh do eochair API {providerLabel}...",
     "apiKeyStoredDescription": "Stóráiltear é agus é criptithe mar dhintiúr iompróra fadsaolach. Níl aon phróiseas athnuachana ann.",
-    "apiKeyRegionDescription": "Réigiún AWS don eochair (réamhshocrú: us-east-1)",
+    "apiKeyRegionAuto": "Braith go huathoibríoch (molta)",
+    "apiKeyRegionUsEast1": "Oirthear SAM (Achadh an Iúir Thuaidh)",
+    "apiKeyRegionEuCentral1": "An Eoraip (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Bainann braith uathoibríoch triail as Oirthear SAM ar dtús, ansin an Eoraip (Frankfurt), agus sábhálann sé an réigiún ina n-oibríonn an eochair.",
     "validating": "Ag bailíochtú...",
     "validateAndSaveApiKey": "Bailíochtaigh agus Sábháil an Eochair API",
     "errorAutoDetect": "Níorbh fhéidir an ceadchomhartha a bhrath go huathoibríoch",

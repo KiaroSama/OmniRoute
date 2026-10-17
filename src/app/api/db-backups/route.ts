@@ -12,6 +12,10 @@ import {
 import { dbBackupCleanupSchema, dbBackupRestoreSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { isAuthenticated } from "@/shared/utils/apiAuth";
+import {
+  CREDENTIAL_IMPORT_FORBIDDEN_MESSAGE,
+  requireOperatorCredential,
+} from "@/lib/api/operatorCredential";
 import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
 
 async function readOptionalJsonBody(request: NextRequest | Request): Promise<unknown> {
@@ -79,12 +83,16 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/db-backups — Restore a specific backup.
  * Body: { backupId: "db_2026-02-11T14-00-00-000Z_pre-write.json" }
- * Security: Requires admin authentication.
+ * Security: operator-only — dashboard session, local CLI, or login disabled. Restoring
+ * replaces the live database wholesale, so API keys of any scope and `oma_` access tokens
+ * get 403 (same boundary as the exports). Listing, creating, retention and cleanup above
+ * and below keep ordinary management auth.
  */
 export async function POST(request: NextRequest) {
-  if (!(await isAuthenticated(request))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const operatorVerdict = await requireOperatorCredential(request, {
+    forbiddenMessage: CREDENTIAL_IMPORT_FORBIDDEN_MESSAGE,
+  });
+  if (operatorVerdict.ok === false) return operatorVerdict.response;
 
   let rawBody;
   try {

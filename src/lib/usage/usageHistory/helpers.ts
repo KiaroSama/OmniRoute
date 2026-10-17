@@ -191,6 +191,83 @@ export function buildLatencyStatsEntry(
   };
 }
 
+/** One usage_history row as read by getConnectionSpeedStats(), newest first. */
+export interface ConnectionSpeedRow {
+  model: unknown;
+  latency_ms: unknown;
+  ttft_ms: unknown;
+  tokens_output: unknown;
+  tokens_reasoning: unknown;
+}
+
+export interface ConnectionSpeedSummary {
+  /** Mean decode tokens/sec (generation window: latency - TTFT). */
+  avgTps: number;
+  /** Decode tokens/sec of the newest usable row. */
+  lastTps: number;
+  medianTps: number;
+  /** Mean TTFT over the rows that recorded one; null when none did. */
+  avgTtftMs: number | null;
+  samples: number;
+}
+
+export interface ConnectionSpeedStats extends ConnectionSpeedSummary {
+  /** Per-model breakdown, most-sampled first. */
+  byModel: Array<ConnectionSpeedSummary & { model: string }>;
+}
+
+/** Shorter generation windows are dominated by overhead/jitter, so they are skipped. */
+export const MIN_SPEED_WINDOW_MS = 300;
+
+interface SpeedSample {
+  tps: number;
+  ttftMs: number;
+}
+
+function summarizeSpeedSamples(samples: SpeedSample[]): ConnectionSpeedSummary {
+  const sorted = samples.map((s) => s.tps).sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  const ttfts = samples.map((s) => s.ttftMs).filter((ms) => ms > 0);
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  return {
+    avgTps: round2(mean(sorted)),
+    lastTps: round2(samples[0].tps),
+    medianTps: round2(median),
+    avgTtftMs: ttfts.length > 0 ? Math.round(mean(ttfts)) : null,
+    samples: samples.length,
+  };
+}
+
+/**
+ * Reduce one connection's recent rows (newest first) into decode-speed stats,
+ * using the same TPS math as the request logger (#13130 helpers), or null when
+ * no row yields a usable sample.
+ */
+export function summarizeConnectionSpeed(rows: ConnectionSpeedRow[]): ConnectionSpeedStats | null {
+  const all: SpeedSample[] = [];
+  const byModel = new Map<string, SpeedSample[]>();
+  for (const row of rows) {
+    const tokens = resolveTpsOutputTokens(Number(row.tokens_output), Number(row.tokens_reasoning));
+    const ttftMs = Number(row.ttft_ms) || 0;
+    const windowMs = resolveGenerationMs(Number(row.latency_ms), ttftMs);
+    if (tokens <= 0 || windowMs === null || windowMs < MIN_SPEED_WINDOW_MS) continue;
+    const sample = { tps: (tokens * 1000) / windowMs, ttftMs };
+    all.push(sample);
+    const model = toStringOrNull(row.model) ?? "unknown";
+    const list = byModel.get(model);
+    if (list) list.push(sample);
+    else byModel.set(model, [sample]);
+  }
+  if (all.length === 0) return null;
+  return {
+    ...summarizeSpeedSamples(all),
+    byModel: [...byModel.entries()]
+      .map(([model, list]) => ({ model, ...summarizeSpeedSamples(list) }))
+      .sort((a, b) => b.samples - a.samples),
+  };
+}
+
 export const MAX_PREVIEW_DEPTH = 6;
 export const MAX_PREVIEW_STRING = 1200;
 export const MAX_PREVIEW_ARRAY_ITEMS = 12;

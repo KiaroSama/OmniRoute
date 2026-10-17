@@ -206,9 +206,18 @@ export const kiroImportSchema = z.object({
   scopes: z.union([z.string(), z.array(z.string())]).optional(),
 });
 
+// Kiro API keys run only on the Amazon Q profile regions; "auto" lets the import probe both
+// (mirrors KIRO_API_KEY_REGION_CHOICES in open-sse/services/kiroRegion.ts). An allowlist, not
+// free text: the region is interpolated into the upstream hostname (SSRF guard).
 export const kiroApiKeyImportSchema = z.object({
   apiKey: z.string().trim().min(1, "API key is required"),
-  region: z.string().trim().default("us-east-1"),
+  region: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .optional()
+    .transform((value) => value || "auto")
+    .pipe(z.enum(["auto", "us-east-1", "eu-central-1"])),
 });
 
 export const zedImportSchema = z.object({

@@ -45,6 +45,7 @@ interface ModelsTabProps {
   blockClaudeCodeFamily: (familyId: ClaudeCodeBlockableFamilyId) => void;
   setCatalogScope: (scope: CatalogScope) => void;
   setDisableNonPublicModels: (disabled: boolean) => void;
+  setForcedModel: (model: string) => void;
   errors?: string[];
 }
 
@@ -254,6 +255,39 @@ function ModelAccessInfoBanner({
                 ? t("restrictCatalogUnavailable", { selectedCount })
                 : t("restrictDesc", { selectedCount, totalModels })}
       </p>
+    </div>
+  );
+}
+
+/** Per-key enforced model: every chat request with this key is routed to it. */
+function ForcedModelSetting({
+  formState,
+  allModels,
+  setForcedModel,
+}: Pick<ModelsTabProps, "formState" | "allModels" | "setForcedModel">) {
+  const t = useTranslations("apiManager");
+
+  return (
+    <div className="flex flex-col gap-2 p-4 rounded-lg border border-border bg-surface/40">
+      <label htmlFor="api-key-forced-model" className="text-sm font-medium text-text-main">
+        {t("forcedModel")}
+      </label>
+      <p className="text-xs text-text-muted">{t("forcedModelDesc")}</p>
+      <input
+        id="api-key-forced-model"
+        type="text"
+        list="api-key-forced-model-options"
+        value={formState.forcedModel}
+        maxLength={300}
+        onChange={(e) => setForcedModel(e.target.value)}
+        placeholder={t("forcedModelPlaceholder")}
+        className="w-full px-3 py-2 text-sm rounded-md border border-border bg-transparent text-text-main"
+      />
+      <datalist id="api-key-forced-model-options">
+        {allModels.map((model) => (
+          <option key={model.id} value={model.id} />
+        ))}
+      </datalist>
     </div>
   );
 }
@@ -575,6 +609,7 @@ export default function ModelsTab({
   blockClaudeCodeFamily,
   setCatalogScope,
   setDisableNonPublicModels,
+  setForcedModel,
   errors,
 }: ModelsTabProps) {
   const { expandedProviders, expandAllProviders, handleToggleExpand } = useProviderGroupExpansion(
@@ -602,6 +637,11 @@ export default function ModelsTab({
         formState={formState}
         setCatalogScope={setCatalogScope}
         setDisableNonPublicModels={setDisableNonPublicModels}
+      />
+      <ForcedModelSetting
+        formState={formState}
+        allModels={allModels}
+        setForcedModel={setForcedModel}
       />
       {!formState.allowAll && scopeSummary.selectedCount > 0 && (
         <SelectedModelsSummary

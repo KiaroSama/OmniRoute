@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Kpochapụ nzacha",
     "disableNonPublicModels": "Gbanyụọ model ndị na-abụghị nke ọha",
     "disableNonPublicModelsDesc": "Jụ arịrịọ maka model ndị achọpụtaghị ma ọ bụ ndị a na-akaghị akara dị ka nke ọha na katalọgụ provider",
+    "forcedModel": "Ụdị a manyere",
+    "forcedModelDesc": "Zipu arịrịọ nkata ọ bụla e mere site na igodo a gaa na ụdị a ma ọ bụ combo a, n'agbanyeghị ụdị onye ahịa rịọrọ (ma ọ bụ mgbe ọ na-ezighị nke ọ bụla). Oke ụdị, combo na mmefu ego nke igodo ka na-arụ ọrụ.",
+    "forcedModelPlaceholder": "Amanyeghị: jiri ụdị onye ahịa rịọrọ",
     "normalKeysSection": "Igodo nkịtị",
     "quotaKeysSection": "Igodo oke ojiji",
     "bypassProviderQuota": "Gafere njedebe quota nke provider",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — usoro RLM maka ide koodu nke na-emeziwanye onwe ya ma nwee nkwado maka ndị na-eweta ọrụ dakọtara na OpenAI",
       "warp": "Warp AI terminal nwere nkwado maka onye na-eweta ọrụ ahaziri iche",
       "agent-deck": "Agent Deck, onye nhazi ọtụtụ ndị nnọchi anya",
-      "5dive": "5dive — ìgwè ndị nnọchi anya ide koodu a na-akwado n'onwe gị; otu profaịlụ nkwenye na-ejikọ ha niile na OmniRoute"
+      "5dive": "5dive — ìgwè ndị nnọchi anya ide koodu a na-akwado n'onwe gị; otu profaịlụ nkwenye na-ejikọ ha niile na OmniRoute",
+      "zed": "Ihe ndezi koodu Zed — onye nnọchi anya arụnyere n'ime site n'aka onye na-enye ọrụ dakọtara na OpenAI"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Mgbe ahụ, malitegharịa VS Code ma tọọ igodo API n'oghere ntinye.",
     "wireApiChatCompletions": "Mmecha Mkparịta ụka (/chat/completions)",
     "wireApiResponses": "API Nzaghachi (/responses)",
+    "codexModelCatalog": "Gosi ụdị OmniRoute na onye nhọrọ /model nke Codex",
+    "codexModelCatalogHint": "Ọ na-ede ~/.codex/omniroute-models.json site na katalọgụ ụdị nke Codex etinyere (ihe dị ka 60 KB maka ụdị ọ bụla). Tinye ya ọzọ mgbe ị kwalitere Codex.",
+    "codexCatalogWarning": "Emelitebeghị onye nhọrọ /model nke Codex: OmniRoute enweghị ike ịgụ katalọgụ ụdị nke Codex etinyere.",
     "cliproxyapiActionFailed": "Omume ahụ dara",
     "cliproxyapiActionSucceeded": "Omume ahụ gara nke ọma",
     "cliproxyapiCheckUpdates": "Lelee Mmelite",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK dị nkenke (文言)",
         "description": "Ụdị Chinese oge ochie dị oke nkenke (dị naanị maka Chinese)."
+      },
+      "antislop-ui": {
+        "label": "Nzacha Antislop maka UI",
+        "description": "Ihe ngosi a nwalere ebumnuche ha: enweghị gradient nkịtị, nhazi template ma ọ bụ njikwa nwụrụ anwụ."
+      },
+      "antislop-copy": {
+        "label": "Nzacha Antislop maka ederede na mmadụ",
+        "description": "Ederede eziokwu na iwu maka ndị mmadụ: enweghị akara AI, ọdịiche WCAG AA, ahụigodo, ọnọdụ, nhazigharị ekwentị."
       }
     },
     "resilienceWaitForCooldown": "Chere ka oge nkwụsị gafee",
@@ -9864,6 +9879,9 @@
     "hideQuotaRow": "Zoo ahịrị oke ojiji a",
     "showQuotaRow": "Gosi ahịrị oke ojiji a",
     "hiddenQuotaRowsLabel": "Ihe ndị ezoro:",
+    "quotaSpeedTitle": "Ọsọ ntụgharị nso nso a na akaụntụ a (arịrịọ {count} gara nke ọma ikpeazụ)",
+    "quotaSpeedLine": "{model}: {avg} tok/s nkezi · ikpeazụ {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s nkezi · ikpeazụ {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Imelite ngosipụta oke ojiji kụrụ afọ n'ala",
     "account": "Akaụntụ",
     "modelQuotas": "Oke ojiji ụdị",
@@ -14501,7 +14519,10 @@
     "importing": "Na-ebubata...",
     "apiKeyPlaceholder": "Tapawa igodo API {providerLabel} gị...",
     "apiKeyStoredDescription": "A na-echekwa ya n'ụdị ezoro ezo dịka nzere bearer na-adịte aka. Enweghị usoro mweghachi.",
-    "apiKeyRegionDescription": "Mpaghara AWS maka igodo ahụ (ndabara: us-east-1)",
+    "apiKeyRegionAuto": "Chọpụta na-akpaghị aka (a tụrụ aro)",
+    "apiKeyRegionUsEast1": "Ọwụwa Anyanwụ US (North Virginia)",
+    "apiKeyRegionEuCentral1": "Yurop (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Nchọpụta na-akpaghị aka na-anwale Ọwụwa Anyanwụ US mbụ, mgbe ahụ Europe (Frankfurt), ma chekwaa mpaghara ebe igodo ahụ na-arụ ọrụ.",
     "validating": "Na-enyocha izi ezi...",
     "validateAndSaveApiKey": "Nyochaa ma Chekwaa Igodo API",
     "errorAutoDetect": "Enweghị ike ịchọpụta token na-akpaghị aka",

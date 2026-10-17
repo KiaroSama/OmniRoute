@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Vymazat filtry",
     "disableNonPublicModels": "Zakázat neveřejné modely",
     "disableNonPublicModelsDesc": "Odmítnout požadavky na modely, které nejsou nalezeny nebo nejsou v katalogu poskytovatele označeny jako veřejné",
+    "forcedModel": "Vynucený model",
+    "forcedModelDesc": "Směruje každý chatový požadavek s tímto klíčem na tento model nebo kombo bez ohledu na to, jaký model klient požaduje (nebo když žádný neodešle). Omezení klíče na modely, komba a rozpočet nadále platí.",
+    "forcedModelPlaceholder": "Nevynuceno: použít model, který klient požaduje",
     "normalKeysSection": "Běžné klíče",
     "quotaKeysSection": "Kvótové klíče",
     "bypassProviderQuota": "Obcházet limity kvót poskytovatele",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — sebezdokonalující se programovací prostředí RLM s podporou poskytovatelů kompatibilních s OpenAI",
       "warp": "AI terminál Warp s podporou vlastních poskytovatelů",
       "agent-deck": "Multiagentní orchestrátor Agent Deck",
-      "5dive": "5dive — vlastní flotila kódovacích agentů; jeden auth profil nasměruje všechny na OmniRoute"
+      "5dive": "5dive — vlastní flotila kódovacích agentů; jeden auth profil nasměruje všechny na OmniRoute",
+      "zed": "Editor kódu Zed — vestavěný agent přes poskytovatele kompatibilního s OpenAI"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Poté znovu načtěte VS Code a nastavte klíč API ve vstupním poli.",
     "wireApiChatCompletions": "Dokončení chatu (/chat/completions)",
     "wireApiResponses": "API odpovědí (/responses)",
+    "codexModelCatalog": "Zobrazit modely OmniRoute ve výběru /model v Codexu",
+    "codexModelCatalogHint": "Zapíše ~/.codex/omniroute-models.json z vlastního katalogu modelů nainstalovaného Codexu (asi 60 KB na model). Po aktualizaci Codexu použijte znovu.",
+    "codexCatalogWarning": "Výběr /model v Codexu nebyl aktualizován: OmniRoute nedokázal načíst katalog modelů nainstalovaného Codexu.",
     "cliproxyapiActionFailed": "Akce selhala",
     "cliproxyapiActionSucceeded": "Akce byla úspěšná",
     "cliproxyapiCheckUpdates": "Zkontrolovat aktualizace",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "Stručné CJK (文言)",
         "description": "Klasický čínský ultra stručný styl (k dispozici pouze pro čínštinu)."
+      },
+      "antislop-ui": {
+        "label": "Antislop filtr UI",
+        "description": "Vizuály s ověřeným účelem: žádné generické přechody, šablonová rozvržení ani nefunkční ovládací prvky."
+      },
+      "antislop-copy": {
+        "label": "Antislop filtr textů a lidí",
+        "description": "Poctivé texty a pravidla pro lidi: žádné stopy AI, kontrast WCAG AA, klávesnice, stavy, mobilní přeskládání."
       }
     },
     "resilienceWaitForCooldown": "Počkejte na Cooldown",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Skrýt tento řádek kvóty",
     "showQuotaRow": "Zobrazit tento řádek kvóty",
     "hiddenQuotaRowsLabel": "Skryté:",
+    "quotaSpeedTitle": "Nedávná rychlost dekódování u tohoto účtu (posledních {count} úspěšných požadavků)",
+    "quotaSpeedLine": "{model}: {avg} tok/s průměr · poslední {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s průměr · poslední {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Nepodařilo se aktualizovat viditelnost kvóty",
     "account": "Účet",
     "modelQuotas": "Kvóty Modelu",
@@ -14501,7 +14519,10 @@
     "importing": "Importuji...",
     "apiKeyPlaceholder": "Vložte svůj {providerLabel} API klíč...",
     "apiKeyStoredDescription": "Uloženo šifrované jako dlouhodobé nositelné pověření. Neexistuje žádný tok obnovení.",
-    "apiKeyRegionDescription": "AWS region pro klíč (výchozí: us-east-1)",
+    "apiKeyRegionAuto": "Automatická detekce (doporučeno)",
+    "apiKeyRegionUsEast1": "USA – východ (Severní Virginie)",
+    "apiKeyRegionEuCentral1": "Evropa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Automatická detekce nejprve zkusí USA – východ, poté Evropu (Frankfurt) a uloží region, ve kterém klíč funguje.",
     "validating": "Ověřování...",
     "validateAndSaveApiKey": "Ověřit a Uložit API Klíč",
     "errorAutoDetect": "Nelze automaticky detekovat token",

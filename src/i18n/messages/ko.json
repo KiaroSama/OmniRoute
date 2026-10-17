@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "필터 지우기",
     "disableNonPublicModels": "비공개 모델 비활성화",
     "disableNonPublicModelsDesc": "공급자 카탈로그에서 검색되지 않았거나 공개로 표시되지 않은 모델에 대한 요청을 거부합니다",
+    "forcedModel": "강제 모델",
+    "forcedModelDesc": "이 키로 보내는 모든 채팅 요청을 클라이언트가 어떤 모델을 요청하든(또는 모델을 보내지 않더라도) 이 모델이나 콤보로 라우팅합니다. 키의 모델, 콤보 및 예산 제한은 계속 적용됩니다.",
+    "forcedModelPlaceholder": "강제하지 않음: 클라이언트가 요청한 모델 사용",
     "normalKeysSection": "일반 키",
     "quotaKeysSection": "할당량 키",
     "bypassProviderQuota": "공급자 할당량 차단 우회",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — OpenAI 호환 제공업체를 지원하는 자기 개선형 RLM 코딩 하네스",
       "warp": "사용자 정의 제공자 지원 기능이 포함된 Warp AI 터미널",
       "agent-deck": "Agent Deck 다중 에이전트 오케스트레이터",
-      "5dive": "5dive — 자체 호스팅 코딩 에이전트 플릿; 인증 프로필 하나로 전체를 OmniRoute로 연결"
+      "5dive": "5dive — 자체 호스팅 코딩 에이전트 플릿; 인증 프로필 하나로 전체를 OmniRoute로 연결",
+      "zed": "Zed 코드 편집기 — OpenAI 호환 공급자를 통한 내장 에이전트"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "그런 다음 VS Code를 다시 로드하고 입력 프롬프트에 API 키를 설정하세요.",
     "wireApiChatCompletions": "채팅 완료(/chat/completions)",
     "wireApiResponses": "응답 API(/responses)",
+    "codexModelCatalog": "Codex의 /model 선택기에 OmniRoute 모델 표시",
+    "codexModelCatalogHint": "설치된 Codex 자체 모델 카탈로그에서 ~/.codex/omniroute-models.json 파일을 생성합니다(모델당 약 60 KB). Codex를 업그레이드한 후 다시 적용하세요.",
+    "codexCatalogWarning": "Codex의 /model 선택기가 업데이트되지 않았습니다: OmniRoute가 설치된 Codex 모델 카탈로그를 읽지 못했습니다.",
     "cliproxyapiActionFailed": "작업 실패",
     "cliproxyapiActionSucceeded": "작업이 성공했습니다",
     "cliproxyapiCheckUpdates": "업데이트 확인",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "간결한 CJK (文言)",
         "description": "한문 초간결 스타일 (중국어만 지원)."
+      },
+      "antislop-ui": {
+        "label": "안티슬롭 UI 필터",
+        "description": "목적을 검증한 시각 요소: 뻔한 그라데이션, 템플릿 레이아웃, 작동하지 않는 컨트롤 없음."
+      },
+      "antislop-copy": {
+        "label": "안티슬롭 문구 및 사용자 필터",
+        "description": "정직한 문구와 사람을 위한 규칙: AI 티 없음, WCAG AA 대비, 키보드, 상태 표시, 모바일 리플로."
       }
     },
     "resilienceWaitForCooldown": "쿨다운 대기",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "이 할당량 행 숨기기",
     "showQuotaRow": "이 할당량 행 표시",
     "hiddenQuotaRowsLabel": "숨김:",
+    "quotaSpeedTitle": "이 계정의 최근 디코딩 속도 (최근 성공한 요청 {count}개)",
+    "quotaSpeedLine": "{model}: {avg} tok/s 평균 · 최근 {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s 평균 · 최근 {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "할당량 표시 여부 업데이트 실패",
     "account": "계정",
     "modelQuotas": "모델 할당량",
@@ -14501,7 +14519,10 @@
     "importing": "가져오는 중...",
     "apiKeyPlaceholder": "{providerLabel} API 키를 붙여넣으세요...",
     "apiKeyStoredDescription": "장기 지속되는 베어러 자격 증명으로 암호화되어 저장됩니다. 새로 고침 흐름이 없습니다.",
-    "apiKeyRegionDescription": "키에 대한 AWS 리전(기본값: us-east-1)",
+    "apiKeyRegionAuto": "자동 감지 (권장)",
+    "apiKeyRegionUsEast1": "미국 동부 (버지니아 북부)",
+    "apiKeyRegionEuCentral1": "유럽 (프랑크푸르트)",
+    "apiKeyRegionAutoDescription": "자동 감지는 먼저 미국 동부를 시도한 다음 유럽(프랑크푸르트)을 시도하고, 키가 작동하는 리전을 저장합니다.",
     "validating": "유효성 검사 중...",
     "validateAndSaveApiKey": "API 키 검증 및 저장",
     "errorAutoDetect": "토큰을 자동으로 감지할 수 없습니다.",

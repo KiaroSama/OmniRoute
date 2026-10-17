@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Limpar filtros",
     "disableNonPublicModels": "Desativar Modelos Não Públicos",
     "disableNonPublicModelsDesc": "Rejeitar solicitações para modelos que não foram descobertos ou não estão marcados como públicos no catálogo do provedor",
+    "forcedModel": "Modelo forçado",
+    "forcedModelDesc": "Encaminha toda requisição de chat feita com esta chave para este modelo ou combo, seja qual for o modelo que o cliente pedir (ou quando não enviar nenhum). Os limites de modelos, combos e orçamento da chave continuam valendo.",
+    "forcedModelPlaceholder": "Não forçado: usar o modelo que o cliente solicitar",
     "normalKeysSection": "Chaves normais",
     "quotaKeysSection": "Chaves de cota",
     "bypassProviderQuota": "Ignorar cortes de cota do provedor",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — harness de codificação RLM autoevolutivo com suporte a API compatível com OpenAI",
       "warp": "Terminal de IA Warp com suporte a provedor personalizado",
       "agent-deck": "Orquestrador multi-agente Agent Deck",
-      "5dive": "5dive — frota auto-hospedada de agentes de codificação; um perfil de autenticação aponta todos para o OmniRoute"
+      "5dive": "5dive — frota auto-hospedada de agentes de codificação; um perfil de autenticação aponta todos para o OmniRoute",
+      "zed": "Editor de código Zed — agente nativo por meio de um provedor compatível com OpenAI"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Em seguida, recarregue o VS Code e defina a chave de API no prompt de entrada.",
     "wireApiChatCompletions": "Conclusões de bate-papo (/chat/completions)",
     "wireApiResponses": "API de respostas (/respostas)",
+    "codexModelCatalog": "Listar os modelos do OmniRoute no seletor /model do Codex",
+    "codexModelCatalogHint": "Grava ~/.codex/omniroute-models.json a partir do catálogo de modelos do próprio Codex instalado (cerca de 60 KB por modelo). Aplique de novo depois de atualizar o Codex.",
+    "codexCatalogWarning": "O seletor /model do Codex não foi atualizado: o OmniRoute não conseguiu ler o catálogo de modelos do Codex instalado.",
     "cliproxyapiActionFailed": "Ação falhou",
     "cliproxyapiActionSucceeded": "Ação bem-sucedida",
     "cliproxyapiCheckUpdates": "Verificar Atualizações",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK conciso (文言)",
         "description": "Estilo ultra-conciso em chinês clássico (disponível apenas para chinês)."
+      },
+      "antislop-ui": {
+        "label": "Filtro antislop de UI",
+        "description": "Visuais com propósito testado: sem degradês genéricos, layouts de template ou controles mortos."
+      },
+      "antislop-copy": {
+        "label": "Filtro antislop de texto e pessoas",
+        "description": "Texto honesto mais regras para pessoas: sem marcas de IA, contraste WCAG AA, teclado, estados, reflow no mobile."
       }
     },
     "resilienceWaitForCooldown": "Aguarde o resfriamento",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Ocultar esta linha de cota",
     "showQuotaRow": "Mostrar esta linha de cota",
     "hiddenQuotaRowsLabel": "Oculto:",
+    "quotaSpeedTitle": "Velocidade de decodificação recente nesta conta (últimas {count} requisições bem-sucedidas)",
+    "quotaSpeedLine": "{model}: {avg} tok/s média · última {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s média · última {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Falha ao atualizar a visibilidade da cota",
     "account": "Conta",
     "modelQuotas": "Cotas de Modelo",
@@ -14501,7 +14519,10 @@
     "importing": "Importando...",
     "apiKeyPlaceholder": "Cole seu chave de API {providerLabel}...",
     "apiKeyStoredDescription": "Armazenado criptografado como uma credencial portadora de longa duração. Não há fluxo de atualização.",
-    "apiKeyRegionDescription": "Região da AWS para a chave (padrão: us-east-1)",
+    "apiKeyRegionAuto": "Detectar automaticamente (recomendado)",
+    "apiKeyRegionUsEast1": "Leste dos EUA (Norte da Virgínia)",
+    "apiKeyRegionEuCentral1": "Europa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "A detecção automática tenta primeiro o Leste dos EUA, depois a Europa (Frankfurt), e salva a região onde a chave funciona.",
     "validating": "Validando...",
     "validateAndSaveApiKey": "Validar e Salvar Chave da API",
     "errorAutoDetect": "Não foi possível detectar o token automaticamente",

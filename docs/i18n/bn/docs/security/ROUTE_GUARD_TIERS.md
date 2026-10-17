@@ -116,6 +116,23 @@ OmniRoute-এর সব ম্যানেজমেন্ট API রুটকে
 
 `/api/settings/obsidian` তার `/webdav` চাইল্ডকে কভার করে: `POST` WebDAV ফাইল সার্ভিসকে — Next.js-এর আগে কাস্টম নোড লেয়ার দ্বারা পরিবেশিত, এই পাইপলাইনের বাইরে — একটি কলার-নির্বাচিত রুটে নির্দেশ করে এবং নতুন তৈরি Basic ক্রেডেনশিয়ালগুলি প্রতিধ্বনিত করে, `DELETE` সেগুলিকে ঘোরানো হয়, এবং প্যারেন্ট `POST` Obsidian REST API টোকেন সংরক্ষণ করে। GHSA-62vw শুধুমাত্র `GET` পাসওয়ার্ড প্রকাশকে মাস্ক করেছিল; ইস্যুয়েন্স তখনও ফেল-ওপেন স্তরে ছিল (GHSA-7pq4-8pvv-rx7r)। `enableObsidianVaultSync()` অতিরিক্তভাবে এমন একটি ভল্ট প্রত্যাখ্যান করে যা ডেটা ডিরেক্টরির মধ্যে থাকে বা ডেটা ডিরেক্টরি ধারণ করে।
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### নতুন ইনস্টল বুটস্ট্র্যাপ শুধুমাত্র লুপব্যাক-এর জন্য — আসল পিয়ার দ্বারা, `Host` দ্বারা নয়
 
 কোনো ম্যানেজমেন্ট পাসওয়ার্ড কনফিগার করা না থাকলে (এবং কোনো `INITIAL_PASSWORD` না থাকলে), `src/shared/utils/apiAuth.ts`-এ `isAuthRequired()` বেনামী বুটস্ট্র্যাপ শুধুমাত্র **লুপব্যাক পিয়ারদের জন্য** খোলা রাখে। লুপব্যাক বিশ্বস্ত পিয়ার সংকেত থেকে সিদ্ধান্ত নেওয়া হয়, ক্রমানুসারে: টোকেন-স্ট্যাম্পড আসল TCP পিয়ার (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, নীতি যা দেখে), পাইপলাইনের নিজস্ব `AUTHZ_HEADER_PEER_LOCALITY` রায় (রুট হ্যান্ডলাররা যা দেখে, `OMNIROUTE_PEER_STAMP_TOKEN` সেট করা থাকলে তবেই বিশ্বস্ত), অথবা সরাসরি কলারদের জন্য একটি আসল সকেট পিয়ার। `Host` / `nextUrl.hostname` কখনও বিবেচনা করা হয় না, এবং প্রথম-পাসওয়ার্ড লেখা (`POST /api/settings/require-login`) একই সীমাবদ্ধতার অধীনে থাকে, প্রতিটি নেটওয়ার্ক পিয়ারের জন্য খোলা থাকে না (GHSA-7pq4-8pvv-rx7r)। `managementPolicy` তার নিজস্ব `peerContext` রায় স্পষ্টভাবে নিচে পাস করে, তাই আসল (স্ট্রিপ করার আগে) অনুরোধের হেডারগুলি এটি কখনও সিদ্ধান্ত নেয় না।

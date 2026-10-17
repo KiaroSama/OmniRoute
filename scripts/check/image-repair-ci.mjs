@@ -8,7 +8,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const baseline = "32130fca348767f97bdd976ce4c5db876675125a";
+const baseline = "858d6022270b73489dfa8d89eee6fcc9a6a9e214";
 const work = path.join(root, ".ci-work/image-repair");
 const home = path.join(work, "isolated-home");
 const temp = path.join(work, "isolated-temp");
@@ -229,6 +229,8 @@ const regressionFiles = [
   "fal-image-edit.test.ts",
   "fal-image-generation-default.test.ts",
   "nanobanana-image-handler.test.ts",
+  "muse-image-provider.test.ts",
+  "nan-provider.test.ts",
   "combo/image-combo.test.ts",
   "combo/image-combo-empty-200-fallback.test.ts",
 ];

@@ -39,10 +39,17 @@ import { handleSyntxImageGeneration } from "./imageGeneration/providers/syntx.ts
 import { handleZenmuxImageGeneration } from "./imageGeneration/providers/zenmux.ts";
 import { handleAlibabaImageGeneration } from "./imageGeneration/providers/alibabaImage.ts";
 import { handleAiHordeImageGeneration } from "./imageGeneration/providers/aihorde.ts";
+import { handleMuseImageGeneration } from "./imageGeneration/providers/museImage.ts";
 // Re-export so /v1/images/edits can dispatch Firefly reference-image edits.
 export { handleAdobeFireflyImageGeneration, handleSyntxImageGeneration };
 import { handleGeminiImageGeneration } from "./geminiImage.ts";
-import { resolveImageBaseUrl } from "./imageGeneration/shared.ts";
+import {
+  resolveImageBaseUrl,
+  saveCallLog,
+  fetchUntrustedRemoteImage,
+  fetchWithTimeout,
+  FetchTimeoutError,
+} from "./imageGeneration/shared.ts";
 import { resolveComfyUiBaseUrl } from "../utils/comfyuiClient.ts";
 import { handleKieImageGeneration } from "./imageGeneration/providers/kie.ts";
 import { handleOpenAIImageGeneration } from "./imageGeneration/providers/openAI.ts";
@@ -246,6 +253,23 @@ export async function handleImageGeneration({
 
   if (providerConfig.format === "syntx-image") {
     return handleSyntxImageGeneration({ model, provider, providerConfig, body, credentials, log });
+  }
+
+  if (providerConfig.format === "muse-image") {
+    return handleMuseImageGeneration({
+      model,
+      provider,
+      body,
+      credentials,
+      log,
+      signal,
+      deps: {
+        saveCallLog,
+        fetchRemoteImage: fetchUntrustedRemoteImage,
+        fetchWithTimeout,
+        isTimeoutError: (err) => err instanceof FetchTimeoutError,
+      },
+    });
   }
 
   if (providerConfig.format === "aihorde") {

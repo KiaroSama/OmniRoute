@@ -19,6 +19,14 @@
  *   credential point dashboard login at an attacker-controlled IdP, allowlist the
  *   attacker's own subject, or send the code to another host. Every `oidc*` key of the
  *   settings schema belongs here (pinned by `tests/unit/oidc-settings-reauth.test.ts`).
+ * - `corsOrigins` / `bruteForceProtection`: which browser origins may call the management
+ *   API with the operator's cookie, and whether repeated failed logins are throttled.
+ *   Loosening either weakens the login defenses, so both need the same re-auth (the Security
+ *   tab asks for the current password) and are dropped by the JSON import.
+ *
+ * Every key here is also OPERATOR-ONLY on `PATCH /api/settings`: a manage-scoped API key or an
+ * `oma_` access token is refused with 403 even when it knows the password
+ * (`tests/unit/security-settings-operator.test.ts`).
  *
  * Note: `mcpEnabled` is NOT gated server-side — the dedicated MCP page
  * (/dashboard/mcp) toggles it via patchSetting() without a currentPassword
@@ -38,6 +46,8 @@ export const SECURITY_IMPACTING_SETTINGS_KEYS = [
   "oidcAllowedSubjects",
   "oidcRedirectPath",
   "oidcScopes",
+  "corsOrigins",
+  "bruteForceProtection",
 ] as const;
 
 /**

@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "清除篩選",
     "disableNonPublicModels": "停用非公開模型",
     "disableNonPublicModelsDesc": "拒絕對未發現或未標記為公共的模型在提供者目錄中的請求",
+    "forcedModel": "強制模型",
+    "forcedModelDesc": "將使用此金鑰發出的每個聊天請求路由到此模型或組合,無論用戶端請求哪個模型(或未傳送模型時亦同)。該金鑰的模型、組合與預算限制仍然適用。",
+    "forcedModelPlaceholder": "未強制:使用用戶端請求的模型",
     "normalKeysSection": "普通鍵",
     "quotaKeysSection": "配額金鑰",
     "bypassProviderQuota": "繞過提供者配額限制",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — 支援 OpenAI 相容提供者、可自我改進的 RLM 程式設計框架",
       "warp": "Warp AI 終端機，支援自訂提供者",
       "agent-deck": "Agent Deck 多代理協調器",
-      "5dive": "5dive — 自架的編碼代理機群；一個認證設定檔即可將全部指向 OmniRoute"
+      "5dive": "5dive — 自架的編碼代理機群；一個認證設定檔即可將全部指向 OmniRoute",
+      "zed": "Zed 程式碼編輯器 — 透過 OpenAI 相容供應商使用內建代理"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "然後重新載入 VS Code 並在輸入提示中設定 API 金鑰。",
     "wireApiChatCompletions": "聊天完成 (/chat/completions)",
     "wireApiResponses": "回應 API (/responses)",
+    "codexModelCatalog": "在 Codex 的 /model 選擇器中列出 OmniRoute 模型",
+    "codexModelCatalogHint": "根據已安裝 Codex 內建的模型目錄寫入 ~/.codex/omniroute-models.json（每個模型約 60 KB）。升級 Codex 後請重新套用。",
+    "codexCatalogWarning": "未更新 Codex 的 /model 選擇器：OmniRoute 無法讀取已安裝 Codex 的模型目錄。",
     "cliproxyapiActionFailed": "操作失敗",
     "cliproxyapiActionSucceeded": "操作成功",
     "cliproxyapiCheckUpdates": "檢查更新",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "精簡 CJK（文言）",
         "description": "文言文極簡風格（僅適用於中文）。"
+      },
+      "antislop-ui": {
+        "label": "反 AI 套路 UI 過濾器",
+        "description": "經過目的檢驗的視覺：不用浮泛的漸層、範本版面或無效控制項。"
+      },
+      "antislop-copy": {
+        "label": "反 AI 套路文案與人本過濾器",
+        "description": "真誠的文案加上以人為本的規則：沒有 AI 腔調、WCAG AA 對比度、鍵盤、狀態、行動版重排。"
       }
     },
     "resilienceWaitForCooldown": "等待冷卻",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "隱藏此配額列",
     "showQuotaRow": "顯示此配額列",
     "hiddenQuotaRowsLabel": "已隱藏：",
+    "quotaSpeedTitle": "此帳號最近的解碼速度（最近 {count} 次成功請求）",
+    "quotaSpeedLine": "{model}: {avg} tok/s 平均 · 最近 {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s 平均 · 最近 {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "更新配額可見性失敗",
     "account": "帳戶",
     "modelQuotas": "模型配額",
@@ -14501,7 +14519,10 @@
     "importing": "匯入中...",
     "apiKeyPlaceholder": "貼上您的 {providerLabel} API 金鑰...",
     "apiKeyStoredDescription": "以長期有效的持證人憑證形式存儲加密信息。沒有刷新流程。",
-    "apiKeyRegionDescription": "密鑰的 AWS 區域 (預設: us-east-1)",
+    "apiKeyRegionAuto": "自動偵測（建議）",
+    "apiKeyRegionUsEast1": "美國東部（維吉尼亞北部）",
+    "apiKeyRegionEuCentral1": "歐洲（法蘭克福）",
+    "apiKeyRegionAutoDescription": "自動偵測會先嘗試美國東部，再嘗試歐洲（法蘭克福），並儲存金鑰可用的區域。",
     "validating": "驗證中...",
     "validateAndSaveApiKey": "驗證並儲存 API 金鑰",
     "errorAutoDetect": "無法自動檢測令牌",

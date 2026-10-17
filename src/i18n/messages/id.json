@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Hapus filter",
     "disableNonPublicModels": "Nonaktifkan Model Non-Publik",
     "disableNonPublicModelsDesc": "Tolak permintaan untuk model yang tidak ditemukan atau tidak ditandai sebagai publik di katalog penyedia",
+    "forcedModel": "Model yang dipaksakan",
+    "forcedModelDesc": "Arahkan setiap permintaan chat dengan kunci ini ke model atau combo ini, apa pun model yang diminta klien (atau saat klien tidak mengirimkannya). Batas model, combo, dan anggaran kunci tetap berlaku.",
+    "forcedModelPlaceholder": "Tidak dipaksakan: gunakan model yang diminta klien",
     "normalKeysSection": "Kunci normal",
     "quotaKeysSection": "Kunci kuota",
     "bypassProviderQuota": "Lewati batas kuota penyedia",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — kerangka kerja coding RLM yang dapat meningkatkan diri dengan dukungan penyedia yang kompatibel dengan OpenAI",
       "warp": "Terminal AI Warp dengan dukungan penyedia kustom",
       "agent-deck": "Orkestrator multi-agen Agent Deck",
-      "5dive": "5dive — armada agen coding yang di-host sendiri; satu profil auth mengarahkan semuanya ke OmniRoute"
+      "5dive": "5dive — armada agen coding yang di-host sendiri; satu profil auth mengarahkan semuanya ke OmniRoute",
+      "zed": "Editor kode Zed — agen bawaan melalui penyedia yang kompatibel dengan OpenAI"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Kemudian muat ulang VS Code dan atur kunci API di prompt input.",
     "wireApiChatCompletions": "Penyelesaian Obrolan (/chat/penyelesaian)",
     "wireApiResponses": "API Respons (/respons)",
+    "codexModelCatalog": "Tampilkan model OmniRoute di pemilih /model Codex",
+    "codexModelCatalogHint": "Menulis ~/.codex/omniroute-models.json dari katalog model milik Codex yang terpasang (sekitar 60 KB per model). Terapkan ulang setelah memperbarui Codex.",
+    "codexCatalogWarning": "Pemilih /model Codex tidak diperbarui: OmniRoute tidak dapat membaca katalog model Codex yang terpasang.",
     "cliproxyapiActionFailed": "Tindakan gagal",
     "cliproxyapiActionSucceeded": "Tindakan berhasil",
     "cliproxyapiCheckUpdates": "Periksa Pembaruan",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK Ringkas (文言)",
         "description": "Gaya ultra-ringkas Tionghoa Klasik (hanya tersedia untuk bahasa Tionghoa)."
+      },
+      "antislop-ui": {
+        "label": "Filter UI Antislop",
+        "description": "Visual yang lolos uji tujuan: tanpa gradien generik, layout template, atau kontrol mati."
+      },
+      "antislop-copy": {
+        "label": "Filter teks dan manusia Antislop",
+        "description": "Teks jujur plus aturan untuk manusia: tanpa ciri AI, kontras WCAG AA, keyboard, status, reflow seluler."
       }
     },
     "resilienceWaitForCooldown": "Tunggu Cooldown",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Sembunyikan baris kuota ini",
     "showQuotaRow": "Tampilkan baris kuota ini",
     "hiddenQuotaRowsLabel": "Tersembunyi:",
+    "quotaSpeedTitle": "Kecepatan dekode terbaru di akun ini ({count} permintaan sukses terakhir)",
+    "quotaSpeedLine": "{model}: {avg} tok/s rata-rata · terakhir {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s rata-rata · terakhir {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Gagal memperbarui visibilitas kuota",
     "account": "Akun",
     "modelQuotas": "Kuota Model",
@@ -14501,7 +14519,10 @@
     "importing": "Mengimpor...",
     "apiKeyPlaceholder": "Tempelkan kunci API {providerLabel} Anda...",
     "apiKeyStoredDescription": "Disimpan terenkripsi sebagai kredensial pembawa yang tahan lama. Tidak ada alur penyegaran.",
-    "apiKeyRegionDescription": "Wilayah AWS untuk kunci (default: us-east-1)",
+    "apiKeyRegionAuto": "Deteksi otomatis (disarankan)",
+    "apiKeyRegionUsEast1": "AS Timur (Virginia Utara)",
+    "apiKeyRegionEuCentral1": "Eropa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Deteksi otomatis mencoba AS Timur terlebih dahulu, lalu Eropa (Frankfurt), dan menyimpan region tempat kunci berfungsi.",
     "validating": "Memvalidasi...",
     "validateAndSaveApiKey": "Validasi dan Simpan Kunci API",
     "errorAutoDetect": "Tidak dapat mendeteksi token secara otomatis",

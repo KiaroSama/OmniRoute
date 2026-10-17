@@ -182,6 +182,23 @@ Obsidian REST API టోకెన్ను నిల్వ చేస్తుం
 ఇంకా ఫెయిల్-ఓపెన్ స్థాయిలోనే ఉంది (GHSA-7pq4-8pvv-rx7r). `enableObsidianVaultSync()` అదనంగా,
 డేటా డైరెక్టరీగా ఉన్న, దాని లోపల ఉన్న, లేదా దాన్ని కలిగి ఉన్న వాల్ట్ను తిరస్కరిస్తుంది.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### తాజా ఇన్స్టాలేషన్ బూట్స్ట్రాప్ లూప్బ్యాక్కు మాత్రమే — నిజమైన పీర్ ఆధారంగా, `Host` ఆధారంగా కాదు
 
 మేనేజ్మెంట్ పాస్వర్డ్ కాన్ఫిగర్ చేయబడనప్పుడు (మరియు `INITIAL_PASSWORD` లేనప్పుడు),

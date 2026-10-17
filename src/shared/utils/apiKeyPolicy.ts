@@ -108,6 +108,7 @@ export interface ApiKeyMetadata {
   compressionEnabled?: boolean;
   allowAutoCombos?: boolean;
   catalogScope?: "all" | "combos" | "models";
+  forcedModel?: string | null;
 }
 
 /**

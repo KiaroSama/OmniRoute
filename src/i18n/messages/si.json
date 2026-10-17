@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "පෙරහන් ඉවත් කරන්න",
     "disableNonPublicModels": "පොදු නොවන මාදිලි අක්රිය කරන්න",
     "disableNonPublicModelsDesc": "සපයන්නාගේ නාමාවලියෙහි සොයාගෙන නොමැති හෝ පොදු ලෙස සලකුණු කර නොමැති මාදිලි සඳහා වන ඉල්ලීම් ප්රතික්ෂේප කරන්න",
+    "forcedModel": "බලෙන් යොදන ආකෘතිය",
+    "forcedModelDesc": "මෙම යතුරෙන් කරන සෑම චැට් ඉල්ලීමක්ම, සේවාලාභියා කුමන ආකෘතියක් ඉල්ලුවද (හෝ කිසිවක් නොයැවුවද), මෙම ආකෘතියට හෝ combo එකට යොමු කරන්න. යතුරේ ආකෘති, combo සහ අයවැය සීමා තවමත් අදාළ වේ.",
+    "forcedModelPlaceholder": "බලෙන් යොදා නැත: සේවාලාභියා ඉල්ලන ආකෘතිය භාවිත කරන්න",
     "normalKeysSection": "සාමාන්ය යතුරු",
     "quotaKeysSection": "කෝටා යතුරු",
     "bypassProviderQuota": "සපයන්නාගේ කෝටා කඩඉම් මඟහරින්න",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — OpenAI-අනුකූල සැපයුම්කරු සහාය සහිත ස්වයං-වැඩිදියුණු වන RLM කේතකරණ රාමුව",
       "warp": "අභිරුචි සැපයුම්කරු සහාය සහිත Warp AI ටර්මිනලය",
       "agent-deck": "Agent Deck බහු-නියෝජිත සම්බන්ධීකාරකය",
-      "5dive": "5dive — ස්වයං-සත්කාරක කේතකරණ නියෝජිත සමූහයක්; එක් සත්යාපන පැතිකඩක් ඒ සියල්ල OmniRoute වෙත යොමු කරයි"
+      "5dive": "5dive — ස්වයං-සත්කාරක කේතකරණ නියෝජිත සමූහයක්; එක් සත්යාපන පැතිකඩක් ඒ සියල්ල OmniRoute වෙත යොමු කරයි",
+      "zed": "Zed කේත සංස්කාරකය — OpenAI-අනුකූල සැපයුම්කරුවෙකු හරහා ගොඩනඟන ලද නියෝජිතයා"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "ඉන්පසු VS Code නැවත පූරණය කර ආදාන විමසුමේ API යතුර සකසන්න.",
     "wireApiChatCompletions": "චැට් සම්පූර්ණ කිරීම් (/chat/completions)",
     "wireApiResponses": "ප්රතිචාර API (/responses)",
+    "codexModelCatalog": "Codex හි /model තේරීමේ ලැයිස්තුවේ OmniRoute මාදිලි පෙන්වන්න",
+    "codexModelCatalogHint": "ස්ථාපිත Codex හි ම මාදිලි නාමාවලියෙන් ~/.codex/omniroute-models.json ලියයි (මාදිලියකට ආසන්න වශයෙන් 60 KB). Codex උත්ශ්‍රේණි කිරීමෙන් පසු නැවත යොදන්න.",
+    "codexCatalogWarning": "Codex හි /model තේරීමේ ලැයිස්තුව යාවත්කාලීන නොවීය: ස්ථාපිත Codex මාදිලි නාමාවලිය කියවීමට OmniRoute හට නොහැකි විය.",
     "cliproxyapiActionFailed": "ක්රියාව අසාර්ථක විය",
     "cliproxyapiActionSucceeded": "ක්රියාව සාර්ථක විය",
     "cliproxyapiCheckUpdates": "යාවත්කාලීන සඳහා පරීක්ෂා කරන්න",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "සංක්ෂිප්ත CJK (文言)",
         "description": "සම්භාව්ය චීන අතිසංක්ෂිප්ත ශෛලිය (චීන භාෂාව සඳහා පමණක් ලබා ගත හැක)."
+      },
+      "antislop-ui": {
+        "label": "Antislop UI පෙරහන",
+        "description": "අරමුණ පරීක්ෂා කළ දෘශ්‍ය: සාමාන්‍ය ග්‍රේඩියන්ට්, සැකිලි පිරිසැලසුම් හෝ ක්‍රියා නොකරන පාලන නැත."
+      },
+      "antislop-copy": {
+        "label": "Antislop පෙළ සහ මානව පෙරහන",
+        "description": "අවංක පෙළ සහ මිනිසුන් සඳහා නීති: AI ලකුණු නැත, WCAG AA වෙනස, යතුරුපුවරුව, තත්ත්වයන්, ජංගම නැවත සැකසීම."
       }
     },
     "resilienceWaitForCooldown": "Cooldown සඳහා රැඳී සිටින්න",
@@ -9864,6 +9879,9 @@
     "hideQuotaRow": "මෙම කෝටා පේළිය සඟවන්න",
     "showQuotaRow": "මෙම කෝටා පේළිය පෙන්වන්න",
     "hiddenQuotaRowsLabel": "සඟවා ඇති දෑ:",
+    "quotaSpeedTitle": "මෙම ගිණුමේ මෑත විකේතන වේගය (අවසන් සාර්ථක ඉල්ලීම් {count})",
+    "quotaSpeedLine": "{model}: {avg} tok/s සාමාන්‍ය · අවසන් {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s සාමාන්‍ය · අවසන් {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "කෝටා දෘශ්යතාව යාවත්කාලීන කිරීමට අසමත් විය",
     "account": "ගිණුම",
     "modelQuotas": "මාදිලි කෝටා",
@@ -14501,7 +14519,10 @@
     "importing": "ආයාත කරමින්...",
     "apiKeyPlaceholder": "ඔබේ {providerLabel} API යතුර අලවන්න...",
     "apiKeyStoredDescription": "දිගුකාලීන බෙයරර් අක්තපත්රයක් ලෙස සංකේතනය කර ගබඩා කෙරේ. නැවුම් කිරීමේ ප්රවාහයක් නොමැත.",
-    "apiKeyRegionDescription": "යතුර සඳහා AWS කලාපය (පෙරනිමිය: us-east-1)",
+    "apiKeyRegionAuto": "ස්වයංක්‍රීයව හඳුනාගන්න (නිර්දේශිත)",
+    "apiKeyRegionUsEast1": "එක්සත් ජනපද නැගෙනහිර (උතුරු වර්ජිනියා)",
+    "apiKeyRegionEuCentral1": "යුරෝපය (ෆ්‍රෑන්ක්ෆර්ට්)",
+    "apiKeyRegionAutoDescription": "ස්වයංක්‍රීය හඳුනාගැනීම මුලින් එක්සත් ජනපද නැගෙනහිර, පසුව යුරෝපය (ෆ්‍රෑන්ක්ෆර්ට්) උත්සාහ කර යතුර ක්‍රියා කරන කලාපය සුරකියි.",
     "validating": "වලංගුභාවය පරීක්ෂා කරමින්...",
     "validateAndSaveApiKey": "API යතුර වලංගු කර සුරකින්න",
     "errorAutoDetect": "ටෝකනය ස්වයංක්රීයව හඳුනාගත නොහැකි විය",

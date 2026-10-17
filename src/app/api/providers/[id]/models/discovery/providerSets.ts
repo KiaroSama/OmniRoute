@@ -97,6 +97,9 @@ export const NAMED_OPENAI_STYLE_PROVIDERS = new Set([
   "internlm",
   "ant-ling",
   "nanogpt",
+  // NaN.Builders — GET https://api.nan.builders/v1/models is key-gated; the registry
+  // seed is only the offline fallback for its frequently-renamed model aliases.
+  "nan",
   "nara",
   // Logfare (https://logfare.ai) — free OpenAI-compatible gateway live-verified
   // 2026-08-21: GET https://logfare.ai/v1/models returns a real 20-model catalog

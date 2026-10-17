@@ -1,0 +1,1 @@
+- Preserve the explicit Anthropic provider for dotted Opus 4.5 requests and normalize its effort variants to dashed wire IDs while retaining the bare legacy alias.

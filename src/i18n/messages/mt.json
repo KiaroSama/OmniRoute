@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Neħħi l-filtri",
     "disableNonPublicModels": "Iddiżattiva Mudelli Mhux Pubbliċi",
     "disableNonPublicModelsDesc": "Irrifjuta talbiet għal mudelli li ma jkunux ġew skoperti jew li ma jkunux immarkati bħala pubbliċi fil-katalgu tal-fornitur",
+    "forcedModel": "Mudell infurzat",
+    "forcedModelDesc": "Ibgħat kull talba ta' chat magħmula b'din iċ-ċavetta lejn dan il-mudell jew combo, ikun x'ikun il-mudell li jitlob il-klijent (jew meta ma jibgħat l-ebda wieħed). Il-limiti tal-mudelli, combo u baġit taċ-ċavetta xorta japplikaw.",
+    "forcedModelPlaceholder": "Mhux infurzat: uża l-mudell li jitlob il-klijent",
     "normalKeysSection": "Ċwievet normali",
     "quotaKeysSection": "Ċwievet tal-kwota",
     "bypassProviderQuota": "Aqbeż il-limiti tal-kwota tal-fornitur",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — qafas tal-kodifikazzjoni RLM li jtejjeb lilu nnifsu b’appoġġ għal fornituri kompatibbli ma’ OpenAI",
       "warp": "Terminal Warp AI b’appoġġ għal fornitur personalizzat",
       "agent-deck": "Orkestratur ta’ diversi aġenti Agent Deck",
-      "5dive": "5dive — flotta awtoospitata ta’ aġenti tal-kodifikazzjoni; profil wieħed tal-awtentikazzjoni jidderiġihom kollha lejn OmniRoute"
+      "5dive": "5dive — flotta awtoospitata ta’ aġenti tal-kodifikazzjoni; profil wieħed tal-awtentikazzjoni jidderiġihom kollha lejn OmniRoute",
+      "zed": "Editur tal-kodiċi Zed — aġent integrat permezz ta' fornitur kompatibbli ma' OpenAI"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Imbagħad erġa' għabbi VS Code u ssettja ċ-ċavetta tal-API fil-prompt tal-input.",
     "wireApiChatCompletions": "Kompletamenti taċ-Chat (/chat/completions)",
     "wireApiResponses": "API tat-Tweġibiet (/responses)",
+    "codexModelCatalog": "Uri l-mudelli ta' OmniRoute fl-għażla /model ta' Codex",
+    "codexModelCatalogHint": "Jikteb ~/.codex/omniroute-models.json mill-katalgu tal-mudelli tal-Codex installat innifsu (madwar 60 KB għal kull mudell). Erġa' applika wara li taġġorna Codex.",
+    "codexCatalogWarning": "L-għażla /model ta' Codex ma ġietx aġġornata: OmniRoute ma setax jaqra l-katalgu tal-mudelli tal-Codex installat.",
     "cliproxyapiActionFailed": "L-azzjoni falliet",
     "cliproxyapiActionSucceeded": "L-azzjoni rnexxiet",
     "cliproxyapiCheckUpdates": "Iċċekkja għal Aġġornamenti",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK konċiż (文言)",
         "description": "Stil ultra-konċiż taċ-Ċiniż Klassiku (disponibbli biss għaċ-Ċiniż)."
+      },
+      "antislop-ui": {
+        "label": "Filtru Antislop għall-UI",
+        "description": "Viżwali b'għan ittestjat: l-ebda gradjent ġeneriku, tqassim ta' mudell jew kontrolli mejta."
+      },
+      "antislop-copy": {
+        "label": "Filtru Antislop għat-test u n-nies",
+        "description": "Test onest u regoli għan-nies: l-ebda sinjal tal-AI, kuntrast WCAG AA, tastiera, stati, adattament għall-mobile."
       }
     },
     "resilienceWaitForCooldown": "Stenna sakemm jintemm il-perjodu ta' stennija",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Aħbi din ir-ringiela tal-kwota",
     "showQuotaRow": "Uri din ir-ringiela tal-kwota",
     "hiddenQuotaRowsLabel": "Moħbija:",
+    "quotaSpeedTitle": "Veloċità reċenti tad-dekodifikazzjoni fuq dan il-kont (l-aħħar {count} talbiet b'suċċess)",
+    "quotaSpeedLine": "{model}: {avg} tok/s medja · l-aħħar {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s medja · l-aħħar {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Ma setgħetx tiġi aġġornata l-viżibbiltà tal-kwota",
     "account": "Kont",
     "modelQuotas": "Kwoti tal-Mudelli",
@@ -14501,7 +14519,10 @@
     "importing": "Qed jiġi importat...",
     "apiKeyPlaceholder": "Waħħal iċ-ċavetta API ta' {providerLabel} tiegħek...",
     "apiKeyStoredDescription": "Tinħażen kriptata bħala kredenzjali bearer b'ħajja twila. Ma hemm l-ebda proċess ta' tiġdid.",
-    "apiKeyRegionDescription": "Ir-reġjun AWS għaċ-ċavetta (predefinit: us-east-1)",
+    "apiKeyRegionAuto": "Skoperta awtomatika (rakkomandata)",
+    "apiKeyRegionUsEast1": "Lvant tal-Istati Uniti (Virginia ta' Fuq)",
+    "apiKeyRegionEuCentral1": "Ewropa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "L-iskoperta awtomatika tipprova l-ewwel il-Lvant tal-Istati Uniti, imbagħad l-Ewropa (Frankfurt), u tissejvja r-reġjun fejn taħdem iċ-ċavetta.",
     "validating": "Qed tiġi vvalidata...",
     "validateAndSaveApiKey": "Ivvalida u Ssejvja ċ-Ċavetta API",
     "errorAutoDetect": "Ma setax jiġi identifikat it-token awtomatikament",

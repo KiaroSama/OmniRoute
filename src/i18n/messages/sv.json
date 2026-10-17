@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Rensa filter",
     "disableNonPublicModels": "Inaktivera icke-offentliga modeller",
     "disableNonPublicModelsDesc": "Avvisa begäranden för modeller som inte har upptäckts eller inte är markerade som offentliga i leverantörskatalogen",
+    "forcedModel": "Påtvingad modell",
+    "forcedModelDesc": "Skicka varje chattförfrågan med den här nyckeln till den här modellen eller kombinationen, oavsett vilken modell klienten begär (eller när den inte skickar någon). Nyckelns modell-, kombinations- och budgetgränser gäller fortfarande.",
+    "forcedModelPlaceholder": "Inte påtvingad: använd modellen som klienten begär",
     "normalKeysSection": "Normala nycklar",
     "quotaKeysSection": "Kvotnycklar",
     "bypassProviderQuota": "Kringgå leverantörens kvotgränser",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — självförbättrande RLM-kodningsramverk med stöd för OpenAI-kompatibla leverantörer",
       "warp": "Warp AI-terminal med stöd för anpassad leverantör",
       "agent-deck": "Agent Deck multi-agent-orkestrerare",
-      "5dive": "5dive — självhostad flotta av kodningsagenter; en auth-profil pekar dem alla mot OmniRoute"
+      "5dive": "5dive — självhostad flotta av kodningsagenter; en auth-profil pekar dem alla mot OmniRoute",
+      "zed": "Zed-kodredigerare — inbyggd agent via en OpenAI-kompatibel leverantör"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Ladda sedan om VS Code och ange API-nyckeln i inmatningsfältet.",
     "wireApiChatCompletions": "Chattavslut (/chat/kompletteringar)",
     "wireApiResponses": "Svars-API (/responses)",
+    "codexModelCatalog": "Visa OmniRoute-modeller i Codex /model-väljare",
+    "codexModelCatalogHint": "Skriver ~/.codex/omniroute-models.json utifrån den installerade Codex egen modellkatalog (cirka 60 KB per modell). Tillämpa igen efter att du uppgraderat Codex.",
+    "codexCatalogWarning": "Codex /model-väljare uppdaterades inte: OmniRoute kunde inte läsa den installerade Codex modellkatalog.",
     "cliproxyapiActionFailed": "Åtgärden misslyckades",
     "cliproxyapiActionSucceeded": "Åtgärden lyckades",
     "cliproxyapiCheckUpdates": "Kontrollera uppdateringar",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "Kortfattad CJK (文言)",
         "description": "Klassisk kinesisk ultrakortfattad stil (endast tillgänglig för kinesiska)."
+      },
+      "antislop-ui": {
+        "label": "Antislop UI-filter",
+        "description": "Syftestestade visuella element: inga generiska övertoningar, mallayouter eller döda kontroller."
+      },
+      "antislop-copy": {
+        "label": "Antislop text- och människofilter",
+        "description": "Ärlig text och regler för människor: inga AI-tecken, WCAG AA-kontrast, tangentbord, tillstånd, mobil omflödning."
       }
     },
     "resilienceWaitForCooldown": "Vänta på nedkylning",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Dölj denna kvotrad",
     "showQuotaRow": "Visa denna kvotrad",
     "hiddenQuotaRowsLabel": "Dold:",
+    "quotaSpeedTitle": "Senaste avkodningshastighet på det här kontot (senaste {count} lyckade förfrågningarna)",
+    "quotaSpeedLine": "{model}: {avg} tok/s snitt · senaste {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s snitt · senaste {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Misslyckades med att uppdatera kvotens synlighet",
     "account": "konto",
     "modelQuotas": "Modellkvoter",
@@ -14501,7 +14519,10 @@
     "importing": "Importerar...",
     "apiKeyPlaceholder": "Klistra in din {providerLabel} API-nyckel...",
     "apiKeyStoredDescription": "Lagrad krypterad som en långlivad bärartoken. Det finns ingen uppdateringsflöde.",
-    "apiKeyRegionDescription": "AWS-region för nyckeln (standard: us-east-1)",
+    "apiKeyRegionAuto": "Identifiera automatiskt (rekommenderas)",
+    "apiKeyRegionUsEast1": "USA Öst (N. Virginia)",
+    "apiKeyRegionEuCentral1": "Europa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Automatisk identifiering provar först USA Öst, sedan Europa (Frankfurt), och sparar regionen där nyckeln fungerar.",
     "validating": "Validerar...",
     "validateAndSaveApiKey": "Validera och Spara API-nyckel",
     "errorAutoDetect": "Kunde inte automatiskt upptäcka token",

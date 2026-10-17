@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "फ़िल्टर साफ़ करें",
     "disableNonPublicModels": "गैर-सार्वजनिक मॉडल अक्षम करें",
     "disableNonPublicModelsDesc": "उन मॉडलों के अनुरोधों को अस्वीकार करें जो प्रदाता कैटलॉग में खोजे नहीं गए हैं या सार्वजनिक के रूप में चिह्नित नहीं हैं",
+    "forcedModel": "लागू मॉडल",
+    "forcedModelDesc": "इस कुंजी से किए गए हर चैट अनुरोध को इस मॉडल या कॉम्बो पर भेजें, क्लाइंट चाहे कोई भी मॉडल माँगे (या कोई न भेजे)। कुंजी की मॉडल, कॉम्बो और बजट सीमाएँ फिर भी लागू रहती हैं।",
+    "forcedModelPlaceholder": "लागू नहीं: क्लाइंट द्वारा माँगा गया मॉडल उपयोग करें",
     "normalKeysSection": "सामान्य कुंजियाँ",
     "quotaKeysSection": "कोटा कुंजियाँ",
     "bypassProviderQuota": "प्रदाता कोटा कटऑफ़ को बायपास करें",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — OpenAI-संगत प्रदाता समर्थन वाला, स्वयं में सुधार करने वाला RLM कोडिंग हार्नेस",
       "warp": "कस्टम प्रदाता समर्थन के साथ Warp AI टर्मिनल",
       "agent-deck": "Agent Deck मल्टी-एजेंट ऑर्केस्ट्रेटर",
-      "5dive": "5dive — स्व-होस्टेड कोडिंग एजेंट्स का बेड़ा; एक auth प्रोफ़ाइल सभी को OmniRoute की ओर इंगित करती है"
+      "5dive": "5dive — स्व-होस्टेड कोडिंग एजेंट्स का बेड़ा; एक auth प्रोफ़ाइल सभी को OmniRoute की ओर इंगित करती है",
+      "zed": "Zed कोड एडिटर — OpenAI-संगत प्रदाता के माध्यम से बिल्ट-इन एजेंट"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "फिर VS Code को पुनः लोड करें और इनपुट प्रॉम्प्ट में API कुंजी सेट करें।",
     "wireApiChatCompletions": "चैट पूर्णताएँ (/चैट/पूर्णियाँ)",
     "wireApiResponses": "प्रतिक्रियाएँ एपीआई (/प्रतिक्रियाएँ)",
+    "codexModelCatalog": "Codex के /model पिकर में OmniRoute मॉडल दिखाएँ",
+    "codexModelCatalogHint": "इंस्टॉल किए गए Codex के अपने मॉडल कैटलॉग से ~/.codex/omniroute-models.json लिखता है (प्रति मॉडल लगभग 60 KB)। Codex अपग्रेड करने के बाद फिर से लागू करें।",
+    "codexCatalogWarning": "Codex का /model पिकर अपडेट नहीं हुआ: OmniRoute इंस्टॉल किए गए Codex का मॉडल कैटलॉग नहीं पढ़ सका।",
     "cliproxyapiActionFailed": "क्रिया विफल हुई",
     "cliproxyapiActionSucceeded": "कार्य सफल हुआ",
     "cliproxyapiCheckUpdates": "अपडेट्स की जांच करें",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "संक्षिप्त CJK (文言)",
         "description": "शास्त्रीय-चीनी अति-संक्षिप्त शैली (केवल चीनी भाषा के लिए उपलब्ध)।"
+      },
+      "antislop-ui": {
+        "label": "Antislop UI फ़िल्टर",
+        "description": "उद्देश्य-परखे विज़ुअल: कोई सामान्य ग्रेडिएंट, टेम्पलेट लेआउट या बेकार कंट्रोल नहीं।"
+      },
+      "antislop-copy": {
+        "label": "Antislop कॉपी और मानव फ़िल्टर",
+        "description": "ईमानदार कॉपी और लोगों के लिए नियम: AI की छाप नहीं, WCAG AA कंट्रास्ट, कीबोर्ड, स्टेट, मोबाइल रीफ़्लो।"
       }
     },
     "resilienceWaitForCooldown": "ठंडा होने की प्रतीक्षा करें",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "इस कोटा पंक्ति को छिपाएं",
     "showQuotaRow": "इस कोटा पंक्ति को दिखाएं",
     "hiddenQuotaRowsLabel": "छिपा हुआ:",
+    "quotaSpeedTitle": "इस खाते पर हाल की डिकोड गति (पिछले {count} सफल अनुरोध)",
+    "quotaSpeedLine": "{model}: {avg} tok/s औसत · अंतिम {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s औसत · अंतिम {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "कोटा दृश्यता अपडेट करने में विफल",
     "account": "खाता",
     "modelQuotas": "मॉडल कोटा",
@@ -14501,7 +14519,10 @@
     "importing": "आयात कर रहा है...",
     "apiKeyPlaceholder": "अपने {providerLabel} एपीआई कुंजी चिपकाएँ...",
     "apiKeyStoredDescription": "लंबे समय तक चलने वाले बियरर क्रेडेंशियल के रूप में संग्रहीत एन्क्रिप्टेड। कोई रिफ्रेश फ्लो नहीं है।",
-    "apiKeyRegionDescription": "कुंजी के लिए AWS क्षेत्र (डिफ़ॉल्ट: us-east-1)",
+    "apiKeyRegionAuto": "स्वतः पता लगाएँ (अनुशंसित)",
+    "apiKeyRegionUsEast1": "यूएस ईस्ट (उत्तरी वर्जीनिया)",
+    "apiKeyRegionEuCentral1": "यूरोप (फ्रैंकफर्ट)",
+    "apiKeyRegionAutoDescription": "स्वतः पहचान पहले यूएस ईस्ट, फिर यूरोप (फ्रैंकफर्ट) आज़माती है और वह क्षेत्र सहेजती है जहाँ कुंजी काम करती है।",
     "validating": "मान्यकरण हो रहा है...",
     "validateAndSaveApiKey": "API कुंजी मान्य करें और सहेजें",
     "errorAutoDetect": "टोकन का स्वचालित पता नहीं लगाया जा सका",

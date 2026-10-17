@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "ล้างตัวกรอง",
     "disableNonPublicModels": "ปิดใช้งานโมเดลที่ไม่ใช่สาธารณะ",
     "disableNonPublicModelsDesc": "ปฏิเสธคำขอสำหรับโมเดลที่ไม่ถูกค้นพบหรือไม่ได้ทำเครื่องหมายว่าเป็นสาธารณะในแคตตาล็อกของผู้ให้บริการ",
+    "forcedModel": "โมเดลที่บังคับใช้",
+    "forcedModelDesc": "ส่งทุกคำขอแชตที่ใช้คีย์นี้ไปยังโมเดลหรือคอมโบนี้ ไม่ว่าไคลเอนต์จะขอโมเดลใด (หรือเมื่อไม่ได้ส่งมาเลย) ขีดจำกัดโมเดล คอมโบ และงบประมาณของคีย์ยังคงมีผล",
+    "forcedModelPlaceholder": "ไม่บังคับ: ใช้โมเดลที่ไคลเอนต์ร้องขอ",
     "normalKeysSection": "คีย์ปกติ",
     "quotaKeysSection": "คีย์โควตา",
     "bypassProviderQuota": "ข้ามการตัดโควตาของผู้ให้บริการ",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — ระบบการเขียนโค้ด RLM ที่พัฒนาตนเองได้ พร้อมรองรับผู้ให้บริการที่เข้ากันได้กับ OpenAI",
       "warp": "เทอร์มินัล Warp AI ที่รองรับผู้ให้บริการแบบกำหนดเอง",
       "agent-deck": "ตัวประสานงานหลายเอเจนต์ Agent Deck",
-      "5dive": "5dive — ฟลีตเอเจนต์เขียนโค้ดที่โฮสต์เอง; โปรไฟล์ auth เดียวชี้ทั้งหมดไปที่ OmniRoute"
+      "5dive": "5dive — ฟลีตเอเจนต์เขียนโค้ดที่โฮสต์เอง; โปรไฟล์ auth เดียวชี้ทั้งหมดไปที่ OmniRoute",
+      "zed": "โปรแกรมแก้ไขโค้ด Zed — เอเจนต์ในตัวผ่านผู้ให้บริการที่เข้ากันได้กับ OpenAI"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "จากนั้นโหลด VS Code ใหม่ และตั้งค่าคีย์ API ในช่องป้อนข้อมูล",
     "wireApiChatCompletions": "เสร็จสิ้นการแชท (/แชท/เสร็จสิ้น)",
     "wireApiResponses": "API การตอบกลับ (/การตอบกลับ)",
+    "codexModelCatalog": "แสดงโมเดลของ OmniRoute ในตัวเลือก /model ของ Codex",
+    "codexModelCatalogHint": "เขียน ~/.codex/omniroute-models.json จากแคตตาล็อกโมเดลของ Codex ที่ติดตั้งไว้เอง (ประมาณ 60 KB ต่อโมเดล) ให้ใช้อีกครั้งหลังอัปเกรด Codex",
+    "codexCatalogWarning": "ตัวเลือก /model ของ Codex ไม่ได้รับการอัปเดต: OmniRoute อ่านแคตตาล็อกโมเดลของ Codex ที่ติดตั้งไว้ไม่ได้",
     "cliproxyapiActionFailed": "การดำเนินการล้มเหลว",
     "cliproxyapiActionSucceeded": "ดำเนินการสำเร็จ",
     "cliproxyapiCheckUpdates": "ตรวจสอบการอัปเดต",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK แบบกระชับ (文言)",
         "description": "สไตล์ภาษาจีนคลาสสิกแบบกระชับอย่างยิ่ง (ใช้ได้เฉพาะภาษาจีนเท่านั้น)"
+      },
+      "antislop-ui": {
+        "label": "ตัวกรอง UI แบบ Antislop",
+        "description": "ภาพที่ผ่านการทดสอบจุดประสงค์: ไม่มีเกรเดียนต์ทั่วไป เลย์เอาต์แบบเทมเพลต หรือปุ่มควบคุมที่ใช้ไม่ได้"
+      },
+      "antislop-copy": {
+        "label": "ตัวกรองข้อความและผู้ใช้แบบ Antislop",
+        "description": "ข้อความที่ซื่อตรงพร้อมกฎเพื่อผู้คน: ไม่มีร่องรอย AI, คอนทราสต์ WCAG AA, คีย์บอร์ด, สถานะ, การจัดเรียงใหม่บนมือถือ"
       }
     },
     "resilienceWaitForCooldown": "รอคูลดาวน์",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "ซ่อนแถวโควตานี้",
     "showQuotaRow": "แสดงแถวโควตานี้",
     "hiddenQuotaRowsLabel": "ซ่อนอยู่:",
+    "quotaSpeedTitle": "ความเร็วถอดรหัสล่าสุดของบัญชีนี้ ({count} คำขอที่สำเร็จล่าสุด)",
+    "quotaSpeedLine": "{model}: {avg} tok/s เฉลี่ย · ล่าสุด {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s เฉลี่ย · ล่าสุด {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "ไม่สามารถอัปเดตการแสดงผลโควตาได้",
     "account": "บัญชี",
     "modelQuotas": "โควต้าโมเดล",
@@ -14501,7 +14519,10 @@
     "importing": "กำลังนำเข้า...",
     "apiKeyPlaceholder": "วางคีย์ API {providerLabel} ของคุณ...",
     "apiKeyStoredDescription": "เก็บข้อมูลที่เข้ารหัสเป็นข้อมูลประจำตัวที่มีอายุยาวนาน ไม่มีการไหลของการรีเฟรช。",
-    "apiKeyRegionDescription": "ภูมิภาค AWS สำหรับกุญแจ (ค่าเริ่มต้น: us-east-1)",
+    "apiKeyRegionAuto": "ตรวจหาอัตโนมัติ (แนะนำ)",
+    "apiKeyRegionUsEast1": "สหรัฐฯ ฝั่งตะวันออก (เวอร์จิเนียเหนือ)",
+    "apiKeyRegionEuCentral1": "ยุโรป (แฟรงก์เฟิร์ต)",
+    "apiKeyRegionAutoDescription": "การตรวจหาอัตโนมัติจะลองสหรัฐฯ ฝั่งตะวันออกก่อน จากนั้นยุโรป (แฟรงก์เฟิร์ต) และบันทึกภูมิภาคที่คีย์ใช้งานได้",
     "validating": "กำลังตรวจสอบ...",
     "validateAndSaveApiKey": "ตรวจสอบและบันทึก API Key",
     "errorAutoDetect": "ไม่สามารถตรวจจับโทเค็นโดยอัตโนมัติได้",

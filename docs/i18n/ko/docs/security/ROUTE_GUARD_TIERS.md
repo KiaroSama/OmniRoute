@@ -168,6 +168,23 @@ Tunnel, Tailscale, Ngrok) 뒤에서 실행하더라도 루프백 검사는 위�
 `enableObsidianVaultSync()`는 데이터 디렉터리 자체이거나, 그 내부에 있거나, 이를
 포함하는 볼트를 거부합니다.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### 신규 설치 부트스트랩은 `Host`가 아닌 실제 피어를 기준으로 루프백에서만 허용됨
 
 관리 비밀번호가 구성되지 않았고 `INITIAL_PASSWORD`도 없으면,

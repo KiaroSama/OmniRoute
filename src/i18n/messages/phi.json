@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "I-clear ang mga filter",
     "disableNonPublicModels": "I-disable ang Mga Hindi Pampublikong Modelo",
     "disableNonPublicModelsDesc": "Tanggihan ang mga kahilingan para sa mga modelong hindi natuklasan o hindi minarkahan bilang pampubliko sa catalog ng provider",
+    "forcedModel": "Ipinapatupad na modelo",
+    "forcedModelDesc": "Ipadala ang bawat chat request na ginawa gamit ang key na ito sa modelong ito o combo, anuman ang modelong hinihingi ng client (o kapag wala itong ipinadala). Patuloy na umiiral ang mga limitasyon sa modelo, combo at budget ng key.",
+    "forcedModelPlaceholder": "Hindi ipinapatupad: gamitin ang modelong hinihingi ng client",
     "normalKeysSection": "Mga normal na key",
     "quotaKeysSection": "Mga quota key",
     "bypassProviderQuota": "I-bypass ang mga cutoff ng quota ng provider",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — kusang humuhusay na RLM coding harness na may suporta para sa OpenAI-compatible na provider",
       "warp": "Warp AI terminal na may suporta sa custom provider",
       "agent-deck": "Agent Deck na tagapag-orkestra ng maraming ahente",
-      "5dive": "5dive — self-hosted fleet ng coding agents; isang auth profile ang nagtuturo sa kanilang lahat sa OmniRoute"
+      "5dive": "5dive — self-hosted fleet ng coding agents; isang auth profile ang nagtuturo sa kanilang lahat sa OmniRoute",
+      "zed": "Zed code editor — built-in na agent sa pamamagitan ng provider na compatible sa OpenAI"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Pagkatapos ay i-reload ang VS Code at i-set ang API key sa input prompt.",
     "wireApiChatCompletions": "Mga Pagkumpleto ng Chat (/chat/pagkumpleto)",
     "wireApiResponses": "Responses API (/mga tugon)",
+    "codexModelCatalog": "Ipakita ang mga model ng OmniRoute sa /model picker ng Codex",
+    "codexModelCatalogHint": "Isinusulat ang ~/.codex/omniroute-models.json mula sa sariling katalogo ng model ng naka-install na Codex (mga 60 KB bawat model). Ilapat muli pagkatapos i-upgrade ang Codex.",
+    "codexCatalogWarning": "Hindi na-update ang /model picker ng Codex: hindi nabasa ng OmniRoute ang katalogo ng model ng naka-install na Codex.",
     "cliproxyapiActionFailed": "Nabigong aksyon",
     "cliproxyapiActionSucceeded": "Matagumpay ang aksyon",
     "cliproxyapiCheckUpdates": "Suriin ang Mga Update",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "Maikling CJK (文言)",
         "description": "Klasikong Tsino na ultra-maikling estilo (magagamit lamang para sa Tsino)."
+      },
+      "antislop-ui": {
+        "label": "Antislop na filter ng UI",
+        "description": "Mga visual na nasubok ang layunin: walang generic na gradient, template na layout o patay na kontrol."
+      },
+      "antislop-copy": {
+        "label": "Antislop na filter ng teksto at tao",
+        "description": "Tapat na teksto at mga patakaran para sa tao: walang bakas ng AI, WCAG AA na contrast, keyboard, mga estado, mobile reflow."
       }
     },
     "resilienceWaitForCooldown": "Maghintay para sa Cooldown",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Itago ang row ng quota na ito",
     "showQuotaRow": "Ipakita ang row ng quota na ito",
     "hiddenQuotaRowsLabel": "Nakatago:",
+    "quotaSpeedTitle": "Kamakailang bilis ng decode sa account na ito (huling {count} matagumpay na kahilingan)",
+    "quotaSpeedLine": "{model}: {avg} tok/s karaniwan · huli {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s karaniwan · huli {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Hindi ma-update ang visibility ng quota",
     "account": "Account",
     "modelQuotas": "Mga Modelong Quota",
@@ -14501,7 +14519,10 @@
     "importing": "Nag-iimport...",
     "apiKeyPlaceholder": "I-paste ang iyong {providerLabel} API key...",
     "apiKeyStoredDescription": "Naka-imbak na naka-encrypt bilang isang pangmatagalang bearer credential. Walang refresh flow.",
-    "apiKeyRegionDescription": "AWS rehiyon para sa susi (default: us-east-1)",
+    "apiKeyRegionAuto": "Awtomatikong tuklasin (inirerekomenda)",
+    "apiKeyRegionUsEast1": "US East (Hilagang Virginia)",
+    "apiKeyRegionEuCentral1": "Europa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Sinusubukan muna ng awtomatikong pagtuklas ang US East, pagkatapos ang Europe (Frankfurt), at sine-save ang rehiyon kung saan gumagana ang key.",
     "validating": "Ninvalidate...",
     "validateAndSaveApiKey": "I-validate at I-save ang API Key",
     "errorAutoDetect": "Hindi ma-auto-detect ang token",

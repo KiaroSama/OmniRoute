@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "សម្អាតតម្រង",
     "disableNonPublicModels": "បិទម៉ូដែលមិនសាធារណៈ",
     "disableNonPublicModelsDesc": "បដិសេធសំណើសម្រាប់ម៉ូដែលដែលមិនត្រូវបានរកឃើញ ឬមិនត្រូវបានសម្គាល់ថាជាសាធារណៈក្នុងកាតាឡុករបស់អ្នកផ្តល់សេវា",
+    "forcedModel": "ម៉ូដែលបង្ខំ",
+    "forcedModelDesc": "បញ្ជូនសំណើជជែកនីមួយៗដែលធ្វើដោយសោនេះទៅម៉ូដែល ឬ combo នេះ មិនថាអតិថិជនស្នើម៉ូដែលណាក៏ដោយ (ឬនៅពេលវាមិនផ្ញើម៉ូដែលណាមួយ)។ ដែនកំណត់ម៉ូដែល combo និងថវិការបស់សោនៅតែអនុវត្ត។",
+    "forcedModelPlaceholder": "មិនបង្ខំ៖ ប្រើម៉ូដែលដែលអតិថិជនស្នើ",
     "normalKeysSection": "សោធម្មតា",
     "quotaKeysSection": "សោកូតា",
     "bypassProviderQuota": "រំលងកម្រិតកាត់ផ្ដាច់កូតារបស់អ្នកផ្តល់សេវា",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — ក្របខណ្ឌសរសេរកូដ RLM ដែលអាចកែលម្អខ្លួនឯង និងគាំទ្រអ្នកផ្តល់សេវាដែលឆបគ្នាជាមួយ OpenAI",
       "warp": "Warp AI terminal ដែលគាំទ្រអ្នកផ្តល់សេវាផ្ទាល់ខ្លួន",
       "agent-deck": "ប្រព័ន្ធសម្របសម្រួលភ្នាក់ងារច្រើន Agent Deck",
-      "5dive": "5dive — ក្រុមភ្នាក់ងារសរសេរកូដដែលបង្ហោះដោយខ្លួនឯង; កម្រងព័ត៌មានផ្ទៀងផ្ទាត់មួយតភ្ជាប់ពួកវាទាំងអស់ទៅ OmniRoute"
+      "5dive": "5dive — ក្រុមភ្នាក់ងារសរសេរកូដដែលបង្ហោះដោយខ្លួនឯង; កម្រងព័ត៌មានផ្ទៀងផ្ទាត់មួយតភ្ជាប់ពួកវាទាំងអស់ទៅ OmniRoute",
+      "zed": "កម្មវិធីកែកូដ Zed — ភ្នាក់ងារភ្ជាប់មកជាមួយ តាមរយៈអ្នកផ្តល់សេវាដែលត្រូវគ្នានឹង OpenAI"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "បន្ទាប់មក ផ្ទុក VS Code ឡើងវិញ ហើយកំណត់សោ API នៅក្នុងប្រអប់បញ្ចូល។",
     "wireApiChatCompletions": "ការបំពេញការជជែក (/chat/completions)",
     "wireApiResponses": "API ការឆ្លើយតប (/responses)",
+    "codexModelCatalog": "បង្ហាញម៉ូដែល OmniRoute នៅក្នុងកម្មវិធីជ្រើស /model របស់ Codex",
+    "codexModelCatalogHint": "សរសេរ ~/.codex/omniroute-models.json ពីកាតាឡុកម៉ូដែលផ្ទាល់របស់ Codex ដែលបានដំឡើង (ប្រហែល 60 KB ក្នុងមួយម៉ូដែល)។ សូមអនុវត្តម្តងទៀតបន្ទាប់ពីធ្វើបច្ចុប្បន្នភាព Codex។",
+    "codexCatalogWarning": "កម្មវិធីជ្រើស /model របស់ Codex មិនត្រូវបានធ្វើបច្ចុប្បន្នភាពទេ៖ OmniRoute មិនអាចអានកាតាឡុកម៉ូដែលរបស់ Codex ដែលបានដំឡើងបានទេ។",
     "cliproxyapiActionFailed": "សកម្មភាពបានបរាជ័យ",
     "cliproxyapiActionSucceeded": "សកម្មភាពបានជោគជ័យ",
     "cliproxyapiCheckUpdates": "ពិនិត្យមើលបច្ចុប្បន្នភាព",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK ខ្លីខ្លឹម (文言)",
         "description": "រចនាប័ទ្មភាសាចិនបុរាណខ្លីបំផុត (មានសម្រាប់តែភាសាចិន)។"
+      },
+      "antislop-ui": {
+        "label": "តម្រង UI Antislop",
+        "description": "រូបភាពដែលបានសាកល្បងគោលបំណង៖ គ្មាន gradient ទូទៅ ប្លង់គំរូ ឬវត្ថុបញ្ជាដែលមិនដំណើរការ។"
+      },
+      "antislop-copy": {
+        "label": "តម្រងអត្ថបទ និងមនុស្ស Antislop",
+        "description": "អត្ថបទស្មោះត្រង់ និងច្បាប់សម្រាប់មនុស្ស៖ គ្មានស្លាកស្នាម AI កម្រិតពន្លឺប្រៀបធៀប WCAG AA ក្ដារចុច ស្ថានភាព ការរៀបចំឡើងវិញលើទូរសព្ទ។"
       }
     },
     "resilienceWaitForCooldown": "រង់ចាំរយៈពេលសម្រាក",
@@ -9864,6 +9879,9 @@
     "hideQuotaRow": "លាក់ជួរកូតានេះ",
     "showQuotaRow": "បង្ហាញជួរកូតានេះ",
     "hiddenQuotaRowsLabel": "បានលាក់៖",
+    "quotaSpeedTitle": "ល្បឿនឌិកូដថ្មីៗលើគណនីនេះ (សំណើជោគជ័យ {count} ចុងក្រោយ)",
+    "quotaSpeedLine": "{model}: {avg} tok/s មធ្យម · ចុងក្រោយ {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s មធ្យម · ចុងក្រោយ {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "បានបរាជ័យក្នុងការធ្វើបច្ចុប្បន្នភាពការបង្ហាញកូតា",
     "account": "គណនី",
     "modelQuotas": "កូតារបស់ម៉ូដែល",
@@ -14501,7 +14519,10 @@
     "importing": "កំពុងនាំចូល...",
     "apiKeyPlaceholder": "បិទភ្ជាប់ {providerLabel} API key របស់អ្នក...",
     "apiKeyStoredDescription": "ត្រូវបានរក្សាទុកដោយអ៊ិនគ្រីបជាលិខិតសម្គាល់អត្តសញ្ញាណប្រភេទ bearer ដែលមានសុពលភាពរយៈពេលវែង។ មិនមានដំណើរការ refresh ទេ។",
-    "apiKeyRegionDescription": "តំបន់ AWS សម្រាប់សោ (លំនាំដើម៖ us-east-1)",
+    "apiKeyRegionAuto": "រកឃើញដោយស្វ័យប្រវត្តិ (ណែនាំ)",
+    "apiKeyRegionUsEast1": "សហរដ្ឋអាមេរិកខាងកើត (វឺជីនៀខាងជើង)",
+    "apiKeyRegionEuCentral1": "អឺរ៉ុប (ហ្វ្រែងហ្វួត)",
+    "apiKeyRegionAutoDescription": "ការរកឃើញដោយស្វ័យប្រវត្តិសាកល្បងសហរដ្ឋអាមេរិកខាងកើតមុន បន្ទាប់មកអឺរ៉ុប (ហ្វ្រែងហ្វួត) ហើយរក្សាទុកតំបន់ដែលកូនសោដំណើរការ។",
     "validating": "កំពុងផ្ទៀងផ្ទាត់...",
     "validateAndSaveApiKey": "ផ្ទៀងផ្ទាត់ និងរក្សាទុក API Key",
     "errorAutoDetect": "មិនអាចរកឃើញ token ដោយស្វ័យប្រវត្តិបានទេ",

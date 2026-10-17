@@ -184,6 +184,8 @@ export const updateKeyPermissionsSchema = z
     codexServiceMode: z.enum(API_KEY_CODEX_SERVICE_MODES).optional(),
     allowAutoCombos: z.boolean().optional(),
     catalogScope: z.enum(["all", "combos", "models"]).optional(),
+    // Per-key enforced routing target; null (or blank) clears the pin.
+    forcedModel: z.string().trim().max(300).nullable().optional(),
     cacheDefaultMode: z.enum(["legacy", "bypass"]).optional(),
     disableNonPublicModels: z.boolean().optional(),
     allowUsageCommand: z.boolean().optional(),
@@ -245,6 +247,7 @@ export const updateKeyPermissionsSchema = z
       value.codexServiceMode === undefined &&
       value.allowAutoCombos === undefined &&
       value.catalogScope === undefined &&
+      value.forcedModel === undefined &&
       value.cacheDefaultMode === undefined &&
       value.disableNonPublicModels === undefined &&
       value.allowUsageCommand === undefined &&

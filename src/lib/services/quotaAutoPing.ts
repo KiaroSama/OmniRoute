@@ -41,6 +41,7 @@ import {
   QUOTA_AUTOPING_TICK_INTERVAL_MS,
   type QuotaAutoPingProviderConfig,
 } from "@/shared/constants/quotaAutoPing";
+import { readCodexPingOutcome } from "./quotaAutoPingOutcome";
 
 const log = logger("QuotaAutoPing");
 
@@ -250,24 +251,6 @@ function buildCodexPingBody(providerConfig: ResolvedQuotaAutoPingProviderConfig)
   };
 }
 
-async function drainResponseBody(response: Response | undefined): Promise<void> {
-  if (!response) return;
-  if (typeof response.text === "function") {
-    await response.text().catch(() => undefined);
-    return;
-  }
-  const reader = (response as { body?: ReadableStream<Uint8Array> }).body?.getReader?.();
-  if (!reader) return;
-  try {
-    for (;;) {
-      const { done } = await reader.read();
-      if (done) return;
-    }
-  } finally {
-    reader.releaseLock?.();
-  }
-}
-
 async function sendCodexPing(
   connection: QuotaAutoPingConnection,
   providerConfig: ResolvedQuotaAutoPingProviderConfig,
@@ -294,9 +277,9 @@ async function sendCodexPing(
     }
     return false;
   }
-  // Codex only starts the 5h window after the streaming response completes.
-  await drainResponseBody(response);
-  return true;
+  // Codex only starts the 5h window after the streaming response completes, and it
+  // reports many failures inside a 200 stream — only `response.completed` counts.
+  return (await readCodexPingOutcome(response)) === "completed";
 }
 
 function shouldPingForReset(

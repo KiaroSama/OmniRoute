@@ -118,6 +118,23 @@
 
 `/api/settings/obsidian` מכסה את נתיב הצאצא שלו `/webdav`: `POST` מפנה את שירות קבצי ה-WebDAV – המוגש על ידי שכבת ה-Node המותאמת אישית לפני Next.js, מחוץ לצינור עיבוד זה – לשורש שנבחר על ידי הקורא ומחזיר אישורי Basic חדשים שנוצרו, `DELETE` מסובב אותם, וה-`POST` ההורה שומר את אסימון ה-Obsidian REST API. GHSA-62vw רק מיסך את חשיפת הסיסמה ב-`GET`; ההנפקה עדיין הייתה בשכבת ה-fail-open (GHSA-7pq4-8pvv-rx7r). `enableObsidianVaultSync()` בנוסף מסרב לכספת שהיא, נמצאת בתוך, או מכילה את ספריית הנתונים.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### אתחול התקנה חדשה הוא loopback-only — על ידי עמית אמיתי, לא `Host`
 
 ללא סיסמת ניהול מוגדרת (וללא `INITIAL_PASSWORD`), `isAuthRequired()` ב-`src/shared/utils/apiAuth.ts` משאיר את האתחול האנונימי פתוח **רק עבור עמיתי loopback**. Loopback נקבע מאותות העמיתים המהימנים, לפי הסדר: עמית ה-TCP האמיתי עם חותמת אסימון (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, מה שהמדיניות רואה), פסיקת `AUTHZ_HEADER_PEER_LOCALITY` של ה-pipeline עצמו (מה שמטפלי הנתיבים רואים, מהימן רק כאשר `OMNIROUTE_PEER_STAMP_TOKEN` מוגדר), או עמית socket אמיתי עבור קוראים ישירים. `Host` / `nextUrl.hostname` לעולם אינם נבדקים, וכתיבת הסיסמה הראשונה (`POST /api/settings/require-login`) כפופה לאותה מגבלה במקום להיות פתוחה לכל עמית רשת (GHSA-7pq4-8pvv-rx7r). `managementPolicy` מעביר את פסיקת `peerContext` שלו במפורש, כך שכותרות הבקשה המקורית (לפני הסרה) לעולם אינן קובעות זאת.

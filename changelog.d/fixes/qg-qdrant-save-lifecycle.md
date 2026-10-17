@@ -1,0 +1,1 @@
+- Dispose Qdrant save-notification timers when leaving the settings card, keep each saved notice visible for its own interval, and ignore save completions after unmount; unmount the UI test fixtures before discarding their DOM.

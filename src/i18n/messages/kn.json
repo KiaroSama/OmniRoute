@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "ಫಿಲ್ಟರ್ಗಳನ್ನು ತೆರವುಗೊಳಿಸಿ",
     "disableNonPublicModels": "ಸಾರ್ವಜನಿಕವಲ್ಲದ ಮಾದರಿಗಳನ್ನು ಅಸಕ್ರಿಯಗೊಳಿಸಿ",
     "disableNonPublicModelsDesc": "ಪ್ರೊವೈಡರ್ ಕ್ಯಾಟಲಾಗ್ನಲ್ಲಿ ಪತ್ತೆಯಾಗದ ಅಥವಾ ಸಾರ್ವಜನಿಕವೆಂದು ಗುರುತಿಸದ ಮಾದರಿಗಳ ವಿನಂತಿಗಳನ್ನು ತಿರಸ್ಕರಿಸಿ",
+    "forcedModel": "ಬಲವಂತದ ಮಾದರಿ",
+    "forcedModelDesc": "ಈ ಕೀಲಿಯಿಂದ ಮಾಡಲಾದ ಪ್ರತಿಯೊಂದು ಚಾಟ್ ವಿನಂತಿಯನ್ನು, ಕ್ಲೈಂಟ್ ಯಾವ ಮಾದರಿಯನ್ನು ಕೇಳಿದರೂ (ಅಥವಾ ಯಾವುದನ್ನೂ ಕಳುಹಿಸದಿದ್ದರೂ), ಈ ಮಾದರಿ ಅಥವಾ ಕಾಂಬೊಗೆ ಕಳುಹಿಸಿ. ಕೀಲಿಯ ಮಾದರಿ, ಕಾಂಬೊ ಮತ್ತು ಬಜೆಟ್ ಮಿತಿಗಳು ಇನ್ನೂ ಅನ್ವಯಿಸುತ್ತವೆ.",
+    "forcedModelPlaceholder": "ಬಲವಂತವಿಲ್ಲ: ಕ್ಲೈಂಟ್ ಕೇಳುವ ಮಾದರಿಯನ್ನು ಬಳಸಿ",
     "normalKeysSection": "ಸಾಮಾನ್ಯ ಕೀಗಳು",
     "quotaKeysSection": "ಕ್ವೋಟಾ ಕೀಗಳು",
     "bypassProviderQuota": "ಪ್ರೊವೈಡರ್ ಕ್ವೋಟಾ ಕಟ್-ಆಫ್ಗಳನ್ನು ಬೈಪಾಸ್ ಮಾಡಿ",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — OpenAI-ಹೊಂದಾಣಿಕೆಯ ಪ್ರೊವೈಡರ್ ಬೆಂಬಲವನ್ನು ಹೊಂದಿರುವ ಸ್ವಯಂ-ಸುಧಾರಣೆಯ RLM ಕೋಡಿಂಗ್ ಹಾರ್ನೆಸ್",
       "warp": "ಕಸ್ಟಮ್ ಪ್ರೊವೈಡರ್ ಬೆಂಬಲವನ್ನು ಹೊಂದಿರುವ Warp AI ಟರ್ಮಿನಲ್",
       "agent-deck": "Agent Deck ಮಲ್ಟಿ-ಏಜೆಂಟ್ ಆರ್ಕೆಸ್ಟ್ರೇಟರ್",
-      "5dive": "5dive — ಸ್ವಯಂ-ಹೋಸ್ಟ್ ಮಾಡಲಾದ ಕೋಡಿಂಗ್ ಏಜೆಂಟ್ಗಳ ಫ್ಲೀಟ್; ಒಂದೇ ಆಥ್ ಪ್ರೊಫೈಲ್ ಅವೆಲ್ಲವನ್ನೂ OmniRoute ಕಡೆಗೆ ನಿರ್ದೇಶಿಸುತ್ತದೆ"
+      "5dive": "5dive — ಸ್ವಯಂ-ಹೋಸ್ಟ್ ಮಾಡಲಾದ ಕೋಡಿಂಗ್ ಏಜೆಂಟ್ಗಳ ಫ್ಲೀಟ್; ಒಂದೇ ಆಥ್ ಪ್ರೊಫೈಲ್ ಅವೆಲ್ಲವನ್ನೂ OmniRoute ಕಡೆಗೆ ನಿರ್ದೇಶಿಸುತ್ತದೆ",
+      "zed": "Zed ಕೋಡ್ ಎಡಿಟರ್ — OpenAI-ಹೊಂದಾಣಿಕೆಯ ಪೂರೈಕೆದಾರರ ಮೂಲಕ ಅಂತರ್ನಿರ್ಮಿತ ಏಜೆಂಟ್"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "ನಂತರ VS Code ಅನ್ನು ಮರುಲೋಡ್ ಮಾಡಿ ಮತ್ತು ಇನ್ಪುಟ್ ಪ್ರಾಂಪ್ಟ್ನಲ್ಲಿ API ಕೀ ಅನ್ನು ಹೊಂದಿಸಿ.",
     "wireApiChatCompletions": "ಚಾಟ್ ಪೂರ್ಣಗೊಳಿಸುವಿಕೆಗಳು (/chat/completions)",
     "wireApiResponses": "ಪ್ರತಿಕ್ರಿಯೆಗಳ API (/responses)",
+    "codexModelCatalog": "Codex ನ /model ಪಿಕರ್‌ನಲ್ಲಿ OmniRoute ಮಾದರಿಗಳನ್ನು ತೋರಿಸಿ",
+    "codexModelCatalogHint": "ಸ್ಥಾಪಿಸಲಾದ Codex ನ ಸ್ವಂತ ಮಾದರಿ ಕ್ಯಾಟಲಾಗ್‌ನಿಂದ ~/.codex/omniroute-models.json ಬರೆಯುತ್ತದೆ (ಪ್ರತಿ ಮಾದರಿಗೆ ಸುಮಾರು 60 KB). Codex ಅಪ್‌ಗ್ರೇಡ್ ಮಾಡಿದ ನಂತರ ಮತ್ತೆ ಅನ್ವಯಿಸಿ.",
+    "codexCatalogWarning": "Codex ನ /model ಪಿಕರ್ ನವೀಕರಿಸಲಾಗಿಲ್ಲ: ಸ್ಥಾಪಿಸಲಾದ Codex ಮಾದರಿ ಕ್ಯಾಟಲಾಗ್ ಅನ್ನು OmniRoute ಓದಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
     "cliproxyapiActionFailed": "ಕ್ರಿಯೆ ವಿಫಲವಾಗಿದೆ",
     "cliproxyapiActionSucceeded": "ಕ್ರಿಯೆ ಯಶಸ್ವಿಯಾಗಿದೆ",
     "cliproxyapiCheckUpdates": "ನವೀಕರಣಗಳನ್ನು ಪರಿಶೀಲಿಸಿ",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "ಸಂಕ್ಷಿಪ್ತ CJK (文言)",
         "description": "ಅತ್ಯಂತ ಸಂಕ್ಷಿಪ್ತ ಶಾಸ್ತ್ರೀಯ-ಚೀನೀ ಶೈಲಿ (ಚೀನೀ ಭಾಷೆಗೆ ಮಾತ್ರ ಲಭ್ಯ)."
+      },
+      "antislop-ui": {
+        "label": "Antislop UI ಫಿಲ್ಟರ್",
+        "description": "ಉದ್ದೇಶ-ಪರೀಕ್ಷಿತ ದೃಶ್ಯಗಳು: ಸಾಮಾನ್ಯ ಗ್ರೇಡಿಯಂಟ್‌ಗಳು, ಟೆಂಪ್ಲೇಟ್ ಲೇಔಟ್‌ಗಳು ಅಥವಾ ನಿಷ್ಕ್ರಿಯ ನಿಯಂತ್ರಣಗಳಿಲ್ಲ."
+      },
+      "antislop-copy": {
+        "label": "Antislop ಪಠ್ಯ ಮತ್ತು ಮಾನವ ಫಿಲ್ಟರ್",
+        "description": "ಪ್ರಾಮಾಣಿಕ ಪಠ್ಯ ಮತ್ತು ಜನರಿಗಾಗಿ ನಿಯಮಗಳು: AI ಗುರುತುಗಳಿಲ್ಲ, WCAG AA ಕಾಂಟ್ರಾಸ್ಟ್, ಕೀಬೋರ್ಡ್, ಸ್ಥಿತಿಗಳು, ಮೊಬೈಲ್ ರಿಫ್ಲೋ."
       }
     },
     "resilienceWaitForCooldown": "ಕೂಲ್ಡೌನ್ ಮುಗಿಯುವವರೆಗೆ ಕಾಯಿರಿ",
@@ -9864,6 +9879,9 @@
     "hideQuotaRow": "ಈ ಕೋಟಾ ಸಾಲನ್ನು ಮರೆಮಾಡಿ",
     "showQuotaRow": "ಈ ಕೋಟಾ ಸಾಲನ್ನು ತೋರಿಸಿ",
     "hiddenQuotaRowsLabel": "ಮರೆಮಾಡಲಾಗಿದೆ:",
+    "quotaSpeedTitle": "ಈ ಖಾತೆಯಲ್ಲಿ ಇತ್ತೀಚಿನ ಡಿಕೋಡ್ ವೇಗ (ಕೊನೆಯ {count} ಯಶಸ್ವಿ ವಿನಂತಿಗಳು)",
+    "quotaSpeedLine": "{model}: {avg} tok/s ಸರಾಸರಿ · ಕೊನೆಯ {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s ಸರಾಸರಿ · ಕೊನೆಯ {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "ಕೋಟಾ ಗೋಚರತೆಯನ್ನು ನವೀಕರಿಸಲು ವಿಫಲವಾಗಿದೆ",
     "account": "ಖಾತೆ",
     "modelQuotas": "ಮಾದರಿ ಕೋಟಾಗಳು",
@@ -14501,7 +14519,10 @@
     "importing": "ಆಮದು ಮಾಡಲಾಗುತ್ತಿದೆ...",
     "apiKeyPlaceholder": "ನಿಮ್ಮ {providerLabel} API ಕೀಯನ್ನು ಅಂಟಿಸಿ...",
     "apiKeyStoredDescription": "ದೀರ್ಘಾವಧಿಯ ಬೇರರ್ ರುಜುವಾತಾಗಿ ಎನ್ಕ್ರಿಪ್ಟ್ ಮಾಡಿ ಸಂಗ್ರಹಿಸಲಾಗಿದೆ. ಯಾವುದೇ ರಿಫ್ರೆಶ್ ಪ್ರಕ್ರಿಯೆ ಇಲ್ಲ.",
-    "apiKeyRegionDescription": "ಕೀಗಾಗಿ AWS ಪ್ರದೇಶ (ಡೀಫಾಲ್ಟ್: us-east-1)",
+    "apiKeyRegionAuto": "ಸ್ವಯಂ ಪತ್ತೆ (ಶಿಫಾರಸು ಮಾಡಲಾಗಿದೆ)",
+    "apiKeyRegionUsEast1": "ಯುಎಸ್ ಈಸ್ಟ್ (ಉತ್ತರ ವರ್ಜೀನಿಯಾ)",
+    "apiKeyRegionEuCentral1": "ಯುರೋಪ್ (ಫ್ರಾಂಕ್‌ಫರ್ಟ್)",
+    "apiKeyRegionAutoDescription": "ಸ್ವಯಂ ಪತ್ತೆ ಮೊದಲು ಯುಎಸ್ ಈಸ್ಟ್, ನಂತರ ಯುರೋಪ್ (ಫ್ರಾಂಕ್‌ಫರ್ಟ್) ಅನ್ನು ಪ್ರಯತ್ನಿಸುತ್ತದೆ ಮತ್ತು ಕೀ ಕಾರ್ಯನಿರ್ವಹಿಸುವ ಪ್ರದೇಶವನ್ನು ಉಳಿಸುತ್ತದೆ.",
     "validating": "ಮೌಲ್ಯೀಕರಿಸಲಾಗುತ್ತಿದೆ...",
     "validateAndSaveApiKey": "API ಕೀಯನ್ನು ಮೌಲ್ಯೀಕರಿಸಿ ಮತ್ತು ಉಳಿಸಿ",
     "errorAutoDetect": "ಟೋಕನ್ ಅನ್ನು ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಪತ್ತೆಹಚ್ಚಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",

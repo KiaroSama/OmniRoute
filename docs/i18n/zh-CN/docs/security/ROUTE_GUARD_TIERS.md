@@ -116,6 +116,23 @@
 
 `/api/settings/obsidian` 涵盖其 `/webdav` 子项：`POST` 会让 WebDAV 文件服务——该服务由自定义 Node 层在 Next.js 之前提供，位于此管线之外——指向调用者选择的根目录，并回显新签发的 Basic 凭据；`DELETE` 会轮换这些凭据，而父级 `POST` 会存储 Obsidian REST API 令牌。GHSA-62vw 仅屏蔽了 `GET` 所泄露的密码；签发操作仍处于失效时开放的层级（GHSA-7pq4-8pvv-rx7r）。`enableObsidianVaultSync()` 还会拒绝以下保险库：其本身是数据目录、位于数据目录内，或包含数据目录。
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### 全新安装的引导仅限环回访问——依据真实对等端，而非 `Host`
 
 当未配置管理密码（且没有 `INITIAL_PASSWORD`）时，`src/shared/utils/apiAuth.ts` 中的 `isAuthRequired()` **仅对环回对等端**保持匿名引导开放。是否为环回按以下可信对等端信号依次判定：由令牌标记的真实 TCP 对等端（`PEER_IP_HEADER` + `VIA_PROXY_HEADER`，即策略所看到的内容）、管线自身的 `AUTHZ_HEADER_PEER_LOCALITY` 判定结果（即路由处理程序所看到的内容，仅在设置了 `OMNIROUTE_PEER_STAMP_TOKEN` 时受信任），或直接调用方的真实套接字对等端。绝不会参考 `Host` / `nextUrl.hostname`，首次密码写入（`POST /api/settings/require-login`）也受同样的约束，而不是向所有网络对等端开放（GHSA-7pq4-8pvv-rx7r）。`managementPolicy` 会显式向下传递其自身的 `peerContext` 判定结果，因此 ORIGINAL（剥离前）请求的标头绝不会决定该结果。

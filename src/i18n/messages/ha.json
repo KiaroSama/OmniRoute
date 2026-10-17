@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Share matatu",
     "disableNonPublicModels": "Kashe Samfuran da Ba na Jama'a Ba",
     "disableNonPublicModelsDesc": "Ƙi buƙatun samfuran da ba a gano su ba ko kuma ba a yi musu alamar cewa na jama'a ba ne a cikin kundin mai samarwa",
+    "forcedModel": "Samfurin tilas",
+    "forcedModelDesc": "Tura duk buƙatar hira da aka yi da wannan maɓalli zuwa wannan samfuri ko haɗin, ko wane samfuri abokin ciniki ya nema (ko lokacin da bai aika ko ɗaya ba). Iyakokin samfuri, haɗi da kasafin kuɗi na maɓallin suna ci gaba da aiki.",
+    "forcedModelPlaceholder": "Ba tilas ba: yi amfani da samfurin da abokin ciniki ya nema",
     "normalKeysSection": "Maɓallan al'ada",
     "quotaKeysSection": "Maɓallan ƙayyadadden kaso",
     "bypassProviderQuota": "Tsallake iyakokin ƙayyadadden kaso na mai samarwa",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — tsarin RLM na shirye-shirye mai inganta kansa tare da goyon bayan masu samarwa masu dacewa da OpenAI",
       "warp": "Terminal na Warp AI tare da goyon bayan mai samarwa na musamman",
       "agent-deck": "Mai tsara ayyukan wakilai da yawa na Agent Deck",
-      "5dive": "5dive — rundunar wakilan shirye-shirye da ake ɗaukar nauyinsu da kai; bayanin martabar tantancewa guda ɗaya yana karkatar da su duka zuwa OmniRoute"
+      "5dive": "5dive — rundunar wakilan shirye-shirye da ake ɗaukar nauyinsu da kai; bayanin martabar tantancewa guda ɗaya yana karkatar da su duka zuwa OmniRoute",
+      "zed": "Editan lamba na Zed — wakili na ciki ta hanyar mai bayarwa mai dacewa da OpenAI"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Sannan ka sake loda VS Code kuma ka saita maɓallin API a filin shigarwa.",
     "wireApiChatCompletions": "Kammalawar Taɗi (/chat/completions)",
     "wireApiResponses": "API na Amsoshi (/responses)",
+    "codexModelCatalog": "Nuna samfuran OmniRoute a cikin mai zaɓin /model na Codex",
+    "codexModelCatalogHint": "Yana rubuta ~/.codex/omniroute-models.json daga kundin samfuran Codex da aka shigar (kusan 60 KB kowane samfuri). Sake aiwatarwa bayan haɓaka Codex.",
+    "codexCatalogWarning": "Ba a sabunta mai zaɓin /model na Codex ba: OmniRoute ya kasa karanta kundin samfuran Codex da aka shigar.",
     "cliproxyapiActionFailed": "Aikin bai yi nasara ba",
     "cliproxyapiActionSucceeded": "Aikin ya yi nasara",
     "cliproxyapiCheckUpdates": "Duba Sabuntawa",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "Taƙaitaccen CJK (文言)",
         "description": "Salon Sinanci na gargajiya mai matuƙar taƙaitawa (yana samuwa ga Sinanci kawai)."
+      },
+      "antislop-ui": {
+        "label": "Matatar Antislop ta UI",
+        "description": "Hotuna da aka gwada manufarsu: babu gradient na gama-gari, tsarin samfuri ko maɓallan da ba sa aiki."
+      },
+      "antislop-copy": {
+        "label": "Matatar Antislop ta rubutu da mutane",
+        "description": "Rubutu na gaskiya da ƙa'idoji don mutane: babu alamun AI, bambancin launi na WCAG AA, madannai, yanayi, sake tsarawa a wayar hannu."
       }
     },
     "resilienceWaitForCooldown": "Jira Lokacin Hucewa",
@@ -9864,6 +9879,9 @@
     "hideQuotaRow": "Ɓoye wannan layin iyakar amfani",
     "showQuotaRow": "Nuna wannan layin iyakar amfani",
     "hiddenQuotaRowsLabel": "Ɓoyayyu:",
+    "quotaSpeedTitle": "Saurin fassarar kwanan nan a wannan asusu (buƙatu {count} na ƙarshe da suka yi nasara)",
+    "quotaSpeedLine": "{model}: {avg} tok/s matsakaici · na ƙarshe {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s matsakaici · na ƙarshe {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "An kasa sabunta ko za a nuna iyakar amfani",
     "account": "Asusu",
     "modelQuotas": "Iyakokin Samfura",
@@ -14501,7 +14519,10 @@
     "importing": "Ana shigo da shi...",
     "apiKeyPlaceholder": "Manna maɓallin API na {providerLabel}...",
     "apiKeyStoredDescription": "An adana shi cikin ɓoyayyen tsari a matsayin shaidar bearer mai dogon wa'adin aiki. Babu tsarin sabunta shi.",
-    "apiKeyRegionDescription": "Yankin AWS na maɓallin (tsoho: us-east-1)",
+    "apiKeyRegionAuto": "Gano kai tsaye (an ba da shawara)",
+    "apiKeyRegionUsEast1": "Gabashin Amurka (Arewacin Virginia)",
+    "apiKeyRegionEuCentral1": "Turai (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Gano kai tsaye yana gwada Gabashin Amurka da farko, sannan Turai (Frankfurt), kuma yana adana yankin da maɓallin ke aiki.",
     "validating": "Ana tantancewa...",
     "validateAndSaveApiKey": "Tantance kuma Ajiye Maɓallin API",
     "errorAutoDetect": "Ba a iya gano token ta atomatik ba",

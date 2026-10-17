@@ -107,3 +107,7 @@ export async function requireOperatorCredential(
 /** 403 message shared by every route that downloads stored credentials or a database copy. */
 export const CREDENTIAL_EXPORT_FORBIDDEN_MESSAGE =
   "Exporting stored credentials requires a signed-in dashboard session or the local CLI; API keys and access tokens cannot download backups.";
+
+/** 403 message shared by every route that restores a backup over the live database or settings. */
+export const CREDENTIAL_IMPORT_FORBIDDEN_MESSAGE =
+  "Restoring a backup requires a signed-in dashboard session or the local CLI; API keys and access tokens cannot replace the database.";

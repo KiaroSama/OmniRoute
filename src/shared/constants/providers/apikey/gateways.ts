@@ -1000,6 +1000,20 @@ export const APIKEY_PROVIDERS_GATEWAYS = {
     textIcon: "NG",
     website: "https://nano-gpt.com",
   },
+  // NaN.Builders (https://nan.builders) — OpenAI-compatible /v1 covering chat, vision,
+  // embeddings, STT, TTS, images and rerank; per-model token quotas feed the limits panel.
+  nan: {
+    id: "nan",
+    serviceKinds: ["llm", "imageToText", "embedding", "stt", "tts", "image"],
+    alias: "nan",
+    name: "NaN.Builders",
+    icon: "hub",
+    color: "#6D5EF3",
+    textIcon: "NaN",
+    website: "https://nan.builders",
+    apiHint:
+      "Create an API key at https://cloud.nan.builders, then paste it here as a Bearer token. OpenAI-compatible base URL: https://api.nan.builders/v1.",
+  },
   aimlapi: {
     id: "aimlapi",
     serviceKinds: ["llm"],

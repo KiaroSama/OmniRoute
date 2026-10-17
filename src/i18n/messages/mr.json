@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "फिल्टर्स साफ करा",
     "disableNonPublicModels": "सार्वजनिक नसलेले मॉडेल्स अक्षम करा",
     "disableNonPublicModelsDesc": "प्रदाता कॅटलॉगमध्ये शोधले न गेलेल्या किंवा सार्वजनिक म्हणून चिन्हांकित न केलेल्या मॉडेल्ससाठीच्या विनंत्या नाकारा",
+    "forcedModel": "सक्तीचे मॉडेल",
+    "forcedModelDesc": "या की ने केलेली प्रत्येक चॅट विनंती या मॉडेल किंवा कॉम्बोकडे पाठवा, क्लायंट कोणतेही मॉडेल मागो (किंवा काहीच पाठवत नसला तरी). कीच्या मॉडेल, कॉम्बो आणि बजेट मर्यादा तरीही लागू राहतात.",
+    "forcedModelPlaceholder": "सक्ती नाही: क्लायंटने मागितलेले मॉडेल वापरा",
     "normalKeysSection": "सामान्य कीज",
     "quotaKeysSection": "कोटा कीज",
     "bypassProviderQuota": "प्रदाता कोटा कटऑफ बायपास करा",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — OpenAI-सुसंगत प्रदाता समर्थनासह स्वयं-सुधारणारा RLM कोडिंग हार्नेस",
       "warp": "कस्टम प्रोव्हायडर सपोर्टसह Warp AI टर्मिनल",
       "agent-deck": "Agent Deck मल्टी-एजंट ऑर्केस्ट्रेटर",
-      "5dive": "5dive — स्वयं-होस्टेड कोडिंग एजंट्सचा ताफा; एक auth प्रोफाइल सर्वांना OmniRoute कडे निर्देशित करते"
+      "5dive": "5dive — स्वयं-होस्टेड कोडिंग एजंट्सचा ताफा; एक auth प्रोफाइल सर्वांना OmniRoute कडे निर्देशित करते",
+      "zed": "Zed कोड एडिटर — OpenAI-सुसंगत प्रदात्याद्वारे अंगभूत एजंट"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "नंतर VS Code रीलोड करा आणि इनपुट प्रॉम्प्टमध्ये API की सेट करा.",
     "wireApiChatCompletions": "चॅट पूर्णता (/चॅट/पूर्णता)",
     "wireApiResponses": "प्रतिसाद API (/प्रतिसाद)",
+    "codexModelCatalog": "Codex च्या /model पिकरमध्ये OmniRoute मॉडेल्स दाखवा",
+    "codexModelCatalogHint": "स्थापित Codex च्या स्वतःच्या मॉडेल कॅटलॉगमधून ~/.codex/omniroute-models.json लिहिते (प्रति मॉडेल सुमारे 60 KB). Codex अपग्रेड केल्यानंतर पुन्हा लागू करा.",
+    "codexCatalogWarning": "Codex चा /model पिकर अपडेट झाला नाही: OmniRoute स्थापित Codex चा मॉडेल कॅटलॉग वाचू शकले नाही.",
     "cliproxyapiActionFailed": "क्रिया अयशस्वी झाली",
     "cliproxyapiActionSucceeded": "क्रिया यशस्वी झाली",
     "cliproxyapiCheckUpdates": "अपडेट्स तपासा",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "संक्षिप्त CJK (文言)",
         "description": "अभिजात-चिनी अति-संक्षिप्त शैली (केवळ चिनी भाषेसाठी उपलब्ध)."
+      },
+      "antislop-ui": {
+        "label": "Antislop UI फिल्टर",
+        "description": "उद्देश्य-तपासलेले व्हिज्युअल: सामान्य ग्रेडियंट, टेम्पलेट लेआउट किंवा निष्क्रिय नियंत्रणे नाहीत."
+      },
+      "antislop-copy": {
+        "label": "Antislop मजकूर आणि मानवी फिल्टर",
+        "description": "प्रामाणिक मजकूर आणि लोकांसाठी नियम: AI च्या खुणा नाहीत, WCAG AA कॉन्ट्रास्ट, कीबोर्ड, स्थिती, मोबाइल रीफ्लो."
       }
     },
     "resilienceWaitForCooldown": "कूलडाउनची प्रतीक्षा करा",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "हा कोटा रो लपवा",
     "showQuotaRow": "हा कोटा रो दाखवा",
     "hiddenQuotaRowsLabel": "लपवलेले:",
+    "quotaSpeedTitle": "या खात्यावरील अलीकडील डिकोड वेग (शेवटच्या {count} यशस्वी विनंत्या)",
+    "quotaSpeedLine": "{model}: {avg} tok/s सरासरी · शेवटचा {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s सरासरी · शेवटचा {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "कोटा दृश्यमानता अपडेट करण्यात अयशस्वी",
     "account": "खाते",
     "modelQuotas": "मॉडेल कोटे",
@@ -14501,7 +14519,10 @@
     "importing": "आयात करत आहे...",
     "apiKeyPlaceholder": "आपला {providerLabel} API की पेस्ट करा...",
     "apiKeyStoredDescription": "दीर्घकालीन धारक प्रमाणपत्र म्हणून संग्रहित केलेले एन्क्रिप्टेड. ताजेतवाने करण्याची प्रक्रिया नाही.",
-    "apiKeyRegionDescription": "कीसाठी AWS क्षेत्र (डिफॉल्ट: us-east-1)",
+    "apiKeyRegionAuto": "स्वयं शोधा (शिफारस केलेले)",
+    "apiKeyRegionUsEast1": "यूएस ईस्ट (उत्तर व्हर्जिनिया)",
+    "apiKeyRegionEuCentral1": "युरोप (फ्रँकफर्ट)",
+    "apiKeyRegionAutoDescription": "स्वयं शोध आधी यूएस ईस्ट, नंतर युरोप (फ्रँकफर्ट) वापरून पाहतो आणि की जिथे काम करते तो प्रदेश जतन करतो.",
     "validating": "मान्य करत आहे...",
     "validateAndSaveApiKey": "API की मान्य करा आणि जतन करा",
     "errorAutoDetect": "टोकन स्वयंचलितपणे ओळखता आले नाही",

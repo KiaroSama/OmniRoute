@@ -2901,6 +2901,13 @@ paths:
     patch:
       tags: [Settings]
       summary: Update settings
+      description: >-
+        Security-policy keys (`requireLogin`, `newPassword`, every `oidc*` key, `corsOrigins`,
+        `bruteForceProtection`, the LOCAL_ONLY bypass list) need `currentPassword` and an
+        operator credential (dashboard session, local CLI, or login disabled); API keys of any
+        scope and `oma_` access tokens get 403 on them. Ordinary settings stay writable for a
+        manage-scoped key or an `admin` access token. Every mutation needs the `admin`
+        access-token scope.
       requestBody:
         required: true
         content:
@@ -2910,6 +2917,14 @@ paths:
       responses:
         "200":
           description: Updated settings
+        "400":
+          description: Validation failed, or `PASSWORD_REQUIRED` for a security-policy key
+        "401":
+          description: Unauthenticated, or `PASSWORD_MISMATCH`
+        "403":
+          description: >-
+            Machine credential (API key of any scope, `oma_` access token) on a security-policy
+            key, or an access token below the `admin` scope
 
   /api/settings/purge-request-history:
     post:
@@ -3341,10 +3356,39 @@ paths:
   /api/settings/require-login:
     post:
       tags: [Settings]
-      summary: Toggle login requirement
+      summary: Set the management password and/or toggle the login requirement
+      description: >-
+        Open without a credential only during the first-run bootstrap window (no password
+        configured yet). Afterwards the write is operator-only: a dashboard session, the local
+        CLI, or an instance with login disabled. API keys of any scope and `oma_` access tokens
+        are refused with 403. A dashboard session must send `currentPassword` to replace an
+        existing password; the local CLI may reset it without one (recovery path).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                requireLogin:
+                  type: boolean
+                password:
+                  type: string
+                  minLength: 4
+                currentPassword:
+                  type: string
+                  description: Current password; required when a dashboard session changes `password`.
       responses:
         "200":
           description: Updated
+        "400":
+          description: Invalid body or no field to update
+        "401":
+          description: No credential outside the bootstrap window
+        "403":
+          description: >-
+            Machine credential (API key of any scope, `oma_` access token), or a dashboard
+            session changing the password without the correct `currentPassword`
 
   /api/settings/ip-filter:
     get:
@@ -6490,10 +6534,18 @@ paths:
           description: Backup list
     post:
       tags: [System]
-      summary: Create database backup
+      summary: Restore a database backup by id
+      description: >-
+        Replaces the live database with the stored backup named in `backupId`. Operator-only:
+        dashboard session, local CLI, or login disabled.
       responses:
         "200":
-          description: Backup created
+          description: Backup restored
+        "403":
+          description: >-
+            Machine credential refused. Restoring replaces the live database, so it requires
+            the dashboard session or the local CLI (or login disabled); API keys of any scope
+            and `oma_` access tokens get 403.
     patch:
       tags: [System]
       summary: Save database backup retention settings
@@ -9965,8 +10017,9 @@ paths:
       description: >-
         Replaces the live database with an uploaded `.sqlite` backup (multipart `file` field,
         or the raw bytes with `?filename=`). The upload is checked for SQLite integrity and the
-        required OmniRoute tables first. Accepts the dashboard session, a `manage`-scoped API
-        key, or the local CLI credential.
+        required OmniRoute tables first. Operator-only: accepts the dashboard session, the
+        local CLI credential, or login disabled; API keys of any scope and `oma_` access tokens
+        are refused (403), for the dry run as well.
       parameters:
         - name: dryRun
           in: query
@@ -9993,6 +10046,11 @@ paths:
           description: Not a valid OmniRoute SQLite backup (type, size, integrity or tables).
         "401":
           description: No accepted credential.
+        "403":
+          description: >-
+            Machine credential refused. Importing replaces the live database, so it requires
+            the dashboard session or the local CLI (or login disabled); API keys of any scope
+            and `oma_` access tokens get 403.
   /api/db/health:
     get:
       tags:
@@ -10463,6 +10521,12 @@ paths:
       tags:
         - Keys
       summary: "PUT keys › groups › <id>"
+      description: >-
+        Updates the group. Setting isActive to false pauses its allow rules while
+        preserving membership restrictions and deny rules. Other active groups may
+        still grant access unless a deny matches. Keys belonging only to inactive
+        groups have no group grants. Keys without groups remain unrestricted by
+        group policy; per-key restrictions still apply.
       responses:
         "200":
           description: OK
@@ -12020,6 +12084,11 @@ paths:
       responses:
         "200":
           description: OK
+        "403":
+          description: >-
+            Machine credential refused. The import replaces settings, connections and API keys,
+            so it requires the dashboard session or the local CLI (or login disabled); API keys
+            of any scope and `oma_` access tokens get 403.
   /api/settings/lkgp-cache:
     delete:
       tags:

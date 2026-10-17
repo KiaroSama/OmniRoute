@@ -86,7 +86,7 @@ const ANTIGRAVITY_NON_CHAT_MODEL_IDS = new Set([
 
 // Non-chat models that still expose user-facing quota buckets. Keep these out of
 // chat discovery while allowing Provider Limits to surface their live quota.
-const ANTIGRAVITY_QUOTA_VISIBLE_NON_CHAT_MODEL_IDS = new Set([
+export const ANTIGRAVITY_QUOTA_VISIBLE_NON_CHAT_MODEL_IDS: ReadonlySet<string> = new Set([
   "gemini-3-pro-image-preview",
   "gemini-3.1-flash-image",
 ]);
@@ -94,6 +94,13 @@ const ANTIGRAVITY_QUOTA_VISIBLE_NON_CHAT_MODEL_IDS = new Set([
 const ANTIGRAVITY_RETIRED_MODEL_IDS = new Set([
   "gemini-3-pro-preview",
   "gemini-3.1-pro",
+  // Per-tier 3.7 ids are absent from the live roster (discussion #15568) and alias onto the
+  // shared "-tiered" id. `gemini-3.7-flash-tiered`, `gemini-3.6-flash-tiered` and
+  // `gemini-3-flash` ARE still served live, so they are deliberately NOT retired here.
+  "gemini-3.7-flash",
+  "gemini-3.7-flash-high",
+  "gemini-3.7-flash-medium",
+  "gemini-3.7-flash-low",
   "gemini-3.6-flash-high",
   "gemini-3.6-flash-medium",
   "gemini-3.6-flash-low",

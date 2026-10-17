@@ -116,6 +116,23 @@ Bu marşrutlar dağıdıcı və ya geri dönməzdir. Onları "şifrəsiz" quraş
 
 `/api/settings/obsidian` öz `/webdav` uşağını əhatə edir: `POST` WebDAV fayl xidmətini — bu boru kəmərindən kənarda, Next.js-dən əvvəl xüsusi Node qatında xidmət göstərilir — zəng edən tərəfindən seçilmiş kökə yönəldir və yeni yaradılmış Basic etimadnamələrini əks etdirir, `DELETE` onları dəyişdirir və valideyn `POST` Obsidian REST API tokenini saxlayır. GHSA-62vw yalnız `GET` şifrəsinin aşkar edilməsini maskaladı; buraxılış hələ də uğursuz-açıq səviyyədə idi (GHSA-7pq4-8pvv-rx7r). `enableObsidianVaultSync()` əlavə olaraq, verilənlər qovluğunda olan, onun içində yerləşən və ya onu ehtiva edən bir vault-u rədd edir.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### Yeni quraşdırma bootstrap yalnız loopback-dir — real peer tərəfindən, `Host` tərəfindən deyil
 
 Heç bir idarəetmə şifrəsi konfiqurasiya edilmədikdə (və `INITIAL_PASSWORD` olmadıqda), `src/shared/utils/apiAuth.ts` faylındakı `isAuthRequired()` anonim bootstrap-ı **yalnız loopback peer-lər üçün** açıq saxlayır. Loopback etibarlı peer siqnallarından ardıcıllıqla müəyyən edilir: token-lə möhürlənmiş real TCP peer (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, siyasətin gördüyü), boru kəmərinin öz `AUTHZ_HEADER_PEER_LOCALITY` qərarı (marşrut işlədicilərinin gördüyü, yalnız `OMNIROUTE_PEER_STAMP_TOKEN` təyin olunduqda etibarlı) və ya birbaşa zəng edənlər üçün real socket peer. `Host` / `nextUrl.hostname` heç vaxt nəzərə alınmır və ilk şifrə yazma (`POST /api/settings/require-login`) hər bir şəbəkə peer-inə açıq olmaq əvəzinə eyni məhdudiyyət altındadır (GHSA-7pq4-8pvv-rx7r). `managementPolicy` öz `peerContext` qərarını açıq şəkildə ötürür, buna görə də ORIGINAL (zolaqdan əvvəlki) sorğunun başlıqları heç vaxt bunu müəyyən etmir.

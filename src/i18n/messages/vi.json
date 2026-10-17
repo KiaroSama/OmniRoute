@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Xóa bộ lọc",
     "disableNonPublicModels": "Vô hiệu hóa mô hình không công khai",
     "disableNonPublicModelsDesc": "Từ chối yêu cầu đối với các mô hình không được phát hiện hoặc không được đánh dấu là công khai trong danh mục của nhà cung cấp",
+    "forcedModel": "Mô hình bắt buộc",
+    "forcedModelDesc": "Định tuyến mọi yêu cầu chat dùng khóa này tới mô hình hoặc combo này, bất kể client yêu cầu mô hình nào (hoặc khi không gửi mô hình). Giới hạn mô hình, combo và ngân sách của khóa vẫn được áp dụng.",
+    "forcedModelPlaceholder": "Không bắt buộc: dùng mô hình mà client yêu cầu",
     "normalKeysSection": "Khóa thông thường",
     "quotaKeysSection": "Khóa hạn mức",
     "bypassProviderQuota": "Bỏ qua ngưỡng hạn ngạch nhà cung cấp",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — bộ khung lập trình RLM tự cải tiến hỗ trợ API tương thích OpenAI",
       "warp": "Terminal Warp AI hỗ trợ nhà cung cấp tùy chỉnh",
       "agent-deck": "Trình điều phối đa tác nhân Agent Deck",
-      "5dive": "5dive — hạm đội tác nhân lập trình tự lưu trữ; một hồ sơ xác thực trỏ tất cả về OmniRoute"
+      "5dive": "5dive — hạm đội tác nhân lập trình tự lưu trữ; một hồ sơ xác thực trỏ tất cả về OmniRoute",
+      "zed": "Trình soạn thảo mã Zed — tác nhân tích hợp sẵn qua nhà cung cấp tương thích OpenAI"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Sau đó tải lại VS Code và nhập khóa API khi được yêu cầu.",
     "wireApiChatCompletions": "Hoàn tất trò chuyện (/chat/completions)",
     "wireApiResponses": "API phản hồi (/responses)",
+    "codexModelCatalog": "Hiển thị các mô hình OmniRoute trong bộ chọn /model của Codex",
+    "codexModelCatalogHint": "Ghi ~/.codex/omniroute-models.json từ danh mục mô hình riêng của Codex đã cài đặt (khoảng 60 KB mỗi mô hình). Áp dụng lại sau khi nâng cấp Codex.",
+    "codexCatalogWarning": "Bộ chọn /model của Codex chưa được cập nhật: OmniRoute không đọc được danh mục mô hình của Codex đã cài đặt.",
     "cliproxyapiActionFailed": "Thao tác thất bại",
     "cliproxyapiActionSucceeded": "Thao tác thành công",
     "cliproxyapiCheckUpdates": "Kiểm tra bản cập nhật",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK súc tích (文言)",
         "description": "Văn phong Hán cổ cực kỳ súc tích (chỉ khả dụng với tiếng Trung)."
+      },
+      "antislop-ui": {
+        "label": "Bộ lọc UI Antislop",
+        "description": "Hình ảnh đã qua kiểm tra mục đích: không gradient chung chung, bố cục template hay điều khiển chết."
+      },
+      "antislop-copy": {
+        "label": "Bộ lọc văn bản và con người Antislop",
+        "description": "Văn bản trung thực cùng quy tắc vì con người: không dấu vết AI, tương phản WCAG AA, bàn phím, trạng thái, sắp xếp lại trên di động."
       }
     },
     "resilienceWaitForCooldown": "Chờ thời gian hồi",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Ẩn hàng hạn mức này",
     "showQuotaRow": "Hiện hàng hạn mức này",
     "hiddenQuotaRowsLabel": "Đã ẩn:",
+    "quotaSpeedTitle": "Tốc độ giải mã gần đây trên tài khoản này ({count} yêu cầu thành công gần nhất)",
+    "quotaSpeedLine": "{model}: {avg} tok/s trung bình · gần nhất {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s trung bình · gần nhất {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Không thể cập nhật hiển thị hạn mức",
     "account": "Tài khoản",
     "modelQuotas": "Hạn ngạch mô hình",
@@ -14501,7 +14519,10 @@
     "importing": "Đang nhập...",
     "apiKeyPlaceholder": "Dán khóa API {providerLabel} của bạn...",
     "apiKeyStoredDescription": "Được lưu trữ dưới dạng thông tin xác thực bearer dài hạn và mã hóa. Không có luồng refresh.",
-    "apiKeyRegionDescription": "Khu vực AWS cho khóa (mặc định: us-east-1)",
+    "apiKeyRegionAuto": "Tự động phát hiện (khuyến nghị)",
+    "apiKeyRegionUsEast1": "Miền Đông Hoa Kỳ (Bắc Virginia)",
+    "apiKeyRegionEuCentral1": "Châu Âu (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Tự động phát hiện sẽ thử Miền Đông Hoa Kỳ trước, sau đó Châu Âu (Frankfurt), và lưu khu vực mà khóa hoạt động.",
     "validating": "Đang xác thực...",
     "validateAndSaveApiKey": "Xác thực và lưu khóa API",
     "errorAutoDetect": "Không thể tự động phát hiện token",

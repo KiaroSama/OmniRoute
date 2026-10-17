@@ -174,6 +174,23 @@ Tyto cesty jsou destruktivní nebo nevratné. Povolení v instalaci „bez hesla
 
 `/api/settings/obsidian` pokrývá svého potomka `/webdav`: `POST` nasměruje službu souborů WebDAV – obsluhovanou vlastní vrstvou Node před Next.js, mimo tuto pipeline – na kořen zvolený volajícím a vrací čerstvě vytvořené Basic pověření, `DELETE` je rotuje a rodičovský `POST` ukládá token Obsidian REST API. GHSA-62vw pouze maskovalo odhalení hesla `GET`; vydávání bylo stále na úrovni fail-open (GHSA-7pq4-8pvv-rx7r). `enableObsidianVaultSync()` navíc odmítá trezor, který je, nachází se uvnitř nebo obsahuje datový adresář.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### Bootstrap čerstvé instalace je pouze loopback – skutečným peerem, nikoli `Host`
 
 Pokud není nakonfigurováno žádné heslo pro správu (a žádné `INITIAL_PASSWORD`), `isAuthRequired()` v `src/shared/utils/apiAuth.ts` udržuje anonymní bootstrap otevřený **pouze pro loopback peery**. Loopback je určen z důvěryhodných signálů peerů, v pořadí: skutečný TCP peer s tokenem (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, co vidí politika), vlastní verdikt pipeline `AUTHZ_HEADER_PEER_LOCALITY` (co vidí obsluhy cest, důvěryhodné pouze, když je nastaven `OMNIROUTE_PEER_STAMP_TOKEN`), nebo skutečný socket peer pro přímé volající. `Host` / `nextUrl.hostname` se nikdy nekonsultují a zápis prvního hesla (`POST /api/settings/require-login`) podléhá stejnému omezení, spíše než aby byl otevřen každému síťovému peeru (GHSA-7pq4-8pvv-rx7r). `managementPolicy` explicitně předává svůj vlastní verdikt `peerContext`, takže hlavičky PŮVODNÍHO (před odstraněním) požadavku o tom nikdy nerozhodují.

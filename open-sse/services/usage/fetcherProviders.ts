@@ -47,6 +47,8 @@ export const USAGE_FETCHER_PROVIDERS = [
   "bailian-coding-plan",
   "qwen-cloud-token-plan",
   "nanogpt",
+  // NaN.Builders per-model token counters (GET cloud-api.nan.builders/api/usage/quota)
+  "nan",
   "apmix",
   "deepseek",
   "moonshot",

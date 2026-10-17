@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "ফিল্টার সাফ করুন",
     "disableNonPublicModels": "নন-পাবলিক মডেল নিষ্ক্রিয় করুন",
     "disableNonPublicModelsDesc": "প্রোভাইডার ক্যাটালগে যে মডেলগুলি পাওয়া যায়নি বা পাবলিক হিসেবে চিহ্নিত নয়, সেগুলির জন্য অনুরোধ প্রত্যাখ্যান করুন",
+    "forcedModel": "বাধ্যতামূলক মডেল",
+    "forcedModelDesc": "এই কী দিয়ে করা প্রতিটি চ্যাট অনুরোধ এই মডেল বা কম্বোতে পাঠান, ক্লায়েন্ট যে মডেলই চাক না কেন (বা কোনো মডেল না পাঠালেও)। কী-এর মডেল, কম্বো ও বাজেট সীমা তখনও প্রযোজ্য।",
+    "forcedModelPlaceholder": "বাধ্যতামূলক নয়: ক্লায়েন্ট যে মডেল চায় সেটি ব্যবহার করুন",
     "normalKeysSection": "সাধারণ কী",
     "quotaKeysSection": "কোটা কী",
     "bypassProviderQuota": "প্রোভাইডার কোটা কাটঅফ বাইপাস করুন",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — OpenAI-সামঞ্জস্যপূর্ণ প্রোভাইডার সমর্থনসহ স্ব-উন্নয়নশীল RLM কোডিং হারনেস",
       "warp": "কাস্টম প্রোভাইডার সাপোর্ট সহ Warp AI টার্মিনাল",
       "agent-deck": "Agent Deck মাল্টি-এজেন্ট অর্কেস্ট্রেটর",
-      "5dive": "5dive — নিজে হোস্ট করা কোডিং এজেন্টের বহর; একটি auth প্রোফাইল সবগুলোকে OmniRoute-এ নির্দেশ করে"
+      "5dive": "5dive — নিজে হোস্ট করা কোডিং এজেন্টের বহর; একটি auth প্রোফাইল সবগুলোকে OmniRoute-এ নির্দেশ করে",
+      "zed": "Zed কোড এডিটর — OpenAI-সামঞ্জস্যপূর্ণ প্রোভাইডারের মাধ্যমে বিল্ট-ইন এজেন্ট"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "তারপর VS Code রিলোড করুন এবং ইনপুট প্রম্পটে API কী সেট করুন।",
     "wireApiChatCompletions": "চ্যাট সমাপ্তি (/চ্যাট/সম্পূর্ণতা)",
     "wireApiResponses": "প্রতিক্রিয়া API (/প্রতিক্রিয়া)",
+    "codexModelCatalog": "Codex-এর /model পিকারে OmniRoute মডেলগুলি দেখান",
+    "codexModelCatalogHint": "ইনস্টল করা Codex-এর নিজস্ব মডেল ক্যাটালগ থেকে ~/.codex/omniroute-models.json লেখে (প্রতি মডেলে প্রায় 60 KB)। Codex আপগ্রেড করার পরে আবার প্রয়োগ করুন।",
+    "codexCatalogWarning": "Codex-এর /model পিকার আপডেট হয়নি: OmniRoute ইনস্টল করা Codex মডেল ক্যাটালগ পড়তে পারেনি।",
     "cliproxyapiActionFailed": "কার্য সম্পন্ন হয়নি",
     "cliproxyapiActionSucceeded": "কার্য সফল হয়েছে",
     "cliproxyapiCheckUpdates": "আপডেট পরীক্ষা করুন",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "সংক্ষিপ্ত CJK (文言)",
         "description": "ক্লাসিক্যাল-চাইনিজ অতি-সংক্ষিপ্ত শৈলী (শুধুমাত্র চাইনিজ ভাষার জন্য উপলব্ধ)।"
+      },
+      "antislop-ui": {
+        "label": "Antislop UI ফিল্টার",
+        "description": "উদ্দেশ্য-যাচাই করা ভিজ্যুয়াল: কোনো সাধারণ গ্রেডিয়েন্ট, টেমপ্লেট লেআউট বা অকেজো কন্ট্রোল নয়।"
+      },
+      "antislop-copy": {
+        "label": "Antislop কপি ও মানব ফিল্টার",
+        "description": "সৎ কপি ও মানুষের জন্য নিয়ম: AI-এর ছাপ নেই, WCAG AA কনট্রাস্ট, কীবোর্ড, স্টেট, মোবাইল রিফ্লো।"
       }
     },
     "resilienceWaitForCooldown": "কুলডাউনের জন্য অপেক্ষা করুন",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "এই কোটা সারিটি লুকান",
     "showQuotaRow": "এই কোটা সারিটি দেখান",
     "hiddenQuotaRowsLabel": "লুকানো:",
+    "quotaSpeedTitle": "এই অ্যাকাউন্টে সাম্প্রতিক ডিকোড গতি (শেষ {count}টি সফল অনুরোধ)",
+    "quotaSpeedLine": "{model}: {avg} tok/s গড় · শেষ {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s গড় · শেষ {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "কোটার দৃশ্যমানতা আপডেট করতে ব্যর্থ হয়েছে",
     "account": "অ্যাকাউন্ট",
     "modelQuotas": "মডেল কোটা",
@@ -14501,7 +14519,10 @@
     "importing": "আমদানি হচ্ছে...",
     "apiKeyPlaceholder": "আপনার {providerLabel} API কী পেস্ট করুন...",
     "apiKeyStoredDescription": "দীর্ঘকালীন বেয়ারার শংসাপত্র হিসেবে সংরক্ষিত এনক্রিপ্টেড। রিফ্রেশ প্রবাহ নেই।",
-    "apiKeyRegionDescription": "কীটির জন্য AWS অঞ্চল (ডিফল্ট: us-east-1)",
+    "apiKeyRegionAuto": "স্বয়ংক্রিয় শনাক্তকরণ (প্রস্তাবিত)",
+    "apiKeyRegionUsEast1": "ইউএস ইস্ট (নর্দার্ন ভার্জিনিয়া)",
+    "apiKeyRegionEuCentral1": "ইউরোপ (ফ্রাঙ্কফুর্ট)",
+    "apiKeyRegionAutoDescription": "স্বয়ংক্রিয় শনাক্তকরণ প্রথমে ইউএস ইস্ট, তারপর ইউরোপ (ফ্রাঙ্কফুর্ট) চেষ্টা করে এবং যে অঞ্চলে কী কাজ করে সেটি সংরক্ষণ করে।",
     "validating": "যাচাই করা হচ্ছে...",
     "validateAndSaveApiKey": "এপিআই কী যাচাই করুন এবং সংরক্ষণ করুন",
     "errorAutoDetect": "টোকেন স্বয়ংক্রিয়ভাবে সনাক্ত করা যায়নি",

@@ -152,6 +152,23 @@ Tunnel、Tailscale、Ngrok）後方執行 OmniRoute，回送位址檢查仍會�
 
 `/api/settings/obsidian` 涵蓋其 `/webdav` 子路徑：`POST` 會將 WebDAV 檔案服務——由自訂 Node 層在 Next.js 之前提供，因此位於此管線之外——指向呼叫者選擇的根目錄，並回傳新簽發的 Basic 憑證；`DELETE` 會輪替這些憑證，而父層的 `POST` 則會儲存 Obsidian REST API 權杖。GHSA-62vw 僅遮蔽了 `GET` 所揭露的密碼；憑證簽發功能仍位於失效時開放的層級（GHSA-7pq4-8pvv-rx7r）。`enableObsidianVaultSync()` 還會拒絕本身即為資料目錄、位於資料目錄內，或包含資料目錄的儲存庫。
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### 全新安裝的啟動設定僅限回送連線——依據真實對等端，而非 `Host`
 
 若未設定管理密碼（且沒有 `INITIAL_PASSWORD`），`src/shared/utils/apiAuth.ts` 中的 `isAuthRequired()` **僅對回送對等端**保持匿名啟動設定開放。是否為回送連線會依序根據下列受信任的對等端訊號判定：以權杖標記的真實 TCP 對等端（`PEER_IP_HEADER` + `VIA_PROXY_HEADER`，即原則所看到的內容）、管線自身的 `AUTHZ_HEADER_PEER_LOCALITY` 判定結果（即路由處理常式所看到的內容，僅在已設定 `OMNIROUTE_PEER_STAMP_TOKEN` 時才受信任），或直接呼叫者的真實 socket 對等端。系統絕不參考 `Host` / `nextUrl.hostname`，而且第一次寫入密碼（`POST /api/settings/require-login`）也受相同限制，而非向所有網路對等端開放（GHSA-7pq4-8pvv-rx7r）。`managementPolicy` 會明確向下傳遞其自身的 `peerContext` 判定結果，因此原始（剝除前）請求的標頭絕不會影響此判定。

@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Obriši filtere",
     "disableNonPublicModels": "Onemogući nejavne modele",
     "disableNonPublicModelsDesc": "Odbij zahtjeve za modele koji nisu otkriveni ili nisu označeni kao javni u katalogu provajdera",
+    "forcedModel": "Nametnuti model",
+    "forcedModelDesc": "Usmjerava svaki chat zahtjev napravljen ovim ključem na ovaj model ili kombo, bez obzira koji model klijent traži (ili kada ga ne pošalje). Ograničenja ključa za modele, kombo i budžet i dalje važe.",
+    "forcedModelPlaceholder": "Nije nametnuto: koristi model koji klijent traži",
     "normalKeysSection": "Normalni ključevi",
     "quotaKeysSection": "Quota ključevi",
     "bypassProviderQuota": "Zaobiđi ograničenja kvote provajdera",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — samopoboljšujući RLM coding harness sa podrškom za OpenAI-kompatibilne provajdere",
       "warp": "Warp AI terminal sa podrškom za prilagođene provajdere",
       "agent-deck": "Agent Deck orkestrator više agenata",
-      "5dive": "5dive — self-hosted flota coding agenata; jedan auth profil sve njih usmjerava na OmniRoute"
+      "5dive": "5dive — self-hosted flota coding agenata; jedan auth profil sve njih usmjerava na OmniRoute",
+      "zed": "Zed uređivač koda — ugrađeni agent putem OpenAI-kompatibilnog provajdera"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Zatim ponovo učitajte VS Code i postavite API ključ u promptu za unos.",
     "wireApiChatCompletions": "Dovršavanja razgovora (/chat/completions)",
     "wireApiResponses": "API odgovora (/responses)",
+    "codexModelCatalog": "Prikaži OmniRoute modele u Codex /model biraču",
+    "codexModelCatalogHint": "Upisuje ~/.codex/omniroute-models.json iz vlastitog kataloga modela instaliranog Codexa (oko 60 KB po modelu). Ponovo primijenite nakon nadogradnje Codexa.",
+    "codexCatalogWarning": "Codex /model birač nije ažuriran: OmniRoute nije mogao pročitati katalog modela instaliranog Codexa.",
     "cliproxyapiActionFailed": "Akcija nije uspjela",
     "cliproxyapiActionSucceeded": "Akcija je uspjela",
     "cliproxyapiCheckUpdates": "Provjeri ažuriranja",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "Sažeti CJK (文言)",
         "description": "Ultra-sažeti stil klasičnog kineskog (dostupno samo za kineski)."
+      },
+      "antislop-ui": {
+        "label": "Antislop filter za UI",
+        "description": "Vizuali s provjerenom svrhom: bez generičkih gradijenata, šablonskih rasporeda ili mrtvih kontrola."
+      },
+      "antislop-copy": {
+        "label": "Antislop filter za tekst i ljude",
+        "description": "Iskren tekst i pravila za ljude: bez tragova AI-ja, WCAG AA kontrast, tastatura, stanja, mobilno prelamanje."
       }
     },
     "resilienceWaitForCooldown": "Čekanje hlađenja",
@@ -9864,6 +9879,9 @@
     "hideQuotaRow": "Sakrij ovaj red kvote",
     "showQuotaRow": "Prikaži ovaj red kvote",
     "hiddenQuotaRowsLabel": "Skriveno:",
+    "quotaSpeedTitle": "Nedavna brzina dekodiranja na ovom računu (posljednjih {count} uspješnih zahtjeva)",
+    "quotaSpeedLine": "{model}: {avg} tok/s prosjek · posljednja {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s prosjek · posljednja {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Neuspjelo ažuriranje vidljivosti kvote",
     "account": "Račun",
     "modelQuotas": "Kvote modela",
@@ -14501,7 +14519,10 @@
     "importing": "Uvoz u toku.",
     "apiKeyPlaceholder": "Zalijepite svoj {providerLabel} API ključ.",
     "apiKeyStoredDescription": "Spremljeno kriptovano kao dugovječni bearer kredencijal. Ne postoji proces osvježavanja (refresh flow).",
-    "apiKeyRegionDescription": "AWS regija za ključ (podrazumijevano: us-east-1)",
+    "apiKeyRegionAuto": "Automatsko otkrivanje (preporučeno)",
+    "apiKeyRegionUsEast1": "SAD Istok (Sjeverna Virginija)",
+    "apiKeyRegionEuCentral1": "Evropa (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Automatsko otkrivanje prvo pokušava SAD Istok, zatim Evropu (Frankfurt), i sprema regiju u kojoj ključ radi.",
     "validating": "Validacija.",
     "validateAndSaveApiKey": "Validiraj i spremi API ključ",
     "errorAutoDetect": "Nije moguće automatski otkriti token",

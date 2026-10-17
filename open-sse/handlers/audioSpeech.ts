@@ -1038,7 +1038,7 @@ export async function handleAudioSpeech({
       body: JSON.stringify({
         model: modelId,
         input: body.input,
-        voice: body.voice || "alloy",
+        voice: body.voice || providerConfig.defaultVoice || "alloy",
         response_format: normalizeSpeechResponseFormat(body.response_format),
         speed: body.speed || 1.0,
       }),

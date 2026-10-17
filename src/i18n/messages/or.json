@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "ଫିଲ୍ଟରଗୁଡ଼ିକ ସଫା କରନ୍ତୁ",
     "disableNonPublicModels": "ଅଣ-ସାର୍ବଜନୀନ ମଡେଲଗୁଡ଼ିକୁ ଅକ୍ଷମ କରନ୍ତୁ",
     "disableNonPublicModelsDesc": "ପ୍ରଦାନକାରୀ କ୍ୟାଟାଲଗ୍ରେ ଆବିଷ୍କୃତ ହୋଇନଥିବା କିମ୍ବା ସାର୍ବଜନୀନ ଭାବେ ଚିହ୍ନିତ ହୋଇନଥିବା ମଡେଲଗୁଡ଼ିକ ପାଇଁ ଅନୁରୋଧ ପ୍ରତ୍ୟାଖ୍ୟାନ କରନ୍ତୁ",
+    "forcedModel": "ବାଧ୍ୟତାମୂଳକ ମଡେଲ",
+    "forcedModelDesc": "ଏହି କି ଦ୍ୱାରା କରାଯାଇଥିବା ପ୍ରତ୍ୟେକ ଚାଟ୍ ଅନୁରୋଧକୁ, କ୍ଲାଏଣ୍ଟ ଯେକୌଣସି ମଡେଲ ମାଗିଲେ ମଧ୍ୟ (କିମ୍ବା କିଛି ନ ପଠାଇଲେ ମଧ୍ୟ), ଏହି ମଡେଲ କିମ୍ବା କମ୍ବୋକୁ ପଠାନ୍ତୁ। କି'ର ମଡେଲ, କମ୍ବୋ ଏବଂ ବଜେଟ୍ ସୀମା ତଥାପି ଲାଗୁ ହୁଏ।",
+    "forcedModelPlaceholder": "ବାଧ୍ୟତାମୂଳକ ନୁହେଁ: କ୍ଲାଏଣ୍ଟ ମାଗୁଥିବା ମଡେଲ ବ୍ୟବହାର କରନ୍ତୁ",
     "normalKeysSection": "ସାଧାରଣ କୀଗୁଡ଼ିକ",
     "quotaKeysSection": "କୋଟା କୀଗୁଡ଼ିକ",
     "bypassProviderQuota": "ପ୍ରଦାନକାରୀ କୋଟା କଟଅଫ୍ଗୁଡ଼ିକୁ ବାଇପାସ୍ କରନ୍ତୁ",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — OpenAI-ସୁସଙ୍ଗତ ପ୍ରଦାନକାରୀ ସମର୍ଥନ ସହିତ ସ୍ୱୟଂ-ଉନ୍ନତିଶୀଳ RLM କୋଡିଂ ହାର୍ନେସ୍",
       "warp": "କଷ୍ଟମ୍ ପ୍ରଦାନକାରୀ ସମର୍ଥନ ସହିତ Warp AI ଟର୍ମିନାଲ୍",
       "agent-deck": "Agent Deck ବହୁ-ଏଜେଣ୍ଟ ସମନ୍ୱୟକାରୀ",
-      "5dive": "5dive — ସ୍ୱୟଂ-ହୋଷ୍ଟ କରାଯାଇଥିବା କୋଡିଂ ଏଜେଣ୍ଟମାନଙ୍କର ଏକ ସମୂହ; ଗୋଟିଏ ପ୍ରମାଣୀକରଣ ପ୍ରୋଫାଇଲ୍ ସେମାନଙ୍କୁ OmniRoute ଆଡ଼କୁ ନିର୍ଦ୍ଦେଶ କରେ"
+      "5dive": "5dive — ସ୍ୱୟଂ-ହୋଷ୍ଟ କରାଯାଇଥିବା କୋଡିଂ ଏଜେଣ୍ଟମାନଙ୍କର ଏକ ସମୂହ; ଗୋଟିଏ ପ୍ରମାଣୀକରଣ ପ୍ରୋଫାଇଲ୍ ସେମାନଙ୍କୁ OmniRoute ଆଡ଼କୁ ନିର୍ଦ୍ଦେଶ କରେ",
+      "zed": "Zed କୋଡ୍ ଏଡିଟର — OpenAI-ସୁସଙ୍ଗତ ପ୍ରଦାତା ମାଧ୍ୟମରେ ବିଲ୍ଟ-ଇନ୍ ଏଜେଣ୍ଟ"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "ତା’ପରେ VS Codeକୁ ପୁନଃଲୋଡ୍ କରନ୍ତୁ ଏବଂ ଇନ୍ପୁଟ୍ ପ୍ରମ୍ପ୍ଟରେ API କୀ ସେଟ୍ କରନ୍ତୁ।",
     "wireApiChatCompletions": "ଚାଟ୍ କମ୍ପ୍ଲିସନ୍ସ (/chat/completions)",
     "wireApiResponses": "ରେସ୍ପନ୍ସେସ୍ API (/responses)",
+    "codexModelCatalog": "Codex ର /model ପିକରରେ OmniRoute ମଡେଲଗୁଡ଼ିକ ଦେଖାନ୍ତୁ",
+    "codexModelCatalogHint": "ସଂସ୍ଥାପିତ Codex ର ନିଜସ୍ୱ ମଡେଲ କ୍ୟାଟାଲଗରୁ ~/.codex/omniroute-models.json ଲେଖେ (ପ୍ରତି ମଡେଲ ପାଇଁ ପ୍ରାୟ 60 KB)। Codex ଅପଗ୍ରେଡ୍ କରିବା ପରେ ପୁଣି ପ୍ରୟୋଗ କରନ୍ତୁ।",
+    "codexCatalogWarning": "Codex ର /model ପିକର ଅପଡେଟ୍ ହୋଇନାହିଁ: OmniRoute ସଂସ୍ଥାପିତ Codex ମଡେଲ କ୍ୟାଟାଲଗ ପଢ଼ିପାରିଲା ନାହିଁ।",
     "cliproxyapiActionFailed": "କାର୍ଯ୍ୟ ବିଫଳ ହେଲା",
     "cliproxyapiActionSucceeded": "କାର୍ଯ୍ୟ ସଫଳ ହେଲା",
     "cliproxyapiCheckUpdates": "ଅପଡେଟ୍ ଯାଞ୍ଚ କରନ୍ତୁ",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "ସଂକ୍ଷିପ୍ତ CJK (文言)",
         "description": "ଶାସ୍ତ୍ରୀୟ ଚୀନୀର ଅତ୍ୟନ୍ତ ସଂକ୍ଷିପ୍ତ ଶୈଳୀ (କେବଳ ଚୀନୀ ପାଇଁ ଉପଲବ୍ଧ)।"
+      },
+      "antislop-ui": {
+        "label": "Antislop UI ଫିଲ୍ଟର",
+        "description": "ଉଦ୍ଦେଶ୍ୟ-ପରୀକ୍ଷିତ ଭିଜୁଆଲ: କୌଣସି ସାଧାରଣ ଗ୍ରେଡିଏଣ୍ଟ, ଟେମ୍ପଲେଟ ଲେଆଉଟ କିମ୍ବା ଅକାମୀ କଣ୍ଟ୍ରୋଲ ନାହିଁ।"
+      },
+      "antislop-copy": {
+        "label": "Antislop ଲେଖା ଓ ମାନବ ଫିଲ୍ଟର",
+        "description": "ସଚ୍ଚୋଟ ଲେଖା ଓ ଲୋକଙ୍କ ପାଇଁ ନିୟମ: AI ଚିହ୍ନ ନାହିଁ, WCAG AA କଣ୍ଟ୍ରାଷ୍ଟ, କିବୋର୍ଡ, ଅବସ୍ଥା, ମୋବାଇଲ ରିଫ୍ଲୋ।"
       }
     },
     "resilienceWaitForCooldown": "କୁଲ୍ଡାଉନ୍ ପାଇଁ ଅପେକ୍ଷା କରନ୍ତୁ",
@@ -9864,6 +9879,9 @@
     "hideQuotaRow": "ଏହି କୋଟା ଧାଡ଼ିଟି ଲୁଚାନ୍ତୁ",
     "showQuotaRow": "ଏହି କୋଟା ଧାଡ଼ିଟି ଦେଖାନ୍ତୁ",
     "hiddenQuotaRowsLabel": "ଲୁଚାଯାଇଛି:",
+    "quotaSpeedTitle": "ଏହି ଆକାଉଣ୍ଟରେ ସାମ୍ପ୍ରତିକ ଡିକୋଡ୍ ଗତି (ଶେଷ {count}ଟି ସଫଳ ଅନୁରୋଧ)",
+    "quotaSpeedLine": "{model}: {avg} tok/s ହାରାହାରି · ଶେଷ {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s ହାରାହାରି · ଶେଷ {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "କୋଟା ଦୃଶ୍ୟମାନତା ଅପଡେଟ୍ କରିବାରେ ବିଫଳ",
     "account": "ଆକାଉଣ୍ଟ",
     "modelQuotas": "ମଡେଲ୍ କୋଟାଗୁଡ଼ିକ",
@@ -14501,7 +14519,10 @@
     "importing": "ଆମଦାନୀ କରାଯାଉଛି...",
     "apiKeyPlaceholder": "ଆପଣଙ୍କ {providerLabel} API କୀ ପେଷ୍ଟ କରନ୍ତୁ...",
     "apiKeyStoredDescription": "ଦୀର୍ଘକାଳୀନ ବିଅରର୍ ପରିଚୟପତ୍ର ଭାବେ ଏନ୍କ୍ରିପ୍ଟ କରି ସଂରକ୍ଷିତ କରାଯାଏ। ଏଥିପାଇଁ କୌଣସି ରିଫ୍ରେଶ୍ ପ୍ରବାହ ନାହିଁ।",
-    "apiKeyRegionDescription": "କୀ ପାଇଁ AWS ଅଞ୍ଚଳ (ଡିଫଲ୍ଟ: us-east-1)",
+    "apiKeyRegionAuto": "ସ୍ୱୟଂଚାଳିତ ଚିହ୍ନଟ (ସୁପାରିଶ କରାଯାଇଛି)",
+    "apiKeyRegionUsEast1": "ୟୁଏସ୍ ଇଷ୍ଟ (ଉତ୍ତର ଭର୍ଜିନିଆ)",
+    "apiKeyRegionEuCentral1": "ୟୁରୋପ (ଫ୍ରାଙ୍କଫର୍ଟ)",
+    "apiKeyRegionAutoDescription": "ସ୍ୱୟଂଚାଳିତ ଚିହ୍ନଟ ପ୍ରଥମେ ୟୁଏସ୍ ଇଷ୍ଟ, ତା'ପରେ ୟୁରୋପ (ଫ୍ରାଙ୍କଫର୍ଟ) ଚେଷ୍ଟା କରେ ଏବଂ ଯେଉଁ ଅଞ୍ଚଳରେ କି କାମ କରେ ତାହା ସେଭ କରେ।",
     "validating": "ବୈଧତା ଯାଞ୍ଚ କରାଯାଉଛି...",
     "validateAndSaveApiKey": "API କୀର ବୈଧତା ଯାଞ୍ଚ କରି ସଂରକ୍ଷଣ କରନ୍ତୁ",
     "errorAutoDetect": "ଟୋକେନ୍ ସ୍ୱୟଂଚାଳିତ ଭାବେ ଚିହ୍ନଟ କରାଯାଇପାରିଲା ନାହିଁ",

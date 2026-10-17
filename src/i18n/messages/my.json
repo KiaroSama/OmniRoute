@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "စစ်ထုတ်မှုများကို ရှင်းလင်းပါ",
     "disableNonPublicModels": "အများသုံးမဟုတ်သော Models များကို ပိတ်ပါ",
     "disableNonPublicModelsDesc": "provider catalog တွင် ရှာဖွေတွေ့ရှိခြင်းမရှိသော သို့မဟုတ် အများသုံးအဖြစ် မသတ်မှတ်ထားသော models များအတွက် တောင်းဆိုမှုများကို ငြင်းပယ်သည်",
+    "forcedModel": "အတင်းသတ်မှတ်ထားသော မော်ဒယ်",
+    "forcedModelDesc": "ဤကီးဖြင့် ပြုလုပ်သော chat တောင်းဆိုမှုတိုင်းကို client က မည်သည့်မော်ဒယ်ကို တောင်းဆိုသည်ဖြစ်စေ (သို့မဟုတ် မပို့သည့်အခါတွင်ပင်) ဤမော်ဒယ် သို့မဟုတ် combo သို့ လမ်းကြောင်းပေးပါ။ ကီး၏ မော်ဒယ်၊ combo နှင့် ဘတ်ဂျက် ကန့်သတ်ချက်များ ဆက်လက်သက်ရောက်ပါသည်။",
+    "forcedModelPlaceholder": "အတင်းမသတ်မှတ်ပါ- client တောင်းဆိုသော မော်ဒယ်ကို အသုံးပြုပါ",
     "normalKeysSection": "ပုံမှန် keys များ",
     "quotaKeysSection": "Quota keys များ",
     "bypassProviderQuota": "provider quota ကန့်သတ်ချက်များကို ကျော်လွှားရန်",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — OpenAI-compatible provider ပံ့ပိုးမှုပါဝင်သော မိမိကိုယ်ကို တိုးတက်စေသည့် RLM ကုဒ်ရေး harness",
       "warp": "စိတ်ကြိုက် provider ပံ့ပိုးမှုပါဝင်သော Warp AI terminal",
       "agent-deck": "Agent Deck အေးဂျင့်မျိုးစုံ စီမံညှိနှိုင်းရေးကိရိယာ",
-      "5dive": "5dive — ကိုယ်တိုင် host လုပ်ထားသော ကုဒ်ရေးအေးဂျင့်အုပ်စု၊ auth profile တစ်ခုတည်းဖြင့် ၎င်းတို့အားလုံးကို OmniRoute သို့ ချိတ်ဆက်ပေးသည်"
+      "5dive": "5dive — ကိုယ်တိုင် host လုပ်ထားသော ကုဒ်ရေးအေးဂျင့်အုပ်စု၊ auth profile တစ်ခုတည်းဖြင့် ၎င်းတို့အားလုံးကို OmniRoute သို့ ချိတ်ဆက်ပေးသည်",
+      "zed": "Zed ကုဒ်တည်းဖြတ်ကိရိယာ — OpenAI နှင့် ကိုက်ညီသော ပံ့ပိုးသူမှတစ်ဆင့် ပါဝင်ပြီးသား အေးဂျင့်"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "ထို့နောက် VS Code ကို ပြန်လည်ဖွင့်ပြီး ထည့်သွင်းရန်အကွက်တွင် API သော့ကို သတ်မှတ်ပါ။",
     "wireApiChatCompletions": "ချတ်ပြီးစီးမှုများ (/chat/completions)",
     "wireApiResponses": "တုံ့ပြန်မှု API (/responses)",
+    "codexModelCatalog": "Codex ၏ /model ရွေးချယ်ကိရိယာတွင် OmniRoute မော်ဒယ်များကို ပြပါ",
+    "codexModelCatalogHint": "ထည့်သွင်းထားသော Codex ၏ ကိုယ်ပိုင် မော်ဒယ်ကတ်တလောက်မှ ~/.codex/omniroute-models.json ကို ရေးသားသည် (မော်ဒယ်တစ်ခုလျှင် 60 KB ခန့်)။ Codex ကို အဆင့်မြှင့်ပြီးနောက် ထပ်မံအသုံးချပါ။",
+    "codexCatalogWarning": "Codex ၏ /model ရွေးချယ်ကိရိယာကို အပ်ဒိတ်မလုပ်ရသေးပါ- OmniRoute သည် ထည့်သွင်းထားသော Codex မော်ဒယ်ကတ်တလောက်ကို မဖတ်နိုင်ပါ။",
     "cliproxyapiActionFailed": "လုပ်ဆောင်ချက် မအောင်မြင်ပါ",
     "cliproxyapiActionSucceeded": "လုပ်ဆောင်ချက် အောင်မြင်ပါသည်",
     "cliproxyapiCheckUpdates": "အပ်ဒိတ်များကို စစ်ဆေးပါ",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "တိုတောင်းသော CJK (文言)",
         "description": "ရှေးဟောင်းတရုတ်စာ အလွန်တိုတောင်းသော ရေးဟန် (တရုတ်ဘာသာအတွက်သာ ရနိုင်သည်)။"
+      },
+      "antislop-ui": {
+        "label": "Antislop UI စစ်ထုတ်စနစ်",
+        "description": "ရည်ရွယ်ချက် စစ်ဆေးထားသော ရုပ်ပုံများ- ယေဘုယျ gradient၊ template အပြင်အဆင် သို့မဟုတ် အလုပ်မလုပ်သော ထိန်းချုပ်မှုများ မပါ။"
+      },
+      "antislop-copy": {
+        "label": "Antislop စာသားနှင့် လူသား စစ်ထုတ်စနစ်",
+        "description": "ရိုးသားသော စာသားနှင့် လူများအတွက် စည်းမျဉ်းများ- AI လက္ခဏာ မပါ၊ WCAG AA ခြားနားမှု၊ ကီးဘုတ်၊ အခြေအနေများ၊ မိုဘိုင်း ပြန်လည်စီစဉ်မှု။"
       }
     },
     "resilienceWaitForCooldown": "Cooldown ပြီးသည်အထိ စောင့်ပါ",
@@ -9864,6 +9879,9 @@
     "hideQuotaRow": "ဤ quota အတန်းကို ဖျောက်ရန်",
     "showQuotaRow": "ဤ quota အတန်းကို ပြရန်",
     "hiddenQuotaRowsLabel": "ဖျောက်ထားသည်:",
+    "quotaSpeedTitle": "ဤအကောင့်ရှိ မကြာသေးမီ ဒီကုဒ်အမြန်နှုန်း (နောက်ဆုံး အောင်မြင်သော တောင်းဆိုမှု {count} ခု)",
+    "quotaSpeedLine": "{model}: {avg} tok/s ပျမ်းမျှ · နောက်ဆုံး {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s ပျမ်းမျှ · နောက်ဆုံး {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "ခွဲတမ်းမြင်နိုင်မှုကို အပ်ဒိတ်လုပ်၍မရပါ",
     "account": "အကောင့်",
     "modelQuotas": "မော်ဒယ်ခွဲတမ်းများ",
@@ -14501,7 +14519,10 @@
     "importing": "တင်သွင်းနေသည်...",
     "apiKeyPlaceholder": "သင့် {providerLabel} API ကီးကို ကူးထည့်ပါ...",
     "apiKeyStoredDescription": "သက်တမ်းရှည် bearer အထောက်အထားအဖြစ် ကုဒ်ဝှက်၍ သိမ်းဆည်းထားပါမည်။ ပြန်လည်ရယူသည့် လုပ်ငန်းစဉ် မရှိပါ။",
-    "apiKeyRegionDescription": "ကီးအတွက် AWS ဒေသ (မူလသတ်မှတ်ချက် - us-east-1)",
+    "apiKeyRegionAuto": "အလိုအလျောက် ရှာဖွေရန် (အကြံပြုထားသည်)",
+    "apiKeyRegionUsEast1": "US အရှေ့ (မြောက်ပိုင်း ဗာဂျီးနီးယား)",
+    "apiKeyRegionEuCentral1": "ဥရောပ (ဖရန့်ဖို့တ်)",
+    "apiKeyRegionAutoDescription": "အလိုအလျောက် ရှာဖွေမှုသည် US အရှေ့ကို ဦးစွာ စမ်းပြီး ဥရောပ (ဖရန့်ဖို့တ်) ကို ဆက်စမ်းကာ ကီး အလုပ်လုပ်သည့် ဒေသကို သိမ်းဆည်းသည်။",
     "validating": "အတည်ပြုနေသည်...",
     "validateAndSaveApiKey": "API ကီးကို အတည်ပြုပြီး သိမ်းဆည်းရန်",
     "errorAutoDetect": "တိုကင်ကို အလိုအလျောက် ရှာမတွေ့နိုင်ပါ",

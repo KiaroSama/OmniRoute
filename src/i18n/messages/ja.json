@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "フィルターをクリア",
     "disableNonPublicModels": "非公開モデルを無効化",
     "disableNonPublicModelsDesc": "プロバイダーカタログで検出されていない、または公開としてマークされていないモデルへのリクエストを拒否します",
+    "forcedModel": "強制モデル",
+    "forcedModelDesc": "このキーで行われるすべてのチャットリクエストを、クライアントが要求するモデルに関係なく(またはモデルを送信しない場合も)、このモデルまたはコンボにルーティングします。キーのモデル、コンボ、予算の制限は引き続き適用されます。",
+    "forcedModelPlaceholder": "強制なし:クライアントが要求するモデルを使用",
     "normalKeysSection": "通常キー",
     "quotaKeysSection": "クォータキー",
     "bypassProviderQuota": "プロバイダーのクォータ制限をバイパス",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — OpenAI互換プロバイダーをサポートする自己改善型RLMコーディングハーネス",
       "warp": "カスタムプロバイダーをサポートするWarp AIターミナル",
       "agent-deck": "Agent Deckマルチエージェントオーケストレーター",
-      "5dive": "5dive — セルフホスト型のコーディングエージェント群。1つの認証プロファイルで全体をOmniRouteに向けます"
+      "5dive": "5dive — セルフホスト型のコーディングエージェント群。1つの認証プロファイルで全体をOmniRouteに向けます",
+      "zed": "Zed コードエディター — OpenAI 互換プロバイダー経由の内蔵エージェント"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "その後、VS Code を再読み込みし、入力プロンプトで API キーを設定します。",
     "wireApiChatCompletions": "チャットの完了 (/chat/completions)",
     "wireApiResponses": "レスポンス API (/responses)",
+    "codexModelCatalog": "Codex の /model ピッカーに OmniRoute のモデルを表示する",
+    "codexModelCatalogHint": "インストール済み Codex 自身のモデルカタログから ~/.codex/omniroute-models.json を書き出します（1 モデルあたり約 60 KB）。Codex を更新したら再適用してください。",
+    "codexCatalogWarning": "Codex の /model ピッカーは更新されませんでした: OmniRoute がインストール済み Codex のモデルカタログを読み取れませんでした。",
     "cliproxyapiActionFailed": "アクションが失敗しました",
     "cliproxyapiActionSucceeded": "アクションが成功しました",
     "cliproxyapiCheckUpdates": "更新を確認",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "簡潔なCJK (文言)",
         "description": "漢文の超簡潔スタイル (中国語でのみ利用可能)。"
+      },
+      "antislop-ui": {
+        "label": "アンチスロップUIフィルター",
+        "description": "目的を検証したビジュアル：ありきたりなグラデーション、テンプレートレイアウト、動かないコントロールを排除。"
+      },
+      "antislop-copy": {
+        "label": "アンチスロップ文章・人間フィルター",
+        "description": "誠実な文章と人のためのルール：AIっぽさなし、WCAG AAコントラスト、キーボード、状態表示、モバイルのリフロー。"
       }
     },
     "resilienceWaitForCooldown": "クールダウンを待ちます",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "このクォータ行を非表示",
     "showQuotaRow": "このクォータ行を表示",
     "hiddenQuotaRowsLabel": "非表示:",
+    "quotaSpeedTitle": "このアカウントの最近のデコード速度（直近 {count} 件の成功リクエスト）",
+    "quotaSpeedLine": "{model}: {avg} tok/s 平均 · 直近 {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s 平均 · 直近 {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "クォータの表示設定の更新に失敗しました",
     "account": "アカウント",
     "modelQuotas": "モデルのクォータ",
@@ -14501,7 +14519,10 @@
     "importing": "インポート中...",
     "apiKeyPlaceholder": "{providerLabel} APIキーを貼り付けてください...",
     "apiKeyStoredDescription": "長期的なベアラー資格情報として暗号化されて保存されています。リフレッシュフローはありません。",
-    "apiKeyRegionDescription": "キーのAWSリージョン（デフォルト：us-east-1）",
+    "apiKeyRegionAuto": "自動検出（推奨）",
+    "apiKeyRegionUsEast1": "米国東部（バージニア北部）",
+    "apiKeyRegionEuCentral1": "欧州（フランクフルト）",
+    "apiKeyRegionAutoDescription": "自動検出はまず米国東部、次に欧州（フランクフルト）を試し、キーが機能するリージョンを保存します。",
     "validating": "検証中...",
     "validateAndSaveApiKey": "APIキーを検証して保存する",
     "errorAutoDetect": "トークンを自動検出できませんでした",

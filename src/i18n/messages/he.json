@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "נקה מסננים",
     "disableNonPublicModels": "השבת מודלים שאינם ציבוריים",
     "disableNonPublicModelsDesc": "דחה בקשות עבור מודלים שלא התגלו או שאינם מסומנים כציבוריים בקטלוג הספק",
+    "forcedModel": "מודל מאולץ",
+    "forcedModelDesc": "ניתוב כל בקשת צ'אט שנעשית עם מפתח זה למודל או לקומבו הזה, בלי קשר למודל שהלקוח מבקש (או כשהוא לא שולח אחד). מגבלות המודלים, הקומבו והתקציב של המפתח עדיין חלות.",
+    "forcedModelPlaceholder": "לא מאולץ: שימוש במודל שהלקוח מבקש",
     "normalKeysSection": "מפתחות רגילים",
     "quotaKeysSection": "מפתחות מכסה",
     "bypassProviderQuota": "עקוף מגבלות מכסה של ספקים",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — מסגרת קידוד מבוססת RLM המשתפרת בעצמה, עם תמיכה בספקים תואמי OpenAI",
       "warp": "מסוף Warp AI עם תמיכה בספק מותאם אישית",
       "agent-deck": "מתזמר מרובה סוכנים Agent Deck",
-      "5dive": "5dive — צי מתארח עצמאית של סוכני קוד; פרופיל אימות אחד מכוון את כולם ל-OmniRoute"
+      "5dive": "5dive — צי מתארח עצמאית של סוכני קוד; פרופיל אימות אחד מכוון את כולם ל-OmniRoute",
+      "zed": "עורך הקוד Zed — סוכן מובנה דרך ספק תואם OpenAI"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "לאחר מכן טען מחדש את VS Code והגדר את מפתח ה-API בשורת הקלט.",
     "wireApiChatCompletions": "השלמות של צ'אט (/chat/completions)",
     "wireApiResponses": "ממשק API של תגובות (/תגובות)",
+    "codexModelCatalog": "הצג את מודלי OmniRoute בבורר ‎/model של Codex",
+    "codexModelCatalogHint": "כותב את ~/.codex/omniroute-models.json מתוך קטלוג המודלים של Codex המותקן (כ־60 KB לכל מודל). יש להחיל שוב לאחר שדרוג Codex.",
+    "codexCatalogWarning": "בורר ‎/model של Codex לא עודכן: OmniRoute לא הצליח לקרוא את קטלוג המודלים של Codex המותקן.",
     "cliproxyapiActionFailed": "הפעולה נכשלה",
     "cliproxyapiActionSucceeded": "הפעולה הצליחה",
     "cliproxyapiCheckUpdates": "בדוק עדכונים",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK תמציתי (文言)",
         "description": "סגנון סיני קלאסי אולטרה-תמציתי (זמין עבור סינית בלבד)."
+      },
+      "antislop-ui": {
+        "label": "מסנן Antislop לממשק",
+        "description": "רכיבים חזותיים שעברו מבחן מטרה: בלי מעברי צבע גנריים, פריסות תבנית או פקדים מתים."
+      },
+      "antislop-copy": {
+        "label": "מסנן Antislop לטקסט ולאנשים",
+        "description": "טקסט כן וכללים לאנשים: בלי סימני AI, ניגודיות WCAG AA, מקלדת, מצבים, התאמה לנייד."
       }
     },
     "resilienceWaitForCooldown": "המתן ל-Cooldown",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "הסתר שורת מכסה זו",
     "showQuotaRow": "הצג שורת מכסה זו",
     "hiddenQuotaRowsLabel": "מוסתר:",
+    "quotaSpeedTitle": "מהירות פענוח אחרונה בחשבון זה ({count} הבקשות המוצלחות האחרונות)",
+    "quotaSpeedLine": "{model}: {avg} tok/s ממוצע · אחרון {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s ממוצע · אחרון {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "עדכון נראות המכסה נכשל",
     "account": "חשבון",
     "modelQuotas": "מכסות דגם",
@@ -14501,7 +14519,10 @@
     "importing": "מייבא...",
     "apiKeyPlaceholder": "הדבק את מפתח ה-API של {providerLabel} שלך...",
     "apiKeyStoredDescription": "מאוחסן מוצפן כקרדנציה נושאת ארוכת טווח. אין זרימת רענון.",
-    "apiKeyRegionDescription": "אזור AWS עבור המפתח (ברירת מחדל: us-east-1)",
+    "apiKeyRegionAuto": "זיהוי אוטומטי (מומלץ)",
+    "apiKeyRegionUsEast1": "מזרח ארה״ב (צפון וירג׳יניה)",
+    "apiKeyRegionEuCentral1": "אירופה (פרנקפורט)",
+    "apiKeyRegionAutoDescription": "הזיהוי האוטומטי מנסה קודם את מזרח ארה״ב, אחר כך את אירופה (פרנקפורט), ושומר את האזור שבו המפתח עובד.",
     "validating": "מאמת...",
     "validateAndSaveApiKey": "אמת ושמור את מפתח ה-API",
     "errorAutoDetect": "לא ניתן לזהות אוטומטית את הטוקן",

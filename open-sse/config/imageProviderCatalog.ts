@@ -1,3 +1,9 @@
+import {
+  QWEN_TOKEN_PLAN_IMAGE_PROVIDER,
+  BAILIAN_CODING_PLAN_IMAGE_PROVIDER,
+  ALIBABA_IMAGE_PROVIDER,
+  QWEN_CLOUD_IMAGE_PROVIDER,
+} from "./providers/registry/dashscope/imageModels.ts";
 import { LMARENA_DIRECT_IMAGE_MODELS } from "./providers/registry/lmarena/directModels.ts";
 import { SEGMIND_IMAGE_PROVIDER } from "./providers/registry/segmind/imageModels.ts";
 import { KIE_IMAGE_MODELS } from "./providers/registry/kie/imageModels.ts";
@@ -11,6 +17,7 @@ import {
 import { AI_HORDE_IMAGE_PROVIDER } from "./providers/registry/aihorde/imageModels.ts";
 import { toRegistryImageModels as toSyntxImageModels } from "../services/syntxMediaCatalog.ts";
 import { ZENMUX_IMAGE_PROVIDER } from "./providers/registry/zenmux/imageModels.ts";
+import { MUSE_CODE_IMAGE_PROVIDER } from "./providers/registry/muse-code/imageModels.ts";
 
 import type { ImageProviderConfig } from "./imageRegistryTypes.ts";
 import { CODEX_IMAGE_PROVIDER } from "./providers/registry/codex/imageModels.ts";
@@ -19,6 +26,7 @@ import { XAI_API_KEY_IMAGE_PROVIDER } from "./providers/registry/xai/imageModels
 
 export const IMAGE_PROVIDERS: Record<string, ImageProviderConfig> = {
   zenmux: ZENMUX_IMAGE_PROVIDER,
+  "muse-code": MUSE_CODE_IMAGE_PROVIDER,
   agnes: {
     id: "agnes",
     baseUrl: "https://apihub.agnes-ai.com/v1/images/generations",
@@ -48,30 +56,7 @@ export const IMAGE_PROVIDERS: Record<string, ImageProviderConfig> = {
     supportedSizes: ["1K", "2K", "3K", "4K"],
   },
 
-  "qwen-cloud-token-plan": {
-    id: "qwen-cloud-token-plan",
-    alias: "qct",
-    baseUrl:
-      "https://token-plan.ap-southeast-1.maas.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
-    authType: "apikey",
-    authHeader: "bearer",
-    format: "qwen-token-plan-image",
-    models: [
-      {
-        id: "wan2.7-image",
-        name: "Wan 2.7 Image",
-        inputModalities: ["text", "image"],
-      },
-      {
-        id: "wan2.7-image-pro",
-        name: "Wan 2.7 Image Pro",
-        inputModalities: ["text", "image"],
-      },
-    ],
-    // Both models share 1K/2K support. The Pro model also accepts explicit 4K
-    // dimensions, which callers can still pass through the permissive request schema.
-    supportedSizes: ["1024x1024", "2048x2048"],
-  },
+  "qwen-cloud-token-plan": QWEN_TOKEN_PLAN_IMAGE_PROVIDER,
 
   openai: {
     id: "openai",
@@ -475,6 +460,20 @@ export const IMAGE_PROVIDERS: Record<string, ImageProviderConfig> = {
     supportedSizes: ["1024x1024", "1024x1280", "1280x1024"],
   },
 
+  // NaN.Builders — OpenAI-compatible image generation.
+  nan: {
+    id: "nan",
+    baseUrl: "https://api.nan.builders/v1/images/generations",
+    authType: "apikey",
+    authHeader: "bearer",
+    format: "openai",
+    models: [
+      { id: "flux-2-klein", name: "FLUX.2 Klein" },
+      { id: "qwen-image-2.1", name: "Qwen Image 2.1" },
+    ],
+    supportedSizes: ["1024x1024"],
+  },
+
   // NVIDIA NIM image generation (FLUX models). Distinct from the NVIDIA *chat* entry
   // (open-sse/config/providers/registry/nvidia/index.ts, host integrate.api.nvidia.com,
   // OpenAI-compatible) — image generation lives on ai.api.nvidia.com/v1/genai/<model>
@@ -584,114 +583,16 @@ export const IMAGE_PROVIDERS: Record<string, ImageProviderConfig> = {
   // Keep Bailian Coding Plan after existing duplicate model owners so adding
   // explicit `bailian-coding-plan/` and `bcp/` routes does not change
   // historical bare-model routing.
-  "bailian-coding-plan": {
-    id: "bailian-coding-plan",
-    alias: "bcp",
-    baseUrl:
-      "https://coding-intl.dashscope.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
-    authType: "apikey",
-    authHeader: "bearer",
-    format: "bailian-coding-plan-image",
-    models: [
-      {
-        id: "wan2.7-image",
-        name: "Wan 2.7 Image",
-        inputModalities: ["text", "image"],
-      },
-      {
-        id: "wan2.7-image-pro",
-        name: "Wan 2.7 Image Pro",
-        inputModalities: ["text", "image"],
-      },
-      {
-        id: "qwen-image-2.0",
-        name: "Qwen Image 2.0",
-        inputModalities: ["text", "image"],
-      },
-      {
-        id: "qwen-image-2.0-pro",
-        name: "Qwen Image 2.0 Pro",
-        inputModalities: ["text", "image"],
-      },
-    ],
-    supportedSizes: ["1024x1024", "2048x2048"],
-  },
+  "bailian-coding-plan": BAILIAN_CODING_PLAN_IMAGE_PROVIDER,
 
   // Keep Alibaba after existing duplicate model owners so adding explicit
   // `alibaba/` and `ali/` routes does not change historical bare-model routing.
-  alibaba: {
-    id: "alibaba",
-    alias: "ali",
-    baseUrl:
-      "https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
-    authType: "apikey",
-    authHeader: "bearer",
-    format: "alibaba-image",
-    models: [
-      {
-        id: "qwen-image-3.0-pro",
-        name: "Qwen Image 3.0 Pro",
-        inputModalities: ["text", "image"],
-      },
-      {
-        id: "qwen-image-2.0-pro-2026-06-22",
-        name: "Qwen Image 2.0 Pro (2026-06-22)",
-        inputModalities: ["text", "image"],
-      },
-      {
-        id: "qwen-image-2.0",
-        name: "Qwen Image 2.0",
-        inputModalities: ["text", "image"],
-      },
-      { id: "z-image-turbo", name: "Z-Image Turbo" },
-      { id: "wan2.6-t2i", name: "Wan 2.6 T2I" },
-    ],
-    supportedSizes: ["1024x1024", "1280x1280", "2048x2048"],
-  },
+  alibaba: ALIBABA_IMAGE_PROVIDER,
 
   // Keep regular Qwen Cloud isolated from Alibaba, Bailian Coding Plan, and
   // Qwen Cloud Token Plan. Explicit `qwen-cloud/` or `qwc/` routes use only
   // the regular Qwen Cloud connection and its regional DashScope endpoint.
-  "qwen-cloud": {
-    id: "qwen-cloud",
-    alias: "qwc",
-    baseUrl:
-      "https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/multimodal-generation/generation",
-    authType: "apikey",
-    authHeader: "bearer",
-    format: "qwen-cloud-image",
-    models: [
-      {
-        id: "wan2.7-image-pro",
-        name: "Wan 2.7 Image Pro",
-        inputModalities: ["text", "image"],
-      },
-      {
-        id: "wan2.7-image",
-        name: "Wan 2.7 Image",
-        inputModalities: ["text", "image"],
-      },
-      {
-        id: "qwen-image-3.0-pro",
-        name: "Qwen Image 3.0 Pro",
-        inputModalities: ["text", "image"],
-      },
-      {
-        id: "qwen-image-2.0-pro-2026-06-22",
-        name: "Qwen Image 2.0 Pro (2026-06-22)",
-        inputModalities: ["text", "image"],
-      },
-      {
-        id: "qwen-image-2.0-2026-03-03",
-        name: "Qwen Image 2.0 (2026-03-03)",
-        inputModalities: ["text", "image"],
-      },
-      { id: "z-image-turbo", name: "Z-Image Turbo" },
-    ],
-    // 1K/2K are shared by the whole catalog. Wan 2.7 Image Pro callers can
-    // still pass supported 4K dimensions through the permissive request schema.
-    supportedSizes: ["1024x1024", "2048x2048"],
-  },
+  "qwen-cloud": QWEN_CLOUD_IMAGE_PROVIDER,
   aihorde: AI_HORDE_IMAGE_PROVIDER,
 
   // Keep UC after every existing image provider because parseImageModel() resolves

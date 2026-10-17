@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "ਫਿਲਟਰ ਸਾਫ਼ ਕਰੋ",
     "disableNonPublicModels": "ਗੈਰ-ਜਨਤਕ ਮਾਡਲ ਅਯੋਗ ਕਰੋ",
     "disableNonPublicModelsDesc": "ਉਨ੍ਹਾਂ ਮਾਡਲਾਂ ਲਈ ਬੇਨਤੀਆਂ ਰੱਦ ਕਰੋ ਜੋ ਖੋਜੇ ਨਹੀਂ ਗਏ ਜਾਂ ਪ੍ਰਦਾਤਾ ਕੈਟਾਲੌਗ ਵਿੱਚ ਜਨਤਕ ਵਜੋਂ ਚਿੰਨ੍ਹਿਤ ਨਹੀਂ ਹਨ",
+    "forcedModel": "ਲਾਜ਼ਮੀ ਮਾਡਲ",
+    "forcedModelDesc": "ਇਸ ਕੁੰਜੀ ਨਾਲ ਕੀਤੀ ਹਰ ਚੈਟ ਬੇਨਤੀ ਨੂੰ ਇਸ ਮਾਡਲ ਜਾਂ ਕੰਬੋ ਵੱਲ ਭੇਜੋ, ਭਾਵੇਂ ਕਲਾਇੰਟ ਕੋਈ ਵੀ ਮਾਡਲ ਮੰਗੇ (ਜਾਂ ਕੋਈ ਨਾ ਭੇਜੇ)। ਕੁੰਜੀ ਦੀਆਂ ਮਾਡਲ, ਕੰਬੋ ਅਤੇ ਬਜਟ ਸੀਮਾਵਾਂ ਫਿਰ ਵੀ ਲਾਗੂ ਰਹਿੰਦੀਆਂ ਹਨ।",
+    "forcedModelPlaceholder": "ਲਾਜ਼ਮੀ ਨਹੀਂ: ਕਲਾਇੰਟ ਵੱਲੋਂ ਮੰਗਿਆ ਮਾਡਲ ਵਰਤੋ",
     "normalKeysSection": "ਸਧਾਰਣ ਕੁੰਜੀਆਂ",
     "quotaKeysSection": "ਕੋਟਾ ਕੁੰਜੀਆਂ",
     "bypassProviderQuota": "ਪ੍ਰਦਾਤਾ ਕੋਟਾ ਕਟਆਫ਼ਾਂ ਨੂੰ ਬਾਈਪਾਸ ਕਰੋ",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — OpenAI-ਅਨੁਕੂਲ ਪ੍ਰੋਵਾਈਡਰ ਸਹਾਇਤਾ ਵਾਲਾ ਸਵੈ-ਸੁਧਾਰਸ਼ੀਲ RLM ਕੋਡਿੰਗ ਹਾਰਨੈੱਸ",
       "warp": "ਕਸਟਮ ਪ੍ਰੋਵਾਈਡਰ ਸਹਾਇਤਾ ਵਾਲਾ Warp AI ਟਰਮੀਨਲ",
       "agent-deck": "Agent Deck ਮਲਟੀ-ਏਜੰਟ ਆਰਕੈਸਟਰੇਟਰ",
-      "5dive": "5dive — ਕੋਡਿੰਗ ਏਜੰਟਾਂ ਦਾ ਸਵੈ-ਹੋਸਟ ਕੀਤਾ ਫਲੀਟ; ਇੱਕ ਪ੍ਰਮਾਣੀਕਰਨ ਪ੍ਰੋਫ਼ਾਈਲ ਉਹਨਾਂ ਸਭ ਨੂੰ OmniRoute ਵੱਲ ਨਿਰਦੇਸ਼ਿਤ ਕਰਦਾ ਹੈ"
+      "5dive": "5dive — ਕੋਡਿੰਗ ਏਜੰਟਾਂ ਦਾ ਸਵੈ-ਹੋਸਟ ਕੀਤਾ ਫਲੀਟ; ਇੱਕ ਪ੍ਰਮਾਣੀਕਰਨ ਪ੍ਰੋਫ਼ਾਈਲ ਉਹਨਾਂ ਸਭ ਨੂੰ OmniRoute ਵੱਲ ਨਿਰਦੇਸ਼ਿਤ ਕਰਦਾ ਹੈ",
+      "zed": "Zed ਕੋਡ ਐਡੀਟਰ — OpenAI-ਅਨੁਕੂਲ ਪ੍ਰਦਾਤਾ ਰਾਹੀਂ ਬਿਲਟ-ਇਨ ਏਜੰਟ"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "ਫਿਰ VS Code ਨੂੰ ਮੁੜ ਲੋਡ ਕਰੋ ਅਤੇ ਇਨਪੁੱਟ ਪ੍ਰੌਮਪਟ ਵਿੱਚ API ਕੁੰਜੀ ਸੈੱਟ ਕਰੋ।",
     "wireApiChatCompletions": "ਚੈਟ ਕੰਪਲੀਸ਼ਨਜ਼ (/chat/completions)",
     "wireApiResponses": "ਰਿਸਪਾਂਸਿਜ਼ API (/responses)",
+    "codexModelCatalog": "Codex ਦੇ /model ਪਿਕਰ ਵਿੱਚ OmniRoute ਮਾਡਲ ਦਿਖਾਓ",
+    "codexModelCatalogHint": "ਇੰਸਟਾਲ ਕੀਤੇ Codex ਦੇ ਆਪਣੇ ਮਾਡਲ ਕੈਟਾਲਾਗ ਤੋਂ ~/.codex/omniroute-models.json ਲਿਖਦਾ ਹੈ (ਹਰ ਮਾਡਲ ਲਈ ਲਗਭਗ 60 KB)। Codex ਅੱਪਗ੍ਰੇਡ ਕਰਨ ਤੋਂ ਬਾਅਦ ਦੁਬਾਰਾ ਲਾਗੂ ਕਰੋ।",
+    "codexCatalogWarning": "Codex ਦਾ /model ਪਿਕਰ ਅੱਪਡੇਟ ਨਹੀਂ ਹੋਇਆ: OmniRoute ਇੰਸਟਾਲ ਕੀਤੇ Codex ਦਾ ਮਾਡਲ ਕੈਟਾਲਾਗ ਨਹੀਂ ਪੜ੍ਹ ਸਕਿਆ।",
     "cliproxyapiActionFailed": "ਕਾਰਵਾਈ ਅਸਫਲ ਰਹੀ",
     "cliproxyapiActionSucceeded": "ਕਾਰਵਾਈ ਸਫਲ ਰਹੀ",
     "cliproxyapiCheckUpdates": "ਅੱਪਡੇਟਾਂ ਦੀ ਜਾਂਚ ਕਰੋ",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "ਸੰਖੇਪ CJK (文言)",
         "description": "ਕਲਾਸੀਕਲ ਚੀਨੀ ਦੀ ਅਤਿ-ਸੰਖੇਪ ਸ਼ੈਲੀ (ਕੇਵਲ ਚੀਨੀ ਲਈ ਉਪਲਬਧ)।"
+      },
+      "antislop-ui": {
+        "label": "Antislop UI ਫਿਲਟਰ",
+        "description": "ਮਕਸਦ-ਪਰਖੇ ਵਿਜ਼ੁਅਲ: ਕੋਈ ਆਮ ਗ੍ਰੇਡੀਐਂਟ, ਟੈਂਪਲੇਟ ਲੇਆਉਟ ਜਾਂ ਬੇਕਾਰ ਕੰਟਰੋਲ ਨਹੀਂ।"
+      },
+      "antislop-copy": {
+        "label": "Antislop ਲਿਖਤ ਅਤੇ ਮਨੁੱਖੀ ਫਿਲਟਰ",
+        "description": "ਇਮਾਨਦਾਰ ਲਿਖਤ ਅਤੇ ਲੋਕਾਂ ਲਈ ਨਿਯਮ: AI ਦੀ ਛਾਪ ਨਹੀਂ, WCAG AA ਕੰਟ੍ਰਾਸਟ, ਕੀਬੋਰਡ, ਸਥਿਤੀਆਂ, ਮੋਬਾਈਲ ਰੀਫਲੋ।"
       }
     },
     "resilienceWaitForCooldown": "ਕੂਲਡਾਊਨ ਦੀ ਉਡੀਕ ਕਰੋ",
@@ -9864,6 +9879,9 @@
     "hideQuotaRow": "ਇਹ ਕੋਟਾ ਕਤਾਰ ਲੁਕਾਓ",
     "showQuotaRow": "ਇਹ ਕੋਟਾ ਕਤਾਰ ਦਿਖਾਓ",
     "hiddenQuotaRowsLabel": "ਲੁਕਵੇਂ:",
+    "quotaSpeedTitle": "ਇਸ ਖਾਤੇ 'ਤੇ ਹਾਲੀਆ ਡੀਕੋਡ ਗਤੀ (ਆਖਰੀ {count} ਸਫਲ ਬੇਨਤੀਆਂ)",
+    "quotaSpeedLine": "{model}: {avg} tok/s ਔਸਤ · ਆਖਰੀ {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s ਔਸਤ · ਆਖਰੀ {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "ਕੋਟੇ ਦੀ ਦਿੱਖ ਅੱਪਡੇਟ ਕਰਨ ਵਿੱਚ ਅਸਫਲ",
     "account": "ਖਾਤਾ",
     "modelQuotas": "ਮਾਡਲ ਕੋਟੇ",
@@ -14501,7 +14519,10 @@
     "importing": "ਆਯਾਤ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
     "apiKeyPlaceholder": "ਆਪਣੀ {providerLabel} API ਕੁੰਜੀ ਪੇਸਟ ਕਰੋ...",
     "apiKeyStoredDescription": "ਲੰਬੀ ਮਿਆਦ ਵਾਲੇ ਬੇਅਰਰ ਕ੍ਰੈਡੈਂਸ਼ਲ ਵਜੋਂ ਇਨਕ੍ਰਿਪਟ ਕਰਕੇ ਸਟੋਰ ਕੀਤਾ ਜਾਂਦਾ ਹੈ। ਕੋਈ ਰਿਫ੍ਰੈਸ਼ ਪ੍ਰਕਿਰਿਆ ਨਹੀਂ ਹੈ।",
-    "apiKeyRegionDescription": "ਕੁੰਜੀ ਲਈ AWS ਖੇਤਰ (ਡਿਫੌਲਟ: us-east-1)",
+    "apiKeyRegionAuto": "ਆਪਣੇ ਆਪ ਪਤਾ ਲਗਾਓ (ਸਿਫ਼ਾਰਸ਼ੀ)",
+    "apiKeyRegionUsEast1": "ਯੂਐਸ ਈਸਟ (ਉੱਤਰੀ ਵਰਜੀਨੀਆ)",
+    "apiKeyRegionEuCentral1": "ਯੂਰਪ (ਫ੍ਰੈਂਕਫਰਟ)",
+    "apiKeyRegionAutoDescription": "ਆਟੋ-ਖੋਜ ਪਹਿਲਾਂ ਯੂਐਸ ਈਸਟ, ਫਿਰ ਯੂਰਪ (ਫ੍ਰੈਂਕਫਰਟ) ਅਜ਼ਮਾਉਂਦੀ ਹੈ ਅਤੇ ਉਹ ਖੇਤਰ ਸੰਭਾਲਦੀ ਹੈ ਜਿੱਥੇ ਕੁੰਜੀ ਕੰਮ ਕਰਦੀ ਹੈ।",
     "validating": "ਪ੍ਰਮਾਣਿਤ ਕੀਤਾ ਜਾ ਰਿਹਾ ਹੈ...",
     "validateAndSaveApiKey": "API ਕੁੰਜੀ ਪ੍ਰਮਾਣਿਤ ਕਰੋ ਅਤੇ ਸੰਭਾਲੋ",
     "errorAutoDetect": "ਟੋਕਨ ਦਾ ਆਪਣੇ ਆਪ ਪਤਾ ਨਹੀਂ ਲਗਾਇਆ ਜਾ ਸਕਿਆ",

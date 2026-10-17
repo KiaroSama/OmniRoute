@@ -14,7 +14,10 @@ import {
   requiresPlainStringContent,
 } from "../../config/providerRegistry.ts";
 import { collectResponsesTools } from "./openai-responses/additionalTools.ts";
-import { flattenNamespaceToolName } from "./openai-responses/namespaceFlatten.ts";
+import {
+  flattenNamespaceToolName,
+  resolveNamespacedToolChoiceName,
+} from "./openai-responses/namespaceFlatten.ts";
 import { mergeHistoricalToolIdentities } from "./openai-responses/historyToolIdentity.ts";
 import { openaiToOpenAIResponsesRequest } from "./openai-responses/toResponses.ts";
 import { coerceToolCallArguments } from "../helpers/toolArguments.ts";
@@ -823,11 +826,22 @@ export function openaiResponsesToOpenAIRequest(
   ) {
     const tc = toRecord(result.tool_choice);
     const tcType = toString(tc.type);
+    // A forced `{ name, namespace }` targets a child of a flattened namespace tool;
+    // resolve it to the declared wire name (`ns__leaf`) instead of the bare leaf.
+    const chatToolNames = new Set(
+      (Array.isArray(result.tools) ? result.tools : [])
+        .map((toolValue) => toString(toRecord(toRecord(toolValue).function).name))
+        .filter(Boolean)
+    );
+    const forcedName = (name: unknown) =>
+      typeof name === "string"
+        ? resolveNamespacedToolChoiceName(tc.namespace, name, chatToolNames)
+        : name;
     // Custom/freeform tools are normalized to Chat function tools with an { input: string }
     // schema above. Force the normalized function here while response-side custom-tool metadata
     // restores custom_tool_call and raw input for the Responses client.
     if ((tcType === "function" || tcType === "custom") && tc.name !== undefined && !tc.function) {
-      result.tool_choice = { type: "function", function: { name: tc.name } };
+      result.tool_choice = { type: "function", function: { name: forcedName(tc.name) } };
     } else if (tcType === "local_shell") {
       result.tool_choice = { type: "function", function: { name: "shell" } };
     } else if (tcType === "custom" && tc.name !== undefined) {
@@ -835,7 +849,7 @@ export function openaiResponsesToOpenAIRequest(
       // sends this to force functions__exec-style tools). Custom tools are already
       // normalized into a Chat { input: string } function schema above, so forcing that
       // same declared name via Chat's tool_choice selects it correctly.
-      result.tool_choice = { type: "function", function: { name: tc.name } };
+      result.tool_choice = { type: "function", function: { name: forcedName(tc.name) } };
     } else if (tcType === "allowed_tools") {
       const mode = toString(tc.mode);
       if (mode !== "auto" && mode !== "required") {
@@ -859,16 +873,13 @@ export function openaiResponsesToOpenAIRequest(
             `Unsupported Responses API feature: allowed_tools descriptor type '${allowedType || "missing"}' cannot be represented in Chat Completions`
           );
         }
-        allowedNames.add(allowedName);
+        allowedNames.add(
+          resolveNamespacedToolChoiceName(allowed.namespace, allowedName, chatToolNames)
+        );
       }
 
       const chatTools = Array.isArray(result.tools) ? result.tools : [];
-      const availableNames = new Set(
-        chatTools
-          .map((toolValue) => toString(toRecord(toRecord(toolValue).function).name))
-          .filter(Boolean)
-      );
-      const missingNames = [...allowedNames].filter((name) => !availableNames.has(name));
+      const missingNames = [...allowedNames].filter((name) => !chatToolNames.has(name));
       if (missingNames.length > 0) {
         throw unsupportedFeature(
           `Unsupported Responses API feature: allowed_tools references unavailable function tool(s): ${missingNames.join(", ")}`

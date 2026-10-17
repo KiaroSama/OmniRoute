@@ -134,6 +134,23 @@
 
 Το `/api/settings/obsidian` καλύπτει το παιδί του `/webdav`: το `POST` δείχνει την υπηρεσία αρχείων WebDAV — που εξυπηρετείται από το προσαρμοσμένο επίπεδο Node πριν από το Next.js, εκτός αυτής της διοχέτευσης — σε μια ρίζα που επιλέγεται από τον καλούντα και επαναλαμβάνει τα πρόσφατα δημιουργημένα βασικά διαπιστευτήρια, το `DELETE` τα περιστρέφει και το γονικό `POST` αποθηκεύει το διακριτικό API REST του Obsidian. Το GHSA-62vw κάλυψε μόνο την αποκάλυψη κωδικού πρόσβασης `GET`. Η έκδοση ήταν ακόμα στο επίπεδο fail-open (GHSA-7pq4-8pvv-rx7r). Το `enableObsidianVaultSync()` επιπλέον αρνείται ένα θησαυροφυλάκιο που είναι, βρίσκεται μέσα ή περιέχει τον κατάλογο δεδομένων.
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### Η αρχική εκκίνηση είναι μόνο loopback — από πραγματικό ομότιμο, όχι `Host`
 
 Χωρίς διαμορφωμένο κωδικό πρόσβασης διαχείρισης (και χωρίς `INITIAL_PASSWORD`), το `isAuthRequired()` στο `src/shared/utils/apiAuth.ts` διατηρεί την ανώνυμη εκκίνηση ανοιχτή **μόνο για ομότιμους loopback**. Το Loopback αποφασίζεται από τα αξιόπιστα σήματα ομότιμων, με τη σειρά: ο πραγματικός ομότιμος TCP με σφραγίδα διακριτικού (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, αυτό που βλέπει η πολιτική), η δική της ετυμηγορία `AUTHZ_HEADER_PEER_LOCALITY` της διοχέτευσης (αυτό που βλέπουν οι χειριστές διαδρομών, αξιόπιστο μόνο όταν έχει οριστεί το `OMNIROUTE_PEER_STAMP_TOKEN`), ή ένας πραγματικός ομότιμος socket για άμεσους καλούντες. Το `Host` / `nextUrl.hostname` δεν συμβουλεύονται ποτέ, και η εγγραφή του πρώτου κωδικού πρόσβασης (`POST /api/settings/require-login`) υπόκειται στον ίδιο περιορισμό αντί να είναι ανοιχτή σε κάθε ομότιμο δικτύου (GHSA-7pq4-8pvv-rx7r). Η `managementPolicy` μεταβιβάζει τη δική της ετυμηγορία `peerContext` ρητά, οπότε οι ORIGINAL (πριν την αφαίρεση) κεφαλίδες της αίτησης δεν την αποφασίζουν ποτέ.

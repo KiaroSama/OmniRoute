@@ -102,7 +102,11 @@ export const VIDEO_PROVIDERS: Record<string, VideoProvider> = {
     authType: "apikey",
     authHeader: "bearer",
     format: "vertex-veo",
+    // Vertex uses the GA `-001` ids; the Gemini-API `*-generate-preview` names 404 here.
+    // Veo 3.1 is GA in us-central1 (the default region).
     models: [
+      { id: "veo-3.1-generate-001", name: "Veo 3.1 (Vertex)" },
+      { id: "veo-3.1-fast-generate-001", name: "Veo 3.1 Fast (Vertex)" },
       { id: "veo-3.0-generate-001", name: "Veo 3.0 (Vertex)" },
       { id: "veo-3.0-fast-generate-001", name: "Veo 3.0 Fast (Vertex)" },
       { id: "veo-2.0-generate-001", name: "Veo 2.0 (Vertex)" },

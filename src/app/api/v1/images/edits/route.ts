@@ -51,6 +51,7 @@ import { readEditInput, type EditInput } from "./editInput.ts";
 import {
   executeImageEditCombo,
   handleSyntxEditRequest,
+  handleMuseEditRequest,
   dispatchAntigravityEdit,
   dispatchCodexImagesEdit,
   validateCodexImagesEditOptions,
@@ -596,6 +597,24 @@ async function postHandler(request: Request, _context?: unknown) {
       toJsonErrorPayload(result.error, "Image edit provider error"),
       result.status
     );
+  }
+
+  if (providerConfig?.format === "muse-image") {
+    return handleMuseEditRequest({
+      parsed,
+      providerConfig,
+      allowedConnections,
+      resolvedModel,
+      prompt,
+      size,
+      responseFormat,
+      images,
+      imageBytes,
+      imageMime,
+      accounting,
+      request,
+      hasMask,
+    });
   }
 
   // Other built-in providers do not expose an OpenAI-compatible edit endpoint.

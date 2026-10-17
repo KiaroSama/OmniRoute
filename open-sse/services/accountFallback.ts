@@ -107,6 +107,8 @@ import { isTransientComboCooldownReason } from "./combo/comboCooldownRetry.ts";
 import { evictLockoutOverflow } from "./accountFallback/lockoutEviction.ts";
 export { MODEL_LOCKOUT_EVICTION_CAP } from "./accountFallback/lockoutEviction.ts";
 export { hasPerModelFailureScope } from "./accountFallback/perModelFailureScope.ts";
+import { buildConcurrencyLimitFallback } from "./accountFallback/concurrencyLimit429.ts";
+export { CONCURRENCY_LIMIT_COOLDOWN_MS } from "./accountFallback/concurrencyLimit429.ts";
 import { capScaledCooldownMs } from "./accountFallback/cooldownCap.ts";
 import { resolveApiKeyForbiddenFallback } from "./accountFallback/nonRetryableUpstream.ts";
 import * as exactModelLock from "./accountFallback/exactModelLock.ts";
@@ -2138,6 +2140,10 @@ export function checkFallbackError(
       );
     }
   }
+
+  // Concurrency-limit 429: healthy-but-busy account — fail over without backoff.
+  const concurrencyFallback = buildConcurrencyLimitFallback(status, errorStr, getUpstreamRetryHint);
+  if (concurrencyFallback) return concurrencyFallback;
 
   const configuredRule =
     isRateLimitStatus && !preserveQuota429

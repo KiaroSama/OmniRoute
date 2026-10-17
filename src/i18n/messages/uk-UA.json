@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Очистити фільтри",
     "disableNonPublicModels": "Вимкнути непублічні моделі",
     "disableNonPublicModelsDesc": "Відхиляти запити для моделей, які не виявлені або не позначені як публічні в каталозі провайдера",
+    "forcedModel": "Примусова модель",
+    "forcedModelDesc": "Спрямовує кожен чат-запит із цим ключем на цю модель або комбо, незалежно від того, яку модель запитує клієнт (або якщо він її не передає). Обмеження ключа щодо моделей, комбо та бюджету й надалі діють.",
+    "forcedModelPlaceholder": "Не задано: використовувати модель, яку запитує клієнт",
     "normalKeysSection": "Звичайні ключі",
     "quotaKeysSection": "Ключі з квотою",
     "bypassProviderQuota": "Обходити ліміти квот провайдера",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — самовдосконалюваний RLM-інструментарій для програмування з підтримкою провайдерів, сумісних з OpenAI",
       "warp": "ШІ-термінал Warp із підтримкою користувацьких провайдерів",
       "agent-deck": "Мультиагентний оркестратор Agent Deck",
-      "5dive": "5dive — самостійно розміщений флот агентів для коду; один auth-профіль спрямовує їх усіх на OmniRoute"
+      "5dive": "5dive — самостійно розміщений флот агентів для коду; один auth-профіль спрямовує їх усіх на OmniRoute",
+      "zed": "Редактор коду Zed — вбудований агент через OpenAI-сумісного провайдера"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Потім перезавантажте VS Code та вкажіть ключ API у полі введення.",
     "wireApiChatCompletions": "Завершення чату (/chat/completions)",
     "wireApiResponses": "Responses API (/responses)",
+    "codexModelCatalog": "Показувати моделі OmniRoute у списку /model у Codex",
+    "codexModelCatalogHint": "Записує ~/.codex/omniroute-models.json на основі власного каталогу моделей встановленого Codex (близько 60 KB на модель). Застосуйте повторно після оновлення Codex.",
+    "codexCatalogWarning": "Список /model у Codex не оновлено: OmniRoute не вдалося прочитати каталог моделей встановленого Codex.",
     "cliproxyapiActionFailed": "Дію не виконано",
     "cliproxyapiActionSucceeded": "Дію виконано успішно",
     "cliproxyapiCheckUpdates": "Перевірити оновлення",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "Стисла CJK (文言)",
         "description": "Класичний китайський ультрастислий стиль (доступно тільки для китайської)."
+      },
+      "antislop-ui": {
+        "label": "Антислоп-фільтр UI",
+        "description": "Візуал із перевіреною метою: без шаблонних градієнтів, шаблонних макетів і мертвих елементів керування."
+      },
+      "antislop-copy": {
+        "label": "Антислоп-фільтр тексту та людей",
+        "description": "Чесний текст і правила для людей: без ознак ШІ, контраст WCAG AA, клавіатура, стани, мобільне перекомпонування."
       }
     },
     "resilienceWaitForCooldown": "Дочекайтеся перезарядки",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "Приховати цей рядок квоти",
     "showQuotaRow": "Показати цей рядок квоти",
     "hiddenQuotaRowsLabel": "Приховано:",
+    "quotaSpeedTitle": "Нещодавня швидкість декодування для цього облікового запису (останні {count} успішних запитів)",
+    "quotaSpeedLine": "{model}: {avg} tok/s в середньому · остання {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s в середньому · остання {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Не вдалося оновити видимість квоти",
     "account": "Обліковий запис",
     "modelQuotas": "Модельні квоти",
@@ -14501,7 +14519,10 @@
     "importing": "Імпортування...",
     "apiKeyPlaceholder": "Вставте свій {providerLabel} API ключ...",
     "apiKeyStoredDescription": "Зберігається зашифрованим як довгостроковий маркер доступу. Процесу оновлення немає.",
-    "apiKeyRegionDescription": "Регіон AWS для ключа (за замовчуванням: us-east-1)",
+    "apiKeyRegionAuto": "Автовизначення (рекомендовано)",
+    "apiKeyRegionUsEast1": "США Схід (Північна Вірджинія)",
+    "apiKeyRegionEuCentral1": "Європа (Франкфурт)",
+    "apiKeyRegionAutoDescription": "Автовизначення спершу пробує США Схід, потім Європу (Франкфурт), і зберігає регіон, у якому працює ключ.",
     "validating": "Валідуючи...",
     "validateAndSaveApiKey": "Перевірити та зберегти API-ключ",
     "errorAutoDetect": "Не вдалося автоматично виявити токен",

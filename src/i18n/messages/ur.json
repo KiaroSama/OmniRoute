@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "فلٹرز صاف کریں",
     "disableNonPublicModels": "غیر عوامی ماڈلز کو غیر فعال کریں",
     "disableNonPublicModelsDesc": "ان ماڈلز کے لیے درخواستوں کو مسترد کریں جو فراہم کنندہ کے کیٹلاگ میں دریافت نہیں ہوئے یا عوامی کے طور پر نشان زد نہیں ہیں",
+    "forcedModel": "لازمی ماڈل",
+    "forcedModelDesc": "اس کلید سے کی گئی ہر چیٹ درخواست کو اس ماڈل یا کومبو کی طرف بھیجیں، چاہے کلائنٹ کوئی بھی ماڈل مانگے (یا کوئی نہ بھیجے)۔ کلید کی ماڈل، کومبو اور بجٹ کی حدیں پھر بھی لاگو رہتی ہیں۔",
+    "forcedModelPlaceholder": "لازمی نہیں: کلائنٹ کا مانگا ہوا ماڈل استعمال کریں",
     "normalKeysSection": "عام کیز",
     "quotaKeysSection": "کوٹہ کیز",
     "bypassProviderQuota": "فراہم کنندہ کے کوٹہ کی حد کو نظرانداز کریں",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — OpenAI-compatible پرووائیڈر سپورٹ کے ساتھ خود کو بہتر بنانے والا RLM کوڈنگ ہارنس",
       "warp": "کسٹم پرووائیڈر سپورٹ کے ساتھ Warp AI ٹرمینل",
       "agent-deck": "Agent Deck ملٹی ایجنٹ آرکیسٹریٹر",
-      "5dive": "5dive — خود میزبان کوڈنگ ایجنٹس کا بیڑا؛ ایک auth پروفائل ان سب کو OmniRoute کی طرف بھیجتی ہے"
+      "5dive": "5dive — خود میزبان کوڈنگ ایجنٹس کا بیڑا؛ ایک auth پروفائل ان سب کو OmniRoute کی طرف بھیجتی ہے",
+      "zed": "Zed کوڈ ایڈیٹر — OpenAI سے مطابقت رکھنے والے فراہم کنندہ کے ذریعے بلٹ اِن ایجنٹ"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "پھر VS Code کو دوبارہ لوڈ کریں اور ان پٹ پرامپٹ میں API key سیٹ کریں۔",
     "wireApiChatCompletions": "چیٹ کی تکمیل (/چیٹ/کمپلیشنز)",
     "wireApiResponses": "Responses API (/responses)",
+    "codexModelCatalog": "Codex کے ‎/model پِکر میں OmniRoute ماڈلز دکھائیں",
+    "codexModelCatalogHint": "انسٹال شدہ Codex کے اپنے ماڈل کیٹلاگ سے ~/.codex/omniroute-models.json لکھتا ہے (فی ماڈل تقریباً 60 KB)۔ Codex اپ گریڈ کرنے کے بعد دوبارہ لاگو کریں۔",
+    "codexCatalogWarning": "Codex کا ‎/model پِکر اپ ڈیٹ نہیں ہوا: OmniRoute انسٹال شدہ Codex کا ماڈل کیٹلاگ نہیں پڑھ سکا۔",
     "cliproxyapiActionFailed": "عمل ناکام ہوگیا",
     "cliproxyapiActionSucceeded": "عمل کامیاب ہوا",
     "cliproxyapiCheckUpdates": "اپ ڈیٹس چیک کریں",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "مختصر CJK (文言)",
         "description": "کلاسیکی چینی انتہائی مختصر انداز (صرف چینی زبان کے لیے دستیاب ہے)۔"
+      },
+      "antislop-ui": {
+        "label": "Antislop UI فلٹر",
+        "description": "مقصد کی جانچ شدہ بصری عناصر: کوئی عام گریڈینٹ، ٹیمپلیٹ لے آؤٹ یا بےکار کنٹرول نہیں۔"
+      },
+      "antislop-copy": {
+        "label": "Antislop متن اور انسانی فلٹر",
+        "description": "دیانت دار متن اور لوگوں کے لیے اصول: AI کے آثار نہیں، WCAG AA کنٹراسٹ، کی بورڈ، حالتیں، موبائل ری فلو۔"
       }
     },
     "resilienceWaitForCooldown": "کولڈاؤن کا انتظار کریں۔",
@@ -9860,6 +9875,9 @@
     "hideQuotaRow": "اس کوٹہ کی قطار کو چھپائیں",
     "showQuotaRow": "اس کوٹہ کی قطار کو دکھائیں",
     "hiddenQuotaRowsLabel": "چھپا ہوا:",
+    "quotaSpeedTitle": "اس اکاؤنٹ پر حالیہ ڈی کوڈ رفتار (آخری {count} کامیاب درخواستیں)",
+    "quotaSpeedLine": "{model}: {avg} tok/s اوسط · آخری {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s اوسط · آخری {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "کوٹہ کی نمائش کو اپ ڈیٹ کرنے میں ناکامی",
     "account": "اکاؤنٹ",
     "modelQuotas": "ماڈل کوٹے",
@@ -14501,7 +14519,10 @@
     "importing": "درآمد ہو رہا ہے...",
     "apiKeyPlaceholder": "اپنی {providerLabel} API کلید پیسٹ کریں...",
     "apiKeyStoredDescription": "طویل مدتی بیئرر اسناد کے طور پر محفوظ کردہ خفیہ کردہ۔ کوئی ریفریش فلو نہیں ہے۔",
-    "apiKeyRegionDescription": "کیز کے لیے AWS علاقہ (ڈیفالٹ: us-east-1)",
+    "apiKeyRegionAuto": "خودکار طور پر شناخت کریں (تجویز کردہ)",
+    "apiKeyRegionUsEast1": "امریکہ مشرق (شمالی ورجینیا)",
+    "apiKeyRegionEuCentral1": "یورپ (فرینکفرٹ)",
+    "apiKeyRegionAutoDescription": "خودکار شناخت پہلے امریکہ مشرق، پھر یورپ (فرینکفرٹ) آزماتی ہے اور وہ ریجن محفوظ کرتی ہے جہاں کلید کام کرتی ہے۔",
     "validating": "جانچ رہے ہیں...",
     "validateAndSaveApiKey": "API کی کلید کی توثیق کریں اور محفوظ کریں",
     "errorAutoDetect": "ٹوکین خودکار طور پر شناخت نہیں کیا جا سکا",

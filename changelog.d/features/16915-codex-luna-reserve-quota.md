@@ -1,0 +1,1 @@
+- **feat(usage):** show the Codex Luna Reserve quota rows as display-only usage rows that never affect account selection ([#16915](https://github.com/diegosouzapw/OmniRoute/pull/16915)) — thanks @raflyazf

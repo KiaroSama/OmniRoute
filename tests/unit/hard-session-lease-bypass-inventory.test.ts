@@ -51,9 +51,9 @@ const EXPECTED: Record<InventoryKind, Record<string, number>> = {
     // of the retirement-check one hoisted before enforceApiKeyPolicy) was
     // removed as dead redundant code, 6->5. #12653 added combo target
     // resolution with the same shape as imageCombo, 5->6.
-    // SYNTX and combo selection stay in editDispatch; #14619 moves Firefly's
-    // guarded selection into adobeFireflyEdit.ts. All retain policy/occupancy filters.
-    "src/app/api/v1/images/edits/editDispatch.ts": 2,
+    // Shared SYNTX/Muse selection, Muse's allowlisted credential fallback, and combo
+    // selection stay in editDispatch. Firefly selection lives in adobeFireflyEdit.ts.
+    "src/app/api/v1/images/edits/editDispatch.ts": 3,
     "src/app/api/v1/images/edits/route.ts": 6,
     "src/app/api/v1/images/generations/route.ts": 3,
     "src/app/api/v1/images/upscale/route.ts": 1,

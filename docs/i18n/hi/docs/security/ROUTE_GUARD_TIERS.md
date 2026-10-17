@@ -116,6 +116,23 @@
 
 `/api/settings/obsidian` अपने `/webdav` चाइल्ड को कवर करता है: `POST` WebDAV फ़ाइल सेवा को — Next.js से पहले कस्टम Node लेयर द्वारा, इस पाइपलाइन के बाहर — एक कॉलर-चुने हुए रूट पर इंगित करता है और नए बनाए गए बेसिक क्रेडेंशियल को इको करता है, `DELETE` उन्हें घुमाता है, और पैरेंट `POST` Obsidian REST API टोकन को संग्रहीत करता है। GHSA-62vw ने केवल `GET` पासवर्ड के प्रकटीकरण को छिपाया; जारी करना अभी भी फेल-ओपन टियर पर था (GHSA-7pq4-8pvv-rx7r)। `enableObsidianVaultSync()` इसके अतिरिक्त एक वॉल्ट को अस्वीकार करता है जो डेटा डायरेक्टरी है, उसके अंदर स्थित है, या उसे समाहित करता है।
 
+#### Credential exports and restores are operator-only
+
+The tier above only decides whether _some_ credential is required. The routes that download
+stored credentials add a second check in the handler: `GET /api/settings/export-json` (decrypted
+provider connections and raw API keys), `GET /api/db-backups/export` (the SQLite file) and
+`GET /api/db-backups/exportAll` (the full archive) call `requireOperatorCredential()`
+(`src/lib/api/operatorCredential.ts`). It accepts a dashboard session, the local CLI subject, or
+an instance with login disabled, and answers `403` to API keys of any scope (including `manage`
+and `admin`) and to `oma_` access tokens. The destructive counterparts hold the same boundary:
+`POST /api/db-backups/import` (uploaded `.sqlite`, `dryRun=true` included), `POST /api/db-backups`
+(restore a stored backup by id) and `POST /api/settings/import-json` (legacy JSON restore)
+replace the live database or the whole settings/connections/API-key set, so a machine credential
+cannot trigger them either. Listing, creating, retention and cleanup of backups
+(`GET`/`PUT`/`PATCH`/`DELETE /api/db-backups`) keep ordinary management auth. Sync token
+issuance (`POST /api/sync/tokens`) uses the same helper, plus the trusted loopback
+internal-service token.
+
 ### फ्रेश-इंस्टॉल बूटस्ट्रैप केवल लूपबैक है — वास्तविक पीयर द्वारा, `Host` द्वारा नहीं
 
 कोई प्रबंधन पासवर्ड कॉन्फ़िगर नहीं होने पर (और कोई `INITIAL_PASSWORD` नहीं होने पर), `src/shared/utils/apiAuth.ts` में `isAuthRequired()` अनाम बूटस्ट्रैप को **केवल लूपबैक पीयर के लिए** खुला रखता है। लूपबैक का निर्णय विश्वसनीय पीयर सिग्नलों से किया जाता है, क्रम में: टोकन-स्टैम्प्ड वास्तविक TCP पीयर (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, जो पॉलिसी देखती है), पाइपलाइन का अपना `AUTHZ_HEADER_PEER_LOCALITY` निर्णय (जो रूट हैंडलर देखते हैं, केवल तभी विश्वसनीय जब `OMNIROUTE_PEER_STAMP_TOKEN` सेट हो), या सीधे कॉल करने वालों के लिए एक वास्तविक सॉकेट पीयर। `Host` / `nextUrl.hostname` पर कभी विचार नहीं किया जाता है, और पहला-पासवर्ड लिखना (`POST /api/settings/require-login`) उसी बाधा के तहत होता है बजाय इसके कि यह हर नेटवर्क पीयर के लिए खुला हो (GHSA-7pq4-8pvv-rx7r)। `managementPolicy` अपना `peerContext` निर्णय स्पष्ट रूप से नीचे भेजता है, इसलिए ORIGINAL (प्री-स्ट्रिप) रिक्वेस्ट के हेडर कभी इसका निर्णय नहीं करते हैं।

@@ -2470,6 +2470,9 @@
     "emptyFilterClear": "Pa àwọn àlẹ̀mọ́ rẹ́",
     "disableNonPublicModels": "Pa Àwọn Módẹ́ẹ̀lì Tí Kì Í Ṣe Ti Gbogbo Èèyàn",
     "disableNonPublicModelsDesc": "Kọ àwọn ìbéèrè fún àwọn módẹ́ẹ̀lì tí a kò rí tàbí tí a kò sàmì sí gẹ́gẹ́ bí ti gbogbo ènìyàn nínú àkójọ olùpèsè",
+    "forcedModel": "Àwòṣe tí a fipá mú",
+    "forcedModelDesc": "Darí gbogbo ìbéèrè ìjíròrò tí a ṣe pẹ̀lú kọ́kọ́rọ́ yìí sí àwòṣe tàbí combo yìí, láìka àwòṣe tí oníbàárà béèrè sí (tàbí nígbà tí kò fi ọ̀kankan ránṣẹ́). Àwọn ààlà àwòṣe, combo àti ìnáwó kọ́kọ́rọ́ náà ṣì ń ṣiṣẹ́.",
+    "forcedModelPlaceholder": "Kò fipá mú: lo àwòṣe tí oníbàárà béèrè",
     "normalKeysSection": "Àwọn kọ́kọ́rọ́ déédéé",
     "quotaKeysSection": "Àwọn kọ́kọ́rọ́ kòtà",
     "bypassProviderQuota": "Forí kọjá àwọn ààlà kòtà olùpèsè",
@@ -3009,7 +3012,8 @@
       "prime-agent": "Prime Agent — ètò ìdarí kíkó kóòdù RLM tó ń mú ara rẹ̀ sunwọ̀n sí i, pẹ̀lú àtìlẹ́yìn fún olùpèsè tó bá OpenAI mu",
       "warp": "Terminal AI Warp pẹ̀lú àtìlẹ́yìn olùpèsè àdáni",
       "agent-deck": "Olùṣètò ọ̀pọ̀ aṣojú Agent Deck",
-      "5dive": "5dive — agbo àwọn aṣojú kíkó kóòdù tí o ń gbàlejò fúnra rẹ; prófáìlì ìfàṣẹsí kan ń darí gbogbo wọn sí OmniRoute"
+      "5dive": "5dive — agbo àwọn aṣojú kíkó kóòdù tí o ń gbàlejò fúnra rẹ; prófáìlì ìfàṣẹsí kan ń darí gbogbo wọn sí OmniRoute",
+      "zed": "Olùṣàtúnṣe kóòdù Zed — aṣojú tí a kọ́ sínú rẹ̀ nípasẹ̀ olùpèsè tí ó bá OpenAI mu"
     },
     "guides": {
       "cursor": {
@@ -3240,6 +3244,9 @@
     "copilotReloadInstruction": "Lẹ́yìn náà, tún VS Code rù kí o sì ṣètò kọ́kọ́rọ́ API nínú ààyè ìtẹ̀wọlé.",
     "wireApiChatCompletions": "Àwọn Ìparí Ìfọ̀rọ̀wérọ̀ (/chat/completions)",
     "wireApiResponses": "API Àwọn Ìdáhùn (/responses)",
+    "codexModelCatalog": "Ṣàfihàn àwọn àwòṣe OmniRoute nínú olùyàn /model ti Codex",
+    "codexModelCatalogHint": "Ó ń kọ ~/.codex/omniroute-models.json láti inú àkójọ àwòṣe ti Codex tí a fi sórí ẹ̀rọ (nǹkan bí 60 KB fún àwòṣe kọ̀ọ̀kan). Tún un lò lẹ́yìn tí o bá ṣe àtúnṣe Codex.",
+    "codexCatalogWarning": "A kò ṣe àtúnṣe olùyàn /model ti Codex: OmniRoute kò lè ka àkójọ àwòṣe ti Codex tí a fi sórí ẹ̀rọ.",
     "cliproxyapiActionFailed": "Ìṣe náà kùnà",
     "cliproxyapiActionSucceeded": "Ìṣe náà ṣàṣeyọrí",
     "cliproxyapiCheckUpdates": "Ṣàyẹ̀wò Àwọn Ìmúdójúìwọ̀n",
@@ -8240,6 +8247,14 @@
       "terse-cjk": {
         "label": "CJK ṣókí (文言)",
         "description": "Àṣà èdè Ṣáínà àtijọ́ tó ṣókí gan-an (ó wà fún èdè Ṣáínà nìkan)."
+      },
+      "antislop-ui": {
+        "label": "Àlẹ̀mọ́ UI Antislop",
+        "description": "Àwọn àwòrán tí a ti dán ète wọn wò: kò sí gradient gbogbogbò, ìfilélẹ̀ àwòṣe tàbí àwọn ìdarí tí kò ṣiṣẹ́."
+      },
+      "antislop-copy": {
+        "label": "Àlẹ̀mọ́ ọ̀rọ̀ àti ènìyàn Antislop",
+        "description": "Ọ̀rọ̀ òtítọ́ pẹ̀lú àwọn òfin fún ènìyàn: kò sí àmì AI, ìyàtọ̀ àwọ̀ WCAG AA, kọ́bọ́ọ̀dù, àwọn ipò, àtúntò fún fóònù."
       }
     },
     "resilienceWaitForCooldown": "Dúró de ìparí àkókò ìtura",
@@ -9864,6 +9879,9 @@
     "hideQuotaRow": "Fi ìlà ìpín yìí pamọ́",
     "showQuotaRow": "Fi ìlà ìpín yìí hàn",
     "hiddenQuotaRowsLabel": "Tí a fi pamọ́:",
+    "quotaSpeedTitle": "Iyara ìtúmọ̀ àìpẹ́ lórí àkọọ́lẹ̀ yìí (àwọn ìbéèrè àṣeyọrí {count} tó kẹ́yìn)",
+    "quotaSpeedLine": "{model}: {avg} tok/s àpapọ̀ · tó kẹ́yìn {last} · TTFT {ttft}s (n={samples})",
+    "quotaSpeedLineNoTtft": "{model}: {avg} tok/s àpapọ̀ · tó kẹ́yìn {last} (n={samples})",
     "quotaVisibilityUpdateFailed": "Ìmúdójúìwọ̀n híhàn ìpín kùnà",
     "account": "Àkọọ́lẹ̀",
     "modelQuotas": "Àwọn Ìpín Mọ́dẹ́lì",
@@ -14501,7 +14519,10 @@
     "importing": "Ń gbé wọlé...",
     "apiKeyPlaceholder": "Lẹ kọ́kọ́rọ́ API {providerLabel} rẹ...",
     "apiKeyStoredDescription": "A tọ́jú rẹ̀ ní ìfipámọ́ gẹ́gẹ́ bí ẹ̀rí bearer tó wà fún ìgbà pípẹ́. Kò sí ìlànà ìmúdójúìwọ̀n.",
-    "apiKeyRegionDescription": "Ẹkùn AWS fún kọ́kọ́rọ́ náà (àiyipada: us-east-1)",
+    "apiKeyRegionAuto": "Ṣàwárí láìfọwọ́yí (a gbà níyànjú)",
+    "apiKeyRegionUsEast1": "Ìlà-oòrùn US (Àríwá Virginia)",
+    "apiKeyRegionEuCentral1": "Yúróòpù (Frankfurt)",
+    "apiKeyRegionAutoDescription": "Ìṣàwárí láìfọwọ́yí máa ń gbìyànjú Ìlà-oòrùn US kọ́kọ́, lẹ́yìn náà Yúróòpù (Frankfurt), ó sì máa ń fi agbègbè tí kọ́kọ́rọ́ náà ti ṣiṣẹ́ pamọ́.",
     "validating": "Ń fìdí rẹ̀ múlẹ̀...",
     "validateAndSaveApiKey": "Fìdí Kọ́kọ́rọ́ API Múlẹ̀ kí o sì Fi Pamọ́",
     "errorAutoDetect": "A kò lè ṣàwárí tóókì láìfọwọ́ṣe",

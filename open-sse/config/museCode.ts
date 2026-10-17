@@ -17,6 +17,9 @@ export const MUSE_CODE_TOKEN_URL = `${MUSE_CODE_AUTH_HOST}/oidc/device/token/`;
 export const MUSE_CODE_MINT_URL = "https://api.meta.ai/muse-code/key";
 export const MUSE_CODE_API_BASE_URL = "https://api.meta.ai/v1";
 export const MUSE_CODE_RESPONSES_URL = `${MUSE_CODE_API_BASE_URL}/responses`;
+/** Muse Image (OpenAI-compatible): JSON generations + multipart edits on the same key. */
+export const MUSE_CODE_IMAGES_GENERATIONS_URL = `${MUSE_CODE_API_BASE_URL}/images/generations`;
+export const MUSE_CODE_IMAGES_EDITS_URL = `${MUSE_CODE_API_BASE_URL}/images/edits`;
 export const MUSE_CODE_DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code";
 export const MUSE_CODE_DEFAULT_POLL_INTERVAL_SEC = 5;
 export const MUSE_CODE_MAX_POLL_MS = 15 * 60 * 1000;
