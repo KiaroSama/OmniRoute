@@ -145,6 +145,8 @@ operátora:
   `/api/providers/`, aby je zachytilo, čímž by se příliš rozšířil strom cest,
   které vzdálené dashboardy legitimně používají pro CRUD poskytovatelů.
 
+  Zavaděč běhových snímků takové položky odstraňuje i z uloženého řádku nastavení a starší import JSON (`/api/settings/import-json`) nikdy nezapisuje klíče pro obejití ochrany. Každá položka `LOCAL_ONLY_API_PREFIXES` musí být na seznamu zákazů nebo musí být po kontrole schválena jako způsobilá k obejití. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Audit přístupu** — pro ověření, že se k těmto cestám nedostává nic mimo hostitele:
 
 - Otevřete **Inventář autorizací** na `/dashboard/settings/security`: zobrazuje živý seznam prefixů LOCAL_ONLY, které prefixy lze obejít, a sadu kompilace schopnou spuštění ("nelze obejít").

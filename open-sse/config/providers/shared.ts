@@ -64,6 +64,12 @@ export interface RegistryModel {
    */
   alwaysReasons?: boolean;
   supportedThinkingEfforts?: readonly string[];
+  /**
+   * Effort suffixes that must fold onto this base model even when the live
+   * catalog lists `<id>-<effort>` as its own model. Use only when that catalog
+   * id is a different billed SKU, not the reasoning tier clients expect.
+   */
+  effortSuffixesThatFoldDespiteLiveCatalog?: readonly string[];
   supportsVision?: boolean;
   supportsAudio?: boolean;
   supportsVideo?: boolean;
@@ -219,6 +225,13 @@ export interface RegistryEntry {
    * OmniRoute accumulates the stream and converts it to a JSON body for the client. (#2081)
    */
   forceStream?: boolean;
+  /**
+   * Opt-in for providers that use prompt-emulated tool calling (e.g. web-session
+   * providers like opencode, duckduckgo-web, cloudflare-playground). When set to
+   * "emulated", the combo tool-calling filter will keep these providers eligible
+   * even though their registry/capability rows report toolCalling:false.
+   */
+  toolCalling?: "emulated" | boolean;
   /**
    * Literal API key sent as the bearer token when the request has no real
    * credential (synthetic noauth fallback). Lets a primarily-authenticated
@@ -427,6 +440,8 @@ export const CHAT_OPENAI_COMPAT_MODELS: Record<string, RegistryModel[]> = {
     "Llama-4-Maverick-17B-128E-Instruct",
     "Meta-Llama-3.3-70B-Instruct",
     "gpt-oss-120b",
+    "DeepSeek-V3.1",
+    "gemma-4-31B-it",
   ]),
   nscale: buildModels([
     "moonshotai/Kimi-K2.5",

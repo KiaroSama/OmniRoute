@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS の制限:** HTTPS `CONNECT` トンネルは、デフォルトではメタデータ（ホスト、ポート、タイミング）のみキャプチャされ、TLS 本文は復号されません。本文全体を検査するには、「プロキシモードで HTTPS を復号」トグルを有効にしてください（オプトインであり、AgentBridge 証明書が信頼されている必要があります）。
+**TLS の制限:** HTTPS `CONNECT` トンネルは、デフォルトではメタデータ（ホスト、ポート、タイミング）のみキャプチャされ、TLS 本文は復号されません。
 
 **ポートの競合:** ポート 8080 が使用中の場合、AgentBridge は構造化されたエラーを伴う 409 を返します。`INSPECTOR_HTTP_PROXY_PORT` 環境変数でポートを変更してください。
 
@@ -463,12 +463,11 @@ netsh winhttp reset proxy
 
 ### キャプチャーモード
 
-| メソッド | パス                           | 説明                                                                                                  |
-| -------- | ------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| GET      | `/capture-modes`               | AgentBridge / カスタムホスト / HTTP_PROXY / システムプロキシの各モードと `tls-intercept` トグルの状態 |
-| POST     | `/capture-modes/http-proxy`    | HTTP_PROXY リスナーを起動／停止（`{action: "start"\|"stop"}`）                                        |
-| POST     | `/capture-modes/system-proxy`  | システム全体のプロキシを適用／解除（`{action: "apply"\|"revert"}`）                                   |
-| POST     | `/capture-modes/tls-intercept` | プロキシモードで HTTPS ボディーの復号を切り替え（`{enabled: boolean}`）                               |
+| メソッド | パス                          | 説明                                                                         |
+| -------- | ----------------------------- | ---------------------------------------------------------------------------- |
+| GET      | `/capture-modes`              | AgentBridge / カスタムホスト / HTTP_PROXY / システムプロキシの各モードの状態 |
+| POST     | `/capture-modes/http-proxy`   | HTTP_PROXY リスナーを起動／停止（`{action: "start"\|"stop"}`）               |
+| POST     | `/capture-modes/system-proxy` | システム全体のプロキシを適用／解除（`{action: "apply"\|"revert"}`）          |
 
 > **TPROXY 復号**（キャプチャーモード 5）は、AgentBridge プレフィックス配下の
 > **別個の**ルート（`GET / POST / DELETE /api/tools/agent-bridge/tproxy`）によって制御され、

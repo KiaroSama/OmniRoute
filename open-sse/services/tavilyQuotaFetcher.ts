@@ -20,6 +20,7 @@
 import { registerQuotaFetcher, type QuotaInfo } from "./quotaPreflight.ts";
 import { registerMonitorFetcher } from "./quotaMonitor.ts";
 import { throttleQuotaFetch } from "./quotaFetchThrottle.ts";
+import { isUrlHost } from "../utils/urlHost.ts";
 import { toNumberOrNull } from "@/shared/utils/numeric";
 
 const TAVILY_USAGE_URL = "https://api.tavily.com/usage";
@@ -133,13 +134,13 @@ export function parseTavilyCreditUsage(data: unknown): TavilyQuota | null {
 
 export function getTavilyBaseUrl(connection?: Record<string, unknown>): string | null {
   const envBase = process.env.TAVILY_BASE_URL?.trim();
-  if (envBase && !envBase.includes("api.tavily.com")) {
+  if (envBase && !isUrlHost(envBase, "api.tavily.com")) {
     return envBase.replace(/\/+$/, "");
   }
   const providerData = toRecord(connection?.providerSpecificData);
   const connBase =
     typeof connection?.baseUrl === "string" ? connection.baseUrl : providerData?.baseUrl;
-  if (typeof connBase === "string" && connBase.trim() && !connBase.includes("api.tavily.com")) {
+  if (typeof connBase === "string" && connBase.trim() && !isUrlHost(connBase, "api.tavily.com")) {
     return connBase.trim().replace(/\/+$/, "");
   }
   return null;

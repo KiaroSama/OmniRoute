@@ -1,6 +1,7 @@
 import { getClaudeCodeUserAgent } from "@/shared/constants/claudeCodeClient";
 
 import { ANTHROPIC_VERSION_HEADER } from "./anthropicHeaders.ts";
+import { isUrlHost } from "../utils/urlHost.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -526,7 +527,9 @@ export function getGlmAnthropicBaseUrl(
     isCodingGlmBaseUrl(fallbackBaseUrl)
   ) {
     return GLM_ANTHROPIC_DEFAULT_BASE_URLS[
-      fallbackBaseUrl.includes("open.bigmodel.cn") ? "china" : getGlmApiRegion(providerSpecificData)
+      isUrlHost(fallbackBaseUrl, "open.bigmodel.cn")
+        ? "china"
+        : getGlmApiRegion(providerSpecificData)
     ];
   }
   if (

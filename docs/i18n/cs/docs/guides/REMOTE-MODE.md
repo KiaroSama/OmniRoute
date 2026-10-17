@@ -257,6 +257,8 @@ omniroute tokens scopes               # vysvětlení tří rozsahů
 Příkazy `tokens` vyžadují přihlašovací údaj s oprávněním **správce**. Tokeny lze také spravovat
 v řídicím panelu v části **Nastavení → Přístupové tokeny** (vytvoření, odvolání, jednorázové zkopírování).
 
+Token nikdy nelze vytvořit s většími oprávněními, než má jeho tvůrce. Token `admin` může vytvořit pouze provozovatel: z relace řídicího panelu, místním CLI přímo na serveru, pomocí `omniroute connect` s heslem nebo v instanci s vypnutým přihlašováním. Strojové přihlašovací údaje (přístupový token `admin` nebo API klíč s rozsahem `manage`/`admin`) mohou vytvářet pouze tokeny `write` a `read`; požadavek na `--scope admin` s těmito údaji vrátí `403`.
+
 ---
 
 ## Konfigurace programátorského CLI ze vzdáleného katalogu

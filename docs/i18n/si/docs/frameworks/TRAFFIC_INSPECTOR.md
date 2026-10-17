@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS සීමාව:** HTTPS `CONNECT` උමං පෙරනිමියෙන් ග්රහණය කරන්නේ පාරදත්ත ලෙස පමණි (ධාරකය, port, කාල තොරතුරු) — TLS අන්තර්ගතය විකේතනය නොකෙරේ. සම්පූර්ණ අන්තර්ගත පරීක්ෂාව සඳහා "ප්රොක්සි ක්රමයේදී HTTPS විකේතනය කරන්න" ටොගලය සක්රිය කරන්න (ස්ව කැමැත්තෙන් සක්රිය කළ යුතු අතර AgentBridge සහතිකය විශ්වාස කළ යුතුය).
+**TLS සීමාව:** HTTPS `CONNECT` උමං පෙරනිමියෙන් ග්රහණය කරන්නේ පාරදත්ත ලෙස පමණි (ධාරකය, port, කාල තොරතුරු) — TLS අන්තර්ගතය විකේතනය නොකෙරේ.
 
 **Port ගැටුම:** port 8080 භාවිතයේ පවතී නම්, AgentBridge ව්යුහගත දෝෂයක් සමඟ 409 ප්රතිචාරයක් ලබා දෙයි. `INSPECTOR_HTTP_PROXY_PORT` පරිසර විචල්යය හරහා port එක වෙනස් කරන්න.
 
@@ -464,12 +464,11 @@ buffer එක `INSPECTOR_BUFFER_SIZE` වෙත (පෙරනිමිය 1000) 
 
 ### ග්රහණ මාදිලි
 
-| ක්රමය | Path                           | විස්තරය                                                                                         |
-| ----- | ------------------------------ | ----------------------------------------------------------------------------------------------- |
-| GET   | `/capture-modes`               | AgentBridge / custom-hosts / HTTP_PROXY / system-proxy මාදිලිවල තත්ත්වය + `tls-intercept` මාරුව |
-| POST  | `/capture-modes/http-proxy`    | HTTP_PROXY listener එක ආරම්භ කරන්න/නවත්වන්න (`{action: "start"\|"stop"}`)                       |
-| POST  | `/capture-modes/system-proxy`  | පද්ධතිය පුරා proxy එක යොදන්න/පෙර තත්ත්වයට පත් කරන්න (`{action: "apply"\|"revert"}`)             |
-| POST  | `/capture-modes/tls-intercept` | proxy මාදිලියේදී HTTPS body විකේතනය මාරු කරන්න (`{enabled: boolean}`)                           |
+| ක්රමය | Path                          | විස්තරය                                                                             |
+| ----- | ----------------------------- | ----------------------------------------------------------------------------------- |
+| GET   | `/capture-modes`              | AgentBridge / custom-hosts / HTTP_PROXY / system-proxy මාදිලිවල තත්ත්වය             |
+| POST  | `/capture-modes/http-proxy`   | HTTP_PROXY listener එක ආරම්භ කරන්න/නවත්වන්න (`{action: "start"\|"stop"}`)           |
+| POST  | `/capture-modes/system-proxy` | පද්ධතිය පුරා proxy එක යොදන්න/පෙර තත්ත්වයට පත් කරන්න (`{action: "apply"\|"revert"}`) |
 
 > **TPROXY විකේතනය** (ග්රහණ මාදිලිය 5) ක්රියාත්මක වන්නේ AgentBridge prefix එක යටතේ ඇති
 > **වෙනම** route එකක් මඟිනි — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` —

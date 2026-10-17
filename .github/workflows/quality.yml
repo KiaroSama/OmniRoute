@@ -244,9 +244,11 @@ jobs:
           # Ratchet-mode gates append --ratchet. `cycles` belongs here since #15281
           # (69cb18dca8): check-cycles.mjs exits 1 on ANY cycle without --ratchet, and
           # the frozen ceiling lives in quality-baseline.json → metrics.cycles — same
-          # `check:cycles:ratchet` semantics ci.yml runs (base-red #15306).
+          # `check:cycles:ratchet` semantics ci.yml runs (base-red #15306). `boundary`
+          # caps the open-sse → src edge count (measure-boundary.mjs --ratchet, ceiling
+          # quality-baseline.json → metrics.boundaryOpenSseToSrc) — same as ci.yml lint.
           ratchet_gates=(
-            secrets vuln-ratchet workflows openapi-breaking cycles
+            secrets vuln-ratchet workflows openapi-breaking cycles boundary
           )
           failed=()
           for g in "${gates[@]}"; do
@@ -412,7 +414,7 @@ jobs:
       - name: Upload test results to Trunk (advisory)
         if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         continue-on-error: true
-        uses: trunk-io/analytics-uploader@14c0f18990953eecd01c9c5afe3cc63a73b6c371 # v2.1.5
+        uses: trunk-io/analytics-uploader@a86313c7029d22e6ea2d5c346060a224d90053dc # v2.1.6
         with:
           junit-paths: trunk-junit/**/*.xml
           org-slug: omniroute

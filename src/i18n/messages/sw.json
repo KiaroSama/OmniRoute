@@ -3384,6 +3384,10 @@
     "comboRefMember": "Mchanganyiko → {name}"
   },
   "combos": {
+    "autoTosIncludeLabel": "Jumuisha watoa huduma wenye alama ToS: avoid katika auto",
+    "autoTosDescription": "Imezimwa kwa chaguo-msingi. Inatumika kwa michanganyiko yote ya auto, si akaunti moja tu. Kuunganisha mtoa huduma hakuwezeshi chaguo hili.",
+    "autoTosSaveError": "Imeshindikana kuhifadhi sera ya ToS. Mpangilio wa awali bado unaonyeshwa. Jaribu tena.",
+    "autoTosLoadError": "Imeshindikana kupakia sera ya ToS. Jaribu tena kabla ya kuibadilisha.",
     "title": "Mikusanyiko",
     "description": "Unda mikusanyiko ya modeli yenye uelekezaji wenye uzani na usaidizi wa kutumia mbadala",
     "autoCatalogTitle": "Katalogi ya uelekezaji kiotomatiki",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Inaonyesha {shown} kati ya safu mlalo {total} zinazolingana (50 bora)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Mahali pa kutuma usawazishaji wa wingu (si nakala rudufu za ndani):",
+    "cloudUploadWarning": "Usawazishaji wa wingu umezimwa kwa chaguo-msingi katika usakinishaji mpya. Ukiuwasha, funguo za API za watoa huduma, tokeni za ufikiaji na kuonyesha upya za OAuth, funguo za API za OmniRoute na usanidi hupakiwa kwenye mahali palipoonyeshwa hapo juu, sasa na wakati wa usawazishaji wa baadaye. Hii ni tofauti na nakala rudufu za ndani katika sehemu ya Hifadhi. Washa tu ikiwa unaamini seva hiyo.",
+    "cloudUploadConsent": "Ninaelewa na kuruhusu taarifa zangu za uthibitishaji kupakiwa kwenye mahali hapa.",
     "title": "Endpoint ya API",
     "subtitle": "Tumia endpoint inayooana na OpenAI pamoja na SDK na zana nyingi.",
     "testEndpoint": "Jaribu endpoint →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Mtoa huduma huyu ameondolewa kwenye auto kwa chaguo-msingi",
+    "tosAvoidNoticeDescription": "Hali yake ya ToS imewekwa alama avoid. Kuunganisha akaunti hakubadilishi sera hii. Soma masharti ya mtoa huduma kabla ya kuwezesha chaguo la jumla kwa michanganyiko yote ya auto.",
+    "tosAvoidNoticeAction": "Angalia sera ya auto",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Zima muunganisho",
     "enableConnection": "Washa muunganisho",
     "reauthenticateConnection": "Thibitisha upya muunganisho huu",
+    "verifyAccount": "Thibitisha akaunti",
+    "verifyAccountHint": "Google inahitaji uthibitishe akaunti hii. Fungua kiungo, kamilisha ukaguzi, kisha jaribu tena.",
     "proxyConfig": "Usanidi wa proksi",
     "aliasExistsAlert": "Lakabu \"{alias}\" tayari ipo. Tafadhali tumia modeli tofauti au hariri lakabu iliyopo.",
     "aliasInputPlaceholder": "jina la lakabu",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Bandari",
     "qdrantHost": "Mwenyeji",
     "qdrantCollection": "Mkusanyiko",
+    "catalogVisibilityHint": "Vitambulisho vya miundo vilivyofichwa bado vinaweza kuitwa kwa ruhusa zilezile za ufikiaji.",
     "catalogScopeTitle": "Orodha ya API ya Models",
     "catalogScopeDesc": "Kile ambacho GET /v1/models hutangaza kwa ufunguo huu. Kupunguza orodha hakubadilishi kamwe kile ambacho ufunguo unaweza kuita.",
     "catalogScopeAll": "Zote mbili",

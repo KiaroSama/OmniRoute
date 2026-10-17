@@ -48,6 +48,10 @@ Akış:
 
 Zorunlu modlar, otomatik buluşsal yöntem çalışmadan **önce** kısa devre yapar; `auto` davranışı, PR-1 öncesi guardrail ile bayt olarak aynıdır.
 
+#### API anahtarının kapsamı (`visionBridgeKeyScope.ts`)
+
+API anahtarı bağlantıları, kota havuzlarını veya modelleri kısıtlıyorsa (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), yeniden yönlendirme ve açıklama yalnızca o anahtara izin verilen modelleri ve bağlantıları seçer. Açıklama her zaman `x-omniroute-self-loop-key-id` başlığıyla OmniRoute'un kendi döngüsünden geçer; bağlantı ve model ilkesi yeniden uygulanır. `enforceApiKeyPolicy()` başlığı yalnızca döngünün bearer belirteciyle birlikte kabul eder: erişimi ancak daraltabilir ve çözümlenemeyen kimlik reddedilir. İzin verilen görsel model yoksa açıklama atlanır ve koruma kapalıymış gibi istek değişmeden geçer (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Anahtarsız istekler ve bu kısıtlamaları olmayan anahtarlar eskisi gibi davranır.
+
 #### Göreve duyarlı açıklama istemi (`modalityBridgeVisionTaskAware`)
 
 Varsayılan **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`), temel açıklama istemine **son kullanıcı mesajının** metnini (500 karakterle kesilmiş) ekler, açıklamayı kullanıcının gerçekten sorduğu şeye yönlendirir (codex-vision-proxy deseni) ve görsel modelden görünür metni yazıya dökmesini ister. Bayrak kapalıysa — veya kullanıcı metni yoksa — temel istem değişmeden kullanılır.

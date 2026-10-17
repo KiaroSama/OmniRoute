@@ -2,7 +2,7 @@
  * Extract usage from non-streaming response body
  * Handles different provider response formats
  */
-import { carryEstimatedUsageMarker } from "../utils/usageTracking.ts";
+import { carryEstimatedUsageMarker, pickReportedCostUsd } from "../utils/usageTracking.ts";
 
 /**
  * True for an Anthropic Messages response body (`type: "message"`), whatever provider
@@ -46,6 +46,7 @@ export function extractUsageFromResponse(responseBody, provider) {
       responseBody.usage.prompt_tokens_details?.cache_write_tokens ??
       responseBody.usage.input_tokens_details?.cache_write_tokens ??
       responseBody.usage.cache_write_tokens;
+    const reportedCostUsd = pickReportedCostUsd(responseBody.usage);
     const openAiUsage = {
       prompt_tokens: responseBody.usage.prompt_tokens || 0,
       completion_tokens: responseBody.usage.completion_tokens || 0,
@@ -82,6 +83,8 @@ export function extractUsageFromResponse(responseBody, provider) {
       responseBody.usage.cost_in_usd_ticks >= 0
         ? { cost_in_usd_ticks: responseBody.usage.cost_in_usd_ticks }
         : {}),
+      // OpenRouter's provider-billed USD cost (`usage.cost`); only set when reported.
+      ...(reportedCostUsd !== undefined ? { cost_usd: reportedCostUsd } : {}),
     };
     return carryEstimatedUsageMarker(responseBody.usage, openAiUsage);
   }

@@ -41,6 +41,11 @@ import {
 import { resolveProxyForConnection } from "@/lib/db/settings";
 import { runWithProxyContext } from "@omniroute/open-sse/utils/proxyFetch.ts";
 import { isCodexFreePlan } from "@omniroute/open-sse/config/codexPlan.ts";
+import { buildAdobeFireflyEditDataUrls } from "@/lib/images/adobeFireflyEdit";
+import {
+  runImageRequestWithAccounting,
+  type ImageRequestAccounting,
+} from "@/lib/usage/imageRequestAccounting";
 import { dispatchCodexImagesEdit, dispatchAntigravityEdit } from "./editNativeDispatch";
 export {
   dispatchCodexImagesEdit,
@@ -100,91 +105,6 @@ async function selectImageEditCredentials(params: {
   return { credentials };
 }
 
-/** Reduce reference images (multi + single fallback) to data-URL strings for Firefly. */
-function buildAdobeFireflyEditDataUrls(
-  images: Array<{ bytes: Buffer; mime: string }>,
-  imageBytes: Buffer | null,
-  imageMime: string | null
-): string[] {
-  const dataUrls: string[] = [];
-  const refList = Array.isArray(images) ? images : [];
-  for (const ref of refList) {
-    if (!ref || typeof ref !== "object") continue;
-    const bytes = (ref as { bytes?: Buffer }).bytes;
-    const mime =
-      typeof (ref as { mime?: string }).mime === "string" &&
-      String((ref as { mime?: string }).mime).startsWith("image/")
-        ? String((ref as { mime?: string }).mime)
-        : "image/png";
-    if (Buffer.isBuffer(bytes) && bytes.length > 0) {
-      dataUrls.push(`data:${mime};base64,${bytes.toString("base64")}`);
-    }
-  }
-  if (dataUrls.length === 0 && imageBytes && imageBytes.length > 0) {
-    const mime =
-      typeof imageMime === "string" && imageMime.startsWith("image/") ? imageMime : "image/png";
-    dataUrls.push(`data:${mime};base64,${imageBytes.toString("base64")}`);
-  }
-  return dataUrls;
-}
-
-/**
- * Adobe Firefly edit = storage upload + generate-async referenceBlobs (same as i2i generate).
- * Extracted from postHandler to keep cyclomatic/cognitive complexity in check
- * (config/quality/complexity-baseline.json ratchet).
- */
-export async function handleAdobeFireflyEditRequest(params: {
-  parsed: ReturnType<typeof parseImageModel>;
-  providerConfig: NonNullable<ReturnType<typeof getImageProvider>>;
-  allowedConnections: string[] | null;
-  resolvedModel: string;
-  prompt: string;
-  size: string | null;
-  responseFormat: string | null;
-  images: Array<{ bytes: Buffer; mime: string }>;
-  imageBytes: Buffer | null;
-  imageMime: string | null;
-}): Promise<Response> {
-  const { parsed, providerConfig, prompt, size, responseFormat, images, imageBytes, imageMime } =
-    params;
-
-  const selection = await selectImageEditCredentials(params);
-  if ("response" in selection) return selection.response;
-  const credentials = selection.credentials;
-  // Prefer multi-image list when present; fall back to the primary imageBytes.
-  const dataUrls = buildAdobeFireflyEditDataUrls(images, imageBytes, imageMime);
-  if (dataUrls.length === 0) {
-    return errorResponse(HTTP_STATUS.BAD_REQUEST, "Missing required field: image");
-  }
-
-  const result = await handleAdobeFireflyImageGeneration({
-    provider: parsed.provider,
-    model: parsed.model,
-    providerConfig,
-    body: {
-      prompt,
-      size: size ?? undefined,
-      response_format: responseFormat ?? undefined,
-      n: 1,
-      image_url: dataUrls[0],
-      image: dataUrls.length === 1 ? dataUrls[0] : dataUrls,
-      image_urls: dataUrls,
-      images: dataUrls,
-    },
-    credentials,
-    log,
-  });
-
-  if ((result as { success?: boolean }).success) {
-    await clearRecoveredProviderState(credentials);
-    return jsonResponse((result as { data?: unknown }).data);
-  }
-  return jsonResponse(
-    toJsonErrorPayload((result as { error?: unknown }).error, "Image edit provider error"),
-    (result as { status?: number }).status ?? HTTP_STATUS.BAD_GATEWAY
-  );
-}
-
 export async function handleSyntxEditRequest(params: {
   parsed: ReturnType<typeof parseImageModel>;
   providerConfig: NonNullable<ReturnType<typeof getImageProvider>>;
@@ -196,6 +116,7 @@ export async function handleSyntxEditRequest(params: {
   images: Array<{ bytes: Buffer; mime: string }>;
   imageBytes: Buffer | null;
   imageMime: string | null;
+  accounting: Pick<ImageRequestAccounting, "apiKeyInfo" | "startTime">;
 }): Promise<Response> {
   const { parsed, providerConfig, prompt, size, responseFormat, images, imageBytes, imageMime } =
     params;
@@ -208,22 +129,32 @@ export async function handleSyntxEditRequest(params: {
     return errorResponse(HTTP_STATUS.BAD_REQUEST, "Missing required field: image");
   }
 
-  const result = await handleSyntxImageGeneration({
-    provider: parsed.provider,
-    model: parsed.model,
-    providerConfig,
-    body: {
-      prompt,
-      size: size ?? undefined,
-      response_format: responseFormat ?? undefined,
-      n: 1,
-      image_url: dataUrls,
-      image: dataUrls.length === 1 ? dataUrls[0] : dataUrls,
-      image_urls: dataUrls,
+  const result = await runImageRequestWithAccounting(
+    {
+      ...params.accounting,
+      endpoint: "/v1/images/edits",
+      provider: parsed.provider,
+      model: parsed.model,
+      credentials,
     },
-    credentials: credentials as Parameters<typeof handleSyntxImageGeneration>[0]["credentials"],
-    log,
-  });
+    () =>
+      handleSyntxImageGeneration({
+        provider: parsed.provider,
+        model: parsed.model,
+        providerConfig,
+        body: {
+          prompt,
+          size: size ?? undefined,
+          response_format: responseFormat ?? undefined,
+          n: 1,
+          image_url: dataUrls,
+          image: dataUrls.length === 1 ? dataUrls[0] : dataUrls,
+          image_urls: dataUrls,
+        },
+        credentials: credentials as Parameters<typeof handleSyntxImageGeneration>[0]["credentials"],
+        log,
+      })
+  );
 
   if ((result as { success?: boolean }).success) {
     await clearRecoveredProviderState(credentials);
@@ -237,6 +168,7 @@ export async function handleSyntxEditRequest(params: {
 
 /** Reference/prompt payload an edit dispatch needs, shared by single + combo paths. */
 interface ImageEditContext {
+  accounting: Pick<ImageRequestAccounting, "apiKeyInfo" | "startTime" | "comboStrategy">;
   nativeOptions?: Record<string, unknown>;
   aspectRatio?: string | null;
   imageSize?: string | null;
@@ -550,7 +482,25 @@ export async function executeImageEditCombo(
         target.modelStr
       ),
     isRateLimited: isAllRateLimitedCredentials,
-    dispatch: ({ target, credentials }) => dispatchImageEditTarget(target, credentials, ctx),
+    dispatch: ({ target, credentials }) => {
+      // Dedicated Images binds accounting after refreshing the selected account.
+      if (target.parsed.provider === "codex" && isCodexImagesModel(target.parsed.model))
+        return dispatchImageEditTarget(target, credentials, {
+          ...ctx,
+          accounting: { ...ctx.accounting, comboStrategy: "priority" },
+        });
+      return runImageRequestWithAccounting(
+        {
+          ...ctx.accounting,
+          endpoint: "/v1/images/edits",
+          provider: target.parsed.provider || target.credKey,
+          model: target.parsed.model,
+          credentials,
+          comboStrategy: "priority",
+        },
+        () => dispatchImageEditTarget(target, credentials, ctx)
+      );
+    },
     onSuccess: async (credentials) => {
       await clearRecoveredProviderState(credentials as never);
     },

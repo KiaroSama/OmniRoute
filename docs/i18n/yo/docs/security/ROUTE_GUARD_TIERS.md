@@ -139,6 +139,8 @@ méjì ṣì wà fún olùṣàkóso:
   prefix `/api/providers/` láti lè mú wọn, èyí tí yóò mú igi ọ̀nà tí àwọn
   dashboard ọ̀nà jíjìn ń lò lọ́nà tó bófin mu fún CRUD provider gbòòrò ju.
 
+  Olùgbé àwòrán ipò àkókò ìṣiṣẹ́ wọlé tún ń yọ irú àwọn àkọsílẹ̀ wọ̀nyí kúrò nínú ìlà ètò tí a fipamọ́, ìmúwọlé JSON àtijọ́ (`/api/settings/import-json`) kò sì kọ àwọn kọ́kọ́rọ́ ìforígbárí ààbò rárá. Gbogbo àkọsílẹ̀ `LOCAL_ONLY_API_PREFIXES` gbọ́dọ̀ wà nínú àtòjọ ìdènà tàbí kí a ti ṣàyẹ̀wò rẹ̀, kí a sì fọwọ́ sí i fún fífo ààbò kọjá. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Ṣíṣàyẹ̀wò ìwọlé** — láti jẹ́rìí pé kò sí ohunkóhun láti òde host tó ń dé àwọn ọ̀nà wọ̀nyí:
 
 - Ṣí **Àkójọ Àṣẹ** lórí `/dashboard/settings/security`: ó ń ṣàfihàn àkójọ prefix LOCAL_ONLY tó ń ṣiṣẹ́ lọ́wọ́lọ́wọ́, àwọn prefix wo ni a lè forí kọjá, àti àkójọpọ̀ àwọn tó lè dá process tuntun sílẹ̀ ní àkókò ìkójọpọ̀ ("a kò lè mú kí a forí kọjá wọn").

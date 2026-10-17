@@ -1,0 +1,1 @@
+- **fix(errors):** mask house access tokens in public error text ([#16759](https://github.com/diegosouzapw/OmniRoute/pull/16759)) — thanks @maxmad64bis

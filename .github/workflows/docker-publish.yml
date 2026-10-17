@@ -144,7 +144,7 @@ jobs:
     name: Preflight — amd64 runner availability
     needs: prepare
     if: >-
-      github.event_name != 'schedule' && needs.prepare.outputs.skip != 'true' && vars.USE_VPS_RUNNER == 'true' &&
+      github.event_name != 'schedule' && needs.prepare.outputs.skip != 'true' && vars.USE_VPS_RUNNER == 'true' && vars.USE_VPS_BUILD_RUNNER == 'true' &&
       (github.event_name != 'schedule' || github.repository == 'diegosouzapw/OmniRoute')
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -193,7 +193,7 @@ jobs:
     # (run 33253576569). The same tree's arm64 webpack build on hosted ARM
     # succeeded (run 33264823398). Dockerfile already documents webpack as the
     # Docker escape hatch (OMNIROUTE_USE_TURBOPACK=0).
-    runs-on: ${{ matrix.arch == 'amd64' && (vars.USE_VPS_RUNNER == 'true' && fromJSON('["self-hosted","omni-build"]') || 'ubuntu-24.04') || 'ubuntu-24.04-arm' }}
+    runs-on: ${{ matrix.arch == 'amd64' && (vars.USE_VPS_RUNNER == 'true' && vars.USE_VPS_BUILD_RUNNER == 'true' && fromJSON('["self-hosted","omni-build"]') || 'ubuntu-24.04') || 'ubuntu-24.04-arm' }}
     # Share the 1-slot omni-build ceiling (#12048) with ci.yml `Build` /
     # npm-publish. Same group as main's Build so a :next publish waits beside
     # the artefact instead of sitting next to it. arm64 is hosted — its own
@@ -665,7 +665,7 @@ jobs:
       - name: Upload Trivy SARIF to Security tab
         if: needs.prepare.outputs.version != 'main'
         continue-on-error: true
-        uses: github/codeql-action/upload-sarif@v4.38.2
+        uses: github/codeql-action/upload-sarif@v4.38.3
         with:
           sarif_file: trivy-results.sarif
           category: trivy-image
@@ -691,6 +691,7 @@ jobs:
     name: omni-build runner offline alert
     if: >-
       (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
+      vars.USE_VPS_RUNNER == 'true' && vars.USE_VPS_BUILD_RUNNER == 'true' &&
       (github.event_name != 'schedule' || github.repository == 'diegosouzapw/OmniRoute')
     runs-on: ubuntu-latest
     timeout-minutes: 5

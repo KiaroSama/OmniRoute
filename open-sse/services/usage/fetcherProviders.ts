@@ -110,6 +110,8 @@ export const USAGE_FETCHER_PROVIDERS = [
   // ChatPlayground subscription and daily credits (GET /api/user)
   "chatplayground",
   "cpl",
+  // Cloudflare Workers AI daily neurons (GraphQL Analytics aiInferenceAdaptiveGroups)
+  "cloudflare-ai",
 ] as const;
 
 export type UsageFetcherProvider = (typeof USAGE_FETCHER_PROVIDERS)[number];

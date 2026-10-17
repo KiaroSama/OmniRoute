@@ -249,6 +249,8 @@ omniroute tokens scopes               # die drei Geltungsbereiche erläutern
 
 `tokens`-Befehle erfordern Admin-Anmeldedaten. Sie können Tokens auch im Dashboard unter **Settings → Access Tokens** verwalten (erstellen, widerrufen, einmalig kopieren).
 
+Ein Token kann niemals mit mehr Berechtigungen erstellt werden, als sein Ersteller besitzt. Nur der Betreiber kann ein `admin`-Token erstellen: über die Dashboard-Sitzung, die lokale CLI auf dem Server selbst, `omniroute connect` mit dem Passwort oder eine Instanz mit deaktivierter Anmeldung. Maschinen-Zugangsdaten (ein `admin`-Zugriffstoken oder ein API-Schlüssel mit dem Geltungsbereich `manage`/`admin`) können nur `write`- und `read`-Tokens erstellen; eine Anfrage mit `--scope admin` liefert damit `403` zurück.
+
 ---
 
 ## Eine Coding-CLI aus dem Remote-Katalog konfigurieren

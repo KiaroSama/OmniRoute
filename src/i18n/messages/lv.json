@@ -3384,6 +3384,10 @@
     "comboRefMember": "Kombinācija → {name}"
   },
   "combos": {
+    "autoTosLoadError": "Neizdevās ielādēt pakalpojuma noteikumu politiku. Pirms tās maiņas mēģiniet vēlreiz.",
+    "autoTosSaveError": "Neizdevās saglabāt pakalpojuma noteikumu politiku. Joprojām tiek rādīts iepriekšējais iestatījums. Mēģiniet vēlreiz.",
+    "autoTosIncludeLabel": "Iekļaut auto pakalpojumu sniedzējus ar atzīmi ToS: avoid",
+    "autoTosDescription": "Pēc noklusējuma izslēgts. Attiecas uz visām auto kombinācijām, ne tikai vienu kontu. Pakalpojuma sniedzēja pievienošana neieslēdz šo iespēju.",
     "title": "Kombinācijas",
     "description": "Izveidojiet modeļu kombinācijas ar svērtu maršrutēšanu un rezerves variantu atbalstu",
     "autoCatalogTitle": "Automātiskās maršrutēšanas katalogs",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Rāda {shown} no {total} atbilstošajām rindām (50 lielākās)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Mākoņa sinhronizācijas galamērķis (nevis vietējo dublējumkopiju):",
+    "cloudUploadWarning": "Jaunās instalācijās mākoņa sinhronizācija pēc noklusējuma ir izslēgta. To ieslēdzot, pakalpojumu sniedzēju API atslēgas, OAuth piekļuves un atsvaidzināšanas marķieri, OmniRoute API atslēgas un konfigurācija tiek augšupielādēti iepriekš norādītajā galamērķī tagad un turpmākajās sinhronizācijās. Šī funkcija ir atsevišķa no vietējām dublējumkopijām sadaļā Krātuve. Ieslēdziet to tikai tad, ja uzticaties šim serverim.",
+    "cloudUploadConsent": "Es saprotu un atļauju augšupielādēt savus akreditācijas datus šajā galamērķī.",
     "title": "API galapunkts",
     "subtitle": "Izmantojiet ar OpenAI saderīgu galapunktu ar vairumu SDK un rīku.",
     "testEndpoint": "Testēt galapunktu →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Šis pakalpojumu sniedzējs pēc noklusējuma ir izslēgts no auto",
+    "tosAvoidNoticeDescription": "Tā pakalpojuma noteikumu statuss ir atzīmēts kā avoid. Konta pievienošana nemaina šo politiku. Pirms kopīgās atļaujas ieslēgšanas visām auto kombinācijām pārskatiet pakalpojuma sniedzēja noteikumus.",
+    "tosAvoidNoticeAction": "Pārskatīt auto politiku",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Atspējot savienojumu",
     "enableConnection": "Iespējot savienojumu",
     "reauthenticateConnection": "Atkārtoti autentificēt šo savienojumu",
+    "verifyAccount": "Verificēt kontu",
+    "verifyAccountHint": "Google pieprasa verificēt šo kontu. Atveriet saiti, pabeidziet pārbaudi un mēģiniet vēlreiz.",
     "proxyConfig": "Proxija konfigurācija",
     "aliasExistsAlert": "Aizstājvārds \"{alias}\" jau pastāv. Lūdzu, izmantojiet citu modeli vai rediģējiet esošo aizstājvārdu.",
     "aliasInputPlaceholder": "aizstājvārda nosaukums",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Ports",
     "qdrantHost": "Resursdators",
     "qdrantCollection": "Kolekcija",
+    "catalogVisibilityHint": "Slēptos modeļu ID joprojām var izsaukt ar tām pašām piekļuves atļaujām.",
     "catalogScopeTitle": "Models API saraksts",
     "catalogScopeDesc": "Ko GET /v1/models uzrāda šai atslēgai. Saraksta sašaurināšana nekad nemaina to, ko atslēga var izsaukt.",
     "catalogScopeAll": "Abi",
@@ -14526,7 +14539,7 @@
     "errorImportFailed": "Importēšana neizdevās",
     "title": "Izveidot savienojumu ar Trae SOLO",
     "authorizeDescription": "Autorizējieties, izmantojot <code>trae.ai</code> uznirstošajā logā. Pēc pilnvaras importēšanas uznirstošais logs tiks automātiski aizvērts.",
-    "authorizeImportant": "<strong>Svarīgi:</strong> vispirms šajā pārlūkprogrammā jums ir jāpiesakās <code>trae.ai</code>. Autorizācijas lapa tikai apstiprina esošu sesiju — tā nevar jūs pieteikt. Ja redzat “Pieteikšanās neizdevās”, noklikšķiniet uz “Atvērt solo.trae.ai”, piesakieties un pēc tam atgriezieties šeit.",
+    "authorizeImportant": "<strong>Svarīgi:</strong> vispirms šajā <em>pārlūkprogrammā</em> jums ir jāpiesakās <code>trae.ai</code>. Autorizācijas lapa tikai apstiprina esošu sesiju — tā nevar jūs pieteikt. Ja redzat “Pieteikšanās neizdevās”, noklikšķiniet uz “Atvērt solo.trae.ai”, piesakieties un pēc tam atgriezieties šeit.",
     "waitingForAuthorization": "Gaida trae.ai…",
     "authorizeWithBrowser": "Autorizēt, izmantojot pārlūkprogrammu",
     "openSoloTrae": "Atvērt solo.trae.ai",

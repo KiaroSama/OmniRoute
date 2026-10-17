@@ -3384,6 +3384,10 @@
     "comboRefMember": "कम्बो → {name}"
   },
   "combos": {
+    "autoTosIncludeLabel": "ToS: avoid चिन्ह लगाइएका प्रदायकहरूलाई auto मा समावेश गर्नुहोस्",
+    "autoTosDescription": "पूर्वनिर्धारित रूपमा बन्द छ। एउटा खातामा मात्र होइन, सबै auto कम्बोमा लागू हुन्छ। प्रदायक जोड्दा यो विकल्प सक्रिय हुँदैन।",
+    "autoTosSaveError": "ToS नीति सुरक्षित गर्न सकिएन। अघिल्लो सेटिङ नै देखाइएको छ। फेरि प्रयास गर्नुहोस्।",
+    "autoTosLoadError": "ToS नीति लोड गर्न सकिएन। परिवर्तन गर्नुअघि फेरि प्रयास गर्नुहोस्।",
     "title": "कम्बोहरू",
     "description": "भारित राउटिङ र फलब्याक समर्थनसहित मोडेल कम्बोहरू सिर्जना गर्नुहोस्",
     "autoCatalogTitle": "स्वतः-राउटिङ क्याटलग",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "मिल्दो {total} पङ्क्तिमध्ये {shown} देखाइँदैछ (शीर्ष 50)।"
   },
   "endpoint": {
+    "cloudUploadDestination": "क्लाउड सिङ्कको गन्तव्य (स्थानीय ब्याकअपको होइन):",
+    "cloudUploadWarning": "नयाँ स्थापनाहरूमा क्लाउड सिङ्क पूर्वनिर्धारित रूपमा बन्द हुन्छ। यसलाई सक्षम पार्दा प्रदायकहरूका API कुञ्जीहरू, OAuth पहुँच र रिफ्रेस टोकनहरू, OmniRoute API कुञ्जीहरू र कन्फिगरेसन माथिको गन्तव्यमा अहिले र भविष्यका सिङ्कहरूमा अपलोड हुन्छन्। यो भण्डारणमा रहेका स्थानीय ब्याकअपहरूबाट अलग छ। उक्त सर्भरलाई विश्वास गर्नुहुन्छ भने मात्र यसलाई सक्षम पार्नुहोस्।",
+    "cloudUploadConsent": "म यो बुझ्छु र मेरा प्रमाणीकरण विवरणहरू यस गन्तव्यमा अपलोड गर्न अनुमति दिन्छु।",
     "title": "API एन्डपोइन्ट",
     "subtitle": "अधिकांश SDK र उपकरणहरूसँग OpenAI-सङ्गत एन्डपोइन्ट प्रयोग गर्नुहोस्।",
     "testEndpoint": "एन्डपोइन्ट परीक्षण गर्नुहोस् →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "यो प्रदायक पूर्वनिर्धारित रूपमा auto बाट हटाइएको छ",
+    "tosAvoidNoticeDescription": "यसको ToS स्थिति avoid छ। खाता जोड्दा यो नीति परिवर्तन हुँदैन। सबै auto कम्बोका लागि विश्वव्यापी विकल्प सक्रिय गर्नुअघि प्रदायकका सर्तहरू पढ्नुहोस्।",
+    "tosAvoidNoticeAction": "auto नीति हेर्नुहोस्",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "जडान असक्षम गर्नुहोस्",
     "enableConnection": "जडान सक्षम गर्नुहोस्",
     "reauthenticateConnection": "यो जडान पुनः प्रमाणीकरण गर्नुहोस्",
+    "verifyAccount": "खाता प्रमाणित गर्नुहोस्",
+    "verifyAccountHint": "Google ले यो खाता प्रमाणित गर्न भनेको छ। लिङ्क खोल्नुहोस्, जाँच पूरा गर्नुहोस्, अनि फेरि प्रयास गर्नुहोस्।",
     "proxyConfig": "प्रोक्सी कन्फिगरेसन",
     "aliasExistsAlert": "उपनाम \"{alias}\" पहिले नै अवस्थित छ। कृपया फरक मोडेल प्रयोग गर्नुहोस् वा विद्यमान उपनाम सम्पादन गर्नुहोस्।",
     "aliasInputPlaceholder": "उपनामको नाम",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "पोर्ट",
     "qdrantHost": "होस्ट",
     "qdrantCollection": "सङ्कलन",
+    "catalogVisibilityHint": "लुकाइएका मोडेल ID हरूलाई उही पहुँच अनुमतिसहित अझै पनि कल गर्न सकिन्छ।",
     "catalogScopeTitle": "Models API सूचीकरण",
     "catalogScopeDesc": "यस कुञ्जीका लागि GET /v1/models ले के देखाउँछ। सूची सीमित गर्दा पनि कुञ्जीले कल गर्न सक्ने कुरामा कहिल्यै परिवर्तन हुँदैन।",
     "catalogScopeAll": "दुवै",

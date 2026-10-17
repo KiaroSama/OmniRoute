@@ -1,0 +1,1 @@
+- **fix(sse):** flatten root `oneOf`/`anyOf`/`allOf` tool schemas into one object schema and keep tool parameters whose names match JSON-Schema keywords when sanitizing Kiro tool schemas ([#16469](https://github.com/diegosouzapw/OmniRoute/pull/16469)) — thanks @ryanngit

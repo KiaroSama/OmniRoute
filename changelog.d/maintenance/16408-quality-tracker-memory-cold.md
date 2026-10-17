@@ -1,0 +1,1 @@
+- **docs(routing):** document that the Auto-Combo quality tracker is in-memory and restarts cold with a neutral 0.5 until first observations ([#16408](https://github.com/diegosouzapw/OmniRoute/pull/16408)) — thanks @maxmad64bis

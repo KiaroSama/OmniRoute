@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**Had TLS:** Terowong `CONNECT` HTTPS ditangkap sebagai metadata sahaja (hos, port, pemasaan) — kandungan TLS tidak dinyahsulit secara lalai. Aktifkan togol "Nyahsulit HTTPS dalam mod proksi" (ikut serta, memerlukan sijil AgentBridge dipercayai) untuk pemeriksaan kandungan penuh.
+**Had TLS:** Terowong `CONNECT` HTTPS ditangkap sebagai metadata sahaja (hos, port, pemasaan) — kandungan TLS tidak dinyahsulit secara lalai.
 
 **Konflik port:** Jika port 8080 sedang digunakan, AgentBridge mengembalikan 409 dengan ralat berstruktur. Tukar port melalui pemboleh ubah persekitaran `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -464,12 +464,11 @@ Laluan asas: `/api/tools/traffic-inspector/`
 
 ### Mod tangkapan
 
-| Kaedah | Laluan                         | Penerangan                                                                                 |
-| ------ | ------------------------------ | ------------------------------------------------------------------------------------------ |
-| GET    | `/capture-modes`               | Keadaan mod AgentBridge / hos tersuai / HTTP_PROXY / proksi sistem + togol `tls-intercept` |
-| POST   | `/capture-modes/http-proxy`    | Mulakan/hentikan pendengar HTTP_PROXY (`{action: "start"\|"stop"}`)                        |
-| POST   | `/capture-modes/system-proxy`  | Gunakan/kembalikan proksi seluruh sistem (`{action: "apply"\|"revert"}`)                   |
-| POST   | `/capture-modes/tls-intercept` | Togol penyahsulitan kandungan HTTPS dalam mod proksi (`{enabled: boolean}`)                |
+| Kaedah | Laluan                        | Penerangan                                                               |
+| ------ | ----------------------------- | ------------------------------------------------------------------------ |
+| GET    | `/capture-modes`              | Keadaan mod AgentBridge / hos tersuai / HTTP_PROXY / proksi sistem       |
+| POST   | `/capture-modes/http-proxy`   | Mulakan/hentikan pendengar HTTP_PROXY (`{action: "start"\|"stop"}`)      |
+| POST   | `/capture-modes/system-proxy` | Gunakan/kembalikan proksi seluruh sistem (`{action: "apply"\|"revert"}`) |
 
 > **Penyahsulitan TPROXY** (mod tangkapan 5) dikendalikan oleh laluan **berasingan** di bawah
 > awalan AgentBridge — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — bukan

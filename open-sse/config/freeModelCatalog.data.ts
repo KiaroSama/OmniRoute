@@ -22,7 +22,7 @@ import type { FreeModelBudget } from "./freeModelCatalog.ts";
  * rewrites file timestamps on every deploy, which would report a months-old
  * catalog as "updated today". Bump this whenever the entries below change.
  */
-export const FREE_CATALOG_CURATED_AT = "2026-09-12";
+export const FREE_CATALOG_CURATED_AT = "2026-10-15";
 
 export const FREE_MODEL_BUDGETS: FreeModelBudget[] = [
   { provider: "agentrouter", modelId: "claude-opus-4-8", displayName: "Claude Opus 4.8", monthlyTokens: 0, creditTokens: 200000000, freeType: "one-time-initial", poolKey: "agentrouter", tos: "caution" },
@@ -109,9 +109,11 @@ export const FREE_MODEL_BUDGETS: FreeModelBudget[] = [
   { provider: "bluesminds", modelId: "gemini-2.5-pro", displayName: "Gemini 2.5 Pro (VIP)", monthlyTokens: 7200000, creditTokens: 0, freeType: "recurring-daily", poolKey: "bluesminds", tos: "ambiguous" },
   { provider: "bluesminds", modelId: "grok-3", displayName: "Grok-3 (VIP)", monthlyTokens: 7200000, creditTokens: 0, freeType: "recurring-daily", poolKey: "bluesminds", tos: "ambiguous" },
   { provider: "bluesminds", modelId: "qwen-max", displayName: "Qwen Max (VIP)", monthlyTokens: 7200000, creditTokens: 0, freeType: "recurring-daily", poolKey: "bluesminds", tos: "ambiguous" },
-  { provider: "bytez", modelId: "meta-llama/Llama-3.3-70B-Instruct", displayName: "meta-llama/Llama-3.3-70B-Instruct", monthlyTokens: 0, creditTokens: 1000000, freeType: "recurring-credit", poolKey: "bytez", tos: "ambiguous" },
-  { provider: "bytez", modelId: "mistralai/Mistral-7B-Instruct-v0.3", displayName: "mistralai/Mistral-7B-Instruct-v0.3", monthlyTokens: 0, creditTokens: 1000000, freeType: "recurring-credit", poolKey: "bytez", tos: "ambiguous" },
-  { provider: "bytez", modelId: "Qwen/Qwen2.5-72B-Instruct", displayName: "Qwen/Qwen2.5-72B-Instruct", monthlyTokens: 0, creditTokens: 1000000, freeType: "recurring-credit", poolKey: "bytez", tos: "ambiguous" },
+  // evidence: public-page https://docs.bytez.com/model-api/docs/billing (2026-10-15).
+  // Free open models are limited to 7B; credits refresh every 4 weeks and bill per inference second.
+  // Token allowance is unpublished: both token counters are 0 (unknown), not a claim of zero credits.
+  // Larger 70B/72B tiers require purchased credits and are not cataloged as free.
+  { provider: "bytez", modelId: "mistralai/Mistral-7B-Instruct-v0.3", displayName: "mistralai/Mistral-7B-Instruct-v0.3", monthlyTokens: 0, creditTokens: 0, freeType: "recurring-credit", poolKey: "bytez", tos: "ambiguous" },
   // #11773: cerebras.ai/pricing (2026-09-03) is a one-time $5 signup credit
   // gated on a payment method, 30-day expiry — not the old no-card 1M/day
   // trial. creditTokens stays 0 because Cerebras publishes dollars, not a
@@ -303,8 +305,8 @@ export const FREE_MODEL_BUDGETS: FreeModelBudget[] = [
   { provider: "muse-spark-web", modelId: "muse-spark-contemplating", displayName: "Muse Spark Contemplating", monthlyTokens: 0, creditTokens: 0, freeType: "keyless", poolKey: "muse-spark-web", tos: "avoid" },
   { provider: "nebius", modelId: "meta-llama/Llama-3.3-70B-Instruct", displayName: "Llama 3.3 70B Instruct", monthlyTokens: 0, creditTokens: 1000000, freeType: "one-time-initial", poolKey: "nebius", tos: "caution" },
   { provider: "nlpcloud", modelId: "llama-3-8b-instruct", displayName: "Llama 3 8B", monthlyTokens: 0, creditTokens: 0, freeType: "recurring-monthly", poolKey: "nlpcloud", tos: "avoid" },
-  { provider: "nous-research", modelId: "Hermes-4-405B", displayName: "Hermes 4 405B (Nous Research)", monthlyTokens: 0, creditTokens: 0, freeType: "recurring-credit", poolKey: "nous-research", tos: "ambiguous" },
-  { provider: "nous-research", modelId: "Hermes-4-70B", displayName: "Hermes 4 70B (Nous Research)", monthlyTokens: 0, creditTokens: 0, freeType: "recurring-credit", poolKey: "nous-research", tos: "ambiguous" },
+  // evidence: public-page https://portal.nousresearch.com/ (2026-10-15): Free models only,
+  // but no named Hermes-4 coverage; omit those unverified rows until evidence establishes access.
   { provider: "novita", modelId: "ai-ai/llama-3.1-8b-instruct", displayName: "Llama 3.1 8B", monthlyTokens: 0, creditTokens: 500000, freeType: "one-time-initial", poolKey: "novita", tos: "caution" },
   { provider: "nscale", modelId: "moonshotai/Kimi-K2.5", displayName: "moonshotai/Kimi-K2.5", monthlyTokens: 0, creditTokens: 5000000, freeType: "one-time-initial", poolKey: "nscale", tos: "caution" },
   { provider: "nscale", modelId: "Qwen/Qwen3-235B-A22B-Instruct-2507", displayName: "Qwen/Qwen3-235B-A22B-Instruct-2507", monthlyTokens: 0, creditTokens: 5000000, freeType: "one-time-initial", poolKey: "nscale", tos: "caution" },
@@ -388,11 +390,12 @@ export const FREE_MODEL_BUDGETS: FreeModelBudget[] = [
   { provider: "qoder", modelId: "minimax-m3", displayName: "MiniMax-M3", monthlyTokens: 0, creditTokens: 1000000, freeType: "one-time-initial", poolKey: "qoder", tos: "caution" },
   { provider: "reka", modelId: "reka-flash-3", displayName: "Reka Flash 3", monthlyTokens: 0, creditTokens: 0, freeType: "recurring-monthly", poolKey: "reka", tos: "caution" },
   { provider: "reka", modelId: "reka-edge-2603", displayName: "Reka Edge 2603", monthlyTokens: 0, creditTokens: 0, freeType: "recurring-monthly", poolKey: "reka", tos: "caution" },
-  { provider: "sambanova", modelId: "MiniMax-M2.7", displayName: "MiniMax-M2.7", monthlyTokens: 6000000, creditTokens: 0, freeType: "recurring-daily", poolKey: "sambanova", tos: "caution" },
+  // evidence: public-page https://docs.sambanova.ai/docs/en/models/rate-limits re-read 2026-10-10 - Free Tier table lists DeepSeek-V3.1, Meta-Llama-3.3-70B-Instruct, gpt-oss-120b (production) and DeepSeek-V3.2, gemma-4-31B-it (preview) at 200,000 TPD each; MiniMax-M2.7 appears only under the Developer Tier and Llama-4-Maverick is not on the page. The page does not say how the token limit is enforced, so the 6M pool is an upper bound.
   { provider: "sambanova", modelId: "DeepSeek-V3.2", displayName: "DeepSeek-V3.2", monthlyTokens: 6000000, creditTokens: 0, freeType: "recurring-daily", poolKey: "sambanova", tos: "caution" },
-  { provider: "sambanova", modelId: "Llama-4-Maverick-17B-128E-Instruct", displayName: "Llama-4-Maverick-17B-128E-Instruct", monthlyTokens: 6000000, creditTokens: 0, freeType: "recurring-daily", poolKey: "sambanova", tos: "caution" },
   { provider: "sambanova", modelId: "Meta-Llama-3.3-70B-Instruct", displayName: "Meta-Llama-3.3-70B-Instruct", monthlyTokens: 6000000, creditTokens: 0, freeType: "recurring-daily", poolKey: "sambanova", tos: "caution" },
   { provider: "sambanova", modelId: "gpt-oss-120b", displayName: "gpt-oss-120b", monthlyTokens: 6000000, creditTokens: 0, freeType: "recurring-daily", poolKey: "sambanova", tos: "caution" },
+  { provider: "sambanova", modelId: "DeepSeek-V3.1", displayName: "DeepSeek-V3.1", monthlyTokens: 6000000, creditTokens: 0, freeType: "recurring-daily", poolKey: "sambanova", tos: "caution" },
+  { provider: "sambanova", modelId: "gemma-4-31B-it", displayName: "gemma-4-31B-it", monthlyTokens: 6000000, creditTokens: 0, freeType: "recurring-daily", poolKey: "sambanova", tos: "caution" },
   { provider: "scaleway", modelId: "qwen3-235b-a22b-instruct-2507", displayName: "Qwen3 235B A22B (1M free tok 🆓)", monthlyTokens: 0, creditTokens: 1000000, freeType: "one-time-initial", poolKey: "scaleway", tos: "ok" },
   { provider: "scaleway", modelId: "llama-3.1-70b-instruct", displayName: "Llama 3.1 70B (🆓 EU)", monthlyTokens: 0, creditTokens: 1000000, freeType: "one-time-initial", poolKey: "scaleway", tos: "ok" },
   { provider: "scaleway", modelId: "llama-3.1-8b-instruct", displayName: "Llama 3.1 8B (🆓 EU)", monthlyTokens: 0, creditTokens: 1000000, freeType: "one-time-initial", poolKey: "scaleway", tos: "ok" },

@@ -3384,6 +3384,10 @@
     "comboRefMember": "Kombo → {name}"
   },
   "combos": {
+    "autoTosLoadError": "Xidmət şərtləri siyasətini yükləmək mümkün olmadı. Dəyişməzdən əvvəl yenidən cəhd edin.",
+    "autoTosSaveError": "Xidmət şərtləri siyasətini saxlamaq mümkün olmadı. Əvvəlki parametr hələ də göstərilir. Yenidən cəhd edin.",
+    "autoTosIncludeLabel": "ToS: avoid kimi işarələnmiş provayderləri auto-ya daxil et",
+    "autoTosDescription": "Standart olaraq söndürülüb. Tək hesaba deyil, bütün auto kombinasiyalarına aiddir. Provayderi qoşmaq bu seçimi aktivləşdirmir.",
     "title": "Kombinasiyalar",
     "description": "Çəkili yönləndirmə və ehtiyat keçid dəstəyi ilə model kombinasiyaları yaradın",
     "autoCatalogTitle": "Avtomatik marşrutlaşdırma kataloqu",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Uyğun gələn {total} sətirdən {shown}-i göstərilir (ilk 50)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Bulud sinxronizasiyasının təyinatı (yerli ehtiyat nüsxələr üçün deyil):",
+    "cloudUploadWarning": "Yeni quraşdırmalarda bulud sinxronizasiyası standart olaraq söndürülür. Onu aktivləşdirdikdə provayderlərin API açarları, OAuth giriş və yeniləmə tokenləri, OmniRoute API açarları və konfiqurasiya indi və gələcək sinxronizasiyalar zamanı yuxarıdakı təyinata yüklənir. Bu, Saxlama bölməsindəki yerli ehtiyat nüsxələrdən ayrıdır. Yalnız həmin serverə etibar edirsinizsə aktivləşdirin.",
+    "cloudUploadConsent": "Bunu başa düşürəm və giriş məlumatlarımın bu təyinata yüklənməsinə icazə verirəm.",
     "title": "API son nöqtəsi",
     "subtitle": "Əksər SDK və alətlərlə OpenAI ilə uyğun son nöqtədən istifadə edin.",
     "testEndpoint": "Son nöqtəni sınaqdan keçirin →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Bu provayder standart olaraq auto-dan çıxarılıb",
+    "tosAvoidNoticeDescription": "Onun xidmət şərtləri statusu avoid kimi işarələnib. Hesab qoşmaq bu siyasəti dəyişmir. Bütün auto kombinasiyaları üçün ümumi razılığı aktivləşdirməzdən əvvəl provayderin şərtlərini nəzərdən keçirin.",
+    "tosAvoidNoticeAction": "auto siyasətini nəzərdən keçir",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Bağlantını deaktiv edin",
     "enableConnection": "Bağlantını aktiv edin",
     "reauthenticateConnection": "Bu bağlantı üçün yenidən autentifikasiya edin",
+    "verifyAccount": "Hesabı təsdiqlə",
+    "verifyAccountHint": "Google bu hesabı təsdiqləməyinizi tələb edir. Linki açın, yoxlamanı tamamlayın, sonra yenidən cəhd edin.",
     "proxyConfig": "Proksi konfiqurasiyası",
     "aliasExistsAlert": "\"{alias}\" ləqəbi artıq mövcuddur. Fərqli modeldən istifadə edin və ya mövcud ləqəbi redaktə edin.",
     "aliasInputPlaceholder": "ləqəb adı",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Port",
     "qdrantHost": "Ev sahibi",
     "qdrantCollection": "Kolleksiya",
+    "catalogVisibilityHint": "Gizlədilmiş model identifikatorlarını eyni giriş icazələri ilə çağırmaq mümkündür.",
     "catalogScopeTitle": "Models API siyahısı",
     "catalogScopeDesc": "GET /v1/models sorğusunun bu açar üçün göstərdiyi siyahı. Siyahının daraldılması açarın hansı modelləri çağıra biləcəyini heç vaxt dəyişmir.",
     "catalogScopeAll": "Hər ikisi",

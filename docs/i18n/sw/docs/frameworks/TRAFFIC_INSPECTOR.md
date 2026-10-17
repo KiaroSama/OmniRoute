@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**Kizuizi cha TLS:** Vichuguu vya HTTPS `CONNECT` hunaswa kama metadata pekee (kipangishi, mlango, muda) — maudhui ya TLS hayasimbuliwi kwa chaguo-msingi. Washa kigeuzi cha "Simbua HTTPS katika modi ya proksi" (hiari, kinahitaji cheti cha AgentBridge kiwe kinaaminika) ili kukagua maudhui kikamilifu.
+**Kizuizi cha TLS:** Vichuguu vya HTTPS `CONNECT` hunaswa kama metadata pekee (kipangishi, mlango, muda) — maudhui ya TLS hayasimbuliwi kwa chaguo-msingi.
 
 **Mgongano wa mlango:** Ikiwa mlango 8080 unatumika, AgentBridge hurejesha 409 pamoja na hitilafu iliyopangwa. Badilisha mlango kupitia kigeu cha mazingira cha `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -464,12 +464,11 @@ Njia msingi: `/api/tools/traffic-inspector/`
 
 ### Modi za kunasa
 
-| Mbinu | Njia                           | Maelezo                                                                                                                    |
-| ----- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| GET   | `/capture-modes`               | Hali ya modi za AgentBridge / wapangishi maalum / HTTP_PROXY / proksi ya mfumo pamoja na kibadilishaji cha `tls-intercept` |
-| POST  | `/capture-modes/http-proxy`    | Anzisha/simamisha kisikilizaji cha HTTP_PROXY (`{action: "start"\|"stop"}`)                                                |
-| POST  | `/capture-modes/system-proxy`  | Tumia/rejesha proksi ya mfumo mzima (`{action: "apply"\|"revert"}`)                                                        |
-| POST  | `/capture-modes/tls-intercept` | Washa au zima usimbuaji fiche wa mwili wa HTTPS katika modi ya proksi (`{enabled: boolean}`)                               |
+| Mbinu | Njia                          | Maelezo                                                                        |
+| ----- | ----------------------------- | ------------------------------------------------------------------------------ |
+| GET   | `/capture-modes`              | Hali ya modi za AgentBridge / wapangishi maalum / HTTP_PROXY / proksi ya mfumo |
+| POST  | `/capture-modes/http-proxy`   | Anzisha/simamisha kisikilizaji cha HTTP_PROXY (`{action: "start"\|"stop"}`)    |
+| POST  | `/capture-modes/system-proxy` | Tumia/rejesha proksi ya mfumo mzima (`{action: "apply"\|"revert"}`)            |
 
 > **Usimbuaji fiche wa TPROXY** (modi ya kunasa ya 5) huendeshwa na njia **tofauti** chini ya
 > kiambishi awali cha AgentBridge — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — si

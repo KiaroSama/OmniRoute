@@ -10,6 +10,7 @@ import {
 import { sanitizeErrorMessage, sanitizeUpstreamDetails } from "../../utils/error.ts";
 import { isJsonObject } from "../../utils/kieTask.ts";
 import { stringifyImageErrorForLog } from "../imageErrorLog.ts";
+import { buildImageEndpointSuccess, type ImageEndpointResult } from "./result.ts";
 /**
  * Resolve the upstream images endpoint for a custom (OpenAI-compatible) image
  * provider node (#3205).
@@ -343,7 +344,13 @@ export function saveImageErrorResult({
 /**
  * Fetch a single image endpoint and normalize response
  */
-export async function fetchImageEndpoint(url, headers, body, provider, log) {
+export async function fetchImageEndpoint(
+  url,
+  headers,
+  body,
+  provider,
+  log
+): Promise<ImageEndpointResult> {
   try {
     let response;
     try {
@@ -404,13 +411,7 @@ export async function fetchImageEndpoint(url, headers, body, provider, log) {
       };
     }
 
-    return {
-      success: true,
-      data: {
-        created: data.created || Math.floor(Date.now() / 1000),
-        data: items,
-      },
-    };
+    return buildImageEndpointSuccess(data, items);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     if (log) {
@@ -510,7 +511,7 @@ function getImageFetchTimeoutResult(err: unknown, provider, log) {
       log.error("IMAGE", `${provider} fetch error: ${message}`);
     }
     return {
-      success: false,
+      success: false as const,
       status: 504,
       error: `Image provider error: ${sanitizeErrorMessage(message || err)}`,
     };

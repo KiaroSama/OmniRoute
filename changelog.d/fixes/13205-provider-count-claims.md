@@ -1,0 +1,1 @@
+- Validate every aggregate provider-count claim across the main documentation and provider skills, and refresh stale references to the measured catalog total (#13205).

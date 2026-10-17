@@ -51,6 +51,7 @@ type QoderCliFailure = {
   status: number;
   message: string;
   code: string;
+  retryAfterSeconds?: number;
 };
 
 function asRecord(value: unknown): JsonRecord {
@@ -707,16 +708,37 @@ export function parseQoderCliFailure(stderrText: string, stdoutText = ""): Qoder
   // 502 upstream_error parked the connection on the long failure cooldown, so a
   // brief upstream hiccup made whole PAT pools look dead. 503 maps to the short
   // serviceUnavailable cooldown, which lets routing retry or fail over at once.
-  if (
-    normalized.includes("10605") ||
-    normalized.includes("queued") ||
-    normalized.includes("is busy") ||
-    normalized.includes("server busy")
-  ) {
+  if (isQoderUpstreamBusy(combined)) {
     return { status: 503, message: combined, code: "upstream_busy" };
   }
 
   return { status: 502, message: combined, code: "upstream_error" };
+}
+
+/**
+ * True when a Qoder error text is the temporary queued/busy throttle (upstream
+ * code 10605) rather than an auth/quota failure. Shared by the CLI failure
+ * parser and the HTTP SSE envelope unwrapper so both classify it the same way.
+ */
+export function isQoderUpstreamBusy(text: string): boolean {
+  const normalized = String(text || "").toLowerCase();
+  return (
+    normalized.includes("10605") ||
+    normalized.includes("queued") ||
+    normalized.includes("is busy") ||
+    normalized.includes("server busy")
+  );
+}
+
+/**
+ * Extracts `retryAfterSeconds` from a (possibly multiply JSON-escaped) Qoder
+ * queue-throttle body. Returns undefined when absent or not a positive number.
+ */
+export function parseQoderRetryAfterSeconds(text: string): number | undefined {
+  const match = /retryAfterSeconds[\\"]*\s*:\s*(\d+)/.exec(String(text || ""));
+  if (!match) return undefined;
+  const seconds = Number(match[1]);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : undefined;
 }
 
 export function createQoderErrorResponse(failure: QoderCliFailure): Response {
@@ -732,6 +754,7 @@ export function createQoderErrorResponse(failure: QoderCliFailure): Response {
       status: failure.status,
       headers: {
         "Content-Type": "application/json",
+        ...(failure.retryAfterSeconds ? { "Retry-After": String(failure.retryAfterSeconds) } : {}),
       },
     }
   );
@@ -800,6 +823,10 @@ const QODER_JOB_TOKEN_EXCHANGE_URL = "https://openapi.qoder.sh/api/v1/jobToken/e
 // Refresh a little before the ~24h expiry to avoid using a just-expired token.
 const QODER_JOB_TOKEN_DEFAULT_TTL_MS = 23 * 60 * 60 * 1000;
 const QODER_JOB_TOKEN_MIN_TTL_MS = 60 * 1000;
+// 9router#4516: never trust the upstream TTL beyond the documented ~24h job-token life.
+const QODER_JOB_TOKEN_MAX_TTL_MS = 24 * 60 * 60 * 1000;
+// An `expires_in` above this is a millisecond value (1e7 s ≈ 115 days is no sane TTL).
+const QODER_JOB_TOKEN_MS_THRESHOLD = 1e7;
 
 type QoderJobTokenCacheEntry = { jobToken: string; expiresAt: number };
 const qoderJobTokenCache = new Map<string, QoderJobTokenCacheEntry>();
@@ -838,9 +865,21 @@ export function parseQoderJobTokenResponse(json: unknown): {
   const expiresRaw = [root.expires_in, root.expiresIn, data.expires_in, data.expiresIn].find(
     (v) => typeof v === "number" && Number.isFinite(v) && (v as number) > 0
   ) as number | undefined;
-  // Qoder reports expiry in seconds; fall back to the default ~24h window.
-  const expiresInMs = expiresRaw ? expiresRaw * 1000 : QODER_JOB_TOKEN_DEFAULT_TTL_MS;
-  return { jobToken, expiresInMs: Math.max(expiresInMs, QODER_JOB_TOKEN_MIN_TTL_MS) };
+  // Unit-agnostic (9router#4516): Qoder documents seconds, but some responses carry
+  // milliseconds (86400000). Fall back to the default ~24h window when absent, and cap
+  // at 24h so a misread unit can never pin a dead token in the cache for months.
+  const expiresInMs = expiresRaw
+    ? expiresRaw > QODER_JOB_TOKEN_MS_THRESHOLD
+      ? expiresRaw
+      : expiresRaw * 1000
+    : QODER_JOB_TOKEN_DEFAULT_TTL_MS;
+  return {
+    jobToken,
+    expiresInMs: Math.min(
+      Math.max(expiresInMs, QODER_JOB_TOKEN_MIN_TTL_MS),
+      QODER_JOB_TOKEN_MAX_TTL_MS
+    ),
+  };
 }
 
 /** Exchange a `pt-*` PAT for a short-lived `jt-*` job token (no caching). */
@@ -896,6 +935,17 @@ export async function resolveQoderJobToken(
     expiresAt: now + exchanged.expiresInMs,
   });
   return exchanged.jobToken;
+}
+
+/**
+ * Drop the cached `jt-*` for a PAT after the upstream rejected it (401 / expired
+ * token), so the next resolve performs a fresh PAT→jt exchange instead of reusing a
+ * dead token until the process restarts (9router#4516). No-op for non-PAT tokens.
+ */
+export function invalidateQoderJobToken(token: string): void {
+  const trimmed = (token || "").trim();
+  if (!isQoderPatToken(trimmed)) return;
+  qoderJobTokenCache.delete(trimmed);
 }
 
 /** Test-only: clear the job-token cache so unit tests don't leak state. */

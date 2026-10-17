@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS ierobežojums:** HTTPS `CONNECT` tuneļiem pēc noklusējuma tiek tverti tikai metadati (resursdators, ports un laiks) — TLS saturs netiek atšifrēts. Lai pilnībā pārbaudītu saturu, ieslēdziet opciju "Atšifrēt HTTPS starpniekservera režīmā" (jāiespējo apzināti; AgentBridge sertifikātam jābūt uzticamam).
+**TLS ierobežojums:** HTTPS `CONNECT` tuneļiem pēc noklusējuma tiek tverti tikai metadati (resursdators, ports un laiks) — TLS saturs netiek atšifrēts.
 
 **Porta konflikts:** Ja ports 8080 jau tiek izmantots, AgentBridge atgriež statusu 409 ar strukturētu kļūdu. Mainiet portu, izmantojot vides mainīgo `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -468,12 +468,11 @@ Bāzes ceļš: `/api/tools/traffic-inspector/`
 
 ### Tveršanas režīmi
 
-| Metode | Ceļš                           | Apraksts                                                                                                                  |
-| ------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/capture-modes`               | AgentBridge / pielāgoto resursdatoru / HTTP_PROXY / sistēmas starpniekservera režīmu stāvoklis un `tls-intercept` slēdzis |
-| POST   | `/capture-modes/http-proxy`    | Palaist/apturēt HTTP_PROXY klausītāju (`{action: "start"\|"stop"}`)                                                       |
-| POST   | `/capture-modes/system-proxy`  | Lietot/atjaunot visas sistēmas starpniekservera iestatījumus (`{action: "apply"\|"revert"}`)                              |
-| POST   | `/capture-modes/tls-intercept` | Pārslēgt HTTPS satura atšifrēšanu starpniekservera režīmā (`{enabled: boolean}`)                                          |
+| Metode | Ceļš                          | Apraksts                                                                                       |
+| ------ | ----------------------------- | ---------------------------------------------------------------------------------------------- |
+| GET    | `/capture-modes`              | AgentBridge / pielāgoto resursdatoru / HTTP_PROXY / sistēmas starpniekservera režīmu stāvoklis |
+| POST   | `/capture-modes/http-proxy`   | Palaist/apturēt HTTP_PROXY klausītāju (`{action: "start"\|"stop"}`)                            |
+| POST   | `/capture-modes/system-proxy` | Lietot/atjaunot visas sistēmas starpniekservera iestatījumus (`{action: "apply"\|"revert"}`)   |
 
 > **TPROXY atšifrēšanu** (5. tveršanas režīms) pārvalda **atsevišķs** maršruts ar
 > AgentBridge prefiksu — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` —, nevis

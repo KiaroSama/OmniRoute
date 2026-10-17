@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**Ƙuntatawar TLS:** Ana kama ramukan `CONNECT` na HTTPS a matsayin metadata kawai (host, port, lokaci) — ba a warware ɓoyewar bayanan TLS ta tsohuwa. Kunna maɓallin "Warware ɓoyewar HTTPS a yanayin proxy" (na zaɓi ne, yana buƙatar a amince da takardar shaidar AgentBridge) don cikakken binciken bayanai.
+**Ƙuntatawar TLS:** Ana kama ramukan `CONNECT` na HTTPS a matsayin metadata kawai (host, port, lokaci) — ba a warware ɓoyewar bayanan TLS ta tsohuwa.
 
 **Rikicin port:** Idan ana amfani da port 8080, AgentBridge yana mayar da 409 tare da kuskure mai tsari. Canja port ɗin ta hanyar env var na `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -464,12 +464,11 @@ Tushen hanya: `/api/tools/traffic-inspector/`
 
 ### Hanyoyin kama bayanai
 
-| Hanya | Tafarki                        | Bayani                                                                                                                     |
-| ----- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| GET   | `/capture-modes`               | Halin hanyoyin AgentBridge / keɓaɓɓun-hosts / HTTP_PROXY / wakilin-tsarin + maɓallin kunnawa da kashewa na `tls-intercept` |
-| POST  | `/capture-modes/http-proxy`    | Fara/tsayar da mai sauraron HTTP_PROXY (`{action: "start"\|"stop"}`)                                                       |
-| POST  | `/capture-modes/system-proxy`  | Aiwatar/mayar da wakilin gabaɗayan tsarin (`{action: "apply"\|"revert"}`)                                                  |
-| POST  | `/capture-modes/tls-intercept` | Kunna ko kashe warware-rufin jikin HTTPS a yanayin wakili (`{enabled: boolean}`)                                           |
+| Hanya | Tafarki                       | Bayani                                                                    |
+| ----- | ----------------------------- | ------------------------------------------------------------------------- |
+| GET   | `/capture-modes`              | Halin hanyoyin AgentBridge / keɓaɓɓun-hosts / HTTP_PROXY / wakilin-tsarin |
+| POST  | `/capture-modes/http-proxy`   | Fara/tsayar da mai sauraron HTTP_PROXY (`{action: "start"\|"stop"}`)      |
+| POST  | `/capture-modes/system-proxy` | Aiwatar/mayar da wakilin gabaɗayan tsarin (`{action: "apply"\|"revert"}`) |
 
 > **Warware-rufin TPROXY** (yanayin kama bayanai na 5) ana sarrafa shi ta wata hanya
 > **dabam** a ƙarƙashin prefix na AgentBridge — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — ba

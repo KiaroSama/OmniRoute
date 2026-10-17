@@ -779,6 +779,7 @@ export async function withRateLimit(
   // would kill a 300ms execution that correctly left the queue immediately).
   const wrappedFn = () => {
     if (queueTimedOut) return Promise.reject(queueTimeoutErr);
+    if (signal?.aborted) return Promise.reject(signal.reason);
     if (delayId) {
       clearTimeout(delayId);
       delayId = null;
@@ -793,8 +794,9 @@ export async function withRateLimit(
   const scheduled = limiter.schedule(scheduleOpts, boundFn as unknown as () => Promise<unknown>);
   scheduled.catch(() => {});
   // If timeoutPromise or the abort wins while the job is still QUEUED,
-  // abandonQueuedJob() removes it (see queuedJobCancel.ts); a job already past
-  // QUEUED is kept from calling fn by wrappedFn's queueTimedOut guard.
+  // abandonQueuedJob() removes it (see queuedJobCancel.ts). A job already past
+  // QUEUED (with capacity free, Bottleneck dispatches before that removal runs)
+  // is kept from calling fn by wrappedFn's guards; the race already settled.
 
   try {
     if (signal) {

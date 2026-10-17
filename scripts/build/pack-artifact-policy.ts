@@ -44,6 +44,7 @@ export const APP_STAGING_ALLOWED_EXACT_PATHS: string[] = [
   // #7065: imported by dist/server-ws.mjs; assembleStandalone copies it but without
   // this bare entry the prepublish prune deleted it → every `omniroute` boot of the
   // published 3.8.47 crashed with ERR_MODULE_NOT_FOUND (same class as tls-options/3.8.41).
+  "h2c-upgrade-guard.cjs",
   "head-response-guard.cjs",
   "http-method-guard.cjs",
   "open-sse/mcp-server/server.js",
@@ -111,7 +112,8 @@ export const PACK_ARTIFACT_ROOT_ALLOWED_EXACT_PATHS: string[] = [
   "config/release/wreq-js-rust-notices.md",
   "bin/aliasResolver.mjs",
   // #14006: Antigravity MITM bridge (operator tool for the Antigravity IDE/CLI).
-  // Pure node:* imports, shipped via package.json "files": ["bin/"].
+  // Shipped via package.json "files": ["bin/"]; its only local import is the CJS shim
+  // ../src/mitm/_internal/bridgeCert.cjs (shipped via "src/mitm/").
   "bin/antigravity-bridge.mjs",
   "bin/chatgpt-web-codex-mcp.mjs",
   // #7808: ESM loader hook split out of bin/aliasResolver.mjs to silence CodeQL
@@ -160,6 +162,7 @@ export const PACK_ARTIFACT_ROOT_ALLOWED_EXACT_PATHS: string[] = [
   "scripts/build/backendOnlyPages.mjs",
   "scripts/build/build-tproxy-native.mjs",
   "scripts/build/build-next-isolated.mjs",
+  "scripts/i18n/generate-global-error-messages.mjs",
   "scripts/check/check-supported-node-runtime.ts",
   "scripts/build/native-binary-compat.mjs",
   "scripts/build/wreqJsNative.mjs",
@@ -230,6 +233,8 @@ export const PACK_ARTIFACT_REQUIRED_PATHS: string[] = [
   "dist/tls-options.mjs",
   // #7065: regression guard for the HEAD response guard (dist/server-ws.mjs import).
   "dist/head-response-guard.cjs",
+  // Cleartext h2c upgrade guard (dist/server-ws.mjs import) — same boot-crash class as above.
+  "dist/h2c-upgrade-guard.cjs",
   "dist/webdav-handler.mjs",
   "bin/cli/program.mjs",
   // Direct imports of bin/omniroute.mjs — bin/cli/ is only an allowlist PREFIX, so a

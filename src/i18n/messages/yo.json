@@ -3384,6 +3384,10 @@
     "comboRefMember": "Àkópọ̀ → {name}"
   },
   "combos": {
+    "autoTosIncludeLabel": "Fi àwọn olùpèsè tí a samisi ToS: avoid sí auto",
+    "autoTosDescription": "Ó wà ní pípa ní ìbẹ̀rẹ̀. Ó kan gbogbo àkójọpọ̀ auto, kì í ṣe àkọọlẹ̀ kan ṣoṣo. Síso olùpèsè pọ̀ kò tan àṣàyàn yìí.",
+    "autoTosSaveError": "A kò lè fi ìlànà ToS pamọ́. Ètò ìṣáájú ṣì hàn. Gbìyànjú lẹ́ẹ̀kan sí i.",
+    "autoTosLoadError": "A kò lè ṣí ìlànà ToS. Gbìyànjú lẹ́ẹ̀kan sí i kí o tó yí i padà.",
     "title": "Àwọn àkójọpọ̀",
     "description": "Ṣẹ̀dá àwọn àkójọpọ̀ awoṣe pẹ̀lú ìtọ́sọ́nà oníwọ̀n àti àtìlẹ́yìn ìpadàsẹ́yìn",
     "autoCatalogTitle": "Àkójọ ìtọ́sọ́nà aládàáṣe",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Ń ṣàfihàn {shown} nínú {total} ìlà tó bá mu (àwọn 50 tó ga jù)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Ibi tí ìmúṣiṣẹ́pọ̀ àwọsánmà ń lọ (kì í ṣe fún àwọn ẹ̀dà àfẹ́yìntì inú ẹ̀rọ):",
+    "cloudUploadWarning": "Ìmúṣiṣẹ́pọ̀ àwọsánmà ti pa láti ìbẹ̀rẹ̀ nínú àwọn ìfisórí tuntun. Títàn án yóò gbé àwọn kọ́kọ́rọ́ API ti àwọn olùpèsè, àwọn token ìwọlé àti ìmúdọ̀tun OAuth, àwọn kọ́kọ́rọ́ API OmniRoute àti ìṣètò sí ibi tí a tọ́ka sí lókè, nísinsìnyí àti nígbà ìmúṣiṣẹ́pọ̀ lọ́jọ́ iwájú. Èyí yàtọ̀ sí àwọn ẹ̀dà àfẹ́yìntì inú ẹ̀rọ ní abala Ìpamọ́. Tàn án kìkì bí o bá gbẹ́kẹ̀ lé olupin yẹn.",
+    "cloudUploadConsent": "Mo lóye èyí, mo sì fún ní àṣẹ láti gbé àwọn ẹ̀rí ìwọlé mi sí ibi yìí.",
     "title": "Ibi Ìparí API",
     "subtitle": "Lo ibi ìparí tó bá OpenAI mu pẹ̀lú ọ̀pọ̀lọpọ̀ SDK àti irinṣẹ́.",
     "testEndpoint": "Dán ibi ìparí wò →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "A yọ olùpèsè yìí kúrò nínú auto ní ìbẹ̀rẹ̀",
+    "tosAvoidNoticeDescription": "A samisi ipò ToS rẹ̀ sí avoid. Síso àkọọlẹ̀ pọ̀ kò yí ìlànà yìí padà. Ka àwọn àdéhùn olùpèsè kí o tó tan àṣàyàn àpapọ̀ fún gbogbo àkójọpọ̀ auto.",
+    "tosAvoidNoticeAction": "Wo ìlànà auto",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Pa àsopọ̀",
     "enableConnection": "Mú àsopọ̀ ṣiṣẹ́",
     "reauthenticateConnection": "Ṣe ìfàṣẹsí àsopọ̀ yìí lẹ́ẹ̀kan sí i",
+    "verifyAccount": "Ṣe ìjẹ́rìísí àkọọ́lẹ̀",
+    "verifyAccountHint": "Google nílò kí o ṣe ìjẹ́rìísí àkọọ́lẹ̀ yìí. Ṣí ọ̀nà àsopọ̀ náà, parí àyẹ̀wò náà, lẹ́yìn náà gbìyànjú lẹ́ẹ̀kan sí i.",
     "proxyConfig": "Ìṣètò aṣojú",
     "aliasExistsAlert": "Ìnagijẹ \"{alias}\" ti wà tẹ́lẹ̀. Jọ̀wọ́ lo awoṣe mìíràn tàbí ṣàtúnṣe ìnagijẹ tó wà.",
     "aliasInputPlaceholder": "orúkọ ìnagijẹ",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Pọ́ọ̀tì",
     "qdrantHost": "Olùgbàlejò",
     "qdrantCollection": "Àkójọpọ̀",
+    "catalogVisibilityHint": "A ṣì lè pe ID àwòṣe tí a fi pamọ́ pẹ̀lú àwọn àṣẹ ìwọlé kan náà.",
     "catalogScopeTitle": "Àkójọ àwòṣe API",
     "catalogScopeDesc": "Ohun tí GET /v1/models fi hàn fún kọ́kọ́rọ́ yìí. Dídín àkójọ náà kù kì í yí ohun tí kọ́kọ́rọ́ náà lè pè padà.",
     "catalogScopeAll": "Méjèèjì",

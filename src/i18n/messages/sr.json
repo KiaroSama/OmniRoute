@@ -3384,6 +3384,10 @@
     "comboRefMember": "Комбинација → {name}"
   },
   "combos": {
+    "autoTosIncludeLabel": "Укључи у auto добављаче означене као ToS: avoid",
+    "autoTosDescription": "Подразумевано искључено. Важи за све auto комбинације, не само за један налог. Повезивање добављача не укључује ову опцију.",
+    "autoTosSaveError": "Није могуће сачувати ToS правила. И даље се приказује претходно подешавање. Покушајте поново.",
+    "autoTosLoadError": "Није могуће учитати ToS правила. Покушајте поново пре измене.",
     "title": "Комбинације",
     "description": "Креирајте комбинације модела са пондерисаним рутирањем и подршком за резервне опције",
     "autoCatalogTitle": "Каталог аутоматског рутирања",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Приказано {shown} од {total} одговарајућих редова (првих 50)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Одредиште синхронизације у облаку (не локалних резервних копија):",
+    "cloudUploadWarning": "Синхронизација у облаку је подразумевано искључена при новим инсталацијама. Њеним укључивањем се API кључеви добављача, OAuth токени за приступ и освежавање, OmniRoute API кључеви и конфигурација отпремају на горе наведено одредиште, сада и током будућих синхронизација. Ово је одвојено од локалних резервних копија у одељку Складиштење. Укључите је само ако верујете том серверу.",
+    "cloudUploadConsent": "Разумем и одобравам отпремање својих података за пријаву на ово одредиште.",
     "title": "API крајња тачка",
     "subtitle": "Користите крајњу тачку компатибилну са OpenAI-јем са већином SDK-ова и алата.",
     "testEndpoint": "Тестирај крајњу тачку →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Овај добављач је подразумевано искључен из auto",
+    "tosAvoidNoticeDescription": "Његов ToS статус је означен као avoid. Повезивање налога не мења ова правила. Прочитајте услове добављача пре укључивања глобалне опције за све auto комбинације.",
+    "tosAvoidNoticeAction": "Погледајте auto правила",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Онемогући везу",
     "enableConnection": "Омогући везу",
     "reauthenticateConnection": "Поново аутентификуј ову везу",
+    "verifyAccount": "Потврди налог",
+    "verifyAccountHint": "Google захтева да потврдите овај налог. Отворите везу, завршите проверу, па покушајте поново.",
     "proxyConfig": "Подешавање проксија",
     "aliasExistsAlert": "Псеудоним „{alias}“ већ постоји. Користите други модел или измените постојећи псеудоним.",
     "aliasInputPlaceholder": "назив псеудонима",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Порт",
     "qdrantHost": "Хост",
     "qdrantCollection": "Колекција",
+    "catalogVisibilityHint": "Скривени ID-јеви модела и даље се могу позивати уз исте дозволе приступа.",
     "catalogScopeTitle": "Листа Models API-ја",
     "catalogScopeDesc": "Шта GET /v1/models приказује за овај кључ. Сужавање листе никада не мења шта кључ може да позове.",
     "catalogScopeAll": "Оба",

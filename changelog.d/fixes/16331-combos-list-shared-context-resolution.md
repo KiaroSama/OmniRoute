@@ -1,0 +1,1 @@
+- **perf(combos):** list endpoint shares alias tables and resolved windows across combos in one request ([#16331](https://github.com/diegosouzapw/OmniRoute/pull/16331)) — thanks @maxmad64bis

@@ -1,0 +1,1 @@
+- Authenticate internal Chaos, Evals, and Issue Agent chat calls when API keys are required, preserving explicitly selected keys and keeping synthetic tasks out of user memory (#16593).

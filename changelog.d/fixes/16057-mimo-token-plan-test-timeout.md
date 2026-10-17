@@ -1,0 +1,1 @@
+- **fix(providers):** give MiMo Token Plan model tests a 60-second minimum timeout ([#16213](https://github.com/diegosouzapw/OmniRoute/pull/16213)) — thanks @lorenzozanee

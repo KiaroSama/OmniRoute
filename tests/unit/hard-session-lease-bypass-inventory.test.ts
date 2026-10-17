@@ -51,8 +51,8 @@ const EXPECTED: Record<InventoryKind, Record<string, number>> = {
     // of the retirement-check one hoisted before enforceApiKeyPolicy) was
     // removed as dead redundant code, 6->5. #12653 added combo target
     // resolution with the same shape as imageCombo, 5->6.
-    // Firefly and hosted edits share selectImageEditCredentials; combo selection
-    // stays separate. Both retain the policy allowlist and unleased occupancy filter.
+    // SYNTX and combo selection stay in editDispatch; #14619 moves Firefly's
+    // guarded selection into adobeFireflyEdit.ts. All retain policy/occupancy filters.
     "src/app/api/v1/images/edits/editDispatch.ts": 2,
     "src/app/api/v1/images/edits/route.ts": 6,
     "src/app/api/v1/images/generations/route.ts": 3,
@@ -81,6 +81,7 @@ const EXPECTED: Record<InventoryKind, Record<string, number>> = {
     // #15761: local embeddings resolve credentials through the serving-connection allowlist
     // (getProviderCredentials(provider, null, servingIds)) — one more site (3 -> 4).
     "src/lib/embeddings/service.ts": 4,
+    "src/lib/images/adobeFireflyEdit.ts": 1,
     // PR #11390: second site is the generic derived-provider listing fallback —
     // read-only key presence probe used to decide whether a configured chat
     // provider may appear in the memory embedding-source dropdown.
@@ -266,6 +267,11 @@ const EXPECTED: Record<InventoryKind, Record<string, number>> = {
     // ACTIVE exclusive lease defers redemption (409 exclusive_lease_active).
     "src/lib/usage/grokResetCredits.ts": 1,
     "src/lib/usage/providerLimits.ts": 4,
+    // #4305 port: after a confirmed reset-credit redemption (whose caller already passed
+    // the auxiliary-lease gate) the row is re-read only to check its terminal/codex-scope
+    // state before lifting the local quota cooldown — a state read, never connection
+    // selection or dispatch, so class C.
+    "src/lib/usage/resetCreditCooldownRelease.ts": 1,
     "src/lib/usage/resilienceExplain.ts": 1,
     "src/lib/usage/usageStats.ts": 1,
     "src/lib/vncSession/service.ts": 2,

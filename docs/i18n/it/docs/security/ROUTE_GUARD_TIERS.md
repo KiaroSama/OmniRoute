@@ -143,6 +143,8 @@ due responsabilità per gli operatori:
   l'intero prefisso `/api/providers/`, ampliando eccessivamente un albero di rotte
   che le dashboard remote utilizzano legittimamente per le operazioni CRUD sui provider.
 
+  Il caricatore degli snapshot di esecuzione scarta queste voci anche da una riga di impostazioni salvata, e l’importazione JSON legacy (`/api/settings/import-json`) non scrive mai le chiavi di bypass. Ogni voce di `LOCAL_ONLY_API_PREFIXES` deve essere nell’elenco dei divieti oppure essere stata verificata come idonea al bypass. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Verifica degli accessi** — per verificare che nessuna origine esterna all'host stia raggiungendo queste rotte:
 
 - Apri **Authorization Inventory** in `/dashboard/settings/security`: mostra l'elenco

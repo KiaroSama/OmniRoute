@@ -6,14 +6,14 @@ import {
   parseApiKeyCodexServiceMode,
   type ApiKeyCodexServiceMode,
 } from "../../shared/constants/codexServiceMode";
-import { createHash } from "crypto";
+import { opaqueTokenFingerprint } from "@omniroute/open-sse/utils/opaqueTokenFingerprint.ts";
 import { v4 as uuidv4 } from "uuid";
 import { getDbInstance, rowToCamel } from "./core";
 import { backupDbFile } from "./backup";
 import { registerDbStateResetter } from "./stateReset";
 import { invalidateReasoningRoutingRuleCache } from "./reasoningRoutingRules";
 import { getKeyGroupsForApiKey, checkKeyModelAccess } from "./apiKeyGroups";
-import { API_KEY_COLUMN_FALLBACKS } from "./apiKeyColumnFallbacks";
+import { ensureApiKeyFallbackColumns } from "./apiKeyColumnFallbacks";
 import { SYNTHETIC_ENV_API_KEY_ID } from "@/shared/constants/apiKeyIdentities";
 import { timingSafeCompare } from "@/shared/utils/timingSafeCompare";
 import {
@@ -426,25 +426,11 @@ async function getPublishedModelLookupTarget(
   return null;
 }
 
-function ensureApiKeyColumn(
-  db: ApiKeysDbLike,
-  columnNames: Set<string>,
-  column: (typeof API_KEY_COLUMN_FALLBACKS)[number]
-): void {
-  if (columnNames.has(column.name)) return;
-  db.exec(`ALTER TABLE api_keys ADD COLUMN ${column.definition}`);
-  console.log(`[DB] Added api_keys.${column.name} column`);
-}
-
 function ensureApiKeysColumns(db: ApiKeysDbLike) {
   if (_schemaChecked) return;
 
   try {
-    const columns = db.prepare<ApiKeyRow>("PRAGMA table_info(api_keys)").all();
-    const columnNames = new Set(columns.map((column) => String(column.name ?? "")));
-    for (const column of API_KEY_COLUMN_FALLBACKS) {
-      ensureApiKeyColumn(db, columnNames, column);
-    }
+    ensureApiKeyFallbackColumns(db);
     _schemaChecked = true;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -696,12 +682,10 @@ export async function getApiKeyById(id: string) {
 
 async function hashKey(key: string): Promise<string> {
   if (!key || typeof key !== "string") return "";
-  // CodeQL: This is intentionally SHA-256, NOT password hashing. API keys are
-  // high-entropy random tokens (not user-chosen passwords) and need fast O(1)
-  // comparison for per-request validation. bcrypt/scrypt would add ~100ms per
-  // request, which is unacceptable for an API proxy.
-  // lgtm[js/insufficient-password-hash]
-  return createHash("sha256").update(key).digest("hex"); // nosemgrep: insufficient-password-hash
+  // Fast SHA-256 fingerprint on purpose, NOT password hashing: API keys are high-entropy
+  // random tokens validated on every request. The rationale and the single CodeQL sink live
+  // in open-sse/utils/opaqueTokenFingerprint.ts.
+  return opaqueTokenFingerprint(key);
 }
 
 export async function createApiKey(

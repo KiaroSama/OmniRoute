@@ -949,6 +949,59 @@ test("google PSE validator requires cx", async () => {
   assert.equal(result.error, "Programmable Search Engine ID (cx) is required");
 });
 
+test("google PSE validator rejects HTTP 400 (invalid key or cx) but keeps 429 valid", async () => {
+  const statuses: number[] = [];
+  let nextStatus = 400;
+  globalThis.fetch = async (url) => {
+    assert.match(String(url), /^https:\/\/www\.googleapis\.com\/customsearch\/v1/);
+    statuses.push(nextStatus);
+    return new Response(
+      JSON.stringify({
+        error: {
+          code: nextStatus,
+          status: nextStatus === 400 ? "INVALID_ARGUMENT" : "RESOURCE_EXHAUSTED",
+          message: "upstream detail that must not be echoed",
+        },
+      }),
+      { status: nextStatus }
+    );
+  };
+
+  const rejected = await validateProviderApiKey({
+    provider: "google-pse-search",
+    apiKey: "bad-google-key",
+    providerSpecificData: { cx: "bad-engine" },
+  });
+  assert.equal(rejected.valid, false);
+  assert.equal(
+    rejected.error,
+    "Google PSE validation failed. Check the API key and Search Engine ID (cx)."
+  );
+  assert.equal(String(rejected.error).includes("upstream detail"), false);
+
+  nextStatus = 429;
+  const quotaExhausted = await validateProviderApiKey({
+    provider: "google-pse-search",
+    apiKey: "good-google-key",
+    providerSpecificData: { cx: "engine-id" },
+  });
+  assert.equal(quotaExhausted.valid, true);
+  assert.equal(quotaExhausted.error, null);
+  assert.deepEqual(statuses, [400, 429]);
+});
+
+test("search validator keeps the lenient 400 policy for providers other than Google PSE", async () => {
+  globalThis.fetch = async () =>
+    new Response(JSON.stringify({ error: "bad request" }), { status: 400 });
+
+  const linkup = await validateProviderApiKey({
+    provider: "linkup-search",
+    apiKey: "linkup-key",
+  });
+  assert.equal(linkup.valid, true);
+  assert.equal(linkup.error, null);
+});
+
 test("Maritalk validates with Key auth against the models endpoint", async () => {
   const calls = [];
   globalThis.fetch = async (url, init = {}) => {
@@ -2384,13 +2437,13 @@ test("claude-web validator: bare sessionKey value gets prefixed", async () => {
 
 // ─── gemini-web validator ────────────────────────────────────────────────────
 
-test("gemini-web validator: 200 from gemini.google.com → valid", async () => {
+test("gemini-web validator: signed-in 200 from gemini.google.com → valid", async () => {
   globalThis.fetch = async (url, init = {}) => {
     const target = String(url);
     const headers = init.headers || {};
     if (target.includes("gemini.google.com/app")) {
       assert.match((headers as Record<string, string>).Cookie || "", /__Secure-1PSID=eyJPSID/);
-      return new Response("ok", { status: 200 });
+      return new Response('<script>{"SNlM0e":"fixture-session"}</script>', { status: 200 });
     }
     throw new Error(`unexpected fetch: ${target}`);
   };

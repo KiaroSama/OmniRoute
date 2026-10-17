@@ -142,6 +142,8 @@ ansvarsområden återstår för den driftansvarige:
   hela prefixet `/api/providers/` för att fånga dem, vilket skulle göra ett route-träd
   som fjärrinstrumentpaneler legitimt använder för CRUD-hantering av leverantörer alltför omfattande.
 
+  Laddaren för runtime-ögonblicksbilder tar också bort sådana poster från en lagrad inställningsrad, och den äldre JSON-importen (`/api/settings/import-json`) skriver aldrig bypass-nycklarna. Varje post i `LOCAL_ONLY_API_PREFIXES` måste finnas i spärrlistan eller ha granskats och godkänts för bypass. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Granskning av åtkomst** — för att verifiera att inget utanför värddatorn når dessa routes:
 
 - Öppna **Auktoriseringsinventering** på `/dashboard/settings/security`: den visar den

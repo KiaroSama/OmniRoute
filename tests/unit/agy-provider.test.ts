@@ -118,6 +118,8 @@ test("agy live discovery accepts new chat models while excluding tab-completion 
   assert.equal(isDiscoverableAgyModelId("gemini-2.5-flash"), false);
   assert.equal(isDiscoverableAgyModelId("tab_flash_lite_preview"), false);
   assert.equal(isDiscoverableAgyModelId("tab_jump_flash_lite_preview"), false);
+  assert.equal(isDiscoverableAgyModelId("gemini_weekly"), false);
+  assert.equal(isDiscoverableAgyModelId("claude_gpt_weekly"), false);
   assert.equal(isDiscoverableAgyModelId(""), false);
 });
 
@@ -131,6 +133,9 @@ test("test 9: agy live catalog is authoritative; quota keys use discoverable den
   assert.equal(isUsageQuotaKeyAllowed("agy", "gemini-new-live-tier"), true);
   assert.equal(isUserCallableAgyModelId("gemini-new-live-tier"), false);
   assert.equal(isUsageQuotaKeyAllowed("agy", "tab_flash_lite_preview"), false);
+  assert.equal(isUsageQuotaKeyAllowed("agy", "gemini_weekly"), true);
+  assert.equal(isUsageQuotaKeyAllowed("antigravity", "gemini_weekly"), true);
+  assert.equal(isUsageQuotaKeyAllowed("antigravity", "claude_gpt_weekly"), true);
 });
 
 test("agy token refresh is wired on the Google (non-rotating) refresh path", () => {

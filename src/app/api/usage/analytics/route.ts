@@ -154,12 +154,23 @@ function getPricingModelCandidates(
   ]);
 }
 
-function resolveModelPricing(
+type PricingResolutionContext = {
+  cache: Map<string, Record<string, unknown> | null>;
+  reverseAlias: Record<string, string>;
+  misses?: { count: number };
+};
+
+function buildPricingCacheKey(provider: string, model: string, serviceTier: string): string {
+  return `${provider}\n${model}\n${serviceTier}`;
+}
+
+function resolveModelPricingUncached(
   pricingByProvider: PricingByProvider,
   providerAliasMap: Record<string, string>,
   providerRaw: string,
   model: string,
-  normalizeModelName: (model: string) => string
+  normalizeModelName: (model: string) => string,
+  reverseAlias?: Record<string, string>
 ): Record<string, unknown> | null {
   const pLower = (providerRaw || "").toLowerCase();
 
@@ -174,8 +185,9 @@ function resolveModelPricing(
   }
 
   if (!providerPricing) {
+    const reverse = reverseAlias ?? providerAliasMap;
     // In case pLower was ALIAS and we want to try the ID (reverse search values)
-    for (const [id, alias] of Object.entries(providerAliasMap)) {
+    for (const [id, alias] of Object.entries(reverse)) {
       if (alias.toLowerCase() === pLower) {
         providerPricing = findKeyInsensitive(pricingByProvider, id);
         if (providerPricing) break;
@@ -238,13 +250,67 @@ function resolveModelPricing(
   return pricing as Record<string, unknown> | null;
 }
 
+function resolvePricingWithContext(
+  pricingByProvider: PricingByProvider,
+  providerAliasMap: Record<string, string>,
+  providerRaw: string,
+  model: string,
+  serviceTier: string,
+  normalizeModelName: (model: string) => string,
+  context: PricingResolutionContext
+): Record<string, unknown> | null {
+  const key = buildPricingCacheKey(providerRaw, model, serviceTier);
+  if (context.cache.has(key)) return context.cache.get(key) ?? null;
+  const resolved = resolveModelPricingUncached(
+    pricingByProvider,
+    providerAliasMap,
+    providerRaw,
+    model,
+    normalizeModelName,
+    context.reverseAlias
+  );
+  context.cache.set(key, resolved);
+  if (context.misses) context.misses.count += 1;
+  return resolved;
+}
+
+function resolveModelPricing(
+  pricingByProvider: PricingByProvider,
+  providerAliasMap: Record<string, string>,
+  providerRaw: string,
+  model: string,
+  normalizeModelName: (model: string) => string,
+  serviceTier?: string,
+  context?: PricingResolutionContext
+): Record<string, unknown> | null {
+  if (!context) {
+    return resolveModelPricingUncached(
+      pricingByProvider,
+      providerAliasMap,
+      providerRaw,
+      model,
+      normalizeModelName
+    );
+  }
+  return resolvePricingWithContext(
+    pricingByProvider,
+    providerAliasMap,
+    providerRaw,
+    model,
+    serviceTier ?? "",
+    normalizeModelName,
+    context
+  );
+}
+
 function computeUsageRowCost(
   row: Record<string, unknown>,
   pricingByProvider: PricingByProvider,
   providerAliasMap: Record<string, string>,
   normalizeModelName: (model: string) => string,
   computeCostFromPricing: ComputeCostFromPricing,
-  flatRateAsZero = true
+  flatRateAsZero = true,
+  pricingContext?: PricingResolutionContext
 ): number {
   const provider = toStringValue(row.provider);
   const model = toStringValue(row.model);
@@ -266,7 +332,9 @@ function computeUsageRowCost(
     providerAliasMap,
     provider,
     model,
-    normalizeModelName
+    normalizeModelName,
+    serviceTier,
+    pricingContext
   );
   if (!pricing) return 0;
 
@@ -294,7 +362,8 @@ function computeUsageRowStandardCost(
   providerAliasMap: Record<string, string>,
   normalizeModelName: (model: string) => string,
   computeCostFromPricing: ComputeCostFromPricing,
-  flatRateAsZero = true
+  flatRateAsZero = true,
+  pricingContext?: PricingResolutionContext
 ): number {
   return computeUsageRowCost(
     {
@@ -310,7 +379,8 @@ function computeUsageRowStandardCost(
     providerAliasMap,
     normalizeModelName,
     computeCostFromPricing,
-    flatRateAsZero
+    flatRateAsZero,
+    pricingContext
   );
 }
 
@@ -348,14 +418,27 @@ function computeActivityStreak(activityMap: Record<string, number>): number {
   return streak;
 }
 
-export async function GET(request: Request) {
+export async function GET(request: Request, testContext?: unknown) {
   const authError = await requireManagementAuth(request);
   if (authError) return authError;
 
-  return serveAnalyticsCached(new URL(request.url).search, () => computeAnalyticsResponse(request));
+  const misses =
+    typeof testContext === "object" &&
+    testContext !== null &&
+    "misses" in testContext &&
+    typeof (testContext as { misses?: unknown }).misses === "object" &&
+    (testContext as { misses?: unknown }).misses !== null
+      ? (testContext as { misses: { count: number } }).misses
+      : undefined;
+  return serveAnalyticsCached(new URL(request.url).search, () =>
+    computeAnalyticsResponse(request, misses)
+  );
 }
 
-async function computeAnalyticsResponse(request: Request): Promise<Response> {
+async function computeAnalyticsResponse(
+  request: Request,
+  misses?: { count: number }
+): Promise<Response> {
   try {
     const { searchParams } = new URL(request.url);
     const range = searchParams.get("range") || "30d";
@@ -444,6 +527,11 @@ async function computeAnalyticsResponse(request: Request): Promise<Response> {
     const { computeCostFromPricing, getCodexFastCostMultiplier, normalizeModelName } =
       await import("@/lib/usage/costCalculator");
     const { PROVIDER_ID_TO_ALIAS } = await import("@omniroute/open-sse/config/providerModels");
+    const pricingContext: PricingResolutionContext = {
+      cache: new Map(),
+      reverseAlias: { ...PROVIDER_ID_TO_ALIAS },
+      ...(misses ? { misses } : {}),
+    };
 
     const summaryRow = getUsageSummary(unifiedSource, unifiedParams) as Record<string, unknown>;
 
@@ -585,7 +673,8 @@ async function computeAnalyticsResponse(request: Request): Promise<Response> {
         PROVIDER_ID_TO_ALIAS,
         normalizeModelName,
         computeCostFromPricing,
-        !includeFlatRateEstimates
+        !includeFlatRateEstimates,
+        pricingContext
       );
       dailyCostByDate.set(date, (dailyCostByDate.get(date) || 0) + cost);
 
@@ -624,7 +713,8 @@ async function computeAnalyticsResponse(request: Request): Promise<Response> {
         PROVIDER_ID_TO_ALIAS,
         normalizeModelName,
         computeCostFromPricing,
-        !includeFlatRateEstimates
+        !includeFlatRateEstimates,
+        pricingContext
       );
       // Keyed by model name alone (not provider) — the table renders one row per
       // model, so the same model served via multiple provider connections/accounts
@@ -696,7 +786,8 @@ async function computeAnalyticsResponse(request: Request): Promise<Response> {
         PROVIDER_ID_TO_ALIAS,
         normalizeModelName,
         computeCostFromPricing,
-        !includeFlatRateEstimates
+        !includeFlatRateEstimates,
+        pricingContext
       );
       providerCostByProvider.set(provider, (providerCostByProvider.get(provider) || 0) + cost);
     }
@@ -712,7 +803,8 @@ async function computeAnalyticsResponse(request: Request): Promise<Response> {
         PROVIDER_ID_TO_ALIAS,
         normalizeModelName,
         computeCostFromPricing,
-        !includeFlatRateEstimates
+        !includeFlatRateEstimates,
+        pricingContext
       );
       accountCostByAccount.set(accountKey, (accountCostByAccount.get(accountKey) || 0) + cost);
     }
@@ -775,7 +867,8 @@ async function computeAnalyticsResponse(request: Request): Promise<Response> {
         PROVIDER_ID_TO_ALIAS,
         normalizeModelName,
         computeCostFromPricing,
-        !includeFlatRateEstimates
+        !includeFlatRateEstimates,
+        pricingContext
       );
       apiKeyMap.set(key, existing);
     }
@@ -820,7 +913,8 @@ async function computeAnalyticsResponse(request: Request): Promise<Response> {
         PROVIDER_ID_TO_ALIAS,
         normalizeModelName,
         computeCostFromPricing,
-        !includeFlatRateEstimates
+        !includeFlatRateEstimates,
+        pricingContext
       );
       existing.cost += actualCost;
       if (serviceTier === "flex") {
@@ -830,7 +924,8 @@ async function computeAnalyticsResponse(request: Request): Promise<Response> {
           PROVIDER_ID_TO_ALIAS,
           normalizeModelName,
           computeCostFromPricing,
-          !includeFlatRateEstimates
+          !includeFlatRateEstimates,
+          pricingContext
         );
         existing.savings += Math.max(0, standardCost - actualCost);
         existing.usageSavingsTokens += computeUsageSavingsTokens(
@@ -954,7 +1049,8 @@ async function computeAnalyticsResponse(request: Request): Promise<Response> {
             PROVIDER_ID_TO_ALIAS,
             normalizeModelName,
             computeCostFromPricing,
-            !includeFlatRateEstimates
+            !includeFlatRateEstimates,
+            pricingContext
           );
         }
 

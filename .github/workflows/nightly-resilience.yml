@@ -21,6 +21,8 @@ jobs:
           node-version: "24"
           cache: npm
       - run: npm ci
+        env:
+          ONNXRUNTIME_NODE_INSTALL: "skip"
       - run: npm run test:heap
 
   chaos:
@@ -36,12 +38,19 @@ jobs:
           node-version: "24"
           cache: npm
       - run: npm ci
+        env:
+          ONNXRUNTIME_NODE_INSTALL: "skip"
       - run: npm run test:chaos
 
   k6-soak:
     if: ${{ github.event_name != 'schedule' || github.repository == 'diegosouzapw/OmniRoute' }}
     name: k6 load/soak
-    runs-on: ubuntu-latest
+    # #11965: this job runs a backend-only `next build`; the hosted 7 GB runner cannot build
+    # release/v3.8.51 (VM shutdown ~7 min in), so it targets the box's light pool (`omni-light`:
+    # two listeners, jobs ≤ ~6 GB). Falls back to hosted when USE_VPS_RUNNER is off.
+    # #16853: on hosted it died in `npm run build:cli` 8 nights out of 8 ("The runner has
+    # received a shutdown signal").
+    runs-on: ${{ (vars.USE_VPS_RUNNER == 'true' && fromJSON('["self-hosted","omni-light"]')) || 'ubuntu-latest' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -50,29 +59,56 @@ jobs:
         with:
           node-version: "24"
           cache: npm
+      # Fresh runtime state per run (same contract as nightly-llm-security.yml). The
+      # omni-light runner keeps a persistent $HOME, so a server booted without DATA_DIR
+      # lands on $HOME/.omniroute, where a database left by older runs can sit far behind
+      # the tip's migrations: the mass-migration guard (#3416) refuses to migrate it and
+      # the server never becomes healthy. A DATA_DIR under $RUNNER_TEMP is a new database
+      # every run, so every migration applies and nothing on the box is touched.
+      - name: Prepare isolated runtime state
+        id: runtime
+        run: |
+          data_dir=$(mktemp -d "$RUNNER_TEMP/omniroute-k6-soak.XXXXXX")
+          mkdir "$data_dir/plugins"
+          {
+            echo "DATA_DIR=$data_dir"
+            echo "OMNIROUTE_PLUGINS_DIR=$data_dir/plugins"
+          } >> "$GITHUB_ENV"
       - run: npm ci
+        env:
+          ONNXRUNTIME_NODE_INSTALL: "skip"
       - name: Build CLI bundle
         env:
           JWT_SECRET: ci-build-secret-with-sufficient-length-for-validation
           OMNIROUTE_BUILD_BACKEND_ONLY: "1"
+          OMNIROUTE_USE_TURBOPACK: "0"
         run: npm run build:cli
+      # Own port: this box also hosts the deployed server on 20128. A test server that
+      # dies on EADDRINUSE must NOT let the soak fall through to whatever else answers
+      # there, and a soak against nothing must not go green — the health wait fails the
+      # job (same contract as nightly-llm-security.yml). Auto-backups stay off: one
+      # pre-migration backup per boot piles up under the runner's home.
       - name: Start OmniRoute (background)
         env:
           JWT_SECRET: ci-build-secret-with-sufficient-length-for-validation
-          PORT: "20128"
+          PORT: "21776"
+          DISABLE_SQLITE_AUTO_BACKUP: "true"
         run: |
           node dist/server.js > server.log 2>&1 &
           echo $! > server.pid
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:20128/api/monitoring/health >/dev/null; then echo "server up"; break; fi
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:21776/api/monitoring/health >/dev/null; then echo "server up"; exit 0; fi
             sleep 2
           done
+          echo "::error::Test server did not come up on 21776 in 120s — see server.log. Refusing to run the soak against an unknown target."
+          tail -40 server.log || true
+          exit 1
       - name: Install k6
         uses: grafana/setup-k6-action@v1
       - name: Run k6 soak
         run: k6 run tests/load/k6-soak.js
         env:
-          BASE_URL: http://localhost:20128
+          BASE_URL: http://localhost:21776
           SOAK_DURATION: "3m"
           SOAK_VUS: "10"
       - name: Stop server
@@ -121,6 +157,8 @@ jobs:
           node-version: "24"
           cache: npm
       - run: npm ci
+        env:
+          ONNXRUNTIME_NODE_INSTALL: "skip"
       - name: Cache Playwright browsers
         uses: actions/cache@v6.1.0
         with:

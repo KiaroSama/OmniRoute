@@ -1,0 +1,1 @@
+- **fix(providers):** keep the operator-disable marker authoritative even when `isActive` is true ([#16784](https://github.com/diegosouzapw/OmniRoute/pull/16784)) — thanks @jacobsparts.

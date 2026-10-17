@@ -42,7 +42,7 @@ import { calculateModalCost } from "@/lib/usage/costCalculator";
 import { generateRequestId } from "@/shared/utils/requestId";
 import { getSpecialtyModelsResponse } from "@/app/api/v1/_shared/specialtyCatalog";
 import { enforceClientApiRouteAuth } from "@/shared/utils/clientApiRouteAuth";
-import { runWithCallLogApiKeyContext } from "@/lib/usage/callLogApiKeyContext";
+import { runImageRequestWithAccounting } from "@/lib/usage/imageRequestAccounting";
 import { executeImageWithCredentialFallback } from "@/sse/services/imageCredentialRetry";
 import { refreshSelectedCodexImageCredentials } from "@/sse/services/selectedCodexImageCredentials";
 import { isCodexImagesModel } from "@omniroute/open-sse/handlers/codexImages.ts";
@@ -341,10 +341,15 @@ async function postHandler(request, context) {
     }
 
     const generateImage = () =>
-      runWithCallLogApiKeyContext(
+      runImageRequestWithAccounting(
         {
-          apiKeyId: policy.apiKeyInfo?.id ?? null,
-          apiKeyName: policy.apiKeyInfo?.name ?? null,
+          endpoint: "/v1/images/generations",
+          provider,
+          model: isCustomModel ? body.model : requestedModel,
+          apiKeyInfo: policy.apiKeyInfo,
+          credentials: attemptCredentials,
+          startTime,
+          recordCallLog: dedicatedCodexImages,
         },
         () =>
           handleImageGeneration({
@@ -394,10 +399,9 @@ async function postHandler(request, context) {
 
   if (result.success) {
     await clearRecoveredProviderState(credentials);
-    const n = Math.max(
-      Number(body.n) || 1,
-      (result as { data?: { data?: unknown[] } }).data?.data?.length || 0
-    );
+    // Bill the images actually delivered: a provider that returns fewer than the
+    // requested `n` must not be charged for the missing ones (#16398 follow-up).
+    const n = (result as { data?: { data?: unknown[] } }).data?.data?.length || 1;
     const costUsd = await calculateModalCost("image", provider, body.model, { n });
     const headers = new Headers({ "Content-Type": "application/json" });
     attachOmniRouteMetaHeaders(headers, {

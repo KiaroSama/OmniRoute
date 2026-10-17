@@ -3384,6 +3384,10 @@
     "comboRefMember": "Yhdistelmä → {name}"
   },
   "combos": {
+    "autoTosLoadError": "Käyttöehtokäytäntöä ei voitu ladata. Yritä uudelleen ennen sen muuttamista.",
+    "autoTosSaveError": "Käyttöehtokäytäntöä ei voitu tallentaa. Aiempi asetus näkyy edelleen. Yritä uudelleen.",
+    "autoTosIncludeLabel": "Sisällytä ToS: avoid -merkityt palveluntarjoajat auto-valintaan",
+    "autoTosDescription": "Oletuksena pois käytöstä. Koskee kaikkia auto-yhdistelmiä, ei vain yhtä tiliä. Palveluntarjoajan yhdistäminen ei ota tätä asetusta käyttöön.",
     "title": "Yhdistelmät",
     "description": "Luo mallikomboja painotetulla reitityksellä ja varatuella",
     "autoCatalogTitle": "Automaattinen reititysluettelo",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Näytetään {shown}/{total} vastaavaa riviä (50 parasta)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Pilvisynkronoinnin kohde (ei paikallisten varmuuskopioiden):",
+    "cloudUploadWarning": "Pilvisynkronointi on oletusarvoisesti pois käytöstä uusissa asennuksissa. Sen käyttöönotto lähettää palveluntarjoajien API-avaimet, OAuth-käyttö- ja päivitystunnukset, OmniRoute API-avaimet ja asetukset yllä olevaan kohteeseen nyt ja tulevien synkronointien yhteydessä. Tämä toiminto on erillinen Varastointi-osion paikallisista varmuuskopioista. Ota se käyttöön vain, jos luotat kyseiseen palvelimeen.",
+    "cloudUploadConsent": "Ymmärrän tämän ja sallin tunnistetietojeni lähettämisen tähän kohteeseen.",
     "title": "API-päätepiste",
     "subtitle": "Käytä OpenAI-yhteensopivaa päätepistettä useimpien SDK:iden ja työkalujen kanssa.",
     "testEndpoint": "Testaa päätepistettä →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Tämä palveluntarjoaja on oletuksena suljettu pois auto-valinnasta",
+    "tosAvoidNoticeDescription": "Sen käyttöehtotilaksi on merkitty avoid. Tilin yhdistäminen ei muuta tätä käytäntöä. Tarkista palveluntarjoajan ehdot ennen kaikille auto-yhdistelmille yhteisen suostumuksen antamista.",
+    "tosAvoidNoticeAction": "Tarkista auto-käytäntö",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Poista yhteys käytöstä",
     "enableConnection": "Ota yhteys käyttöön",
     "reauthenticateConnection": "Todenna tämä yhteys uudelleen",
+    "verifyAccount": "Vahvista tili",
+    "verifyAccountHint": "Google vaatii tämän tilin vahvistamisen. Avaa linkki, suorita tarkistus ja yritä uudelleen.",
     "proxyConfig": "Välityspalvelimen konfigurointi",
     "aliasExistsAlert": "Alias \"{alias}\" on jo olemassa. Käytä toista mallia tai muokkaa olemassa olevaa aliasta.",
     "aliasInputPlaceholder": "aliaksen nimi",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Portti",
     "qdrantHost": "Isäntä",
     "qdrantCollection": "Kokoelma",
+    "catalogVisibilityHint": "Piilotettuja mallitunnuksia voi edelleen kutsua samoilla käyttöoikeuksilla.",
     "catalogScopeTitle": "Models API -luettelo",
     "catalogScopeDesc": "Mitä GET /v1/models ilmoittaa tälle avaimelle. Luettelon rajaaminen ei koskaan muuta sitä, mitä avain voi kutsua.",
     "catalogScopeAll": "Molemmat",

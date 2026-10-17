@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS-korlátozás:** A HTTPS `CONNECT` alagutak esetében alapértelmezés szerint csak a metaadatokat (hoszt, port, időzítés) rögzíti — a TLS-törzs nincs visszafejtve. A teljes törzs vizsgálatához engedélyezze a „HTTPS visszafejtése proxy módban” kapcsolót (külön bekapcsolandó, és megköveteli, hogy az AgentBridge tanúsítványa megbízható legyen).
+**TLS-korlátozás:** A HTTPS `CONNECT` alagutak esetében alapértelmezés szerint csak a metaadatokat (hoszt, port, időzítés) rögzíti — a TLS-törzs nincs visszafejtve.
 
 **Portütközés:** Ha a 8080-as port használatban van, az AgentBridge strukturált hibával ellátott 409-es választ ad vissza. A port az `INSPECTOR_HTTP_PROXY_PORT` környezeti változóval módosítható.
 
@@ -464,12 +464,11 @@ Alapútvonal: `/api/tools/traffic-inspector/`
 
 ### Rögzítési módok
 
-| Metódus | Útvonal                        | Leírás                                                                                                       |
-| ------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| GET     | `/capture-modes`               | Az AgentBridge / egyéni gazdagépek / HTTP_PROXY / rendszerproxy módok állapota és a `tls-intercept` kapcsoló |
-| POST    | `/capture-modes/http-proxy`    | A HTTP_PROXY-figyelő indítása/leállítása (`{action: "start"\|"stop"}`)                                       |
-| POST    | `/capture-modes/system-proxy`  | A rendszerszintű proxy alkalmazása/visszaállítása (`{action: "apply"\|"revert"}`)                            |
-| POST    | `/capture-modes/tls-intercept` | A HTTPS-törzs visszafejtésének átváltása proxy módban (`{enabled: boolean}`)                                 |
+| Metódus | Útvonal                       | Leírás                                                                            |
+| ------- | ----------------------------- | --------------------------------------------------------------------------------- |
+| GET     | `/capture-modes`              | Az AgentBridge / egyéni gazdagépek / HTTP_PROXY / rendszerproxy módok állapota    |
+| POST    | `/capture-modes/http-proxy`   | A HTTP_PROXY-figyelő indítása/leállítása (`{action: "start"\|"stop"}`)            |
+| POST    | `/capture-modes/system-proxy` | A rendszerszintű proxy alkalmazása/visszaállítása (`{action: "apply"\|"revert"}`) |
 
 > A **TPROXY-visszafejtést** (5. rögzítési mód) egy **különálló**, az
 > AgentBridge előtag alatti útvonal vezérli — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` —, nem

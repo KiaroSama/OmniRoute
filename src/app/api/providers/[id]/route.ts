@@ -387,6 +387,18 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     const updated = await updateProviderConnection(id, updateData);
 
+    if (isActive === true && existing.provider === "codex") {
+      // Await catalog repair so the next request can use a newly enabled account.
+      // A discovery failure does not undo the operator's activation intent.
+      try {
+        const { restoreActivatedConnectionCatalog } =
+          await import("@/lib/providerModels/prepareConnectionModelTest");
+        await restoreActivatedConnectionCatalog(existing.provider, id, isActive);
+      } catch {
+        console.warn("[Providers] Activated account model catalog could not be refreshed");
+      }
+    }
+
     // If rateLimitOverrides was included in the request, refresh the in-memory
     // rate limiter state so the change takes effect without a server restart.
     // Only (re)enable enforcement when rate limit protection is actually

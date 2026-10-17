@@ -204,14 +204,19 @@ function loadEnvFile() {
 
   // The package directory is replaced by the next `npm i -g`, so a .env kept
   // there is silently lost. Say so once, and only when that file actually
-  // supplied something.
+  // supplied an effective value that is not a regenerated template default.
   const durableEnvPath = join(process.env.DATA_DIR || getDefaultDataDir(), ".env");
-  const suppliedKeys = [...keyOrigin.values()].some((origin) => origin === join(ROOT, ".env"));
+  const suppliedValues = new Map(
+    [...keyOrigin]
+      .filter(([, origin]) => origin === join(ROOT, ".env"))
+      .map(([key]) => [key, process.env[key]])
+  );
   const volatileWarning = describeVolatileEnvWarning({
     envPath: join(ROOT, ".env"),
     packageRoot: ROOT,
     durableEnvPath,
-    suppliedKeys,
+    suppliedKeys: suppliedValues.size > 0,
+    suppliedValues,
   });
   if (volatileWarning && loadedEnvPaths.includes(join(ROOT, ".env"))) {
     console.warn(`  \x1b[33m⚠ ${volatileWarning}\x1b[0m`);

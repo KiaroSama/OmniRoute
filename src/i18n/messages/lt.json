@@ -3384,6 +3384,10 @@
     "comboRefMember": "Derinys → {name}"
   },
   "combos": {
+    "autoTosLoadError": "Nepavyko įkelti paslaugų teikimo sąlygų politikos. Prieš keisdami bandykite dar kartą.",
+    "autoTosSaveError": "Nepavyko išsaugoti paslaugų teikimo sąlygų politikos. Vis dar rodoma ankstesnė nuostata. Bandykite dar kartą.",
+    "autoTosIncludeLabel": "Į auto įtraukti teikėjus, pažymėtus ToS: avoid",
+    "autoTosDescription": "Pagal numatytuosius nustatymus išjungta. Taikoma visiems auto deriniams, ne tik vienai paskyrai. Teikėjo prijungimas šios parinkties neįjungia.",
     "title": "Kombinacijos",
     "description": "Kurkite modelių kombinacijas su svertiniu maršrutizavimu ir perėjimo prie atsarginio modelio palaikymu",
     "autoCatalogTitle": "Automatinio maršrutizavimo katalogas",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Rodoma {shown} iš {total} atitinkančių eilučių (pirmosios 50)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Sinchronizavimo debesijoje paskirties vieta (ne vietinių atsarginių kopijų):",
+    "cloudUploadWarning": "Naujose diegtyse sinchronizavimas debesijoje pagal numatytuosius nustatymus išjungtas. Jį įjungus, teikėjų API raktai, OAuth prieigos ir atnaujinimo prieigos raktai, OmniRoute API raktai ir konfigūracija įkeliami į pirmiau nurodytą paskirties vietą dabar ir per būsimus sinchronizavimus. Ši funkcija yra atskira nuo vietinių atsarginių kopijų skiltyje Saugykla. Įjunkite ją tik jei pasitikite tuo serveriu.",
+    "cloudUploadConsent": "Suprantu ir leidžiu įkelti savo prisijungimo duomenis į šią paskirties vietą.",
     "title": "API galinis punktas",
     "subtitle": "Naudokite su OpenAI suderinamą galinį punktą su daugeliu SDK ir įrankių.",
     "testEndpoint": "Testuoti galinį punktą →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Šis teikėjas pagal numatytuosius nustatymus neįtrauktas į auto",
+    "tosAvoidNoticeDescription": "Jo paslaugų teikimo sąlygų būsena pažymėta avoid. Paskyros prijungimas šios politikos nekeičia. Prieš įjungdami bendrą leidimą visiems auto deriniams, peržiūrėkite teikėjo sąlygas.",
+    "tosAvoidNoticeAction": "Peržiūrėti auto politiką",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Išjungti ryšį",
     "enableConnection": "Įjungti ryšį",
     "reauthenticateConnection": "Pakartotinai autentifikuoti šį ryšį",
+    "verifyAccount": "Patvirtinti paskyrą",
+    "verifyAccountHint": "Google reikalauja patvirtinti šią paskyrą. Atidarykite nuorodą, užbaikite patikrą ir bandykite dar kartą.",
     "proxyConfig": "Tarpinio serverio konfigūracija",
     "aliasExistsAlert": "Alternatyvusis vardas „{alias}“ jau yra. Pasirinkite kitą modelį arba redaguokite esamą alternatyvųjį vardą.",
     "aliasInputPlaceholder": "alternatyvusis vardas",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Prievadas",
     "qdrantHost": "Pagrindinis kompiuteris",
     "qdrantCollection": "Rinkinys",
+    "catalogVisibilityHint": "Paslėptus modelių ID ir toliau galima iškviesti turint tas pačias prieigos teises.",
     "catalogScopeTitle": "Models API sąrašas",
     "catalogScopeDesc": "Ką GET /v1/models nurodo šiam raktui. Sąrašo susiaurinimas niekada nekeičia, ką raktas gali iškviesti.",
     "catalogScopeAll": "Abu",

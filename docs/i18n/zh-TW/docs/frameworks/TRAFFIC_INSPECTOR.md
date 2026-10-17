@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS 限制：** HTTPS `CONNECT` 通道預設只會擷取中繼資料（主機、連接埠、時間資訊）——不會解密 TLS 主體。若要完整檢查主體，請啟用「在 Proxy 模式中解密 HTTPS」切換開關（需選擇加入，且必須信任 AgentBridge 憑證）。
+**TLS 限制：** HTTPS `CONNECT` 通道預設只會擷取中繼資料（主機、連接埠、時間資訊）——不會解密 TLS 主體。
 
 **連接埠衝突：** 如果連接埠 8080 已被使用，AgentBridge 會傳回包含結構化錯誤的 409。可透過 `INSPECTOR_HTTP_PROXY_PORT` 環境變數變更連接埠。
 
@@ -463,12 +463,11 @@ netsh winhttp reset proxy
 
 ### 擷取模式
 
-| 方法 | 路徑                           | 說明                                                                                    |
-| ---- | ------------------------------ | --------------------------------------------------------------------------------------- |
-| GET  | `/capture-modes`               | AgentBridge / 自訂主機 / HTTP_PROXY / 系統代理模式的狀態，以及 `tls-intercept` 切換開關 |
-| POST | `/capture-modes/http-proxy`    | 啟動/停止 HTTP_PROXY 監聽器（`{action: "start"\|"stop"}`）                              |
-| POST | `/capture-modes/system-proxy`  | 套用/還原系統全域代理（`{action: "apply"\|"revert"}`）                                  |
-| POST | `/capture-modes/tls-intercept` | 切換代理模式中的 HTTPS 主體解密（`{enabled: boolean}`）                                 |
+| 方法 | 路徑                          | 說明                                                       |
+| ---- | ----------------------------- | ---------------------------------------------------------- |
+| GET  | `/capture-modes`              | AgentBridge / 自訂主機 / HTTP_PROXY / 系統代理模式的狀態   |
+| POST | `/capture-modes/http-proxy`   | 啟動/停止 HTTP_PROXY 監聽器（`{action: "start"\|"stop"}`） |
+| POST | `/capture-modes/system-proxy` | 套用/還原系統全域代理（`{action: "apply"\|"revert"}`）     |
 
 > **TPROXY 解密**（擷取模式 5）由 AgentBridge 前綴下的**獨立**路由驅動 —
 > `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — 而非位於

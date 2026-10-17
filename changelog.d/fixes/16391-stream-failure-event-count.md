@@ -1,0 +1,1 @@
+- **fix(sse):** keep the events read before a cut stream in its failure record ([#16391](https://github.com/diegosouzapw/OmniRoute/pull/16391)) — thanks @maxmad64bis

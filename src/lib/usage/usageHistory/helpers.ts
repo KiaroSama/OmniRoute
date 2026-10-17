@@ -196,8 +196,22 @@ export const MAX_PREVIEW_STRING = 1200;
 export const MAX_PREVIEW_ARRAY_ITEMS = 12;
 export const MAX_PREVIEW_OBJECT_KEYS = 24;
 
+function slicePrefixWithoutSplitSurrogate(value: string, end: number): string {
+  const code = end > 0 ? value.charCodeAt(end - 1) : 0;
+  // A cut that keeps a high surrogate (U+D800–U+DBFF) without its pair becomes
+  // U+FFFD in the Buffer round-trip below. Shorten by one code unit instead.
+  const cut = code >= 0xd800 && code <= 0xdbff ? end - 1 : end;
+  return value.slice(0, cut);
+}
+
 function truncatePreviewString(value: string): string {
-  return value.length > MAX_PREVIEW_STRING ? `${value.slice(0, MAX_PREVIEW_STRING)}...` : value;
+  if (value.length <= MAX_PREVIEW_STRING) return value;
+  // Detach the preview from its source. A bare String#slice() returns a V8
+  // SlicedString that keeps the whole parent string alive, so the pending pool
+  // would retain full multi-megabyte request bodies while only accounting for
+  // the visible preview. Pull the cut off a trailing high surrogate first.
+  const head = slicePrefixWithoutSplitSurrogate(value, MAX_PREVIEW_STRING);
+  return Buffer.from(`${head}...`, "utf8").toString("utf8");
 }
 
 function previewTree(value: unknown, depth: number, cutStrings: boolean): unknown {

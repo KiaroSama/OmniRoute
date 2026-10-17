@@ -259,6 +259,8 @@ Il-kmandi `tokens` jeħtieġu kredenzjali ta’ **admin**. Tista’ wkoll timman
 t-tokens fid-dashboard taħt **Settings → Access Tokens** (oħloq, irrevoka,
 ikkopja darba biss).
 
+Token qatt ma jista’ jinħoloq bi privileġġi akbar minn dawk tal-kreatur tiegħu. L-operatur biss jista’ joħloq token `admin`: permezz tas-sessjoni tad-dashboard, il-CLI lokali fuq is-server innifsu, `omniroute connect` bil-password jew istanza fejn il-login huwa diżattivat. Il-kredenzjali tal-magna (token ta’ aċċess `admin` jew ċavetta API bl-ambitu `manage`/`admin`) jistgħu joħolqu biss tokens `write` u `read`; talba għal `--scope admin` b’dawn il-kredenzjali tirritorna `403`.
+
 ---
 
 ## Konfigurazzjoni ta’ CLI tal-coding mill-katalgu remot

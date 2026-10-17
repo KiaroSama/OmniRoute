@@ -17,6 +17,7 @@ import {
 } from "./base.ts";
 import { applyReasoningEffortRecovery } from "./base/reasoningEffortRecovery.ts";
 import { applyFieldDowngradeRecovery } from "./base/fieldDowngradeRecovery.ts";
+import { peekCommandCodeCliStream } from "./commandCode/cliEmbeddedError.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -1052,9 +1053,13 @@ export class CommandCodeExecutor extends BaseExecutor {
       };
     }
 
-    const response = stream
-      ? createStreamResponse(cliUpstream, model, signal, toolNameMap)
-      : await createJsonResponse(cliUpstream, model, signal, toolNameMap);
+    // An embedded `error` frame before any content fails the request with its own status.
+    const peeked = await peekCommandCodeCliStream(cliUpstream, signal);
+    const response = !peeked.ok
+      ? peeked
+      : stream
+        ? createStreamResponse(peeked, model, signal, toolNameMap)
+        : await createJsonResponse(peeked, model, signal, toolNameMap);
 
     return { response, url: cliUrl, headers: cliHeaders, transformedBody: cliTransformedBody };
   }

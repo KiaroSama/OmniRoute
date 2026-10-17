@@ -145,6 +145,8 @@ operatoriaus atsakomybės:
   visą `/api/providers/` prefiksą, todėl būtų pernelyg išplėstas maršrutų medis,
   kurį nuotoliniai valdymo skydeliai teisėtai naudoja teikėjų CRUD operacijoms.
 
+  Vykdymo meto momentinės kopijos įkėliklis tokius įrašus taip pat pašalina iš išsaugotos nuostatų eilutės, o senasis JSON importas (`/api/settings/import-json`) niekada neįrašo apėjimo raktų. Kiekvienas `LOCAL_ONLY_API_PREFIXES` įrašas turi būti draudimų sąraše arba po peržiūros pripažintas tinkamu apėjimui. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Prieigos auditas** — norėdami patikrinti, ar šie maršrutai nėra pasiekiami iš kitų įrenginių:
 
 - Atidarykite **Autorizavimo inventorių** adresu `/dashboard/settings/security`: jame rodomas

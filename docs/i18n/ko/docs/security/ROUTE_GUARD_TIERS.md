@@ -125,6 +125,8 @@ Tunnel, Tailscale, Ngrok) 뒤에서 실행하더라도 루프백 검사는 위�
   포함해야 하며, 그러면 원격 대시보드가 공급자 CRUD에 합법적으로 사용하는
   라우트 트리까지 지나치게 광범위하게 제한하게 됩니다.
 
+  런타임 스냅샷 로더도 저장된 설정 행에서 이러한 항목을 제거하며, 기존 JSON 가져오기(`/api/settings/import-json`)는 우회 키를 절대 기록하지 않습니다. `LOCAL_ONLY_API_PREFIXES`의 각 항목은 거부 목록에 있거나 검토를 통해 우회 가능한 것으로 승인되어야 합니다. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **액세스 감사** — 호스트 외부에서 이러한 경로에 접근하지 못하는지 확인하려면:
 
 - `/dashboard/settings/security`에서 **Authorization Inventory**를 여세요. 여기에는

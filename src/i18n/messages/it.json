@@ -3384,6 +3384,10 @@
     "comboRefMember": "Combo → {name}"
   },
   "combos": {
+    "autoTosLoadError": "Impossibile caricare la politica sui termini di servizio. Riprova prima di modificarla.",
+    "autoTosSaveError": "Impossibile salvare la politica sui termini di servizio. È ancora visualizzata l’impostazione precedente. Riprova.",
+    "autoTosIncludeLabel": "Includi in auto i provider contrassegnati ToS: avoid",
+    "autoTosDescription": "Disattivato per impostazione predefinita. Si applica a tutte le combinazioni auto, non solo a un account. Collegare un provider non attiva questa opzione.",
     "title": "Combinazioni",
     "description": "Crea combinazioni di modelli con routing ponderato e supporto fallback",
     "autoCatalogTitle": "Catalogo dell'autorouting",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Visualizzate {shown} di {total} righe corrispondenti (prime 50)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Destinazione della sincronizzazione cloud (non dei backup locali):",
+    "cloudUploadWarning": "La sincronizzazione cloud è disattivata per impostazione predefinita nelle nuove installazioni. Attivandola, le chiavi API dei provider, i token di accesso e di aggiornamento OAuth, le chiavi API di OmniRoute e la configurazione vengono inviati alla destinazione indicata sopra, ora e nelle sincronizzazioni future. Questa funzione è separata dai backup locali di «Magazzinaggio». Attivala solo se ti fidi di quel server.",
+    "cloudUploadConsent": "Comprendo e autorizzo l’invio delle mie credenziali a questa destinazione.",
     "title": "Endpoint API",
     "subtitle": "Usa l'endpoint compatibile con OpenAI con la maggior parte degli SDK e degli strumenti.",
     "testEndpoint": "Testa l'endpoint →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Questo provider è escluso da auto per impostazione predefinita",
+    "tosAvoidNoticeDescription": "Il suo stato dei termini di servizio è contrassegnato come avoid. Collegare un account non modifica questa politica. Consulta i termini del provider prima di attivare il consenso globale per tutte le combinazioni auto.",
+    "tosAvoidNoticeAction": "Consulta la politica di auto",
     "codexReleaseCooldown": "Azzera cooldown locale",
     "codexReleaseCooldownHint": "Consente di riprovare questo account Codex. Non riscatta un credito di ripristino né modifica i limiti del fornitore.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Disabilita connessione",
     "enableConnection": "Abilita connessione",
     "reauthenticateConnection": "Autenticare nuovamente questa connessione",
+    "verifyAccount": "Verifica account",
+    "verifyAccountHint": "Google richiede la verifica di questo account. Apri il link, completa il controllo e riprova.",
     "proxyConfig": "Configurazione proxy",
     "aliasExistsAlert": "L'alias \"{alias}\" esiste già. Utilizza un modello diverso o modifica l'alias esistente.",
     "aliasInputPlaceholder": "nome dell'alias",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Porta",
     "qdrantHost": "Host",
     "qdrantCollection": "Collezione",
+    "catalogVisibilityHint": "Gli ID dei modelli nascosti restano richiamabili con gli stessi permessi di accesso.",
     "catalogScopeTitle": "Elenco dell'API Models",
     "catalogScopeDesc": "Ciò che GET /v1/models mostra per questa chiave. Limitare l'elenco non modifica mai ciò che la chiave può chiamare.",
     "catalogScopeAll": "Entrambi",

@@ -154,7 +154,8 @@ test("Antigravity and AGY support metadata excludes retired Flash ids", () => {
   assert.equal(cliAliases.includes("gemini-3-flash"), false);
   assert.equal(cliModelIds.includes("gemini-3-flash"), false);
   assert.equal(agyFreeModelIds.includes("gemini-3-flash"), false);
-  assert.equal(pricing["gemini-3-flash"], undefined);
+  // Removed from static support metadata, but live discovery still admits it: keep it billable (#16570).
+  assert.ok(pricing["gemini-3-flash"], "gemini-3-flash must retain Antigravity billing coverage");
 
   for (const modelId of ACTIVE_FLASH_MODEL_IDS) {
     assert.equal(cliAliases.includes(modelId), true, `${modelId} must remain selectable`);

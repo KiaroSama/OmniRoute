@@ -821,8 +821,11 @@ export async function POST(
         });
       } catch (exchangeErr: any) {
         console.error("OAuth exchange error:", exchangeErr);
+        const detail = sanitizeErrorMessage(
+          exchangeErr instanceof Error ? exchangeErr.message : String(exchangeErr)
+        );
         return NextResponse.json(
-          { success: false, error: "Internal server error" },
+          { success: false, error: detail || "Internal server error" },
           { status: 500 }
         );
       }
@@ -980,7 +983,8 @@ export async function POST(
     return NextResponse.json({ error: "Unknown action" }, { status: 400 });
   } catch (error) {
     console.error("OAuth POST error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const detail = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
+    return NextResponse.json({ error: detail || "Internal server error" }, { status: 500 });
   }
 }
 

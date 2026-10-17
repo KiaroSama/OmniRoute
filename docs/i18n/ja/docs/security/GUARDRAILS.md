@@ -50,6 +50,10 @@
 
 強制モードは、自動ヒューリスティックが実行される**前に**ショートサーキットします。`auto` の動作は、PR-1以前のガードレールとバイト単位で同一です。
 
+#### API キーのスコープ (`visionBridgeKeyScope.ts`)
+
+API キーが接続、クォータプール、モデルを制限している場合（`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`）、再ルーティングと説明生成では、そのキーに許可されたモデルと接続だけを選択します。説明生成の呼び出しは常に `x-omniroute-self-loop-key-id` ヘッダー付きで OmniRoute の自己ループを経由し、接続とモデルのポリシーを再適用します。`enforceApiKeyPolicy()` は自己ループの bearer トークンを伴う場合だけこのヘッダーを認めます。アクセスを狭めることしかできず、解決できない ID は拒否されます。許可された視覚モデルがなければ説明生成を省略し、保護機能が無効な場合と同じくリクエストを変更せず通過させます（meta `{ skipped: true, reason: "no_permitted_vision_model" }`）。キーのないリクエストと、これらの制限がないキーの動作は従来どおりです。
+
 #### タスクアウェアな記述プロンプト (`modalityBridgeVisionTaskAware`)
 
 デフォルトは**true**です。`composeVisionPrompt()` (`visionBridgeHelpers.ts`) は、**最後のユーザーメッセージ**のテキスト（500文字に切り詰められます）を基本記述プロンプトに追加し、ユーザーが実際に尋ねた内容（codex-vision-proxyパターン）に記述を誘導し、ビジョンモデルに可視テキストの転写を依頼します。このフラグがオフの場合、またはユーザーテキストがない場合は、基本プロンプトが変更されずに使用されます。

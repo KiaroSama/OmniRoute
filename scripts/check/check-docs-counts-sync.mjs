@@ -542,6 +542,18 @@ const SVG_DIAGRAM_FILES = [
   "public/images/tier-flow-light.svg",
 ];
 
+function makeProviderCountValidator(expected, requireClaim = false) {
+  return makeNumberClaimValidator(expected, {
+    what: "aggregate provider count",
+    // Subsets and approximate counts (100+) have their own denominators.
+    pattern:
+      /\b(\d{3,4})\*{0,2}(?:\s+(?:(?:AI|LLM|registered|unique)\s+)?providers\b|-provider\b)/gi,
+    skipBefore: /chat model registry covers\s+\*{0,2}$/i,
+    skipAfter: /^\s+in\s+(?:>\s*)?OmniRoute v\d+\.\d+\.\d+/i,
+    requireClaim,
+  });
+}
+
 export function buildChecks() {
   return [
     ...buildReadmeMigrationChecks(ROOT, countMigrations()),
@@ -551,6 +563,30 @@ export function buildChecks() {
       docKey: "providers",
       strict: true,
       files: ["README.md", "AGENTS.md", "llm.txt"],
+      validate: makeProviderCountValidator(readProviderTotal(), true),
+    },
+    {
+      label: "Provider count (secondary docs and skills)",
+      actual: readProviderTotal(),
+      docKey: "providers",
+      strict: true,
+      files: [
+        "docs/architecture/ARCHITECTURE.md",
+        "docs/architecture/CODEBASE_DOCUMENTATION.md",
+        "docs/architecture/REPOSITORY_MAP.md",
+        "docs/frameworks/A2A-SERVER.md",
+        "docs/frameworks/ACP.md",
+        "docs/frameworks/AGENTBRIDGE.md",
+        "docs/frameworks/OPEN_SSE_ARCHITECTURE.md",
+        "docs/getting-started/FREE-TIERS-GUIDE.md",
+        "docs/comparison/OMNIROUTE_VS_ALTERNATIVES.md",
+        "docs/guides/FREE_PROVIDER_RANKINGS.md",
+        "src/shared/constants/agentSkills.ts",
+        "skills/README.md",
+        "skills/omni-auth/SKILL.md",
+        "skills/omni-providers/SKILL.md",
+      ],
+      validate: makeProviderCountValidator(readProviderTotal()),
     },
     {
       label: "Provider count (package.json description)",

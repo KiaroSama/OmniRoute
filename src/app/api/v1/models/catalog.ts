@@ -106,6 +106,8 @@ import {
   maybeOmitCatalogModelName,
   getThinkingCapabilityFields,
   mergeComboCapabilities,
+  hasRoutableComboConnection,
+  selectComboLimitPool,
   visionDerivedModalities,
   getConnectionScopedEffortTiers,
   type ConnectionScopedReasoningCatalog,
@@ -653,7 +655,10 @@ async function buildUnifiedModelsResponseCore(
         !source.syncedCapability &&
         !source.reasoningEffortsOverride
       ) {
-        return null;
+        // Explicit vision evidence remains valid without registry/synced metadata.
+        return typeof canonical.capabilities.vision === "boolean"
+          ? { capabilities: { vision: canonical.capabilities.vision } }
+          : null;
       }
 
       const synced = getSyncedCapability(providerId, modelId);
@@ -670,11 +675,15 @@ async function buildUnifiedModelsResponseCore(
       const maxInputTokens = isPositiveFiniteNumber(canonical.limits.maxInputTokens)
         ? canonical.limits.maxInputTokens
         : contextLength;
-      const maxOutputTokens = isPositiveFiniteNumber(synced?.limit_output)
-        ? synced.limit_output
-        : isPositiveFiniteNumber(spec?.maxOutputTokens)
-          ? spec.maxOutputTokens
-          : undefined;
+      // #16515: canonical.limits.maxOutputTokens already applies an operator's
+      // max_output_tokens override, as the per-model catalog entry does.
+      const maxOutputTokens = isPositiveFiniteNumber(canonical.limits.maxOutputTokens)
+        ? canonical.limits.maxOutputTokens
+        : isPositiveFiniteNumber(synced?.limit_output)
+          ? synced.limit_output
+          : isPositiveFiniteNumber(spec?.maxOutputTokens)
+            ? spec.maxOutputTokens
+            : undefined;
 
       const syncedVision =
         typeof synced?.attachment === "boolean"
@@ -751,6 +760,14 @@ async function buildUnifiedModelsResponseCore(
         ...(inputModalities && inputModalities.length > 0 ? { inputModalities } : {}),
         ...(outputModalities && outputModalities.length > 0 ? { outputModalities } : {}),
         capabilities,
+        routable: isNoAuthProviderKey(providerId, providerAlias, targetModel.providerId)
+          ? !isNoAuthProviderBlocked(
+              blockedProviders,
+              providerId,
+              providerAlias,
+              targetModel.providerId
+            )
+          : hasRoutableComboConnection(target, allProviderConnections),
       };
     };
 
@@ -773,19 +790,18 @@ async function buildUnifiedModelsResponseCore(
         (metadata): metadata is ComboTargetCatalogMetadata => metadata !== null
       );
       if (knownMetadata.length === 0) return baseMetadata;
+      const limitPool = selectComboLimitPool(knownMetadata); // #4627: skip inactive seats
       const contextLength =
         explicitContextLength ??
-        minKnownNumber(knownMetadata.map((metadata) => metadata.contextLength));
+        minKnownNumber(limitPool.map((metadata) => metadata.contextLength));
       const targetMinMaxInput = minKnownNumber(
-        knownMetadata.map((metadata) => metadata.maxInputTokens)
+        limitPool.map((metadata) => metadata.maxInputTokens)
       );
       const maxInputTokens =
         explicitContextLength === undefined
           ? targetMinMaxInput
           : Math.min(explicitContextLength, targetMinMaxInput ?? explicitContextLength);
-      const maxOutputTokens = minKnownNumber(
-        knownMetadata.map((metadata) => metadata.maxOutputTokens)
-      );
+      const maxOutputTokens = minKnownNumber(limitPool.map((metadata) => metadata.maxOutputTokens));
 
       const inputModalities = intersectKnownStringArrays(
         knownMetadata.map((m) => (Array.isArray(m.inputModalities) ? m.inputModalities : []))
@@ -797,6 +813,7 @@ async function buildUnifiedModelsResponseCore(
       const capabilities = mergeComboCapabilities(knownMetadata);
       if (targetMetadata.some((metadata) => metadata === null)) {
         delete capabilities.effort_tiers;
+        delete capabilities.vision;
       }
 
       return {
@@ -1290,6 +1307,10 @@ async function buildUnifiedModelsResponseCore(
           // so the effort_tiers exclusion (codex/glm/kimi) and the entries agree.
           const syncedOwnedBy = resolvePublicOwnerId(providerId, canonicalProviderId);
           const syncedFields = {
+            ...(sm.visibility ? { visibility: sm.visibility } : {}),
+            ...(typeof sm.supportedInApi === "boolean"
+              ? { supported_in_api: sm.supportedInApi }
+              : {}),
             ...(modelType ? { type: modelType } : {}),
             ...(apiFormat !== "chat-completions" ? { api_format: apiFormat } : {}),
             ...(classification.subtype ? { subtype: classification.subtype } : {}),

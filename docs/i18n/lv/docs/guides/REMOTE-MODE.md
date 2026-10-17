@@ -254,6 +254,8 @@ omniroute tokens scopes               # izskaidrot trīs tvērumus
 `tokens` komandām ir nepieciešami **administratora** akreditācijas dati. Pilnvaras varat pārvaldīt arī
 informācijas paneļa sadaļā **Iestatījumi → Piekļuves pilnvaras** (izveide, atsaukšana, vienreizēja kopēšana).
 
+Tokenu nekad nevar izveidot ar lielākām privilēģijām, nekā ir tā izveidotājam. Tikai operators var izveidot `admin` tokenu: no vadības paneļa sesijas, ar lokālo CLI pašā serverī, ar `omniroute connect` un paroli vai instancē, kurā pieteikšanās ir atspējota. Mašīnas akreditācijas dati (`admin` piekļuves tokens vai API atslēga ar tvērumu `manage`/`admin`) var izveidot tikai `write` un `read` tokenus; pieprasot `--scope admin` ar tiem, tiek atgriezts `403`.
+
 ---
 
 ## Kodēšanas CLI konfigurēšana no attālā kataloga

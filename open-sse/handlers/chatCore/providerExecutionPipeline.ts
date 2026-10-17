@@ -9,6 +9,7 @@ import type {
 } from "../../services/accountFallback.ts";
 import { createErrorResult } from "../../utils/error.ts";
 import { applyStatusRestatement } from "../../config/upstreamStatusRestatement.ts";
+import { appendGoogleDailyQuotaViolation } from "../../services/googleDailyQuota.ts";
 import { recoverAnthropicThinkingSignature } from "./thinkingSignatureRecovery.ts";
 import { isAnthropicThinkingSignatureError } from "./passthroughHelpers.ts";
 import {
@@ -295,7 +296,7 @@ async function toOutcome(
       error: result.error,
       errorCode: result.errorCode,
       errorType: result.errorType,
-      rawMessage: message,
+      rawMessage: appendGoogleDailyQuotaViolation(message, body),
       upstreamErrorBody: body,
       upstreamHeaders: attempt.response.headers,
     },

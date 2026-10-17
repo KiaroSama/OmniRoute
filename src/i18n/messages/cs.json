@@ -3384,6 +3384,10 @@
     "comboRefMember": "Kombinace → {name}"
   },
   "combos": {
+    "autoTosLoadError": "Zásady podmínek služby se nepodařilo načíst. Před změnou to zkuste znovu.",
+    "autoTosSaveError": "Zásady podmínek služby se nepodařilo uložit. Stále se zobrazuje předchozí nastavení. Zkuste to znovu.",
+    "autoTosIncludeLabel": "Zahrnout do auto poskytovatele označené ToS: avoid",
+    "autoTosDescription": "Ve výchozím nastavení vypnuto. Platí pro všechny kombinace auto, nejen pro jeden účet. Připojení poskytovatele tuto možnost nezapne.",
     "title": "Komba",
     "description": "Vytvářejte kombinace modelů s váženým směrováním a podporou záloh",
     "autoCatalogTitle": "Katalog automatického směrování",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Zobrazuje se {shown} z {total} odpovídajících řádků (top 50)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Cíl synchronizace s cloudem (nikoli místních záloh):",
+    "cloudUploadWarning": "Při nové instalaci je synchronizace s cloudem ve výchozím nastavení vypnutá. Jejím zapnutím se klíče API poskytovatelů, přístupové a obnovovací tokeny OAuth, klíče API OmniRoute a konfigurace nahrají do výše uvedeného cíle, nyní i při budoucích synchronizacích. Tato funkce je oddělená od místních záloh v části Skladování. Zapněte ji pouze tehdy, pokud tomuto serveru důvěřujete.",
+    "cloudUploadConsent": "Rozumím tomu a povoluji nahrání svých přihlašovacích údajů do tohoto cíle.",
     "title": "API Koncový bod",
     "subtitle": "Použijte koncový bod kompatibilní s OpenAI ve většině sad SDK a nástrojů.",
     "testEndpoint": "Otestovat koncový bod →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Tento poskytovatel je ve výchozím nastavení z auto vyloučen",
+    "tosAvoidNoticeDescription": "Jeho stav podmínek služby je označen jako avoid. Připojení účtu tyto zásady nezmění. Před zapnutím společného souhlasu pro všechny kombinace auto si přečtěte podmínky poskytovatele.",
+    "tosAvoidNoticeAction": "Zkontrolovat zásady auto",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Zakázat připojení",
     "enableConnection": "Povolit připojení",
     "reauthenticateConnection": "Znovu ověřit toto připojení",
+    "verifyAccount": "Ověřit účet",
+    "verifyAccountHint": "Google vyžaduje ověření tohoto účtu. Otevřete odkaz, dokončete ověření a zkuste to znovu.",
     "proxyConfig": "Nastavení Proxy",
     "aliasExistsAlert": "Alias \"​{alias}\" již existuje. Použijte prosím jiný model nebo upravte existující alias.",
     "aliasInputPlaceholder": "název aliasu",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Port",
     "qdrantHost": "Hostitel",
     "qdrantCollection": "Kolekce",
+    "catalogVisibilityHint": "Skryté identifikátory modelů lze nadále volat se stejnými přístupovými oprávněními.",
     "catalogScopeTitle": "Výpis API modelů",
     "catalogScopeDesc": "Co GET /v1/models uvádí pro tento klíč. Zúžení seznamu nikdy nezmění, které modely může klíč volat.",
     "catalogScopeAll": "Obojí",

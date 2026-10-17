@@ -146,6 +146,8 @@ tanggungjawab pengendali masih kekal:
   `/api/providers/` untuk menangkap laluan tersebut, sekali gus meluaskan secara berlebihan pepohon laluan yang
   digunakan secara sah oleh papan pemuka jauh untuk CRUD penyedia.
 
+  Pemuat snapshot masa jalan turut membuang entri tersebut daripada baris tetapan tersimpan, dan import JSON lama (`/api/settings/import-json`) tidak pernah menulis kunci pintasan. Setiap entri `LOCAL_ONLY_API_PREFIXES` mesti berada dalam senarai penolakan atau telah disemak dan diluluskan untuk pintasan. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Mengaudit akses** — untuk mengesahkan bahawa tiada apa-apa dari luar hos mencapai laluan ini:
 
 - Buka **Inventori Kebenaran** pada `/dashboard/settings/security`: ia memaparkan

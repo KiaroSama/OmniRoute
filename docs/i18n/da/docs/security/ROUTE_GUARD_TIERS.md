@@ -142,6 +142,8 @@ ikke kan nå en oprettelse. To operatøransvar forbliver:
   `/api/providers/`-præfikset for at fange dem, hvilket ville udvide et rutetræ,
   som fjern-dashboards legitimt bruger til udbyder-CRUD, for meget.
 
+  Indlæseren af runtime-snapshots fjerner også sådanne poster fra en gemt indstillingsrække, og den ældre JSON-import (`/api/settings/import-json`) skriver aldrig bypass-nøglerne. Hver post i `LOCAL_ONLY_API_PREFIXES` skal enten være på afvisningslisten eller være gennemgået og godkendt til bypass. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Revision af adgang** — for at verificere, at intet uden for værten når disse ruter:
 
 - Åbn **Authorization Inventory** på `/dashboard/settings/security`: den viser den live LOCAL_ONLY præfiksliste, hvilke præfikser der kan omgås, og det compile-time spawn-capable ("kan ikke gøres omgåeligt") sæt.

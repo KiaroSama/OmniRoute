@@ -3384,6 +3384,10 @@
     "comboRefMember": "Kombination → {name}"
   },
   "combos": {
+    "autoTosLoadError": "Politikken for tjenestevilkår kunne ikke indlæses. Prøv igen, før du ændrer den.",
+    "autoTosSaveError": "Politikken for tjenestevilkår kunne ikke gemmes. Den tidligere indstilling vises stadig. Prøv igen.",
+    "autoTosIncludeLabel": "Medtag udbydere markeret ToS: avoid i auto",
+    "autoTosDescription": "Slået fra som standard. Gælder alle auto-kombinationer, ikke kun én konto. Tilslutning af en udbyder aktiverer ikke denne mulighed.",
     "title": "Kombinationer",
     "description": "Skab modelkombinationer med vægtet routing og fallback-understøttelse",
     "autoCatalogTitle": "Auto-routing katalog",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Viser {shown} af {total} matchende rækker (top 50)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Destination for skysynkronisering (ikke lokale sikkerhedskopier):",
+    "cloudUploadWarning": "Skysynkronisering er som standard slået fra ved nye installationer. Hvis du slår den til, uploades udbydernes API-nøgler, OAuth-adgangs- og opdateringstokens, OmniRoute API-nøgler og konfiguration til destinationen ovenfor, nu og ved fremtidige synkroniseringer. Dette er adskilt fra lokale sikkerhedskopier under Opbevaring. Slå det kun til, hvis du har tillid til denne server.",
+    "cloudUploadConsent": "Jeg forstår og tillader, at mine legitimationsoplysninger uploades til denne destination.",
     "title": "API-endepunkt",
     "subtitle": "Brug det OpenAI-kompatible slutpunkt med de fleste SDK'er og værktøjer.",
     "testEndpoint": "Test slutpunkt →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Denne udbyder er som standard udelukket fra auto",
+    "tosAvoidNoticeDescription": "Udbyderens status for tjenestevilkår er markeret avoid. Tilslutning af en konto ændrer ikke denne politik. Læs udbyderens vilkår, før du aktiverer det fælles tilvalg for alle auto-kombinationer.",
+    "tosAvoidNoticeAction": "Gennemgå politikken for auto",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Deaktiver forbindelse",
     "enableConnection": "Aktiver forbindelse",
     "reauthenticateConnection": "Genautentificer denne forbindelse",
+    "verifyAccount": "Bekræft konto",
+    "verifyAccountHint": "Google kræver, at du bekræfter denne konto. Åbn linket, gennemfør kontrollen, og prøv igen.",
     "proxyConfig": "Proxy konfiguration",
     "aliasExistsAlert": "Aliaset \"{alias}\" findes allerede. Brug venligst en anden model, eller rediger eksisterende alias.",
     "aliasInputPlaceholder": "aliasnavn",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Port",
     "qdrantHost": "Vært",
     "qdrantCollection": "Samling",
+    "catalogVisibilityHint": "Skjulte model-id’er kan stadig kaldes med de samme adgangsrettigheder.",
     "catalogScopeTitle": "Modelliste i API'et",
     "catalogScopeDesc": "Hvad GET /v1/models viser for denne nøgle. En begrænsning af listen ændrer aldrig, hvad nøglen kan kalde.",
     "catalogScopeAll": "Begge",

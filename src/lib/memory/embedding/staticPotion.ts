@@ -95,25 +95,35 @@ function parseSafetensors(buf: Buffer): { matrix: Float32Array; shape: number[] 
   throw new Error("No float32 tensor found in safetensors file");
 }
 
+/**
+ * Read the token → index map from a Hugging Face tokenizer.json (WordPiece:
+ * `model.vocab` is a flat `{ token: index }` object).
+ */
+function parseTokenizerVocab(raw: string): Record<string, number> {
+  const parsed = JSON.parse(raw) as { model?: { vocab?: unknown } };
+  const vocab = parsed.model?.vocab;
+  if (!vocab || typeof vocab !== "object" || Array.isArray(vocab)) {
+    throw new Error("tokenizer.json has no WordPiece model.vocab map");
+  }
+  return vocab as Record<string, number>;
+}
+
 async function loadModel(): Promise<PotionModel> {
   const modelDir = getModelDir();
   await fs.mkdir(modelDir, { recursive: true });
 
   const hfBase = `${HF_BASE}/${MODEL_ID}/resolve/main`;
 
-  const vocabPath = path.join(modelDir, "vocab.json");
   const modelPath = path.join(modelDir, "model.safetensors");
   const tokenizerPath = path.join(modelDir, "tokenizer.json");
 
   await Promise.all([
-    ensureFile(vocabPath, `${hfBase}/vocab.json`),
     ensureFile(modelPath, `${hfBase}/model.safetensors`),
     ensureFile(tokenizerPath, `${hfBase}/tokenizer.json`),
   ]);
 
-  // Load vocab
-  const vocabRaw = await fs.readFile(vocabPath, "utf8");
-  const vocab = JSON.parse(vocabRaw) as Record<string, number>;
+  // Load vocab (the model repo ships tokenizer.json and vocab.txt, no vocab.json)
+  const vocab = parseTokenizerVocab(await fs.readFile(tokenizerPath, "utf8"));
 
   // Load matrix from safetensors
   const modelBuf = await fs.readFile(modelPath);

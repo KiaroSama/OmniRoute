@@ -88,13 +88,18 @@ export default function QuotaCard({
   const isActive = connection.isActive ?? true;
   const [costModalOpen, setCostModalOpen] = useState(false);
   const rawQuotas = quota?.quotas ?? EMPTY_QUOTAS;
+  // Per-account visibility (9router#4767); provider entry is a legacy fallback.
+  const visibilityScope = useMemo(
+    () => ({ connectionId: connection.id, provider: connection.provider }),
+    [connection.id, connection.provider]
+  );
   const quotas = useMemo(
-    () => filterQuotasByVisibility(connection.provider, rawQuotas, quotaVisibility),
-    [connection.provider, rawQuotas, quotaVisibility]
+    () => filterQuotasByVisibility(visibilityScope, rawQuotas, quotaVisibility),
+    [visibilityScope, rawQuotas, quotaVisibility]
   );
   const hiddenQuotaRows = useMemo(
-    () => getHiddenQuotaRows(connection.provider, rawQuotas, quotaVisibility),
-    [connection.provider, rawQuotas, quotaVisibility]
+    () => getHiddenQuotaRows(visibilityScope, rawQuotas, quotaVisibility),
+    [visibilityScope, rawQuotas, quotaVisibility]
   );
   const cardStatus = useMemo<CardStatus>(() => worstStatus(quotas), [quotas]);
   const tierMeta = useMemo(

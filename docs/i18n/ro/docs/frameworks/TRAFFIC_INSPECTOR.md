@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**Limitare TLS:** Tunelurile HTTPS `CONNECT` sunt capturate doar ca metadate (gazdă, port, temporizare) — conținutul TLS nu este decriptat în mod implicit. Activați opțiunea „Decriptare HTTPS în modul proxy” (opțională, necesită ca certificatul AgentBridge să fie considerat de încredere) pentru inspectarea completă a conținutului.
+**Limitare TLS:** Tunelurile HTTPS `CONNECT` sunt capturate doar ca metadate (gazdă, port, temporizare) — conținutul TLS nu este decriptat în mod implicit.
 
 **Conflict de port:** Dacă portul 8080 este utilizat, AgentBridge returnează un răspuns 409 cu o eroare structurată. Schimbați portul prin variabila de mediu `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -465,12 +465,11 @@ Cale de bază: `/api/tools/traffic-inspector/`
 
 ### Moduri de capturare
 
-| Metodă | Cale                           | Descriere                                                                                                       |
-| ------ | ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| GET    | `/capture-modes`               | Starea modurilor AgentBridge / gazde personalizate / HTTP_PROXY / proxy de sistem + comutatorul `tls-intercept` |
-| POST   | `/capture-modes/http-proxy`    | Pornește/oprește ascultătorul HTTP_PROXY (`{action: "start"\|"stop"}`)                                          |
-| POST   | `/capture-modes/system-proxy`  | Aplică/dezactivează proxy-ul la nivel de sistem (`{action: "apply"\|"revert"}`)                                 |
-| POST   | `/capture-modes/tls-intercept` | Comută decriptarea corpului HTTPS în modul proxy (`{enabled: boolean}`)                                         |
+| Metodă | Cale                          | Descriere                                                                         |
+| ------ | ----------------------------- | --------------------------------------------------------------------------------- |
+| GET    | `/capture-modes`              | Starea modurilor AgentBridge / gazde personalizate / HTTP_PROXY / proxy de sistem |
+| POST   | `/capture-modes/http-proxy`   | Pornește/oprește ascultătorul HTTP_PROXY (`{action: "start"\|"stop"}`)            |
+| POST   | `/capture-modes/system-proxy` | Aplică/dezactivează proxy-ul la nivel de sistem (`{action: "apply"\|"revert"}`)   |
 
 > **Decriptarea TPROXY** (modul de capturare 5) este controlată printr-o rută
 > **separată**, aflată sub prefixul AgentBridge — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — nu

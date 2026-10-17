@@ -326,6 +326,14 @@ Content-Type: application/json
 
 Available providers include OpenAI (GPT Image 2), xAI (Grok Image), Together AI (FLUX), Fireworks AI, Nebius (FLUX), Hyperbolic, NanoBanana, **OpenRouter**, **ZenMux**, SD WebUI (local), ComfyUI (local).
 
+`n` returns `n` images in `data[]`. Providers whose upstream API returns one image per call
+(Black Forest Labs, Stability AI, Leonardo, Ideogram, Haiper, Hyperbolic, Magnific/Freepik,
+NVIDIA NIM, Cloudflare Workers AI) get `n` separate upstream calls, at most 4 in flight. A
+fixed `seed` is offset by call index (`seed`, `seed + 1`, …), so the images differ but stay
+reproducible. `n` is capped at 10. The request fails as a whole if any call fails. The list
+of fan-out formats is `SINGLE_IMAGE_FANOUT_FORMATS` in
+`open-sse/handlers/imageGeneration/fanOut.ts`.
+
 ZenMux reuses the existing API-key connection and accepts `zenmux/` or `zm/` prefixes:
 
 - `zenmux/openai/gpt-image-2` uses ZenMux's OpenAI Images API. Options include `size`,
@@ -1108,14 +1116,18 @@ curl -X PATCH "$OMNIROUTE_URL/api/keys/$KEY_ID" \
 
 ### Backup & Export/Import
 
-| Endpoint                    | Method | Description                             |
-| --------------------------- | ------ | --------------------------------------- |
-| `/api/db-backups`           | GET    | List available backups                  |
-| `/api/db-backups`           | PUT    | Create a manual backup                  |
-| `/api/db-backups`           | POST   | Restore from a specific backup          |
-| `/api/db-backups/export`    | GET    | Download database as .sqlite file       |
-| `/api/db-backups/import`    | POST   | Upload .sqlite file to replace database |
-| `/api/db-backups/exportAll` | GET    | Download full backup as .tar.gz archive |
+| Endpoint                    | Method | Description                                                             |
+| --------------------------- | ------ | ----------------------------------------------------------------------- |
+| `/api/db-backups`           | GET    | List available backups                                                  |
+| `/api/db-backups`           | PUT    | Create a manual backup                                                  |
+| `/api/db-backups`           | POST   | Restore from a specific backup                                          |
+| `/api/db-backups/export`    | GET    | Download database as .sqlite file                                       |
+| `/api/db-backups/import`    | POST   | Upload .sqlite file to replace database (`?dryRun=true` validates only) |
+| `/api/db-backups/exportAll` | GET    | Download full backup as .tar.gz archive                                 |
+
+`/api/db-backups/export`, `/api/db-backups/exportAll` and `/api/settings/export-json` hand out
+every stored credential, so they require the dashboard session or the local CLI (or login
+disabled). API keys of any scope and `oma_` access tokens get `403`.
 
 ### Cloud Sync
 
@@ -1492,7 +1504,7 @@ Used by the auto-key management subsystem to issue and rotate API keys against a
 | DELETE | `/api/v1/registered-keys/[id]`        | Revoke a registered key                                                                                                                                                                     |
 | POST   | `/api/v1/registered-keys/[id]/revoke` | Explicit revoke endpoint (same effect as DELETE)                                                                                                                                            |
 
-**Auth:** Bearer API key (`isAuthenticated`). See also `/v1/quotas/check` and `/v1/issues/report`.
+**Auth:** management session/API key (`requireManagementAuth`) — the same guard as `/api/keys`: a dashboard session, the local CLI token, or an API key with `manage`/`admin` scope; inference-only API keys get `403`. See also `/v1/quotas/check` and `/v1/issues/report`.
 
 ---
 

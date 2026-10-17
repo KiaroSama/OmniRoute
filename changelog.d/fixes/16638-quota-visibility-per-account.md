@@ -1,0 +1,1 @@
+- dashboard: make Quota Tracker row hide/show independent per account instead of per provider, keeping legacy provider-level preferences as a fallback (#16638)

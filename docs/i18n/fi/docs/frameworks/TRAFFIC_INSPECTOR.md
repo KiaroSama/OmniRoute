@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS-rajoitus:** HTTPS-`CONNECT`-tunneleista kaapataan oletusarvoisesti vain metatiedot (isäntä, portti ja ajoitus) — TLS-sisältöä ei pureta. Ota käyttöön "Pura HTTPS-salaus välityspalvelintilassa" -valitsin (valinnainen, edellyttää, että AgentBridge-varmenteeseen luotetaan), jotta koko sisältö voidaan tarkastaa.
+**TLS-rajoitus:** HTTPS-`CONNECT`-tunneleista kaapataan oletusarvoisesti vain metatiedot (isäntä, portti ja ajoitus) — TLS-sisältöä ei pureta.
 
 **Porttiristiriita:** Jos portti 8080 on käytössä, AgentBridge palauttaa 409-vastauksen ja jäsennellyn virheen. Vaihda portti `INSPECTOR_HTTP_PROXY_PORT`-ympäristömuuttujan avulla.
 
@@ -465,12 +465,11 @@ Peruspolku: `/api/tools/traffic-inspector/`
 
 ### Kaappaustilat
 
-| Menetelmä | Polku                          | Kuvaus                                                                                                                     |
-| --------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| GET       | `/capture-modes`               | AgentBridge- / mukautettujen isäntien / HTTP_PROXY- / järjestelmävälityspalvelintilojen tila sekä `tls-intercept`-valitsin |
-| POST      | `/capture-modes/http-proxy`    | Käynnistä/pysäytä HTTP_PROXY-kuuntelija (`{action: "start"\|"stop"}`)                                                      |
-| POST      | `/capture-modes/system-proxy`  | Ota käyttöön / kumoa järjestelmänlaajuinen välityspalvelin (`{action: "apply"\|"revert"}`)                                 |
-| POST      | `/capture-modes/tls-intercept` | Ota HTTPS-sisällön salauksen purku käyttöön tai poista se käytöstä välityspalvelintilassa (`{enabled: boolean}`)           |
+| Menetelmä | Polku                         | Kuvaus                                                                                       |
+| --------- | ----------------------------- | -------------------------------------------------------------------------------------------- |
+| GET       | `/capture-modes`              | AgentBridge- / mukautettujen isäntien / HTTP_PROXY- / järjestelmävälityspalvelintilojen tila |
+| POST      | `/capture-modes/http-proxy`   | Käynnistä/pysäytä HTTP_PROXY-kuuntelija (`{action: "start"\|"stop"}`)                        |
+| POST      | `/capture-modes/system-proxy` | Ota käyttöön / kumoa järjestelmänlaajuinen välityspalvelin (`{action: "apply"\|"revert"}`)   |
 
 > **TPROXY-salauksen purkua** (kaappaustila 5) ohjataan **erillisellä** reitillä
 > AgentBridge-etuliitteen alla — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — ei

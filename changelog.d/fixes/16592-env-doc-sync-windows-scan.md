@@ -1,0 +1,1 @@
+- **fix(ci):** scan `process.env` references with Node so env-doc-sync works on Windows ([#16592](https://github.com/diegosouzapw/OmniRoute/pull/16592)) — thanks @shipsfromrio.

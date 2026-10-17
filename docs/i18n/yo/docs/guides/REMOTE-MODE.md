@@ -250,6 +250,8 @@ omniroute tokens scopes               # ṣàlàyé àwọn scope mẹ́tẹ̀�
 Àwọn àṣẹ `tokens` nílò credential **admin**. O tún lè ṣàkóso àwọn token nínú
 dashboard lábẹ́ **Settings → Access Tokens** (ṣẹ̀dá, fagilé, ṣe àdàkọ lẹ́ẹ̀kan ṣoṣo).
 
+A kò lè dá token kan sílẹ̀ pẹ̀lú àṣẹ tó ju ti ẹni tó dá a lọ. Olùṣàkóso nìkan ló lè dá token `admin` sílẹ̀: nípasẹ̀ ìpàdé dashboard, CLI agbègbè lórí server fúnra rẹ̀, `omniroute connect` pẹ̀lú ọ̀rọ̀ aṣínà, tàbí instance tí a ti pa wíwọlé rẹ̀. Àwọn ẹ̀rí ìdánimọ̀ ẹ̀rọ (token ìwọlé `admin` tàbí kọ́kọ́rọ́ API tó ní ààlà `manage`/`admin`) lè dá token `write` àti `read` nìkan sílẹ̀; bí a bá béèrè fún `--scope admin` pẹ̀lú wọn, `403` ni yóò padà.
+
 ---
 
 ## Ṣíṣètò CLI coding láti inú katalogi jíjìn

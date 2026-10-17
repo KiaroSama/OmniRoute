@@ -1,0 +1,1 @@
+- **docs:** translate the remote token privilege ceiling and stored-settings/legacy-import local-only bypass protections in all 66 locale mirrors. Refresh only the corresponding translation records after validating each source and target preimage, and add regressions requiring localized policy literals and matching content hashes.

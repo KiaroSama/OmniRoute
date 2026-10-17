@@ -257,6 +257,8 @@ omniroute tokens scopes               # üç kapsamı açıkla
 `tokens` komutları bir **admin** kimlik bilgisi gerektirir. Belirteçleri
 panoda **Ayarlar → Erişim Belirteçleri** altında da yönetebilirsiniz (oluşturma, iptal etme, tek seferlik kopyalama).
 
+Bir token hiçbir zaman kendisini oluşturanın sahip olduğundan daha fazla ayrıcalıkla oluşturulamaz. `admin` tokenini yalnızca operatör oluşturabilir: pano oturumu, sunucunun kendisindeki yerel CLI, parola ile `omniroute connect` veya oturum açmanın devre dışı olduğu bir örnek üzerinden. Makine kimlik bilgileri (bir `admin` erişim tokeni veya `manage`/`admin` kapsamlı API anahtarı) yalnızca `write` ve `read` tokenleri oluşturabilir; bunlarla `--scope admin` istemek `403` döndürür.
+
 ---
 
 ## Uzak katalogdan bir kodlama CLI'ını yapılandırma

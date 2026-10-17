@@ -1,11 +1,8 @@
 import { z } from "zod";
 import { handleFirecrawlMap } from "@omniroute/open-sse/handlers/firecrawlMap.ts";
 import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import {
-  extractApiKey,
-  getProviderCredentialsWithQuotaPreflight,
-  isValidApiKey,
-} from "@/sse/services/auth";
+import { getProviderCredentialsWithQuotaPreflight } from "@/sse/services/auth";
+import { resolveClientApiKey } from "@/sse/services/clientApiKeyResolver";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
 import { isRequireApiKeyEnabled } from "@/shared/utils/featureFlags";
 import {
@@ -60,9 +57,9 @@ export async function POST(request: Request) {
   if (isValidationFailure(validation))
     return errorResponse(400, formatValidationMessage(validation.error));
 
-  const apiKey = extractApiKey(request);
+  const { apiKey, valid: apiKeyValid } = await resolveClientApiKey(request);
   if (isRequireApiKeyEnabled() && !apiKey) return errorResponse(401, "Authentication required");
-  if (isRequireApiKeyEnabled() && apiKey && !(await isValidApiKey(apiKey))) {
+  if (isRequireApiKeyEnabled() && apiKey && !apiKeyValid) {
     return errorResponse(401, "Invalid API key");
   }
 

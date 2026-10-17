@@ -55,6 +55,10 @@ Tok:
 
 Forsirani režimi se kratko spajaju **pre** nego što se pokrene auto heuristika; `auto` ponašanje je bajt-identično zaštitnom mehanizmu pre PR-1.
 
+#### Опсег API кључа (`visionBridgeKeyScope.ts`)
+
+Ако API кључ ограничава везе, групе квота или моделе (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), преусмеравање и опис бирају само моделе и везе дозвољене том кључу. Опис увек пролази кроз унутрашњу петљу OmniRoute-а са заглављем `x-omniroute-self-loop-key-id`, па се правила за везе и моделе поново примењују. `enforceApiKeyPolicy()` прихвата заглавље само уз bearer токен те петље: може само да сузи приступ, а непознат идентификатор се одбија. Ако нема дозвољеног визуелног модела, опис се прескаче и захтев остаје непромењен, као уз искључену заштиту (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Захтеви без кључа и кључеви без тих ограничења раде као раније.
+
 #### Prompt za opis svestan zadatka (`modalityBridgeVisionTaskAware`)
 
 Podrazumevano **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) dodaje tekst **poslednje korisničke poruke** (skraćene na 500 znakova) osnovnom promptu za opis, usmeravajući opis ka onome što je korisnik zaista pitao (codex-vision-proxy obrazac) i tražeći od vizuelnog modela da transkribuje vidljivi tekst. Kada je zastavica isključena — ili nema korisničkog teksta — koristi se nepromenjeni osnovni prompt.

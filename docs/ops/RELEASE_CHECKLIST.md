@@ -403,8 +403,11 @@ npm run release:dry-run-lts-cut -- --from <3.9.0-tip> # pin the source commit
 ```
 
 `scripts/release/dry-run-lts-cut.mjs` executes nothing: it reads git and `gh` and prints the
-whole sequence — preconditions (source resolves, previous tag exists, `package.json` is the
-target version, a `release-freeze` issue is open, no open `Release branch not green` issue
+whole sequence — preconditions (source resolves, the source repository has full history —
+a shallow clone cannot push `stable/v3`, the receiving side rejects the pack at the first
+grafted parent, so cut from a full clone or `git fetch --unshallow origin` first — previous
+tag exists, `package.json` is the target version, a `release-freeze` issue is open, no open
+`Release branch not green` issue
 on an existing release branch — a branch that does not exist reports `?` unknown, never
 green — the Mergify `release` queue is configured (G11: `queue_rules`, `checks_timeout`,
 label `queue`), the `release/*` ruleset still blocks deletion and force-push, and

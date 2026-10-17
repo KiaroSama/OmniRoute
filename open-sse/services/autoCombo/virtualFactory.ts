@@ -1,3 +1,4 @@
+import { EMULATED_TOOL_CALLING_NOAUTH_PROVIDERS } from "./emulatedNoAuthAllowlist";
 import { AutoComboConfig } from "./engine";
 import { MODE_PACKS } from "./modePacks";
 import { DEFAULT_WEIGHTS, reliabilityFactor, ScoringWeights } from "./scoring";
@@ -346,31 +347,12 @@ function hasUsableConnectionCredential(conn: VirtualFactoryConn): boolean {
 
 const SYNTHETIC_NOAUTH_CONNECTION_ID = RESILIENCE_NOAUTH_CONNECTION_ID;
 
-// Allowlist of no-auth (keyless) providers permitted to enter the `auto`/`auto-*`
-// candidate pool. Narrowed to the backends verified to answer without any
-// configuration on our reference egress (VPS .15): `opencode` returns 200
-// there, while duckduckgo-web (429/VQD rate limit),
-// aihorde (401, anon key rejected)
-// and the others are unreliable. The excluded providers stay fully usable via
-// direct `<alias>/<model>` calls — they are just kept OUT of auto-routing until
-// re-verified. Re-add an id here to bring it back into every auto/* pool.
-//
-// Scope (operator decision 2026-07-24, refs #8183/#6453/#7032): this allowlist
-// targets public-HTTP-egress reliability for the category/tier and flat-variant
-// `auto/*` pools (auto/best-free, auto/coding:fast, ...). It does NOT apply to
-// `auto/<family>` pools (auto/glm, auto/zai, ...) — a family combo is an
-// identity selector ("whatever genuinely serves GLM"), not a reliability-curated
-// pool, so it admits any no-auth backend that genuinely serves the family (e.g.
-// auggie, a local CLI subprocess with zero HTTP egress, belongs in auto/glm
-// regardless of this list). See the `bypassAllowlist` param below.
-const AUTO_COMBO_NOAUTH_ALLOWLIST = new Set<string>(["opencode"]);
-
 function isChatAutoComboNoAuthProvider(
   providerDef: NoAuthProviderDefinition,
   bypassAllowlist: boolean
 ): boolean {
   if (providerDef.noAuth !== true) return false;
-  if (!bypassAllowlist && !AUTO_COMBO_NOAUTH_ALLOWLIST.has(providerDef.id)) return false;
+  if (!bypassAllowlist && !EMULATED_TOOL_CALLING_NOAUTH_PROVIDERS.has(providerDef.id)) return false;
   if (!Array.isArray(providerDef.serviceKinds) || providerDef.serviceKinds.length === 0)
     return true;
   return providerDef.serviceKinds.includes("llm");

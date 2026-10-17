@@ -313,6 +313,108 @@ test("v1 image edit route sends Codex GPT Image references to the Images edits r
   assert.equal(body.data[0].b64_json, "ZWRpdGVk");
 });
 
+test("v1 image edit route sends Codex GPT Image 2.5 Sunburst references to the Images edits route", async () => {
+  await providersDb.createProviderConnection({
+    provider: "codex",
+    authType: "oauth",
+    name: "codex-sunburst-edit",
+    accessToken: "codex-oauth-token",
+    isActive: true,
+    testStatus: "active",
+    providerSpecificData: {},
+  });
+  const calls: Captured[] = [];
+  captureFetch(calls, () => imagesResponse("ZWRpdGVk"));
+
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+  const formData = new FormData();
+  formData.set("prompt", "make the cup blue");
+  formData.set("model", "codex/gpt-image-2.5-sunburst");
+  formData.append("image", new File([png], "cup.png", { type: "image/png" }));
+
+  const response = await imageEditRoute.POST(
+    new Request("http://localhost/api/v1/images/edits", { method: "POST", body: formData })
+  );
+  const body = (await response.json()) as { data: Array<{ b64_json?: string }> };
+
+  assert.equal(response.status, 200);
+  assert.equal(calls.length, 1);
+  const [call] = calls;
+  assert.equal(call.url, `${IMAGES_BASE}/edits`);
+  assert.equal(call.body.model, "gpt-image-2.5-sunburst");
+  assert.equal(call.body.prompt, "make the cup blue");
+  assert.equal(call.body.n, 1);
+  assert.equal(call.body.tools, undefined);
+  assert.deepEqual(call.body.images, [
+    { image_url: `data:image/png;base64,${Buffer.from(png).toString("base64")}` },
+  ]);
+  assert.equal(call.headers.Authorization, "Bearer codex-oauth-token");
+  assert.equal(call.headers.originator, "codex_cli_rs");
+  assert.equal(call.headers.Accept, "application/json");
+  assert.equal(body.data[0].b64_json, "ZWRpdGVk");
+});
+
+test("v1 image generation route serves codex/gpt-image-2.5-sunburst from the Images route", async () => {
+  await providersDb.createProviderConnection({
+    provider: "codex",
+    authType: "oauth",
+    name: "codex-sunburst-generation",
+    accessToken: "codex-oauth-token",
+    isActive: true,
+    testStatus: "active",
+    providerSpecificData: {},
+  });
+  const calls: Captured[] = [];
+  captureFetch(calls);
+
+  const response = await imageRoute.POST(
+    new Request("http://localhost/api/v1/images/generations", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ model: "codex/gpt-image-2.5-sunburst", prompt: "a ceramic teacup" }),
+    })
+  );
+  const body = (await response.json()) as { data: Array<{ b64_json?: string; url?: string }> };
+
+  assert.equal(response.status, 200);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, `${IMAGES_BASE}/generations`);
+  assert.equal(calls[0].body.model, "gpt-image-2.5-sunburst");
+  assert.equal(calls[0].body.tools, undefined);
+  assert.equal(calls[0].headers.Authorization, "Bearer codex-oauth-token");
+  assert.equal(body.data[0].b64_json, "ZmxhcmU=");
+  assert.equal(body.data[0].url, undefined);
+});
+
+test("v1 image edit route rejects unregistered Codex GPT Image ids without upstream calls", async () => {
+  await providersDb.createProviderConnection({
+    provider: "codex",
+    authType: "apikey",
+    name: "codex-unknown-image-edit",
+    apiKey: "codex-oauth-token",
+    isActive: true,
+    testStatus: "active",
+    providerSpecificData: {},
+  });
+  const calls: Captured[] = [];
+  captureFetch(calls);
+
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+  const formData = new FormData();
+  formData.set("prompt", "make the cup blue");
+  formData.set("model", "codex/gpt-image-9-notreal");
+  formData.append("image", new File([png], "cup.png", { type: "image/png" }));
+
+  const response = await imageEditRoute.POST(
+    new Request("http://localhost/api/v1/images/edits", { method: "POST", body: formData })
+  );
+  const body = (await response.json()) as { error: { message: string } };
+
+  assert.equal(response.status, 400);
+  assert.match(body.error.message, /Unsupported Codex image edit model/);
+  assert.equal(calls.length, 0);
+});
+
 test("GPT-5.6 Codex image ids stay on the hosted Responses tool", async () => {
   const calls: Captured[] = [];
   captureFetch(calls, () => {

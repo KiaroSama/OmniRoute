@@ -1,4 +1,3 @@
-import { learnCopilotModelRejection } from "../services/copilotModelRejections.ts";
 import {
   extractRequestToolMetadata,
   resolveResponseToolNameMap,
@@ -8,10 +7,12 @@ import {
   mergeInjectedFallbackOwnerNames,
 } from "./chatCore/memorySkillsInjection.ts";
 import { resolveChatCoreRequestSetup } from "./chatCore/requestSetup.ts";
+import { stripOutputConfigFormatForCompat } from "./chatCore/outputConfigFormatStrip.ts";
 import {
   normalizeOpenAICompatibleTools,
   shouldNormalizeFunctionToolsOnly,
 } from "./chatCore/openAICompatibleTools.ts";
+import { normalizeToolSchemasForProvider } from "./chatCore/openrouterToolSchemas.ts";
 import {
   buildFailureUsageRecord,
   readCpaAuthIndex,
@@ -112,6 +113,7 @@ import { FORMATS } from "../translator/formats.ts";
 import { collectCustomToolNamesForSourceFormat } from "../translator/request/openai-responses/additionalTools.ts";
 import { sanitizeKiroTools } from "../utils/kiroSanitizer.ts";
 import { splitMisplacedToolResults } from "../translator/helpers/claudeHelper.ts";
+import { hoistDeferredToolsForTarget } from "../translator/helpers/claudeDeferredTools.ts";
 import { ensureCacheControlOnLastUserMessage } from "../services/claudeCodeConstraints.ts";
 import { THINKING_MARKER_HEADER } from "../utils/thinkCloseMarker.ts";
 import { resolveAgentGoalPolicy } from "../utils/agentGoalPolicy.ts";
@@ -124,7 +126,7 @@ import { createPreparedRequestLogger } from "../utils/providerRequestLogging.ts"
 import { summarizeToolSources } from "../utils/toolSources.ts";
 import { applyResponsesPreviousResponseIdPolicy } from "../utils/responsesStatePolicy.ts";
 import { applyClaudeEffortVariant } from "./chatCore/claudeEffortVariant.ts";
-import { DEFAULT_THINKING_CLAUDE_SIGNATURE } from "../config/defaultThinkingSignature.ts";
+import { sanitizeAnthropicPassthroughHistory } from "./chatCore/anthropicPassthroughHistory.ts";
 import {
   getStripTypesForProviderModel,
   stripIncompatibleMessageContent,
@@ -177,8 +179,6 @@ import {
 
 import { resolveResilienceSettings } from "@/lib/resilience/settings";
 import { classifyProviderError, PROVIDER_ERROR_TYPES } from "../services/errorClassifier.ts";
-import { isOpencodeFreeTierRefusalForProvider } from "../executors/opencodeGeoBlock.ts";
-import { noteOpencodeFreeTierSkip } from "../services/opencodeFreeTierSkip.ts";
 import { updateProviderConnection, getProviderConnectionById } from "@/lib/db/providers";
 
 import { connectionHasExtraKeys } from "../services/apiKeyRotator.ts";
@@ -201,6 +201,7 @@ import { attachCompressionUsageReceiptAfterAnalytics as attachCompressionUsageRe
 
 import { getQuotaScopeLabelForProvider } from "../services/antigravityQuotaFamily.ts";
 import { excludeConnectionForCooldown } from "./chatCore/connectionCooldown.ts";
+import { handleProjectRouteFailure } from "./chatCore/projectRouteFailure.ts";
 import { handleRequestRejectedFailure } from "./chatCore/requestRejectedFailure.ts";
 import { projectRetainedProviderFailureMessage } from "./chatCore/providerFailureRetention.ts";
 import { getKimiTemporaryRateLimitResetAt } from "./chatCore/kimiQuotaRecovery.ts";
@@ -220,6 +221,7 @@ import {
   updatePendingScope,
 } from "@/lib/usage/pendingRequestScope";
 import { recordChatCallCost, buildCostCtx } from "@/domain/costRules";
+import { attachOmniRouteMetaToResponse as attachRouteMeta } from "@/domain/omnirouteResponseMeta";
 import { calculateCost } from "@/lib/usage/costCalculator";
 import { buildClaudePassthroughToolNameMap } from "./chatCore/passthroughToolNames.ts";
 import {
@@ -299,6 +301,7 @@ import {
   resolveComboContextLimit,
 } from "../services/contextManager.ts";
 import { resolveBackgroundTaskRedirect } from "./chatCore/backgroundRedirect.ts";
+import { resolveCopilotAuto } from "./chatCore/copilotAutoModel.ts";
 import { emitThinkingSignatureDiagnostics } from "./chatCore/thinkingSignatureDiagnostics.ts";
 import type {
   CompressionConfig,
@@ -323,7 +326,6 @@ import {
 import { setGeminiThoughtSignatureMode } from "../services/geminiThoughtSignatureStore.ts";
 import { classifyModelScope429, isModelScopeProvider } from "../services/modelscopePolicy.ts";
 import { incrementTokenUsage, isTpmExhausted } from "../services/geminiRateLimitTracker.ts";
-import { getProactiveCompressionRatio } from "@/lib/db/compression";
 
 /**
  * #12150 P1b: shape of handleChatCore's optional `videoBridgeLog` param — see
@@ -759,6 +761,9 @@ async function handleChatCoreInner({
     });
   }
 
+  const ca = await resolveCopilotAuto(provider, model, body, credentials, sessionAffinityKey, log);
+  if (ca.errorResult) return ca.errorResult;
+  ({ model, credentials } = ca);
   // Custom aliases remain explicit; lifecycle replacements are advisory and never silently routed.
   let [resolvedModel, effectiveModel, routedLifecycleError] = resolveLifecycle(
     provider,
@@ -872,12 +877,13 @@ async function handleChatCoreInner({
     body = bodyWithWebSearchFallback as typeof body;
     // Server-side web-search execution cannot be injected into an arbitrary
     // client SSE stream (streaming interception is not implemented — #9725), so
-    // a stream:true OpenAI Responses request whose web_search tool was converted
-    // to the fallback is executed non-streaming: the assembled response then
-    // carries the executed results (function_call_output + web_search_call) and
-    // JSON-tolerating Responses clients (pi-web-access) consume it directly.
+    // Responses clients and Claude clients on Cursor must execute the internal
+    // search loop non-streaming, then replay the final response as client-native
+    // SSE. Otherwise the client receives an undeclared omniroute_web_search call
+    // instead of the search result and final answer.
     if (
-      sourceFormat === FORMATS.OPENAI_RESPONSES &&
+      (sourceFormat === FORMATS.OPENAI_RESPONSES ||
+        (provider === "cursor" && sourceFormat === FORMATS.CLAUDE)) &&
       (body as Record<string, unknown>).stream === true
     ) {
       clientRequestedResponsesStream = true;
@@ -1306,6 +1312,14 @@ async function handleChatCoreInner({
   // further down — see #8378 (context limit resolved by the combo was silently
   // discarded because it only existed inside this `if` block).
   let contextLimit = getTokenLimit(provider, effectiveModel);
+  const contextWindowChecksDisabled = areContextWindowChecksDisabled();
+  const effectiveInputCap = contextWindowChecksDisabled
+    ? null
+    : toPositiveInteger(
+        resolveInputTokenCapForGate({ provider, model: effectiveModel }, { isCombo })
+      );
+  const getEffectiveCompactionCeiling = (limit: number) =>
+    effectiveInputCap != null ? Math.min(limit, effectiveInputCap) : limit;
   // Strict model proofs cannot invoke auxiliary compression providers or prewarmers.
   // This trusted in-process fence is never accepted from a client header/body.
   if (!validationExecutorFence && body && Array.isArray(allMessages) && allMessages.length > 0) {
@@ -2003,19 +2017,22 @@ async function handleChatCoreInner({
       }
     }
 
-    const COMPRESSION_THRESHOLD = getProactiveCompressionRatio();
+    const effectiveCompactionCeiling = getEffectiveCompactionCeiling(contextLimit);
+    const COMPRESSION_THRESHOLD = (
+      await import("@/lib/db/compression")
+    ).getProactiveCompressionRatio();
     let reservedTokens = 0;
     if (Array.isArray(body.tools)) {
       reservedTokens = estimateTokens(body.tools);
     }
     const threshold = Math.max(
       1,
-      Math.floor((Math.max(1, contextLimit) - reservedTokens) * COMPRESSION_THRESHOLD)
+      Math.floor((Math.max(1, effectiveCompactionCeiling) - reservedTokens) * COMPRESSION_THRESHOLD)
     );
 
     log?.debug?.(
       "CONTEXT",
-      `Checking compression: ${estimatedTokens} tokens vs ${threshold} threshold (${contextLimit} limit, ${reservedTokens} reserved)`
+      `Checking compression: ${estimatedTokens} tokens vs ${threshold} threshold (${effectiveCompactionCeiling} limit, ${reservedTokens} reserved)`
     );
 
     // Capture pre-compression body so translators can access original message
@@ -2037,7 +2054,7 @@ async function handleChatCoreInner({
         // separately as the threshold's reserve), unlike the full-breakdown
         // number the final guard rejects with — state the basis so the two
         // lines can be read side by side without a decoder ring.
-        `Proactive compression triggered: ${estimatedTokens} message tokens > ${threshold} threshold (${contextLimit} limit, tools reserve ${reservedTokens})`
+        `Proactive compression triggered: ${estimatedTokens} message tokens > ${threshold} threshold (${effectiveCompactionCeiling} limit, tools reserve ${reservedTokens})`
       );
 
       // Adapt Responses `input[]` → messages so compressContext can run, then restore.
@@ -2103,15 +2120,17 @@ async function handleChatCoreInner({
   const finalContextLimit = contextLimit;
   const toolsReserve = Array.isArray(body?.tools) ? estimateTokens(body.tools) : 0;
 
+  const effectiveCompactionCeiling = getEffectiveCompactionCeiling(finalContextLimit);
+
   // Last-resort compaction against the concrete input budget (not the 70% threshold).
   // Covers cases where the proactive pass was skipped or still left the request oversized (#8560).
   if (
     reactiveContextCompactionEnabled &&
     !nativeCodexPassthrough &&
-    finalEstimatedInputTokens >= finalContextLimit &&
+    finalEstimatedInputTokens >= effectiveCompactionCeiling &&
     body
   ) {
-    const lastResortTarget = Math.max(1, finalContextLimit - toolsReserve - 1);
+    const lastResortTarget = Math.max(1, effectiveCompactionCeiling - toolsReserve - 1);
     const lastResortAdapter = adaptBodyForCompression(body as Record<string, unknown>);
     const lastResortResult = compressContext(lastResortAdapter.body, {
       provider,
@@ -2143,18 +2162,13 @@ async function handleChatCoreInner({
   const modelOutputCap = toPositiveInteger(
     getExplicitModelOutputCap({ provider, model: effectiveModel })
   );
-  const contextWindowChecksDisabled = areContextWindowChecksDisabled();
   const outputBudget = enforceOutputTokenBudget(
     body as Record<string, unknown>,
     finalEstimatedInputTokens,
     contextWindowChecksDisabled ? Number.MAX_SAFE_INTEGER : finalContextLimit,
     targetFormat === FORMATS.CLAUDE && sourceFormat !== FORMATS.CLAUDE ? DEFAULT_MAX_TOKENS : 0,
     modelOutputCap,
-    contextWindowChecksDisabled
-      ? null
-      : toPositiveInteger(
-          resolveInputTokenCapForGate({ provider, model: effectiveModel }, { isCombo })
-        )
+    effectiveInputCap
   );
   if (outputBudget.ok === false) {
     const exceededInputCap = outputBudget.maxInputTokens !== undefined;
@@ -2375,16 +2389,25 @@ async function handleChatCoreInner({
       // payloads at high context (150+ msgs, 100+ tools). Fix: #1359.
       // Claude Code sends well-formed Messages API payloads — trust them
       // regardless of combo strategy or cache_control settings.
-      translatedBody = applyReasoningRuleDirective({ ...body }, "claude");
+      // applyReasoningRuleDirective returns unknown; the hoist helper requires a record.
+      const claudePassthroughBody = applyReasoningRuleDirective({ ...body }, "claude");
+      translatedBody = hoistDeferredToolsForTarget(
+        claudePassthroughBody !== null &&
+          typeof claudePassthroughBody === "object" &&
+          !Array.isArray(claudePassthroughBody)
+          ? (claudePassthroughBody as Record<string, unknown>)
+          : { ...(body as Record<string, unknown>) },
+        provider
+      );
       translatedBody._disableToolPrefix = true;
 
       // Sanitize historical thinking-block signatures for Anthropic-native Claude OAuth.
       // Only Anthropic's first-party API validates these signatures (token-bound); third-party
       // Claude-shape providers do not. See redactPassthroughThinkingSignatures + issue #2454.
       if (provider === "claude") {
-        translatedBody.messages = redactPassthroughThinkingSignatures(
-          translatedBody.messages,
-          DEFAULT_THINKING_CLAUDE_SIGNATURE
+        // Also drops foreign server_tool_use ids (z.ai `call_…`) that fail ^srvtoolu_ (9router#3685).
+        translatedBody.messages = sanitizeAnthropicPassthroughHistory(
+          translatedBody.messages
         ) as typeof translatedBody.messages;
 
         stripClaudeRejectedTopLevelFields(translatedBody, clientRawRequest?.headers);
@@ -2445,20 +2468,11 @@ async function handleChatCoreInner({
         delete translatedBody.output_format;
       }
 
-      // Fix #1719: Strip output_config.format for non-Anthropic Claude-compatible providers.
+      // Fix #1719: Strip output_config.format for non-Anthropic Claude-compatible providers
+      // (first-party `claude` OAuth and `anthropic` API-key keep it).
       // Third-party Claude endpoints (MiniMax, DeepSeek via aggregators) reject this field
       // with 400 errors since they don't support Anthropic's structured output / json_schema.
-      if (
-        provider !== "claude" &&
-        translatedBody.output_config &&
-        typeof translatedBody.output_config === "object"
-      ) {
-        const oc = translatedBody.output_config as Record<string, unknown>;
-        delete oc.format;
-        if (Object.keys(oc).length === 0) {
-          delete translatedBody.output_config;
-        }
-      }
+      stripOutputConfigFormatForCompat(translatedBody, provider);
     } else {
       translatedBody = { ...body };
 
@@ -2677,6 +2691,12 @@ async function handleChatCoreInner({
   // seam. Capture both before stripping their side channels: a Responses ->
   // Gemini/Antigravity pivot carries both maps, not one recoverable ledger.
   const { requestToolIdentityMap, toolNameAliasMap } = extractRequestToolMetadata(translatedBody);
+
+  // OpenRouter (→ Cohere) 400s the whole request on a malformed `pattern`
+  // regex in any tool schema; drop only those constraints before dispatch.
+  if (Array.isArray(translatedBody?.tools)) {
+    translatedBody.tools = normalizeToolSchemasForProvider(provider, translatedBody.tools, log);
+  }
 
   // Kiro: sanitize tool schemas before dispatch. Kiro returns 400 "Improperly
   // formed request" for unsupported JSON-Schema keywords (anyOf/$ref/if-then,
@@ -3128,12 +3148,13 @@ async function handleChatCoreInner({
         // FIX 5: tag this as a per-API-key token-limit breach (errorCode
         // TOKEN_LIMIT_EXCEEDED) so the combo loop can distinguish it from an
         // upstream 429 and NOT cool shared accounts / retry it transiently.
-        return createErrorResult(
+        const rejected = createErrorResult(
           HTTP_STATUS.RATE_LIMITED,
           `Token limit exceeded for ${scopeLabel}: ${tokenBreach.tokensUsed}/${tokenBreach.limitValue} tokens used in the current window. Please try again later.`,
           null,
           "TOKEN_LIMIT_EXCEEDED"
         );
+        return { ...rejected, response: attachRouteMeta(rejected.response, { provider, model }) };
       }
     } catch (err) {
       // Fail-open at Tier 2: Tier 1 already enforced the model/global limit pre-dispatch.
@@ -3149,12 +3170,13 @@ async function handleChatCoreInner({
     try {
       if (isTpmExhausted(effectiveModel)) {
         trackPendingRequest(model, provider, pendingConnId, false, undefined, pendingRequestId);
-        return createErrorResult(
+        const rejected = createErrorResult(
           HTTP_STATUS.RATE_LIMITED,
           `Gemini TPM rate limit reached for ${effectiveModel}. Please try again later.`,
           null,
           "GEMINI_TPM_EXHAUSTED"
         );
+        return { ...rejected, response: attachRouteMeta(rejected.response, { provider, model }) };
       }
     } catch (err) {
       log?.warn?.("GEMINI_RATE_LIMIT", "Pre-dispatch TPM check failed; allowing request", { err });
@@ -3526,22 +3548,15 @@ async function handleChatCoreInner({
             `[provider] Node ${errorConnectionId} OAuth token invalid (${statusCode}) -- token refresh available`
           );
         } else if (errorType === PROVIDER_ERROR_TYPES.PROJECT_ROUTE_ERROR) {
-          await updateProviderConnection(errorConnectionId, {
-            lastErrorType: errorType,
-            lastError: persistentMessage,
-            errorCode: statusCode,
+          await handleProjectRouteFailure({
+            provider,
+            connectionId: errorConnectionId,
+            statusCode,
+            persistentMessage,
+            message,
+            upstreamErrorBody,
+            targetModel,
           });
-          console.warn(
-            `[provider] Node ${errorConnectionId} project routing error (${statusCode}) -- not banning`
-          );
-          // #14313: free-tier refusal on the keyless path — record a short TTL
-          // skip so auto-combo / noauth fallback stop re-picking it immediately.
-          if (
-            errorConnectionId === "noauth" &&
-            isOpencodeFreeTierRefusalForProvider(provider, statusCode, message)
-          ) {
-            noteOpencodeFreeTierSkip(provider, Date.now(), undefined, targetModel);
-          }
         } else if (errorType === PROVIDER_ERROR_TYPES.GEO_BLOCKED) {
           // Google regional refusal: account-independent, non-terminal; park the connection
           // until egress uses a supported region; probes skip the day-long cooldown (#9817).
@@ -3578,6 +3593,9 @@ async function handleChatCoreInner({
           const notFoundCooldownMs = COOLDOWN_MS.notFound;
           if (!(await shouldIsolateProbeFailures())) {
             const modelToLock = targetModel || model;
+            const { learnCopilotModelRejection } = await import(
+              "../services/copilotModelRejections.ts"
+            );
             if (!learnCopilotModelRejection(statusCode, provider, errorConnectionId, modelToLock, upstreamErrorBody)) {
               lockModel(provider, errorConnectionId, modelToLock, "model_not_found", notFoundCooldownMs);
               console.warn(
@@ -3927,8 +3945,4 @@ async function handleChatCoreInner({
     }
   }
 }
-export function isTokenExpiringSoon(expiresAt, bufferMs = 5 * 60 * 1000) {
-  if (!expiresAt) return false;
-  const expiresAtMs = new Date(expiresAt).getTime();
-  return expiresAtMs - Date.now() < bufferMs;
-}
+export { isTokenExpiringSoon } from "./chatCore/tokenExpiry.ts";

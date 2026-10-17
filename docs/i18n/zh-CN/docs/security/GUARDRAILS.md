@@ -55,6 +55,10 @@ Guardrail 在 OmniRoute 与上游提供者之间的边界处实施安全、策�
 
 强制模式在自动启发式运行**之前**短路；`auto` 行为与 PR-1 之前的防护栏字节相同。
 
+#### API 密钥作用域 (`visionBridgeKeyScope.ts`)
+
+如果 API 密钥限制了连接、配额池或模型（`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`），重新路由和描述生成只会选择该密钥获准使用的模型及连接。描述调用始终通过 OmniRoute 自环并携带 `x-omniroute-self-loop-key-id` 请求头，以再次执行连接和模型策略。`enforceApiKeyPolicy()` 仅在同时提供自环 bearer 令牌时认可该请求头：它只能缩小访问范围，无法解析的 ID 会被拒绝。若该密钥没有获准使用的视觉模型，则跳过描述生成，像防护功能关闭时一样让请求保持不变地通过（meta `{ skipped: true, reason: "no_permitted_vision_model" }`）。不带密钥的请求及没有这些限制的密钥维持原有行为。
+
 #### 任务感知描述提示 (`modalityBridgeVisionTaskAware`)
 
 默认**true**。`composeVisionPrompt()` (`visionBridgeHelpers.ts`) 将**最后一条用户消息**的文本（截断为 500 个字符）附加到基本描述提示中，引导描述朝向用户实际询问的内容（codex-vision-proxy 模式），并要求视觉模型转录可见文本。如果此标志关闭 — 或没有用户文本 — 则基本提示保持不变。

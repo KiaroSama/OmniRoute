@@ -3384,6 +3384,10 @@
     "comboRefMember": "કૉમ્બો → {name}"
   },
   "combos": {
+    "autoTosLoadError": "સેવાની શરતોની નીતિ લોડ થઈ શકી નથી. તેને બદલતા પહેલાં ફરી પ્રયાસ કરો.",
+    "autoTosSaveError": "સેવાની શરતોની નીતિ સાચવી શકાઈ નથી. અગાઉની સેટિંગ હજી દેખાય છે. ફરી પ્રયાસ કરો.",
+    "autoTosIncludeLabel": "ToS: avoid તરીકે ચિહ્નિત પ્રદાતાઓને auto માં સામેલ કરો",
+    "autoTosDescription": "ડિફૉલ્ટ રૂપે બંધ છે. માત્ર એક ખાતા માટે નહીં, બધી auto સંયોજન માટે લાગુ પડે છે. પ્રદાતાને જોડવાથી આ વિકલ્પ ચાલુ થતો નથી.",
     "title": "કોમ્બોઝ",
     "description": "ભારાંકિત રૂટિંગ અને ફૉલબૅક સપોર્ટ સાથે મોડેલ કોમ્બોઝ બનાવો",
     "autoCatalogTitle": "સ્વતઃ-રાઉટીંગ કેટલોગ",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "કુલ {total} મેળ ખાતી પંક્તિઓમાંથી {shown} બતાવવામાં આવી છે (ટોચની 50)."
   },
   "endpoint": {
+    "cloudUploadDestination": "ક્લાઉડ સિંકનું ગંતવ્ય (સ્થાનિક બૅકઅપનું નહીં):",
+    "cloudUploadWarning": "નવા ઇન્સ્ટોલેશનમાં ક્લાઉડ સિંક ડિફૉલ્ટ રૂપે બંધ હોય છે. તેને ચાલુ કરવાથી પ્રદાતાઓની API કી, OAuth ઍક્સેસ અને રિફ્રેશ ટોકન, OmniRoute API કી અને ગોઠવણી ઉપરના ગંતવ્ય પર અત્યારે અને ભવિષ્યના સિંક દરમિયાન અપલોડ થાય છે. આ સ્ટોરેજના સ્થાનિક બૅકઅપથી અલગ છે. તે સર્વર પર વિશ્વાસ હોય તો જ તેને ચાલુ કરો.",
+    "cloudUploadConsent": "હું આ સમજું છું અને મારી ઓળખ ચકાસણીની વિગતો આ ગંતવ્ય પર અપલોડ કરવાની મંજૂરી આપું છું.",
     "title": "API એન્ડપોઇન્ટ",
     "subtitle": "મોટાભાગના SDKs અને ટૂલ્સ સાથે OpenAI-સુસંગત એન્ડપોઇન્ટનો ઉપયોગ કરો.",
     "testEndpoint": "એન્ડપોઇન્ટનું પરીક્ષણ કરો →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "આ પ્રદાતા ડિફૉલ્ટ રૂપે auto માંથી બાકાત છે",
+    "tosAvoidNoticeDescription": "તેની સેવાની શરતોની સ્થિતિ avoid તરીકે ચિહ્નિત છે. ખાતું જોડવાથી આ નીતિ બદલાતી નથી. બધી auto સંયોજન માટે વૈશ્વિક મંજૂરી ચાલુ કરતા પહેલાં પ્રદાતાની શરતો વાંચો.",
+    "tosAvoidNoticeAction": "auto નીતિની સમીક્ષા કરો",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "કનેક્શન અક્ષમ કરો",
     "enableConnection": "કનેક્શન સક્ષમ કરો",
     "reauthenticateConnection": "આ કનેક્શનનું ફરી પ્રમાણીકરણ કરો",
+    "verifyAccount": "એકાઉન્ટ ચકાસો",
+    "verifyAccountHint": "Google આ એકાઉન્ટ ચકાસવા માટે કહે છે. લિંક ખોલો, ચકાસણી પૂર્ણ કરો, પછી ફરી પ્રયાસ કરો.",
     "proxyConfig": "પ્રોક્સી રૂપરેખાંકન",
     "aliasExistsAlert": "ઉપનામ \"{alias}\" પહેલેથી અસ્તિત્વમાં છે. કૃપા કરીને અલગ મોડેલનો ઉપયોગ કરો અથવા હાલના ઉપનામમાં ફેરફાર કરો.",
     "aliasInputPlaceholder": "ઉપનામનું નામ",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "પોર્ટ",
     "qdrantHost": "હોસ્ટ",
     "qdrantCollection": "સંગ્રહ",
+    "catalogVisibilityHint": "છુપાયેલા મોડેલ ID ને સમાન ઍક્સેસ પરવાનગીઓ સાથે હજી પણ કૉલ કરી શકાય છે.",
     "catalogScopeTitle": "Models API સૂચિ",
     "catalogScopeDesc": "આ કી માટે GET /v1/models શું દર્શાવે છે. સૂચિને મર્યાદિત કરવાથી કી કયા મોડલને કૉલ કરી શકે છે તેમાં ક્યારેય ફેરફાર થતો નથી.",
     "catalogScopeAll": "બંને",

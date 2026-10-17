@@ -125,6 +125,8 @@ a bhfuil a sheoladh cliant neamh-lúbchúil le
   `SPAWN_CAPABLE_PREFIXES` — bheadh ar an eagar cothrom an réimír `/api/providers/` iomlán a chlúdach chun iad a ghabháil, ag leathnú ró-leathan crann bealaí
   a úsáideann painéil iargúlta go dlisteanach le haghaidh CRUD soláthraí.
 
+  Baineann lódálaí na ngrianghraf ama rite na hiontrálacha sin as ró socruithe stóráilte freisin, agus ní scríobhann an sean-iompórtáil JSON (`/api/settings/import-json`) na heochracha seachanta riamh. Caithfidh gach iontráil `LOCAL_ONLY_API_PREFIXES` a bheith ar an liosta diúltaithe nó a bheith athbhreithnithe agus ceadaithe le haghaidh seachanta. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Iniúchadh rochtana** — chun a fhíorú nach bhfuil aon rud lasmuigh den óstach ag teacht ar na bealaí seo:
 
 - Oscail an **Fardal Údaraithe** ar `/dashboard/settings/security`: taispeánann sé an liosta réimíreanna LOCAL_ONLY beo, cé na réimíreanna is féidir a sheachaint, agus an tacar atá in ann a ghiniúint le linn tiomsaithe ("ní féidir é a dhéanamh in-sheachanta").

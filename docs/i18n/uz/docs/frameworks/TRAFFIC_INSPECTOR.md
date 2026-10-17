@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS cheklovi:** HTTPS `CONNECT` tunnellari faqat metama’lumotlar (host, port, vaqt ko‘rsatkichlari) sifatida yozib olinadi — TLS tanasi standart holatda shifrdan chiqarilmaydi. Tananing to‘liq tarkibini tekshirish uchun “Proksi rejimida HTTPS shifrini yechish” tugmasini yoqing (ixtiyoriy, AgentBridge sertifikati ishonchli deb tan olingan bo‘lishi kerak).
+**TLS cheklovi:** HTTPS `CONNECT` tunnellari faqat metama’lumotlar (host, port, vaqt ko‘rsatkichlari) sifatida yozib olinadi — TLS tanasi standart holatda shifrdan chiqarilmaydi.
 
 **Port to‘qnashuvi:** Agar 8080-port band bo‘lsa, AgentBridge tuzilmaviy xato bilan 409 javobini qaytaradi. Portni `INSPECTOR_HTTP_PROXY_PORT` muhit o‘zgaruvchisi orqali o‘zgartiring.
 
@@ -464,12 +464,11 @@ Asosiy yo‘l: `/api/tools/traffic-inspector/`
 
 ### Tutib olish rejimlari
 
-| Metod | Yo‘l                           | Tavsif                                                                                                       |
-| ----- | ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| GET   | `/capture-modes`               | AgentBridge / maxsus hostlar / HTTP_PROXY / tizim proksisi rejimlari holati + `tls-intercept` almashtirgichi |
-| POST  | `/capture-modes/http-proxy`    | HTTP_PROXY tinglovchisini ishga tushirish/to‘xtatish (`{action: "start"\|"stop"}`)                           |
-| POST  | `/capture-modes/system-proxy`  | Butun tizim proksisini qo‘llash/asl holatiga qaytarish (`{action: "apply"\|"revert"}`)                       |
-| POST  | `/capture-modes/tls-intercept` | Proksi rejimida HTTPS tanasi shifrini yechishni yoqish/o‘chirish (`{enabled: boolean}`)                      |
+| Metod | Yo‘l                          | Tavsif                                                                                 |
+| ----- | ----------------------------- | -------------------------------------------------------------------------------------- |
+| GET   | `/capture-modes`              | AgentBridge / maxsus hostlar / HTTP_PROXY / tizim proksisi rejimlari holati            |
+| POST  | `/capture-modes/http-proxy`   | HTTP_PROXY tinglovchisini ishga tushirish/to‘xtatish (`{action: "start"\|"stop"}`)     |
+| POST  | `/capture-modes/system-proxy` | Butun tizim proksisini qo‘llash/asl holatiga qaytarish (`{action: "apply"\|"revert"}`) |
 
 > **TPROXY shifrini yechish** (5-tutib olish rejimi) AgentBridge prefiksi ostidagi
 > **alohida** marshrut — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — orqali boshqariladi,

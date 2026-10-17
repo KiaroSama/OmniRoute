@@ -28,3 +28,15 @@ test("runner isolation still blocks fork code from the self-hosted build slot", 
   assert.match(workflow.jobs.build["runs-on"], /\["self-hosted","omni-build"\]/);
   assert.match(workflow.jobs.build["runs-on"], /\|\| 'ubuntu-latest'/);
 });
+
+test("the Build job compiles with webpack on every runner", () => {
+  // Turbopack no longer fits the .113: measured alone on 2026-10-16 (32 vCPUs, cgroup cap,
+  // swap off) the build peaks at 33-37 GB on Next 16.3.5/16.3.6/16.3.8 - more than the
+  // 47 GB box can spare next to the other runners - and 16.4.2 needs over 36 GB in the
+  // compile phase alone; webpack builds the same tree in 14 GB.
+  // See tests/unit/ci-build-bundler-webpack.test.ts.
+  const step = workflow.jobs.build.steps.find(
+    (item: { run?: string }) => item.run === "npm run build"
+  );
+  assert.equal(String(step.env.OMNIROUTE_USE_TURBOPACK), "0");
+});

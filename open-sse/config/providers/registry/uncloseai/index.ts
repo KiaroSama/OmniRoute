@@ -9,6 +9,7 @@ export const uncloseaiProvider: RegistryEntry = {
   modelsUrl: "https://hermes.ai.unturf.com/v1/models",
   authType: "optional",
   authHeader: "bearer",
+  toolCalling: "emulated",
   models: [
     // 2026-09-15 refresh — upstream rotated its roster: /v1/models now serves
     // exactly one model, and every previously catalogued id (adamo1139/

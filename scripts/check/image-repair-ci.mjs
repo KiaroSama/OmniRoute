@@ -8,7 +8,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const baseline = "7f3cbb046b3706bf0bbc047b7eaa0cbada8d9e50";
+const baseline = "32130fca348767f97bdd976ce4c5db876675125a";
 const work = path.join(root, ".ci-work/image-repair");
 const home = path.join(work, "isolated-home");
 const temp = path.join(work, "isolated-temp");
@@ -223,6 +223,8 @@ const regressionFiles = [
   "hard-session-lease-bypass-inventory.test.ts",
   "proxySubscription.parse.test.ts",
   "image-normalize.test.ts",
+  "image-accounting-adapters.test.ts",
+  "image-usage-accounting.test.ts",
   "t42-image-size-to-aspect-ratio.test.ts",
   "fal-image-edit.test.ts",
   "fal-image-generation-default.test.ts",
@@ -278,6 +280,9 @@ async function focusedTests(roots) {
       "image-generation-route.test.ts",
       "image-generation-resilience.test.ts",
       "image-generation-proxy.test.ts",
+      "image-generation-n-fanout.test.ts",
+      "image-accounting-adapters.test.ts",
+      "image-usage-accounting.test.ts",
       "codex-images-dedicated-endpoint.test.ts",
       "image-generation-size-and-payload-guard.test.ts",
       "image-routes-combo-edits-3214-3215.test.ts",

@@ -130,6 +130,22 @@ export function validationBadgeProps(result: string): {
   return { variant: "error", labelKey: "invalid", fallback: "Invalid" };
 }
 
+/**
+ * Extract a human-readable reason from a validate/test response `error` field. The
+ * field is a bare string for validator results but an `{ code, message }` envelope
+ * for pipeline rejections (403 LOCAL_ONLY, AUTH_*) — swallowing the envelope made a
+ * reverse-proxied dashboard's Check button show a bare "Invalid" with no reason.
+ */
+export function validationErrorMessage(error: unknown): string | null {
+  if (typeof error === "string" && error.trim()) return error;
+  if (error && typeof error === "object") {
+    const { message, code } = error as { message?: unknown; code?: unknown };
+    if (typeof message === "string" && message.trim()) return message;
+    if (typeof code === "string" && code.trim()) return code;
+  }
+  return null;
+}
+
 /** A single model's outcome from a `/api/models/test-all` response. */
 export interface TestAllModelOutcome {
   status: "ok" | "error";

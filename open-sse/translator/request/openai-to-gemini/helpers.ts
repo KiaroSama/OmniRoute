@@ -171,12 +171,33 @@ export type GeminiContent = { role: string; parts: GeminiPart[] };
 // that invalid alternation through. Merge adjacent same-role entries by concatenating
 // their parts, the same normalization the Kiro and Claude request paths already apply
 // (9router#2191).
+//
+// When the merge folds a tool-result turn (functionResponse parts) together with a
+// following plain user turn, the naive concatenation yields [functionResponse, text].
+// Gemini 4 (e.g. gemini-4-argon) rejects a user turn whose last part is not a
+// functionResponse with 400 "Requests ending with a model turn are not supported",
+// while [text, functionResponse] is accepted by Gemini 4, 3.x and 2.5 alike. So a
+// merged turn keeps its functionResponse parts at the end (stable within each group)
+// (9router#4802).
+function isFunctionResponsePart(part: GeminiPart): boolean {
+  return !!part && typeof part === "object" && "functionResponse" in part;
+}
+
+function moveFunctionResponsesLast(parts: GeminiPart[]): GeminiPart[] {
+  const others: GeminiPart[] = [];
+  const responses: GeminiPart[] = [];
+  for (const part of parts) {
+    (isFunctionResponsePart(part) ? responses : others).push(part);
+  }
+  return [...others, ...responses];
+}
+
 export function mergeConsecutiveSameRoleContents(contents: GeminiContent[]): GeminiContent[] {
   const merged: GeminiContent[] = [];
   for (const entry of contents) {
     const last = merged[merged.length - 1];
     if (last && last.role === entry.role) {
-      last.parts.push(...entry.parts);
+      last.parts = moveFunctionResponsesLast([...last.parts, ...entry.parts]);
     } else {
       // Shallow-copy the entry and its `parts` array so a later same-role merge
       // (`last.parts.push(...)`) never mutates the caller's input objects.

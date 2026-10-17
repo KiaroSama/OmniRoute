@@ -112,21 +112,31 @@ function containsLegacyCallLogLayout(dirPath: string | null): boolean {
   return false;
 }
 
+// Archives zip whole request-log trees (prompts, responses): owner-only, like call-log
+// artifacts, regardless of the process umask.
+const PRIVATE_ARCHIVE_DIR_MODE = 0o700;
+const PRIVATE_ARCHIVE_FILE_MODE = 0o600;
+
 function ensureArchiveDir() {
   if (!LOG_ARCHIVES_DIR) return;
-  fs.mkdirSync(LOG_ARCHIVES_DIR, { recursive: true });
+  fs.mkdirSync(LOG_ARCHIVES_DIR, { recursive: true, mode: PRIVATE_ARCHIVE_DIR_MODE });
+  try {
+    fs.chmodSync(LOG_ARCHIVES_DIR, PRIVATE_ARCHIVE_DIR_MODE);
+  } catch {
+    // Best effort (e.g. a directory owned by another UID); archive files stay 0600.
+  }
 }
 
 /**
- * Directory the live file logger writes to (`buildLogger()` in
+ * File the live logger writes to (`buildLoggerResource()` in
  * `src/shared/utils/logger.ts`), so the legacy-log sweep below never zips-then-deletes
- * a directory it does not own. Since PR #6234 (fix for #6197) the default app log path
+ * that file or its containing subtree. Since PR #6234 (fix for #6197) the default app log path
  * moved from a `process.cwd()`-anchored location to `DATA_DIR/logs/application/app.log`,
  * landing it inside the same `DATA_DIR/logs` tree this "legacy" migration sweeps (#6799).
  */
-function getLiveAppLogDir(): string | null {
+function getLiveAppLogPath(): string | null {
   try {
-    return path.dirname(getAppLogFilePath());
+    return path.resolve(getAppLogFilePath());
   } catch {
     return null;
   }
@@ -135,13 +145,23 @@ function getLiveAppLogDir(): string | null {
 function listRequestLogArchiveEntries(): ArchiveTarget[] {
   if (!CURRENT_REQUEST_LOGS_DIR || !fs.existsSync(CURRENT_REQUEST_LOGS_DIR)) return [];
 
-  const liveAppLogDir = getLiveAppLogDir();
+  const liveAppLogPath = getLiveAppLogPath();
   const entries = fs.readdirSync(CURRENT_REQUEST_LOGS_DIR);
   const targets: ArchiveTarget[] = [];
 
   for (const entry of entries) {
     const entryPath = path.join(CURRENT_REQUEST_LOGS_DIR, entry);
-    if (liveAppLogDir && isSamePath(entryPath, liveAppLogDir)) continue;
+    if (liveAppLogPath) {
+      const relativeLogPath = path.relative(entryPath, liveAppLogPath);
+      if (
+        relativeLogPath === "" ||
+        (relativeLogPath !== ".." &&
+          !relativeLogPath.startsWith(`..${path.sep}`) &&
+          !path.isAbsolute(relativeLogPath))
+      ) {
+        continue;
+      }
+    }
 
     targets.push({
       sourcePath: entryPath,
@@ -206,7 +226,7 @@ function createLegacyArchive(targets: ArchiveTarget[]): Promise<string> {
     const archiveFilename = `${timestamp}_legacy-request-logs.zip`;
     const archivePath = path.join(LOG_ARCHIVES_DIR, archiveFilename);
     const zipFile = new ZipFile();
-    const output = fs.createWriteStream(archivePath);
+    const output = fs.createWriteStream(archivePath, { mode: PRIVATE_ARCHIVE_FILE_MODE });
 
     let settled = false;
     // yazl detects a stat->stream size mismatch (a file growing while being zipped, e.g.
@@ -254,7 +274,8 @@ function writeLegacyLayoutMarker(archiveFilename: string) {
       },
       null,
       2
-    )
+    ),
+    { mode: PRIVATE_ARCHIVE_FILE_MODE }
   );
 }
 

@@ -20,6 +20,7 @@ import { isNextBuildPhase } from "../buildPhase";
 import { runMigrations } from "./migrationRunner";
 import { runDbHealthCheck, getPagerCorruption } from "./healthCheck";
 import { createManagedDbBackup as writeManagedDbBackup } from "./managedBackup";
+import { DB_SECRET_DIR_MODE, hardenDbFilePermissions } from "./filePermissions";
 import { createDbHealthCoordinator, runDbHealthInChild } from "./healthCheckRunner";
 import { resetAllDbModuleState } from "./stateReset";
 import { parseStoredPayload } from "../logPayloads";
@@ -203,7 +204,7 @@ function openSqliteDatabase(sqliteFile: string, options?: Record<string, unknown
 // Ensure data directory exists — with fallback for restricted home directories (#133)
 if (!isCloud && !fs.existsSync(DATA_DIR)) {
   try {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.mkdirSync(DATA_DIR, { recursive: true, mode: DB_SECRET_DIR_MODE });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     console.warn(
@@ -1359,6 +1360,8 @@ export function getDbInstance(): SqliteDatabase {
     // gate on its own way through, recursing without end (each recursion opens
     // its own real DB connection and re-runs migrations-check, so this is a
     // real resource-exhaustion loop, not just a deep call stack). #13717 rework.
+    // Owner-only DB + -wal/-shm (also repairs a 0644 file from an older install).
+    hardenDbFilePermissions(sqliteFile);
     setDb(db);
   } catch (error) {
     try {
@@ -1609,8 +1612,7 @@ function migrateFromJson(db: SqliteDatabase, jsonPath: string) {
         let rateLimitOverridesJson = serializeJsonField(conn.rateLimitOverrides);
         if (!hasOverrides && typeof conn.id === "string") {
           const existing = selectExistingOverrides.get(conn.id) as
-            | { rate_limit_overrides_json: string | null }
-            | undefined;
+            { rate_limit_overrides_json: string | null } | undefined;
           if (existing) rateLimitOverridesJson = existing.rate_limit_overrides_json;
         }
         insertConn.run({

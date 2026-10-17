@@ -8,6 +8,7 @@ import { validateCodexImageEditReferences } from "@/lib/images/imageRouteModel";
 import { resolveProxyForConnection } from "@/lib/db/settings";
 import { runWithProxyContext } from "@omniroute/open-sse/utils/proxyFetch.ts";
 import { refreshSelectedCodexImageCredentials } from "@/sse/services/selectedCodexImageCredentials";
+import { runImageRequestWithAccounting } from "@/lib/usage/imageRequestAccounting";
 import type { ImageComboDispatchResult } from "@omniroute/open-sse/services/imageCombo.ts";
 import * as log from "@/sse/utils/logger";
 
@@ -63,22 +64,33 @@ export async function dispatchCodexImagesEdit(
       ? await resolveProxyForConnection(selected.connectionId)
       : null;
     return await runWithProxyContext(proxyInfo?.proxy || null, () =>
-      handleCodexImages({
-        provider: parsed.provider,
-        model: parsed.model,
-        providerConfig,
-        body: {
-          ...ctx.nativeOptions,
-          prompt: ctx.prompt,
-          size: ctx.size ?? undefined,
-          response_format: ctx.responseFormat ?? undefined,
+      runImageRequestWithAccounting(
+        {
+          ...ctx.accounting,
+          endpoint: "/v1/images/edits",
+          provider: parsed.provider,
+          model: parsed.model,
+          credentials: selected,
+          recordCallLog: true,
         },
-        referenceImages: ctx.images,
-        operation: "edits",
-        credentials: selected,
-        log,
-        signal: ctx.request.signal,
-      })
+        () =>
+          handleCodexImages({
+            provider: parsed.provider,
+            model: parsed.model,
+            providerConfig,
+            body: {
+              ...ctx.nativeOptions,
+              prompt: ctx.prompt,
+              size: ctx.size ?? undefined,
+              response_format: ctx.responseFormat ?? undefined,
+            },
+            referenceImages: ctx.images,
+            operation: "edits",
+            credentials: selected,
+            log,
+            signal: ctx.request.signal,
+          })
+      )
     );
   } catch {
     return fail(

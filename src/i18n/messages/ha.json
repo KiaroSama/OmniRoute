@@ -3384,6 +3384,10 @@
     "comboRefMember": "Combo → {name}"
   },
   "combos": {
+    "autoTosLoadError": "An kasa loda manufar sharuddan sabis. Sake gwadawa kafin ka canza ta.",
+    "autoTosSaveError": "An kasa adana manufar sharuddan sabis. Ana nuna saitin da ya gabata har yanzu. Sake gwadawa.",
+    "autoTosIncludeLabel": "Haɗa masu ba da sabis da aka yi wa alamar ToS: avoid a cikin auto",
+    "autoTosDescription": "A kashe yake ta tsohuwa. Ya shafi duk haɗuwar auto, ba asusu ɗaya kaɗai ba. Haɗa mai ba da sabis ba ya kunna wannan zaɓi.",
     "title": "Haɗe-haɗe",
     "description": "Ƙirƙiri haɗe-haɗen samfura tare da rarrabawa bisa nauyi da goyon bayan madadin",
     "autoCatalogTitle": "Kundin rarrabawa ta atomatik",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Ana nuna layuka {shown} daga cikin {total} masu dacewa (50 na farko)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Wurin aika daidaitawar gajimare (ba na madadin cikin na’ura ba):",
+    "cloudUploadWarning": "Ana kashe daidaitawar gajimare ta tsohuwa a sabbin shigarwa. Kunna ta yana loda maɓallan API na masu samarwa, token na shiga da sabuntawa na OAuth, maɓallan API na OmniRoute da saituna zuwa wurin da ke sama, yanzu da yayin daidaitawa a nan gaba. Wannan ya bambanta da madadin cikin na’ura a sashen Ma’ajiyar Bayanai. Kunna ta kawai idan kun amince da wannan uwar garken.",
+    "cloudUploadConsent": "Na fahimta kuma na ba da izinin loda bayanan shaidar shiga na zuwa wannan wurin.",
     "title": "Mahadar API",
     "subtitle": "Yi amfani da mahadar da ta dace da OpenAI tare da yawancin SDKs da kayan aiki.",
     "testEndpoint": "Gwada mahadar →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "An ware wannan mai ba da sabis daga auto ta tsohuwa",
+    "tosAvoidNoticeDescription": "An yi wa matsayin sharuddan sabis ɗinsa alamar avoid. Haɗa asusu ba ya canza wannan manufa. Duba sharuddan mai ba da sabis kafin ka kunna izini na gama-gari ga duk haɗuwar auto.",
+    "tosAvoidNoticeAction": "Duba manufar auto",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Kashe haɗin",
     "enableConnection": "Kunna haɗin",
     "reauthenticateConnection": "Sake tantance wannan haɗin",
+    "verifyAccount": "Tabbatar da asusu",
+    "verifyAccountHint": "Google na buƙatar ka tabbatar da wannan asusu. Buɗe hanyar haɗin, kammala tabbatarwa, sannan sake gwadawa.",
     "proxyConfig": "Tsarin proxy",
     "aliasExistsAlert": "Alias \"{alias}\" ya riga ya wanzu. Da fatan za a yi amfani da wani samfuri daban ko a gyara alias ɗin da ke akwai.",
     "aliasInputPlaceholder": "sunan alias",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Tashar jiragen ruwa",
     "qdrantHost": "Uwar garke",
     "qdrantCollection": "Tarin",
+    "catalogVisibilityHint": "Har yanzu ana iya kiran ID na samfurori da aka ɓoye da izinin shiga iri ɗaya.",
     "catalogScopeTitle": "Jerin Models API",
     "catalogScopeDesc": "Abin da GET /v1/models ke nuna wa wannan maɓalli. Taƙaita jerin ba ya taɓa canza abin da maɓallin zai iya kira.",
     "catalogScopeAll": "Duka biyun",

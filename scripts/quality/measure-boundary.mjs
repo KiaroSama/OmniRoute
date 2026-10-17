@@ -22,9 +22,22 @@
  * `open-sse → src` should trend to zero: the engine must not depend on the app. The
  * full list of those edges is emitted (`openSseToSrcEdges`) as the v4 remediation list.
  *
+ * Ratchet: `open-sse → src` went 745 → 768 edges between 2026-10-10 and 2026-10-16 while
+ * this script only measured it, so the count now has a frozen ceiling in
+ * `config/quality/quality-baseline.json` → `metrics.boundaryOpenSseToSrc` (`direction:
+ * down`, `dedicatedGate: true`, same shape as `metrics.cycles`):
+ *   - `--ratchet` blocks (exit 1) when `edges.openSseToSrc` exceeds that ceiling; with no
+ *     ceiling in the baseline it is advisory (exit 0 + warning);
+ *   - `--update` writes the measured count as the new ceiling, but only when it is not
+ *     higher than the current one — the ceiling only goes down. Raising it is a manual,
+ *     justified edit of the baseline, never a way to make the gate green.
+ * Without either flag the Markdown/JSON report is unchanged.
+ *
  * Usage:
  *   node scripts/quality/measure-boundary.mjs --json [--root <dir>]
  *   node scripts/quality/measure-boundary.mjs --md   [--root <dir>]
+ *   node scripts/quality/measure-boundary.mjs --ratchet [--root <dir>] [--baseline <file>]
+ *   node scripts/quality/measure-boundary.mjs --update  [--root <dir>] [--baseline <file>]
  *
  * Only `node:fs` / `node:path` / `node:url`; no child processes, no shell.
  */
@@ -460,18 +473,135 @@ export function renderMarkdown(result) {
   return lines.join("\n");
 }
 
+// ---------------------------------------------------------------------------
+// Ratchet (quality-baseline.json → metrics.boundaryOpenSseToSrc)
+// ---------------------------------------------------------------------------
+
+/** Key of the `open-sse → src` ceiling inside `quality-baseline.json` → `metrics`. */
+export const BOUNDARY_METRIC_KEY = "boundaryOpenSseToSrc";
+
+/** Default location of the baseline, resolved from this script's own path. */
+export function defaultBaselinePath() {
+  return fileURLToPath(new URL("../../config/quality/quality-baseline.json", import.meta.url));
+}
+
+/**
+ * Read the frozen `open-sse → src` ceiling. Missing file, missing metric or a non-numeric
+ * value ⇒ `null` (advisory: no ceiling to enforce).
+ *
+ * @param {string} [baselinePath]
+ * @returns {number | null}
+ */
+export function readBaselineBoundaryValue(baselinePath = defaultBaselinePath()) {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
+    const value = parsed?.metrics?.[BOUNDARY_METRIC_KEY]?.value;
+    return typeof value === "number" && Number.isFinite(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Compare the measured `open-sse → src` edge count with the ceiling.
+ *
+ * @param {number} measured
+ * @param {number | null} ceiling
+ * @returns {{ status: "ok" | "fail" | "advisory", exitCode: 0 | 1, message: string }}
+ */
+export function evaluateBoundaryRatchet(measured, ceiling) {
+  if (ceiling === null || ceiling === undefined) {
+    return {
+      status: "advisory",
+      exitCode: 0,
+      message: `[boundary] RATCHET ADVISORY - no metrics.${BOUNDARY_METRIC_KEY} ceiling in quality-baseline.json; not enforced (${measured} edges, no ceiling).`,
+    };
+  }
+  if (measured > ceiling) {
+    return {
+      status: "fail",
+      exitCode: 1,
+      message: `[boundary] RATCHET FAIL - open-sse → src edges exceed the quality-baseline.json ceiling (${measured} edges, ceiling ${ceiling}). The engine must not gain new imports from src/: move the code into open-sse/ or inject it. Run \`npm run quality:boundary\` for the full edge list. Do not raise the ceiling to make this gate green.`,
+    };
+  }
+  return {
+    status: "ok",
+    exitCode: 0,
+    message: `[boundary] RATCHET OK - open-sse → src edges within the quality-baseline.json ceiling (${measured} edges, ceiling ${ceiling}).`,
+  };
+}
+
+/**
+ * Write `measured` as the new ceiling. Refuses to raise an existing ceiling (the ratchet
+ * only goes down); a missing metric is seeded as a dedicated down-only gate. Every other
+ * key of the baseline — including the metric's `_note` — is preserved.
+ *
+ * @param {string} baselinePath
+ * @param {number} measured
+ * @returns {{ written: boolean, previous: number | null, value: number }}
+ */
+export function updateBaselineBoundaryValue(baselinePath, measured) {
+  const baseline = JSON.parse(fs.readFileSync(baselinePath, "utf8"));
+  baseline.metrics ??= {};
+  const spec = baseline.metrics[BOUNDARY_METRIC_KEY];
+  const previous = typeof spec?.value === "number" ? spec.value : null;
+  if (previous !== null && measured > previous) {
+    return { written: false, previous, value: measured };
+  }
+  baseline.metrics[BOUNDARY_METRIC_KEY] = spec
+    ? { ...spec, value: measured }
+    : { value: measured, direction: "down", dedicatedGate: true };
+  fs.writeFileSync(baselinePath, `${JSON.stringify(baseline, null, 2)}\n`);
+  return { written: true, previous, value: measured };
+}
+
+// ---------------------------------------------------------------------------
+// CLI
+// ---------------------------------------------------------------------------
+
 function parseArgs(argv) {
-  const args = { format: "md", root: process.cwd() };
+  const args = {
+    format: "md",
+    root: process.cwd(),
+    baseline: null,
+    ratchet: false,
+    update: false,
+  };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--json") args.format = "json";
     else if (arg === "--md") args.format = "md";
+    else if (arg === "--ratchet") args.ratchet = true;
+    else if (arg === "--update") args.update = true;
     else if (arg === "--root") args.root = argv[++i];
     else if (arg.startsWith("--root=")) args.root = arg.slice("--root=".length);
+    else if (arg === "--baseline") args.baseline = argv[++i];
+    else if (arg.startsWith("--baseline=")) args.baseline = arg.slice("--baseline=".length);
     else if (arg === "--help" || arg === "-h") args.help = true;
     else throw new Error(`Unknown argument: ${arg}`);
   }
+  if (args.ratchet && args.update) throw new Error("--ratchet and --update are exclusive");
   return args;
+}
+
+function runUpdate(baselinePath, measured) {
+  let outcome;
+  try {
+    outcome = updateBaselineBoundaryValue(baselinePath, measured);
+  } catch (error) {
+    console.error(`[boundary] cannot update ${baselinePath}: ${error.message}`);
+    return 2;
+  }
+  if (!outcome.written) {
+    console.error(
+      `[boundary] UPDATE refused - measured ${measured} edges is above the ceiling of ${outcome.previous}; the ceiling only goes down. Remove the new open-sse → src imports instead.`
+    );
+    return 1;
+  }
+  console.log(
+    `[boundary] UPDATE - metrics.${BOUNDARY_METRIC_KEY}.value ${outcome.previous ?? "(unset)"} → ${measured}.`
+  );
+  return 0;
 }
 
 function main() {
@@ -483,10 +613,25 @@ function main() {
     process.exit(2);
   }
   if (args.help) {
-    console.log("Usage: node scripts/quality/measure-boundary.mjs [--json|--md] [--root <dir>]");
+    console.log(
+      "Usage: node scripts/quality/measure-boundary.mjs [--json|--md] [--ratchet|--update] [--root <dir>] [--baseline <file>]"
+    );
     return;
   }
   const result = measureBoundary({ root: args.root });
+  const baselinePath = path.resolve(args.baseline ?? defaultBaselinePath());
+
+  if (args.update) process.exit(runUpdate(baselinePath, result.edges.openSseToSrc));
+
+  if (args.ratchet) {
+    const verdict = evaluateBoundaryRatchet(
+      result.edges.openSseToSrc,
+      readBaselineBoundaryValue(baselinePath)
+    );
+    (verdict.status === "ok" ? console.log : console.error)(verdict.message);
+    process.exit(verdict.exitCode);
+  }
+
   process.stdout.write(
     args.format === "json" ? `${JSON.stringify(result, null, 2)}\n` : renderMarkdown(result)
   );

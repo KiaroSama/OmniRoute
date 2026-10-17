@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**የTLS ገደብ:** የHTTPS `CONNECT` ዋሻዎች እንደ ሜታዳታ ብቻ (አስተናጋጅ፣ ወደብ፣ የጊዜ መረጃ) ይቀረጻሉ — የTLS ይዘት በነባሪ ዲክሪፕት አይደረግም። የይዘቱን ሙሉ ምርመራ ለማንቃት "በተኪ ሁነታ HTTPSን ዲክሪፕት አድርግ" መቀያየሪያውን ያብሩ (በፈቃድ የሚነቃ፣ የAgentBridge ምስክር ወረቀት የታመነ እንዲሆን ይፈልጋል)።
+**የTLS ገደብ:** የHTTPS `CONNECT` ዋሻዎች እንደ ሜታዳታ ብቻ (አስተናጋጅ፣ ወደብ፣ የጊዜ መረጃ) ይቀረጻሉ — የTLS ይዘት በነባሪ ዲክሪፕት አይደረግም።
 
 **የወደብ ግጭት:** ወደብ 8080 በጥቅም ላይ ከሆነ፣ AgentBridge የተዋቀረ ስህተት ያለው 409 ይመልሳል። ወደቡን በ`INSPECTOR_HTTP_PROXY_PORT` የአካባቢ ተለዋዋጭ በኩል ይቀይሩ።
 
@@ -464,12 +464,11 @@ netsh winhttp reset proxy
 
 ### የመያዣ ሁነታዎች
 
-| ዘዴ   | ዱካ                             | መግለጫ                                                                                           |
-| ---- | ------------------------------ | ---------------------------------------------------------------------------------------------- |
-| GET  | `/capture-modes`               | የAgentBridge / custom-hosts / HTTP_PROXY / system-proxy ሁነታዎች ሁኔታ + የ`tls-intercept` ማብሪያ/ማጥፊያ |
-| POST | `/capture-modes/http-proxy`    | የHTTP_PROXY አዳማጭን ያስጀምሩ/ያቁሙ (`{action: "start"\|"stop"}`)                                      |
-| POST | `/capture-modes/system-proxy`  | የስርዓት-አቀፍ ፕሮክሲን ይተግብሩ/ወደ ቀድሞው ይመልሱ (`{action: "apply"\|"revert"}`)                             |
-| POST | `/capture-modes/tls-intercept` | በፕሮክሲ ሁነታ የHTTPS ይዘት ዲክሪፕሽንን ያብሩ ወይም ያጥፉ (`{enabled: boolean}`)                                |
+| ዘዴ   | ዱካ                            | መግለጫ                                                               |
+| ---- | ----------------------------- | ------------------------------------------------------------------ |
+| GET  | `/capture-modes`              | የAgentBridge / custom-hosts / HTTP_PROXY / system-proxy ሁነታዎች ሁኔታ  |
+| POST | `/capture-modes/http-proxy`   | የHTTP_PROXY አዳማጭን ያስጀምሩ/ያቁሙ (`{action: "start"\|"stop"}`)          |
+| POST | `/capture-modes/system-proxy` | የስርዓት-አቀፍ ፕሮክሲን ይተግብሩ/ወደ ቀድሞው ይመልሱ (`{action: "apply"\|"revert"}`) |
 
 > **TPROXY ዲክሪፕት** (የመያዣ ሁነታ 5) በAgentBridge ቅድመ ቅጥያ ስር ባለ **የተለየ** መንገድ ይንቀሳቀሳል —
 > `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — በ

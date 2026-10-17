@@ -53,5 +53,13 @@ export function isUserCallableAgyModelId(modelId: string): boolean {
 }
 
 export function isDiscoverableAgyModelId(modelId: string): boolean {
-  return !!modelId && !AGY_NON_CHAT_MODEL_IDS.has(modelId) && !AGY_RETIRED_MODEL_IDS.has(modelId);
+  const id = modelId ? modelId.trim() : "";
+  return (
+    !!id &&
+    !id.startsWith("chat_") &&
+    !id.startsWith("tab_") &&
+    !id.endsWith("_weekly") &&
+    !AGY_NON_CHAT_MODEL_IDS.has(id) &&
+    !AGY_RETIRED_MODEL_IDS.has(id)
+  );
 }

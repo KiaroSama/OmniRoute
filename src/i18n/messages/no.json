@@ -3384,6 +3384,10 @@
     "comboRefMember": "Kombinasjon → {name}"
   },
   "combos": {
+    "autoTosIncludeLabel": "Inkluder leverandører merket ToS: avoid i auto",
+    "autoTosDescription": "Av som standard. Gjelder alle auto-kombinasjoner, ikke bare én konto. Tilkobling av en leverandør slår ikke på dette valget.",
+    "autoTosSaveError": "Kunne ikke lagre ToS-policyen. Den forrige innstillingen vises fortsatt. Prøv igjen.",
+    "autoTosLoadError": "Kunne ikke laste ToS-policyen. Prøv igjen før du endrer den.",
     "title": "Kombinasjoner",
     "description": "Lag modellkombinasjoner med vektet ruting og reservestøtte",
     "autoCatalogTitle": "Automatisk rutekatalog",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Viser {shown} av {total} samsvarende rader (topp 50)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Mål for skysynkronisering (ikke lokale sikkerhetskopier):",
+    "cloudUploadWarning": "Skysynkronisering er slått av som standard ved nye installasjoner. Når du slår den på, lastes leverandørenes API-nøkler, OAuth-tilgangs- og oppdateringstokener, OmniRoute API-nøkler og konfigurasjonen opp til målet ovenfor, nå og ved fremtidige synkroniseringer. Dette er atskilt fra lokale sikkerhetskopier under Oppbevaring. Slå det bare på hvis du stoler på den serveren.",
+    "cloudUploadConsent": "Jeg forstår dette og tillater at påloggingsopplysningene mine lastes opp til dette målet.",
     "title": "API-endepunkt",
     "subtitle": "Bruk det OpenAI-kompatible endepunktet med de fleste SDK-er og verktøy.",
     "testEndpoint": "Test endepunkt →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Denne leverandøren er som standard utelatt fra auto",
+    "tosAvoidNoticeDescription": "ToS-statusen er merket avoid. Tilkobling av en konto endrer ikke denne policyen. Les leverandørens vilkår før du aktiverer det globale valget for alle auto-kombinasjoner.",
+    "tosAvoidNoticeAction": "Se auto-policyen",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Deaktiver tilkobling",
     "enableConnection": "Aktiver tilkobling",
     "reauthenticateConnection": "Autentiser denne tilkoblingen på nytt",
+    "verifyAccount": "Bekreft konto",
+    "verifyAccountHint": "Google krever at du bekrefter denne kontoen. Åpne lenken, fullfør kontrollen og prøv igjen.",
     "proxyConfig": "Proxy konfig",
     "aliasExistsAlert": "Aliaset \"{alias}\" eksisterer allerede. Bruk en annen modell eller rediger eksisterende alias.",
     "aliasInputPlaceholder": "aliasnavn",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Port",
     "qdrantHost": "Vert",
     "qdrantCollection": "Samling",
+    "catalogVisibilityHint": "Skjulte modell-ID-er kan fortsatt kalles med de samme tilgangsrettighetene.",
     "catalogScopeTitle": "Modelliste i API-et",
     "catalogScopeDesc": "Hva GET /v1/models oppgir for denne nøkkelen. Å begrense listen endrer aldri hva nøkkelen kan kalle.",
     "catalogScopeAll": "Begge",

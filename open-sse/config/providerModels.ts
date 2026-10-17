@@ -298,6 +298,16 @@ export function getModelTargetFormat(aliasOrId: string, modelId: string): string
   ) {
     return "openai-responses";
   }
+  // The gh executors send any *codex* id to /responses (9router#102);
+  // keep the body in Responses shape too, or an uncatalogued codex id goes out as
+  // a chat-completions body on the Responses endpoint.
+  if (
+    (alias === "gh" || alias === "ghe-copilot") &&
+    /codex/i.test(bareModelId) &&
+    !/gemini/i.test(bareModelId)
+  ) {
+    return "openai-responses";
+  }
   // Model-level targetFormat is provider-scoped: a catalog entry declares how THIS
   // provider's endpoint serves the model — do NOT import another provider's tag.
   // #9994 scoped this for providers WITH a catalog; #10072 extends it to catalogless

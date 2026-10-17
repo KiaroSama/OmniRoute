@@ -1,0 +1,1 @@
+- **fix(translator):** keep Claude document (PDF) blocks when translating to OpenAI-hub providers such as Antigravity, Gemini and OpenAI-compatible targets ([#16617](https://github.com/diegosouzapw/OmniRoute/pull/16617)) — thanks @Shurelia

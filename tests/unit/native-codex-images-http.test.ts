@@ -15,6 +15,9 @@ const core = await import("../../src/lib/db/core.ts");
 const providers = await import("../../src/lib/db/providers.ts");
 const { createCombo } = await import("../../src/lib/db/combos.ts");
 const { createApiKey } = await import("../../src/lib/db/apiKeys.ts");
+const { updatePricing } = await import("../../src/lib/db/settings.ts");
+const { getUsageHistory } = await import("../../src/lib/usage/usageHistory.ts");
+const { getCallLogs, waitForCallLogSaves } = await import("../../src/lib/usage/callLogs.ts");
 const { POST } = await import("../../src/app/api/v1/images/edits/route.ts");
 const { POST: generate } = await import("../../src/app/api/v1/images/generations/route.ts");
 const { handleImageGeneration } = await import("../../open-sse/handlers/imageGeneration.ts");
@@ -452,5 +455,119 @@ test(
     assert.equal(blocked.status, 403);
     assert.equal(calls, 0);
     assert.equal(refreshCalls, 0);
+  }
+);
+
+test(
+  "native direct and combo image attempts retain selected-account usage exactly once",
+  { timeout: 5000 },
+  async () => {
+    const model = "gpt-image-2.5-sunburst";
+    await updatePricing({ codex: { [model]: { input: 5, output: 40 } } });
+    const connection = await providers.createProviderConnection({
+      provider: "codex",
+      authType: "oauth",
+      name: "fixture-accounting",
+      accessToken: "fixture-accounting-token",
+      isActive: true,
+      testStatus: "active",
+      providerSpecificData: {
+        workspaceId: "fixture-accounting-workspace",
+        workspacePlanType: "plus",
+      },
+    });
+    assert.equal(typeof connection.id, "string");
+    if (typeof connection.id !== "string") assert.fail("Fixture connection ID missing");
+    const combo = "fixture-accounting-combo";
+    await createCombo({ name: combo, strategy: "priority", models: [`cx/${model}`] });
+    const key = await createApiKey("fixture-accounting-key", "fixture-machine", [], {
+      allowedConnections: [connection.id],
+      allowedCombos: [combo],
+    });
+    const headers = { "content-type": "application/json", authorization: `Bearer ${key.key}` };
+    const reported = {
+      ...payload,
+      usage: { input_tokens: 20, output_tokens: 100, total_tokens: 120 },
+    };
+    let calls = 0;
+    globalThis.fetch = async (url, init) => {
+      calls++;
+      const body = JSON.parse(String(init?.body));
+      assert.equal(body.model, model);
+      assert.equal(
+        new Headers(init?.headers).get("authorization"),
+        "Bearer fixture-accounting-token"
+      );
+      assert.equal(
+        new Headers(init?.headers).get("chatgpt-account-id"),
+        "fixture-accounting-workspace"
+      );
+      if (String(url).endsWith("/edits")) assert.deepEqual(body.images, [{ image_url: DATA_URL }]);
+      return Response.json(reported);
+    };
+    for (const [index, variant] of [
+      "generation",
+      "edit",
+      "combo-generation",
+      "combo-edit",
+    ].entries()) {
+      const edit = variant.endsWith("edit");
+      const body = {
+        model: variant.startsWith("combo") ? combo : `cx/${model}`,
+        prompt: "fixture",
+        ...(edit && { image: DATA_URL }),
+      };
+      const response = await (edit ? POST : generate)(
+        new Request(`http://localhost/api/v1/images/${edit ? "edits" : "generations"}`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(body),
+        })
+      );
+      assert.equal(response.status, 200, await response.clone().text());
+      assert.deepEqual(await response.json(), reported);
+      assert.equal(calls, index + 1, "one submission per logical request");
+      const rows = (await getUsageHistory({ provider: "codex", model })).filter(
+        (row) => row.apiKeyId === key.id
+      );
+      assert.equal(rows.length, index + 1, "one usage record, not a nested duplicate");
+      assert.ok(rows.every((row) => row.connectionId === connection.id && row.success));
+      assert.ok(rows.every((row) => row.tokens.input === 20 && row.tokens.output === 100));
+      assert.equal(await waitForCallLogSaves(1000), true);
+      const logs = await getCallLogs({ provider: "codex", apiKey: key.id });
+      assert.equal(logs.length, index + 1, "one attributed call log per native attempt");
+      assert.ok(logs.every((row) => row.connectionId === connection.id && row.status === 200));
+      assert.ok(logs.every((row) => !row.hasRequestBody && !row.hasResponseBody));
+    }
+    globalThis.fetch = async () => {
+      calls++;
+      return Response.json({ error: { message: "private fixture failure" } }, { status: 401 });
+    };
+    const rejected = await generate(
+      new Request("http://localhost/api/v1/images/generations", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ model: combo, prompt: "fixture" }),
+      })
+    );
+    assert.equal(rejected.status, 401);
+    assert.equal(calls, 5, "terminal rejection must not submit again");
+    assert.equal(await waitForCallLogSaves(1000), true);
+    const logs = await getCallLogs({ provider: "codex", apiKey: key.id });
+    assert.equal(logs.length, 5);
+    const failure = logs.filter((row) => row.status === 401);
+    assert.equal(failure.length, 1);
+    assert.equal(failure[0].connectionId, connection.id);
+    assert.equal(failure[0].hasRequestBody, false);
+    assert.equal(failure[0].hasResponseBody, false);
+    assert.doesNotMatch(
+      JSON.stringify(logs),
+      /private fixture failure|fixture-accounting-token|fixture-accounting-workspace/
+    );
+    assert.equal(
+      (await getUsageHistory({ provider: "codex", model })).filter((row) => row.apiKeyId === key.id)
+        .length,
+      4
+    );
   }
 );

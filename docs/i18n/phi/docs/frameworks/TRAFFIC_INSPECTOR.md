@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**Limitasyon ng TLS:** Naka-capture lamang bilang metadata ang mga HTTPS `CONNECT` tunnel (host, port, timing) — hindi dine-decrypt ang TLS body bilang default. I-enable ang toggle na "I-decrypt ang HTTPS sa proxy mode" (opt-in, nangangailangang pinagkakatiwalaan ang AgentBridge cert) para sa buong inspeksyon ng body.
+**Limitasyon ng TLS:** Naka-capture lamang bilang metadata ang mga HTTPS `CONNECT` tunnel (host, port, timing) — hindi dine-decrypt ang TLS body bilang default.
 
 **Salungatan sa port:** Kung ginagamit na ang port 8080, nagbabalik ang AgentBridge ng 409 na may structured error. Baguhin ang port sa pamamagitan ng `INSPECTOR_HTTP_PROXY_PORT` env var.
 
@@ -464,12 +464,11 @@ Base path: `/api/tools/traffic-inspector/`
 
 ### Mga capture mode
 
-| Paraan | Path                           | Paglalarawan                                                                                                 |
-| ------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
-| GET    | `/capture-modes`               | Estado ng mga mode na AgentBridge / custom-hosts / HTTP_PROXY / system-proxy + ang toggle na `tls-intercept` |
-| POST   | `/capture-modes/http-proxy`    | Simulan/ihinto ang HTTP_PROXY listener (`{action: "start"\|"stop"}`)                                         |
-| POST   | `/capture-modes/system-proxy`  | Ilapat/ibalik ang system-wide proxy (`{action: "apply"\|"revert"}`)                                          |
-| POST   | `/capture-modes/tls-intercept` | I-toggle ang pag-decrypt ng HTTPS body sa proxy mode (`{enabled: boolean}`)                                  |
+| Paraan | Path                          | Paglalarawan                                                                 |
+| ------ | ----------------------------- | ---------------------------------------------------------------------------- |
+| GET    | `/capture-modes`              | Estado ng mga mode na AgentBridge / custom-hosts / HTTP_PROXY / system-proxy |
+| POST   | `/capture-modes/http-proxy`   | Simulan/ihinto ang HTTP_PROXY listener (`{action: "start"\|"stop"}`)         |
+| POST   | `/capture-modes/system-proxy` | Ilapat/ibalik ang system-wide proxy (`{action: "apply"\|"revert"}`)          |
 
 > Ang **TPROXY decrypt** (capture mode 5) ay pinapagana ng **hiwalay** na route sa ilalim ng
 > AgentBridge prefix — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — hindi

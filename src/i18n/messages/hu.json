@@ -3384,6 +3384,10 @@
     "comboRefMember": "Kombináció → {name}"
   },
   "combos": {
+    "autoTosLoadError": "Nem sikerült betölteni a felhasználási feltételekre vonatkozó szabályzatot. Módosítás előtt próbálja újra.",
+    "autoTosSaveError": "Nem sikerült menteni a felhasználási feltételekre vonatkozó szabályzatot. Továbbra is az előző beállítás látható. Próbálja újra.",
+    "autoTosIncludeLabel": "A ToS: avoid jelölésű szolgáltatók bevonása az auto használatába",
+    "autoTosDescription": "Alapértelmezés szerint kikapcsolva. Minden auto kombinációra vonatkozik, nem csak egy fiókra. Egy szolgáltató csatlakoztatása nem kapcsolja be ezt a lehetőséget.",
     "title": "Kombók",
     "description": "Modellkombinációk létrehozása súlyozott útválasztással és tartalék támogatással",
     "autoCatalogTitle": "Auto-routing katalógus",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "{shown} / {total} egyező sor megjelenítve (top 50)."
   },
   "endpoint": {
+    "cloudUploadDestination": "A felhőszinkronizálás célja (nem a helyi biztonsági mentéseké):",
+    "cloudUploadWarning": "Új telepítéseknél a felhőszinkronizálás alapértelmezés szerint ki van kapcsolva. Bekapcsolásakor a szolgáltatók API-kulcsai, az OAuth hozzáférési és frissítési tokenek, az OmniRoute API-kulcsai és a konfiguráció feltöltődik a fenti célra, most és a későbbi szinkronizálások során is. Ez a funkció elkülönül a Tárolás rész helyi biztonsági mentéseitől. Csak akkor kapcsolja be, ha megbízik ebben a kiszolgálóban.",
+    "cloudUploadConsent": "Megértettem, és engedélyezem a hitelesítő adataim feltöltését erre a célra.",
     "title": "API végpont",
     "subtitle": "Használja az OpenAI-kompatibilis végpontot a legtöbb SDK-val és eszközzel.",
     "testEndpoint": "Végpont tesztelése →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Ez a szolgáltató alapértelmezés szerint ki van zárva az auto használatából",
+    "tosAvoidNoticeDescription": "A felhasználási feltételek állapota avoid jelölésű. Egy fiók csatlakoztatása nem módosítja ezt a szabályzatot. Az összes auto kombinációra érvényes közös engedély bekapcsolása előtt tekintse át a szolgáltató feltételeit.",
+    "tosAvoidNoticeAction": "Az auto szabályzatának áttekintése",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Kapcsolódás letiltása",
     "enableConnection": "Kapcsolat engedélyezése",
     "reauthenticateConnection": "Hitelesítse újra ezt a kapcsolatot",
+    "verifyAccount": "Fiók ellenőrzése",
+    "verifyAccountHint": "A Google kéri a fiók ellenőrzését. Nyisd meg a linket, végezd el az ellenőrzést, majd próbáld újra.",
     "proxyConfig": "Proxy konfig",
     "aliasExistsAlert": "A \"{alias}\" alias már létezik. Kérjük, használjon másik modellt, vagy módosítsa a meglévő álnevet.",
     "aliasInputPlaceholder": "álnév",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Port",
     "qdrantHost": "Gazda",
     "qdrantCollection": "Gyűjtemény",
+    "catalogVisibilityHint": "A rejtett modellazonosítók továbbra is hívhatók ugyanazokkal a hozzáférési jogosultságokkal.",
     "catalogScopeTitle": "A Models API listája",
     "catalogScopeDesc": "Amit a GET /v1/models ennél a kulcsnál elérhetőként jelez. A lista szűkítése soha nem módosítja, hogy a kulcs mely modelleket hívhatja meg.",
     "catalogScopeAll": "Mindkettő",

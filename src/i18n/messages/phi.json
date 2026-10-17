@@ -3384,6 +3384,10 @@
     "comboRefMember": "Combo → {name}"
   },
   "combos": {
+    "autoTosIncludeLabel": "Isama sa auto ang mga provider na may markang ToS: avoid",
+    "autoTosDescription": "Naka-off bilang default. Para ito sa lahat ng auto combo, hindi lang sa isang account. Hindi pinapagana ang opsyong ito kapag kumonekta ka sa provider.",
+    "autoTosSaveError": "Hindi ma-save ang patakaran sa ToS. Nakikita pa rin ang dating setting. Subukan muli.",
+    "autoTosLoadError": "Hindi ma-load ang patakaran sa ToS. Subukan muli bago ito baguhin.",
     "title": "Mga combo",
     "description": "Gumawa ng mga combo ng modelo na may weighted routing at fallback support",
     "autoCatalogTitle": "Catalog ng auto-routing",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Ipinapakita ang {shown} sa {total} tumutugmang mga row (nangungunang 50)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Destinasyon ng pag-sync sa cloud (hindi ng mga lokal na backup):",
+    "cloudUploadWarning": "Naka-off bilang default ang pag-sync sa cloud sa mga bagong pag-install. Kapag pinagana ito, ia-upload ang mga API key ng provider, mga access at refresh token ng OAuth, mga API key ng OmniRoute, at configuration sa destinasyon sa itaas, ngayon at sa mga susunod na pag-sync. Hiwalay ito sa mga lokal na backup sa Imbakan. Paganahin lamang ito kung pinagkakatiwalaan mo ang server na iyon.",
+    "cloudUploadConsent": "Nauunawaan ko ito at pinahihintulutan kong i-upload ang aking mga kredensyal sa destinasyong ito.",
     "title": "Endpoint ng API",
     "subtitle": "Gamitin ang endpoint na compatible sa OpenAI sa karamihan ng mga SDK at tool.",
     "testEndpoint": "Subukan ang endpoint →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Hindi kasama sa auto ang provider na ito bilang default",
+    "tosAvoidNoticeDescription": "May markang avoid ang ToS status nito. Hindi nagbabago ang patakarang ito kapag nagkonekta ng account. Basahin ang mga tuntunin ng provider bago paganahin ang global na opsyon para sa lahat ng auto combo.",
+    "tosAvoidNoticeAction": "Tingnan ang patakaran ng auto",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Huwag paganahin ang koneksyon",
     "enableConnection": "Paganahin ang koneksyon",
     "reauthenticateConnection": "Muling patotohanan ang koneksyong ito",
+    "verifyAccount": "I-verify ang account",
+    "verifyAccountHint": "Hinihingi ng Google na i-verify mo ang account na ito. Buksan ang link, tapusin ang pagsusuri, saka subukang muli.",
     "proxyConfig": "Configuration ng proxy",
     "aliasExistsAlert": "Umiiral na ang alyas na \"{alias}\". Mangyaring gumamit ng ibang modelo o i-edit ang kasalukuyang alias.",
     "aliasInputPlaceholder": "pangalan ng alias",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Port",
     "qdrantHost": "Host",
     "qdrantCollection": "Koleksyon",
+    "catalogVisibilityHint": "Maaari pa ring tawagin ang mga nakatagong model ID gamit ang parehong mga pahintulot sa pag-access.",
     "catalogScopeTitle": "Listahan ng Models API",
     "catalogScopeDesc": "Kung ano ang inilalabas ng GET /v1/models para sa key na ito. Ang pagpapaliit ng listahan ay hindi kailanman nagbabago sa kung ano ang maaaring tawagin ng key.",
     "catalogScopeAll": "Pareho",

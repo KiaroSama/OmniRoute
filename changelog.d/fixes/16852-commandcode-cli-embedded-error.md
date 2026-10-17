@@ -1,0 +1,1 @@
+- **fix(command-code):** fail the CLI-fallback request on an embedded server error before any content so combo fallback triggers ([#16852](https://github.com/diegosouzapw/OmniRoute/pull/16852)) — thanks @jefripunza

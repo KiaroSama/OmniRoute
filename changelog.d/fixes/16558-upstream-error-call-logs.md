@@ -1,0 +1,1 @@
+- fix(logging): retain bounded, sanitized upstream error bodies in call-log details even when detailed pipeline logging is disabled (#16558).

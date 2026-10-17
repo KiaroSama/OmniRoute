@@ -39,7 +39,9 @@ export function classifyModelSupportedEndpoints(endpoints: readonly string[]): {
   subtype?: "speech" | "transcription";
 } {
   // "chat" and "responses" are text-conversation endpoints; they carry no
-  // modality type, so they fall through to the empty return below.
+  // modality type. Return before the media checks so a multimodal chat model
+  // is not classified as image, audio, embedding, or rerank.
+  if (endpoints.includes("chat") || endpoints.includes("responses")) return {};
   if (endpoints.includes("embeddings")) return { type: "embedding" };
   if (endpoints.includes("rerank")) return { type: "rerank" };
   if (endpoints.includes("images")) return { type: "image" };

@@ -53,7 +53,34 @@ export type ComboTargetCatalogMetadata = {
   inputModalities?: string[];
   outputModalities?: string[];
   capabilities: Record<string, boolean | string[]>;
+  // false when the target's provider has no active connection it can be routed to.
+  routable?: boolean;
 };
+
+/** True when a combo target has an active connection it may use (all `connections` are active). */
+export function hasRoutableComboConnection(
+  target: ComboCatalogTarget,
+  connections: ReadonlyArray<{ id?: unknown }>
+): boolean {
+  const ids = new Set(connections.map((connection) => connection?.id));
+  if (target.connectionId) return ids.has(target.connectionId);
+  if (target.allowedConnectionIds?.length) {
+    return target.allowedConnectionIds.some((id) => ids.has(id));
+  }
+  return ids.size > 0;
+}
+
+/**
+ * Seats that bound a combo's advertised limits: a seat whose provider has no active connection
+ * is never routed to, so it must not shrink the window. Falls back to every seat when none is
+ * routable, so a fully disabled combo still advertises its conservative minimum.
+ */
+export function selectComboLimitPool(
+  metadata: ComboTargetCatalogMetadata[]
+): ComboTargetCatalogMetadata[] {
+  const routable = metadata.filter((entry) => entry.routable !== false);
+  return routable.length > 0 ? routable : metadata;
+}
 
 export function isPositiveFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;

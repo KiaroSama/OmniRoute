@@ -1,0 +1,1 @@
+- fix(openai): send explicit non-reasoning mode for GPT-6 Luna function tools on Chat Completions, preserving Responses reasoning (#16440).

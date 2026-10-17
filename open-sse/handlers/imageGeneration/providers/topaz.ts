@@ -1,6 +1,12 @@
 import { sanitizeErrorMessage } from "../../../utils/error.ts";
 
-import { extractImageInputs, resolveImageSource, saveImageSuccessResult, saveImageErrorResult, parseSizeToDimensions } from "../shared.ts";
+import {
+  extractImageInputs,
+  resolveImageSource,
+  saveImageSuccessResult,
+  saveImageErrorResult,
+  parseSizeToDimensions,
+} from "../shared.ts";
 export async function handleTopazImageGeneration({
   model,
   provider,
@@ -88,4 +94,3 @@ export async function handleTopazImageGeneration({
     });
   }
 }
-

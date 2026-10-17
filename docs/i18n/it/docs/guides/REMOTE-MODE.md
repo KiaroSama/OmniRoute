@@ -261,6 +261,8 @@ I comandi `tokens` richiedono una credenziale **admin**. Puoi gestire i token an
 nella dashboard, in **Impostazioni → Token di accesso** (creazione, revoca, copia
 singola).
 
+Un token non può mai essere creato con più privilegi di quelli del suo creatore. Solo l’operatore può creare un token `admin`: dalla sessione del pannello, dalla CLI locale sul server stesso, tramite `omniroute connect` con la password o in un’istanza con l’accesso disabilitato. Le credenziali macchina (un token di accesso `admin` o una chiave API con ambito `manage`/`admin`) possono creare solo token `write` e `read`; richiedere `--scope admin` con tali credenziali restituisce `403`.
+
 ---
 
 ## Configurazione di una CLI di programmazione dal catalogo remoto

@@ -3384,6 +3384,10 @@
     "comboRefMember": "کمبو → {name}"
   },
   "combos": {
+    "autoTosIncludeLabel": "ToS: avoid کے نشان والے فراہم کنندگان کو auto میں شامل کریں",
+    "autoTosDescription": "بطور ڈیفالٹ بند ہے۔ صرف ایک اکاؤنٹ نہیں بلکہ تمام auto کومبوز پر لاگو ہوتا ہے۔ فراہم کنندہ کو جوڑنے سے یہ اختیار فعال نہیں ہوتا۔",
+    "autoTosSaveError": "ToS پالیسی محفوظ نہیں ہو سکی۔ پچھلی ترتیب اب بھی دکھائی جا رہی ہے۔ دوبارہ کوشش کریں۔",
+    "autoTosLoadError": "ToS پالیسی لوڈ نہیں ہو سکی۔ اسے بدلنے سے پہلے دوبارہ کوشش کریں۔",
     "title": "کمبوز",
     "description": "وزنی روٹنگ اور فال بیک سپورٹ کے ساتھ ماڈل کمبوز بنائیں",
     "autoCatalogTitle": "آٹو روٹنگ کیٹلاگ",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "مطابق {total} قطاروں میں سے {shown} دکھائی جا رہی ہیں (سرفہرست 50)۔"
   },
   "endpoint": {
+    "cloudUploadDestination": "کلاؤڈ سنک کی منزل (مقامی بیک اپ کی نہیں):",
+    "cloudUploadWarning": "نئی تنصیبات میں کلاؤڈ سنک بطور ڈیفالٹ بند ہوتا ہے۔ اسے فعال کرنے سے فراہم کنندگان کی API کلیدیں، OAuth کے رسائی اور ریفریش ٹوکن، OmniRoute کی API کلیدیں اور ترتیب اوپر دی گئی منزل پر ابھی اور آئندہ سنک کے دوران اپ لوڈ ہوتے ہیں۔ یہ اسٹوریج میں موجود مقامی بیک اپ سے الگ ہے۔ اسے صرف تب فعال کریں جب آپ کو اس سرور پر بھروسا ہو۔",
+    "cloudUploadConsent": "میں یہ سمجھتا/سمجھتی ہوں اور اپنی شناختی اسناد اس منزل پر اپ لوڈ کرنے کی اجازت دیتا/دیتی ہوں۔",
     "title": "API اینڈپوائنٹ",
     "subtitle": "زیادہ تر SDKs اور ٹولز کے ساتھ OpenAI سے ہم آہنگ اینڈپوائنٹ استعمال کریں۔",
     "testEndpoint": "اینڈپوائنٹ آزمائیں →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "یہ فراہم کنندہ بطور ڈیفالٹ auto سے خارج ہے",
+    "tosAvoidNoticeDescription": "اس کی ToS حیثیت avoid ہے۔ اکاؤنٹ جوڑنے سے یہ پالیسی تبدیل نہیں ہوتی۔ تمام auto کومبوز کے لیے عالمی اختیار فعال کرنے سے پہلے فراہم کنندہ کی شرائط پڑھیں۔",
+    "tosAvoidNoticeAction": "auto پالیسی دیکھیں",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "کنکشن غیر فعال کریں",
     "enableConnection": "کنکشن فعال کریں",
     "reauthenticateConnection": "اس کنکشن کی دوبارہ توثیق کریں",
+    "verifyAccount": "اکاؤنٹ کی تصدیق کریں",
+    "verifyAccountHint": "Google اس اکاؤنٹ کی تصدیق کا تقاضا کرتا ہے۔ لنک کھولیں، جانچ مکمل کریں، پھر دوبارہ کوشش کریں۔",
     "proxyConfig": "پراکسی کنفیگریشن",
     "aliasExistsAlert": "عرف \"{alias}\" پہلے سے موجود ہے۔ براہِ کرم کوئی مختلف ماڈل استعمال کریں یا موجودہ عرف میں ترمیم کریں۔",
     "aliasInputPlaceholder": "عرف کا نام",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "پورٹ",
     "qdrantHost": "میزبان",
     "qdrantCollection": "اجتماع",
+    "catalogVisibilityHint": "چھپے ہوئے ماڈل ID کو انہی رسائی اجازتوں کے ساتھ اب بھی کال کیا جا سکتا ہے۔",
     "catalogScopeTitle": "Models API کی فہرست",
     "catalogScopeDesc": "یہ کلید GET /v1/models میں کیا ظاہر کرتی ہے۔ فہرست محدود کرنے سے کبھی بھی اس بات پر اثر نہیں پڑتا کہ کلید کن ماڈلز کو کال کر سکتی ہے۔",
     "catalogScopeAll": "دونوں",

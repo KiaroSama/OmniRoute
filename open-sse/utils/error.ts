@@ -12,8 +12,11 @@ import type { ModelCooldownErrorPayload } from "@/types";
 import { buildPassthroughErrorResponse } from "./upstreamErrorPassthrough.ts";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 import { resolveRetryAfterInstant } from "./retryAfterInstant.ts";
+import { parseAntigravityRetryTime, parseProseRetryDelayMs } from "./proseRetryDelay.ts";
+import { parseDetailedRetryHintFromJsonBody } from "../services/retryAfterJson.ts";
 
 export { parseRetryAfterHeader, resolveRetryAfterInstant } from "./retryAfterInstant.ts";
+export { parseAntigravityRetryTime, parseProseRetryDelayMs };
 
 export { redactSensitiveErrorText, sanitizeErrorMessage, sanitizeUpstreamDetails };
 
@@ -166,6 +169,7 @@ const SAFE_PUBLIC_ERROR_IDENTIFIERS = new Set([
   "invalid_trailer",
   "key_allows_all_combos",
   "key_allows_all_models",
+  "kiro_tool_call_repair_retry_failed",
   "lease_action_invalid",
   "lease_api_key_invalid",
   "lease_authentication_required",
@@ -235,6 +239,7 @@ const SAFE_PUBLIC_ERROR_IDENTIFIERS = new Set([
   "provider_circuit_open",
   "provider_deprecated",
   "provider_error",
+  "provider_not_configured",
   "provider_retired",
   "provider_unavailable",
   "proxy_family_unavailable",
@@ -534,8 +539,7 @@ export function sanitizeRecoveryHint(
   if (!r || typeof r !== "object") return undefined;
   const action = typeof r.action === "string" ? (r.action as ComboRecoveryAction) : null;
   if (!action || !RECOVERY_ACTIONS.has(action)) return undefined;
-  // Reject empty OR whitespace-only next_step — the value must render usefully as a
-  // header and as a body field. A whitespace-only string would print as a blank hint.
+  // Reject empty/whitespace-only next_step: it must render as a non-blank header + body hint.
   const next_step = clampRecoveryStr(r.next_step, 200).trim();
   if (!next_step) return undefined;
   const hint: ComboRecoveryHint = { action, next_step };
@@ -753,57 +757,6 @@ function projectPublicRetryTimestamp(value: unknown): string | null {
 }
 
 /**
- * Parse Antigravity error message to extract retry time
- * Example: "You have exhausted your capacity on this model. Your quota will reset after 2h7m23s."
- * @param {string} message - Error message
- * @returns {number|null} Retry time in milliseconds, or null if not found
- */
-export function parseAntigravityRetryTime(message: unknown): number | null {
-  if (typeof message !== "string") return null;
-
-  // Match patterns like: 2h7m23s, 5m30s, 45s, 1h20m, etc.
-  const match = message.match(/reset after (\d+h)?(\d+m)?(\d+s)?/i);
-  if (!match) return null;
-
-  let totalMs = 0;
-
-  // Extract hours
-  if (match[1]) {
-    const hours = parseInt(match[1]);
-    totalMs += hours * 60 * 60 * 1000;
-  }
-
-  // Extract minutes
-  if (match[2]) {
-    const minutes = parseInt(match[2]);
-    totalMs += minutes * 60 * 1000;
-  }
-
-  // Extract seconds
-  if (match[3]) {
-    const seconds = parseInt(match[3]);
-    totalMs += seconds * 1000;
-  }
-
-  return totalMs > 0 ? totalMs : null;
-}
-
-const MAX_PROSE_RETRY_MS = 24 * 60 * 60 * 1000;
-
-/**
- * Retry delay in ms from upstream error prose (Antigravity "reset after 2h7m23s",
- * generic "retry after 30s"), capped at 24h; null when the text carries no hint.
- */
-export function parseProseRetryDelayMs(text: unknown): number | null {
-  if (typeof text !== "string" || text === "") return null;
-  const antigravityMs = parseAntigravityRetryTime(text);
-  if (antigravityMs) return Math.min(antigravityMs, MAX_PROSE_RETRY_MS);
-  const m = /retry\s+after\s+(\d{1,9})\s*s/i.exec(text);
-  const ms = m ? Number.parseInt(m[1], 10) * 1000 : 0;
-  return ms > 0 ? Math.min(ms, MAX_PROSE_RETRY_MS) : null;
-}
-
-/**
  * Combo drain paths: ISO retry time read from the prose of an upstream error body,
  * JSON or plain text. Null when RETRY_AFTER_PROVENANCE_ENABLED is off (legacy:
  * only structured retry fields are read) or when the text carries no hint.
@@ -838,14 +791,18 @@ export function logRetryHintUnreadable(
  * @returns {Promise<{statusCode: number, message: string, retryAfterMs: number|null, responseBody: unknown}>}
  */
 export async function parseUpstreamError(response: Response, provider: string | null = null) {
+  // Cap maximum retry time at 24 hours to prevent infinite wait
+  const MAX_RETRY_MS = 24 * 60 * 60 * 1000;
   let message = "";
   let retryAfterMs: number | null = null;
   let responseBody: unknown = null;
   let errorCode: unknown = undefined;
   let errorType: unknown = undefined;
+  let rawText = "";
 
   try {
     const text = await response.text();
+    rawText = text;
     responseBody = normalizePayloadForLog(text);
 
     // Try parse as JSON
@@ -888,6 +845,19 @@ export async function parseUpstreamError(response: Response, provider: string | 
     }
   }
 
+  // #16442: a structured google.rpc.RetryInfo detail (`error.details[].retryDelay`)
+  // with NO prose hint in the message and NO Retry-After header is still an
+  // authoritative upstream window — Gemini 429s carry the delay only there. Read
+  // it from the raw body before the prose heuristics, mirroring the structured-
+  // first order detectRetryHint() uses on the classification side. Returns null
+  // for non-JSON bodies, so this is a no-op on every existing path.
+  if (response.status === 429 && !retryAfterMs) {
+    const structuredHint = parseDetailedRetryHintFromJsonBody(rawText, MAX_RETRY_MS);
+    if (structuredHint) {
+      retryAfterMs = structuredHint.retryAfterMs;
+    }
+  }
+
   // Parse Antigravity-specific retry time from error message
   if (provider === "antigravity" && response.status === 429) {
     retryAfterMs = parseAntigravityRetryTime(messageStr);
@@ -906,8 +876,6 @@ export async function parseUpstreamError(response: Response, provider: string | 
     }
   }
 
-  // Cap maximum retry time at 24 hours to prevent infinite wait
-  const MAX_RETRY_MS = 24 * 60 * 60 * 1000;
   if (retryAfterMs && retryAfterMs > MAX_RETRY_MS) {
     retryAfterMs = MAX_RETRY_MS;
   }
@@ -925,6 +893,23 @@ export async function parseUpstreamError(response: Response, provider: string | 
     responseBody,
     responseHeaders,
   };
+}
+
+/**
+ * Headers for a createErrorResult response. #16442: a parsed upstream retry hint
+ * must ride the REBUILT response, not only the `result.retryAfterMs` field —
+ * the fallback engine (chat.ts → markAccountUnavailable → checkFallbackError →
+ * detectRetryHint) reads `result.response.headers`, so dropping the header
+ * dropped the hint and every Gemini 429 with a details-only google.rpc.RetryInfo
+ * locked the model for the 3s base cooldown instead of the real upstream window.
+ * Standard seconds form; the passthrough branch below already does the same.
+ */
+function buildErrorResultHeaders(retryAfterMs: number | null | undefined): Record<string, string> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (retryAfterMs && Number.isFinite(retryAfterMs) && retryAfterMs > 0) {
+    headers["Retry-After"] = String(Math.ceil(retryAfterMs / 1000));
+  }
+  return headers;
 }
 
 /**
@@ -977,7 +962,7 @@ export function createErrorResult(
     errorCode,
     response: new Response(JSON.stringify(body), {
       status: statusCode,
-      headers: { "Content-Type": "application/json" },
+      headers: buildErrorResultHeaders(retryAfterMs),
     }),
   };
 

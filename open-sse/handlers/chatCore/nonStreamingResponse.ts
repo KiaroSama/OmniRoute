@@ -387,7 +387,7 @@ export async function runNonStreamingResponse(deps: NonStreamingDeps) {
         reqLogger.logTargetRequest(captured.url, captured.headers, captured.body);
       }
       reqLogger.logError(new Error(err.error || "Provider request failed"), finalBody);
-      const isNetworkThrow = Boolean(err.originalError);
+      const isNetworkThrow = Boolean(err.originalError) && errUpstreamBody == null;
       // #3229: Antigravity terminal failures are diagnosed from the bounded projection, never
       // from the upstream payload — see isAntigravityProvider in antigravityUpstreamError.ts.
       const isAgyProvider = isAntigravityProvider(provider);
@@ -396,7 +396,7 @@ export async function runNonStreamingResponse(deps: NonStreamingDeps) {
         ? agyDiagnostic
         : isNetworkThrow
           ? undefined
-          : err.response;
+          : errUpstreamBody;
       if (isAgyProvider) {
         reqLogger.logProviderDiagnostic(agyDiagnostic);
       } else if (err.response && !isNetworkThrow) {
@@ -404,7 +404,7 @@ export async function runNonStreamingResponse(deps: NonStreamingDeps) {
           err.status,
           err.response.statusText || "Error",
           err.response.headers,
-          err.response
+          persistedProviderErrorBody
         );
       }
       appendRequestLog({

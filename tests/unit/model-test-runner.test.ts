@@ -325,6 +325,18 @@ test("resolveModelTestTimeoutMs gives zai-web checks up to 60 seconds", () => {
   assert.equal(resolveModelTestTimeoutMs("zai-web", "zai-web/glm-5.3-flash", 90_000), 90_000);
 });
 
+test("resolveModelTestTimeoutMs applies a 60-second minimum to Xiaomi MiMo Token Plan checks", () => {
+  assert.equal(
+    resolveModelTestTimeoutMs("xiaomi-mimo-token-plan", "mimo-v2.6-flash", 30_000),
+    60_000
+  );
+  assert.equal(resolveModelTestTimeoutMs("xiaomi-mimo", "mimo-v2.6-flash", 30_000), 30_000);
+  assert.equal(
+    resolveModelTestTimeoutMs("xiaomi-mimo-token-plan", "mimo-v2.6-flash", 90_000),
+    90_000
+  );
+});
+
 test("runSingleModelTest skips web-session providers before sending a chat probe", async () => {
   const result = await runSingleModelTest({
     providerId: "deepseek-web",
@@ -496,4 +508,60 @@ test("#13376 a generation-only model is skipped with a 4xx and is never dispatch
   } finally {
     globalThis.fetch = originalFetch;
   }
+});
+
+test("detectTestKind prioritizes chat/responses capability over secondary audio-transcriptions", () => {
+  const result = detectTestKind(
+    "cx/gpt-6-sol-high",
+    {
+      apiFormat: "responses",
+      supportedEndpoints: ["chat", "images", "audio-transcriptions"],
+    },
+    undefined
+  );
+  assert.equal(result.isAudioTranscription, false);
+  assert.equal(result.isRerank, false);
+  assert.equal(result.isEmbedding, false);
+});
+
+test("detectTestKind: node-level chat/responses apiType never overrides per-model or name detection", () => {
+  // The node apiType is only a fallback for models without metadata.
+  const audioOnChatNode = detectTestKind("vendor/x", { apiFormat: "audio-transcriptions" }, "chat");
+  assert.equal(audioOnChatNode.isAudioTranscription, true);
+
+  const embeddingOnChatNode = detectTestKind(
+    "vendor/x",
+    { supportedEndpoints: ["embeddings"] },
+    "chat"
+  );
+  assert.equal(embeddingOnChatNode.isEmbedding, true);
+
+  // A Responses-typed node can still host an embedding model.
+  const embeddingOnResponsesNode = detectTestKind(
+    "vendor/x",
+    { supportedEndpoints: ["embeddings"] },
+    "responses"
+  );
+  assert.equal(embeddingOnResponsesNode.isEmbedding, true);
+  assert.equal(embeddingOnResponsesNode.isResponses, false);
+
+  // Name heuristics are not neutralised by a chat-typed node.
+  assert.equal(detectTestKind("vendor/rerank-x", null, "chat").isRerank, true);
+  assert.equal(detectTestKind("vendor/text-embedding-3", null, "chat").isEmbedding, true);
+
+  // A model-level apiFormat of chat-completions does not beat a per-model audio endpoint.
+  const audioEndpointWithChatFormat = detectTestKind(
+    "vendor/x",
+    { apiFormat: "chat-completions", supportedEndpoints: ["audio-transcriptions"] },
+    "chat"
+  );
+  assert.equal(audioEndpointWithChatFormat.isAudioTranscription, true);
+
+  // Only the model's own supportedEndpoints with chat wins over audio-transcriptions.
+  const multimodal = detectTestKind(
+    "vendor/x",
+    { supportedEndpoints: ["chat", "audio-transcriptions"] },
+    undefined
+  );
+  assert.equal(multimodal.isAudioTranscription, false);
 });

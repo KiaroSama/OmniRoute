@@ -1,0 +1,1 @@
+- **fix(grok-cli):** keep hosted `web_search`/`x_search` tools and the function `tool_choice` forces when capping Grok Build requests at its 200-tool limit ([#16728](https://github.com/diegosouzapw/OmniRoute/pull/16728)) — thanks @ryanngit

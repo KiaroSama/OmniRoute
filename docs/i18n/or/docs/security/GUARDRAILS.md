@@ -85,6 +85,10 @@ Guardrailଗୁଡ଼ିକ OmniRoute ଏବଂ ଅପ୍ଷ୍ଟ୍ରିମ�
 ଫୋର୍ସଡ୍ ମୋଡ୍ଗୁଡ଼ିକ ଅଟୋ ହ୍ୟୁରିଷ୍ଟିକ୍ ଚାଲିବା **ପୂର୍ବରୁ** ସର୍ଟ-ସର୍କିଟ୍ କରନ୍ତି;
 `auto` ବ୍ୟବହାର PR-1 ପୂର୍ବ ଗାର୍ଡରେଲ୍ ସହିତ ବାଇଟ୍-ଆଇଡେଣ୍ଟିକାଲ୍ ଅଟେ।
 
+#### API କିର ପରିସର (`visionBridgeKeyScope.ts`)
+
+API କି ସଂଯୋଗ, କୋଟା ଗୋଷ୍ଠୀ କିମ୍ବା ମଡେଲ୍‌କୁ ସୀମିତ କଲେ (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), ପୁନଃରୁଟିଂ ଓ ବର୍ଣ୍ଣନା କେବଳ ସେହି କି ପାଇଁ ଅନୁମୋଦିତ ମଡେଲ୍ ଓ ସଂଯୋଗ ବାଛନ୍ତି। ବର୍ଣ୍ଣନା ସର୍ବଦା `x-omniroute-self-loop-key-id` ହେଡର୍ ସହ OmniRouteର ନିଜସ୍ୱ ଲୁପ୍‌ରେ ଯାଏ, ଯାହା ସଂଯୋଗ ଓ ମଡେଲ୍ ନୀତିକୁ ପୁଣି ଲାଗୁ କରେ। `enforceApiKeyPolicy()` ସେହି ଲୁପ୍‌ର bearer ଟୋକେନ୍ ସହିତ ହିଁ ହେଡର୍‌କୁ ଗ୍ରହଣ କରେ: ଏହା କେବଳ ପ୍ରବେଶ କମାଇପାରେ ଏବଂ ଅଜଣା ID ପ୍ରତ୍ୟାଖ୍ୟାନ ହୁଏ। ଅନୁମୋଦିତ ଭିଜନ୍ ମଡେଲ୍ ନଥିଲେ ବର୍ଣ୍ଣନା ଛାଡ଼ି ଦିଆଯାଏ ଓ ନିଷ୍କ୍ରିୟ ସୁରକ୍ଷା ପରି ଅନୁରୋଧ ଅପରିବର୍ତ୍ତିତ ଯାଏ (meta `{ skipped: true, reason: "no_permitted_vision_model" }`)। କି ବିହୀନ ଅନୁରୋଧ ଏବଂ ଏହି ସୀମା ନଥିବା କି ପୂର୍ବପରି କାମ କରନ୍ତି।
+
 #### ଟାସ୍କ-ଆୱେର୍ ବର୍ଣ୍ଣନା ପ୍ରମ୍ପ୍ଟ୍ (`modalityBridgeVisionTaskAware`)
 
 ଡିଫଲ୍ଟ **true**। `composeVisionPrompt()` (`visionBridgeHelpers.ts`)

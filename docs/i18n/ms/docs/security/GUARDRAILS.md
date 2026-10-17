@@ -82,6 +82,10 @@ Aliran:
 Mod paksa memintas **sebelum** heuristik auto berjalan; tingkah laku `auto`
 adalah sama persis bait dengan guardrail pra-PR-1.
 
+#### Skop kunci API (`visionBridgeKeyScope.ts`)
+
+Jika kunci API mengehadkan sambungan, kumpulan kuota atau model (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), penghalaan semula dan penerangan hanya memilih model serta sambungan yang dibenarkan untuk kunci itu. Penerangan sentiasa melalui gelung dalaman OmniRoute dengan pengepala `x-omniroute-self-loop-key-id`, lalu menguatkuasakan semula dasar sambungan dan model. `enforceApiKeyPolicy()` hanya menerima pengepala bersama token bearer gelung itu: ia hanya boleh mengecilkan akses dan ID yang tidak dikenali ditolak. Jika tiada model penglihatan dibenarkan, penerangan dilangkau dan permintaan kekal tidak berubah, seperti perlindungan yang dinyahaktifkan (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Permintaan tanpa kunci dan kunci tanpa sekatan ini berfungsi seperti sebelumnya.
+
 #### Gesaan huraian peka tugas (`modalityBridgeVisionTaskAware`)
 
 Lalai **benar**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) menambahkan teks

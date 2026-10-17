@@ -150,6 +150,8 @@ operadores:
   de rotas que os painéis remotos utilizam legitimamente para operações CRUD
   de fornecedores.
 
+  O carregador de snapshots de execução também elimina essas entradas de uma linha de definições guardada, e a importação JSON legada (`/api/settings/import-json`) nunca escreve as chaves de bypass. Cada entrada de `LOCAL_ONLY_API_PREFIXES` deve constar da lista de negação ou ter sido revista como elegível para bypass. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Auditar o acesso** — para verificar que nenhum acesso externo ao anfitrião está a chegar a estas rotas:
 
 - Abra o **Inventário de Autorizações** em `/dashboard/settings/security`: este apresenta a

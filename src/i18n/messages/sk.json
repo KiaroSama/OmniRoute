@@ -3384,6 +3384,10 @@
     "comboRefMember": "Kombinácia → {name}"
   },
   "combos": {
+    "autoTosIncludeLabel": "Zahrnúť do auto poskytovateľov označených ToS: avoid",
+    "autoTosDescription": "Predvolene vypnuté. Platí pre všetky kombinácie auto, nielen pre jeden účet. Pripojenie poskytovateľa túto možnosť nezapne.",
+    "autoTosSaveError": "Pravidlá ToS sa nepodarilo uložiť. Stále sa zobrazuje predchádzajúce nastavenie. Skúste to znova.",
+    "autoTosLoadError": "Pravidlá ToS sa nepodarilo načítať. Pred ich zmenou to skúste znova.",
     "title": "kombá",
     "description": "Vytvárajte kombinácie modelov s váženým smerovaním a záložnou podporou",
     "autoCatalogTitle": "Katalóg automatického smerovania",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Zobrazuje sa {shown} z {total} zodpovedajúcich riadkov (top 50)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Cieľ synchronizácie s cloudom (nie miestnych záloh):",
+    "cloudUploadWarning": "Pri nových inštaláciách je synchronizácia s cloudom predvolene vypnutá. Jej zapnutím sa API kľúče poskytovateľov, prístupové a obnovovacie tokeny OAuth, API kľúče OmniRoute a konfigurácia nahrajú do vyššie uvedeného cieľa, teraz aj pri budúcich synchronizáciách. Táto funkcia je oddelená od miestnych záloh v časti Skladovanie. Zapnite ju iba vtedy, ak danému serveru dôverujete.",
+    "cloudUploadConsent": "Rozumiem a povoľujem nahranie svojich prihlasovacích údajov do tohto cieľa.",
     "title": "Koncový bod API",
     "subtitle": "Použite koncový bod kompatibilný s OpenAI vo väčšine SDK a nástrojov.",
     "testEndpoint": "Otestovať koncový bod →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Tento poskytovateľ je predvolene vylúčený z auto",
+    "tosAvoidNoticeDescription": "Jeho stav ToS je označený ako avoid. Pripojenie účtu tieto pravidlá nemení. Pred zapnutím globálnej možnosti pre všetky kombinácie auto si prečítajte podmienky poskytovateľa.",
+    "tosAvoidNoticeAction": "Zobraziť pravidlá auto",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Zakázať pripojenie",
     "enableConnection": "Povoliť pripojenie",
     "reauthenticateConnection": "Znova overte toto pripojenie",
+    "verifyAccount": "Overiť účet",
+    "verifyAccountHint": "Google vyžaduje overenie tohto účtu. Otvorte odkaz, dokončite overenie a skúste to znova.",
     "proxyConfig": "Konfigurácia proxy",
     "aliasExistsAlert": "Alias „{alias}“ už existuje. Použite iný model alebo upravte existujúci alias.",
     "aliasInputPlaceholder": "názov aliasu",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Port",
     "qdrantHost": "Hostiteľ",
     "qdrantCollection": "Zbierka",
+    "catalogVisibilityHint": "Skryté identifikátory modelov je možné naďalej volať s rovnakými prístupovými oprávneniami.",
     "catalogScopeTitle": "Zoznam rozhrania Models API",
     "catalogScopeDesc": "Čo GET /v1/models uvádza pre tento kľúč. Zúženie zoznamu nikdy nemení, čo môže kľúč volať.",
     "catalogScopeAll": "Oboje",

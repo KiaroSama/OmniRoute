@@ -230,22 +230,26 @@ async function currentSelectorChoice(
 
 /**
  * First member in declared order that is neither excluded by the caller nor
- * set aside in the refusal memory for this entry. Falls back to the least
- * recently set-aside member when every candidate is set aside (progress over
- * refusal); null only when nothing is eligible at all (e.g. single member).
- * `nowMs` is frozen by the caller for the whole switch (no clock drift
- * between the record and the pick).
+ * set aside in the refusal memory for this entry. Members served by a sibling
+ * selector of the same core rank last at equal refusal state. Falls back to
+ * the least recently set-aside member when every candidate is set aside
+ * (progress over refusal); null only when nothing is eligible at all (e.g.
+ * single member). `nowMs` is frozen by the caller for the whole switch (no
+ * clock drift between the record and the pick).
  */
 export function pickLiveMember(
   entryKey: string,
   members: string[],
   excluded: Set<string>,
-  nowMs: number
+  nowMs: number,
+  served?: Set<string>
 ): string | null {
   const candidates = members.filter((m) => !excluded.has(m));
   if (candidates.length === 0) return null;
-  const fresh = candidates.find((m) => !isSelectorMemberAvoided(entryKey, m, nowMs));
-  if (fresh) return fresh;
+  const fresh = candidates.filter((m) => !isSelectorMemberAvoided(entryKey, m, nowMs));
+  const unserved = fresh.find((m) => !(served?.has(m) ?? false));
+  if (unserved) return unserved;
+  if (fresh.length > 0) return fresh[0]!;
   return leastRecentlySetAside(entryKey, candidates, nowMs);
 }
 
@@ -260,14 +264,16 @@ function avoidExtraForSwitch(
   live: { members: string[]; current: string | null } | null,
   setAsideKey: string,
   currentName: string | null,
-  now: number
+  now: number,
+  servedBySiblings?: Set<string>
 ): string[] | undefined {
   if (live == null) return undefined;
   const memoryTarget = pickLiveMember(
     setAsideKey,
     live.members,
     new Set([currentName ?? setAsideKey, setAsideKey].filter((x): x is string => !!x)),
-    now
+    now,
+    servedBySiblings
   );
   if (!memoryTarget) return undefined;
   const avoidExtra = live.members.filter((m) => m !== memoryTarget);
@@ -355,7 +361,8 @@ async function runSwitch(
   hit: { controlUrl: string; selector: string; secretEnc: string | null; subscriptionId: string },
   setAsideKey: string,
   now: number,
-  kind: ProxyRefusalKind
+  kind: ProxyRefusalKind,
+  siblings?: Array<{ selector: string; secretEnc: string | null }>
 ): Promise<SelectorTriggerResult> {
   const throttleKey = `${hit.subscriptionId} ${hit.selector}`;
   // Reserve the slot BEFORE the await: two concurrent triggers for the same
@@ -398,13 +405,28 @@ async function runSwitch(
   const live = await currentSelectorChoice(hit.controlUrl, secret, hit.selector);
   const currentName = live?.current ?? null;
   if (currentName) noteProxyMemberRefusal(setAsideKey, currentName, kind, now);
+  // Sibling choice read: one best-effort GET per steered selector of the same
+  // core known to resolvePairs (same controlUrl). Each sibling uses its own
+  // stored secret; an unreadable sibling reads as unknown and never blocks
+  // the switch. A single-selector core reads no sibling at all.
+  const servedBySiblings = new Set<string>();
+  for (const sibling of siblings ?? []) {
+    if (sibling.selector === hit.selector) continue;
+    const siblingSecret = readSwitchSecret(sibling.secretEnc);
+    const siblingLive = await currentSelectorChoice(
+      hit.controlUrl,
+      siblingSecret,
+      sibling.selector
+    );
+    if (siblingLive?.current) servedBySiblings.add(siblingLive.current);
+  }
   const res = await switchSelector(
     {
       controlUrl: hit.controlUrl,
       secret,
       selector: hit.selector,
       avoidName: currentName ?? setAsideKey,
-      avoidExtra: avoidExtraForSwitch(live, setAsideKey, currentName, now),
+      avoidExtra: avoidExtraForSwitch(live, setAsideKey, currentName, now, servedBySiblings),
     },
     undefined
   );
@@ -517,7 +539,15 @@ export async function maybeSwitchOnSetAside(
       });
       return { switched: false, reason: "throttled" };
     }
-    return runSwitch(hit, setAsideKey, now, switchOutcomeKind(setAsideKey, now, opts?.kind));
+    return runSwitch(
+      hit,
+      setAsideKey,
+      now,
+      switchOutcomeKind(setAsideKey, now, opts?.kind),
+      pairs
+        .filter((p) => p.controlUrl === hit.controlUrl && p.selector !== hit.selector)
+        .map((p) => ({ selector: p.selector, secretEnc: p.secretEnc }))
+    );
   } catch {
     return { switched: false, reason: "network-error" };
   }

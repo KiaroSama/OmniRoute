@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**Limitazzjoni tat-TLS:** Il-mini HTTPS `CONNECT` jinqabdu bħala metadata biss (host, port, ħinijiet) — il-korp TLS ma jiġix deċifrat b’mod predefinit. Attiva l-għażla "Iddeċifra HTTPS fil-modalità proxy" (teħtieġ attivazzjoni espliċita u li ċ-ċertifikat ta’ AgentBridge ikun fdat) biex tispezzjona l-korp kollu.
+**Limitazzjoni tat-TLS:** Il-mini HTTPS `CONNECT` jinqabdu bħala metadata biss (host, port, ħinijiet) — il-korp TLS ma jiġix deċifrat b’mod predefinit.
 
 **Kunflitt tal-port:** Jekk il-port 8080 ikun qed jintuża, AgentBridge jirritorna 409 bi żball strutturat. Ibdel il-port permezz tal-varjabbli tal-ambjent `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -465,12 +465,11 @@ Mogħdija bażi: `/api/tools/traffic-inspector/`
 
 ### Modalitajiet tal-qbid
 
-| Metodu | Mogħdija                       | Deskrizzjoni                                                                                                               |
-| ------ | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/capture-modes`               | L-istat tal-modalitajiet AgentBridge / hosts personalizzati / HTTP_PROXY / proxy tas-sistema + il-kontroll `tls-intercept` |
-| POST   | `/capture-modes/http-proxy`    | Ibda/waqqaf il-listener ta' HTTP_PROXY (`{action: "start"\|"stop"}`)                                                       |
-| POST   | `/capture-modes/system-proxy`  | Applika/irriversja l-proxy tas-sistema kollha (`{action: "apply"\|"revert"}`)                                              |
-| POST   | `/capture-modes/tls-intercept` | Aqleb id-deċifrar tal-korp HTTPS fil-modalità proxy (`{enabled: boolean}`)                                                 |
+| Metodu | Mogħdija                      | Deskrizzjoni                                                                                 |
+| ------ | ----------------------------- | -------------------------------------------------------------------------------------------- |
+| GET    | `/capture-modes`              | L-istat tal-modalitajiet AgentBridge / hosts personalizzati / HTTP_PROXY / proxy tas-sistema |
+| POST   | `/capture-modes/http-proxy`   | Ibda/waqqaf il-listener ta' HTTP_PROXY (`{action: "start"\|"stop"}`)                         |
+| POST   | `/capture-modes/system-proxy` | Applika/irriversja l-proxy tas-sistema kollha (`{action: "apply"\|"revert"}`)                |
 
 > Id-**deċifrar TPROXY** (modalità ta' qbid 5) jitħaddem minn rotta **separata** taħt il-
 > prefiss AgentBridge — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — mhux

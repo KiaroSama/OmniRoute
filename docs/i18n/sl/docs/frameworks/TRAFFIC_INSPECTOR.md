@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**Omejitev TLS:** Tuneli HTTPS `CONNECT` se privzeto zajemajo samo kot metapodatki (gostitelj, vrata, časovni podatki) — vsebina TLS ni dešifrirana. Za popoln pregled vsebine omogočite stikalo »Dešifriraj HTTPS v načinu posredniškega strežnika« (izbirno, zahteva, da je potrdilo AgentBridge zaupanja vredno).
+**Omejitev TLS:** Tuneli HTTPS `CONNECT` se privzeto zajemajo samo kot metapodatki (gostitelj, vrata, časovni podatki) — vsebina TLS ni dešifrirana.
 
 **Spor vrat:** Če so vrata 8080 v uporabi, AgentBridge vrne stanje 409 s strukturirano napako. Vrata spremenite prek okoljske spremenljivke `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -464,12 +464,11 @@ Osnovna pot: `/api/tools/traffic-inspector/`
 
 ### Načini zajemanja
 
-| Metoda | Pot                            | Opis                                                                                                                               |
-| ------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/capture-modes`               | Stanje načinov AgentBridge / gostiteljev po meri / HTTP_PROXY / sistemskega posredniškega strežnika in preklopnika `tls-intercept` |
-| POST   | `/capture-modes/http-proxy`    | Zažene/ustavi poslušalnik HTTP_PROXY (`{action: "start"\|"stop"}`)                                                                 |
-| POST   | `/capture-modes/system-proxy`  | Uveljavi/povrne sistemski posredniški strežnik (`{action: "apply"\|"revert"}`)                                                     |
-| POST   | `/capture-modes/tls-intercept` | Preklopi dešifriranje telesa HTTPS v načinu posredniškega strežnika (`{enabled: boolean}`)                                         |
+| Metoda | Pot                           | Opis                                                                                                |
+| ------ | ----------------------------- | --------------------------------------------------------------------------------------------------- |
+| GET    | `/capture-modes`              | Stanje načinov AgentBridge / gostiteljev po meri / HTTP_PROXY / sistemskega posredniškega strežnika |
+| POST   | `/capture-modes/http-proxy`   | Zažene/ustavi poslušalnik HTTP_PROXY (`{action: "start"\|"stop"}`)                                  |
+| POST   | `/capture-modes/system-proxy` | Uveljavi/povrne sistemski posredniški strežnik (`{action: "apply"\|"revert"}`)                      |
 
 > **Dešifriranje TPROXY** (način zajemanja 5) se upravlja prek **ločene** poti pod
 > predpono AgentBridge — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — in ne

@@ -106,4 +106,6 @@ export const USAGE_SUPPORTED_PROVIDERS: readonly string[] = [
   // ChatPlayground subscription and daily credits (GET /api/user)
   "chatplayground",
   "cpl",
+  // Cloudflare Workers AI daily neurons vs the 10k/day free allocation (needs Analytics: Read)
+  "cloudflare-ai",
 ];

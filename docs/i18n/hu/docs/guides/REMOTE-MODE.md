@@ -223,6 +223,8 @@ omniroute tokens scopes               # a három hatókör ismertetése
 A `tokens` parancsokhoz **admin** hitelesítő adat szükséges. A tokeneket
 az irányítópult **Settings → Access Tokens** részében is kezelheti (létrehozás, visszavonás, egyszeri másolás).
 
+Egy token soha nem hozható létre a létrehozója jogosultságainál nagyobb jogosultságokkal. `admin` tokent csak az üzemeltető hozhat létre: a vezérlőpult munkamenetéből, a szerveren futó helyi CLI-ből, az `omniroute connect` paranccsal és a jelszóval, vagy egy kikapcsolt bejelentkezésű példányon. A gépi hitelesítő adatok (`admin` hozzáférési token vagy `manage`/`admin` hatókörű API-kulcs) csak `write` és `read` tokeneket hozhatnak létre; az ezekkel kért `--scope admin` eredménye `403`.
+
 ---
 
 ## Kódolási CLI konfigurálása a távoli katalógusból

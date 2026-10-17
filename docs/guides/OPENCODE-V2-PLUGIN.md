@@ -127,11 +127,16 @@ Set `"geminiSanitization": false` to turn it off.
 
 ## Troubleshooting
 
-| Symptom                               | Cause                                                                                                    |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| Picker shows no OmniRoute model       | No key resolved (check the startup warning), or the gateway is unreachable                               |
-| Raw model ids, no combos, no pricing  | The management endpoints refused the token — set `managementReadToken`                                   |
-| A session pinned to `opencode-<id>/…` | The v1 plugin published `opencode-<id>`; v2 publishes `<id>` bare, so re-select the model under `<id>/…` |
+| Symptom                               | Cause                                                                                                           |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Picker shows no OmniRoute model       | No key resolved (check the startup warning), or the gateway is unreachable                                      |
+| Raw model ids, no combos, no pricing  | The management endpoints refused the token — set `managementReadToken`                                          |
+| Short or empty `freeOnly` catalog     | No management token or a refused token — read the refresh summary line (`unmatched-free` count) in the host log |
+| A session pinned to `opencode-<id>/…` | The v1 plugin published `opencode-<id>`; v2 publishes `<id>` bare, so re-select the model under `<id>/…`        |
+
+Environment variables must reach the opencode server process: when the host
+runs as a service, the shell that runs `opencode models` and the server
+environment are different, so export the key where the server reads it.
 
 ## See also
 

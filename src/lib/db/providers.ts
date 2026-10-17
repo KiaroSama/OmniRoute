@@ -12,10 +12,7 @@ import { createLazyRowProxy } from "./providers/lazyConnectionView";
 import { invalidateDbCache, getCachedRawProviderConnections } from "./readCache";
 import { invalidateConnectionUpdate, type UpdateOpts } from "./readCache";
 import { reorderConnections } from "./providers/deletion";
-import { normalizeProviderSpecificData } from "@/lib/providers/requestDefaults";
-import { withDerivedCookieExpiry } from "@/shared/utils/webCookieExpiry";
-import { WEB_COOKIE_PROVIDERS } from "@/shared/constants/providers";
-import { ensureCodexFingerprintSeed } from "@omniroute/open-sse/config/codexIdentity.ts";
+import { normalizeConnectionProviderSpecificData } from "./providers/providerSpecificData";
 import { bumpProxyConfigGeneration, getSettings } from "./settings";
 import {
   getStoredManagementPassword,
@@ -35,53 +32,6 @@ import { reconcileCodexUsageHistory } from "./providers/usageIdentityReconciliat
 import { isRuntimeRetiredProviderId } from "@/shared/constants/providerRetirement";
 import { applyCodexChildCooldownClearOnUpdate } from "./providers/codexAccountState";
 
-/**
- * normalizeProviderSpecificData + the Codex fingerprint-seed invariant: Codex
- * OAuth connections whose convergence mode derives account-scoped identities
- * (device/session/full — the default session included) carry a persisted
- * random seed (`codexFingerprintSeed`) as the derivation source. Created here
- * at the persistence choke point so every write path (manual create, OAuth
- * persist, edit, import) is covered; the seed is never regenerated once valid,
- * so identities stay put across saves. Pre-seed connections rotate from the
- * legacy connection-id derivation exactly once on their next write — the
- * OmniRoute analog of sub2api's migration-225 backfill (v0.1.178, #5696).
- */
-function normalizeConnectionProviderSpecificData(
-  provider: string | null,
-  providerSpecificData: unknown,
-  credentials: { accessToken?: unknown; refreshToken?: unknown },
-  existingProviderSpecificData?: unknown
-) {
-  const normalized = normalizeProviderSpecificData(provider, providerSpecificData);
-  const withExpiry = withDerivedCookieExpiryForProvider(provider, normalized, credentials);
-  if (provider !== "codex") return withExpiry;
-  return ensureCodexFingerprintSeed(
-    withExpiry,
-    credentials,
-    (existingProviderSpecificData as Record<string, unknown> | null) ?? null
-  );
-}
-
-function withDerivedCookieExpiryForProvider(
-  provider: string | null,
-  providerSpecificData: unknown,
-  credentials: { accessToken?: unknown; refreshToken?: unknown } | unknown
-): Record<string, unknown> {
-  const key = String(provider || "").toLowerCase();
-  if (!(WEB_COOKIE_PROVIDERS as Record<string, unknown>)[key]) {
-    // Both branches must satisfy the Codex seed signature below; the
-    // passthrough keeps whatever shape normalization already returned.
-    return (providerSpecificData ?? {}) as Record<string, unknown>;
-  }
-  const source = credentials as Record<string, unknown> | null;
-  const credential =
-    source && typeof source === "object"
-      ? (typeof source.apiKey === "string" && source.apiKey) ||
-        (typeof source.cookie === "string" && source.cookie) ||
-        null
-      : null;
-  return withDerivedCookieExpiry(providerSpecificData, credential);
-}
 import {
   withNullableMaxConcurrent,
   withNullableQuotaWindowThresholds,

@@ -262,6 +262,8 @@ Teastaíonn dintiúr **riarthóra** ó na horduithe `tokens`. Is féidir leat
 comharthaí a bhainistiú sa phainéal freisin faoi **Socruithe → Comharthaí
 Rochtana** (cruthaigh, cúlghair, cóipeáil uair amháin).
 
+Ní féidir comhartha a chruthú riamh le níos mó pribhléidí ná mar atá ag a chruthaitheoir. Is é an t-oibreoir amháin atá in ann comhartha `admin` a chruthú: trí sheisiún an deais, an CLI áitiúil ar an bhfreastalaí féin, `omniroute connect` leis an bhfocal faire, nó in ásc ina bhfuil logáil isteach díchumasaithe. Ní féidir le dintiúir mheaisín (comhartha rochtana `admin` nó eochair API le scóip `manage`/`admin`) ach comharthaí `write` agus `read` a chruthú; tugann iarratas ar `--scope admin` leo `403` ar ais.
+
 ---
 
 ## CLI códúcháin a chumrú ón gcatalóg chianda

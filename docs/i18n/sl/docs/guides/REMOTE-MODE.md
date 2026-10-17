@@ -239,6 +239,8 @@ omniroute tokens scopes               # razloži tri obsege
 
 Ukazi `tokens` zahtevajo poverilnico **skrbnika**. Žetone lahko upravljate tudi na nadzorni plošči v razdelku **Nastavitve → Žetoni za dostop** (ustvarjanje, preklic, enkratno kopiranje).
 
+Žetona nikoli ni mogoče ustvariti z več pravicami, kot jih ima njegov ustvarjalec. Žeton `admin` lahko ustvari le upravljavec: prek seje nadzorne plošče, lokalnega CLI na samem strežniku, z `omniroute connect` in geslom ali v primerku z onemogočeno prijavo. Strojne poverilnice (žeton za dostop `admin` ali ključ API z obsegom `manage`/`admin`) lahko ustvarjajo le žetone `write` in `read`; zahteva `--scope admin` s temi poverilnicami vrne `403`.
+
 ---
 
 ## Konfiguriranje CLI-ja za programiranje iz oddaljenega kataloga

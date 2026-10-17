@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**قيود TLS:** تُلتقط أنفاق `CONNECT` الخاصة بـ HTTPS على هيئة بيانات وصفية فقط (المضيف، والمنفذ، والتوقيت) — ولا يُفك تشفير محتوى TLS افتراضيًا. فعّل مفتاح التبديل "فك تشفير HTTPS في وضع الوكيل" (اختياري، ويتطلب الوثوق بشهادة AgentBridge) لفحص المحتوى بالكامل.
+**قيود TLS:** تُلتقط أنفاق `CONNECT` الخاصة بـ HTTPS على هيئة بيانات وصفية فقط (المضيف، والمنفذ، والتوقيت) — ولا يُفك تشفير محتوى TLS افتراضيًا.
 
 **تعارض المنفذ:** إذا كان المنفذ 8080 مستخدمًا، يعيد AgentBridge استجابة 409 تتضمن خطأً منظمًا. غيّر المنفذ عبر متغير البيئة `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -464,12 +464,11 @@ netsh winhttp reset proxy
 
 ### أوضاع الالتقاط
 
-| الطريقة | المسار                         | الوصف                                                                                                |
-| ------- | ------------------------------ | ---------------------------------------------------------------------------------------------------- |
-| GET     | `/capture-modes`               | حالة أوضاع AgentBridge / المضيفين المخصّصين / HTTP_PROXY / وكيل النظام + مفتاح تبديل `tls-intercept` |
-| POST    | `/capture-modes/http-proxy`    | بدء/إيقاف مستمع HTTP_PROXY (`{action: "start"\|"stop"}`)                                             |
-| POST    | `/capture-modes/system-proxy`  | تطبيق/إلغاء وكيل النظام (`{action: "apply"\|"revert"}`)                                              |
-| POST    | `/capture-modes/tls-intercept` | تبديل فك تشفير محتوى HTTPS في وضع الوكيل (`{enabled: boolean}`)                                      |
+| الطريقة | المسار                        | الوصف                                                                  |
+| ------- | ----------------------------- | ---------------------------------------------------------------------- |
+| GET     | `/capture-modes`              | حالة أوضاع AgentBridge / المضيفين المخصّصين / HTTP_PROXY / وكيل النظام |
+| POST    | `/capture-modes/http-proxy`   | بدء/إيقاف مستمع HTTP_PROXY (`{action: "start"\|"stop"}`)               |
+| POST    | `/capture-modes/system-proxy` | تطبيق/إلغاء وكيل النظام (`{action: "apply"\|"revert"}`)                |
 
 > يُدار **فك تشفير TPROXY** (وضع الالتقاط 5) بواسطة مسار **منفصل** ضمن بادئة
 > AgentBridge — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — وليس

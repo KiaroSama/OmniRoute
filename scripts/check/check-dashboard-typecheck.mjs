@@ -23,10 +23,10 @@
 //   node scripts/check/check-dashboard-typecheck.mjs
 //   node scripts/check/check-dashboard-typecheck.mjs --update   # re-freeze baseline
 
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { runBuildTool } from "../build/buildToolRunner.mjs";
 
 const ROOT = process.cwd();
 const TSCONFIG = path.join(ROOT, "tsconfig.typecheck-dashboard.json");
@@ -96,9 +96,10 @@ export function diffAgainstBaseline(live, baseline) {
 
 function runTsc() {
   try {
-    const stdout = execFileSync(
-      process.platform === "win32" ? "npx.cmd" : "npx",
-      ["tsc", "--pretty", "false", "--noEmit", "-p", TSCONFIG],
+    const stdout = runBuildTool(
+      "typescript",
+      "tsc",
+      ["--pretty", "false", "--noEmit", "-p", TSCONFIG],
       { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, cwd: ROOT }
     );
     return stdout;
@@ -147,7 +148,9 @@ function main() {
       `[dashboard-typecheck] ${improvements.length} baselined error(s) no longer present ` +
         `— run 'node scripts/check/check-dashboard-typecheck.mjs --update' to ratchet the baseline down:\n` +
         improvements
-          .map((i) => `  - ${i.file} ${i.code} (baseline ${i.baselineCount} -> live ${i.liveCount})`)
+          .map(
+            (i) => `  - ${i.file} ${i.code} (baseline ${i.baselineCount} -> live ${i.liveCount})`
+          )
           .join("\n")
     );
   }

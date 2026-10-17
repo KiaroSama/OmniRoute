@@ -1204,7 +1204,7 @@ test("BaseExecutor helpers manage custom user agents and upstream extra headers"
 
   setUserAgentHeader(headers, "MyAgent/2.0");
   assert.equal(headers["User-Agent"], "MyAgent/2.0");
-  assert.equal(headers["user-agent"], "MyAgent/2.0");
+  assert.equal(headers["user-agent"], undefined);
 
   applyConfiguredUserAgent(headers, { customUserAgent: "MyAgent/3.0" });
   assert.equal(headers["User-Agent"], "MyAgent/3.0");
@@ -1216,7 +1216,7 @@ test("BaseExecutor helpers manage custom user agents and upstream extra headers"
   });
   assert.equal(headers.Authorization, "Bearer override");
   assert.equal(headers["User-Agent"], "Merged/4.0");
-  assert.equal(headers["user-agent"], "Merged/4.0");
+  assert.equal(headers["user-agent"], undefined);
   assert.equal(headers["X-Upstream"], "1");
 });
 

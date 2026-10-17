@@ -1,15 +1,30 @@
 /**
- * Auto-combo no-auth allowlist — the `auto`/`auto-*` candidate pool must only
- * pull in no-auth (keyless) providers verified to work without any credential on
- * our reference egress. As of this change that allowlist is narrowed to
- * `opencode`: on the reference VPS (.15) it answers 200 with zero configuration.
- * The other no-auth providers
- * (duckduckgo-web, aihorde) stay OUT of every auto/* pool
- * until re-verified — they remain usable via direct `<alias>/<model>` calls, they
- * are just not auto-routed to.
+ * Auto-combo no-auth pool — the `auto`/`auto-*` candidate pool may only pull in
+ * no-auth (keyless) providers that opted into prompt-emulated tool calling.
  *
- * Regression guard: AUTO_COMBO_NOAUTH_ALLOWLIST in
- * open-sse/services/autoCombo/virtualFactory.ts drives what belongs here.
+ * The pool is no longer a hand-maintained id list: it is derived at startup from
+ * NOAUTH_PROVIDERS, taking every entry with `noAuth: true` and
+ * `toolCalling: "emulated"`. Those providers answer without any credential, and
+ * their tool calls are executed by the 3rd-party CLI (Claude Code, Codex, Cursor…)
+ * rather than by the upstream.
+ *
+ * Every other keyless provider stays OUT of every auto/* pool — it remains fully
+ * usable via direct `<alias>/<model>` calls, it is just not auto-routed to.
+ *
+ * Owner-accepted set (no feature flag): `cloudflare-playground`,
+ * `devin-cli-agentic`, `duckduckgo-web`, `opencode`, and `uncloseai`.
+ * `duckduckgo-web` and `devin-cli-agentic` already carried
+ * `toolCalling: "emulated"`; the other three opt in the same way.
+ * `aihorde`, `auggie`, `codex-app-server`, `veoaifree-web`, and `zcode` have no
+ * flag and stay out. `duckduckgo-web` is in the pool, not excluded.
+ *
+ * Historical note: until 2026-07-24 (refs #8183/#6453/#7032) the pool was a
+ * hardcoded `{opencode}` allowlist. That narrowing is retired.
+ *
+ * Regression guard: EMULATED_TOOL_CALLING_NOAUTH_PROVIDERS in
+ * open-sse/services/autoCombo/emulatedNoAuthAllowlist.ts drives what belongs
+ * here. Adding `toolCalling: "emulated"` to another NOAUTH_PROVIDERS entry WILL
+ * change the pool and must update ALLOWED_NOAUTH_PROVIDERS below.
  */
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -53,17 +68,31 @@ test.after(async () => {
   }
 });
 
-const ALLOWED_NOAUTH_PROVIDERS = ["opencode"];
-const EXCLUDED_NOAUTH_PROVIDERS = ["duckduckgo-web", "aihorde"];
+// Exactly the NOAUTH_PROVIDERS entries with `noAuth: true` + `toolCalling: "emulated"`.
+const ALLOWED_NOAUTH_PROVIDERS = [
+  "cloudflare-playground",
+  "devin-cli-agentic",
+  "duckduckgo-web",
+  "opencode",
+  "uncloseai",
+];
+// Keyless providers that never opted in — must stay out of every auto/* pool.
+const EXCLUDED_NOAUTH_PROVIDERS = [
+  "aihorde",
+  "auggie",
+  "codex-app-server",
+  "veoaifree-web",
+  "zcode",
+];
 
-test("fresh install: the allowlisted no-auth providers are present in the auto-combo pool", async () => {
+test("fresh install: the emulated-tool-calling no-auth providers are present in the auto-combo pool", async () => {
   const combo = await virtualFactory.createVirtualAutoCombo(undefined);
 
   for (const providerId of ALLOWED_NOAUTH_PROVIDERS) {
     const models = combo.models.filter((m: { providerId: string }) => m.providerId === providerId);
     assert.ok(
       models.length >= 1,
-      `allowlisted no-auth provider "${providerId}" must be present in the fresh-install ` +
+      `no-auth provider "${providerId}" (toolCalling: "emulated") must be present in the fresh-install ` +
         `auto-combo pool. Pool providers: ${JSON.stringify([...new Set(combo.models.map((m: { providerId: string }) => m.providerId))])}`
     );
     assert.ok(
@@ -77,7 +106,7 @@ test("fresh install: the allowlisted no-auth providers are present in the auto-c
   }
 });
 
-test("fresh install: non-allowlisted no-auth providers are EXCLUDED from the auto-combo pool", async () => {
+test("fresh install: no-auth providers without the emulated opt-in are EXCLUDED from the auto-combo pool", async () => {
   const combo = await virtualFactory.createVirtualAutoCombo(undefined);
 
   for (const providerId of EXCLUDED_NOAUTH_PROVIDERS) {
@@ -85,8 +114,9 @@ test("fresh install: non-allowlisted no-auth providers are EXCLUDED from the aut
     assert.equal(
       present,
       false,
-      `no-auth provider "${providerId}" must NOT be auto-routed to (not in allowlist), ` +
-        `but it appeared in the pool. Pool: ${JSON.stringify(combo.models.map((m: { model: string }) => m.model))}`
+      `no-auth provider "${providerId}" must NOT be auto-routed to (it carries no ` +
+        `toolCalling: "emulated" opt-in), but it appeared in the pool. ` +
+        `Pool: ${JSON.stringify(combo.models.map((m: { model: string }) => m.model))}`
     );
     assert.ok(
       !combo.autoConfig.candidatePool.includes(providerId),
@@ -95,7 +125,7 @@ test("fresh install: non-allowlisted no-auth providers are EXCLUDED from the aut
   }
 });
 
-test("fresh install: EVERY synthetic-noauth candidate belongs to an allowlisted provider (no other keyless provider leaks in)", async () => {
+test("fresh install: ONLY the emulated-tool-calling providers are synthetic-noauth candidates (no other keyless provider leaks in)", async () => {
   const combo = await virtualFactory.createVirtualAutoCombo(undefined);
 
   const noauthProviders = [
@@ -108,7 +138,7 @@ test("fresh install: EVERY synthetic-noauth candidate belongs to an allowlisted 
   assert.deepEqual(
     noauthProviders,
     [...ALLOWED_NOAUTH_PROVIDERS].sort(),
-    `only the allowlisted providers may be no-auth (connectionId="noauth") candidates on a ` +
+    `only the emulated-tool-calling providers may be no-auth (connectionId="noauth") candidates on a ` +
       `fresh install, but found: ${JSON.stringify(noauthProviders)}`
   );
 });

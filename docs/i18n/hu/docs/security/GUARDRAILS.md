@@ -56,6 +56,10 @@ Folyamat:
 
 A kényszerített módok **mielőtt** az automatikus heurisztika futna, rövidre zárnak; az `auto` viselkedés byte-ra azonos a PR-1 előtti védőkorláttal.
 
+#### Az API-kulcs hatóköre (`visionBridgeKeyScope.ts`)
+
+Ha az API-kulcs korlátozza a kapcsolatokat, kvótakészleteket vagy modelleket (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), az átirányítás és a leírás csak a kulcsnak engedélyezett modelleket és kapcsolatokat választja. A leírás mindig az OmniRoute belső visszahívásán keresztül halad a `x-omniroute-self-loop-key-id` fejléccel, ismét érvényesítve a kapcsolat- és modellszabályokat. A `enforceApiKeyPolicy()` csak e visszahívás bearer tokenjével együtt fogadja el a fejlécet: az csak szűkítheti a hozzáférést, az ismeretlen azonosítót pedig elutasítja. Engedélyezett képfeldolgozó modell hiányában a leírás kimarad, és a kérés változatlanul továbbhalad, mint kikapcsolt védelemnél (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). A kulcs nélküli kérések és az ilyen korlátozás nélküli kulcsok a korábbiak szerint működnek.
+
 #### Feladatspecifikus leírási prompt (`modalityBridgeVisionTaskAware`)
 
 Alapértelmezett **igaz**. A `composeVisionPrompt()` (`visionBridgeHelpers.ts`) hozzáfűzi az **utolsó felhasználói üzenet** szövegét (500 karakterre csonkítva) az alap leírási prompt-hoz, irányítva a leírást afelé, amit a felhasználó ténylegesen kért (codex-vision-proxy minta), és arra kéri a látásmodellt, hogy írja át a látható szöveget. Ha a jelző ki van kapcsolva — vagy nincs felhasználói szöveg — az alap prompt változatlanul kerül felhasználásra.

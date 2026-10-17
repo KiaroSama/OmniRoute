@@ -15,6 +15,7 @@ import {
 import { stripObfuscationZeroWidth } from "../utils/zeroWidth.ts";
 import { normalizeArrayContentChunk } from "../utils/arrayContentDelta.ts";
 import { assignAliasCacheWrite } from "../utils/pickCacheCreationTokens.ts";
+import { findBalancedJsonEnd } from "./responseSanitizer/balancedJson.ts";
 export {
   extractThinkingFromContent,
   shouldParseTextualReasoningTags,
@@ -131,50 +132,6 @@ function stripZeroWidthValue(value: unknown): unknown {
     );
   }
   return value;
-}
-
-function findBalancedJsonEnd(text: string, startIndex: number): number {
-  if (startIndex < 0 || startIndex >= text.length || text[startIndex] !== "{") return -1;
-
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-
-  for (let index = startIndex; index < text.length; index += 1) {
-    const char = text[index];
-
-    if (inString) {
-      if (escaped) {
-        escaped = false;
-        continue;
-      }
-      if (char === "\\") {
-        escaped = true;
-        continue;
-      }
-      if (char === '"') {
-        inString = false;
-      }
-      continue;
-    }
-
-    if (char === '"') {
-      inString = true;
-      continue;
-    }
-
-    if (char === "{") {
-      depth += 1;
-      continue;
-    }
-
-    if (char === "}") {
-      depth -= 1;
-      if (depth === 0) return index;
-    }
-  }
-
-  return -1;
 }
 
 function stripInternalToolEnvelopeText(content: string): string {
@@ -524,6 +481,11 @@ function sanitizeUsage(usage: unknown): unknown {
     }
   }
   applyCacheHitTokensToUsage(usageRecord, sanitized); // DeepSeek/MiniMax/Bedrock cache-hit passthrough (#8171)
+  // OpenRouter's provider-billed USD cost: keep it only as a finite bare number.
+  const reportedCost = usageRecord.cost;
+  if (typeof reportedCost === "number" && Number.isFinite(reportedCost) && reportedCost >= 0) {
+    sanitized.cost = reportedCost;
+  }
   // Ensure required fields
   const promptTokens = toNumber(sanitized.prompt_tokens) ?? 0;
   const completionTokens = toNumber(sanitized.completion_tokens) ?? 0;
@@ -1185,6 +1147,8 @@ export function sanitizeStreamingChunk(parsed: unknown): unknown {
           }
           if (deltaRecord.function_call !== undefined)
             delta.function_call = stripZeroWidthFunctionArguments(deltaRecord.function_call);
+          // Generated-image deltas (gemini-to-openai inlineData) must survive the allow-list.
+          if (Array.isArray(deltaRecord.images)) delta.images = deltaRecord.images;
           c.delta = delta;
         } else {
           c.delta = choiceRecord.delta;

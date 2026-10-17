@@ -72,28 +72,28 @@ og oppgir endepunktet og hva som gikk tapt — slik at en redusert modellvelger 
 
 ## Alternativer
 
-| Nøkkel                           | Standardverdi                                        | Merknader                                                                                                         |
-| -------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `providerId`                     | `"omniroute"`                                        | Leverandør-ID, integrasjons-ID og prefikset som modellene vises under                                             |
-| `baseURL`                        | påkrevd                                              | Rotadresse for gatewayen, kun `http(s)`; suffikset `/v1` legges til der det er nødvendig                          |
-| `apiKey`                         | tilkoblet legitimasjon, deretter `OMNIROUTE_API_KEY` | Chat-nøkkel for `/v1/*`                                                                                           |
-| `managementReadToken`            | faller tilbake på `apiKey`                           | Nøkkel for `/api/*` — vanligvis **ikke** den samme                                                                |
-| `displayName`                    | `"OmniRoute"`                                        | Leverandørnavn i velgeren                                                                                         |
-| `timeoutMs`                      | `10000`                                              | Tidsavbrudd per endepunkt (automatiske kombinasjoner bruker 5 s)                                                  |
-| `modelCacheTtlMs`                | `300000`                                             | TTL for katalogbufferen; et øyeblikksbilde på disken gir raskere kaldstarter                                      |
-| `timeouts`                       | faller tilbake på `timeoutMs`                        | Tidsbudsjetter per endepunkt i ms: `models`, `combos`, `autoCombos`, `enrichment`                                 |
-| `enrichment`                     | `true`                                               | Hent navn, priser og budsjetter for gratisnivået                                                                  |
-| `providerTag`                    | `true`                                               | Sett leverandøren den ruter til, foran visningsnavnet                                                             |
-| `usableOnly`                     | `false`                                              | Behold bare leverandører som gatewayen rapporterer som klargjort                                                  |
-| `showcasePerOwner`               | `10`                                                 | Antall oppføringer per leverandør som beholdes i standardvisningen                                                |
-| `freshPerOwner`                  | `10`                                                 | Antall nye oppføringer per leverandør som beholdes i standardvisningen                                            |
-| `freshWindowDays`                | `90`                                                 | Tidsvindu for nye oppføringer, i dager                                                                            |
-| `usageMemory`                    | `true`                                               | Gjenopprett statisk fjernede oppføringer som finnes i bruksanalysen for 30 dager (krever et administrasjonstoken) |
-| `visibleModels` / `hiddenModels` | `[]`                                                 | Tillatelseslister med eksakt samsvar eller suffikssamsvar; avvisning har forrang                                  |
-| `geminiSanitization`             | `true`                                               | Fjern JSON Schema-nøkkelordene som Gemini avviser, fra verktøyskjemaer (`$ref`-verktøy videresendes uendret)      |
-| `apiFormat.allowAnthropic`       | `false`                                              | Rut ID-er på tillatelseslisten gjennom Anthropic API-blokken                                                      |
-| `apiFormat.anthropicModels`      | `[]`                                                 | Fullstendige modell-ID-er som rutes til Anthropic                                                                 |
-| `logLevel` / `startupDebug`      | `warn` / `false`                                     | Detaljnivå for logging                                                                                            |
+| Nøkkel                           | Standardverdi                                        | Merknader                                                                                                                              |
+| -------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `providerId`                     | `"omniroute"`                                        | Leverandør-ID, integrasjons-ID og prefikset modellene vises under                                                                      |
+| `baseURL`                        | påkrevd                                              | Rotadresse for gatewayen, kun `http(s)`; suffikset `/v1` legges til der det er nødvendig                                               |
+| `apiKey`                         | tilkoblet legitimasjon, deretter `OMNIROUTE_API_KEY` | Chatnøkkel for `/v1/*`                                                                                                                 |
+| `managementReadToken`            | bruker `apiKey` som reserve                          | Nøkkel for `/api/*` — vanligvis **ikke** den samme                                                                                     |
+| `displayName`                    | `"OmniRoute"`                                        | Leverandørnavn i velgeren                                                                                                              |
+| `timeoutMs`                      | `10000`                                              | Tidsavbrudd per endepunkt (automatiske kombinasjoner bruker 5 s)                                                                       |
+| `modelCacheTtlMs`                | `300000`                                             | TTL for katalogbufferen; et diskøyeblikksbilde varmer opp kaldstarter                                                                  |
+| `timeouts`                       | bruker `timeoutMs` som reserve                       | Tidsbudsjetter per endepunkt i ms: `models`, `combos`, `autoCombos`, `enrichment`                                                      |
+| `enrichment`                     | `true`                                               | Hent navn, priser og budsjetter for gratisnivået                                                                                       |
+| `providerTag`                    | `true`                                               | Sett leverandøren den ruter til, foran visningsnavnet                                                                                  |
+| `usableOnly`                     | `false`                                              | Behold bare leverandører som gatewayen rapporterer som klargjort                                                                       |
+| `showcasePerOwner`               | `10`                                                 | Oppføringer som beholdes per leverandør i standardvisningen                                                                            |
+| `freshPerOwner`                  | `10`                                                 | Nye oppføringer som beholdes per leverandør i standardvisningen                                                                        |
+| `freshWindowDays`                | `90`                                                 | Tidsvindu for hva som regnes som nytt, i dager                                                                                         |
+| `usageMemory`                    | `true`                                               | Gjenopprett statisk utelatte oppføringer navngitt av bruksanalyse for 30 dager (krever et administrasjonstoken)                        |
+| `visibleModels` / `hiddenModels` | `[]`                                                 | Tillatelseslister med eksakt treff eller suffikstreff; avvisning vinner; `*` publiserer hele katalogen (andre filtre gjelder fortsatt) |
+| `geminiSanitization`             | `true`                                               | Fjern JSON Schema-nøkkelordene Gemini avviser fra verktøyskjemaer (`$ref`-verktøy videresendes uendret)                                |
+| `apiFormat.allowAnthropic`       | `false`                                              | Rut tillatte ID-er gjennom Anthropic API-blokken                                                                                       |
+| `apiFormat.anthropicModels`      | `[]`                                                 | Fullstendige modell-ID-er som rutes til Anthropic                                                                                      |
+| `logLevel` / `startupDebug`      | `warn` / `false`                                     | Loggerens detaljnivå                                                                                                                   |
 
 Bruksminne er aktivert som standard. Uten et administrasjonstoken forblir det inaktivt
 (et oppstartsvarsel logges), og ingenting gjenopprettes.

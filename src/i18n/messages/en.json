@@ -3387,6 +3387,10 @@
     "title": "Combos",
     "description": "Create model combos with weighted routing and fallback support",
     "autoCatalogTitle": "Auto-routing catalog",
+    "autoTosLoadError": "Could not load the ToS policy. Retry before changing it.",
+    "autoTosSaveError": "Could not save the ToS policy. The previous setting is still shown. Try again.",
+    "autoTosIncludeLabel": "Include providers marked ToS: avoid in auto",
+    "autoTosDescription": "Off by default. Applies to all auto combos, not just one account. Connecting a provider does not enable this option.",
     "autoCatalogTemplateCount": "{count} templates",
     "autoCatalogDescription": "Built-in auto/* combos resolved dynamically from connected providers. Use any of these IDs as the model field — no setup needed.",
     "autoCatalogExpand": "Expand auto-routing catalog",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Showing {shown} of {total} matching rows (top 50)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Cloud sync destination (not local backups):",
+    "cloudUploadWarning": "Cloud sync is disabled by default on new installations. Enabling it uploads provider API keys, OAuth access/refresh tokens, OmniRoute API keys, and configuration to the destination above, now and during future syncs. This is separate from local Storage backups. Only enable it if you trust that server.",
+    "cloudUploadConsent": "I understand and authorize uploading my credentials to this destination.",
     "title": "API Endpoint",
     "subtitle": "Use the OpenAI-compatible endpoint with most SDKs and tools.",
     "testEndpoint": "Test endpoint →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "This provider is excluded from auto by default",
+    "tosAvoidNoticeDescription": "Its ToS status is marked avoid. Connecting an account does not change this policy. Review the provider terms before using the global opt-in for all auto combos.",
+    "tosAvoidNoticeAction": "Review the auto policy",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Disable connection",
     "enableConnection": "Enable connection",
     "reauthenticateConnection": "Re-authenticate this connection",
+    "verifyAccount": "Verify account",
+    "verifyAccountHint": "Google requires you to verify this account. Open the link, complete the check, then retry.",
     "proxyConfig": "Proxy config",
     "aliasExistsAlert": "Alias \"{alias}\" already exists. Please use a different model or edit existing alias.",
     "aliasInputPlaceholder": "alias name",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Port",
     "qdrantHost": "Host",
     "qdrantCollection": "Collection",
+    "catalogVisibilityHint": "Hidden model IDs remain callable with the same access permissions.",
     "catalogScopeTitle": "Models API listing",
     "catalogScopeDesc": "What GET /v1/models advertises for this key. Narrowing the list never changes what the key can call.",
     "catalogScopeAll": "Both",

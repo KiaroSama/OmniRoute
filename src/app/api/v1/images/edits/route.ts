@@ -9,6 +9,11 @@ import {
   isFalImageEditModel,
 } from "@omniroute/open-sse/handlers/imageGeneration/providers/fal.ts";
 import { createInjectionGuard } from "@/middleware/promptInjectionGuard";
+import { handleAdobeFireflyEditRequest } from "@/lib/images/adobeFireflyEdit";
+import {
+  runImageRequestWithAccounting,
+  type ImageRequestAccounting,
+} from "@/lib/usage/imageRequestAccounting";
 import {
   getProviderCredentialsWithQuotaPreflight,
   clearRecoveredProviderState,
@@ -45,7 +50,6 @@ import {
 import { readEditInput, type EditInput } from "./editInput.ts";
 import {
   executeImageEditCombo,
-  handleAdobeFireflyEditRequest,
   handleSyntxEditRequest,
   dispatchAntigravityEdit,
   dispatchCodexImagesEdit,
@@ -68,7 +72,19 @@ function jsonResponse(data: unknown, status = 200): Response {
     headers: { "Content-Type": "application/json" },
   });
 }
+type EditAccountingBase = Pick<ImageRequestAccounting, "apiKeyInfo" | "startTime">;
+
+function editAccounting(
+  base: EditAccountingBase,
+  provider: string,
+  model: string | null | undefined,
+  credentials: unknown
+): ImageRequestAccounting {
+  return { ...base, endpoint: "/v1/images/edits", provider, model, credentials };
+}
+
 async function postHandler(request: Request, _context?: unknown) {
+  const startTime = Date.now();
   let input: EditInput | null;
   try {
     input = await readEditInput(request);
@@ -164,6 +180,7 @@ async function postHandler(request: Request, _context?: unknown) {
         nativeOptions,
         allowedConnections: comboAllowedConnections,
         request,
+        accounting: { apiKeyInfo: comboPolicy.apiKeyInfo, startTime },
       });
     }
   }
@@ -194,6 +211,7 @@ async function postHandler(request: Request, _context?: unknown) {
     policy.apiKeyInfo?.allowedConnections && policy.apiKeyInfo.allowedConnections.length > 0
       ? policy.apiKeyInfo.allowedConnections
       : null;
+  const accounting: EditAccountingBase = { apiKeyInfo: policy.apiKeyInfo, startTime };
 
   const parsed = parseImageModel(resolvedModel);
   const providerConfig = parsed.provider ? getImageProvider(parsed.provider) : null;
@@ -243,10 +261,19 @@ async function postHandler(request: Request, _context?: unknown) {
       return errorResponse(429, "Selected image account is already leased; try again later");
     if (!isUsableImageCredentials(credentials))
       return errorResponse(401, "Image credential selection did not return usable credentials");
-    const result = await dispatchAntigravityEdit(
-      { parsed, providerConfig, modelStr: resolvedModel },
-      credentials,
-      { prompt, size, responseFormat, images, aspectRatio, imageSize, hasMask, request }
+    const result = await runImageRequestWithAccounting(
+      editAccounting(accounting, parsed.provider, parsed.model, credentials),
+      () =>
+        dispatchAntigravityEdit({ parsed, providerConfig, modelStr: resolvedModel }, credentials, {
+          prompt,
+          size,
+          responseFormat,
+          images,
+          aspectRatio,
+          imageSize,
+          hasMask,
+          request,
+        })
     );
     if (result.success) {
       await clearRecoveredProviderState(credentials);
@@ -259,7 +286,16 @@ async function postHandler(request: Request, _context?: unknown) {
   }
   // Explicit image engines use JSON Images; hosted orchestration models retain their route.
   if (providerConfig?.format === "codex-responses" && isCodexImagesModel(parsed.model)) {
-    const ctx = { prompt, size, responseFormat, images, hasMask, nativeOptions, request };
+    const ctx = {
+      prompt,
+      size,
+      responseFormat,
+      images,
+      hasMask,
+      nativeOptions,
+      request,
+      accounting,
+    };
     const validation = validateCodexImagesEditOptions(ctx);
     if (validation) return errorResponse(400, validation);
     const credentials = await getProviderCredentialsWithQuotaPreflight(
@@ -369,20 +405,24 @@ async function postHandler(request: Request, _context?: unknown) {
     }
 
     const editImage = () =>
-      handleCodexImageEdit({
-        provider: parsed.provider,
-        model: parsed.model,
-        providerConfig,
-        body: {
-          prompt,
-          size: size ?? undefined,
-          response_format: responseFormat ?? undefined,
-        },
-        referenceImages: images,
-        credentials,
-        log,
-        signal: request.signal,
-      });
+      runImageRequestWithAccounting(
+        editAccounting(accounting, parsed.provider, parsed.model, credentials),
+        () =>
+          handleCodexImageEdit({
+            provider: parsed.provider,
+            model: parsed.model,
+            providerConfig,
+            body: {
+              prompt,
+              size: size ?? undefined,
+              response_format: responseFormat ?? undefined,
+            },
+            referenceImages: images,
+            credentials,
+            log,
+            signal: request.signal,
+          })
+      );
 
     const result = await (connectionId
       ? runWithProxyContext(proxyInfo?.proxy || null, editImage).catch(() => ({
@@ -432,20 +472,24 @@ async function postHandler(request: Request, _context?: unknown) {
       return errorResponse(429, "Selected image account is already leased; try again later");
     if (!isUsableImageCredentials(credentials))
       return errorResponse(401, "Image credential selection did not return usable credentials");
-    const result = await handleFalAIImageEdit({
-      provider: parsed.provider,
-      model: parsed.model,
-      providerConfig,
-      body: {
-        prompt,
-        size: size ?? undefined,
-        response_format: responseFormat ?? undefined,
-        n: 1,
-      },
-      images,
-      credentials,
-      log,
-    });
+    const result = await runImageRequestWithAccounting(
+      editAccounting(accounting, parsed.provider, parsed.model, credentials),
+      () =>
+        handleFalAIImageEdit({
+          provider: parsed.provider,
+          model: parsed.model,
+          providerConfig,
+          body: {
+            prompt,
+            size: size ?? undefined,
+            response_format: responseFormat ?? undefined,
+            n: 1,
+          },
+          images,
+          credentials,
+          log,
+        })
+    );
 
     if (result.success === false && "error" in result) {
       return jsonResponse(
@@ -473,6 +517,7 @@ async function postHandler(request: Request, _context?: unknown) {
       images,
       imageBytes,
       imageMime,
+      accounting,
     });
   }
 
@@ -488,6 +533,7 @@ async function postHandler(request: Request, _context?: unknown) {
       images,
       imageBytes,
       imageMime,
+      accounting,
     });
   }
 
@@ -525,18 +571,22 @@ async function postHandler(request: Request, _context?: unknown) {
       return errorResponse(429, "Selected image account is already leased; try again later");
     if (!isUsableImageCredentials(credentials))
       return errorResponse(401, "Image credential selection did not return usable credentials");
-    const result = await handleOpenRouterImageEdit({
-      provider: parsed.provider,
-      model: parsed.model,
-      baseUrl: providerConfig.baseUrl,
-      credentials,
-      prompt,
-      imageBytes,
-      imageMime,
-      size: size ?? undefined,
-      n: 1,
-      log,
-    });
+    const result = await runImageRequestWithAccounting(
+      editAccounting(accounting, parsed.provider, parsed.model, credentials),
+      () =>
+        handleOpenRouterImageEdit({
+          provider: parsed.provider,
+          model: parsed.model,
+          baseUrl: providerConfig.baseUrl,
+          credentials,
+          prompt,
+          imageBytes,
+          imageMime,
+          size: size ?? undefined,
+          n: 1,
+          log,
+        })
+    );
 
     if (result.success) {
       await clearRecoveredProviderState(credentials);
@@ -598,18 +648,22 @@ async function postHandler(request: Request, _context?: unknown) {
     return errorResponse(429, "Selected image account is already leased; try again later");
   if (!isUsableImageCredentials(credentials))
     return errorResponse(401, "Image credential selection did not return usable credentials");
-  const result = await handleOpenAIImageEdit({
-    provider: customProviderId,
-    model: customModel,
-    credentials,
-    prompt,
-    imageBytes,
-    imageMime,
-    size,
-    responseFormat,
-    n: 1,
-    log,
-  });
+  const result = await runImageRequestWithAccounting(
+    editAccounting(accounting, customProviderId, customModel, credentials),
+    () =>
+      handleOpenAIImageEdit({
+        provider: customProviderId,
+        model: customModel,
+        credentials,
+        prompt,
+        imageBytes,
+        imageMime,
+        size,
+        responseFormat,
+        n: 1,
+        log,
+      })
+  );
 
   if (result.success) {
     await clearRecoveredProviderState(credentials);

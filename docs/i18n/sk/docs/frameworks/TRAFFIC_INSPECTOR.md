@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**Obmedzenie TLS:** Tunely HTTPS `CONNECT` sa predvolene zachytávajú iba ako metadáta (hostiteľský názov, port, časovanie) — telo TLS sa nedešifruje. Ak chcete kontrolovať celé telo, zapnite prepínač „Dešifrovať HTTPS v režime proxy“ (voliteľné, vyžaduje, aby bol certifikát AgentBridge dôveryhodný).
+**Obmedzenie TLS:** Tunely HTTPS `CONNECT` sa predvolene zachytávajú iba ako metadáta (hostiteľský názov, port, časovanie) — telo TLS sa nedešifruje.
 
 **Konflikt portov:** Ak sa port 8080 používa, AgentBridge vráti stav 409 so štruktúrovanou chybou. Port zmeňte prostredníctvom premennej prostredia `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -464,12 +464,11 @@ Základná cesta: `/api/tools/traffic-inspector/`
 
 ### Režimy zachytávania
 
-| Metóda | Cesta                          | Popis                                                                                                               |
-| ------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/capture-modes`               | Stav režimov AgentBridge / vlastných hostiteľov / HTTP_PROXY / systémového proxy servera + prepínač `tls-intercept` |
-| POST   | `/capture-modes/http-proxy`    | Spustenie/zastavenie poslucháča HTTP_PROXY (`{action: "start"\|"stop"}`)                                            |
-| POST   | `/capture-modes/system-proxy`  | Použitie/obnovenie systémového proxy servera (`{action: "apply"\|"revert"}`)                                        |
-| POST   | `/capture-modes/tls-intercept` | Prepnutie dešifrovania tela HTTPS v režime proxy servera (`{enabled: boolean}`)                                     |
+| Metóda | Cesta                         | Popis                                                                                    |
+| ------ | ----------------------------- | ---------------------------------------------------------------------------------------- |
+| GET    | `/capture-modes`              | Stav režimov AgentBridge / vlastných hostiteľov / HTTP_PROXY / systémového proxy servera |
+| POST   | `/capture-modes/http-proxy`   | Spustenie/zastavenie poslucháča HTTP_PROXY (`{action: "start"\|"stop"}`)                 |
+| POST   | `/capture-modes/system-proxy` | Použitie/obnovenie systémového proxy servera (`{action: "apply"\|"revert"}`)             |
 
 > **Dešifrovanie TPROXY** (režim zachytávania 5) sa ovláda prostredníctvom **samostatnej** trasy pod
 > predponou AgentBridge — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — nie

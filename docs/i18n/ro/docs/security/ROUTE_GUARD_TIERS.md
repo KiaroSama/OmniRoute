@@ -142,6 +142,8 @@ două responsabilități pentru operator:
   `/api/providers/` pentru a le detecta, extinzând excesiv un arbore de rute
   pe care panourile de control de la distanță îl utilizează în mod legitim pentru operațiunile CRUD asupra furnizorilor.
 
+  Încărcătorul instantaneelor de execuție elimină aceste intrări și dintr-un rând de setări salvat, iar importul JSON vechi (`/api/settings/import-json`) nu scrie niciodată cheile de ocolire. Fiecare intrare din `LOCAL_ONLY_API_PREFIXES` trebuie să fie în lista de interdicții sau să fi fost verificată și aprobată pentru ocolire. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Auditarea accesului** — pentru a verifica dacă niciun acces din afara gazdei nu ajunge la aceste rute:
 
 - Deschideți **Inventarul de autorizare** la `/dashboard/settings/security`: acesta afișează lista

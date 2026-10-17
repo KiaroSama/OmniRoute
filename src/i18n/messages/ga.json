@@ -3384,6 +3384,10 @@
     "comboRefMember": "Teaglaim → {name}"
   },
   "combos": {
+    "autoTosLoadError": "Níorbh fhéidir an polasaí téarmaí seirbhíse a lódáil. Bain triail eile as sula n-athraíonn tú é.",
+    "autoTosSaveError": "Níorbh fhéidir an polasaí téarmaí seirbhíse a shábháil. Tá an socrú roimhe seo fós á thaispeáint. Bain triail eile as.",
+    "autoTosIncludeLabel": "Cuir soláthraithe marcáilte ToS: avoid san áireamh in auto",
+    "autoTosDescription": "Múchta de réir réamhshocraithe. Baineann sé le gach teaglaim auto, ní le cuntas amháin. Ní chumasaítear an rogha seo trí sholáthraí a nascadh.",
     "title": "Teaglamaí",
     "description": "Cruthaigh teaglamaí samhlacha le ródú ualaithe agus tacaíocht cúltaca",
     "autoCatalogTitle": "Catalóg ródaithe uathoibríoch",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Ag taispeáint {shown} as {total} sraitheanna comhoiriúnacha (an 50 ceann is airde)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Ceann scríbe sioncronaithe néil (ní cúltacaí áitiúla):",
+    "cloudUploadWarning": "Bíonn sioncronú néil díchumasaithe de réir réamhshocraithe i suiteálacha nua. Má chumasaítear é, uaslódáiltear eochracha API na soláthraithe, comharthaí rochtana agus athnuachana OAuth, eochracha API OmniRoute agus an chumraíocht chuig an gceann scríbe thuas, anois agus le linn sioncronuithe amach anseo. Tá sé seo ar leithligh ó na cúltacaí áitiúla sa rannán Stóráil. Ná cumasaigh é ach amháin má tá muinín agat as an bhfreastalaí sin.",
+    "cloudUploadConsent": "Tuigim é seo agus údaraím mo dhintiúir a uaslódáil chuig an gceann scríbe seo.",
     "title": "Críochphointe API",
     "subtitle": "Úsáid an críochphointe atá comhoiriúnach le OpenAI le formhór na SDKanna agus na n-uirlisí.",
     "testEndpoint": "Tástáil an críochphointe →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Tá an soláthraí seo eisiata ó auto de réir réamhshocraithe",
+    "tosAvoidNoticeDescription": "Tá a stádas téarmaí seirbhíse marcáilte avoid. Ní athraíonn nascadh cuntais an polasaí seo. Léigh téarmaí an tsoláthraí sula gcumasaíonn tú an rogha dhomhanda do gach teaglaim auto.",
+    "tosAvoidNoticeAction": "Athbhreithnigh polasaí auto",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Díchumasaigh nasc",
     "enableConnection": "Cumasaigh nasc",
     "reauthenticateConnection": "Athfhíordheimhnigh an nasc seo",
+    "verifyAccount": "Fíoraigh an cuntas",
+    "verifyAccountHint": "Éilíonn Google go bhfíorófá an cuntas seo. Oscail an nasc, críochnaigh an seiceáil, agus bain triail eile as.",
     "proxyConfig": "Cumraíocht seachfhreastalaí",
     "aliasExistsAlert": "Tá alias \"{alias}\" ann cheana. Úsáid samhail eile nó cuir alias atá ann cheana in eagar.",
     "aliasInputPlaceholder": "ainm alias",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Port",
     "qdrantHost": "Óstach",
     "qdrantCollection": "Bailiúchán",
+    "catalogVisibilityHint": "Is féidir aitheantóirí samhlacha folaithe a ghlaoch fós leis na ceadanna rochtana céanna.",
     "catalogScopeTitle": "Liostú API na samhlacha",
     "catalogScopeDesc": "An méid a fhógraíonn GET /v1/models don eochair seo. Ní athraíonn cúngú an liosta na samhlacha ar féidir leis an eochair glaoch orthu.",
     "catalogScopeAll": "An dá cheann",

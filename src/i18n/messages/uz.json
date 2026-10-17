@@ -3384,6 +3384,10 @@
     "comboRefMember": "Kombinatsiya → {name}"
   },
   "combos": {
+    "autoTosIncludeLabel": "ToS: avoid deb belgilangan provayderlarni auto tarkibiga kiriting",
+    "autoTosDescription": "Sukut bo‘yicha o‘chirilgan. Faqat bitta hisobga emas, barcha auto kombinatsiyalariga tatbiq etiladi. Provayderni ulash bu parametrni yoqmaydi.",
+    "autoTosSaveError": "ToS siyosatini saqlab bo‘lmadi. Oldingi sozlama hali ham ko‘rsatilmoqda. Qayta urinib ko‘ring.",
+    "autoTosLoadError": "ToS siyosatini yuklab bo‘lmadi. O‘zgartirishdan oldin qayta urinib ko‘ring.",
     "title": "Kombinatsiyalar",
     "description": "Vaznli yoʻnaltirish va zaxira variantlarini qoʻllab-quvvatlaydigan model kombinatsiyalarini yarating",
     "autoCatalogTitle": "Avtomatik yoʻnaltirish katalogi",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Mos keluvchi {total} ta qatordan {shown} tasi ko‘rsatilmoqda (eng katta 50 ta)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Bulut sinxronlash manzili (mahalliy zaxira nusxalar uchun emas):",
+    "cloudUploadWarning": "Yangi o‘rnatishlarda bulut sinxronlash sukut bo‘yicha o‘chirilgan. Uni yoqsangiz, provayderlarning API kalitlari, OAuth kirish va yangilash tokenlari, OmniRoute API kalitlari va sozlamalar yuqoridagi manzilga hozir va keyingi sinxronlashlar davomida yuklanadi. Bu Saqlash bo‘limidagi mahalliy zaxira nusxalardan alohida. Faqat o‘sha serverga ishonsangiz yoqing.",
+    "cloudUploadConsent": "Buni tushunaman va hisobga kirish ma’lumotlarimni ushbu manzilga yuklashga ruxsat beraman.",
     "title": "API endpointi",
     "subtitle": "Ko‘pchilik SDK va vositalar bilan OpenAI bilan mos endpointdan foydalaning.",
     "testEndpoint": "Endpointni sinash →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Bu provayder sukut bo‘yicha auto tarkibidan chiqarilgan",
+    "tosAvoidNoticeDescription": "Uning ToS holati avoid deb belgilangan. Hisobni ulash bu siyosatni o‘zgartirmaydi. Barcha auto kombinatsiyalari uchun umumiy parametrni yoqishdan oldin provayder shartlarini o‘qing.",
+    "tosAvoidNoticeAction": "auto siyosatini ko‘rish",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Ulanishni oʻchirish",
     "enableConnection": "Ulanishni yoqish",
     "reauthenticateConnection": "Bu ulanishni qayta autentifikatsiya qilish",
+    "verifyAccount": "Hisobni tasdiqlash",
+    "verifyAccountHint": "Google ushbu hisobni tasdiqlashingizni talab qiladi. Havolani oching, tekshiruvni yakunlang va qayta urinib ko'ring.",
     "proxyConfig": "Proksi konfiguratsiyasi",
     "aliasExistsAlert": "\"{alias}\" taxallusi allaqachon mavjud. Boshqa modeldan foydalaning yoki mavjud taxallusni tahrirlang.",
     "aliasInputPlaceholder": "taxallus nomi",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Port",
     "qdrantHost": "Xost",
     "qdrantCollection": "Toʻplam",
+    "catalogVisibilityHint": "Yashirilgan model identifikatorlarini bir xil kirish ruxsatlari bilan chaqirish mumkin.",
     "catalogScopeTitle": "Models API roʻyxati",
     "catalogScopeDesc": "GET /v1/models ushbu kalit uchun nimalarni koʻrsatishi. Roʻyxatni qisqartirish kalit qaysi modellarni chaqira olishiga taʼsir qilmaydi.",
     "catalogScopeAll": "Ikkalasi ham",

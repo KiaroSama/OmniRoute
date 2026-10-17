@@ -80,7 +80,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS ograničenje:** HTTPS `CONNECT` tuneli se snimaju samo kao metapodaci (host, port, vreme) — TLS telo se podrazumevano ne dekriptuje. Omogućite "Decrypt HTTPS in proxy mode" prekidač (opciono, zahteva da AgentBridge sertifikat bude poverljiv) za potpunu inspekciju tela.
+**TLS ograničenje:** HTTPS `CONNECT` tuneli se snimaju samo kao metapodaci (host, port, vreme) — TLS telo se podrazumevano ne dekriptuje.
 
 **Konflikt portova:** Ako je port 8080 u upotrebi, AgentBridge vraća 409 sa strukturiranom greškom. Promenite port putem `INSPECTOR_HTTP_PROXY_PORT` varijable okruženja.
 
@@ -464,12 +464,11 @@ Osnovna putanja: `/api/tools/traffic-inspector/`
 
 ### Režimi snimanja (Capture modes)
 
-| Metoda | Putanja                        | Opis                                                                                            |
-| ------ | ------------------------------ | ----------------------------------------------------------------------------------------------- |
-| GET    | `/capture-modes`               | Stanje AgentBridge / custom-hosts / HTTP_PROXY / system-proxy režima + `tls-intercept` prekidač |
-| POST   | `/capture-modes/http-proxy`    | Pokreni/zaustavi HTTP_PROXY osluškivač (`{action: "start"\|"stop"}`)                            |
-| POST   | `/capture-modes/system-proxy`  | Primijeni/vrati sistemski proxy (`{action: "apply"\|"revert"}`)                                 |
-| POST   | `/capture-modes/tls-intercept` | Uključi/isključi dekripciju HTTPS tijela u proxy režimu (`{enabled: boolean}`)                  |
+| Metoda | Putanja                       | Opis                                                                 |
+| ------ | ----------------------------- | -------------------------------------------------------------------- |
+| GET    | `/capture-modes`              | Stanje AgentBridge / custom-hosts / HTTP_PROXY / system-proxy režima |
+| POST   | `/capture-modes/http-proxy`   | Pokreni/zaustavi HTTP_PROXY osluškivač (`{action: "start"\|"stop"}`) |
+| POST   | `/capture-modes/system-proxy` | Primijeni/vrati sistemski proxy (`{action: "apply"\|"revert"}`)      |
 
 > **TPROXY dekripcija** (capture mode 5) se pokreće putem zasebne rute pod
 > AgentBridge prefiksom — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — ne

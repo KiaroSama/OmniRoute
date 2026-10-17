@@ -139,6 +139,8 @@ operatøransvar gjenstår:
   hele prefikset `/api/providers/` for å fange dem, noe som ville gjort et rutetre
   som eksterne kontrollpaneler legitimt bruker til CRUD-operasjoner for leverandører, for bredt.
 
+  Lasteren for runtime-øyeblikksbilder fjerner også slike oppføringer fra en lagret innstillingsrad, og den eldre JSON-importen (`/api/settings/import-json`) skriver aldri bypass-nøklene. Hver oppføring i `LOCAL_ONLY_API_PREFIXES` må være på avvisningslisten eller være gjennomgått og godkjent for bypass. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Revisjon av tilgang** — slik bekrefter du at ingenting utenfor verten når disse rutene:
 
 - Åpne **Autorisasjonsoversikten** på `/dashboard/settings/security`: Den viser den

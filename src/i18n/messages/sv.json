@@ -3384,6 +3384,10 @@
     "comboRefMember": "Kombination → {name}"
   },
   "combos": {
+    "autoTosIncludeLabel": "Inkludera leverantörer märkta ToS: avoid i auto",
+    "autoTosDescription": "Av som standard. Gäller alla auto-kombinationer, inte bara ett konto. Att ansluta en leverantör aktiverar inte det här alternativet.",
+    "autoTosSaveError": "Det gick inte att spara ToS-policyn. Den tidigare inställningen visas fortfarande. Försök igen.",
+    "autoTosLoadError": "Det gick inte att läsa in ToS-policyn. Försök igen innan du ändrar den.",
     "title": "Kombinationer",
     "description": "Skapa modellkombinationer med viktad routing och reservstöd",
     "autoCatalogTitle": "Katalog för automatisk routing",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Visar {shown} av {total} matchande rader (topp 50)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Mål för molnsynkronisering (inte lokala säkerhetskopior):",
+    "cloudUploadWarning": "Molnsynkronisering är avstängd som standard vid nya installationer. Om du aktiverar den laddas leverantörernas API-nycklar, OAuth-åtkomst- och uppdateringstoken, OmniRoute API-nycklar och konfigurationen upp till målet ovan, nu och vid framtida synkroniseringar. Detta är skilt från lokala säkerhetskopior under Förvaring. Aktivera det bara om du litar på den servern.",
+    "cloudUploadConsent": "Jag förstår detta och tillåter att mina inloggningsuppgifter laddas upp till detta mål.",
     "title": "API-slutpunkt",
     "subtitle": "Använd den OpenAI-kompatibla slutpunkten med de flesta SDK:er och verktyg.",
     "testEndpoint": "Testa slutpunkten →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Den här leverantören är som standard utesluten från auto",
+    "tosAvoidNoticeDescription": "Dess ToS-status är märkt avoid. Att ansluta ett konto ändrar inte policyn. Läs leverantörens villkor innan du aktiverar det globala alternativet för alla auto-kombinationer.",
+    "tosAvoidNoticeAction": "Visa auto-policyn",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Inaktivera anslutningen",
     "enableConnection": "Aktivera anslutning",
     "reauthenticateConnection": "Autentisera den här anslutningen igen",
+    "verifyAccount": "Verifiera konto",
+    "verifyAccountHint": "Google kräver att du verifierar det här kontot. Öppna länken, slutför kontrollen och försök igen.",
     "proxyConfig": "Proxykonfiguration",
     "aliasExistsAlert": "Aliaset \"{alias}\" finns redan. Använd en annan modell eller redigera befintligt alias.",
     "aliasInputPlaceholder": "aliasnamn",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Port",
     "qdrantHost": "Värd",
     "qdrantCollection": "Samling",
+    "catalogVisibilityHint": "Dolda modell-ID:n kan fortfarande anropas med samma åtkomstbehörigheter.",
     "catalogScopeTitle": "Modellista i API:et",
     "catalogScopeDesc": "Vad GET /v1/models visar för denna nyckel. Att begränsa listan ändrar aldrig vad nyckeln kan anropa.",
     "catalogScopeAll": "Båda",

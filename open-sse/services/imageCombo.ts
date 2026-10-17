@@ -20,6 +20,7 @@ import { handleImageGeneration } from "@omniroute/open-sse/handlers/imageGenerat
 import { attachOmniRouteMetaHeaders } from "@/domain/omnirouteResponseMeta";
 import { generateRequestId } from "@/shared/utils/requestId";
 import { calculateModalCost } from "@/lib/usage/costCalculator";
+import { runImageRequestWithAccounting } from "@/lib/usage/imageRequestAccounting";
 import { toJsonErrorPayload } from "@/shared/utils/upstreamError";
 import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
 import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
@@ -253,7 +254,20 @@ export async function executeImageCombo(
           : null,
         target.modelStr
       ),
-    dispatch: (context) => dispatchImageComboGeneration(context, body, auth.request, log),
+    dispatch: (context) =>
+      runImageRequestWithAccounting(
+        {
+          endpoint: "/v1/images/generations",
+          provider: context.provider,
+          model: context.model,
+          apiKeyInfo: auth.policy.apiKeyInfo,
+          credentials: context.credentials,
+          startTime,
+          comboStrategy: "priority",
+          recordCallLog: context.provider === "codex" && isCodexImagesModel(context.model),
+        },
+        () => dispatchImageComboGeneration(context, body, auth.request, log)
+      ),
     onSuccess: async (credentials) => {
       await clearRecoveredProviderState(credentials as never);
     },

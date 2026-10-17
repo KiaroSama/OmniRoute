@@ -55,6 +55,10 @@ Fluxo:
 
 Os modos forçados fazem um curto-circuito **antes** da heurística automática ser executada; o comportamento `auto` é byte-idêntico ao guardrail pré-PR-1.
 
+#### Âmbito da chave de API (`visionBridgeKeyScope.ts`)
+
+Se a chave de API restringir ligações, grupos de quotas ou modelos (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), o reencaminhamento e a descrição escolhem apenas modelos e ligações permitidos para essa chave. A descrição passa sempre pelo ciclo interno do OmniRoute com o cabeçalho `x-omniroute-self-loop-key-id`, reaplicando as políticas de ligação e modelo. `enforceApiKeyPolicy()` só aceita o cabeçalho juntamente com o token bearer desse ciclo: apenas pode restringir o acesso, e um ID não encontrado é rejeitado. Sem um modelo de visão permitido, a descrição é ignorada e o pedido passa sem alterações, como com a proteção desativada (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Pedidos sem chave e chaves sem estas restrições mantêm o comportamento anterior.
+
 #### Prompt de descrição sensível à tarefa (`modalityBridgeVisionTaskAware`)
 
 Predefinição **verdadeiro**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) anexa o texto da **última mensagem do utilizador** (truncado a 500 caracteres) ao prompt de descrição base, direcionando a descrição para o que o utilizador realmente perguntou (padrão codex-vision-proxy) e pedindo ao modelo de visão para transcrever texto visível. Com a flag desativada — ou sem texto do utilizador — o prompt base é usado inalterado.

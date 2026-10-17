@@ -20,10 +20,20 @@ import assert from "node:assert/strict";
 
 import {
   buildOpencodeBackgroundHeaders,
+  isValidOpencodeSessionValue,
   OPENCODE_REQUEST_PATTERN,
-  OPENCODE_SESSION_PATTERN,
 } from "../../open-sse/utils/opencodeHeaders.ts";
 import { PROVIDER_MODELS_CONFIG } from "../../src/app/api/providers/[id]/models/discovery/providerModelsConfig.ts";
+
+/**
+ * The free tier validates the session *value* (the 12-hex time part must decode to the
+ * client's `Identifier.descending()` counter window `0xFC0–0xFFF`), not just its shape:
+ * a shape-only match would accept an out-of-window counter the upstream 403s. Assert
+ * through the value-level validator.
+ */
+function assertDescendingSession(value: string | undefined, message?: string): void {
+  assert.equal(isValidOpencodeSessionValue(value), value, message);
+}
 
 test("background headers carry the OpenCode CLI identity, not the bare runtime UA", () => {
   const headers = buildOpencodeBackgroundHeaders({ seed: "conn-a" });
@@ -36,7 +46,7 @@ test("background headers carry the OpenCode CLI identity, not the bare runtime U
 test("background session id is a stable per-seed fingerprint (same hash family as the chat path)", () => {
   const first = buildOpencodeBackgroundHeaders({ seed: "wrk_01ABC" });
   const second = buildOpencodeBackgroundHeaders({ seed: "wrk_01ABC" });
-  assert.match(first["x-opencode-session"] ?? "", OPENCODE_SESSION_PATTERN);
+  assertDescendingSession(first["x-opencode-session"]);
   assert.equal(first["x-opencode-session"], second["x-opencode-session"]);
 });
 
@@ -49,11 +59,7 @@ test("background session id differs across seeds (connections do not share an id
 test("seedless background calls still send a session id (random fallback)", () => {
   const headers = buildOpencodeBackgroundHeaders();
   const value = headers["x-opencode-session"] ?? "";
-  assert.match(
-    value,
-    OPENCODE_SESSION_PATTERN,
-    `expected a canonical ses_ session id, got ${value}`
-  );
+  assertDescendingSession(value, `expected a canonical ses_ session id, got ${value}`);
 });
 
 test("explicit userAgent override wins over the CLI default", () => {
@@ -74,7 +80,7 @@ test("discovery entries for opencode / opencode-zen / opencode-go attach the ses
     });
     assert.equal(headers.Authorization, "Bearer test-token");
     assert.equal(headers["User-Agent"], "opencode");
-    assert.match(headers["x-opencode-session"] ?? "", OPENCODE_SESSION_PATTERN);
+    assertDescendingSession(headers["x-opencode-session"]);
     // Same workspace → same identity as the raw helper (seed comes from psd).
     assert.equal(
       headers["x-opencode-session"],

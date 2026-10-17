@@ -87,6 +87,10 @@ Le modalità forzate interrompono il circuito **prima** dell'esecuzione dell'eur
 automatica; il comportamento di `auto` è identico bit per bit al guardrail
 precedente alla PR-1.
 
+#### Ambito della chiave API (`visionBridgeKeyScope.ts`)
+
+Se la chiave API limita connessioni, gruppi di quote o modelli (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), reindirizzamento e descrizione scelgono soltanto modelli e connessioni consentiti alla chiave. La descrizione passa sempre dal circuito interno di OmniRoute con l'header `x-omniroute-self-loop-key-id`, applicando nuovamente le politiche di connessione e modello. `enforceApiKeyPolicy()` accetta l'header solo insieme al token bearer del circuito: può soltanto restringere l'accesso e rifiuta gli identificativi sconosciuti. Se non esiste un modello visivo consentito, la descrizione viene saltata e la richiesta resta invariata, come con la protezione disattivata (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Le richieste senza chiave e le chiavi senza queste restrizioni mantengono il comportamento precedente.
+
 #### Prompt di descrizione sensibile al task (`modalityBridgeVisionTaskAware`)
 
 Predefinito **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) aggiunge

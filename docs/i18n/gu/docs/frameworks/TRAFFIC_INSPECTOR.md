@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS મર્યાદા:** HTTPS `CONNECT` ટનલ્સ ફક્ત મેટાડેટા (હોસ્ટ, પોર્ટ, સમય) તરીકે કૅપ્ચર થાય છે — ડિફૉલ્ટ રૂપે TLS બૉડી ડિક્રિપ્ટ થતી નથી. સંપૂર્ણ બૉડી નિરીક્ષણ માટે "પ્રૉક્સી મોડમાં HTTPS ડિક્રિપ્ટ કરો" ટૉગલ ચાલુ કરો (વૈકલ્પિક, AgentBridge સર્ટિફિકેટ વિશ્વસનીય હોવું જરૂરી છે).
+**TLS મર્યાદા:** HTTPS `CONNECT` ટનલ્સ ફક્ત મેટાડેટા (હોસ્ટ, પોર્ટ, સમય) તરીકે કૅપ્ચર થાય છે — ડિફૉલ્ટ રૂપે TLS બૉડી ડિક્રિપ્ટ થતી નથી.
 
 **પોર્ટ સંઘર્ષ:** જો પોર્ટ 8080 ઉપયોગમાં હોય, તો AgentBridge સંરચિત ભૂલ સાથે 409 પરત કરે છે. `INSPECTOR_HTTP_PROXY_PORT` env var દ્વારા પોર્ટ બદલો.
 
@@ -464,12 +464,11 @@ netsh winhttp reset proxy
 
 ### કૅપ્ચર મોડ
 
-| પદ્ધતિ | પાથ                            | વર્ણન                                                                                        |
-| ------ | ------------------------------ | -------------------------------------------------------------------------------------------- |
-| GET    | `/capture-modes`               | AgentBridge / કસ્ટમ-હોસ્ટ / HTTP_PROXY / સિસ્ટમ-પ્રૉક્સી મોડની સ્થિતિ + `tls-intercept` ટૉગલ |
-| POST   | `/capture-modes/http-proxy`    | HTTP_PROXY લિસનર શરૂ/બંધ કરો (`{action: "start"\|"stop"}`)                                   |
-| POST   | `/capture-modes/system-proxy`  | સિસ્ટમ-વ્યાપી પ્રૉક્સી લાગુ કરો/પાછું ફેરવો (`{action: "apply"\|"revert"}`)                  |
-| POST   | `/capture-modes/tls-intercept` | પ્રૉક્સી મોડમાં HTTPS બૉડી ડિક્રિપ્શન ટૉગલ કરો (`{enabled: boolean}`)                        |
+| પદ્ધતિ | પાથ                           | વર્ણન                                                                       |
+| ------ | ----------------------------- | --------------------------------------------------------------------------- |
+| GET    | `/capture-modes`              | AgentBridge / કસ્ટમ-હોસ્ટ / HTTP_PROXY / સિસ્ટમ-પ્રૉક્સી મોડની સ્થિતિ       |
+| POST   | `/capture-modes/http-proxy`   | HTTP_PROXY લિસનર શરૂ/બંધ કરો (`{action: "start"\|"stop"}`)                  |
+| POST   | `/capture-modes/system-proxy` | સિસ્ટમ-વ્યાપી પ્રૉક્સી લાગુ કરો/પાછું ફેરવો (`{action: "apply"\|"revert"}`) |
 
 > **TPROXY ડિક્રિપ્ટ** (કૅપ્ચર મોડ 5) AgentBridge પ્રીફિક્સ હેઠળના **અલગ** રૂટ દ્વારા સંચાલિત થાય છે —
 > `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — તે

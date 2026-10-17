@@ -257,6 +257,8 @@ omniroute tokens scopes               # expliquer les trois portées
 Les commandes `tokens` nécessitent un identifiant **administrateur**. Vous pouvez également gérer les jetons dans
 le tableau de bord sous **Paramètres → Jetons d’accès** (création, révocation, copie unique).
 
+Un jeton ne peut jamais être créé avec plus de privilèges que son créateur. Seul l’opérateur peut créer un jeton `admin` : via la session du tableau de bord, la CLI locale sur le serveur lui-même, `omniroute connect` avec le mot de passe ou une instance où la connexion est désactivée. Les identifiants machine (un jeton d’accès `admin` ou une clé API de portée `manage`/`admin`) ne peuvent créer que des jetons `write` et `read` ; demander `--scope admin` avec ces identifiants renvoie `403`.
+
 ---
 
 ## Configuration d’une CLI de programmation à partir du catalogue distant

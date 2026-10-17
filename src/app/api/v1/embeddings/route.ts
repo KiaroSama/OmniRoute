@@ -7,7 +7,7 @@ import { v1EmbeddingsSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 
 import { createEmbeddingResponse, type EmbeddingHandlerOptions } from "@/lib/embeddings/service";
-import { extractApiKey, isValidApiKey } from "@/sse/services/auth";
+import { resolveClientApiKey } from "@/sse/services/clientApiKeyResolver";
 import { withInjectionGuard } from "@/middleware/promptInjectionGuard";
 import { getSpecialtyModelsResponse } from "@/app/api/v1/_shared/specialtyCatalog";
 
@@ -56,11 +56,11 @@ async function postHandler(request, context) {
 
   // Auth check — when REQUIRE_API_KEY=false, ignore presented invalid keys
   // so anonymous access works the same as all other client APIs (#7785).
-  const apiKeyRaw = extractApiKey(request);
+  const { apiKey: apiKeyRaw, valid: apiKeyValid } = await resolveClientApiKey(request);
   if (isRequireApiKeyEnabled() && !apiKeyRaw) {
     return errorResponse(HTTP_STATUS.UNAUTHORIZED, "Authentication required");
   }
-  if (isRequireApiKeyEnabled() && apiKeyRaw && !(await isValidApiKey(apiKeyRaw))) {
+  if (isRequireApiKeyEnabled() && apiKeyRaw && !apiKeyValid) {
     return errorResponse(HTTP_STATUS.UNAUTHORIZED, "Invalid API key");
   }
 

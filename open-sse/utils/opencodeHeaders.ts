@@ -19,6 +19,32 @@ export const OPENCODE_SESSION_PATTERN = /^ses_[0-9a-f]{12}[0-9A-Za-z]{14}$/;
 /** Same shape for the request id, which the upstream accepts but does not validate. */
 export const OPENCODE_REQUEST_PATTERN = /^msg_[0-9a-f]{12}[0-9A-Za-z]{14}$/;
 
+/**
+ * The free-tier gate is the session id's *value*, not its shape: the upstream decodes the
+ * 12 hex back through OpenCode CLI's `Identifier.descending()` layout, where the low 12
+ * bits hold `0xFFF - counter` (counter is the within-millisecond sequence, 0–63). Only a
+ * low-12 landing in `0xFC0–0xFFF` passes — `counter = 64` renders `fbf` and is refused
+ * (opencode.ai/zen free tier, upstream validated from 2026-10-13; #16328 probes 2026-10-14).
+ * `OPENCODE_SESSION_PATTERN` alone accepts any 12 hex, so an out-of-window counter would
+ * slip through and 403; the time-part pattern below is the value-level check.
+ *
+ * Length is 12: `[0-9a-f]{9}` timestamp bits, then the low-12 window `f[c-f][0-9a-f]`
+ * (top nibble `f`, second nibble `c–f`). Byte-identical to opencode2api v1.3.8's
+ * `descendingTimePartPattern`, which is the reference implementation our side aligns to.
+ */
+export const OPENCODE_SESSION_TIME_PART_PATTERN = /^[0-9a-f]{9}f[c-f][0-9a-f]$/;
+
+/** Whether a `ses_…` id's 12-hex time part carries the accepted descending counter window. */
+export function isValidOpencodeSessionValue(
+  sessionId: string | null | undefined
+): string | undefined {
+  const value = (sessionId || "").trim();
+  if (!OPENCODE_SESSION_PATTERN.test(value)) return undefined;
+  // A genuine OpenCode session keeps its prompt-cache affinity; a foreign encoding
+  // (raw hash, ascending id, counter out of window) is re-minted by canonicalId().
+  return OPENCODE_SESSION_TIME_PART_PATTERN.test(value.slice(4, 16)) ? value : undefined;
+}
+
 const MINIMUM_USER_AGENT_MINOR = 17;
 const USER_AGENT_VERSION_RE = /opencode\/(?:[a-z]+\/)?v?(\d+)\.(\d+)/i;
 
@@ -95,6 +121,12 @@ export function resolveOpencodeCliDefaults(
 
 const BASE62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
+/** The within-millisecond sequence OpenCode's `Identifier.descending()` inverts. */
+const OPENCODE_SESSION_COUNTER = 1n;
+const OPENCODE_SESSION_MASK_48 = 0xffffffffffffn;
+/** Bits the hash may carry into the inverted low-48 (48 bits − the 12 reserved for counter). */
+const OPENCODE_SESSION_TS_MAX = 0xfffffffffn; // 2**36 − 1
+
 function base62From(bytes: Buffer, length: number): string {
   return Array.from(bytes.subarray(0, length), (byte) => BASE62[byte % 62]).join("");
 }
@@ -102,16 +134,60 @@ function base62From(bytes: Buffer, length: number): string {
 /**
  * Render an id in the canonical OpenCode shape (`<prefix>` + 12 hex + 14 base62).
  *
- * The upstream checks the shape and not the value: 12 arbitrary hex digits pass, so
- * there is no need to reproduce the client's own id algorithm (timestamp plus counter).
- * With a seed the result is deterministic, which is what keeps a conversation on one
- * upstream session — and therefore keeps prompt caching warm — across requests.
+ * For `ses_` the hex half must reproduce OpenCode CLI's `Identifier.descending()`
+ * encoding: `descending(ts) = ~(ts << 12 | counter)` over 48 bits, rendered as 12 hex
+ * (most-significant byte first). The upstream free tier decodes it back and only accepts
+ * a low 12 bits in `0xFC0–0xFFF` (counter 0–63), so we invert with `counter = 1` — the
+ * deterministic replacement for the client's per-ms sequence — and take the high 36 bits
+ * from the top 36 bits of the seed hash. A `Date.now()` timestamp is *not* validated
+ * upstream (epoch+1ms passes), so staying hash-derived keeps the id stable per
+ * conversation and prompt-cache affinity intact. Byte-identical to opencode2api v1.3.8's
+ * `CanonicalSessionID` (the reference implementation), so both gateways mint alike.
+ *
+ * `msg_` ids are not value-checked upstream, so they keep the plain hash render.
  */
 function canonicalId(prefix: "ses_" | "msg_", seed?: string): string {
   const bytes = seed
     ? createHash("sha256").update(`opencode\u0000${prefix}\u0000${seed}`).digest()
     : randomBytes(32);
+  if (prefix === "ses_") {
+    // Top 36 bits of hash[0:5]: bytes 0-3 plus the high nibble of byte 4, exactly as
+    // opencode2api's descendingTimePart() reads them into the timestamp half.
+    const ts36 =
+      ((BigInt(bytes[0]) << 28n) |
+        (BigInt(bytes[1]) << 20n) |
+        (BigInt(bytes[2]) << 12n) |
+        (BigInt(bytes[3]) << 4n) |
+        (BigInt(bytes[4]) >> 4n)) &
+      OPENCODE_SESSION_TS_MAX;
+    // OpenCode's own math, counter pinned to 1: ~(ts << 12 | 1) over 48 bits.
+    const value = (~((ts36 << 12n) | OPENCODE_SESSION_COUNTER)) & OPENCODE_SESSION_MASK_48;
+    return `${prefix}${value.toString(16).padStart(12, "0")}${base62From(bytes.subarray(6), 14)}`;
+  }
   return `${prefix}${bytes.subarray(0, 6).toString("hex")}${base62From(bytes.subarray(6), 14)}`;
+}
+
+/**
+ * Case-insensitively replace any existing entry before setting: a registry static
+ * or operator header under a different case plus the forwarded key would both
+ * reach the wire and be comma-joined into one garbage value by undici.
+ */
+function setForwardedHeader(headers: Record<string, string>, name: string, value: string): void {
+  for (const existing of Object.keys(headers)) {
+    if (existing.toLowerCase() === name) delete headers[existing];
+  }
+  headers[name] = value;
+}
+
+/**
+ * Attribution kill-switch: OMNIROUTE_FORWARD_ATTRIBUTION=0 keeps the
+ * registry/operator app identity and never forwards client x-session-id /
+ * x-title / http-referer. Default on: a harness behind OmniRoute keeps its app
+ * attribution upstream (OpenRouter publisher gates key on it), matching the
+ * falsy-off motif of OPENCODE_SYNTHESIZE_CLI_HEADERS.
+ */
+function attributionForwardingEnabled(): boolean {
+  return !/^(0|false|no|off)$/i.test(process.env.OMNIROUTE_FORWARD_ATTRIBUTION?.trim() ?? "");
 }
 
 /**
@@ -128,11 +204,13 @@ const OPENCODE_HEADER_KEYS = [
 /**
  * Common agent-metadata headers used by non-OpenCode clients (custom agents/
  * providers) for upstream request tracking and attribution. Forwarded the same
- * way as the x-opencode-* set: case-insensitive lookup, client value wins.
- * Added for 9router#2413 — these were previously dropped for every client
- * outside the OpenCode allowlist.
+ * way as the x-opencode-* set (case-insensitive lookup, client value wins,
+ * plus case-variant replacement — see setForwardedHeader). http-referer was
+ * added for app attribution that upstreams such as OpenRouter key publisher
+ * access control on; the whole set is gated by OMNIROUTE_FORWARD_ATTRIBUTION.
+ * Originally added for 9router#2413.
  */
-const AGENT_METADATA_HEADER_KEYS = ["x-session-id", "x-title"] as const;
+const AGENT_METADATA_HEADER_KEYS = ["x-session-id", "x-title", "http-referer"] as const;
 
 /**
  * Case-insensitive lookup for a header in a headers record.
@@ -148,8 +226,10 @@ function findHeader(headers: Record<string, string>, name: string): string | und
  * 1. Forwards User-Agent from clientHeaders via `setUserAgentHeader()`
  * 2. Forwards x-opencode-session, x-opencode-request, x-opencode-project,
  *    x-opencode-client headers (case-insensitive match)
- * 3. Forwards x-session-id, x-title agent-metadata headers (case-insensitive
- *    match) — common conventions used by non-OpenCode agent clients (9router#2413)
+ * 3. Forwards x-session-id, x-title and http-referer agent-metadata headers
+ *    (case-insensitive match) — common conventions used by non-OpenCode agent
+ *    clients (9router#2413); http-referer carries app attribution upstreams
+ *    such as OpenRouter key publisher access control on.
  *
  * @param headers - The outbound headers record to mutate
  * @param clientHeaders - The client-provided headers to forward from
@@ -175,6 +255,12 @@ function findHeader(headers: Record<string, string>, name: string): string | und
  *   conversation-stable session fingerprint (model, system, messages or input, tools).
  *   When provided, x-opencode-session is a deterministic hash instead of a random
  *   UUID, so upstream prompt caching hits across requests in the same conversation.
+ * @param options.reencodeSession - Free-tier (zen) only: validate a client-supplied
+ *   session's *value* (the 12-hex time part must decode to the client's
+ *   `Identifier.descending()` counter window `0xFC0–0xFFF`) and re-mint it otherwise. The
+ *   upstream began enforcing this on 2026-10-13; a shape-valid but foreign-encoded id
+ *   (raw hash, ascending id, out-of-window counter) is 403 FreeTierError. Off for the
+ *   ungated surfaces (opencode-go), which keep the client's session unchanged (#15311).
  */
 export function forwardOpencodeClientHeaders(
   headers: Record<string, string>,
@@ -185,6 +271,7 @@ export function forwardOpencodeClientHeaders(
     keepAgentUserAgent?: boolean;
     sessionBody?: OpencodeSessionBody;
     forwardUserAgent?: boolean;
+    reencodeSession?: boolean;
   }
 ): void {
   // 1. Forward User-Agent (opt-out for generic providers, #15632)
@@ -197,15 +284,19 @@ export function forwardOpencodeClientHeaders(
   for (const headerName of OPENCODE_HEADER_KEYS) {
     const value = findHeader(clientHeaders, headerName);
     if (value) {
-      headers[headerName] = value;
+      setForwardedHeader(headers, headerName, value);
     }
   }
 
-  // 2b. Forward agent-metadata headers (x-session-id, x-title) — 9router#2413
-  for (const headerName of AGENT_METADATA_HEADER_KEYS) {
-    const value = findHeader(clientHeaders, headerName);
-    if (value) {
-      headers[headerName] = value;
+  // 2b. Forward agent-metadata headers (x-session-id, x-title, http-referer) — 9router#2413.
+  // http-referer carries app attribution OpenRouter publisher gates key on (e.g. the
+  // thinkingmachines/inkling:free "agentic harnesses" 403). Gated by
+  // OMNIROUTE_FORWARD_ATTRIBUTION for operators who want the static identity kept.
+  if (attributionForwardingEnabled()) {
+    for (const headerName of AGENT_METADATA_HEADER_KEYS) {
+      const value = findHeader(clientHeaders, headerName);
+      if (!value) continue;
+      setForwardedHeader(headers, headerName, value);
     }
   }
 
@@ -221,7 +312,8 @@ export function forwardOpencodeClientHeaders(
       headers,
       options.cliDefaults,
       options.sessionBody,
-      options.keepAgentUserAgent === true
+      options.keepAgentUserAgent === true,
+      options.reencodeSession === true
     );
   }
 }
@@ -266,7 +358,8 @@ function applyCliDefaults(
   headers: Record<string, string>,
   cliDefaults: { userAgent: string; client: string; project: string },
   sessionBody?: OpencodeSessionBody,
-  keepAgentUserAgent = false
+  keepAgentUserAgent = false,
+  reencodeSession = false
 ): void {
   if (!keepsClientUserAgent(headers["User-Agent"] || headers["user-agent"], keepAgentUserAgent)) {
     setUserAgentHeader(headers, cliDefaults.userAgent);
@@ -281,11 +374,21 @@ function applyCliDefaults(
     clientRequestId && OPENCODE_REQUEST_PATTERN.test(clientRequestId)
       ? clientRequestId
       : canonicalId("msg_", clientRequestId || undefined);
+  // The free tier (zen) validates the session's *value*, not just its shape: a caller id
+  // that matches `OPENCODE_SESSION_PATTERN` but carries an out-of-window counter (a
+  // foreign or ascending encoding) still 403s upstream, so on that path only a genuine
+  // descending id is kept and everything else is re-minted from the client's own value
+  // (opencode2api v1.3.8 `CanonicalSessionID` — same conversation, same stable session,
+  // compliant encoding). The ungated surfaces (opencode-go, #15311) keep the client's
+  // session untouched, so the value check applies only when `reencodeSession` is set.
   const clientSessionId = headers["x-opencode-session"]?.trim();
-  headers["x-opencode-session"] = clientSessionId
-    ? OPENCODE_SESSION_PATTERN.test(clientSessionId)
+  const canonicalClientSession = reencodeSession
+    ? isValidOpencodeSessionValue(clientSessionId)
+    : clientSessionId && OPENCODE_SESSION_PATTERN.test(clientSessionId)
       ? clientSessionId
-      : canonicalId("ses_", clientSessionId)
+      : undefined;
+  headers["x-opencode-session"] = clientSessionId
+    ? (canonicalClientSession ?? canonicalId("ses_", clientSessionId))
     : canonicalId("ses_", generateSessionId(sessionBody ?? null) ?? undefined);
 }
 

@@ -7,8 +7,10 @@
  *
  *   1. `stream: true` in the body,
  *   2. a non-empty `tools` array (the content is not inspected),
- *   3. a session header shaped `ses_` + 12 hex + 14 base62 (the shape is checked, the
- *      value is not — 12 arbitrary hex digits pass),
+ *   3. a session header shaped `ses_` + 12 hex + 14 base62 whose 12-hex time part decodes
+ *      to the client's `Identifier.descending()` counter window (`0xFC0–0xFFF`). The shape
+ *      alone is not enough — the value is validated too, since 2026-10-13 — so a session
+ *      is minted by `opencodeHeaders.ts` (`canonicalId`) rather than copied arbitrarily,
  *   4. a `User-Agent` carrying `opencode/<version>` with version >= 1.17 (an older
  *      version answers 426 UpgradeRequired rather than 403).
  *
@@ -16,12 +18,22 @@
  * host are not gated (a paid model without tools answers 401 CreditsError), which is why
  * `requiresFreeTierRequestContract` narrows the contract to free-tier models.
  *
+ * Measured again on 2026-10-14: the free tier moved. The client now takes its base URL
+ * from the models.dev catalog (`https://opencode.ai/inference/v1`), and the very same
+ * request is refused on `/zen/v1`; on the new base a declared `read` or `bash` whose
+ * parameters carry no properties is refused, while an empty schema on a name outside the
+ * quartet still passes. `FREE_TIER_INFERENCE_BASE_URL` and `placeholderToolParameters`
+ * carry those two facts.
+ *
  * The module also owns the free-model catalog — the catalog is what decides whether the
  * contract applies, so the two belong together and the executor imports them from here —
  * and the way back: the forced stream is rebuilt into a JSON body for a caller that asked
  * for JSON, reusing the shared event-stream parsers.
  */
 import { parseSSEToOpenAIResponse, parseSSEToResponsesOutput } from "../handlers/sseParser.ts";
+import { readSyncedOpencodeFamilyModelIds } from "@/lib/db/models";
+import { getModelCatalogCacheVersion } from "@/lib/db/readCache";
+import { getModelsDevPricing, getSyncedCapability } from "@/lib/modelsDevSync";
 import {
   confirmBorrowedToolNames,
   getObservedToolNames,
@@ -63,22 +75,50 @@ export interface FreeTierContractAttempt {
 }
 
 /**
- * Models that work WITHOUT any API key on the free/noauth opencode tier.
+ * Free-vs-premium is derived from the synced catalog when one exists, not a static list.
  *
- * The upstream free tier rotates frequently — when a `-free` suffix model is
- * delisted upstream, the upstream returns "Model X is not supported" (a separate
- * issue from this gate). The set is defined by two data sources:
+ * The upstream free tier rotates constantly — models.dev lists dozens of `-free` ids and
+ * adds/retires them without notice — so a hard-coded set goes stale overnight (measured
+ * 2026-10-14: 5 of the 6 ids the old `OPENCODE_FREE_MODELS` held were already absent from
+ * the live `/zen/v1/models` list, 4 of them `deprecated`). When the catalog is synced, a
+ * model is free-tier iff:
  *
- *   1. **Known free models** — models explicitly listed in the noauth
- *      `opencode` provider registry (`open-sse/config/providers/registry/opencode/index.ts`).
- *      These are the canonical free models. `deepseek-v4-flash-free` appears in both
- *      the noauth AND the zen registry (it is free on both tiers).
- *   2. **`-free` suffix** — any model whose id ends in `-free`. This automatically
- *      covers upstream free-tier additions without a code deploy.
+ *   1. **available** — its id is in the synced live catalog for the `opencode` family
+ *      (what `GET https://opencode.ai/zen/v1/models` reported at discovery time), which
+ *      catches ids the upstream has since delisted; and
+ *   2. **free** — models.dev reports `cost.input === 0 && cost.output === 0` for it, which
+ *      catches free models that carry no `-free` suffix (`big-pickle`) and drops the ones
+ *      that gained a price; and
+ *   3. **not deprecated** — `status !== "deprecated"` as a secondary guard.
+ *
+ * Signals are read synchronously from data OmniRoute already syncs — the live catalog via
+ * the discovery writer (`syncedAvailableModels`) and cost/status via `models.dev`
+ * (`modelsDevSync.ts`) — memoized on `getModelCatalogCacheVersion()`, which every catalog
+ * write bumps. No per-request fetch, and no table to rot.
+ *
+ * When the catalog has never been synced (a fresh install, or a unit test with no DB), the
+ * check **falls back to the legacy heuristic** — the `-free` suffix plus the registry's
+ * known free ids — rather than treating every model as premium. Failing closed there would
+ * 402 every free model on an unsynced deployment and regress the pre-change behavior; the
+ * fallback keeps the status quo until discovery runs, and the synced catalog then takes
+ * over. `OPENCODE_LEGACY_FREE_MODELS` is therefore retained only as that fallback.
  *
  * For `opencode-go`, there is no free tier — ALL models require an API key.
  */
-const OPENCODE_FREE_MODELS = new Set([
+interface OpencodeFreeCatalog {
+  /** Catalog version this snapshot was built from; a bump invalidates it. */
+  readonly version: number;
+  /** Free ids from the synced catalog, or `null` when no catalog has been synced. */
+  readonly free: ReadonlySet<string> | null;
+}
+
+/**
+ * Legacy free ids kept only as the unsynced-catalog fallback (see the block above).
+ *
+ * `deepseek-v4-flash-free` appears in both the noauth and the zen registry; the rotating
+ * `-free` ids are covered by the suffix rule alongside this set.
+ */
+const OPENCODE_LEGACY_FREE_MODELS = new Set([
   "big-pickle",
   "deepseek-v4-flash-free",
   "mimo-v2.5-free",
@@ -87,23 +127,77 @@ const OPENCODE_FREE_MODELS = new Set([
   "north-mini-code-free",
 ]);
 
+/** Provider ids whose live catalog feeds the `opencode` family (canonical + aliases). */
+const OPENCODE_CATALOG_PROVIDER_IDS = ["opencode", "opencode-zen"] as const;
+
+let freeCatalogCache: OpencodeFreeCatalog | null = null;
+
+/**
+ * Test seam: pin the free-model set without a synced catalog, so unit tests can exercise
+ * `isPremiumOpencodeModel` (and the request contract it gates) deterministically. Pass
+ * `null` to restore the catalog-driven lookup.
+ */
+let testFreeModelsOverride: ReadonlySet<string> | null = null;
+
+export function _setOpencodeFreeModelsForTests(ids: readonly string[] | null): void {
+  testFreeModelsOverride = ids === null ? null : new Set(ids);
+  freeCatalogCache = null;
+}
+
+/** The free ids the synced catalog implies, or `null` when nothing has been synced. */
+function deriveFreeIdsFromCatalog(): Set<string> | null {
+  try {
+    const available = readSyncedOpencodeFamilyModelIds();
+    if (available.size === 0) return null;
+    const free = new Set<string>();
+    const pricing = getModelsDevPricing();
+    const byProvider = pricing[OPENCODE_CATALOG_PROVIDER_IDS[0]] ?? pricing["opencode-zen"];
+    for (const id of available) {
+      const cost = byProvider?.[id];
+      if (!cost || cost.input !== 0 || cost.output !== 0) continue;
+      const status = getSyncedCapability(OPENCODE_CATALOG_PROVIDER_IDS[0], id)?.status;
+      if (status === "deprecated") continue;
+      free.add(id);
+    }
+    return free;
+  } catch {
+    // No DB / no synced pricing yet: no catalog, fall back to the legacy heuristic.
+    return null;
+  }
+}
+
+/** Build (or reuse) the free-model snapshot for the current catalog version. */
+function opencodeFreeModelCatalog(): ReadonlySet<string> | null {
+  if (testFreeModelsOverride) return testFreeModelsOverride;
+
+  const version = getModelCatalogCacheVersion();
+  if (freeCatalogCache && freeCatalogCache.version === version) return freeCatalogCache.free;
+
+  const free = deriveFreeIdsFromCatalog();
+  freeCatalogCache = { version, free };
+  return free;
+}
+
 /**
  * Determine whether a model requires an API key on the given opencode provider.
  *
  * - `opencode-go`: ALL models require a key (no free tier).
- * - `opencode` / `opencode-zen`: premium = any model NOT in the free set (known
- *   free models OR ending in `-free`).
+ * - `opencode` / `opencode-zen`: premium = any model NOT in the synced free catalog
+ *   (available ∩ free ∧ not deprecated). With no synced catalog, the legacy heuristic
+ *   (`-free` suffix or the registry's known free ids) is used instead.
  * - Unknown models are assumed premium (fail-safe).
  */
 export function isPremiumOpencodeModel(model: string, provider: string): boolean {
   // opencode-go has no free tier — every model requires a key.
   if (provider === "opencode-go") return true;
 
-  // Models ending in `-free` are always free on the noauth/zen tier.
-  if (model.endsWith("-free")) return false;
+  const id = model.trim();
+  const catalog = opencodeFreeModelCatalog();
+  if (catalog) return !catalog.has(id);
 
-  // Check the known free model catalog.
-  return !OPENCODE_FREE_MODELS.has(model);
+  // Unsynced catalog: the legacy rule, so an unsynced deployment keeps its behavior.
+  if (id.endsWith("-free")) return false;
+  return !OPENCODE_LEGACY_FREE_MODELS.has(id);
 }
 
 /**
@@ -120,6 +214,14 @@ export type OpencodeSurface = "zen" | "go" | "other";
 
 const ZEN_SURFACE_BASE_URL = "https://opencode.ai/zen/v1";
 const GO_SURFACE_BASE_URL = "https://opencode.ai/zen/go/v1";
+
+/**
+ * Where a gated free-tier request is sent. Since 2026-10-14 the OpenCode client takes its
+ * base URL from the models.dev catalog (`https://opencode.ai/inference/v1`), and the free
+ * tier refuses the very same request on `/zen/v1` with 403 FreeTierError. Paid models keep
+ * the registry base URL, which still serves them.
+ */
+export const FREE_TIER_INFERENCE_BASE_URL = "https://opencode.ai/inference/v1";
 
 /** Tell the surfaces apart by registry `baseUrl`, so provider ids and aliases stay out. */
 export function surfaceFromBaseUrl(baseUrl: string | null | undefined): OpencodeSurface {
@@ -166,7 +268,7 @@ export function requiresFreeTierRequestContract(
 }
 
 /** The placeholder tool name the official client uses for the same purpose. */
-const PLACEHOLDER_TOOL_NAME = "_noop";
+const PLACEHOLDER_TOOL_NAME = "read";
 export const DEFAULT_PLACEHOLDER_TOOL_NAME = PLACEHOLDER_TOOL_NAME;
 
 /**
@@ -195,6 +297,26 @@ export function configuredPlaceholderToolNames(): string[] {
 const PLACEHOLDER_TOOL_DESCRIPTION =
   "Do not call this tool. It exists only for API compatibility and must never be invoked.";
 const PLACEHOLDER_TOOL_PARAMETERS = { type: "object", properties: {} } as const;
+
+/**
+ * Minimal parameter schemas for injected placeholder tools, mirroring the OpenCode client's
+ * argument names. Since 2026-10-14 the free tier refuses a declared `read` or `bash` whose
+ * parameter object has no properties (measured on /inference/v1: `read` + `bash` with
+ * `properties: {}` is 403, the same pair with `{command}` on `bash` is 200, and a request
+ * with no property-bearing `read` is 403), while an empty schema on a name outside the
+ * quartet (`webfetch`, `_noop`) still passes.
+ */
+const PLACEHOLDER_TOOL_PARAMETER_SCHEMAS: Readonly<Record<string, Record<string, unknown>>> = {
+  bash: { type: "object", properties: { command: { type: "string" } }, required: ["command"] },
+  glob: { type: "object", properties: { pattern: { type: "string" } }, required: ["pattern"] },
+  grep: { type: "object", properties: { pattern: { type: "string" } }, required: ["pattern"] },
+  read: { type: "object", properties: { filePath: { type: "string" } }, required: ["filePath"] },
+};
+
+/** Parameter schema for an injected placeholder tool named `name`. */
+export function placeholderToolParameters(name: string): Record<string, unknown> {
+  return PLACEHOLDER_TOOL_PARAMETER_SCHEMAS[name] ?? PLACEHOLDER_TOOL_PARAMETERS;
+}
 
 /**
  * Bring a free-tier request up to the upstream contract, without overriding anything the
@@ -236,7 +358,7 @@ export function applyFreeTierRequestContract<T>(
         type: "function",
         name,
         description: PLACEHOLDER_TOOL_DESCRIPTION,
-        parameters: PLACEHOLDER_TOOL_PARAMETERS,
+        parameters: placeholderToolParameters(name),
       })),
     ];
     return next as T;
@@ -250,7 +372,7 @@ export function applyFreeTierRequestContract<T>(
         function: {
           name,
           description: PLACEHOLDER_TOOL_DESCRIPTION,
-          parameters: PLACEHOLDER_TOOL_PARAMETERS,
+          parameters: placeholderToolParameters(name),
         },
       })),
     ];
@@ -270,8 +392,9 @@ export function applyFreeTierRequestContract<T>(
  * FreeTierError. When such a refusal comes back, this rebuilds the same body with the
  * observed names appended after the client's own entries: the client tools keep their
  * full shape (description, parameters) so the model can still call them, while the
- * appended names are list entries with an empty parameter object — the same shape the
- * placeholder path uses, never a callable tool.
+ * appended names are list entries carrying the minimal parameter schema
+ * `placeholderToolParameters` gives them — the same shape the placeholder path uses,
+ * never a callable tool.
  *
  * Pure: returns the input body unchanged when no observed names are missing, so the
  * caller can skip the retry on identity alone. Resolution order is the store's own:
@@ -302,7 +425,7 @@ export function mergeClientToolsWithObserved<T>(
         type: "function",
         name,
         description: PLACEHOLDER_TOOL_DESCRIPTION,
-        parameters: PLACEHOLDER_TOOL_PARAMETERS,
+        parameters: placeholderToolParameters(name),
       })),
     ];
     return next as T;
@@ -315,7 +438,7 @@ export function mergeClientToolsWithObserved<T>(
         function: {
           name,
           description: PLACEHOLDER_TOOL_DESCRIPTION,
-          parameters: PLACEHOLDER_TOOL_PARAMETERS,
+          parameters: placeholderToolParameters(name),
         },
       })),
     ];

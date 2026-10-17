@@ -87,6 +87,8 @@
 - **不要通过伪造环回客户端 IP 来“修复”403。** 设置 `X-Forwarded-For: 127.0.0.1`，或使用将源地址重写为环回地址的代理，会重新引入此安全层所消除的 RCE 风险类型。通过代理公开仪表板/API — 切勿公开具备进程启动能力的路由。
 - **将管理作用域绕过保持在最小范围。** 只有 `/api/mcp/` 可以绕过，并且只能使用具有 `manage` 作用域的 API 密钥。`SPAWN_CAPABLE_PREFIXES` 永远不能添加到绕过列表中 — zod schema 会拒绝它们，且 `isLocalOnlyBypassableByManageScope` 会在运行时拒绝它们（纵深防御）；这就是仪表板中“无法设为可绕过”的含义。`/api/providers/` 下包含动态段和静态路径且具备进程启动能力的路由（例如 `/login`、`/refresh-cursor`）由 `src/shared/constants/spawnCapablePrefixes.ts` 中基于正则表达式的 `SPAWN_CAPABLE_PATTERNS` / `SPAWN_CAPABLE_PATTERN_ANCESTORS` 配套项覆盖，而非扁平的 `SPAWN_CAPABLE_PREFIXES` 数组 — 若要使用该扁平数组捕获这些路由，就必须覆盖整个 `/api/providers/` 前缀，从而过度扩大路由树的限制范围，而远程仪表板需要合法使用该路由树进行提供者 CRUD 操作。
 
+  运行时快照加载器也会从已保存的设置行中剔除这些条目，而旧版 JSON 导入（`/api/settings/import-json`）绝不会写入绕过保护的键。`LOCAL_ONLY_API_PREFIXES` 的每个条目都必须位于拒绝列表中，或经过审核确认可以绕过保护。 (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **访问审计** — 要验证主机外部没有任何请求访问这些路由：
 
 - 在 `/dashboard/settings/security` 中打开 **Authorization Inventory**：它会呈现实时的 LOCAL_ONLY 前缀列表、哪些前缀可绕过，以及编译时确定的具备进程生成能力（“不可设为可绕过”）的集合。

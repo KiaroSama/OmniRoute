@@ -50,6 +50,10 @@
 
 강제 모드는 `auto` 휴리스틱이 실행되기 **전에** 단락됩니다; `auto` 동작은 PR-1 이전 가드레일과 바이트 단위로 동일합니다.
 
+#### API 키 범위 (`visionBridgeKeyScope.ts`)
+
+API 키가 연결, 할당량 풀 또는 모델을 제한하면(`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), 재라우팅과 설명 생성은 해당 키에 허용된 모델과 연결만 선택합니다. 설명 호출은 항상 `x-omniroute-self-loop-key-id` 헤더와 함께 OmniRoute 자체 루프를 거쳐 연결 및 모델 정책을 다시 적용합니다. `enforceApiKeyPolicy()`는 자체 루프의 bearer 토큰이 함께 있을 때만 헤더를 인정합니다. 접근 범위를 좁히는 것만 가능하며, 확인되지 않는 ID는 거부됩니다. 허용된 시각 모델이 없으면 설명 생성을 건너뛰고, 보호 기능이 꺼진 경우처럼 요청을 변경 없이 통과시킵니다(meta `{ skipped: true, reason: "no_permitted_vision_model" }`). 키 없는 요청과 이러한 제한이 없는 키의 동작은 이전과 같습니다.
+
 #### 작업 인식 설명 프롬프트 (`modalityBridgeVisionTaskAware`)
 
 기본값은 **true**입니다. `composeVisionPrompt()` (`visionBridgeHelpers.ts`)는 **마지막 사용자 메시지**의 텍스트 (500자로 잘림)를 기본 설명 프롬프트에 추가하여, 사용자가 실제로 요청한 내용(codex-vision-proxy 패턴)에 따라 설명을 유도하고 비전 모델에게 보이는 텍스트를 전사하도록 요청합니다. 이 플래그가 꺼져 있거나 사용자 텍스트가 없는 경우, 기본 프롬프트는 변경 없이 사용됩니다.

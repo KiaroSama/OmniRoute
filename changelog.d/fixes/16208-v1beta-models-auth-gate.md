@@ -1,0 +1,1 @@
+- **fix(models):** /v1beta/models now enforces the same requireAuthForModels gate as /v1/models, so the Gemini catalog no longer lists models to unauthenticated callers on installs that require catalog auth.

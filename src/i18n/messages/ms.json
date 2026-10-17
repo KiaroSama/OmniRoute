@@ -3384,6 +3384,10 @@
     "comboRefMember": "Kombo → {name}"
   },
   "combos": {
+    "autoTosIncludeLabel": "Sertakan penyedia bertanda ToS: avoid dalam auto",
+    "autoTosDescription": "Dimatikan secara lalai. Terpakai kepada semua kombo auto, bukan hanya satu akaun. Menyambungkan penyedia tidak menghidupkan pilihan ini.",
+    "autoTosSaveError": "Dasar ToS tidak dapat disimpan. Tetapan sebelumnya masih dipaparkan. Cuba lagi.",
+    "autoTosLoadError": "Dasar ToS tidak dapat dimuatkan. Cuba lagi sebelum mengubahnya.",
     "title": "Kombo",
     "description": "Cipta gabungan model dengan penghalaan berwajaran dan sokongan sandaran",
     "autoCatalogTitle": "Katalog penghalaan automatik",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Memaparkan {shown} daripada {total} baris yang sepadan (50 teratas)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Destinasi penyegerakan awan (bukan sandaran setempat):",
+    "cloudUploadWarning": "Penyegerakan awan dilumpuhkan secara lalai pada pemasangan baharu. Mengaktifkannya akan memuat naik kunci API penyedia, token akses dan penyegaran OAuth, kunci API OmniRoute serta konfigurasi ke destinasi di atas, sekarang dan semasa penyegerakan akan datang. Fungsi ini berasingan daripada sandaran setempat dalam bahagian Penyimpanan. Aktifkannya hanya jika anda mempercayai pelayan tersebut.",
+    "cloudUploadConsent": "Saya memahami dan membenarkan kelayakan akses saya dimuat naik ke destinasi ini.",
     "title": "Titik Akhir API",
     "subtitle": "Gunakan titik akhir yang serasi dengan OpenAI bersama kebanyakan SDK dan alat.",
     "testEndpoint": "Uji titik akhir →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "Penyedia ini dikecualikan daripada auto secara lalai",
+    "tosAvoidNoticeDescription": "Status ToS penyedia ini ditandakan avoid. Menyambungkan akaun tidak mengubah dasar ini. Semak syarat penyedia sebelum mengaktifkan pilihan global untuk semua kombo auto.",
+    "tosAvoidNoticeAction": "Semak dasar auto",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Lumpuhkan sambungan",
     "enableConnection": "Dayakan sambungan",
     "reauthenticateConnection": "Sahkan semula sambungan ini",
+    "verifyAccount": "Sahkan akaun",
+    "verifyAccountHint": "Google memerlukan anda mengesahkan akaun ini. Buka pautan, lengkapkan semakan, kemudian cuba lagi.",
     "proxyConfig": "Konfigurasi proksi",
     "aliasExistsAlert": "Alias \"{alias}\" sudah wujud. Sila gunakan model lain atau edit alias sedia ada.",
     "aliasInputPlaceholder": "nama alias",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Pelabuhan",
     "qdrantHost": "Hos",
     "qdrantCollection": "Koleksi",
+    "catalogVisibilityHint": "ID model yang disembunyikan masih boleh dipanggil dengan kebenaran akses yang sama.",
     "catalogScopeTitle": "Penyenaraian API Model",
     "catalogScopeDesc": "Perkara yang diiklankan oleh GET /v1/models untuk kunci ini. Mengecilkan senarai tidak akan mengubah perkara yang boleh dipanggil oleh kunci tersebut.",
     "catalogScopeAll": "Kedua-duanya",

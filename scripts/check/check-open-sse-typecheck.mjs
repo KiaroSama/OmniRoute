@@ -18,10 +18,10 @@
 //   node scripts/check/check-open-sse-typecheck.mjs
 //   node scripts/check/check-open-sse-typecheck.mjs --update   # re-freeze baseline
 
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { runBuildTool } from "../build/buildToolRunner.mjs";
 import { diffAgainstBaseline, parseTscOutput } from "./typecheckBaseline.mjs";
 
 export { diffAgainstBaseline, parseTscOutput } from "./typecheckBaseline.mjs";
@@ -33,9 +33,10 @@ const UPDATE = process.argv.includes("--update");
 
 function runTsc() {
   try {
-    const stdout = execFileSync(
-      process.platform === "win32" ? "npx.cmd" : "npx",
-      ["tsc", "--pretty", "false", "--noEmit", "-p", TSCONFIG],
+    const stdout = runBuildTool(
+      "typescript",
+      "tsc",
+      ["--pretty", "false", "--noEmit", "-p", TSCONFIG],
       { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, cwd: ROOT }
     );
     return stdout;

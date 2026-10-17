@@ -1,0 +1,1 @@
+- fix(tests): preserve proxy environment variables during setup and restoration on Windows, preventing six false TLS proxy-context failures (#16526).

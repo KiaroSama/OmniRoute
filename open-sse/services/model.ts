@@ -5,9 +5,17 @@ import { resolveWildcardAlias } from "./wildcardRouter.ts";
 import { getRegisteredProviderEffortBaseModelId } from "../utils/registeredEffortVariants.ts";
 import { hasProviderModelAlias, resolveProviderModelAlias } from "./modelCanonicalization.ts";
 import { resolveActivePrefixedProviderModel } from "./prefixedProviderModel.ts";
+import { logger } from "../utils/logger.ts";
+import { boundedMap } from "../../src/lib/quota/boundedMap.ts";
 
 export { resolveProviderAlias };
 export { resolveCanonicalProviderModel } from "./modelCanonicalization.ts";
+
+// Tagged, level-gated logger (honors APP_LOG_LEVEL, default "info"). Routing the
+// former console.debug calls through this skips the synchronous stdout write when
+// the level is above debug — console.* blocks the event loop per line, and
+// parseModel() sits on the per-request hot path (combo scoring, chatCore).
+const log = logger("MODEL");
 
 type ModelAliasValue = string | { provider?: string; model?: string };
 type ModelAliasMap = Record<string, ModelAliasValue>;
@@ -64,6 +72,15 @@ for (const [aliasOrId, models] of Object.entries(PROVIDER_MODELS)) {
   }
 }
 const KNOWN_MODEL_IDS = new Set(MODEL_TO_PROVIDERS.keys());
+
+/**
+ * True when `modelId` is a model id some static provider catalog exposes verbatim
+ * (including slash-bearing ids such as `meta-llama/...`). Used by the combo resolver
+ * so a catalogued model id is never re-read as `<client-namespace>/<combo>`.
+ */
+export function isKnownCatalogModelId(modelId: string | null | undefined): boolean {
+  return typeof modelId === "string" && KNOWN_MODEL_IDS.has(modelId);
+}
 // Bare Codex CLI defaults must always route to the `codex` provider (chatgpt.com
 // OAuth) even when other providers that also catalog the model id (e.g.
 // `agentrouter`, `openai`) are active. The Codex cookie quota on the user's
@@ -132,6 +149,15 @@ interface ProviderConnectionLike {
  * placeholder. A "/"-qualified model name is an explicit provider/model choice
  * and is always returned untouched.
  *
+ * Only a placeholder is replaced: the resolved model must be empty, null or
+ * "auto". A concrete bare model name (e.g. a catalog short name such as
+ * "claude-haiku-4-5") is an explicit choice too; replacing it with the
+ * connection's `defaultModel` silently served a different model (a Gemini
+ * default answering a Claude request) with no error anywhere.
+ *
+ * Set `BARE_MODEL_DEFAULT_OVERRIDE_LEGACY=true` to restore the previous
+ * behaviour (any bare name is replaced); it logs one warning per pair.
+ *
  * Pure function — `requestedModelStr` is the raw client-facing model string
  * (used only to decide whether the name is "bare"); `resolvedModel` is the
  * already-resolved model that would otherwise be sent upstream.
@@ -145,10 +171,33 @@ export function resolveBareModelToConnectionDefault(
   if (typeof requestedModelStr !== "string" || requestedModelStr.includes("/")) {
     return fallback;
   }
-  if (typeof connectionDefaultModel === "string" && connectionDefaultModel.length > 0) {
+  if (typeof connectionDefaultModel !== "string" || connectionDefaultModel.length === 0) {
+    return fallback;
+  }
+  if (fallback === null || fallback === "" || fallback === "auto") {
+    return connectionDefaultModel;
+  }
+  if (fallback === connectionDefaultModel) return fallback;
+  if (isBareModelDefaultOverrideLegacy()) {
+    warnLegacyBareModelOverride(fallback, connectionDefaultModel);
     return connectionDefaultModel;
   }
   return fallback;
+}
+
+function isBareModelDefaultOverrideLegacy() {
+  return isTruthyEnv(process.env.BARE_MODEL_DEFAULT_OVERRIDE_LEGACY);
+}
+
+const legacyBareModelOverrideWarned = new Set<string>();
+
+function warnLegacyBareModelOverride(model: string, connectionDefaultModel: string) {
+  const key = `${model}|${connectionDefaultModel}`;
+  if (legacyBareModelOverrideWarned.has(key)) return;
+  legacyBareModelOverrideWarned.add(key);
+  log.warn(
+    `BARE_MODEL_DEFAULT_OVERRIDE_LEGACY: '${model}' replaced by the connection defaultModel '${connectionDefaultModel}'`
+  );
 }
 
 function isCrossProxyModelCompatEnabled() {
@@ -176,7 +225,7 @@ export function normalizeCrossProxyModelId(modelId: unknown): {
     return { modelId, applied: false, original: null };
   }
 
-  console.debug(`[MODEL] Cross-proxy alias applied: "${modelId}" → "${normalized}"`);
+  log.debug(`Cross-proxy alias applied: "${modelId}" → "${normalized}"`);
   return { modelId: normalized, applied: true, original: modelId };
 }
 
@@ -347,6 +396,23 @@ function shouldTreatAsExactModelId(modelStr: string | null) {
   return !hasKnownProviderModel(providerOrAlias, providerScopedModel);
 }
 
+// parseModel is deterministic for a given string except MODEL_ALIAS_COMPAT_ENABLED,
+// which normalizeCrossProxyModelId reads on every call. The flag is part of the key
+// so an env toggle cannot return a stale parse. Callers receive a copy: the cache
+// must not alias a mutated result into the next request.
+export const PARSE_MODEL_CACHE_LIMIT = 2048;
+export const parseModelCache = boundedMap<ParsedModel>(
+  "parse-model-cache",
+  PARSE_MODEL_CACHE_LIMIT,
+  "lru"
+);
+
+function parseModelCacheKey(modelStr: string): string {
+  const raw = process.env.MODEL_ALIAS_COMPAT_ENABLED;
+  const compat = raw === "false" || raw === "0" ? "0" : "1";
+  return `${compat}\0${modelStr}`;
+}
+
 /**
  * Resolve a provider/model pair into canonical provider ID + provider-scoped model ID.
  * Keeps provider-specific legacy aliases out of downstream capability and budget lookups.
@@ -356,6 +422,16 @@ function shouldTreatAsExactModelId(modelStr: string | null) {
  * Supports [1m] suffix for extended 1M context window (e.g. "claude-sonnet-4-6[1m]")
  */
 export function parseModel(modelStr: string | null | undefined): ParsedModel {
+  if (typeof modelStr !== "string") return parseModelUncached(modelStr);
+  const key = parseModelCacheKey(modelStr);
+  const cached = parseModelCache.get(key);
+  if (cached) return { ...cached };
+  const parsed = parseModelUncached(modelStr);
+  parseModelCache.set(key, parsed);
+  return { ...parsed };
+}
+
+function parseModelUncached(modelStr: string | null | undefined): ParsedModel {
   // Guard truthy non-strings (object/number/array), not just falsy values — a
   // malformed combo `modelStr` or providerSpecificData saved as an object would
   // otherwise reach `cleanStr.endsWith("[1m]")` and crash with
@@ -377,7 +453,7 @@ export function parseModel(modelStr: string | null | undefined): ParsedModel {
     /[\x00-\x1f]/.test(modelStr) ||
     hasUnsafeModelIdSyntax(modelStr)
   ) {
-    console.log(`[MODEL] Warning: rejected malformed model string: "${modelStr.substring(0, 50)}"`);
+    log.warn(`Rejected malformed model string: "${modelStr.substring(0, 50)}"`);
     return {
       provider: null,
       model: null,
@@ -403,7 +479,7 @@ export function parseModel(modelStr: string | null | undefined): ParsedModel {
   }
 
   if (shouldTreatAsExactModelId(cleanStr)) {
-    console.debug(`[MODEL] Treating "${cleanStr}" as an exact model id`);
+    log.debug(`Treating "${cleanStr}" as an exact model id`);
     return { provider: null, model: cleanStr, isAlias: true, providerAlias: null, extendedContext };
   }
 
@@ -695,7 +771,7 @@ async function resolveModelByProviderInference(modelId: string, extendedContext:
     const aliasesForHint = candidatesToUse.map((p) => PROVIDER_ID_TO_ALIAS[p] || p);
     const hints = aliasesForHint.slice(0, 2).map((alias) => `${alias}/${modelId}`);
     const message = `Ambiguous model '${modelId}'. Use provider/model prefix (ex: ${hints.join(" or ")}).`;
-    console.warn(`[MODEL] ${message} Candidates: ${aliasesForHint.join(", ")}`);
+    log.warn(`${message} Candidates: ${aliasesForHint.join(", ")}`);
     return {
       provider: null,
       model: modelId,

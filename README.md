@@ -19,9 +19,9 @@
 
 > **Bring your own provider accounts.** This is an estimated aggregate across separately eligible third-party free tiers, not a token grant from OmniRoute. Sign up, obtain credentials where required, and connect the providers you can use; each provider controls its limits, availability, and terms.
 >
-> Stacking free tiers by hand is painful — dozens of SDKs, dozens of rate limits, and no idea how much you actually have. OmniRoute catalogs **489 free-tier entries across 35 recurring pool keys** and computes the token headline from the **17 pools with a published positive monthly budget plus five per-model Groq caps**, deduplicated by shared pool. Quotas that only open after a regional identity check (today: ModelScope) are shown apart, +~6M behind regional identity verification, and never summed into the headline. The result stays visible on the dashboard (`/dashboard/free-tiers`).
+> Stacking free tiers by hand is painful — dozens of SDKs, dozens of rate limits, and no idea how much you actually have. OmniRoute catalogs **485 free-tier entries across 35 recurring pool keys** and computes the token headline from the **17 pools with a published positive monthly budget plus five per-model Groq caps**, deduplicated by shared pool. Quotas that only open after a regional identity check (today: ModelScope) are shown apart, +~6M behind regional identity verification, and never summed into the headline. The result stays visible on the dashboard (`/dashboard/free-tiers`).
 
-<img src="./docs/diagrams/free-tier-budget.svg" width="100%" alt="OmniRoute free-tier budget card: ~1.62B free tokens per month steady, up to ~2.22B in the first month with signup credits, from 35 documented recurring pool keys covering 489 cataloged free-tier entries behind one endpoint. Honest pool-deduped math — each shared pool counted once, including 17 recurring pools with a published positive monthly token budget plus five per-model Groq caps; 13 providers are marked avoid in the terms-risk catalog so you decide. Budget bar includes Mistral 1B, Nara 210M, LLM7 150M, xKiro 150M, Groq 30M (five per-model caps) and smaller pools, plus first-month signup credits and permanently-free no-token-cap providers surfaced separately so they never inflate the headline. Live used/remaining on /dashboard/free-tiers."/>
+<img src="./docs/diagrams/free-tier-budget.svg" width="100%" alt="OmniRoute free-tier budget card: ~1.62B free tokens per month steady, up to ~2.22B in the first month with signup credits, from 35 documented recurring pool keys covering 485 cataloged free-tier entries behind one endpoint. Honest pool-deduped math — each shared pool counted once, including 17 recurring pools with a published positive monthly token budget plus five per-model Groq caps; 13 providers are marked avoid in the terms-risk catalog so you decide. Budget bar includes Mistral 1B, Nara 210M, LLM7 150M, xKiro 150M, Groq 30M (five per-model caps) and smaller pools, plus first-month signup credits and permanently-free no-token-cap providers surfaced separately so they never inflate the headline. Live used/remaining on /dashboard/free-tiers."/>
 
 > Animated summary of the live `/dashboard/free-tiers` page. Full methodology (pool dedupe, credit tiers, provider terms): **[docs/reference/FREE_TIERS.md](docs/reference/FREE_TIERS.md)**.
 >
@@ -94,7 +94,7 @@
     <td align="right"><b>🚀 Start</b></td>
     <td align="center"><a href="#-quick-start">🚀 Quick Start</a></td>
     <td align="center"><a href="#-more-install-methods--docker-source-pnpm-arch">📦 Install</a></td>
-    <td align="center"><a href="#-works-the-second-you-install-it--no-keys-no-config">🆓 Zero-config</a></td>
+    <td align="center"><a href="#first-run">🆓 Connect a provider</a></td>
   </tr>
   <tr>
     <td align="right"><b>💡 Learn</b></td>
@@ -213,6 +213,8 @@
 
 <div align="center">
 
+<a id="first-run"></a>
+
 ## 🆓 Install, connect a provider, then route through one endpoint
 
 </div>
@@ -239,7 +241,7 @@ curl http://localhost:20128/v1/chat/completions \
 
 </div>
 
-<img src="./docs/diagrams/promise-pillars.svg" width="100%" alt="The Promise — One endpoint and 372 providers. Automatic fallback keeps routing while another healthy target is available. Six pillars: resilient fallback across 372 providers · up to 95% token savings on eligible workloads · $0 to start with 150+ free tiers and 54 recurring/keyless free-forever providers · 36 CLI/agent integrations through one config · OpenAI, Claude, Gemini and Responses API compatibility at /v1 · production controls including circuit breakers, TLS stealth, MCP 110 tools, A2A, memory, guardrails, evals and 39,000+ static test declarations across 5,100+ tracked test files."/>
+<img src="./docs/diagrams/promise-pillars.svg" width="100%" alt="The Promise — One endpoint and 372 providers. Automatic fallback keeps routing while another healthy target is available. Six pillars: resilient fallback across 372 providers · up to 95% token savings on eligible workloads · $0 to start with 150+ free tiers and 53 recurring/keyless free-forever providers · 36 CLI/agent integrations through one config · OpenAI, Claude, Gemini and Responses API compatibility at /v1 · production controls including circuit breakers, TLS stealth, MCP 110 tools, A2A, memory, guardrails, evals and 39,000+ static test declarations across 5,100+ tracked test files."/>
 
 <br/>
 <br/>
@@ -592,7 +594,7 @@ the current catalog at **[radar.omniroute.online/planos](https://radar.omniroute
 - **🖼️ New endpoints** — `/v1/ocr` (Mistral OCR) and `/v1/audio/translations` (Whisper-style) round out the media surface. → [API Reference](docs/reference/API_REFERENCE.md)
 - **🎨 Image / video / audio generation** — one API for media: xAI Grok Imagine & Novita AI video, ComfyUI, Magnific, Adobe Firefly, Segmind, and speech providers such as ElevenLabs. → [API Reference](docs/reference/API_REFERENCE.md). This fork's [native image repair contracts](docs/CODEX-IMAGES.md) document Codex engine routing, Antigravity references and verification limits.
 - **🌍 Deployment & ops** — reverse-proxy `basePath`, browser-language auto-detect, per-key device tracking, root-less MITM trust, zh-TW localization. → [Environment](docs/reference/ENVIRONMENT.md)
-- **🤝 More providers & agents** — cloud agents (Codex Cloud, Cursor, Devin, Jules), Grok Build (xAI) with browser + OAuth login, Ollama first-class card, Claude Opus 5 & Sonnet 5, Kimi official partnership (Code/Web/Moonshot), Zed, Requesty, SenseNova, Yuanbao, Agnes AI… and a refreshed **352-provider catalog**. → [Providers](docs/reference/PROVIDER_REFERENCE.md)
+- **🤝 More providers & agents** — cloud agents (Codex Cloud, Cursor, Devin, Jules), Grok Build (xAI) with browser + OAuth login, Ollama first-class card, Claude Opus 5 & Sonnet 5, Kimi official partnership (Code/Web/Moonshot), Zed, Requesty, SenseNova, Yuanbao, Agnes AI… and a refreshed **372-provider catalog**. → [Providers](docs/reference/PROVIDER_REFERENCE.md)
 - **📡 Routing transparency** — every response carries an `X-OmniRoute-Decision` header naming the strategy/provider/latency that served it, a new `cache-optimized` combo strategy + Auto-Combo `cacheAffinity` factor route repeat requests back to the connection holding the cached prefix, and a read-only `/v1/auto-combo/{channel}/candidates` endpoint exposes an `auto/*` channel's live candidate pool. → [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **⚡ Local performance & infra** — one-click local Redis, Cloudflare Workers / Deno Deploy relay deployers, Bifrost & Mux as supervised embedded services. → [Embedded Services](docs/frameworks/EMBEDDED-SERVICES.md)
 - **🧩 Also in the box** — plugin framework + marketplace, Omni/Agent/GitHub skills frameworks, Obsidian vault integration (22 MCP tools), OpenAI-compatible Batch & Files APIs, semantic response cache, gamification with leaderboards, ACP agent discovery (15 built-in agents), scheduled log export to BigQuery, `auto/chaos` parallel multi-model fan-out, a Telegram bot bridge, an in-app version manager and LMArena-ELO free-provider rankings. → [Docs](docs/README.md)
@@ -680,7 +682,7 @@ of your shell history. → [CLI Integrations](docs/guides/CLI-INTEGRATIONS.md)
 
 </div>
 
-> **372 registered providers** across the canonical chat, media, search, local, cloud-agent and system collections, including **154 carrying `hasFree: true` discovery metadata**. The chat model registry covers **237 providers / 3,009 distinct provider-model pairs / 1,443 raw model IDs**; the separate free-budget catalog has **491 per-model rows**, **35 recurring pools** and **54 recurring/keyless free-forever providers**. These are different denominators by design; definitions and pool-deduped calculations live in the [Provider Reference](docs/reference/PROVIDER_REFERENCE.md) and [Free Tiers](docs/reference/FREE_TIERS.md).
+> **372 registered providers** across the canonical chat, media, search, local, cloud-agent and system collections, including **154 carrying `hasFree: true` discovery metadata**. The chat model registry covers **237 providers / 3,009 distinct provider-model pairs / 1,443 raw model IDs**; the separate free-budget catalog has **485 per-model rows**, **35 recurring pools** and **53 recurring/keyless free-forever providers**. These are different denominators by design; definitions and pool-deduped calculations live in the [Provider Reference](docs/reference/PROVIDER_REFERENCE.md) and [Free Tiers](docs/reference/FREE_TIERS.md).
 
 <div align="center">
 
@@ -1359,7 +1361,7 @@ Métricas canônicas em 2026-08-24: **1.029 vídeos únicos** · **11.132.922 vi
   <tr><td nowrap><b><a href="docs/architecture/RESILIENCE_GUIDE.md">Resilience Guide</a></b></td><td>Circuit breakers, cooldowns, queue, anti-thundering herd, TLS spoofing</td></tr>
   <tr><td nowrap><b><a href="docs/routing/AUTO-COMBO.md">Auto-Combo Engine</a></b></td><td>16-factor scoring, mode packs, self-healing</td></tr>
   <tr><td nowrap><b><a href="docs/ops/PROXY_GUIDE.md">Proxy Guide</a></b></td><td>3-level proxy system, 1proxy marketplace, registry CRUD</td></tr>
-  <tr><td nowrap><b><a href="docs/reference/FREE_TIERS.md">Free Tiers</a></b></td><td>Consolidated directory: 35 documented recurring pools / 489 cataloged free-tier entries</td></tr>
+  <tr><td nowrap><b><a href="docs/reference/FREE_TIERS.md">Free Tiers</a></b></td><td>Consolidated directory: 35 documented recurring pools / 485 cataloged free-tier entries</td></tr>
   <tr><td nowrap><b><a href="docs/guides/FEATURES.md">Features Gallery</a></b></td><td>Visual dashboard tour with screenshots</td></tr>
   <tr><td nowrap><b><a href="docs/architecture/CODEBASE_DOCUMENTATION.md">Codebase Documentation</a></b></td><td>Beginner-friendly codebase walkthrough</td></tr>
 </table>

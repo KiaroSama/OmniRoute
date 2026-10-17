@@ -83,6 +83,10 @@ Flux:
 Modurile forțate scurtcircuitează **înainte** ca euristica automată să ruleze; comportamentul `auto`
 este identic byte-cu-byte cu bariera de protecție pre-PR-1.
 
+#### Domeniul cheii API (`visionBridgeKeyScope.ts`)
+
+Dacă cheia API restricționează conexiunile, grupurile de cote sau modelele (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), redirecționarea și descrierea aleg doar modele și conexiuni permise acelei chei. Descrierea trece întotdeauna prin bucla internă OmniRoute cu antetul `x-omniroute-self-loop-key-id`, aplicând din nou politica de conexiuni și modele. `enforceApiKeyPolicy()` acceptă antetul numai împreună cu tokenul bearer al buclei: poate doar restrânge accesul, iar un identificator necunoscut este respins. Dacă nu există un model vizual permis, descrierea este omisă, iar cererea rămâne neschimbată, ca atunci când protecția este dezactivată (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Cererile fără cheie și cheile fără aceste restricții funcționează ca înainte.
+
 #### Prompt de descriere conștient de sarcină (`modalityBridgeVisionTaskAware`)
 
 Implicit **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) adaugă textul

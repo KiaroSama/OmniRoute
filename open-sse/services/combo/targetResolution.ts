@@ -561,9 +561,14 @@ async function applyContinuityFilters(
     (config as { compatFilterFailOpen?: unknown }).compatFilterFailOpen === true ||
     (settings as { compatFilterFailOpen?: unknown } | null | undefined)?.compatFilterFailOpen ===
       true;
+  const outputLimitAdvisory =
+    (config as { outputLimitAdvisory?: unknown }).outputLimitAdvisory === true ||
+    (settings as { outputLimitAdvisory?: unknown } | null | undefined)?.outputLimitAdvisory ===
+      true;
   const preCompatTargets = orderedTargets;
   orderedTargets = filterTargetsByRequestCompatibility(orderedTargets, body, log, undefined, {
     failOpen: compatFilterFailOpen,
+    outputLimitAdvisory,
   });
   if (orderedTargets.length === 0 && preCompatTargets.length > 0) {
     const exhaustion = describeCapabilityFilterExhaustion(preCompatTargets, body, combo.name);

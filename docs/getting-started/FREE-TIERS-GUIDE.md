@@ -1,3 +1,9 @@
+---
+title: "Free Tiers Guide: Understand and Combine Free AI Access"
+version: 3.8.52
+lastUpdated: 2026-10-11
+---
+
 # Free Tiers Guide: Understand and Combine Free AI Access
 
 > **TL;DR**: Bring your own eligible provider accounts. OmniRoute combines the connections you configure; it does not issue the advertised aggregate token budget. Free access can require signup, an API key, approval, or a payment method. Provider limits, privacy policies, and terms still apply.

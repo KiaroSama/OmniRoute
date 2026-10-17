@@ -143,6 +143,8 @@ trách nhiệm dành cho người vận hành:
   tiền tố `/api/providers/` để phát hiện chúng, làm phạm vi của cây route mà các
   bảng điều khiển từ xa sử dụng hợp lệ cho CRUD nhà cung cấp trở nên quá rộng.
 
+  Bộ nạp ảnh chụp trạng thái lúc chạy cũng loại bỏ các mục đó khỏi hàng cài đặt đã lưu, và chức năng nhập JSON cũ (`/api/settings/import-json`) không bao giờ ghi các khóa bỏ qua bảo vệ. Mỗi mục `LOCAL_ONLY_API_PREFIXES` phải nằm trong danh sách từ chối hoặc đã được xét duyệt là đủ điều kiện bỏ qua. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Kiểm tra quyền truy cập** — để xác minh không có gì từ bên ngoài máy chủ đang tiếp cận các route này:
 
 - Mở **Kho kiểm kê phân quyền** trên `/dashboard/settings/security`: trang này hiển thị

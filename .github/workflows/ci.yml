@@ -141,6 +141,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - run: npm run check:cycles:ratchet
+      - run: npm run check:boundary:ratchet
       - run: npm run check:route-validation:t06
       - run: npm run check:any-budget:t11
       - run: npm run check:provider-consistency
@@ -705,7 +706,7 @@ jobs:
     # back to ubuntu-latest unless the PR head repo is this repository (push /
     # dispatch events are own-origin by definition). Any failure path (VM down,
     # var unset/false) also falls back to ubuntu-latest.
-    runs-on: ${{ (vars.USE_VPS_RUNNER == 'true' && github.event_name != 'merge_group' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","omni-build"]') || 'ubuntu-latest' }}
+    runs-on: ${{ (vars.USE_VPS_RUNNER == 'true' && vars.USE_VPS_BUILD_RUNNER == 'true' && github.event_name != 'merge_group' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted","omni-build"]') || 'ubuntu-latest' }}
     needs: changes
     # Capacity is owned by the ONE omni-build runner slot (#12048), also used by
     # Docker amd64. Do not add another worker with that label on the same host
@@ -731,21 +732,19 @@ jobs:
           # PR acceleration is not release-candidate provenance.
           cache: ${{ github.event_name == 'pull_request' }}
       - run: npm run check:node-runtime
-      # NOTE: the webpack `.build/next/cache` actions/cache step was removed with the
-      # Turbopack switch below — Turbopack does not read/write the webpack cache dir
-      # (its persistent FS cache is still experimental and intentionally NOT enabled),
-      # so restoring the old ~0.5 GB webpack cache would only waste download time.
-      # Rolling back to webpack = revert this commit (cache step comes back with it).
-      #
-      # Turbopack production build (Next 16, stable): benchmarked 1.9× faster than the
-      # webpack pass (9min0s vs 17min15s on a 32-core box; multi-core Rust vs webpack's
-      # single-threaded compile). Standalone output smoke-validated (server boots,
-      # /api/monitoring/health 200). Downstream jobs (e2e ×9, package-artifact,
-      # electron-package-smoke) consume this artifact, so a green run here validates
-      # the Turbopack artifact end-to-end.
+      # Use the existing webpack fallback on hosted runners, matching limited Docker builders.
+      # Keep the benchmarked Turbopack build on the dedicated omni-build runner.
+      # Both produce the standalone artifact consumed by downstream smoke checks.
+      # 2026-10-16: Turbopack is OFF on every runner. Measured alone on the 32-vCPU/47 GB
+      # .113 (cgroup cap, swap off), a Turbopack build of this tree peaks at 33-37 GB on
+      # Next 16.3.5/16.3.6/16.3.8 (compile ~21 GB + 31 static-generation workers 17-21 GB),
+      # which the box cannot spare next to the three omni-light runners (~200 red Builds
+      # since 10-06, each swap-thrashing for 17-90 min); 16.4.2 needs more than 36 GB in
+      # the compile phase alone. webpack builds the same tree in 14 GB. Guarded by
+      # tests/unit/ci-build-bundler-webpack.test.ts; flip back only with a measurement.
       - run: npm run build
         env:
-          OMNIROUTE_USE_TURBOPACK: "1"
+          OMNIROUTE_USE_TURBOPACK: "0"
       - name: Verify colocated compression worker
         run: node --import tsx/esm --test tests/integration/compression-worker-standalone.int.test.ts
         env:
@@ -982,7 +981,7 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=8192
         run: |
           rm -rf coverage-shard coverage-shard-report
-          npx c8 \
+          npx c8 --merge-async \
             --temp-directory=coverage-shard \
             --reports-dir=coverage-shard-report \
             --reporter=json \
@@ -1075,7 +1074,7 @@ jobs:
       - name: Upload test results to Trunk (advisory)
         if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         continue-on-error: true
-        uses: trunk-io/analytics-uploader@14c0f18990953eecd01c9c5afe3cc63a73b6c371 # v2.1.5
+        uses: trunk-io/analytics-uploader@a86313c7029d22e6ea2d5c346060a224d90053dc # v2.1.6
         with:
           junit-paths: trunk-junit/**/*.xml
           org-slug: omniroute
@@ -1408,7 +1407,7 @@ jobs:
       - name: Upload test results to Trunk (advisory)
         if: ${{ always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
         continue-on-error: true
-        uses: trunk-io/analytics-uploader@14c0f18990953eecd01c9c5afe3cc63a73b6c371 # v2.1.5
+        uses: trunk-io/analytics-uploader@a86313c7029d22e6ea2d5c346060a224d90053dc # v2.1.6
         with:
           junit-paths: junit-e2e-results.xml
           org-slug: omniroute

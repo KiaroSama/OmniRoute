@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**Limitazione TLS:** i tunnel HTTPS `CONNECT` vengono acquisiti solo come metadati (host, porta, tempistiche): il corpo TLS non viene decrittografato per impostazione predefinita. Attivare l'opzione "Decrittografa HTTPS in modalità proxy" (opt-in, richiede che il certificato AgentBridge sia considerato attendibile) per ispezionare il corpo completo.
+**Limitazione TLS:** i tunnel HTTPS `CONNECT` vengono acquisiti solo come metadati (host, porta, tempistiche): il corpo TLS non viene decrittografato per impostazione predefinita.
 
 **Conflitto di porta:** se la porta 8080 è in uso, AgentBridge restituisce un errore strutturato con codice 409. Cambiare la porta tramite la variabile d'ambiente `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -464,12 +464,11 @@ Percorso di base: `/api/tools/traffic-inspector/`
 
 ### Modalità di acquisizione
 
-| Metodo | Percorso                       | Descrizione                                                                                                           |
-| ------ | ------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/capture-modes`               | Stato delle modalità AgentBridge / host personalizzati / HTTP_PROXY / proxy di sistema e dell'opzione `tls-intercept` |
-| POST   | `/capture-modes/http-proxy`    | Avvia/arresta il listener HTTP_PROXY (`{action: "start"\|"stop"}`)                                                    |
-| POST   | `/capture-modes/system-proxy`  | Applica/ripristina il proxy a livello di sistema (`{action: "apply"\|"revert"}`)                                      |
-| POST   | `/capture-modes/tls-intercept` | Attiva o disattiva la decrittografia del corpo HTTPS in modalità proxy (`{enabled: boolean}`)                         |
+| Metodo | Percorso                      | Descrizione                                                                            |
+| ------ | ----------------------------- | -------------------------------------------------------------------------------------- |
+| GET    | `/capture-modes`              | Stato delle modalità AgentBridge / host personalizzati / HTTP_PROXY / proxy di sistema |
+| POST   | `/capture-modes/http-proxy`   | Avvia/arresta il listener HTTP_PROXY (`{action: "start"\|"stop"}`)                     |
+| POST   | `/capture-modes/system-proxy` | Applica/ripristina il proxy a livello di sistema (`{action: "apply"\|"revert"}`)       |
 
 > **Decrittografia TPROXY** (modalità di acquisizione 5) è gestita da una route
 > **separata** sotto il prefisso AgentBridge — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — e non

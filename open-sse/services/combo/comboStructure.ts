@@ -666,6 +666,15 @@ export type CompatFilterOptions = {
    * instead of returning an empty list. Default is fail-closed.
    */
   failOpen?: boolean;
+  /**
+   * Opt-in: a known output ceiling below the request's `max_tokens` no longer
+   * removes the target; it keeps its place in the strategy order (operator
+   * priority wins). Clients like Claude Code send max_tokens as a generous
+   * ceiling (128000), which otherwise strips every 64k-output model from the
+   * combo; translators clamp to the model cap, and a real rejection still falls
+   * through to the next target. Default keeps the hard exclusion.
+   */
+  outputLimitAdvisory?: boolean;
 };
 
 function highestKnownOutputLimit(targets: ResolvedComboTarget[]): number {
@@ -755,6 +764,9 @@ export function filterTargetsByRequestCompatibility(
   options?: CompatFilterOptions
 ): ResolvedComboTarget[] {
   if (targets.length === 0) return targets;
+  const outputLimitAdvisory = options?.outputLimitAdvisory === true;
+  const isHardReason = (reason: string) =>
+    HARD_COMPAT_REASONS.has(reason) && !(outputLimitAdvisory && reason === "output_tokens");
   const requirements = deriveRequestCompatibilityRequirements(body);
   const needsFiltering =
     requirements.requiresTools ||
@@ -776,7 +788,7 @@ export function filterTargetsByRequestCompatibility(
   // never remove the only target that could accept the request at runtime.
   const compatible = targets.filter((target) => {
     const reasons = targetReasons.get(target) || [];
-    return !reasons.some((reason) => HARD_COMPAT_REASONS.has(reason));
+    return !reasons.some(isHardReason);
   });
   const hadKnownTooSmallContextTarget = rejected.some((entry) =>
     entry.reasons.includes("context_window")

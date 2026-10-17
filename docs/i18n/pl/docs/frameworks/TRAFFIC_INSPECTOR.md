@@ -85,7 +85,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**Ograniczenie TLS:** Tunele HTTPS `CONNECT` są domyślnie przechwytywane wyłącznie jako metadane (host, port, czas) — treść TLS nie jest odszyfrowywana. Aby umożliwić pełną inspekcję treści, włącz opcję „Odszyfruj HTTPS w trybie proxy” (wymaga świadomego włączenia i zaufania certyfikatowi AgentBridge).
+**Ograniczenie TLS:** Tunele HTTPS `CONNECT` są domyślnie przechwytywane wyłącznie jako metadane (host, port, czas) — treść TLS nie jest odszyfrowywana.
 
 **Konflikt portu:** Jeśli port 8080 jest używany, AgentBridge zwraca kod 409 z błędem strukturalnym. Zmień port za pomocą zmiennej środowiskowej `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -464,12 +464,11 @@ Wszystkie trasy są oznaczone jako `LOCAL_ONLY` (dostępne wyłącznie przez int
 
 ### Tryby przechwytywania
 
-| Metoda | Ścieżka                        | Opis                                                                                                                         |
-| ------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/capture-modes`               | Stan trybów AgentBridge / niestandardowych hostów / HTTP_PROXY / systemowego serwera proxy oraz przełącznika `tls-intercept` |
-| POST   | `/capture-modes/http-proxy`    | Uruchamia/zatrzymuje odbiornik HTTP_PROXY (`{action: "start"\|"stop"}`)                                                      |
-| POST   | `/capture-modes/system-proxy`  | Włącza/wyłącza systemowy serwer proxy (`{action: "apply"\|"revert"}`)                                                        |
-| POST   | `/capture-modes/tls-intercept` | Przełącza odszyfrowywanie treści HTTPS w trybie serwera proxy (`{enabled: boolean}`)                                         |
+| Metoda | Ścieżka                       | Opis                                                                                       |
+| ------ | ----------------------------- | ------------------------------------------------------------------------------------------ |
+| GET    | `/capture-modes`              | Stan trybów AgentBridge / niestandardowych hostów / HTTP_PROXY / systemowego serwera proxy |
+| POST   | `/capture-modes/http-proxy`   | Uruchamia/zatrzymuje odbiornik HTTP_PROXY (`{action: "start"\|"stop"}`)                    |
+| POST   | `/capture-modes/system-proxy` | Włącza/wyłącza systemowy serwer proxy (`{action: "apply"\|"revert"}`)                      |
 
 > **Odszyfrowywanie TPROXY** (tryb przechwytywania 5) jest obsługiwane przez **oddzielną** trasę z prefiksem
 > AgentBridge — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — a nie

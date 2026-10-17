@@ -74,31 +74,31 @@ adatok vesztek el — így a korlátozott modellválasztó oka sosem marad rejt�
 
 ## Beállítások
 
-| Kulcs                            | Alapértelmezés                                            | Megjegyzések                                                                                                                      |
-| -------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `providerId`                     | `"omniroute"`                                             | A szolgáltatóazonosító, az integrációazonosító és a modellek megjelenési előtagja                                                 |
-| `baseURL`                        | kötelező                                                  | Az átjáró gyökér-URL-je, csak `http(s)`; a `/v1` utótag szükség esetén automatikusan hozzáadódik                                  |
-| `apiKey`                         | csatlakoztatott hitelesítő adat, majd `OMNIROUTE_API_KEY` | Csevegési kulcs a `/v1/*` végpontokhoz                                                                                            |
-| `managementReadToken`            | visszaáll az `apiKey` értékére                            | Kulcs az `/api/*` végpontokhoz — általában **nem** ugyanaz                                                                        |
-| `displayName`                    | `"OmniRoute"`                                             | A szolgáltató neve a választóban                                                                                                  |
-| `timeoutMs`                      | `10000`                                                   | Lekérési időtúllépés végpontonként (az automatikus kombinációk 5 másodpercet használnak)                                          |
-| `modelCacheTtlMs`                | `300000`                                                  | A katalógus-gyorsítótár TTL-je; egy lemezen tárolt pillanatkép felgyorsítja a hidegindítást                                       |
-| `timeouts`                       | visszaáll a `timeoutMs` értékére                          | Végpontonkénti időkeretek ezredmásodpercben: `models`, `combos`, `autoCombos`, `enrichment`                                       |
-| `enrichment`                     | `true`                                                    | Nevek, árak és ingyenes csomagok kereteinek lekérése                                                                              |
-| `providerTag`                    | `true`                                                    | A megjelenítési név kiegészítése annak a külső szolgáltatónak az előtagjával, amelyhez az útválasztás történik                    |
-| `usableOnly`                     | `false`                                                   | Csak azoknak a szolgáltatóknak a megtartása, amelyeket az átjáró kiépítettként jelent                                             |
-| `showcasePerOwner`               | `10`                                                      | Szolgáltatónként megtartott bejegyzések száma az alapértelmezett nézetben                                                         |
-| `freshPerOwner`                  | `10`                                                      | Szolgáltatónként megtartott friss bejegyzések száma az alapértelmezett nézetben                                                   |
-| `freshWindowDays`                | `90`                                                      | A friss ág frissességi időablaka napokban                                                                                         |
-| `usageMemory`                    | `true`                                                    | A 30 napos használati analitika által megnevezett, statikusan eltávolított bejegyzések visszaállítása (kezelési tokent igényel)   |
-| `visibleModels` / `hiddenModels` | `[]`                                                      | Pontos vagy utótag-alapú engedélyezési listák; a tiltás elsőbbséget élvez                                                         |
-| `geminiSanitization`             | `true`                                                    | A Gemini által elutasított JSON-Schema-kulcsszavak eltávolítása az eszközsémákból (a `$ref` eszközök változatlanul továbbítódnak) |
-| `apiFormat.allowAnthropic`       | `false`                                                   | Az engedélyezési listán szereplő azonosítók átirányítása az Anthropic API-blokkon keresztül                                       |
-| `apiFormat.anthropicModels`      | `[]`                                                      | Az Anthropic szolgáltatáshoz irányított teljes modellazonosítók                                                                   |
-| `logLevel` / `startupDebug`      | `warn` / `false`                                          | A naplózás részletessége                                                                                                          |
+| Kulcs                            | Alapértelmezett                                           | Megjegyzések                                                                                                                                            |
+| -------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `providerId`                     | `"omniroute"`                                             | Szolgáltatóazonosító, integrációazonosító és a modellek megjelenítéséhez használt előtag                                                                |
+| `baseURL`                        | kötelező                                                  | Az átjáró gyökér-URL-je, csak `http(s)`; a `/v1` utótag szükség esetén automatikusan hozzáadódik                                                        |
+| `apiKey`                         | csatlakoztatott hitelesítő adat, majd `OMNIROUTE_API_KEY` | Csevegési kulcs a `/v1/*` végpontokhoz                                                                                                                  |
+| `managementReadToken`            | visszaáll az `apiKey` értékére                            | Kulcs az `/api/*` végpontokhoz — általában **nem** ugyanaz                                                                                              |
+| `displayName`                    | `"OmniRoute"`                                             | A szolgáltató neve a választóban                                                                                                                        |
+| `timeoutMs`                      | `10000`                                                   | Végpontonkénti lekérési időkorlát (az automatikus kombinációk 5 másodpercet használnak)                                                                 |
+| `modelCacheTtlMs`                | `300000`                                                  | A katalógus-gyorsítótár TTL-je; egy lemezre mentett pillanatkép gyorsítja a hidegindítást                                                               |
+| `timeouts`                       | visszaáll a `timeoutMs` értékére                          | Végpontonkénti időkeretek ezredmásodpercben: `models`, `combos`, `autoCombos`, `enrichment`                                                             |
+| `enrichment`                     | `true`                                                    | Nevek, díjszabás és ingyenes csomaghoz tartozó keretek lekérése                                                                                         |
+| `providerTag`                    | `true`                                                    | A megjelenítési név kiegészítése annak a felsőbb szintű szolgáltatónak az előtagjával, amelyhez az útvonal vezet                                        |
+| `usableOnly`                     | `false`                                                   | Csak azoknak a szolgáltatóknak a megtartása, amelyeket az átjáró kiépítettként jelent                                                                   |
+| `showcasePerOwner`               | `10`                                                      | Szolgáltatónként megtartott bejegyzések az alapértelmezett nézetben                                                                                     |
+| `freshPerOwner`                  | `10`                                                      | Szolgáltatónként megtartott friss bejegyzések az alapértelmezett nézetben                                                                               |
+| `freshWindowDays`                | `90`                                                      | A friss ághoz tartozó frissességi időablak napokban                                                                                                     |
+| `usageMemory`                    | `true`                                                    | A 30 napos használati analitika által megnevezett, statikusan kihagyott bejegyzések visszaállítása (felügyeleti token szükséges)                        |
+| `visibleModels` / `hiddenModels` | `[]`                                                      | Pontos vagy utótag szerinti engedélyezési listák; a tiltás elsőbbséget élvez; a `*` közzéteszi a teljes katalógust (a többi szűrő továbbra is érvényes) |
+| `geminiSanitization`             | `true`                                                    | A Gemini által elutasított JSON-Schema-kulcsszavak eltávolítása az eszközsémákból (a `$ref` eszközök változatlanul továbbítódnak)                       |
+| `apiFormat.allowAnthropic`       | `false`                                                   | Az engedélyezési listán szereplő azonosítók átirányítása az Anthropic API-blokkon keresztül                                                             |
+| `apiFormat.anthropicModels`      | `[]`                                                      | Az Anthrophichoz irányított teljes modellazonosítók                                                                                                     |
+| `logLevel` / `startupDebug`      | `warn` / `false`                                          | A naplózás részletessége                                                                                                                                |
 
-A használati memória alapértelmezés szerint be van kapcsolva. Kezelési token nélkül inaktív marad
-(indításkor erről egy értesítés kerül a naplóba), és semmi nem kerül visszaállításra.
+A használati memória alapértelmezés szerint be van kapcsolva. Felügyeleti token nélkül inaktív marad
+(indításkor egy értesítés kerül a naplóba), és semmi sem lesz visszaállítva.
 
 ## Hogyan marad naprakész a katalógus
 

@@ -13,6 +13,7 @@
  */
 
 import { splitClaudeEffortSuffix } from "../../config/providerModels.ts";
+import { resolveProviderModelAlias } from "../../services/modelCanonicalization.ts";
 import { isClaudeCodeCompatibleProvider } from "../../services/claudeCodeCompatible.ts";
 import { FORMATS } from "../../translator/formats.ts";
 import { isKnownClaudeEffortBaseModel } from "../../utils/claudeEffortVariants.ts";
@@ -72,15 +73,19 @@ export function applyClaudeEffortVariant(opts: {
     const { baseModel, effort } = splitClaudeEffortSuffix(effectiveModel);
     const isDirectClaudeLane = provider === "claude" || isClaudeCodeCompatibleProvider(provider);
     if (effort && (isDirectClaudeLane || isKnownClaudeEffortBaseModel(baseModel))) {
-      effectiveModel = baseModel;
+      // The suffixed id was resolved before it was split, so the provider alias (for example the
+      // dotted `claude-haiku-4.5` that Anthropic only accepts as `claude-haiku-4-5`) has to be
+      // applied to the base id here too.
+      const resolvedBase = resolveProviderModelAlias(provider, baseModel);
+      effectiveModel = resolvedBase;
       if (body && typeof body === "object" && !Array.isArray(body)) {
         const claudeBody = body as Record<string, unknown>;
-        claudeBody.model = baseModel;
+        claudeBody.model = resolvedBase;
         if (sourceFormat !== FORMATS.CLAUDE && !hasExplicitClaudeEffort(claudeBody)) {
           claudeBody.reasoning_effort = effort;
         }
       }
-      log = `Claude effort variant: stripped "-${effort}" → ${baseModel} (reasoning_effort=${effort})`;
+      log = `Claude effort variant: stripped "-${effort}" → ${resolvedBase} (reasoning_effort=${effort})`;
     }
   }
 

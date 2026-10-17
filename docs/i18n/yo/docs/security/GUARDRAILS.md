@@ -64,6 +64,10 @@ yóò ṣe àkọsílẹ̀ àṣìṣe náà, yóò sì tẹ̀síwájú sí guar
 
 Àwọn ipò tí a fi tipátipá ṣe máa ń dáwọ́ dúró **kí** ìwà àkọ́kọ́ṣe tó bẹ̀rẹ̀; ìwà `auto` jẹ́ bákan náà pẹ̀lú ààbò tí ó wà ṣáájú PR-1.
 
+#### Ààlà kọ́kọ́rọ́ API (`visionBridgeKeyScope.ts`)
+
+Bí kọ́kọ́rọ́ API bá fi ààlà sí ìsopọ̀, àwọn ẹgbẹ́ ìpín tàbí àwòṣe (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), yíyí ọ̀nà àti ṣíṣe àpèjúwe máa ń yan àwòṣe àti ìsopọ̀ tí a fàyè gba fún kọ́kọ́rọ́ náà nìkan. Àpèjúwe máa ń gba yípo inú OmniRoute kọjá nígbà gbogbo pẹ̀lú àkọlé `x-omniroute-self-loop-key-id`, kí a tún fi òfin ìsopọ̀ àti àwòṣe múlẹ̀. `enforceApiKeyPolicy()` gba àkọlé náà pẹ̀lú token bearer yípo náà nìkan: ó lè dín àṣẹ kù nìkan, a sì kọ ID tí a kò rí sílẹ̀. Bí kò bá sí àwòṣe ìran tí a fàyè gba, a fo àpèjúwe, ìbéèrè sì ń kọjá láìyí padà bí ìgbà tí ààbò wà ní pípa (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Ìbéèrè aláìní kọ́kọ́rọ́ àti kọ́kọ́rọ́ tí kò ní àwọn ààlà wọ̀nyí ń ṣiṣẹ́ bí tẹ́lẹ̀.
+
 #### Àlàyé tí ó mọ iṣẹ́ (`modalityBridgeVisionTaskAware`)
 
 Àkọ́kọ́ṣe **òtítọ́**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) fi ọ̀rọ̀ **ìhìn iṣẹ́ olùmúlò tí ó kẹ́yìn** (tí a gé sí àwọn ohun kikọ 500) kún àlàyé àkọ́kọ́ṣe, tí ó ń darí àlàyé náà sí ohun tí olùmúlò béèrè gangan (àpẹẹrẹ codex-vision-proxy) àti tí ó ń béèrè lọ́wọ́ àwòrán ìran láti kọ ọ̀rọ̀ tí ó hàn. Pẹ̀lú àmì tí ó wà ní àìṣiṣẹ́ — tàbí kò sí ọ̀rọ̀ olùmúlò — a máa ń lo àlàyé àkọ́kọ́ṣe láìyípadà.

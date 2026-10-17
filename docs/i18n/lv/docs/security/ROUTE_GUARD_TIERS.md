@@ -140,6 +140,8 @@ joprojām ir divi pienākumi:
   `/api/providers/` prefikss, lai tos konstatētu, tādējādi pārmērīgi paplašinot maršrutu koku,
   ko attālie informācijas paneļi pamatoti izmanto pakalpojumu sniedzēju CRUD darbībām.
 
+  Izpildlaika momentuzņēmuma ielādētājs arī izmet šādus ierakstus no saglabātas iestatījumu rindas, un mantotais JSON imports (`/api/settings/import-json`) nekad neraksta apiešanas atslēgas. Katram `LOCAL_ONLY_API_PREFIXES` ierakstam jābūt aizliegumu sarakstā vai pēc pārskatīšanas jābūt atzītam par piemērotu apiešanai. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Piekļuves audits** — lai pārbaudītu, ka šiem maršrutiem nepiekļūst nekas ārpus resursdatora:
 
 - Atveriet **Autorizācijas inventāru** lapā `/dashboard/settings/security`: tajā tiek attēlots

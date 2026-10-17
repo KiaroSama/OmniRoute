@@ -131,6 +131,8 @@ Operatörlerin iki sorumluluğu devam eder:
   kapsaması gerekirdi; bu da uzak panoların sağlayıcı CRUD işlemleri için
   meşru şekilde kullandığı rota ağacını gereğinden fazla genişletirdi.
 
+  Çalışma zamanı anlık görüntü yükleyicisi bu girdileri kayıtlı ayar satırından da çıkarır; eski JSON içe aktarma yolu (`/api/settings/import-json`) ise atlama anahtarlarını hiçbir zaman yazmaz. Her `LOCAL_ONLY_API_PREFIXES` girdisi ya engelleme listesinde olmalı ya da incelenerek atlamaya uygun bulunmalıdır. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Erişim denetimi** — ana makine dışından hiçbir isteğin bu rotalara ulaşmadığını doğrulamak için:
 
 - `/dashboard/settings/security` sayfasındaki **Yetkilendirme Envanteri**'ni açın: canlı

@@ -10,6 +10,7 @@
 import { v7 as uuidv7 } from "uuid";
 import { BaseExecutor, type ExecuteInput } from "./base.ts";
 import { tlsFetchLMArena, TlsClientUnavailableError } from "../services/lmarenaTlsClient.ts";
+import { currentAppliedProxySink } from "../utils/proxyFetch.ts";
 import { readLMArenaCookie, reconstructLMArenaCookie } from "./lmarena/cookie.ts";
 import { sanitizeLMArenaError } from "./lmarena/error.ts";
 import {
@@ -76,6 +77,12 @@ function readRecaptchaToken(credentials: unknown, body: unknown): string | null 
     return null;
   };
   return fromObj(credentials) ?? fromObj(body);
+}
+
+// Publish the received status so proxy health counts it as upstream.
+function recordLMArenaUpstreamStatus(status: number): void {
+  const sink = currentAppliedProxySink();
+  if (sink && status >= 400) sink.upstreamStatus = status;
 }
 
 export class LMArenaExecutor extends BaseExecutor {
@@ -185,6 +192,7 @@ export class LMArenaExecutor extends BaseExecutor {
       signal: ctx.signal,
       stream: ctx.stream,
     });
+    recordLMArenaUpstreamStatus(tlsResult.status);
 
     const failed = mapFailedTlsResult({
       status: tlsResult.status,

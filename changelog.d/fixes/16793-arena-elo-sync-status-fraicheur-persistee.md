@@ -1,0 +1,1 @@
+- **fix(arena-elo-sync):** serve the persisted dataset date on the authenticated sync status after a restart ([#16793](https://github.com/diegosouzapw/OmniRoute/pull/16793)) — thanks @maxmad64bis

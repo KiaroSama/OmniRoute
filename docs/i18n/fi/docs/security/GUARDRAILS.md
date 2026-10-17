@@ -85,6 +85,10 @@ Kulku:
 Pakotetut tilat oikosulkevat **ennen** automaattisen heuristiikan suorittamista; `auto`-käyttäytyminen
 on tavuittain identtinen PR-1:tä edeltävän suojakaiteen kanssa.
 
+#### API-avaimen käyttöalue (`visionBridgeKeyScope.ts`)
+
+Jos API-avain rajoittaa yhteyksiä, kiintiöryhmiä tai malleja (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`), uudelleenohjaus ja kuvaus valitsevat vain avaimelle sallitut mallit ja yhteydet. Kuvaus kulkee aina OmniRouten sisäisen silmukan kautta otsakkeella `x-omniroute-self-loop-key-id`, jolloin yhteys- ja mallikäytännöt tarkistetaan uudelleen. `enforceApiKeyPolicy()` hyväksyy otsakkeen vain silmukan bearer-tunnisteen kanssa: se voi ainoastaan supistaa pääsyä, ja tuntematon tunnus hylätään. Jos sallittua näkömallia ei ole, kuvaus ohitetaan ja pyyntö jatkaa muuttumattomana kuten suojauksen ollessa pois käytöstä (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). Avaimettomat pyynnöt ja avaimet ilman näitä rajoituksia toimivat kuten ennen.
+
 #### Tehtävätietoinen kuvauskehotus (`modalityBridgeVisionTaskAware`)
 
 Oletus **true**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) liittää

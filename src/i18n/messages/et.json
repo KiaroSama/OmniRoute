@@ -3384,6 +3384,10 @@
     "comboRefMember": "Kombinatsioon → {name}"
   },
   "combos": {
+    "autoTosLoadError": "Teenustingimuste reegleid ei saanud laadida. Enne nende muutmist proovige uuesti.",
+    "autoTosSaveError": "Teenustingimuste reegleid ei saanud salvestada. Kuvatakse endiselt eelmine säte. Proovige uuesti.",
+    "autoTosIncludeLabel": "Kaasa auto-valikusse pakkujad märkega ToS: avoid",
+    "autoTosDescription": "Vaikimisi välja lülitatud. Kehtib kõigile auto-kombinatsioonidele, mitte ainult ühele kontole. Pakkuja ühendamine seda valikut ei lülita sisse.",
     "title": "Kombinatsioonid",
     "description": "Loo kaalutud marsruutimise ja varuvalikute toega mudelikombinatsioone",
     "autoCatalogTitle": "Automaatse marsruutimise kataloog",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Kuvatud sobivaid ridu: {shown}/{total} (50 esimest)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Pilvesünkroonimise sihtkoht (mitte kohalike varukoopiate jaoks):",
+    "cloudUploadWarning": "Uutel paigaldustel on pilvesünkroonimine vaikimisi välja lülitatud. Selle sisselülitamine laadib teenusepakkujate API-võtmed, OAuthi juurdepääsu- ja värskendustõendid, OmniRoute API-võtmed ning seadistuse ülaltoodud sihtkohta nüüd ja tulevastel sünkroonimistel. See on eraldi jaotise Salvestusruum kohalikest varukoopiatest. Lülitage see sisse ainult siis, kui usaldate seda serverit.",
+    "cloudUploadConsent": "Mõistan seda ja luban oma autentimisandmed sellesse sihtkohta üles laadida.",
     "title": "API otspunkt",
     "subtitle": "Kasutage enamiku SDK-de ja tööriistadega OpenAI-ga ühilduvat otspunkti.",
     "testEndpoint": "Testi otspunkti →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "See pakkuja on vaikimisi auto-valikust välja jäetud",
+    "tosAvoidNoticeDescription": "Tema teenustingimuste olek on märgitud avoid. Konto ühendamine neid reegleid ei muuda. Enne kõigi auto-kombinatsioonide jaoks üldise nõusoleku andmist vaadake pakkuja tingimused üle.",
+    "tosAvoidNoticeAction": "Vaata auto reegleid",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Keela ühendus",
     "enableConnection": "Luba ühendus",
     "reauthenticateConnection": "Autendi see ühendus uuesti",
+    "verifyAccount": "Kinnita konto",
+    "verifyAccountHint": "Google nõuab selle konto kinnitamist. Ava link, vii kontroll lõpule ja proovi uuesti.",
     "proxyConfig": "Puhverserveri seadistus",
     "aliasExistsAlert": "Alias „{alias}” on juba olemas. Kasuta teist mudelit või muuda olemasolevat aliast.",
     "aliasInputPlaceholder": "aliase nimi",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Port",
     "qdrantHost": "Host",
     "qdrantCollection": "Kogumik",
+    "catalogVisibilityHint": "Peidetud mudelite ID-sid saab endiselt kutsuda samade juurdepääsuõigustega.",
     "catalogScopeTitle": "Models API loend",
     "catalogScopeDesc": "Mida GET /v1/models selle võtme kohta avaldab. Loendi kitsendamine ei muuda kunagi seda, milliseid mudeleid võti saab kutsuda.",
     "catalogScopeAll": "Mõlemad",

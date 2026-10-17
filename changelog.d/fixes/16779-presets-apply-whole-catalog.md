@@ -1,0 +1,1 @@
+- **fix(plugin):** publish preset-passing entries and member-passing combos ([#16779](https://github.com/diegosouzapw/OmniRoute/pull/16779)) — thanks @maxmad64bis

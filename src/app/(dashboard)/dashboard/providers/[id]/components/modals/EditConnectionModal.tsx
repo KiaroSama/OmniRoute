@@ -53,6 +53,7 @@ import {
   type CodexPromptCacheKeyScopeValue,
   getClaudeCodeCompatibleRequestDefaults,
   providerText,
+  validationErrorMessage,
   ERROR_TYPE_LABELS,
   formatTimeAgo,
 } from "../../providerPageHelpers";
@@ -461,7 +462,7 @@ export default function EditConnectionModal({
       setTestResult({
         valid: !!data.valid,
         diagnosis: data.diagnosis || null,
-        message: data.error || null,
+        message: validationErrorMessage(data.error),
       });
     } catch {
       setTestResult({

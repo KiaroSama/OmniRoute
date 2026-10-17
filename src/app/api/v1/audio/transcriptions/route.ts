@@ -18,6 +18,7 @@ import { resolveDynamicAudioProviders } from "@/app/api/v1/_shared/audioProvider
 import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
 import { HTTP_STATUS } from "@omniroute/open-sse/config/constants.ts";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
+import { intersectAllowedConnectionIds } from "@/sse/handlers/chat/connectionConstraints";
 import {
   isAllRateLimitedCredentials,
   rateLimitedProviderResponse,
@@ -70,6 +71,29 @@ function withModel(formData: FormData, modelStr: string): FormData {
 }
 
 /**
+ * `getProviderCredentials` returns `{ blockedByKeyPolicy: true }` when the
+ * provider has connections but the caller key's scope hid every one of them —
+ * a truthy object without any secret that must never be dispatched.
+ */
+function isKeyScopeBlocked(credentials: unknown): credentials is { blockedCount?: number } {
+  return (
+    !!credentials &&
+    typeof credentials === "object" &&
+    (credentials as { blockedByKeyPolicy?: unknown }).blockedByKeyPolicy === true
+  );
+}
+
+/** Same 403 chat answers for a pool emptied by the key's scope (#13832). */
+function keyScopeBlockedResponse(provider: string, credentials: { blockedCount?: number }) {
+  const count = Number(credentials.blockedCount) || 1;
+  return errorResponse(
+    HTTP_STATUS.FORBIDDEN,
+    `[${provider}] ${count} connection(s) exist but are excluded by this API key's ` +
+      `connection allowlist / quota scope — add them to the key in the dashboard, or use a key without that scope`
+  );
+}
+
+/**
  * Handle CORS preflight
  */
 export async function OPTIONS() {
@@ -90,7 +114,8 @@ async function transcribeWithModel(
   modelStr: string,
   startTime: number,
   apiKeyId?: string | null,
-  apiKeyName?: string | null
+  apiKeyName?: string | null,
+  allowedConnections: string[] | null = null
 ): Promise<Response> {
   // Provider nodes eligible for transcription: this route's own audio type plus
   // general chat/responses gateways. Remote hosts are opt-in (default OFF).
@@ -121,11 +146,17 @@ async function transcribeWithModel(
     const credentialKey = providerConfig.credentialProviderId || provider;
     // NOTE: the 2nd arg of this helper is `excludeConnectionId`, not "use this
     // connection" — a combo target's connectionId must never be passed here.
-    credentials = await getProviderCredentialsWithQuotaPreflight(credentialKey);
+    // GHSA-3w2r: the pool is bounded by the caller key's allowed connections.
+    credentials = await getProviderCredentialsWithQuotaPreflight(
+      credentialKey,
+      null,
+      allowedConnections
+    );
     // Prefix match wins (`deepgram/nova-3` → native Deepgram). If that
     // provider has no credentials, retry gateways that list the same nested
-    // model id (e.g. OpenRouter's `deepgram/nova-3`).
-    if (!credentials) {
+    // model id (e.g. OpenRouter's `deepgram/nova-3`). A pool emptied by the
+    // key's scope may still be served by an in-scope gateway.
+    if (!credentials || isKeyScopeBlocked(credentials)) {
       const candidates = audioModelAliasCandidates(modelStr, provider, resolvedModel);
       const alternate = findAlternateAudioProvider(
         AUDIO_TRANSCRIPTION_PROVIDERS,
@@ -134,9 +165,15 @@ async function transcribeWithModel(
       );
       if (alternate) {
         const alternateCredentials = await getProviderCredentialsWithQuotaPreflight(
-          alternate.provider
+          alternate.provider,
+          null,
+          allowedConnections
         );
-        if (alternateCredentials && !isAllRateLimitedCredentials(alternateCredentials)) {
+        if (
+          alternateCredentials &&
+          !isAllRateLimitedCredentials(alternateCredentials) &&
+          !isKeyScopeBlocked(alternateCredentials)
+        ) {
           provider = alternate.provider;
           resolvedModel = alternate.model;
           providerConfig = alternate.config;
@@ -153,6 +190,9 @@ async function transcribeWithModel(
           listAlternateAudioModelIds(AUDIO_TRANSCRIPTION_PROVIDERS, provider, candidates)
         )
       );
+    }
+    if (isKeyScopeBlocked(credentials)) {
+      return keyScopeBlockedResponse(provider, credentials);
     }
     if (isAllRateLimitedCredentials(credentials)) {
       return rateLimitedProviderResponse(provider, credentials);
@@ -244,6 +284,14 @@ export async function POST(request) {
   // request, matching the pattern every other proxied route follows (#13544).
   const apiKeyId = policy.apiKeyInfo?.id || null;
   const apiKeyName = policy.apiKeyInfo?.name || null;
+  // GHSA-3w2r: credential selection stays on the key's allowed connections —
+  // for the internal self-loop bearer, those of the caller key it names
+  // (x-omniroute-self-loop-key-id, resolved by enforceApiKeyPolicy). null = the
+  // key is not connection-scoped.
+  const allowedConnections = intersectAllowedConnectionIds(
+    policy.apiKeyInfo?.allowedConnections ?? null,
+    null
+  );
 
   // A bare name (no "/") may be a combo. /v1/models advertises combos, and chat and
   // embeddings both resolve them — resolving here too keeps the catalog honest and
@@ -270,7 +318,8 @@ export async function POST(request) {
               targetModelStr,
               startTime,
               apiKeyId,
-              apiKeyName
+              apiKeyName,
+              allowedConnections
             ),
           isModelAvailable: undefined,
           log,
@@ -285,5 +334,12 @@ export async function POST(request) {
     }
   }
 
-  return transcribeWithModel(formData, modelStr, startTime, apiKeyId, apiKeyName);
+  return transcribeWithModel(
+    formData,
+    modelStr,
+    startTime,
+    apiKeyId,
+    apiKeyName,
+    allowedConnections
+  );
 }

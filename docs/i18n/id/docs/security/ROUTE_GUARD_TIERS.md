@@ -141,6 +141,8 @@ tanggung jawab operator tetap ada:
   array datar harus mencakup seluruh prefiks `/api/providers/` untuk menangkapnya,
   terlalu memperluas pohon rute yang secara sah digunakan dasbor jarak jauh untuk CRUD penyedia.
 
+  Pemuat snapshot runtime juga membuang entri tersebut dari baris pengaturan tersimpan, dan impor JSON lama (`/api/settings/import-json`) tidak pernah menulis kunci bypass. Setiap entri `LOCAL_ONLY_API_PREFIXES` harus ada dalam daftar penolakan atau telah ditinjau dan dinyatakan layak untuk bypass. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Mengaudit akses** — untuk memverifikasi tidak ada yang di luar host yang mencapai rute ini:
 
 - Buka **Inventaris Otorisasi** di `/dashboard/settings/security`: ini menampilkan daftar prefiks LOCAL_ONLY langsung, prefiks mana yang dapat dilewati, dan set yang mampu di-spawn saat kompilasi ("tidak dapat dibuat dapat dilewati").

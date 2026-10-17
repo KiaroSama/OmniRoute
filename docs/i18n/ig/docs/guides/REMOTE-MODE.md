@@ -252,6 +252,8 @@ omniroute tokens scopes               # kọwaa scope atọ ahụ
 Iwu `tokens` chọrọ nzere **admin**. Ị nwekwara ike ijikwa token n’ime
 ogwe njikwa n’okpuru **Ntọala → Token Nnweta** (mepụta, kagbuo, detuo naanị otu ugboro).
 
+A pụghị ịmepụta token nwere ikike karịrị nke onye mepụtara ya. Naanị onye na-ahụ maka sistemụ nwere ike ịmepụta token `admin`: site na nnọkọ dashboard, CLI dị n'ime sava ahụ n'onwe ya, `omniroute connect` na paswọọdụ, ma ọ bụ instance agbanyụrụ nbanye ya. Nkwenye njirimara igwe (token nnweta `admin` ma ọ bụ igodo API nwere oke `manage`/`admin`) nwere ike ịmepụta naanị token `write` na `read`; ịrịọ `--scope admin` site na ha na-eweghachi `403`.
+
 ---
 
 ## Ịhazigharị CLI ide koodu site na katalọgụ dịpụrụ adịpụ

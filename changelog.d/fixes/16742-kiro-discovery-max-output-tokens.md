@@ -1,0 +1,1 @@
+- **fix(kiro):** preserve the upstream output-token limit in live model discovery ([#16742](https://github.com/diegosouzapw/OmniRoute/pull/16742)) — thanks @ryanngit

@@ -55,7 +55,6 @@ export function isOperatorDisabled(connection: {
   isActive?: unknown;
   providerSpecificData?: unknown;
 }): boolean {
-  if (connection.isActive === true) return false;
   const marker = asRecord(connection.providerSpecificData)[OPERATOR_DISABLED_AT_KEY];
   return typeof marker === "string" && marker.length > 0;
 }

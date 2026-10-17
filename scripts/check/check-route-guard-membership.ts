@@ -19,7 +19,6 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
-import { isLocalOnlyPath } from "@/server/authz/routeGuard.ts";
 
 // Inline stale-allowlist helper (mirrors scripts/check/lib/allowlist.mjs).
 // The TypeScript gate cannot import the .mjs helper directly; keep this in sync.
@@ -242,7 +241,12 @@ function collectRouteFiles(dir: string): string[] {
   return out;
 }
 
-function main(): void {
+async function main(): Promise<void> {
+  if (!process.env.DATA_DIR?.trim()) delete process.env.DATA_DIR;
+  if (process.env.OMNIROUTE_ALLOW_DEFAULT_DATA_DIR !== "1") {
+    await import("../../tests/_setup/isolateDataDir.ts");
+  }
+  const { isLocalOnlyPath } = await import("@/server/authz/routeGuard.ts");
   const cwd = process.cwd();
 
   // --- Subcheck 1 (original): SPAWN_CAPABLE_ROUTE_ROOTS ---
@@ -315,4 +319,11 @@ function main(): void {
   process.exit(0);
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] || "").href) main();
+if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
+  main().catch((err) => {
+    console.error(
+      `[route-guard-membership] fatal error: ${err instanceof Error ? err.message : String(err)}`
+    );
+    process.exit(1);
+  });
+}

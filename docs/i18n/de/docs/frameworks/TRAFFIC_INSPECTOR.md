@@ -78,7 +78,7 @@ export HTTP_PROXY=http://127.0.0.1:8080
 export HTTPS_PROXY=http://127.0.0.1:8080
 ```
 
-**TLS-Einschränkung:** HTTPS-`CONNECT`-Tunnel werden standardmäßig nur als Metadaten erfasst (Host, Port, Timing) — der TLS-Inhalt wird nicht entschlüsselt. Aktivieren Sie den Schalter „HTTPS im Proxy-Modus entschlüsseln“ (Opt-in; das AgentBridge-Zertifikat muss als vertrauenswürdig eingestuft sein), um den vollständigen Inhalt zu untersuchen.
+**TLS-Einschränkung:** HTTPS-`CONNECT`-Tunnel werden standardmäßig nur als Metadaten erfasst (Host, Port, Timing) — der TLS-Inhalt wird nicht entschlüsselt.
 
 **Portkonflikt:** Wenn Port 8080 bereits verwendet wird, gibt AgentBridge den Statuscode 409 mit einem strukturierten Fehler zurück. Ändern Sie den Port über die Umgebungsvariable `INSPECTOR_HTTP_PROXY_PORT`.
 
@@ -466,12 +466,11 @@ Basispfad: `/api/tools/traffic-inspector/`
 
 ### Erfassungsmodi
 
-| Methode | Pfad                           | Beschreibung                                                                                                              |
-| ------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| GET     | `/capture-modes`               | Status der AgentBridge-, benutzerdefinierten Host-, HTTP_PROXY- und System-Proxy-Modi sowie des Schalters `tls-intercept` |
-| POST    | `/capture-modes/http-proxy`    | HTTP_PROXY-Listener starten/stoppen (`{action: "start"\|"stop"}`)                                                         |
-| POST    | `/capture-modes/system-proxy`  | Systemweiten Proxy anwenden/zurücksetzen (`{action: "apply"\|"revert"}`)                                                  |
-| POST    | `/capture-modes/tls-intercept` | Entschlüsselung von HTTPS-Nachrichtenkörpern im Proxy-Modus umschalten (`{enabled: boolean}`)                             |
+| Methode | Pfad                          | Beschreibung                                                                          |
+| ------- | ----------------------------- | ------------------------------------------------------------------------------------- |
+| GET     | `/capture-modes`              | Status der AgentBridge-, benutzerdefinierten Host-, HTTP_PROXY- und System-Proxy-Modi |
+| POST    | `/capture-modes/http-proxy`   | HTTP_PROXY-Listener starten/stoppen (`{action: "start"\|"stop"}`)                     |
+| POST    | `/capture-modes/system-proxy` | Systemweiten Proxy anwenden/zurücksetzen (`{action: "apply"\|"revert"}`)              |
 
 > **TPROXY-Entschlüsselung** (Erfassungsmodus 5) wird über eine **separate** Route unter dem
 > AgentBridge-Präfix gesteuert — `GET / POST / DELETE /api/tools/agent-bridge/tproxy` — und nicht

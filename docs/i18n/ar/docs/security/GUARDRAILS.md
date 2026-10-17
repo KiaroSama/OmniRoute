@@ -83,6 +83,10 @@
 تعمل الأوضاع المفروضة على تقصير الدائرة **قبل** تشغيل الاستدلال التلقائي؛
 سلوك `auto` مطابق تمامًا للحاجز قبل PR-1.
 
+#### نطاق مفتاح API (`visionBridgeKeyScope.ts`)
+
+إذا قيّد مفتاح API الاتصالات أو مجموعات الحصص أو النماذج (`allowedConnections`, `allowedQuotas`, `allowedModels` / `blockedModels` / `modelAccessMode: "restricted"` / `disableNonPublicModels`)، فلا يختار مسارا إعادة التوجيه والوصف إلا النماذج والاتصالات المسموح بها للمفتاح. يمر الوصف دائمًا عبر الحلقة الذاتية في OmniRoute مع الترويسة `x-omniroute-self-loop-key-id` لإعادة تطبيق سياسة الاتصالات والنماذج. لا تقبل `enforceApiKeyPolicy()` الترويسة إلا مع رمز bearer الخاص بالحلقة؛ فهي تضيق الصلاحيات فقط، ويُرفض أي معرّف غير معروف. إن لم يُسمح للمفتاح بأي نموذج بصري، يُتجاوز الوصف ويمر الطلب دون تغيير، كما عند تعطيل الحماية (meta `{ skipped: true, reason: "no_permitted_vision_model" }`). لا يتغير سلوك الطلبات بلا مفتاح أو المفاتيح بلا هذه القيود.
+
 #### مطالبة الوصف الواعية بالمهمة (`modalityBridgeVisionTaskAware`)
 
 الافتراضي **صحيح**. `composeVisionPrompt()` (`visionBridgeHelpers.ts`) يلحق

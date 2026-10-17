@@ -249,6 +249,8 @@ omniroute tokens scopes               # explică cele trei domenii
 Comenzile `tokens` necesită o acreditare de **administrator**. De asemenea, puteți gestiona tokenurile în
 panoul de control, la **Setări → Tokenuri de acces** (creare, revocare, copiere unică).
 
+Un token nu poate fi creat niciodată cu mai multe privilegii decât are creatorul său. Numai operatorul poate crea un token `admin`: din sesiunea panoului, prin CLI-ul local chiar pe server, prin `omniroute connect` cu parola sau într-o instanță cu autentificarea dezactivată. Credențialele mașinii (un token de acces `admin` sau o cheie API cu domeniul `manage`/`admin`) pot crea doar tokenuri `write` și `read`; solicitarea `--scope admin` cu acestea returnează `403`.
+
 ---
 
 ## Configurarea unui CLI de programare din catalogul de la distanță

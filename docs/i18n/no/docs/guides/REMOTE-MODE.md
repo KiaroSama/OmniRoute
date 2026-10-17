@@ -254,6 +254,8 @@ omniroute tokens scopes               # forklar de tre omfangene
 tokener i kontrollpanelet under **Innstillinger → Tilgangstokener** (opprett,
 tilbakekall, kopier én gang).
 
+Et token kan aldri opprettes med flere rettigheter enn oppretteren har. Bare operatøren kan opprette et `admin`-token: gjennom dashbordøkten, den lokale CLI-en på selve serveren, `omniroute connect` med passordet eller en instans med innlogging deaktivert. Maskinlegitimasjon (et `admin`-tilgangstoken eller en API-nøkkel med omfanget `manage`/`admin`) kan bare opprette `write`- og `read`-tokener; en forespørsel om `--scope admin` med disse returnerer `403`.
+
 ---
 
 ## Konfigurere en CLI for koding fra den eksterne katalogen

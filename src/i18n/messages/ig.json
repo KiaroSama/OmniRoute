@@ -3384,6 +3384,10 @@
     "comboRefMember": "Ngwakọta → {name}"
   },
   "combos": {
+    "autoTosLoadError": "Enweghị ike ibunye iwu usoro ọrụ. Nwaa ọzọ tupu ị gbanwee ya.",
+    "autoTosSaveError": "Enweghị ike ichekwa iwu usoro ọrụ. A ka na-egosi ntọala gara aga. Nwaa ọzọ.",
+    "autoTosIncludeLabel": "Tinye ndị na-enye ọrụ nwere akara ToS: avoid na auto",
+    "autoTosDescription": "A gbanyụrụ ya na ndabara. Ọ na-emetụta ngwakọta auto niile, ọ bụghị naanị otu akaụntụ. Ijikọta onye na-enye ọrụ anaghị agbanwu nhọrọ a.",
     "title": "Ngwakọta",
     "description": "Mepụta ngwakọta model nwere ntụgharị ụzọ dabere n'ịdị arọ na nkwado fallback",
     "autoCatalogTitle": "Katalọgụ ntụgharị ụzọ akpaaka",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "Na-egosi ahịrị {shown} n'ime {total} dabara (50 kachasị elu)."
   },
   "endpoint": {
+    "cloudUploadDestination": "Ebe a na-eziga mmekọrịta igwe ojii (ọ bụghị nkwado ndabere mpaghara):",
+    "cloudUploadWarning": "A na-agbanyụ mmekọrịta igwe ojii na ndabara na ntinye ọhụrụ. Ịgbanye ya na-ebugo igodo API ndị na-eweta ọrụ, token nnweta na mmegharị OAuth, igodo API OmniRoute na nhazi gaa ebe e gosiri n’elu, ugbu a na n’oge mmekọrịta ndị na-abịa. Nke a dị iche na nkwado ndabere mpaghara dị na ngalaba Nchekwa. Gbanye ya naanị ma ọ bụrụ na ị tụkwasịrị sava ahụ obi.",
+    "cloudUploadConsent": "Aghọtara m nke a ma kwe ka e bulite ozi njirimara nbanye m gaa ebe a.",
     "title": "Ebe njedebe API",
     "subtitle": "Jiri ebe njedebe kwekọrọ na OpenAI mee ihe na ọtụtụ n'ime SDK na ngwaọrụ.",
     "testEndpoint": "Nwalee ebe njedebe →",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "A na-ewepụ onye na-enye ọrụ a na auto na ndabara",
+    "tosAvoidNoticeDescription": "Akara ọnọdụ usoro ọrụ ya bụ avoid. Ijikọta akaụntụ anaghị agbanwe iwu a. Nyochaa usoro onye na-enye ọrụ tupu ị gbanye nkwenye zuru ụwa ọnụ maka ngwakọta auto niile.",
+    "tosAvoidNoticeAction": "Nyochaa iwu auto",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "Gbanyụọ njikọ",
     "enableConnection": "Gbanye njikọ",
     "reauthenticateConnection": "Nyochaa njirimara njikọ a ọzọ",
+    "verifyAccount": "Nyochaa akaụntụ",
+    "verifyAccountHint": "Google chọrọ ka i nyochaa akaụntụ a. Mepee njikọ ahụ, mezue nyocha ahụ, wee nwaa ọzọ.",
     "proxyConfig": "Nhazi proksi",
     "aliasExistsAlert": "Aha ọzọ \"{alias}\" adịlarị. Biko jiri ụdịdị ọzọ ma ọ bụ dezie aha ọzọ dị ugbu a.",
     "aliasInputPlaceholder": "aha ọzọ",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "Ọdụ ụgbọ mmiri",
     "qdrantHost": "Onye nnabata",
     "qdrantCollection": "Nchịkọta",
+    "catalogVisibilityHint": "A ka nwere ike ịkpọ ID ụdị ndị ezoro ezo site na otu ikike nnweta ahụ.",
     "catalogScopeTitle": "Ndepụta Models API",
     "catalogScopeDesc": "Ihe GET /v1/models na-egosi maka igodo a. Ibelata ndepụta ahụ anaghị agbanwe ụdịdị igodo ahụ nwere ike ịkpọ.",
     "catalogScopeAll": "Ha abụọ",

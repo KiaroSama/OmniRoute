@@ -3384,6 +3384,10 @@
     "comboRefMember": "ترکیب → {name}"
   },
   "combos": {
+    "autoTosLoadError": "بارگذاری سیاست شرایط استفاده ممکن نشد. پیش از تغییر آن دوباره تلاش کنید.",
+    "autoTosSaveError": "ذخیرهٔ سیاست شرایط استفاده ممکن نشد. همچنان تنظیم قبلی نمایش داده می‌شود. دوباره تلاش کنید.",
+    "autoTosIncludeLabel": "ارائه‌دهندگان با برچسب ToS: avoid را در auto بگنجان",
+    "autoTosDescription": "به‌طور پیش‌فرض خاموش است. برای همهٔ ترکیب‌های auto اعمال می‌شود، نه فقط یک حساب. اتصال یک ارائه‌دهنده این گزینه را فعال نمی‌کند.",
     "title": "ترکیبها",
     "description": "ایجاد ترکیبهای مدل با مسیریابی وزندار و پشتیبانی از جایگزین",
     "autoCatalogTitle": "کاتالوگ مسیریابی خودکار",
@@ -4090,6 +4094,9 @@
     "showingTopCostRows": "نمایش {shown} مورد از {total} ردیف منطبق (۵۰ مورد برتر)."
   },
   "endpoint": {
+    "cloudUploadDestination": "مقصد همگام‌سازی ابری (نه پشتیبان‌گیری محلی):",
+    "cloudUploadWarning": "همگام‌سازی ابری در نصب‌های جدید به‌طور پیش‌فرض غیرفعال است. با فعال‌کردن آن، کلیدهای API ارائه‌دهندگان، توکن‌های دسترسی و نوسازی OAuth، کلیدهای API مربوط به OmniRoute و پیکربندی، اکنون و در همگام‌سازی‌های آینده به مقصد بالا بارگذاری می‌شوند. این قابلیت از نسخه‌های پشتیبان محلی در بخش فضای ذخیرهسازی جداست. تنها در صورتی آن را فعال کنید که به این سرور اعتماد دارید.",
+    "cloudUploadConsent": "این موضوع را درک می‌کنم و اجازه می‌دهم اطلاعات احراز هویت من به این مقصد بارگذاری شود.",
     "title": "نقطه پایانی API",
     "subtitle": "از نقطه پایانی سازگار با OpenAI در اکثر SDKها و ابزارها استفاده کنید.",
     "testEndpoint": "آزمایش نقطه پایانی ←",
@@ -5268,6 +5275,9 @@
     }
   },
   "providers": {
+    "tosAvoidNoticeTitle": "این ارائه‌دهنده به‌طور پیش‌فرض از auto کنار گذاشته شده است",
+    "tosAvoidNoticeDescription": "وضعیت شرایط استفادهٔ آن با avoid مشخص شده است. اتصال یک حساب این سیاست را تغییر نمی‌دهد. پیش از فعال‌کردن اجازهٔ سراسری برای همهٔ ترکیب‌های auto، شرایط ارائه‌دهنده را بررسی کنید.",
+    "tosAvoidNoticeAction": "بررسی سیاست auto",
     "codexReleaseCooldown": "Clear local cooldown",
     "codexReleaseCooldownHint": "Allow this Codex account to be tried again. Does not redeem a reset credit or change upstream limits.",
     "codexReleasingCooldown": "Clearing…",
@@ -5704,6 +5714,8 @@
     "disableConnection": "غیرفعال کردن اتصال",
     "enableConnection": "فعال کردن اتصال",
     "reauthenticateConnection": "احراز هویت مجدد برای این اتصال",
+    "verifyAccount": "تأیید حساب",
+    "verifyAccountHint": "Google از شما می‌خواهد این حساب را تأیید کنید. پیوند را باز کنید، بررسی را کامل کنید و دوباره تلاش کنید.",
     "proxyConfig": "پیکربندی پروکسی",
     "aliasExistsAlert": "نام مستعار «{alias}» از قبل وجود دارد. لطفاً از مدل دیگری استفاده کنید یا نام مستعار موجود را ویرایش کنید.",
     "aliasInputPlaceholder": "نام مستعار",
@@ -8683,6 +8695,7 @@
     "cliproxyapiPort": "پورت",
     "qdrantHost": "میزبان",
     "qdrantCollection": "مجموعه",
+    "catalogVisibilityHint": "شناسه‌های مدل پنهان همچنان با همان مجوزهای دسترسی قابل فراخوانی هستند.",
     "catalogScopeTitle": "فهرست Models API",
     "catalogScopeDesc": "مواردی که GET /v1/models برای این کلید اعلام میکند. محدود کردن فهرست هرگز مدلهایی را که کلید میتواند فراخوانی کند تغییر نمیدهد.",
     "catalogScopeAll": "هر دو",

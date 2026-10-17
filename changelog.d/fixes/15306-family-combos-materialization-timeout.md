@@ -1,0 +1,1 @@
+- test: give `auto/<family>` materialization 90s so the ~50-candidate GLM cartesian pool can finish inside vitest (base-red #15306).

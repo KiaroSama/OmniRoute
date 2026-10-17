@@ -63,6 +63,7 @@ import {
 
 import { HTTP_STATUS, ANTIGRAVITY_PRE_RESPONSE_TIMEOUT_CODE } from "../../config/constants.ts";
 import { applyStatusRestatement } from "../../config/upstreamStatusRestatement.ts";
+import { appendGoogleDailyQuotaViolation } from "../../services/googleDailyQuota.ts";
 
 import { updateProviderConnection, getProviderConnectionById } from "@/lib/db/providers";
 import { wasRefreshTokenRotated } from "@omniroute/open-sse/services/refreshSerializer.ts";
@@ -815,7 +816,7 @@ export async function runStreamingResponse(deps: StreamingDeps) {
     } else {
       const details = await parseUpstreamError(providerResponse, provider);
       statusCode = details.statusCode;
-      message = details.message;
+      message = appendGoogleDailyQuotaViolation(details.message, details.responseBody);
       retryAfterMs = details.retryAfterMs;
       upstreamErrorBody = details.responseBody;
       upstreamErrorCode = typeof details.errorCode === "string" ? details.errorCode : undefined;

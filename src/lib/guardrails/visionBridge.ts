@@ -33,6 +33,7 @@ import {
   hasUsableCredentialsForModel,
 } from "./visionBridgeCredentials";
 import { MAX_COMBO_DEPTH } from "@omniroute/open-sse/services/combo/comboPredicates.ts";
+import { combineCredentialChecks, resolveVisionBridgeKeyScope } from "./visionBridgeKeyScope";
 
 export { isProviderConnectionUsable, hasUsableCredentialsForModel };
 
@@ -393,6 +394,19 @@ export class VisionBridgeGuardrail extends BaseGuardrail {
       return { block: false };
     }
 
+    // 8b. Caller API-key scope. A key restricted by connections, quota pools or
+    // model lists may only have its image described/rerouted by a vision model
+    // it is allowed to use, on a connection it is allowed to use. `null` (no
+    // key, or a key without such restrictions) keeps the unscoped behavior.
+    const checkCreds = this.deps.hasUsableCredentials ?? hasUsableCredentialsForModel;
+    const keyScope = await resolveVisionBridgeKeyScope(context.apiKeyInfo);
+    const scopedCheckCreds = !keyScope
+      ? checkCreds
+      : this.deps.hasUsableCredentials
+        ? combineCredentialChecks(this.deps.hasUsableCredentials, keyScope)
+        : keyScope.hasUsableCredentials;
+    const scopedRouterConfig = keyScope ? { cacheScope: keyScope.cacheScope } : {};
+
     // 9. Individual non-combo model with images → optionally REROUTE to best vision-capable model
     // instead of describing images through an intermediate vision call.
     //
@@ -471,7 +485,6 @@ export class VisionBridgeGuardrail extends BaseGuardrail {
     //   blocked below instead of described (raw images must never reach a
     //   text-only backend — #8430).
     if (rerouteEligible && runtime.mode !== "describe") {
-      const checkCreds = this.deps.hasUsableCredentials ?? hasUsableCredentialsForModel;
       const originalUsable = runtime.mode === "reroute" ? false : await checkCreds(model);
 
       if (originalUsable === true && !isAuto && !rerouteTextOnly) {
@@ -498,11 +511,11 @@ export class VisionBridgeGuardrail extends BaseGuardrail {
         // falls back to the real DB-backed hasUsableCredentialsForModel and
         // ignores an injected `deps.hasUsableCredentials` test/DI override.
         const bestModel = await getBestVisionModel(
-          { fixedModel: configuredModel },
-          { hasUsableCredentials: checkCreds }
+          { fixedModel: configuredModel, ...scopedRouterConfig },
+          { hasUsableCredentials: scopedCheckCreds }
         );
         if (bestModel && bestModel !== model) {
-          const bestUsable = await checkCreds(bestModel);
+          const bestUsable = await scopedCheckCreds(bestModel);
           // Only block the reroute when we KNOW the target is unusable (false).
           // `null` (no DB / tests) fails open so existing unit tests keep working.
           // `auto/*` ids (e.g. auto/best-vision) are VIRTUAL combos: credentials
@@ -578,6 +591,29 @@ export class VisionBridgeGuardrail extends BaseGuardrail {
       visionBridgeMaxImages: runtime.maxImages,
     });
 
+    // 10b. Key-scoped describe: pick the vision model among those the key may
+    // use. With none permitted, step aside and pass the request through
+    // unchanged — the documented fail-open guardrail behavior, as if the bridge
+    // were disabled — rather than sending the image outside the key's scope.
+    let describeModel = config.model;
+    if (keyScope) {
+      const scopedModel = await getBestVisionModel(
+        { fixedModel: config.model, ...scopedRouterConfig },
+        { hasUsableCredentials: scopedCheckCreds }
+      );
+      if (!scopedModel) {
+        context.log?.warn?.(
+          "VISION_BRIDGE",
+          `No vision model is permitted for this API key; passing ${detectedImageCount} image(s) through unchanged`
+        );
+        return {
+          block: false,
+          meta: { skipped: true, reason: "no_permitted_vision_model", requestedModel: model },
+        };
+      }
+      describeModel = scopedModel;
+    }
+
     // 11. Limit images
     const limitedParts = imageParts.slice(0, config.maxImages);
 
@@ -595,8 +631,10 @@ export class VisionBridgeGuardrail extends BaseGuardrail {
     // every describe. Tests inject their own callVisionModel.
     const describeConfig = {
       ...config,
+      model: describeModel,
       prompt: composedPrompt,
       fetchImpl: undiciFetch as unknown as typeof fetch,
+      ...(keyScope ? { keyScope } : {}),
     };
 
     // Shared describe cache (sha256 of contentRef+prompt+model): the same image
@@ -688,7 +726,7 @@ export class VisionBridgeGuardrail extends BaseGuardrail {
         // Keep meta observability stable: report a human label for failures.
         descriptions: descriptions.map((d, i) => d ?? `[Image ${i + 1}]: (unavailable)`),
         processingTimeMs: processingTime,
-        visionModel: config.model,
+        visionModel: describeModel,
       },
     };
   }

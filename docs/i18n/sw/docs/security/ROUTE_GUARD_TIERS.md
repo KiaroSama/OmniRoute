@@ -139,6 +139,8 @@ ya mwendeshaji yanasalia:
   `/api/providers/` ili kuzinasa, jambo ambalo lingepanua kupita kiasi mti wa njia ambao
   dashibodi za mbali hutumia kihalali kwa CRUD ya watoa huduma.
 
+  Kipakiaji cha picha ya hali ya wakati wa utekelezaji pia huondoa ingizo hizo kwenye safu ya mipangilio iliyohifadhiwa, na uingizaji wa zamani wa JSON (`/api/settings/import-json`) hauandiki kamwe funguo za kupita kinga. Kila ingizo la `LOCAL_ONLY_API_PREFIXES` lazima liwe katika orodha ya kukataliwa au liwe limekaguliwa na kuidhinishwa kupita kinga. (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`)
+
 **Kukagua ufikiaji** — ili kuthibitisha kuwa hakuna kitu kutoka nje ya seva kinachofikia njia hizi:
 
 - Fungua **Orodha ya Uidhinishaji** kwenye `/dashboard/settings/security`: inaonyesha
