@@ -9,6 +9,13 @@ on:
         required: true
         type: string
 
+      validation_scope:
+        description: Validation scope; existing OpenCode checks remain unchanged
+        required: true
+        default: opencode
+        type: choice
+        options: [opencode, streaming-credentials]
+
 permissions:
   contents: read
 
@@ -31,7 +38,7 @@ env:
 
 jobs:
   validate:
-    if: github.repository == 'KiaroSama/OmniRoute' && github.event_name == 'workflow_dispatch'
+    if: github.repository == 'KiaroSama/OmniRoute' && github.event_name == 'workflow_dispatch' && inputs.validation_scope == 'opencode'
     name: Validate (${{ matrix.lane }})
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -312,7 +319,7 @@ jobs:
   coverage:
     name: Merged coverage and ratchet
     needs: validate
-    if: ${{ !cancelled() && github.repository == 'KiaroSama/OmniRoute' }}
+    if: ${{ !cancelled() && github.repository == 'KiaroSama/OmniRoute' && inputs.validation_scope == 'opencode' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -448,5 +455,222 @@ jobs:
             coverage/receipt.json
             coverage/cleanup.json
             coverage/*.log*
+          if-no-files-found: error
+          retention-days: 7
+
+  streaming-credentials:
+    name: Streaming credential type and runtime contract
+    if: github.repository == 'KiaroSama/OmniRoute' && github.event_name == 'workflow_dispatch' && inputs.validation_scope == 'streaming-credentials'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Validate immutable input
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify candidate and create isolated state
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          git merge-base --is-ancestor 3c3edb9ef32f7273c0de848af261f2cc7926f9fb HEAD
+          owned="$GITHUB_WORKSPACE/.ci-work/streaming-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          umask 077
+          mkdir -p "$GITHUB_WORKSPACE/.ci-work"
+          mkdir -m 700 "$owned"
+          mkdir -m 700 "$owned/home" "$owned/tmp" "$owned/data" "$owned/plugins" "$owned/evidence"
+          {
+            echo "OWNED_ROOT=$owned"
+            echo "HOME=$owned/home"
+            echo "USERPROFILE=$owned/home"
+            echo "APPDATA=$owned/home"
+            echo "LOCALAPPDATA=$owned/home"
+            echo "TMPDIR=$owned/tmp"
+            echo "TMP=$owned/tmp"
+            echo "TEMP=$owned/tmp"
+            echo "DATA_DIR=$owned/data"
+            echo "OMNIROUTE_PLUGINS_DIR=$owned/plugins"
+            echo "NPM_CONFIG_CACHE=$owned/npm-cache"
+          } >> "$GITHUB_ENV"
+          python3 -I - "$owned/evidence/process-baseline.json" <<'PY'
+          import json, pathlib, sys
+          baseline = {}
+          for entry in pathlib.Path('/proc').iterdir():
+              if not entry.name.isdecimal():
+                  continue
+              try:
+                  fields = (entry / 'stat').read_text(encoding='utf-8').rsplit(')', 1)[1].split()
+                  baseline[entry.name] = fields[19]
+              except (FileNotFoundError, ProcessLookupError):
+                  pass
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(baseline) + '\n', encoding='utf-8')
+          PY
+          printf 'Candidate: `%s`\nWorkflow source: `%s`\nScope: streaming credentials; no full-CI/build claim.\n' "$CANDIDATE_SHA" "$GITHUB_WORKFLOW_SHA" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - uses: ./.github/actions/npm-ci-retry
+        timeout-minutes: 10
+        with:
+          cache: "false"
+      - name: Check real compiler closure and streaming behavior offline
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { runGateProcess } from './scripts/quality/gate-process.mjs';
+          const root = process.cwd();
+          const owned = process.env.OWNED_ROOT;
+          const env = {
+            PATH: process.env.PATH, LANG: 'C.UTF-8', CI: 'true', NODE_ENV: 'test',
+            NODE_OPTIONS: '--max-old-space-size=6144',
+            OWNED_ROOT: owned, HOME: path.join(owned, 'home'), USERPROFILE: path.join(owned, 'home'),
+            APPDATA: path.join(owned, 'home'), LOCALAPPDATA: path.join(owned, 'home'),
+            TMPDIR: path.join(owned, 'tmp'), TMP: path.join(owned, 'tmp'), TEMP: path.join(owned, 'tmp'),
+            DATA_DIR: path.join(owned, 'data'), OMNIROUTE_PLUGINS_DIR: path.join(owned, 'plugins'),
+            APP_LOG_TO_FILE: 'false', DISABLE_SQLITE_AUTO_BACKUP: 'true',
+            OMNIROUTE_SKIP_SYSTEM_TRUST: '1', OMNIROUTE_SKIP_DNS_WRITE: '1',
+            ADOBE_FIREFLY_BROWSER_REFRESH: '0', NEXT_TELEMETRY_DISABLED: '1',
+            HOOKMAKER_MAX_TEST_WORKERS: '1', OMNIROUTE_MAX_TEST_WORKERS: '1',
+          };
+          const compile = path.join(owned, 'compile.mjs');
+          fs.writeFileSync(compile, `
+          import ts from 'typescript';
+          import path from 'node:path';
+          const root = process.cwd();
+          const config = ts.readConfigFile(path.join(root, 'tsconfig.json'), ts.sys.readFile);
+          if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, '\\n'));
+          const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, root);
+          const roots = ['src/lib/streamingCredentialTransform.ts', 'open-sse/handlers/chatCore/streamingTail.ts'];
+          const declarations = [...parsed.fileNames.filter(file => file.endsWith('.d.ts')), path.join(root, 'open-sse/types.d.ts')];
+          console.log('Checking real streaming gate, caller and transitive production imports');
+          const program = ts.createProgram([...roots.map(file => path.join(root, file)), ...declarations], { ...parsed.options, noCheck: false, noEmit: true, incremental: false });
+          const diagnostics = [...parsed.errors, ...ts.getPreEmitDiagnostics(program)];
+          if (diagnostics.length) {
+            console.error(ts.formatDiagnosticsWithColorAndContext(diagnostics, { getCanonicalFileName: file => file, getCurrentDirectory: () => root, getNewLine: () => '\\n' }));
+            process.exitCode = 1;
+          } else console.log('PASS: streaming production closure has zero diagnostics');
+          `, 'utf8');
+          const receipts = [];
+          let failed = false;
+          let cancelled = false;
+          let controller;
+          const cancel = () => { cancelled = true; controller?.abort(); };
+          process.on('SIGTERM', cancel);
+          process.on('SIGINT', cancel);
+          async function check(name, args, wall, idle) {
+            assert.ok(!cancelled, 'Cancelled run cannot start another check');
+            controller = new AbortController();
+            const script = 'uid="$1"; gid="$2"; shift 2; ip link set lo up; exec setpriv --reuid "$uid" --regid "$gid" --clear-groups -- "$@"';
+            const offline = ['-n', 'unshare', '--net', '--', '/bin/bash', '-euc', script, 'streaming-ci', String(process.getuid()), String(process.getgid()), '/usr/bin/env', '-i', ...Object.entries(env).map(([key, value]) => `${key}=${value}`), process.execPath, ...args];
+            const result = await runGateProcess('sudo', offline, {
+              cwd: root, env, timeout: wall * 1000, heartbeatMs: 5000, signal: controller.signal,
+              logPath: path.join(owned, 'evidence', `${name}.log`),
+              onHeartbeat: ({ elapsedMs, lastOutputAt, bytes }) => {
+                console.log(`[${name}] elapsed=${elapsedMs} outputBytes=${bytes}`);
+                if (Date.now() - Date.parse(lastOutputAt) > idle * 1000) controller.abort();
+              },
+            });
+            controller = undefined;
+            receipts.push({ name, code: result.code, ...result.receipt });
+            failed ||= result.code !== 0;
+            console.log(result.out.slice(-20000));
+            fs.writeFileSync(path.join(owned, 'evidence', 'receipt.json'), JSON.stringify({ candidate: process.env.CANDIDATE_SHA, workflowSha: process.env.GITHUB_WORKFLOW_SHA, receipts, failed }, null, 2) + '\n', 'utf8');
+          }
+          try {
+            assert.ok(fs.existsSync('tests/unit/streaming-credential-gate-types.test.mjs'), 'Candidate must contain the semantic regression');
+            await check('production-closure', [compile], 180, 120);
+            await check('public-type-contract', ['--test', '--test-reporter=tap', '--test-concurrency=1', '--test-timeout=60000', 'tests/unit/streaming-credential-gate-types.test.mjs'], 90, 70);
+            await check('streaming-runtime', ['--import', 'tsx/esm', '--import', './tests/_setup/isolateDataDir.ts', '--test', '--test-reporter=tap', '--test-concurrency=1', '--test-timeout=60000', 'tests/unit/streaming-credential-transform.test.ts'], 120, 90);
+            const files = ['src/lib/streamingCredentialTransform.ts', 'tests/unit/streaming-credential-transform.test.ts', 'tests/unit/streaming-credential-gate-types.test.mjs'];
+            await check('scoped-lint', ['node_modules/eslint/bin/eslint.js', '--suppressions-location', 'config/quality/eslint-suppressions.json', '--pass-on-unpruned-suppressions', ...files], 60, 45);
+            await check('scoped-format', ['node_modules/prettier/bin/prettier.cjs', '--check', ...files], 30, 20);
+          } catch (error) {
+            failed = true;
+            console.error(error);
+          } finally {
+            fs.writeFileSync(path.join(owned, 'evidence', 'receipt.json'), JSON.stringify({ candidate: process.env.CANDIDATE_SHA, workflowSha: process.env.GITHUB_WORKFLOW_SHA, receipts, failed }, null, 2) + '\n', 'utf8');
+            process.removeListener('SIGTERM', cancel);
+            process.removeListener('SIGINT', cancel);
+          }
+          process.exitCode = failed ? 1 : 0;
+          NODE
+      - name: Verify owned process cleanup
+        if: always() && env.OWNED_ROOT != ''
+        timeout-minutes: 1
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -I - <<'PY'
+          import json, os, pathlib, signal, time
+          evidence = pathlib.Path(os.environ['OWNED_ROOT']) / 'evidence'
+          baseline = json.loads((evidence / 'process-baseline.json').read_text(encoding='utf-8'))
+          marker = b'OWNED_ROOT=' + os.environ['OWNED_ROOT'].encode()
+          protected, current = set(), os.getpid()
+          def identity(entry):
+              fields = (entry / 'stat').read_text(encoding='utf-8').rsplit(')', 1)[1].split()
+              return fields[19], int(fields[1]), fields[0]
+          while current and current not in protected:
+              protected.add(current)
+              current = identity(pathlib.Path(f'/proc/{current}'))[1]
+          killed, unreadable = [], []
+          for entry in pathlib.Path('/proc').iterdir():
+              if not entry.name.isdecimal() or int(entry.name) in protected:
+                  continue
+              try:
+                  start, _, state = identity(entry)
+                  if baseline.get(entry.name) == start or state == 'Z':
+                      continue
+                  try:
+                      environment = (entry / 'environ').read_bytes().split(b'\0')
+                  except PermissionError:
+                      if entry.stat().st_uid == os.getuid():
+                          unreadable.append({'pid': int(entry.name), 'start': start})
+                      continue
+                  if marker not in environment:
+                      continue
+                  if identity(entry)[0] == start:
+                      killed.append({'pid': int(entry.name), 'start': start})
+                      os.kill(int(entry.name), signal.SIGKILL)
+              except (FileNotFoundError, ProcessLookupError):
+                  pass
+          deadline = time.monotonic() + 3
+          remaining = killed[:]
+          while remaining and time.monotonic() < deadline:
+              alive = []
+              for item in remaining:
+                  try:
+                      start, _, state = identity(pathlib.Path(f'/proc/{item["pid"]}'))
+                      if start == item['start'] and state != 'Z':
+                          alive.append(item)
+                  except (FileNotFoundError, ProcessLookupError):
+                      pass
+              remaining = alive
+              if remaining:
+                  time.sleep(0.02)
+          clean = not killed and not unreadable and not remaining
+          (evidence / 'cleanup.json').write_text(json.dumps({'clean': clean, 'survivorsKilled': killed, 'remaining': remaining, 'unreadableNewProcesses': unreadable}) + '\n', encoding='utf-8')
+          if not clean:
+              raise SystemExit('Owned cleanup or new-process ownership could not be verified')
+          print('PASS: no owned subprocess survived')
+          PY
+      - name: Upload synthetic validation evidence
+        if: always() && env.OWNED_ROOT != ''
+        timeout-minutes: 2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: streaming-credentials-${{ inputs.candidate_sha }}
+          path: ${{ env.OWNED_ROOT }}/evidence/
           if-no-files-found: error
           retention-days: 7
