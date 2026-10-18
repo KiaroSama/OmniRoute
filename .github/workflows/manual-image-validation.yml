@@ -1,0 +1,179 @@
+name: Manual image candidate validation
+
+on:
+  workflow_call:
+    inputs:
+      candidate_sha:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: github.repository == 'KiaroSama/OmniRoute' && github.event_name == 'workflow_dispatch'
+    name: Images (${{ matrix.lane }})
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        lane: [image, static, types, unit-1, unit-2, unit-3, unit-4, unit-5, unit-6, unit-7, unit-8, integration-1, integration-2, vitest-mcp, vitest-ui, ecosystem, protocols, compile-linux, compile-windows]
+    runs-on: ${{ matrix.lane == 'compile-windows' && 'windows-latest' || 'ubuntu-latest' }}
+    timeout-minutes: 55
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      VALIDATION_WORKFLOW_SHA: ${{ github.workflow_sha }}
+      IMAGE_VALIDATION_LANE: ${{ matrix.lane }}
+      CI: 'true'
+      APP_LOG_TO_FILE: 'false'
+      NEXT_TELEMETRY_DISABLED: '1'
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      OMNIROUTE_SKIP_SYSTEM_TRUST: '1'
+      OMNIROUTE_SKIP_DNS_WRITE: '1'
+      DISABLE_SQLITE_AUTO_BACKUP: 'true'
+    steps:
+      - name: Admit immutable candidate before checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${#CANDIDATE_SHA}" -eq 40
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]+$ ]]
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Checkout reviewed validation tooling separately
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .claude/validation-tooling
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Verify exact checkout and isolate state
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          git merge-base --is-ancestor 1591cd55e0c2b4195cb41ea9e1967d3eb8f56d5e HEAD
+          owned="$GITHUB_WORKSPACE/.ci-work/i-$GITHUB_RUN_ATTEMPT"
+          echo "IMAGE_VALIDATION_ROOT=$owned" >> "$GITHUB_ENV"
+          echo "OWNED_ROOT=$owned" >> "$GITHUB_ENV"
+          IMAGE_VALIDATION_ROOT="$owned" node .claude/validation-tooling/scripts/ci/image-validation.mjs prepare
+          {
+            echo "HOME=$owned/isolated-home"
+            echo "USERPROFILE=$owned/isolated-home"
+            echo "APPDATA=$owned/isolated-home"
+            echo "LOCALAPPDATA=$owned/isolated-home"
+            echo "DATA_DIR=$owned/isolated-data"
+            echo "OMNIROUTE_PLUGINS_DIR=$owned/isolated-plugins"
+            echo "TMPDIR=$owned/tmp"
+            echo "TMP=$owned/tmp"
+            echo "TEMP=$owned/tmp"
+            echo "NPM_CONFIG_CACHE=$owned/npm-cache"
+          } >> "$GITHUB_ENV"
+          printf 'Candidate: `%s`\nWorkflow: `%s`\nLane: `%s`\nCompiler output is not a signed distribution.\n' "$CANDIDATE_SHA" "$VALIDATION_WORKFLOW_SHA" "$IMAGE_VALIDATION_LANE" >> "$GITHUB_STEP_SUMMARY"
+      - uses: ./.github/actions/npm-ci-retry
+        timeout-minutes: 12
+        with:
+          cache: 'false'
+      - name: Run bounded image acceptance lane
+        timeout-minutes: 38
+        shell: bash
+        run: node .claude/validation-tooling/scripts/ci/image-validation.mjs run
+      - name: Verify owned cleanup
+        if: always() && env.IMAGE_VALIDATION_ROOT != ''
+        timeout-minutes: 2
+        shell: bash
+        run: node .claude/validation-tooling/scripts/ci/image-validation.mjs cleanup
+      - name: Upload synthetic receipts only
+        if: always() && env.IMAGE_VALIDATION_ROOT != ''
+        timeout-minutes: 3
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: image-validation-${{ matrix.lane }}
+          path: ${{ env.IMAGE_VALIDATION_ROOT }}/evidence/
+          if-no-files-found: error
+          retention-days: 7
+
+  coverage:
+    name: Image batch inventory and merged coverage
+    needs: validate
+    if: ${{ !cancelled() && github.repository == 'KiaroSama/OmniRoute' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      VALIDATION_WORKFLOW_SHA: ${{ github.workflow_sha }}
+      IMAGE_VALIDATION_LANE: coverage
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      APP_LOG_TO_FILE: 'false'
+      OMNIROUTE_SKIP_SYSTEM_TRUST: '1'
+      OMNIROUTE_SKIP_DNS_WRITE: '1'
+    steps:
+      - name: Validate immutable input
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${#CANDIDATE_SHA}" -eq 40
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]+$ ]]
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Checkout reviewed validation tooling separately
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .claude/validation-tooling
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Prepare isolated coverage state
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          git merge-base --is-ancestor 1591cd55e0c2b4195cb41ea9e1967d3eb8f56d5e HEAD
+          owned="$GITHUB_WORKSPACE/.ci-work/i-$GITHUB_RUN_ATTEMPT"
+          echo "IMAGE_VALIDATION_ROOT=$owned" >> "$GITHUB_ENV"
+          echo "OWNED_ROOT=$owned" >> "$GITHUB_ENV"
+          IMAGE_VALIDATION_ROOT="$owned" node .claude/validation-tooling/scripts/ci/image-validation.mjs prepare
+          echo "HOME=$owned/isolated-home" >> "$GITHUB_ENV"
+          echo "DATA_DIR=$owned/isolated-data" >> "$GITHUB_ENV"
+          echo "TMPDIR=$owned/tmp" >> "$GITHUB_ENV"
+          echo "NPM_CONFIG_CACHE=$owned/npm-cache" >> "$GITHUB_ENV"
+      - uses: ./.github/actions/npm-ci-retry
+        timeout-minutes: 12
+        with:
+          cache: 'false'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: image-validation-*
+          path: .ci-work/image-evidence
+      - name: Verify inventory, merge coverage and enforce floor/ratchet
+        timeout-minutes: 10
+        shell: bash
+        run: node .claude/validation-tooling/scripts/ci/image-validation.mjs run
+      - name: Verify owned cleanup
+        if: always() && env.IMAGE_VALIDATION_ROOT != ''
+        timeout-minutes: 2
+        shell: bash
+        run: node .claude/validation-tooling/scripts/ci/image-validation.mjs cleanup
+      - name: Upload merged evidence only
+        if: always() && env.IMAGE_VALIDATION_ROOT != ''
+        timeout-minutes: 2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: image-merged-coverage
+          path: ${{ env.IMAGE_VALIDATION_ROOT }}/evidence/
+          if-no-files-found: error
+          retention-days: 7

@@ -14,7 +14,7 @@ on:
         required: true
         default: opencode
         type: choice
-        options: [opencode, streaming-credentials]
+        options: [opencode, streaming-credentials, images]
 
 permissions:
   contents: read
@@ -674,3 +674,9 @@ jobs:
           path: ${{ env.OWNED_ROOT }}/evidence/
           if-no-files-found: error
           retention-days: 7
+
+  images:
+    if: github.repository == 'KiaroSama/OmniRoute' && github.event_name == 'workflow_dispatch' && inputs.validation_scope == 'images'
+    uses: ./.github/workflows/manual-image-validation.yml
+    with:
+      candidate_sha: ${{ inputs.candidate_sha }}
