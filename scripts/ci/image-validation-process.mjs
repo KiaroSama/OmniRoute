@@ -3,33 +3,61 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync, spawn } from "node:child_process";
 import { setTimeout as pause } from "node:timers/promises";
-import { ownedDescendants } from "./image-validation-contract.mjs";
+import { imageOfflineCommand, ownedDescendants } from "./image-validation-contract.mjs";
+
+function windowsSnapshot() {
+  const source = [
+    "$ErrorActionPreference='Stop'; $sensor=$PID; $job=$null",
+    "if ($env:IMAGE_WINDOWS_JOB_NAME) { Add-Type -Path $env:IMAGE_WINDOWS_JOB_SOURCE; $job=[ImageWindowsJob]::new($env:IMAGE_WINDOWS_JOB_NAME,$false) }",
+    "try { $rows=@(Get-CimInstance Win32_Process | ForEach-Object { $start=$null; $membership='unknown'; $process=$null; try { $process=[Diagnostics.Process]::GetProcessById([int]$_.ProcessId); $created=$process.StartTime.ToUniversalTime().ToFileTimeUtc(); $start=$created.ToString([Globalization.CultureInfo]::InvariantCulture); if ($null -ne $job) { $membership=$job.Inspect([int]$_.ProcessId,$created).Membership } } catch { } finally { if ($null -ne $process) { $process.Dispose() } }; [pscustomobject]@{ ProcessId=$_.ProcessId; ParentProcessId=$_.ParentProcessId; Name=$_.Name; Start=$start; Membership=$membership } }); if ($null -ne $job) { $members=@($job.Members()); foreach ($row in $rows) { if ($members -notcontains [int]$row.ProcessId) { $row.Membership='outside' } }; foreach ($member in $members) { if ($rows.ProcessId -notcontains $member) { $rows += [pscustomobject]@{ ProcessId=$member; ParentProcessId=0; Name='unknown'; Start=$null; Membership='unknown' } } } }; @{sensor=$sensor;rows=$rows} | ConvertTo-Json -Compress } finally { if ($null -ne $job) { $job.Dispose() } }",
+  ].join("; ");
+  const items = JSON.parse(
+    execFileSync("pwsh", ["-NoProfile", "-NonInteractive", "-Command", source], {
+      encoding: "utf8",
+      timeout: 15000,
+      windowsHide: true,
+      maxBuffer: 8 * 1024 * 1024,
+    })
+  );
+  return new Map(
+    items.rows
+      .filter((item) => item.ProcessId !== items.sensor)
+      .map((item) => [
+        String(item.ProcessId),
+        {
+          start: item.Start,
+          parent: String(item.ParentProcessId),
+          name: item.Name,
+          membership: item.Membership,
+          state: "R",
+        },
+      ])
+  );
+}
+
+function terminateWindowsOwned(pid, start) {
+  assert.match(pid, /^\d+$/);
+  assert.match(start, /^\d+$/);
+  assert.ok(process.env.IMAGE_WINDOWS_JOB_NAME, "Native Windows ownership is required");
+  execFileSync(
+    "pwsh",
+    [
+      "-NoProfile",
+      "-NonInteractive",
+      "-Command",
+      "$ErrorActionPreference='Stop'; Add-Type -Path $env:IMAGE_WINDOWS_JOB_SOURCE; $job=[ImageWindowsJob]::new($env:IMAGE_WINDOWS_JOB_NAME,$false); try { if (-not $job.TerminateOwned([int]$env:IMAGE_STOP_PID,[long]$env:IMAGE_STOP_START)) { throw 'Process identity or job membership changed' } } finally { $job.Dispose() }",
+    ],
+    {
+      env: { ...process.env, IMAGE_STOP_PID: pid, IMAGE_STOP_START: start },
+      timeout: 15000,
+      windowsHide: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    }
+  );
+}
 
 export function processSnapshot() {
-  if (process.platform === "win32") {
-    const source =
-      "$sensor=$PID; $rows=@(Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,@{n='Start';e={$_.CreationDate.ToUniversalTime().ToString('o')}}); @{sensor=$sensor;rows=$rows} | ConvertTo-Json -Compress";
-    const items = JSON.parse(
-      execFileSync("pwsh", ["-NoProfile", "-NonInteractive", "-Command", source], {
-        encoding: "utf8",
-        timeout: 15000,
-        windowsHide: true,
-        maxBuffer: 8 * 1024 * 1024,
-      })
-    );
-    return new Map(
-      items.rows
-        .filter((item) => item.ProcessId !== items.sensor)
-        .map((item) => [
-          String(item.ProcessId),
-          {
-            start: item.Start,
-            parent: String(item.ParentProcessId),
-            state: "R",
-          },
-        ])
-    );
-  }
+  if (process.platform === "win32") return windowsSnapshot();
   const entries = new Map();
   for (const pid of fs.readdirSync("/proc").filter((name) => /^\d+$/.test(name))) {
     try {
@@ -79,8 +107,8 @@ export function imageEnvironment(root, owned, extra = {}) {
     USERPROFILE: path.join(owned, "isolated-home"),
     APPDATA: path.join(owned, "isolated-home"),
     LOCALAPPDATA: path.join(owned, "isolated-home"),
-    XDG_CONFIG_HOME: path.join(owned, "isolated-home"),
-    XDG_CACHE_HOME: path.join(owned, "isolated-home"),
+    XDG_CONFIG_HOME: path.join(owned, "isolated-home", ".config"),
+    XDG_CACHE_HOME: path.join(owned, "isolated-home", ".cache"),
     TMPDIR: path.join(owned, "tmp"),
     TMP: path.join(owned, "tmp"),
     TEMP: path.join(owned, "tmp"),
@@ -99,6 +127,12 @@ export function imageEnvironment(root, owned, extra = {}) {
     HOOKMAKER_MAX_TEST_WORKERS: "2",
     OMNIROUTE_MAX_TEST_WORKERS: "2",
     NODE_OPTIONS: "--max-old-space-size=3072",
+    ...(process.platform === "win32" && process.env.IMAGE_WINDOWS_JOB_NAME
+      ? {
+          IMAGE_WINDOWS_JOB_NAME: process.env.IMAGE_WINDOWS_JOB_NAME,
+          IMAGE_WINDOWS_JOB_SOURCE: process.env.IMAGE_WINDOWS_JOB_SOURCE,
+        }
+      : {}),
     ...extra,
   };
 }
@@ -109,31 +143,7 @@ export function offlineCommand(command, args, env) {
     "linux",
     "Offline application checks require Linux network isolation"
   );
-  const script =
-    'uid="$1"; gid="$2"; shift 2; ip link set lo up; exec setpriv --reuid "$uid" --regid "$gid" --clear-groups -- "$@"';
-  return [
-    "sudo",
-    [
-      "-n",
-      "unshare",
-      "--net",
-      "--pid",
-      "--fork",
-      "--kill-child",
-      "--",
-      "/bin/bash",
-      "-euc",
-      script,
-      "image-ci",
-      String(process.getuid()),
-      String(process.getgid()),
-      "/usr/bin/env",
-      "-i",
-      ...Object.entries(env).map(([key, value]) => `${key}=${value}`),
-      command,
-      ...args,
-    ],
-  ];
+  return imageOfflineCommand(command, args, env, process.getuid(), process.getgid());
 }
 
 // Windows uses creation identities; the shared POSIX gate's taskkill path is not reused.
@@ -145,6 +155,11 @@ export async function runWindowsImageGate(command, args, options) {
   const baseline = processSnapshot();
   const owned = new Map([[String(process.pid), baseline.get(String(process.pid))]]);
   assert.ok(owned.get(String(process.pid))?.start, "Process owner identity unavailable");
+  assert.equal(
+    owned.get(String(process.pid))?.membership,
+    "owned",
+    "Native Windows job admission missing"
+  );
   let output = "",
     lastOutput = Date.now(),
     failure,
@@ -159,7 +174,8 @@ export async function runWindowsImageGate(command, args, options) {
   });
   const exit = new Promise((resolve) => {
     child.once("error", (error) => {
-      failure = error.code;
+      failure = error.code || "SPAWN_ERROR";
+      closed = true;
       resolve();
     });
     child.once("close", (value) => {
@@ -180,10 +196,16 @@ export async function runWindowsImageGate(command, args, options) {
   try {
     do {
       const snapshot = processSnapshot();
-      for (const [pid, item] of ownedDescendants(snapshot, owned)) owned.set(pid, item);
-      const journal = path.join(env.OWNED_ROOT, "process-owned.json");
-      const previous = fs.existsSync(journal) ? JSON.parse(fs.readFileSync(journal, "utf8")) : [];
-      fs.writeFileSync(journal, JSON.stringify([...new Map([...previous, ...owned])]), "utf8");
+      const root = snapshot.get(String(child.pid));
+      if (root?.start && root.membership === "owned" && !owned.has(String(child.pid))) {
+        owned.set(String(child.pid), root);
+      }
+      const descendants = new Map(owned);
+      descendants.delete(String(process.pid));
+      for (const [pid, item] of ownedDescendants(snapshot, descendants)) {
+        if (item.start && item.membership === "owned") owned.set(pid, item);
+      }
+      // Track only this child's tree, never a concurrent caller's snapshot helpers.
       if (signal?.aborted) failure ||= "CANCELLED";
       if (Date.now() - started > timeout) failure ||= "TIMEOUT";
       if (Date.now() - lastOutput > idle) failure ||= "IDLE_TIMEOUT";
@@ -195,11 +217,7 @@ export async function runWindowsImageGate(command, args, options) {
       const current = processSnapshot().get(pid);
       if (current?.start !== item.start) continue;
       failure ||= "ORPHANED_DESCENDANTS";
-      execFileSync("taskkill", ["/PID", pid, "/F"], {
-        windowsHide: true,
-        timeout: 10000,
-        stdio: "ignore",
-      });
+      terminateWindowsOwned(pid, item.start);
     }
     await Promise.race([exit, pause(3000)]);
     if (!closed) {
@@ -218,14 +236,14 @@ export async function runWindowsImageGate(command, args, options) {
     console.error(error instanceof Error ? error.message : "Process owner failed");
     try {
       const current = processSnapshot();
-      for (const [pid, item] of ownedDescendants(current, owned)) owned.set(pid, item);
+      const descendants = new Map(owned);
+      descendants.delete(String(process.pid));
+      for (const [pid, item] of ownedDescendants(current, descendants)) {
+        if (item.start && item.membership === "owned") owned.set(pid, item);
+      }
       for (const [pid, item] of owned) {
         if (pid !== String(process.pid) && processSnapshot().get(pid)?.start === item?.start) {
-          execFileSync("taskkill", ["/PID", pid, "/F"], {
-            windowsHide: true,
-            timeout: 10000,
-            stdio: "ignore",
-          });
+          terminateWindowsOwned(pid, item.start);
         }
       }
     } catch {
@@ -261,21 +279,32 @@ export async function sweepImageProcesses(owned) {
     protectedIds.add(parent);
     parent = snapshot.get(parent)?.parent;
   }
-  const trackedPath = path.join(owned, "process-owned.json");
-  const tracked = fs.existsSync(trackedPath)
-    ? new Map(JSON.parse(fs.readFileSync(trackedPath, "utf8")))
-    : new Map();
   const killed = [],
     unreadable = [];
   for (const [pid, item] of snapshot) {
-    if (protectedIds.has(pid) || baseline.get(pid)?.start === item.start || item.state === "Z")
+    if (
+      protectedIds.has(pid) ||
+      (item.start && baseline.get(pid)?.start === item.start) ||
+      item.state === "Z"
+    )
       continue;
     let marked;
     if (process.platform === "win32") {
-      marked = tracked.get(pid)?.start === item.start;
+      if (process.env.IMAGE_WINDOWS_JOB_NAME && item.membership === "outside") continue;
+      marked = Boolean(item.start && item.membership === "owned");
       // A path-free command line cannot disprove ownership; never report it clean by omission.
-      if (!marked && processSnapshot().get(pid)?.start === item.start)
-        unreadable.push({ pid, start: item.start });
+      if (!marked && processSnapshot().get(pid)?.start === item.start) {
+        const parent = snapshot.get(item.parent);
+        unreadable.push({
+          pid,
+          start: item.start,
+          name: item.name,
+          parent: item.parent,
+          parentStart: parent?.start,
+          parentName: parent?.name,
+          parentWasPresent: Boolean(parent && baseline.get(item.parent)?.start === parent.start),
+        });
+      }
     } else {
       try {
         marked = fs
@@ -297,12 +326,7 @@ export async function sweepImageProcesses(owned) {
     }
     if (!marked || processSnapshot().get(pid)?.start !== item.start) continue;
     killed.push({ pid, start: item.start });
-    if (process.platform === "win32")
-      execFileSync("taskkill", ["/PID", pid, "/F"], {
-        timeout: 10000,
-        windowsHide: true,
-        stdio: "ignore",
-      });
+    if (process.platform === "win32") terminateWindowsOwned(pid, item.start);
     else {
       try {
         process.kill(Number(pid), "SIGKILL");

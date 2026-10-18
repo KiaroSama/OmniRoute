@@ -38,6 +38,20 @@ export function validateImageSelection({ candidate, actual, workflow, admitted }
   return { candidate, workflow, baseline: IMAGE_BASELINE };
 }
 
+export function validateWindowsJobCleanup(receipt, selection) {
+  assert.ok(
+    receipt && typeof receipt === "object" && !Array.isArray(receipt),
+    "Windows job receipt missing"
+  );
+  assert.equal(receipt.candidate, selection.candidate, "Windows job candidate mismatch");
+  assert.equal(receipt.workflow, selection.workflow, "Windows job workflow mismatch");
+  assert.equal(receipt.assigned, true, "Windows job was not assigned");
+  assert.equal(receipt.clean, true, "Windows job cleanup unverified");
+  assert.deepEqual(receipt.terminated, [], "Windows job required forced cleanup");
+  assert.deepEqual(receipt.remaining, [], "Windows job has surviving processes");
+  assert.equal(receipt.failure, null, "Windows job failed");
+}
+
 export function selectImageFiles(files, changed = []) {
   const available = new Set(files);
   for (const file of IMAGE_REGRESSIONS) {
@@ -83,6 +97,39 @@ export function discoverNativeBuckets(root) {
       files,
     };
   });
+}
+
+export function imageOfflineCommand(command, args, env, uid, gid) {
+  for (const id of [uid, gid])
+    assert.ok(Number.isSafeInteger(id) && id >= 0, "Invalid namespace user identity");
+  const script =
+    'uid="$1"; gid="$2"; shift 2; mount -t tmpfs -o size=1G,mode=1777 tmpfs /tmp; ip link set lo up; exec setpriv --reuid "$uid" --regid "$gid" --clear-groups -- "$@"';
+  return [
+    "sudo",
+    [
+      "-n",
+      "unshare",
+      "--net",
+      "--pid",
+      "--mount-proc",
+      "--fork",
+      "--kill-child",
+      "--",
+      "/bin/bash",
+      "-euc",
+      script,
+      "image-ci",
+      String(uid),
+      String(gid),
+      "/usr/bin/env",
+      "-i",
+      ...Object.entries({ ...env, TMPDIR: "/tmp", TMP: "/tmp", TEMP: "/tmp" }).map(
+        ([key, value]) => `${key}=${value}`
+      ),
+      command,
+      ...args,
+    ],
+  ];
 }
 
 export function imageWorkerDirectory(owned, checkId, pid) {

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
+import { validateWindowsJobCleanup } from "./image-validation-contract.mjs";
 
 export async function mergeImageCoverage({
   root,
@@ -46,6 +47,12 @@ export async function mergeImageCoverage({
     );
     const cleanup = JSON.parse(fs.readFileSync(path.join(directory, "cleanup.json"), "utf8"));
     assert.equal(cleanup.clean, true, `${lane} cleanup unverified`);
+    if (lane === "compile-windows") {
+      validateWindowsJobCleanup(
+        JSON.parse(fs.readFileSync(path.join(directory, "windows-job-cleanup.json"), "utf8")),
+        selection
+      );
+    }
     if (lane === "image" || lane.startsWith("unit-")) {
       nativeFiles.push(
         ...JSON.parse(fs.readFileSync(path.join(directory, "executed-files.json"), "utf8"))

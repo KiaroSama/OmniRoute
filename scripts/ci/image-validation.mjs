@@ -25,6 +25,7 @@ assert.equal(process.env.GITHUB_REPOSITORY, "KiaroSama/OmniRoute", "Owner-fork v
 const root = process.cwd();
 const tooling = path.dirname(fileURLToPath(import.meta.url));
 const initialPath = process.env.PATH;
+const selectedNpmCli = process.env.IMAGE_NPM_CLI;
 assert.deepEqual(
   fs.readFileSync(path.join(tooling, "image-validation-contract.mjs")),
   fs.readFileSync(path.join(root, "scripts/ci/image-validation-contract.mjs")),
@@ -91,6 +92,12 @@ if (process.argv[2] === "prepare") {
     );
   const coverage = path.join(owned, "v8");
   const env = imageEnvironment(root, owned);
+  if (selectedNpmCli) {
+    assert.ok(path.isAbsolute(selectedNpmCli), "Selected npm entry must be absolute");
+    assert.ok(fs.statSync(selectedNpmCli).isFile(), "Selected npm entry is unavailable");
+    env.NPM_CONFIG_PREFIX = path.resolve(path.dirname(selectedNpmCli), "../../..");
+    env.PATH = `${env.NPM_CONFIG_PREFIX}${path.delimiter}${env.PATH}`;
+  }
   Object.keys(process.env).forEach((key) => {
     delete process.env[key];
   });
@@ -230,15 +237,15 @@ if (process.argv[2] === "prepare") {
   }
 
   try {
+    assert.ok(process.platform !== "win32" || selectedNpmCli, "Windows npm entry was not captured");
     const npmVersion = execFileSync(
-      process.platform === "win32" ? "npm.cmd" : "npm",
-      ["--version"],
+      selectedNpmCli ? process.execPath : "npm",
+      selectedNpmCli ? [selectedNpmCli, "--version"] : ["--version"],
       {
         cwd: root,
         env,
         encoding: "utf8",
         timeout: 15000,
-        shell: process.platform === "win32",
         windowsHide: true,
       }
     ).trim();
@@ -359,7 +366,20 @@ if (process.argv[2] === "prepare") {
         );
       await compactCoverage();
     } else if (lane === "static") {
+      const isolation = await node(
+        "namespace-runtime",
+        [
+          "scripts/check/image-offline-runtime.mjs",
+          String(process.getuid()),
+          String(process.getgid()),
+          ...["pid", "net", "mnt"].map((name) => fs.readlinkSync(`/proc/self/ns/${name}`)),
+        ],
+        15,
+        10
+      );
+      assert.equal(isolation.code, 0, "Namespace isolation runtime contract failed");
       await node("discovery", ["scripts/check/check-test-discovery.mjs"], 90, 60);
+      await node("architecture", ["scripts/quality/measure-boundary.mjs", "--ratchet"], 90, 60);
       await node("lint", ["scripts/quality/run-eslint-json.mjs"], 900, 120, {
         ESLINT_RESULTS_JSON: path.join(evidence, "eslint-results.json"),
       });

@@ -18,20 +18,41 @@ jobs:
       fail-fast: false
       max-parallel: 4
       matrix:
-        lane: [image, static, types, unit-1, unit-2, unit-3, unit-4, unit-5, unit-6, unit-7, unit-8, integration-1, integration-2, vitest-mcp, vitest-ui, ecosystem, protocols, compile-linux, compile-windows]
+        lane:
+          [
+            image,
+            static,
+            types,
+            unit-1,
+            unit-2,
+            unit-3,
+            unit-4,
+            unit-5,
+            unit-6,
+            unit-7,
+            unit-8,
+            integration-1,
+            integration-2,
+            vitest-mcp,
+            vitest-ui,
+            ecosystem,
+            protocols,
+            compile-linux,
+            compile-windows,
+          ]
     runs-on: ${{ matrix.lane == 'compile-windows' && 'windows-latest' || 'ubuntu-latest' }}
     timeout-minutes: 55
     env:
       CANDIDATE_SHA: ${{ inputs.candidate_sha }}
       VALIDATION_WORKFLOW_SHA: ${{ github.workflow_sha }}
       IMAGE_VALIDATION_LANE: ${{ matrix.lane }}
-      CI: 'true'
-      APP_LOG_TO_FILE: 'false'
-      NEXT_TELEMETRY_DISABLED: '1'
-      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
-      OMNIROUTE_SKIP_SYSTEM_TRUST: '1'
-      OMNIROUTE_SKIP_DNS_WRITE: '1'
-      DISABLE_SQLITE_AUTO_BACKUP: 'true'
+      CI: "true"
+      APP_LOG_TO_FILE: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      OMNIROUTE_SKIP_SYSTEM_TRUST: "1"
+      OMNIROUTE_SKIP_DNS_WRITE: "1"
+      DISABLE_SQLITE_AUTO_BACKUP: "true"
     steps:
       - name: Admit immutable candidate before checkout
         shell: bash
@@ -78,15 +99,23 @@ jobs:
           } >> "$GITHUB_ENV"
           printf 'Candidate: `%s`\nWorkflow: `%s`\nLane: `%s`\nCompiler output is not a signed distribution.\n' "$CANDIDATE_SHA" "$VALIDATION_WORKFLOW_SHA" "$IMAGE_VALIDATION_LANE" >> "$GITHUB_STEP_SUMMARY"
       - uses: ./.github/actions/npm-ci-retry
+        if: runner.os != 'Windows'
         timeout-minutes: 12
         with:
-          cache: 'false'
+          cache: "false"
+      - name: Run Windows setup and validation under native ownership
+        if: runner.os == 'Windows'
+        timeout-minutes: 40
+        shell: pwsh
+        run: |
+          & .claude/validation-tooling/scripts/ci/image-windows-owner.ps1 -Root $env:GITHUB_WORKSPACE -ToolingRoot (Join-Path $env:GITHUB_WORKSPACE '.claude/validation-tooling/scripts/ci') -Owned $env:IMAGE_VALIDATION_ROOT
       - name: Run bounded image acceptance lane
+        if: runner.os != 'Windows'
         timeout-minutes: 38
         shell: bash
         run: node .claude/validation-tooling/scripts/ci/image-validation.mjs run
       - name: Verify owned cleanup
-        if: always() && env.IMAGE_VALIDATION_ROOT != ''
+        if: always() && runner.os != 'Windows' && env.IMAGE_VALIDATION_ROOT != ''
         timeout-minutes: 2
         shell: bash
         run: node .claude/validation-tooling/scripts/ci/image-validation.mjs cleanup
@@ -110,11 +139,11 @@ jobs:
       CANDIDATE_SHA: ${{ inputs.candidate_sha }}
       VALIDATION_WORKFLOW_SHA: ${{ github.workflow_sha }}
       IMAGE_VALIDATION_LANE: coverage
-      CI: 'true'
-      NEXT_TELEMETRY_DISABLED: '1'
-      APP_LOG_TO_FILE: 'false'
-      OMNIROUTE_SKIP_SYSTEM_TRUST: '1'
-      OMNIROUTE_SKIP_DNS_WRITE: '1'
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      APP_LOG_TO_FILE: "false"
+      OMNIROUTE_SKIP_SYSTEM_TRUST: "1"
+      OMNIROUTE_SKIP_DNS_WRITE: "1"
     steps:
       - name: Validate immutable input
         shell: bash
@@ -154,7 +183,7 @@ jobs:
       - uses: ./.github/actions/npm-ci-retry
         timeout-minutes: 12
         with:
-          cache: 'false'
+          cache: "false"
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
         with:
           pattern: image-validation-*
