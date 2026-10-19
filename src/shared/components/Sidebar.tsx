@@ -540,7 +540,7 @@ export default function Sidebar({
               {item.label}
             </span>
             {item.subtitle && (
-              <span className="truncate text-[10px] text-text-muted/60">{item.subtitle}</span>
+              <span className="truncate text-[10px] text-text-main/65">{item.subtitle}</span>
             )}
           </span>
         )}
@@ -618,7 +618,7 @@ export default function Sidebar({
       "group/nav-item flex items-center rounded-lg transition-all",
       active
         ? "bg-primary/10 text-primary"
-        : "text-text-muted hover:bg-surface/50 hover:text-text-main"
+        : "text-text-main/75 hover:bg-surface/50 hover:text-text-main"
     );
     const innerLinkClassName = "flex min-w-0 flex-1 items-center gap-3 px-3 py-1.5";
 

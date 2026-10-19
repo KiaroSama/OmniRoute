@@ -107,6 +107,17 @@ test("a11y boots the downloaded build on a fresh DATA_DIR and never builds itsel
   );
 });
 
+test("a11y boots the artefact on a hosted runner, where the download takes seconds", () => {
+  // Run 39156364797 (2026-10-18): on the light pool the 1.2 GB artefact took 1,416 s to download
+  // and the 30-minute job timeout cancelled the job while it was still extracting, before the
+  // axe suite ran. Hosted runners pull the same class of artefact in ~10 s (the per-PR E2E
+  // shards, 518 MB in 7-10 s), booting a prebuilt standalone server fits them, and a fresh VM
+  // has no port or $HOME left behind by other jobs.
+  assert.equal(a11y["runs-on"], "ubuntu-latest");
+  const timeout = (a11y as Job & { "timeout-minutes"?: number })["timeout-minutes"] ?? 0;
+  assert.ok(timeout >= 30, `timeout-minutes is ${timeout}`);
+});
+
 test("playwright.config pipes the webServer stdout only when asked", () => {
   assert.match(
     playwrightConfig,

@@ -16,13 +16,13 @@ AgentBridge est le proxy MITM (Man-in-the-Middle, ou « homme du milieu ») d’
 
 ### Qu’est-ce qu’AgentBridge ?
 
-Lorsqu’un agent d’IDE (par exemple, GitHub Copilot, Cursor ou Claude Code) effectue un appel API, il se connecte directement au fournisseur d’IA en amont (OpenAI, Anthropic, etc.). AgentBridge intercepte cette connexion de manière transparente au niveau TLS — sans nécessiter aucune modification de la configuration de l’agent — et réécrit la requête afin qu’elle transite par OmniRoute.
+Lorsqu’un agent d’IDE (par exemple GitHub Copilot, Cursor ou Claude Code) effectue un appel API, il se connecte directement au fournisseur d’IA en amont (OpenAI, Anthropic, etc.). AgentBridge intercepte cette connexion de manière transparente au niveau TLS — sans nécessiter aucune modification de la configuration de l’agent — et réécrit la requête afin qu’elle transite par OmniRoute.
 
-Cela vous permet de :
+Vous pouvez ainsi :
 
-- **Rediriger n’importe quel agent vers n’importe quel fournisseur** : Copilot communique avec OpenAI ? Redirigez-le vers Anthropic Claude, Gemini ou l’un des 372 fournisseurs d’OmniRoute.
+- **Rediriger n’importe quel agent vers n’importe quel fournisseur** : Copilot communique avec OpenAI ? Redirigez-le vers Anthropic Claude, Gemini ou l’un des 374 fournisseurs pris en charge par OmniRoute.
 - **Appliquer des correspondances de modèles** : `gemini-3-flash` → `claude-sonnet-4.7` de manière transparente au niveau du gestionnaire.
-- **Observer tout le trafic des agents** : chaque requête interceptée est publiée dans l’[Inspecteur de trafic](./TRAFFIC_INSPECTOR.md).
+- **Observer l’intégralité du trafic des agents** : chaque requête interceptée est publiée dans l’[Inspecteur de trafic](./TRAFFIC_INSPECTOR.md).
 - **Appliquer les mécanismes de résilience d’OmniRoute** : le routage combiné, les disjoncteurs, les solutions de repli et le suivi des coûts fonctionnent également pour le trafic des agents d’IDE.
 
 ### Positionnement par rapport au marché

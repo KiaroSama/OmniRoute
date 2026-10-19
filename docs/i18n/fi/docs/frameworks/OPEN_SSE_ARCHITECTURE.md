@@ -483,13 +483,13 @@ Se käsittelee seuraavat:
 
 `open-sse/config/` sisältää konfiguraatiokerroksen:
 
-| Tiedosto                      | Tarkoitus                                                     |
-| ----------------------------- | ------------------------------------------------------------- |
-| `providerRegistry.ts`         | Keskustelumallien rekisteri 372 palveluntarjoajan luettelolle |
-| `providerModels.ts`           | Mallien aliakset ja muotomuunnokset                           |
-| `constants.ts`                | Aikakatkaisut, rajoitukset ja tilakoodit                      |
-| `defaultThinkingSignature.ts` | Clauden oletusarvoinen ajatteluallekirjoitus                  |
-| `modelStrip.ts` (palveluissa) | Palveluntarjoajakohtainen kenttien poistaminen                |
+| Tiedosto                      | Tarkoitus                                                  |
+| ----------------------------- | ---------------------------------------------------------- |
+| `providerRegistry.ts`         | Keskustelumallirekisteri 374 palveluntarjoajan luettelolle |
+| `providerModels.ts`           | Mallien aliakset ja muotomuunnokset                        |
+| `constants.ts`                | Aikakatkaisut, rajat ja tilakoodit                         |
+| `defaultThinkingSignature.ts` | Clauden oletusarvoinen päättelyallekirjoitus               |
+| `modelStrip.ts` (palveluissa) | Palveluntarjoajakohtainen kenttien poistaminen             |
 
 ### Palveluntarjoajarekisterin skeema
 

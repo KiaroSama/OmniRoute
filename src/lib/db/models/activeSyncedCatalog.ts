@@ -422,7 +422,18 @@ export async function getActiveSyncedCatalog(
  * Return non-empty synced catalogs grouped by provider, restricted to active
  * connections. This is the authoritative live source for /v1/models.
  */
-export async function getAllActiveSyncedModels(): Promise<Record<string, SyncedAvailableModel[]>> {
+export interface GetAllActiveSyncedModelsOptions {
+  /**
+   * `customModels` rows already read by the caller's request-level capability
+   * snapshot. When present the listing reuses them instead of reading the
+   * namespace a second time (#16929 operator endpoint overlay).
+   */
+  customModelsByProvider?: Readonly<Record<string, unknown>>;
+}
+
+export async function getAllActiveSyncedModels(
+  options: GetAllActiveSyncedModelsOptions = {}
+): Promise<Record<string, SyncedAvailableModel[]>> {
   try {
     const connections = await getRawProviderConnections({ isActive: true }, undefined, undefined, [
       "id",
@@ -449,16 +460,20 @@ export async function getAllActiveSyncedModels(): Promise<Record<string, SyncedA
 
     const result: Record<string, SyncedAvailableModel[]> = {};
 
-    // #16929: one customModels read for the whole listing (not one per provider).
-    let customModelsByProvider: Record<string, unknown> = {};
-    try {
-      const all = await getCustomModels();
-      if (all && typeof all === "object" && !Array.isArray(all)) {
-        customModelsByProvider = all as Record<string, unknown>;
+    // #16929: one customModels read for the whole listing (not one per provider),
+    // and none at all when the caller's capability snapshot already holds the rows.
+    let customModelsByProvider: Readonly<Record<string, unknown>> =
+      options.customModelsByProvider ?? {};
+    if (!options.customModelsByProvider) {
+      try {
+        const all = await getCustomModels();
+        if (all && typeof all === "object" && !Array.isArray(all)) {
+          customModelsByProvider = all as Record<string, unknown>;
+        }
+      } catch {
+        // An unavailable custom overlay must not empty the entire live model
+        // catalog: keep the raw synced entries just as dispatch does.
       }
-    } catch {
-      // An unavailable custom overlay must not empty the entire live model
-      // catalog: keep the raw synced entries just as dispatch does.
     }
 
     await Promise.all(

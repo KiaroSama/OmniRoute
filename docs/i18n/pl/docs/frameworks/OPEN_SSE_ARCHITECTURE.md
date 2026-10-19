@@ -492,11 +492,11 @@ Obsługuje:
 
 | Plik                          | Przeznaczenie                                         |
 | ----------------------------- | ----------------------------------------------------- |
-| `providerRegistry.ts`         | Rejestr modeli czatu obejmujący katalog 372 dostawców |
+| `providerRegistry.ts`         | Rejestr modeli czatu oparty na katalogu 374 dostawców |
 | `providerModels.ts`           | Aliasy modeli, mapowanie formatów                     |
 | `constants.ts`                | Limity czasu, ograniczenia, kody stanu                |
-| `defaultThinkingSignature.ts` | Domyślny podpis procesu rozumowania Claude            |
-| `modelStrip.ts` (w services)  | Usuwanie pól zależnie od dostawcy                     |
+| `defaultThinkingSignature.ts` | Domyślna sygnatura rozumowania Claude                 |
+| `modelStrip.ts` (w services)  | Usuwanie pól właściwe dla poszczególnych dostawców    |
 
 ### Schemat rejestru dostawców
 

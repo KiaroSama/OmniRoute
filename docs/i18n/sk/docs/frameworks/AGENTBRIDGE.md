@@ -16,16 +16,16 @@ AgentBridge je MITM (Man-in-the-Middle) proxy server OmniRoute, ktorý zachytáv
 
 ### Čo je AgentBridge?
 
-Keď agent IDE (napr. GitHub Copilot, Cursor, Claude Code) uskutoční volanie API, pripojí sa priamo k nadradenému poskytovateľovi AI (OpenAI, Anthropic atď.). AgentBridge toto pripojenie transparentne zachytí na úrovni TLS — bez potreby akejkoľvek zmeny konfigurácie agenta — a presmeruje požiadavku cez OmniRoute.
+Keď agent IDE (napr. GitHub Copilot, Cursor, Claude Code) uskutoční volanie API, pripojí sa priamo k nadradenému poskytovateľovi AI (OpenAI, Anthropic atď.). AgentBridge toto pripojenie transparentne zachytí na úrovni TLS — bez potreby akejkoľvek zmeny konfigurácie agenta — a prepíše požiadavku prostredníctvom OmniRoute.
 
 To znamená, že môžete:
 
-- **Presmerovať ľubovoľného agenta k ľubovoľnému poskytovateľovi**: Komunikuje Copilot s OpenAI? Presmerujte ho na Anthropic Claude, Gemini alebo ktoréhokoľvek z 372 poskytovateľov podporovaných službou OmniRoute.
-- **Použiť mapovanie modelov**: `gemini-3-flash` → `claude-sonnet-4.7` transparentne na úrovni obslužného mechanizmu.
+- **Presmerovať ľubovoľného agenta k ľubovoľnému poskytovateľovi**: Komunikuje Copilot s OpenAI? Presmerujte ho na Anthropic Claude, Gemini alebo ktoréhokoľvek z 374 poskytovateľov OmniRoute.
+- **Použiť mapovania modelov**: `gemini-3-flash` → `claude-sonnet-4.7` transparentne na úrovni obslužnej rutiny.
 - **Sledovať všetku komunikáciu agentov**: každá zachytená požiadavka sa zverejní v nástroji [Traffic Inspector](./TRAFFIC_INSPECTOR.md).
 - **Využiť odolnosť OmniRoute**: kombinované smerovanie, ističe, záložné mechanizmy a sledovanie nákladov fungujú aj pre komunikáciu agentov IDE.
 
-### Pozícia na trhu
+### Postavenie na trhu
 
 | Funkcia                                    | 9router | anti-api | llm-interceptor | **OmniRoute AgentBridge** |
 | ------------------------------------------ | :-----: | :------: | :-------------: | :-----------------------: |
@@ -42,7 +42,7 @@ To znamená, že môžete:
 | Traffic Inspector                          |    ✗    |    ✗     |        ✓        |             ✓             |
 | Smerovanie OmniRoute                       |    ✗    |    ✗     |        ✗        |             ✓             |
 | Používateľské rozhranie mapovania modelov  |    ✗    |    ✗     |        ✗        |             ✓             |
-| Zoznam vynechaní                           |    ✗    |    ✗     |        ✓        |             ✓             |
+| Zoznam výnimiek                            |    ✗    |    ✗     |        ✓        |             ✓             |
 | Certifikát nadradenej CA                   |    ✗    |    ✗     |        ✓        |             ✓             |
 
 ---

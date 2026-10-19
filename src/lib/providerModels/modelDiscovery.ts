@@ -9,7 +9,7 @@ import { CANONICAL_EFFORT_VALUES } from "@/shared/reasoning/effortStandardizatio
 import { isObsoleteKiroModelAlias } from "@omniroute/open-sse/services/kiroModels.ts";
 import { filterSelectableModels } from "@omniroute/open-sse/services/modelLifecycle.ts";
 import { getEmbeddingProvider } from "@omniroute/open-sse/config/embeddingRegistry.ts";
-import { hasPayloadFreeEvidence } from "@/shared/utils/payloadFreeEvidence";
+import { hasPayloadFreeEvidence, hasPayloadPaidEvidence } from "@/shared/utils/payloadFreeEvidence";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -683,7 +683,8 @@ export function normalizeDiscoveredModels(
     const supportsVision = detectVisionInput(record);
     // Persist only evidence present in this discovery payload. Static catalog
     // membership is intentionally not evidence about this connection's economics.
-    const isFree = hasPayloadFreeEvidence({ ...record, id });
+    const explicitlyPaid = providerId === "siliconflow" && hasPayloadPaidEvidence(record);
+    const isFree = !explicitlyPaid && hasPayloadFreeEvidence({ ...record, id });
 
     deduped.set(id, {
       id,
@@ -727,7 +728,9 @@ export function normalizeDiscoveredModels(
       ...(record.alwaysThinking === true ? { alwaysThinking: true } : {}),
       ...(typeof record.supportsTools === "boolean" ? { supportsTools: record.supportsTools } : {}),
       ...(typeof record.supportsVideo === "boolean" ? { supportsVideo: record.supportsVideo } : {}),
-      ...(isFree ? { isFree: true } : {}),
+      // Keep a paid verdict through the cache round trip: dropping false would
+      // let a :free suffix or a prior optimistic flag grant access again.
+      ...(explicitlyPaid ? { isFree: false } : isFree ? { isFree: true } : {}),
       ...(supportsVision ? { supportsVision: true } : {}),
       ...(typeof modality.dimensions === "number" && modality.dimensions > 0
         ? { dimensions: modality.dimensions }

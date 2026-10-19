@@ -483,15 +483,15 @@ Hiki hushughulikia:
 
 `open-sse/config/` huhifadhi safu ya usanidi:
 
-| Faili                             | Madhumuni                                                      |
-| --------------------------------- | -------------------------------------------------------------- |
-| `providerRegistry.ts`             | Rejesta ya modeli za gumzo juu ya katalogi ya watoa huduma 372 |
-| `providerModels.ts`               | Majina mbadala ya modeli, ulinganishaji wa miundo              |
-| `constants.ts`                    | Vikomo vya muda, viwango, misimbo ya hali                      |
-| `defaultThinkingSignature.ts`     | Sahihi chaguo-msingi ya fikra ya Claude                        |
-| `modelStrip.ts` (katika services) | Uondoaji wa sehemu kwa kila mtoa huduma                        |
+| Faili                             | Madhumuni                                                     |
+| --------------------------------- | ------------------------------------------------------------- |
+| `providerRegistry.ts`             | Sajili ya modeli za gumzo juu ya katalogi ya watoa huduma 374 |
+| `providerModels.ts`               | Majina mbadala ya modeli, ulinganishaji wa miundo             |
+| `constants.ts`                    | Vipindi vya kuisha, vikomo, misimbo ya hali                   |
+| `defaultThinkingSignature.ts`     | Sahihi chaguo-msingi ya kufikiri ya Claude                    |
+| `modelStrip.ts` (katika services) | Uondoaji wa sehemu kulingana na kila mtoa huduma              |
 
-### Skema ya Rejesta ya Watoa Huduma
+### Skima ya Sajili ya Watoa Huduma
 
 ```ts
 interface ProviderConfig {
@@ -506,7 +506,7 @@ interface ProviderConfig {
 }
 ```
 
-Uthibitishaji wa Zod wakati wa upakiaji wa moduli huhakikisha kuwa usanidi wote wa watoa huduma ni halali.
+Uthibitishaji wa Zod wakati wa kupakia moduli huhakikisha kuwa usanidi wote wa watoa huduma ni halali.
 
 ---
 

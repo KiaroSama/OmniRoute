@@ -39,11 +39,11 @@
 
 ## OmniRoute ကို မည်သည့်အချိန်တွင် ရွေးချယ်သင့်သနည်း
 
-- ကိုယ်တိုင် host လုပ်ထားပြီး **provider များကို အကျယ်ပြန့်ဆုံး ပံ့ပိုးနိုင်မှု** (provider 372 ခု၊ အခမဲ့/အထောက်အထားပြရန်မလိုသော catalog entry 155 ခု) ကို လိုချင်သည့်အခါ
-- **built-in MCP server** (LLM tool များ၊ memory နှင့် skill များကို tool များအဖြစ် အသုံးပြုနိုင်ခြင်း) လိုအပ်သည့်အခါ
-- agent တစ်ခုမှ agent တစ်ခုသို့ workflow များအတွက် **A2A protocol** လိုအပ်သည့်အခါ
-- upstream CAPTCHA များ၏ ထောက်လှမ်းမှုကို ရှောင်ရှားရန် **fingerprint stealth** (JA3/JA4) ကို လိုချင်သည့်အခါ
-- SaaS အတွက် အခကြေးငွေ မပေးဘဲ **လုပ်ငန်းသုံး အင်္ဂါရပ်များ** (guardrail များ၊ eval များ၊ audit trail) လိုအပ်သည့်အခါ
+- ကိုယ်ပိုင်ဆာဗာတွင် လက်ခံအသုံးပြုပြီး **provider များကို အများဆုံး လွှမ်းခြုံအသုံးပြုနိုင်မှု** (provider 374 ခု၊ အခမဲ့/အထောက်အထားစိစစ်ရန်မလိုသော catalog entry 155 ခု) ကို လိုချင်သည့်အခါ
+- **built-in MCP server** (LLM tool များ၊ memory၊ skill များကို tool များအဖြစ် ဖော်ထုတ်ပေးထားခြင်း) လိုအပ်သည့်အခါ
+- agent-to-agent workflow များအတွက် **A2A protocol** လိုအပ်သည့်အခါ
+- upstream CAPTCHA များ၏ ထောက်လှမ်းမှုကို ရှောင်ရှားရန် **fingerprint stealth** (JA3/JA4) လိုချင်သည့်အခါ
+- SaaS အသုံးပြုခ ပေးစရာမလိုဘဲ **enterprise feature များ** (guardrail များ၊ eval များ၊ audit trail) လိုအပ်သည့်အခါ
 
 ## LiteLLM ကို ရွေးချယ်သင့်သည့်အချိန်
 

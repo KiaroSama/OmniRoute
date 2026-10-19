@@ -1,0 +1,1 @@
+- **test(video):** the OpenRouter off-origin test compares parsed hosts with `isUrlHost()` instead of a URL-prefix match (CodeQL #1159, #1160).

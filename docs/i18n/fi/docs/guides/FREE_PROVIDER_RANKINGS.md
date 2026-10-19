@@ -12,23 +12,23 @@
 
 ## Mikä se on
 
-OmniRoute rekisteröi 372 palveluntarjoajaa, mukaan lukien 155 luettelomerkintää, jotka on merkitty **ilmaisiksi / eivät vaadi tunnistautumista**
+OmniRoute rekisteröi 374 palveluntarjoajaa, mukaan lukien 155 luettelomerkintää, jotka on merkitty **ilmaisiksi / eivät vaadi tunnistautumista**
 (ei tunnistautumista,
 ilmaisen tason OAuth tai ilmaisen tason API-avain — katso
 [Ilmaisten tasojen opas](../getting-started/FREE-TIERS-GUIDE.md) ja koko
-[Ilmaisten tasojen hakemisto](../reference/FREE_TIERS.md)). Haasteena on, että ilmaisten palveluntarjoajien mallien laatu
-vaihtelee suuresti. Huipputason mallia tarjoava palveluntarjoaja, joka ei vaadi tunnistautumista, on paljon hyödyllisempi
+[Ilmaisten tasojen hakemisto](../reference/FREE_TIERS.md)). Haasteena on, että ilmaisten palveluntarjoajien
+mallien laatu vaihtelee huomattavasti. Huipputason mallia tarjoava, tunnistautumista edellyttämätön palveluntarjoaja on paljon hyödyllisempi
 kuin pientä vanhaa mallia tarjoava palveluntarjoaja.
 
-**Ilmaisten palveluntarjoajien sijoitukset** vastaa kysymykseen "**mikä ilmainen palveluntarjoaja tarjoaa minulle parhaan mallin?**"
-yhdistämällä kunkin ilmaisen palveluntarjoajan malliluettelon **joukkoistettuihin laatupisteisiin**
+**Ilmaisten palveluntarjoajien sijoitukset** vastaa kysymykseen ”**mikä ilmainen palveluntarjoaja tarjoaa minulle parhaan mallin?**” yhdistämällä
+kunkin ilmaisen palveluntarjoajan luettelon **joukkoistettuihin laatupisteisiin**, jotka ovat peräisin
 **Arena AI -tulostaulukosta** (ihmisten mieltymyksiin perustuva ELO, sama idea kuin LMArenan
-chatbot-areenassa). Palveluntarjoajat asetetaan sitten järjestykseen niiden **parhaan ilmaisen mallin** suorituskyvyn perusteella.
+chatbot-areenassa). Palveluntarjoajat asetetaan sitten järjestykseen niiden **parhaan ilmaisen mallin** vahvuuden perusteella.
 
 Sijoitus lasketaan kolmesta todellisesta lähteestä:
 
 1. Ilmaisten palveluntarjoajien luettelot — `NOAUTH_PROVIDERS` sekä `OAUTH_PROVIDERS`- /
-   `APIKEY_PROVIDERS`-merkinnät, joissa `hasFree` on asetettu
+   `APIKEY_PROVIDERS`-merkinnät, joilla on `hasFree`-merkintä
    (`src/shared/constants/providers.ts`).
 2. Kunkin palveluntarjoajan malliluettelo palveluntarjoajarekisteristä
    (`open-sse/config/providerRegistry.ts`).

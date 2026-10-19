@@ -13,31 +13,31 @@
 
 ## Ano Ito
 
-Nagrerehistro ang OmniRoute ng 372 provider, kabilang ang 155 entry sa catalog na minarkahang **libre/walang-auth**
+Nagrerehistro ang OmniRoute ng 374 na provider, kabilang ang 155 entry sa catalog na minarkahang **libre/walang-auth**
 (walang-auth,
 libreng-tier na OAuth, o libreng-tier na API key — tingnan ang
 [Gabay sa Mga Libreng Tier](../getting-started/FREE-TIERS-GUIDE.md) at ang kumpletong
-[Direktoryo ng Mga Libreng Tier](../reference/FREE_TIERS.md)). Ang kapalit: malaki ang
+[Direktoryo ng Mga Libreng Tier](../reference/FREE_TIERS.md)). Ang problema: malaki ang
 pagkakaiba-iba ng kalidad ng modelo sa mga libreng provider. Higit na kapaki-pakinabang
 ang isang provider na walang-auth na naghahatid ng frontier model kaysa sa naghahatid
-ng maliit at lumang modelo.
+ng maliit na legacy model.
 
 Sinasagot ng **Mga Ranggo ng Libreng Provider** ang "**aling libreng provider ang nagbibigay sa akin ng pinakamahusay na modelo?**" sa pamamagitan ng
-pagtutugma sa catalog ng bawat libreng provider sa **mga score ng kalidad na nagmula sa komunidad** mula sa
-**leaderboard ng Arena AI** (ELO batay sa kagustuhan ng tao, kaparehong konsepto sa likod ng chatbot arena ng
-LMArena). Pagkatapos, niraranggo ang mga provider ayon sa husay ng kanilang **pinakamahusay na libreng modelo**.
+pagsasama ng catalog ng bawat libreng provider sa **mga marka ng kalidad na nagmula sa komunidad** mula sa
+**leaderboard ng Arena AI** (ELO batay sa kagustuhan ng tao, ang parehong konsepto sa likod ng LMArena
+chatbot arena). Pagkatapos, niraranggo ang mga provider batay sa husay ng kanilang **pinakamahusay na libreng modelo**.
 
 Kinukuwenta ang ranggo mula sa tatlong tunay na source:
 
-1. Ang mga listahan ng libreng provider — `NOAUTH_PROVIDERS`, kasama ang mga entry na
-   `OAUTH_PROVIDERS` / `APIKEY_PROVIDERS` na may flag na `hasFree`
+1. Ang mga listahan ng libreng provider — `NOAUTH_PROVIDERS`, kasama ang mga entry sa `OAUTH_PROVIDERS` /
+   `APIKEY_PROVIDERS` na may flag na `hasFree`
    (`src/shared/constants/providers.ts`).
-2. Ang catalog ng modelo ng bawat provider mula sa registry ng provider
+2. Ang catalog ng modelo ng bawat provider mula sa provider registry
    (`open-sse/config/providerRegistry.ts`).
-3. Mga score ng pagiging angkop sa gawain na hinango mula sa ELO at nakaimbak sa DB table na `model_intelligence` ng
+3. Mga score ng pagiging angkop sa gawain na hinango mula sa ELO at naka-store sa `model_intelligence` DB table ng
    Arena ELO sync engine (`src/lib/arenaEloSync.ts`).
 
-Makikita ang lohika ng pagtutugma sa `src/lib/freeProviderRankings.ts`.
+Makikita ang lohika ng pagsasama sa `src/lib/freeProviderRankings.ts`.
 
 ---
 

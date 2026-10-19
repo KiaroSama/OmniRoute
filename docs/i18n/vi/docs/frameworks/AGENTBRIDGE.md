@@ -16,14 +16,14 @@ AgentBridge là proxy MITM (Man-in-the-Middle — trung gian) của OmniRoute, c
 
 ### AgentBridge là gì?
 
-Khi một tác nhân IDE (ví dụ: GitHub Copilot, Cursor, Claude Code) thực hiện lệnh gọi API, nó kết nối trực tiếp với nhà cung cấp AI thượng nguồn (OpenAI, Anthropic, v.v.). AgentBridge chặn kết nối đó một cách trong suốt ở tầng TLS — mà không yêu cầu thay đổi bất kỳ cấu hình nào của tác nhân — và ghi lại yêu cầu để định tuyến qua OmniRoute.
+Khi một tác nhân IDE (ví dụ: GitHub Copilot, Cursor, Claude Code) thực hiện lệnh gọi API, nó sẽ kết nối trực tiếp với nhà cung cấp AI thượng nguồn (OpenAI, Anthropic, v.v.). AgentBridge chặn kết nối đó một cách minh bạch ở tầng TLS — mà không yêu cầu bất kỳ thay đổi cấu hình nào đối với tác nhân — và viết lại yêu cầu thông qua OmniRoute.
 
 Điều này có nghĩa là bạn có thể:
 
-- **Định tuyến lại bất kỳ tác nhân nào đến bất kỳ nhà cung cấp nào**: Copilot đang giao tiếp với OpenAI? Hãy chuyển hướng nó đến Anthropic Claude, Gemini hoặc bất kỳ nhà cung cấp nào trong số 372 nhà cung cấp của OmniRoute.
-- **Áp dụng ánh xạ mô hình**: `gemini-3-flash` → `claude-sonnet-4.7` một cách trong suốt ở cấp trình xử lý.
+- **Định tuyến lại bất kỳ tác nhân nào đến bất kỳ nhà cung cấp nào**: Copilot đang giao tiếp với OpenAI? Hãy chuyển hướng nó đến Anthropic Claude, Gemini hoặc bất kỳ nhà cung cấp nào trong số 374 nhà cung cấp của OmniRoute.
+- **Áp dụng ánh xạ mô hình**: `gemini-3-flash` → `claude-sonnet-4.7` một cách minh bạch ở cấp trình xử lý.
 - **Quan sát toàn bộ lưu lượng của tác nhân**: mọi yêu cầu bị chặn đều được gửi đến [Trình kiểm tra lưu lượng](./TRAFFIC_INSPECTOR.md).
-- **Áp dụng khả năng phục hồi của OmniRoute**: định tuyến kết hợp, bộ ngắt mạch, phương án dự phòng và theo dõi chi phí cũng hoạt động với lưu lượng của tác nhân IDE.
+- **Áp dụng khả năng phục hồi của OmniRoute**: định tuyến tổ hợp, bộ ngắt mạch, phương án dự phòng và theo dõi chi phí cũng hoạt động với lưu lượng của tác nhân IDE.
 
 ### Vị thế so với thị trường
 

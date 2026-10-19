@@ -37,12 +37,12 @@ Populyar açıq mənbəli süni intellekt marşrutlayıcıları ilə obyektiv fu
 | **Tunel dəstəyi (Cloudflared, Tailscale, Ngrok)**        |                       ✅                       |        ❌        |        n/a        |     n/a     |
 | **Lisenziya**                                            |                      MIT                       |       MIT        |    proprietar     | proprietar  |
 
-## OmniRoute-u nə vaxt seçməli
+## OmniRoute-u nə zaman seçmək lazımdır
 
-- Özünüz hostinq edirsiniz və **maksimum provayder əhatəsi** istəyirsiniz (372 provayder, 155 pulsuz/autentifikasiya tələb etməyən kataloq qeydi)
+- Öz hostinqinizdə yerləşdirirsiniz və **maksimum provayder əhatəsi** istəyirsiniz (374 provayder, 155 pulsuz/autentifikasiya tələb etməyən kataloq qeydi)
 - **Daxili MCP serverinə** ehtiyacınız var (LLM alətləri, yaddaş və bacarıqlar alətlər kimi təqdim olunur)
 - Agentlərarası iş axınları üçün **A2A protokoluna** ehtiyacınız var
-- Yuxarı axındakı CAPTCHA-lar tərəfindən aşkarlanmamaq üçün **rəqəmsal iz gizliliyinə** (JA3/JA4) ehtiyacınız var
+- Yuxarı axındakı CAPTCHA-lar tərəfindən aşkarlanmamaq üçün **barmaq izi gizliliyinə** (JA3/JA4) ehtiyacınız var
 - SaaS ödənişi olmadan **korporativ funksiyalara** (qoruyucu məhdudiyyətlər, qiymətləndirmələr, audit izi) ehtiyacınız var
 
 ## LiteLLM-i nə zaman seçməli

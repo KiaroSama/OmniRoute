@@ -17,9 +17,9 @@ Guardrails អនុវត្តសុវត្ថិភាព គោលកា�
 នឹងកត់ត្រាកំហុស ហើយបន្តទៅ guardrail បន្ទាប់ ជំនួសឱ្យការធ្វើឱ្យសំណើ
 បរាជ័យ។ ការទប់ស្កាត់គឺជាការសម្រេចចិត្តជាក់លាក់ (`block: true`) មិនមែនកើតឡើងដោយចៃដន្យឡើយ។
 
-## របាំងការពារដែលភ្ជាប់មកជាស្រេច
+## របាំងការពារដែលមានស្រាប់
 
-registry ផ្ទុករបាំងការពារចំនួនប្រាំមួយដោយស្វ័យប្រវត្តិ តាមលំដាប់អាទិភាពនៅពេល import
+បញ្ជីចុះឈ្មោះនឹងផ្ទុករបាំងការពារចំនួនប្រាំមួយដោយស្វ័យប្រវត្តិតាមលំដាប់អាទិភាព នៅពេល import
 (សូមមើល `registry.ts` → `registerDefaultGuardrails()`):
 
 | អាទិភាព | ឈ្មោះ               | ដំណាក់កាល      | ឯកសារ                 |
@@ -31,128 +31,127 @@ registry ផ្ទុករបាំងការពារចំនួនប្�
 | `20`    | `prompt-injection`  | `preCall`      | `promptInjection.ts`  |
 | `95`    | `credential-masker` | `pre` + `post` | `credentialMasker.ts` |
 
-លេខអាទិភាពទាបជាង ដំណើរការ **មុន**។
+លេខអាទិភាពកាន់តែទាប នឹងដំណើរការ **មុន**។
 
-### ស្ពានរូបភាព (`visionBridge.ts`) — ស្ពានម៉ូដាលីតេ PR-1
+### ស្ពានចក្ខុវិស័យ (`visionBridge.ts`) — ស្ពានម៉ូដាលីតេ PR-1
 
-ស្ទាក់ចាប់សំណើដែលមានរូបភាព និងតម្រង់ទៅកាន់ **ម៉ូដែលដែលមិនគាំទ្ររូបភាព** ហើយបន្ទាប់មក
-បញ្ជូនសំណើទាំងមូលឡើងវិញទៅម៉ូដែលដែលគាំទ្ររូបភាព ឬជំនួសផ្នែករូបភាព
-ដោយការពិពណ៌នាជាអត្ថបទដែលបង្កើតដោយម៉ូដែលរូបភាពដែលអាចកំណត់រចនាសម្ព័ន្ធបាន មុនពេល
-ហៅទៅ upstream។ វាអនុញ្ញាតឱ្យអ្នកផ្តល់សេវាដែលគាំទ្រតែអត្ថបទ អាចដោះស្រាយ
-payload ពហុម៉ូដាលីតេដោយរលូន។
+ស្ទាក់ចាប់សំណើដែលមានរូបភាព ហើយមានគោលដៅទៅកាន់ **ម៉ូដែលដែលមិនគាំទ្រចក្ខុវិស័យ** រួចធ្វើការបញ្ជូនសំណើទាំងមូលឡើងវិញទៅម៉ូដែលដែលគាំទ្រចក្ខុវិស័យ ឬជំនួស
+ផ្នែករូបភាពដោយការពិពណ៌នាជាអត្ថបទដែលបង្កើតដោយម៉ូដែលចក្ខុវិស័យដែលអាចកំណត់រចនាសម្ព័ន្ធបាន មុនពេល
+ការហៅទៅកាន់ upstream។ វាអនុញ្ញាតឱ្យអ្នកផ្តល់សេវាដែលគាំទ្រតែអត្ថបទ អាចដោះស្រាយ
+payload ពហុម៉ូដាលីតេដោយតម្លាភាព។
 
 លំហូរ៖
 
-1. រំលង ប្រសិនបើម៉ូដែលគោលដៅគាំទ្ររូបភាពរួចហើយ (លុះត្រាតែវាមាននៅក្នុង
+1. រំលង ប្រសិនបើម៉ូដែលគោលដៅគាំទ្រចក្ខុវិស័យរួចហើយ (លុះត្រាតែវាមាននៅក្នុង
    បញ្ជីបង្ខំឱ្យប្រើស្ពាន `isVisionBridgeForcedModel`)។
 2. ស្រង់ផ្នែករូបភាពតាមរយៈ `extractImageParts(messages)`
-   (`visionBridgeHelpers.ts`) ដែលផ្ទេរភារកិច្ចទៅ **ឧបករណ៍ស្វែងរកមេឌៀរួម**
+   (`visionBridgeHelpers.ts`) ដែលផ្ទេរការងារទៅកាន់ **ឧបករណ៍រកឃើញមេឌៀរួម**
    `detectMediaParts()` នៅក្នុង `open-sse/utils/mediaParts.ts` — ដែលជា
-   ប្រភពការពិតតែមួយគត់ដែលប្រើរួមជាមួយតម្រងភាពឆបគ្នា combo។
-   ការស្រង់ត្រូវបានកំណត់ដោយបញ្ជីអនុញ្ញាត ឱ្យយកតែផ្នែកកម្រិតកំពូលដែលមានទម្រង់
+   ប្រភពការពិតតែមួយដែលប្រើរួមគ្នាជាមួយតម្រងភាពត្រូវគ្នារបស់ combo។
+   ការស្រង់ត្រូវបានកំណត់តាមបញ្ជីអនុញ្ញាត សម្រាប់តែផ្នែកកម្រិតកំពូលដែលមានទម្រង់
    ដែល `replaceImageParts` អាចបញ្ចូលត្រឡប់វិញបាន (កិច្ចសន្យា extract↔replace)៖ OpenAI
    `image_url`, Anthropic base64 `source.type:"base64"`, Anthropic URL
-   `source.type:"url"` និង Responses API `input_image`។ ការរកឃើញដែលស្ថិតនៅខាងក្នុង
-   និងទម្រង់ដែលមានតែសូចនាករ គឺសម្រាប់តម្រង combo ហើយមិនត្រូវបានស្រង់ចេញឡើយ។
+   `source.type:"url"` និង Responses API `input_image`។ លទ្ធផលរកឃើញដែលស្ថិតនៅក្នុងរចនាសម្ព័ន្ធជ្រៅ
+   និងទម្រង់ដែលមានតែសូចនាករ គឺជាសម្ភារៈសម្រាប់តម្រង combo ហើយមិនត្រូវបានស្រង់ឡើយ។
    រំលង ប្រសិនបើរកមិនឃើញ។
-3. កំណត់រចនាសម្ព័ន្ធពេលដំណើរការ តាមរយៈ `resolveVisionBridgeRuntimeSettings()`
-   (`src/shared/constants/modalityBridgeDefaults.ts`)៖ keys ការកំណត់ថ្មី `modalityBridge*`
-   មានអាទិភាពខ្ពស់ជាង; keys ចាស់ `visionBridge*` នៅតែជា **fallback មួយវដ្ត**
-   (ចន្លោះពេលសម្រាប់ rollback)។ រំលងមុនពេលរុករកមេឌៀណាមួយ នៅពេលស្ពាន
-   ត្រូវបានបិទ។
-4. ឧបករណ៍ជ្រើសរើសម៉ូដ (`modalityBridgeVisionMode` សូមមើលតារាងខាងក្រោម) សម្រេចថា
-   ត្រូវបញ្ជូនឡើងវិញ ឬពិពណ៌នា។ ការបញ្ជូនឡើងវិញ ត្រឡប់ `modifiedPayload` ដែលប្ដូរតែ
-   `model` ប៉ុណ្ណោះ រួមជាមួយ meta `{ rerouted, fromModel, toModel, imagesKept }`។
-5. ផ្លូវពិពណ៌នា៖ កំណត់ចំនួនរូបភាពត្រឹម `maxImages`, រៀបចំ prompt ដែលដឹងពីភារកិច្ច,
-   ពិនិត្យ describe cache, ហៅម៉ូដែលរូបភាព **ស្របគ្នា**
-   (`Promise.allSettled`) ហើយបញ្ចូលផ្នែកអត្ថបទ `[Image N]: <description>` ជំនួស
-   កន្លែងរូបភាពទាំងនោះ។ ប្រសិនបើការពិពណ៌នាបរាជ័យ វាត្រឡប់ `null` ហើយផ្នែករូបភាពដើម
-   ត្រូវបាន **រក្សាទុក** (#4012) — លើកលែងតែនៅលើផ្លូវពិពណ៌នា combo នៅពេល
-   ការពិពណ៌នាទាំងអស់បានបរាជ័យ ដែលក្នុងករណីនោះ upstream ដែលបានបញ្ជាក់ថាមិនគាំទ្ររូបភាព
-   នឹងទទួល stub `(មិនអាចប្រើបាន — គ្មានអ្នកផ្តល់សេវាដែលគាំទ្ររូបភាពបានភ្ជាប់)`
-   ជំនួសវិញ (#8430)។
+3. ដោះស្រាយការកំណត់ runtime តាមរយៈ `resolveVisionBridgeRuntimeSettings()`
+   (`src/shared/constants/modalityBridgeDefaults.ts`)៖ key ការកំណត់ `modalityBridge*`
+   ថ្មីមានអាទិភាព ហើយ key `visionBridge*` ចាស់នៅតែជា **ជម្រើសបម្រុងសម្រាប់មួយវដ្ត**
+   (ចន្លោះពេលសម្រាប់ rollback)។ រំលងមុនពេលឆ្លងកាត់មេឌៀណាមួយ នៅពេល
+   ស្ពានត្រូវបានបិទ។
+4. ឧបករណ៍ជ្រើសរើសមុខងារ (`modalityBridgeVisionMode`, សូមមើលតារាងខាងក្រោម) សម្រេចថា
+   ត្រូវបញ្ជូនឡើងវិញ ឬពិពណ៌នា។ ការបញ្ជូនឡើងវិញនឹងត្រឡប់ `modifiedPayload` ដែលមានតែ `model`
+   ត្រូវបានប្តូរ ព្រមទាំង meta `{ rerouted, fromModel, toModel, imagesKept }`។
+5. ផ្លូវពិពណ៌នា៖ កំណត់ចំនួនរូបភាពអតិបរមាត្រឹម `maxImages`, បង្កើត prompt ដែលយល់ដឹងអំពីភារកិច្ច,
+   ពិនិត្យមើល cache សម្រាប់ការពិពណ៌នា, ហៅម៉ូដែលចក្ខុវិស័យ **ស្របគ្នា**
+   (`Promise.allSettled`) និងបញ្ចូលផ្នែកអត្ថបទ `[Image N]: <description>` ជំនួស
+   រូបភាពទាំងនោះ។ ការពិពណ៌នាដែលបរាជ័យនឹងផ្តល់ `null` ហើយផ្នែករូបភាពដើមត្រូវបាន
+   **រក្សាទុក** (#4012) — លើកលែងតែនៅលើផ្លូវពិពណ៌នា combo នៅពេលការពិពណ៌នាទាំងអស់
+   បរាជ័យ ដែលក្នុងករណីនោះ upstream ដែលបានបញ្ជាក់ថាមិនគាំទ្រចក្ខុវិស័យ នឹងទទួលបាន stub
+   `(មិនអាចប្រើបាន — មិនមានអ្នកផ្តល់សេវាដែលគាំទ្រចក្ខុវិស័យត្រូវបានភ្ជាប់)` ជំនួសវិញ (#8430)។
 6. ត្រឡប់ `modifiedPayload` + meta (`imagesProcessed`, `descriptions`,
    `processingTimeMs`, `visionModel`)។
 
-#### ឧបករណ៍ជ្រើសរើសម៉ូដ (`modalityBridgeVisionMode`)
+#### ឧបករណ៍ជ្រើសរើសមុខងារ (`modalityBridgeVisionMode`)
 
-| ម៉ូដ       | លំនាំដើម | ឥរិយាបថ                                                                                                                                                                                                                                                                       |
-| ---------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `auto`     | ✔        | heuristic ចាស់ មិនត្រូវបានកែប្រែ (#6640/#7204)៖ ម៉ូដែលដែលមិនមែនជា combo/`auto/` ត្រូវបានបញ្ជូនឡើងវិញទៅម៉ូដែលរូបភាពល្អបំផុត លុះត្រាតែម៉ូដែលដើមមាន credential ដែលអាចប្រើបានរួចហើយ (ក្នុងករណីនោះត្រូវពិពណ៌នា); គោលដៅ combo តែងតែពិពណ៌នា។                                         |
-| `describe` |          | តែងតែពិពណ៌នា — block បញ្ជូនឡើងវិញត្រូវបានរំលងទាំងស្រុង; ម៉ូដែលដែលអ្នកប្រើបានជ្រើសរើស តែងតែជាអ្នកឆ្លើយ។                                                                                                                                                                        |
-| `reroute`  |          | បង្ខំឱ្យបញ្ជូនឡើងវិញ៖ guard សម្រាប់រក្សាម៉ូដែលដែលមាន credential ត្រូវបានរំលង។ guard credential របស់ **គោលដៅ** បញ្ជូនឡើងវិញ នៅតែត្រូវបានអនុវត្ត — នៅពេលគ្មានគោលដៅរូបភាពដែលអាចប្រើបាន សំណើនឹងបន្តទៅកាន់ការពិពណ៌នា ដើម្បីកុំឱ្យរូបភាពដើមទៅដល់ backend ដែលគាំទ្រតែអត្ថបទ (#8430)។ |
+| មុខងារ     | លំនាំដើម | ឥរិយាបថ                                                                                                                                                                                                                                                                                        |
+| ---------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `auto`     | ✔        | ហេយូរីស្ទិកចាស់ ដែលមិនបានកែប្រែ (#6640/#7204)៖ ម៉ូដែល non-combo/`auto/` នឹងត្រូវបញ្ជូនឡើងវិញទៅម៉ូដែលចក្ខុវិស័យល្អបំផុត លុះត្រាតែម៉ូដែលដើមមានព័ត៌មានសម្គាល់អត្តសញ្ញាណដែលអាចប្រើបានរួចហើយ (ក្នុងករណីនោះនឹងពិពណ៌នា)។ គោលដៅ combo តែងតែប្រើការពិពណ៌នា។                                             |
+| `describe` |          | តែងតែពិពណ៌នា — ប្លុកបញ្ជូនឡើងវិញត្រូវបានរំលងទាំងស្រុង ហើយម៉ូដែលដែលអ្នកប្រើបានជ្រើសរើសតែងតែជាអ្នកឆ្លើយតប។                                                                                                                                                                                       |
+| `reroute`  |          | បង្ខំឱ្យបញ្ជូនឡើងវិញ៖ របាំងរក្សាម៉ូដែលដែលមានព័ត៌មានសម្គាល់អត្តសញ្ញាណត្រូវបានរំលង។ របាំងព័ត៌មានសម្គាល់អត្តសញ្ញាណរបស់ **គោលដៅ** បញ្ជូនឡើងវិញនៅតែត្រូវបានអនុវត្ត — នៅពេលគ្មានគោលដៅចក្ខុវិស័យដែលអាចប្រើបាន សំណើនឹងបន្តទៅផ្លូវពិពណ៌នា ដើម្បីកុំឱ្យរូបភាពដើមទៅដល់ backend ដែលគាំទ្រតែអត្ថបទ (#8430)។ |
 
-ម៉ូដបង្ខំធ្វើ short-circuit **មុនពេល** heuristic `auto` ដំណើរការ; ឥរិយាបថ `auto`
-ដូចគ្នាទាំងស្រុងនៅកម្រិត byte ជាមួយរបាំងការពារមុន PR-1។
+មុខងារដែលត្រូវបានបង្ខំ នឹងបញ្ចប់ដំណើរការមុនកំណត់ **មុនពេល** ហេយូរីស្ទិក `auto` ដំណើរការ។ ឥរិយាបថ `auto`
+គឺដូចគ្នាទាំងស្រុងតាមកម្រិត byte ជាមួយរបាំងការពារមុន PR-1។
 
 #### វិសាលភាព API key (`visionBridgeKeyScope.ts`)
 
-នៅពេល API key របស់អ្នកហៅ កំណត់ `allowedConnections`, ក្រុមកូតា
+នៅពេល API key របស់អ្នកហៅដាក់កម្រិតលើ `allowedConnections`, ក្រុម quota
 (`allowedQuotas`) ឬម៉ូដែល (`allowedModels` / `blockedModels` /
-`modelAccessMode: "restricted"` / `disableNonPublicModels`) ស្ពានជ្រើសរើសតែ
-ម៉ូដែលសម្រាប់ reroute និង describe ដែល key នោះអាចប្រើបាន នៅលើការតភ្ជាប់ដែល key នោះ
-អាចប្រើបានប៉ុណ្ណោះ។ បន្ទាប់មកការហៅ describe តែងតែឆ្លងកាត់ OmniRoute self-loop
-ជាមួយ header `x-omniroute-self-loop-key-id` ដូច្នេះ chat request ដែលទទួល
-អនុវត្តគោលការណ៍ការតភ្ជាប់ និងម៉ូដែលរបស់ key នោះម្ដងទៀត។ `enforceApiKeyPolicy()`
-គោរព header នោះតែនៅពេលមាន self-loop bearer ជាមួយគ្នាប៉ុណ្ណោះ ដូច្នេះវាអាច
-បង្រួមសិទ្ធិចូលប្រើប៉ុណ្ណោះ ហើយ id ដែលមិនអាចដោះស្រាយបាន នឹងត្រូវបដិសេធ។
+`modelAccessMode: "restricted"` / `disableNonPublicModels`) ស្ពាននឹងជ្រើសរើស
+តែម៉ូដែលសម្រាប់បញ្ជូនឡើងវិញ និងពិពណ៌នា ដែល key នោះត្រូវបានអនុញ្ញាតឱ្យប្រើ នៅលើ connection ដែល key នោះ
+ត្រូវបានអនុញ្ញាតឱ្យប្រើ។ បន្ទាប់មក ការហៅសម្រាប់ការពិពណ៌នាតែងតែឆ្លងកាត់ self-loop របស់ OmniRoute ដោយមាន
+header `x-omniroute-self-loop-key-id` ដូច្នេះសំណើ chat ដែលទទួល
+នឹងអនុវត្តគោលការណ៍ connection និងម៉ូដែលរបស់ key នោះម្តងទៀត។ `enforceApiKeyPolicy()`
+គោរព header នោះតែនៅពេលដែលមាន self-loop bearer ជាមួយគ្នាប៉ុណ្ណោះ ដូច្នេះវាអាចត្រឹមតែ
+បង្រួមសិទ្ធិចូលប្រើ ហើយ id ដែលមិនអាចដោះស្រាយបាននឹងត្រូវបដិសេធ។
 
-ប្រសិនបើគ្មានម៉ូដែលរូបភាពណាមួយត្រូវបានអនុញ្ញាតសម្រាប់ key នោះ ផ្លូវ describe នឹងថយចេញ ហើយ
-សំណើឆ្លងកាត់ដោយមិនផ្លាស់ប្តូរ ដែលជាឥរិយាបថ fail-open ដូចគ្នានឹងរបាំងការពារដែលត្រូវបានបិទ
+ប្រសិនបើគ្មានម៉ូដែលចក្ខុវិស័យណាមួយត្រូវបានអនុញ្ញាតសម្រាប់ key នោះ ផ្លូវពិពណ៌នានឹងដកខ្លួន
+ហើយសំណើនឹងឆ្លងកាត់ដោយមិនផ្លាស់ប្តូរ ដែលជាឥរិយាបថ fail-open ដូចគ្នានឹងរបាំងការពារដែលត្រូវបានបិទ
 (meta `{ skipped: true, reason: "no_permitted_vision_model" }`)។
-សំណើដែលគ្មាន key និង keys ដែលគ្មានការរឹតត្បិតទាំងនេះ មានឥរិយាបថដូចមុនទាំងស្រុង។
+សំណើដែលគ្មាន key និង key ដែលគ្មានការរឹតបន្តឹងទាំងនេះ នឹងមានឥរិយាបថដូចពីមុនទាំងស្រុង។
 
-#### Prompt ពិពណ៌នាដែលដឹងពីភារកិច្ច (`modalityBridgeVisionTaskAware`)
+#### Prompt ពិពណ៌នាដែលយល់ដឹងអំពីភារកិច្ច (`modalityBridgeVisionTaskAware`)
 
 លំនាំដើមគឺ **true**។ `composeVisionPrompt()` (`visionBridgeHelpers.ts`) បន្ថែម
-អត្ថបទនៃ **សារចុងក្រោយរបស់អ្នកប្រើ** (កាត់ត្រឹម 500 តួអក្សរ) ទៅកាន់ prompt
-ពិពណ៌នាគោល ដើម្បីតម្រង់ទិសការពិពណ៌នាទៅរកអ្វីដែលអ្នកប្រើពិតជាបានស្នើសុំ
-(លំនាំ codex-vision-proxy) និងស្នើឱ្យម៉ូដែល vision ចម្លងអត្ថបទដែលមើលឃើញ។
-នៅពេលបិទ flag — ឬគ្មានអត្ថបទពីអ្នកប្រើ — prompt គោលត្រូវបានប្រើដោយគ្មានការកែប្រែ។
+អត្ថបទនៃ **សារចុងក្រោយរបស់អ្នកប្រើប្រាស់** (កាត់ឱ្យនៅត្រឹម 500 តួអក្សរ) ទៅក្នុង prompt
+ពិពណ៌នាមូលដ្ឋាន ដោយតម្រង់ការពិពណ៌នាទៅរកអ្វីដែលអ្នកប្រើប្រាស់បានសួរពិតប្រាកដ
+(លំនាំ codex-vision-proxy) និងស្នើឱ្យម៉ូដែលចក្ខុវិស័យចម្លងអត្ថបទដែលមើលឃើញ។
+នៅពេលបិទ flag — ឬគ្មានអត្ថបទអ្នកប្រើប្រាស់ — prompt មូលដ្ឋានត្រូវបានប្រើដោយមិនកែប្រែ។
 
-សំណើដែលឆបគ្នាជាមួយ OpenAI ផ្ទាល់ខ្លួនរបស់ self-loop សម្រាប់ការពិពណ៌នា (`callVisionModelSingle()`
-ក្នុង `visionBridgeHelpers.ts`) តែងតែស្នើ `image_url.detail: "high"` —
-ដោយគ្មានលក្ខខណ្ឌ សម្រាប់គ្រប់ caller/provider ទាំងអស់ និងមិនអាស្រ័យលើសញ្ញាណាមួយពី client។
-ការយកសំណាកកម្រិតលម្អិតទាបធ្វើឱ្យភាពត្រឹមត្រូវរបស់ OCR ថយចុះ សម្រាប់កិច្ចការចម្លង
-អត្ថបទដែល prompt នេះស្នើសុំយ៉ាងជាក់លាក់ ដូច្នេះ describe call ខ្លួនវាតែងតែស្នើ
-កម្រិតលម្អិតខ្ពស់ ដោយមិនគិតពីកម្រិតលម្អិតដែលសំណើចូលដើមបានប្រើ។ វា
-ប៉ះពាល់តែ body នៃសំណើពិពណ៌នាខាងក្នុងប៉ុណ្ណោះ; វាមិនផ្លាស់ប្ដូររបៀបដែល
-OmniRoute បញ្ជូនបន្ត `image_url.detail` ផ្ទាល់របស់ caller នៅលើសំណើចម្បងទេ —
-លំនាំដើមនោះត្រូវបានអនុវត្តដោយឡែក និងសម្រាប់តែ OpenCode clients ដែលបានរកឃើញប៉ុណ្ណោះ ក្នុង
-`defaultImageDetail()` (`open-sse/handlers/chatCore/upstreamBody.ts`)។ Branch
-នៃ wire format របស់ Anthropic ក្នុង describe self-loop មិនមាន field `detail`
-ទេ ហើយមិនរងឥទ្ធិពលពីលំនាំដើមទាំងពីរឡើយ។
+សំណើដែលឆបគ្នាជាមួយ OpenAI របស់ describe self-loop (`callVisionModelSingle()`
+នៅក្នុង `visionBridgeHelpers.ts`) តែងតែស្នើ `image_url.detail: "high"` —
+ដោយគ្មានលក្ខខណ្ឌ សម្រាប់គ្រប់ caller/provider ទាំងអស់ និងមិនពឹងផ្អែកលើសញ្ញាណាមួយពី client។
+ការយកគំរូកម្រិតព័ត៌មានលម្អិតទាបធ្វើឱ្យភាពត្រឹមត្រូវរបស់ OCR ថយចុះ សម្រាប់ភារកិច្ចចម្លងអត្ថបទ
+ដែល prompt នេះស្នើជាក់ស្តែង ដូច្នេះការហៅ describe ខ្លួនវាតែងតែស្នើកម្រិតព័ត៌មានលម្អិតខ្ពស់
+ដោយមិនគិតពីកម្រិតព័ត៌មានលម្អិតដែលសំណើដើមចូលមកបានប្រើ។ វាប៉ះពាល់តែ body នៃសំណើ
+describe ខាងក្នុងប៉ុណ្ណោះ; វាមិនផ្លាស់ប្តូររបៀបដែល OmniRoute បញ្ជូនបន្ត
+`image_url.detail` ផ្ទាល់របស់ caller នៅលើសំណើចម្បងទេ — លំនាំដើមនោះត្រូវបានអនុវត្តដាច់ដោយឡែក
+ហើយសម្រាប់តែ client OpenCode ដែលបានរកឃើញប៉ុណ្ណោះ នៅក្នុង
+`defaultImageDetail()` (`open-sse/handlers/chatCore/upstreamBody.ts`)។ សាខា
+wire-format របស់ Anthropic នៃ describe self-loop មិនមាន field `detail` ទេ
+ហើយមិនរងផលប៉ះពាល់ដោយលំនាំដើមណាមួយឡើយ។
 
-#### កម្រិតអតិបរមានៃលទ្ធផលពិពណ៌នា (`modalityBridgeVisionMaxChars`)
+#### កម្រិតអតិបរមានៃលទ្ធផល describe (`modalityBridgeVisionMaxChars`)
 
-| Key                            | លំនាំដើម | ចន្លោះ          |
+| Key                            | លំនាំដើម | ជួរ             |
 | ------------------------------ | -------- | --------------- |
 | `modalityBridgeVisionMaxChars` | `0`      | `0` ឬ 100–50000 |
 
-`0` (លំនាំដើម) មានន័យថា **គ្មានកម្រិតអតិបរមា** — ការពិពណ៌នាដែលត្រឡប់ដោយ
-`callVisionModel()` ត្រូវបានបញ្ជូនបន្តដោយគ្មានការកែប្រែ ដើម្បីរក្សាឥរិយាបថ
-ដែលមានស្រាប់។ តម្លៃណាមួយក្នុងចន្លោះ 100–50000 នឹងកាត់ការពិពណ៌នា ដោយបន្ថែម
-បច្ច័យ `…` មុនពេលវាត្រូវបានបញ្ចូលត្រឡប់ជាទម្រង់ `[Image N]: <description>`
-(`VisionBridgeGuardrail.preCall()` ក្នុង `src/lib/guardrails/visionBridge.ts`)។
-បង្កើនតម្លៃនេះសម្រាប់កិច្ចការ OCR ដែលមានព័ត៌មានលម្អិតច្រើន ដែលម៉ូដែលបន្ទាប់ត្រូវការ
-ការចម្លងទាំងមូល; បន្ថយវាដើម្បីកំណត់ការប្រើប្រាស់ token ពីម៉ូដែល vision ដែលផ្ដល់
-ការពិពណ៌នាច្រើន។ Field នៅលើ dashboard ស្ថិតក្នុងផ្ទាំង Advanced នៃ Vision tab
-(`modality-bridge-max-chars` ក្នុង `ModalityBridgeVisionTab.tsx`) ហើយកែតម្លៃ
-ណាមួយចន្លោះ 1 និង 99 ឡើងទៅកម្រិតអប្បបរមា 100 ខណៈដែលរក្សា `0`
-ដែលបានបញ្ជាក់ច្បាស់ឱ្យនៅដដែល — `0` គឺជាតម្លៃ Zod ដែលមានសុពលភាពដោយខ្លួនឯង
-(`z.union([z.literal(0), z.number().int().min(100).max(50000)])`) មិនមែនគ្រាន់តែ
-ជាលំនាំដើម "មិនបានកំណត់" នោះទេ។
+`0` (លំនាំដើម) មានន័យថា **គ្មានកម្រិតអតិបរមា** — ការពិពណ៌នាដែលបញ្ជូនត្រឡប់ដោយ
+`callVisionModel()` ត្រូវបានបញ្ជូនបន្តដោយមិនកែប្រែ ដើម្បីរក្សាឥរិយាបថដែលមានស្រាប់។
+តម្លៃណាមួយក្នុងជួរ 100–50000 នឹងកាត់ការពិពណ៌នា ហើយបន្ថែមបច្ច័យ
+`…` មុនពេលវាត្រូវបានបញ្ចូលត្រឡប់ជាទម្រង់ `[Image N]: <description>`
+(`VisionBridgeGuardrail.preCall()` នៅក្នុង `src/lib/guardrails/visionBridge.ts`)។
+បង្កើនតម្លៃនេះសម្រាប់ភារកិច្ច OCR ដែលមានព័ត៌មានលម្អិតច្រើន ដែលម៉ូដែល downstream
+ត្រូវការការចម្លងអត្ថបទពេញលេញ; បន្ថយវាដើម្បីកំណត់ការប្រើប្រាស់ token លើម៉ូដែលចក្ខុវិស័យ
+ដែលផ្តល់ការពិពណ៌នាវែង។ field នៅលើ dashboard ស្ថិតក្នុងផ្ទាំង Advanced នៃ tab Vision
+(`modality-bridge-max-chars` នៅក្នុង `ModalityBridgeVisionTab.tsx`) ហើយវាបង្កើនតម្លៃណាមួយ
+ចន្លោះពី 1 ដល់ 99 ឱ្យដល់កម្រិតអប្បបរមា 100 ខណៈដែលរក្សាតម្លៃ `0` ដែលបានកំណត់ជាក់លាក់
+ឱ្យនៅដដែល — `0` គឺជាតម្លៃ Zod ត្រឹមត្រូវដោយខ្លួនវា
+(`z.union([z.literal(0), z.number().int().min(100).max(50000)])`) មិនមែនគ្រាន់តែជា
+លំនាំដើម "មិនបានកំណត់" នោះទេ។
 
-#### Cache សម្រាប់ការពិពណ៌នា (`modalityBridge/bridgeCache.ts`)
+#### ឃ្លាំងសម្ងាត់ describe (`modalityBridge/bridgeCache.ts`)
 
-LRU + TTL cache ក្នុង memory សម្រាប់លទ្ធផលពិពណ៌នា ដែលត្រូវបានចែករំលែកទូទាំង process។
+ឃ្លាំងសម្ងាត់ LRU + TTL ក្នុងអង្គចងចាំ ដែលបានចែករំលែកទូទាំង process។
 Key = `sha256(imageRef + composedPrompt + configuredBridgeModel)` ជាមួយ
-ការកំណត់ស៊ុមដោយបុព្វបទប្រវែង (គ្មានការប៉ះទង្គិចព្រំដែន field)។ សមាសភាគ model គឺជា
-bridge model ដែលបាន **កំណត់រចនាសម្ព័ន្ធ** មិនមែនជាម៉ូដែលដែលពិតជាបានឆ្លើយទេ —
-`callVisionModel` អាចប្រើ fallback នៅខាងក្នុង ហើយការបង្កើត key តាមការសាកល្បងនីមួយៗ
-នឹងធ្វើឱ្យ cache បែកជាផ្នែកៗ។ ការពិពណ៌នាដែលបរាជ័យមិនត្រូវបាន cache ឡើយ។ ការកំណត់៖
+length-prefix framing (មិនមានការប៉ះទង្គិចព្រំដែន field)។ សមាសភាគ model គឺជា
+ម៉ូដែល bridge ដែលបាន **កំណត់រចនាសម្ព័ន្ធ** មិនមែនម៉ូដែលដែលបានឆ្លើយតបពិតប្រាកដទេ —
+`callVisionModel` អាចប្រើ fallback នៅខាងក្នុង ហើយការបង្កើត key តាមការប៉ុនប៉ងនីមួយៗ
+នឹងធ្វើឱ្យឃ្លាំងសម្ងាត់បែកខ្ញែក។ ការពិពណ៌នាដែលបរាជ័យមិនត្រូវបានរក្សាទុកក្នុងឃ្លាំងសម្ងាត់ទេ។
+ការកំណត់៖
 
-| Key                             | លំនាំដើម | ចន្លោះ  |
+| Key                             | លំនាំដើម | ជួរ     |
 | ------------------------------- | -------- | ------- |
 | `modalityBridgeCacheEnabled`    | `true`   | —       |
 | `modalityBridgeCacheTtlMinutes` | `60`     | 1–1440  |
@@ -160,146 +159,152 @@ bridge model ដែលបាន **កំណត់រចនាសម្ព័ន�
 
 #### ការធ្វើឱ្យរូបភាពពីចម្ងាយមានទម្រង់ស្តង់ដារ (self-loop describe/base64 fetch)
 
-នៅពេល bridge ទាញយករូបភាព **ពីចម្ងាយ** ដោយខ្លួនឯង — Anthropic describe
-self-call និងការបម្លែង base64 សម្រាប់ claude-wire-format
-(`ensureBase64ImagesForClaudeWire`) ទាំងពីរតាមរយៈ
-`fetchRemoteImageAsDataUri()` ក្នុង `visionBridgeHelpers.ts` — data
-URI ដែលទទួលបានត្រូវបានបញ្ជូនកាត់ `normalizeDataUri()`
-(`open-sse/utils/imageNormalize.ts`) មុនពេលបង្កប់ក្នុងសំណើទៅកាន់ vision model។
-រូបភាពដែលធំពេកត្រូវបានបន្ថយទំហំឱ្យគែមវែងមានប្រវែង **2048px** (ត្រូវនឹង
-កម្រិតប្ដូរទំហំអតិបរមាដែល OpenAI/Anthropic អនុវត្តនៅផ្នែក server រួចហើយ) ដែលកាត់បន្ថយ
-ចំនួន byte/latency នៃការ upload ដោយមិនផ្លាស់ប្ដូរអ្វីដែល vision model មើលឃើញ។
-ការប្ដូរទំហំប្រើ `sharp` ដែលត្រូវបាន load តាម dynamic import៖ នៅលើ platform ដែល
-native binary របស់វាមិនអាច load បាន `normalizeDataUri()` **មិនដែល throw** ទេ —
-វា fallback ទៅការបញ្ជូនបន្ត byte ដើមដោយគ្មានការកែប្រែ ដូច្នេះ path សម្រាប់
-describe/base64-conversion តែងតែបន្តដំណើរការ។ Byte ដែលមិនមែនជារូបភាព
-(fetch ដែលមិនបានត្រឡប់រូបភាពដែលអាច decode បាន) ក៏ត្រូវបានបញ្ជូនបន្តដោយគ្មាន
-ការកែប្រែដែរ។ ការធ្វើ normalization នេះត្រូវបានកំណត់វិសាលភាពចំពោះតែរូបភាពដែល
-bridge ទាញយកសម្រាប់ self-call ផ្ទាល់ខ្លួនប៉ុណ្ណោះ — វាមិនដែលត្រូវបានអនុវត្តចំពោះ
-raw passthrough payload របស់ caller ទេ ដែលស្របតាមគោលការណ៍កែប្រែតែនៅពេល opt-in
+នៅពេល bridge ទាញយករូបភាព **ពីចម្ងាយ** ដោយខ្លួនវា — Anthropic describe
+self-call និងការបម្លែងទៅជា base64 ក្នុង claude-wire-format
+(`ensureBase64ImagesForClaudeWire`) ដែលទាំងពីរប្រើ
+`fetchRemoteImageAsDataUri()` នៅក្នុង `visionBridgeHelpers.ts` — data
+URI ដែលបានលទ្ធផលត្រូវបានបញ្ជូនឆ្លងកាត់ `normalizeDataUri()`
+(`open-sse/utils/imageNormalize.ts`) មុនពេលបង្កប់ក្នុងសំណើទៅម៉ូដែលចក្ខុវិស័យ។
+រូបភាពដែលមានទំហំធំពេកត្រូវបានបន្ថយមាត្រដ្ឋានឱ្យជ្រុងវែងមានទំហំ **2048px**
+(ត្រូវគ្នានឹងកម្រិតប្តូរទំហំអតិបរមាដែល OpenAI/Anthropic អនុវត្តនៅ server-side រួចហើយ)
+ដែលកាត់បន្ថយចំនួន byte/latency នៃការផ្ទុកឡើង ដោយមិនផ្លាស់ប្តូរអ្វីដែលម៉ូដែលចក្ខុវិស័យមើលឃើញ។
+ការប្តូរទំហំប្រើ `sharp` ដែលផ្ទុកតាមរយៈ dynamic import៖ នៅលើ platform ដែល native
+binary របស់វាបរាជ័យក្នុងការផ្ទុក `normalizeDataUri()` **មិនដែល throw ទេ** — វា fallback
+ទៅការបញ្ជូន byte ដើមតាមធម្មតា ដូច្នេះផ្លូវ describe/base64-conversion តែងតែបន្តដំណើរការ។
+byte ដែលមិនមែនជារូបភាព (ការទាញយកដែលមិនបានបញ្ជូនរូបភាពដែលអាច decode បានត្រឡប់មកវិញ)
+ក៏ត្រូវបានបញ្ជូនបន្តដោយមិនកែប្រែផងដែរ។ ការធ្វើឱ្យមានទម្រង់ស្តង់ដារនេះត្រូវបានកំណត់វិសាលភាព
+ត្រឹមរូបភាពដែល bridge ទាញយកសម្រាប់ self-call របស់វាប៉ុណ្ណោះ — វាមិនត្រូវបានអនុវត្ត
+លើ payload passthrough ដើមរបស់ caller ឡើយ ស្របតាមគោលការណ៍កែប្រែតែនៅពេល opt-in
 (Hard Rule #20)។
 
-#### Schema នៃការកំណត់ + migration
+#### Schema ការកំណត់ + migration
 
-Key ថ្មី `modalityBridge*` ត្រូវបាន validate ដោយ Zod ក្នុង `updateSettingsSchema`
+Key `modalityBridge*` ថ្មីត្រូវបានផ្ទៀងផ្ទាត់ដោយ Zod នៅក្នុង `updateSettingsSchema`
 (`src/shared/validation/settingsSchemas.ts`)៖ `modalityBridgeVisionEnabled`,
 `modalityBridgeVisionMode`, `modalityBridgeVisionModel`,
 `modalityBridgeVisionTaskAware`, `modalityBridgeVisionPrompt`,
 `modalityBridgeVisionTimeout`, `modalityBridgeVisionMaxImages`,
-`modalityBridgeVisionMaxChars`, ក្រុម `modalityBridgeCache*` ទាំងបី និងក្រុម
+`modalityBridgeVisionMaxChars`, ក្រុមទាំងបី `modalityBridgeCache*` និងក្រុម
 `modalityBridgeAudio*` ដែលប្រើដោយ Audio Bridge។ Migration
 `141_modality_bridge_settings.sql` ចម្លងតម្លៃ legacy `visionBridge*` ដែលមានស្រាប់
-ទៅកាន់ key ថ្មីដែលត្រូវគ្នា (idempotent និងមិនដែលសរសេរជាន់លើតម្លៃ
-`modalityBridge*` ដែល operator បានកំណត់); key legacy នៅតែត្រូវបានទទួលយកជា
-read fallback សម្រាប់ release cycle មួយ។
+ទៅកាន់ key ថ្មីដែលត្រូវគ្នា (idempotent និងមិនដែលសរសេរជាន់លើតម្លៃ `modalityBridge*`
+ដែល operator បានកំណត់ទេ); key legacy នៅតែត្រូវបានទទួលយកជា read fallback
+សម្រាប់វដ្តចេញផ្សាយមួយ។
 
-#### Header សម្រាប់តម្លាភាព + ស្ថិតិ
+#### Header តម្លាភាព + ស្ថិតិ
 
-Response ដែលបានបម្លែងដោយការពិពណ៌នា មាន
+Response ដែលត្រូវបានបម្លែងដោយ describe មាន
 `x-omniroute-modality-bridge: image->text;model=<visionModel>;parts=<n>`
-(បង្កើតដោយ `buildModalityBridgeHeader()` ក្នុង `modalityBridge/bridgeStats.ts`
-និងបោះត្រាដោយ `withModalityBridgeHeader()` ក្នុង `src/sse/handlers/chatHelpers.ts`)។
-សំណើដែលត្រូវបាន reroute **មិនមាន** header ទេ — payload មិនត្រូវបានប៉ះពាល់ ហើយ
-ការប្ដូរម៉ូដែលអាចមើលឃើញរួចហើយក្នុង field `model` នៃ response body។
+(បង្កើតដោយ `buildModalityBridgeHeader()` នៅក្នុង `modalityBridge/bridgeStats.ts`
+និងដាក់ដោយ `withModalityBridgeHeader()` នៅក្នុង `src/sse/handlers/chatHelpers.ts`)។
+សំណើដែលត្រូវបាន reroute ទទួលបាន **គ្មាន** header ទេ — payload មិនត្រូវបានកែប្រែ
+ហើយការប្តូរម៉ូដែលអាចមើលឃើញរួចហើយនៅក្នុង field `model` នៃ response body។
 
-`GET /api/modality-bridge/stats` (ការផ្ទៀងផ្ទាត់សម្រាប់ការគ្រប់គ្រង កម្រិតដូចគ្នានឹង
-`GET /api/settings`) ត្រឡប់ counter ក្នុង memory សម្រាប់ modality នីមួយៗ
+`GET /api/modality-bridge/stats` (ការផ្ទៀងផ្ទាត់សម្រាប់ការគ្រប់គ្រង ដែលមានកម្រិតដូចគ្នានឹង
+`GET /api/settings`) ត្រឡប់ចំនួនរាប់តាម modality ដែលរក្សាទុកក្នុងអង្គចងចាំ
 `{ attempts, successes, bridged, cacheHits, failures, totalLatencyMs,
-latencySamples, averageLatencyMs, lastUsedAt }` សម្រាប់ `vision`, `audio` និង
-`video`។ `averageLatencyMs` ប្រើ `latencySamples` ជាភាគបែង មិនមែន attempts
-ទាំងអស់ទេ; ប្រតិបត្តិការដែលគ្មានការវាស់ពេលវេលា មិនបង្កើត sample សូន្យមីលីវិនាទី
-ក្លែងក្លាយឡើយ។ `bridged` នៅតែជា alias ដែលរក្សាភាពឆបគ្នាថយក្រោយ សម្រាប់ការ
-បម្លែងដែលជោគជ័យ; attempts ដែលបរាជ័យមិនបង្កើនវាទេ។
-Counters ត្រូវបានកំណត់ឡើងវិញនៅពេល process ចាប់ផ្ដើមឡើងវិញតាមការរចនា
-(telemetry មិនមែន accounting ទេ)។
+latencySamples, averageLatencyMs, lastUsedAt }` សម្រាប់ `vision`, `audio`, និង
+`video`។ `averageLatencyMs` ប្រើ `latencySamples` ជាភាគបែង មិនមែនចំនួនការប៉ុនប៉ង
+ទាំងអស់ទេ។ ប្រតិបត្តិការដែលគ្មានទិន្នន័យកំណត់ពេលវេលា នឹងមិនបង្កើតគំរូ
+សូន្យមិល្លីវិនាទីក្លែងក្លាយឡើយ។ `bridged` នៅតែជាឈ្មោះជំនួសដែលអាចប្រើជាមួយ
+កំណែចាស់បាន សម្រាប់ការបម្លែងដែលជោគជ័យ។ ការប៉ុនប៉ងដែលបរាជ័យមិនបង្កើនវាទេ។
+តាមការរចនា ចំនួនរាប់នឹងកំណត់ឡើងវិញនៅពេលដំណើរការចាប់ផ្តើមឡើងវិញ
+(ទិន្នន័យ telemetry មិនមែនគណនេយ្យទេ)។
 
-#### ការកំណត់រចនាសម្ព័ន្ធ Dashboard
+#### ការកំណត់រចនាសម្ព័ន្ធផ្ទាំងគ្រប់គ្រង
 
-ទំព័រ dashboard ដាច់ដោយឡែកគឺ
-`/dashboard/settings/modality-bridge`។ Tabs `Vision`, `Audio` និង
-`Video` ដែលអាចចូលប្រើតាម URL របស់វា រក្សាទុក query parameters ខណៈពេលប្ដូរតម្លៃ
-`tab`។ Tab Vision បង្ហាញការបើកដំណើរការ mode ការជ្រើសរើស model (រួមទាំងតម្លៃ
-លំនាំដើមដោយស្វ័យប្រវត្តិ) prompting ដែលស្គាល់ task, timeout/image/description-length/cache
-limits កម្រិតខ្ពស់, runtime
-counters និង sample request ដែលមានការការពារ។ Tab Audio ក៏ដំណើរការផ្ទាល់ដែរ៖ វាបង្ហាញ
-ការបើកដំណើរការ model picker សម្រាប់តែ STT ដែលមាន Auto, timeout/max-clip limits,
-audio counters និងការធ្វើតេស្ត sample `input_audio`។ Tab Video ដំណើរការបាន៖ វារាយការណ៍
-ស្ថានភាព runtime របស់ FFmpeg/ffprobe — មួយក្នុងចំណោមស្ថានភាព UI ច្បាស់លាស់ទាំងបួន (`unknown` ខណៈពេល
-probe កំពុងដំណើរការ ឬមិនអាចបញ្ចប់បាន, `restricted` នៅលើ dashboard host ដែលមិនមែនជា loopback
-ដែល probe ត្រូវបានរំលងនៅ client-side, `unavailable` បន្ទាប់ពីបាន probe និងបញ្ជាក់ថាបាត់,
-ឬ `available` ជាមួយនឹង versions របស់ FFmpeg/ffprobe) — រក្សាទុក
-enable/model/frame/video/timeout limits, ចម្រោះ model picker ឱ្យនៅសល់តែ models ដែលគាំទ្រ vision
-និងបង្ហាញ video counters។
+ទំព័រផ្ទាំងគ្រប់គ្រងដាច់ដោយឡែកគឺ
+`/dashboard/settings/modality-bridge`។ ផ្ទាំង `Vision`, `Audio`,
+និង `Video` ដែលអាចចូលប្រើតាម URL រក្សាទុកប៉ារ៉ាម៉ែត្រ query ខណៈពេលប្ដូរតម្លៃ
+`tab`។ ផ្ទាំង Vision ផ្ដល់នូវការបើកដំណើរការ, mode, ការជ្រើសរើសម៉ូដែល
+(រួមទាំងលំនាំដើមស្វ័យប្រវត្តិ), prompt ដែលយល់ដឹងអំពីភារកិច្ច, ដែនកំណត់កម្រិតខ្ពស់
+សម្រាប់ timeout/រូបភាព/ប្រវែងការពិពណ៌នា/cache, ចំនួនរាប់ពេលដំណើរការ,
+និងសំណើគំរូដែលមានការការពារ។ ផ្ទាំង Audio ក៏ដំណើរការជាក់ស្ដែងផងដែរ៖ វាផ្ដល់នូវ
+ការបើកដំណើរការ, កម្មវិធីជ្រើសរើសម៉ូដែលសម្រាប់តែ STT ដែលមាន Auto, ដែនកំណត់
+timeout/ប្រវែង clip អតិបរមា, ចំនួនរាប់ audio, និងការធ្វើតេស្តគំរូ `input_audio`។
+ផ្ទាំង Video អាចប្រើបានពេញលេញ៖ វារាយការណ៍ស្ថានភាពពេលដំណើរការរបស់
+FFmpeg/ffprobe ដែលជាស្ថានភាព UI មួយក្នុងចំណោមបួនដែលបានកំណត់ច្បាស់លាស់
+(`unknown` ខណៈពេល probe កំពុងដំណើរការ ឬមិនអាចបញ្ចប់បាន, `restricted` នៅលើ
+ម៉ាស៊ីនផ្ទុកផ្ទាំងគ្រប់គ្រងដែលមិនមែនជា loopback ដែល probe ត្រូវបានរំលងនៅផ្នែក
+client, `unavailable` បន្ទាប់ពីបាន probe និងបញ្ជាក់ថាមិនមាន, ឬ `available`
+ជាមួយកំណែ FFmpeg/ffprobe) — រក្សាទុកដែនកំណត់ enable/model/frame/video/timeout,
+ច្រោះកម្មវិធីជ្រើសរើសម៉ូដែលឱ្យនៅសល់តែម៉ូដែលដែលមានសមត្ថភាព vision និងបង្ហាញ
+ចំនួនរាប់ video។
 
-កាត Vision Bridge ចាស់នៅក្រោម AI settings គឺជា compatibility link ទៅកាន់
-ទំព័រថ្មី; វាលែងកាន់កាប់ច្បាប់ចម្លងទីពីរនៃ form ទៀតហើយ។ Media Providers ក៏
-ភ្ជាប់ workflows Image-to-Text និង Speech-to-Text ទៅកាន់ tabs Modality
-Bridge ដែលត្រូវគ្នា ដោយមិនលុប Speech-to-Text playground ដែលមានស្រាប់ឡើយ។
+កាត Vision Bridge ចាស់នៅក្រោមការកំណត់ AI គឺជាតំណសម្រាប់ភាពឆបគ្នាទៅកាន់
+ទំព័រថ្មី។ វាលែងគ្រប់គ្រងច្បាប់ចម្លងទីពីរនៃសំណុំបែបបទទៀតហើយ។ Media Providers
+ក៏ភ្ជាប់លំហូរការងារ Image-to-Text និង Speech-to-Text ទៅកាន់ផ្ទាំង Modality
+Bridge ដែលត្រូវគ្នា ដោយមិនលុប playground Speech-to-Text ដែលមានស្រាប់ឡើយ។
 
-**ការរំលង self-loop admission:** នៅពេល describe call ឆ្លងកាត់
-`/v1` self-loop ផ្ទាល់របស់ OmniRoute (provider model មិនស្តង់ដារ), sub-request ផ្ញើ
-`x-omniroute-admission-bypass: internal` ហើយត្រូវបានផ្ទៀងផ្ទាត់ជាមួយ self-loop credential
-ដែលបាន resolve — sentinel `sk_omniroute` មូលដ្ឋានក្នុង local mode ឬ env key
-`OMNIROUTE_API_KEY` / `ROUTER_API_KEY` ដែល operator បានកំណត់ (#1350) ដូច្នេះ
-deployments ដែលមាន `REQUIRE_API_KEY=true` នៅតែអាចដំណើរការ describe call បាន។ ការរំលងនេះ
-ត្រូវបានអនុញ្ញាតសម្រាប់តែ credentials ជាក់លាក់ទាំងនោះប៉ុណ្ណោះ ដូច្នេះ external clients មិនអាចប្រើ
-header ដើម្បីរំលង admission បានទេ។
+**ការរំលងការអនុញ្ញាត self-loop៖** នៅពេលការហៅ describe ឆ្លងកាត់ self-loop
+`/v1` ផ្ទាល់របស់ OmniRoute (ម៉ូដែល provider មិនស្តង់ដារ) សំណើរងនឹងផ្ញើ
+`x-omniroute-admission-bypass: internal` ហើយត្រូវបានផ្ទៀងផ្ទាត់ដោយប្រើ
+ព័ត៌មានសម្ងាត់ self-loop ដែលបានដោះស្រាយ — sentinel មូលដ្ឋាន `sk_omniroute`
+ក្នុង local mode ឬ env key `OMNIROUTE_API_KEY` / `ROUTER_API_KEY` ដែល operator
+បានកំណត់ (#1350) ដើម្បីឱ្យ deployment ដែលមាន `REQUIRE_API_KEY=true` នៅតែអាច
+ដំណើរការការហៅ describe បាន។ ការរំលងនេះត្រូវបានអនុញ្ញាតសម្រាប់តែព័ត៌មានសម្ងាត់
+ជាក់លាក់ទាំងនោះប៉ុណ្ណោះ ដូច្នេះ client ខាងក្រៅមិនអាចប្រើ header នេះដើម្បី
+រំលងការអនុញ្ញាតបានទេ។
 
-តម្លៃលំនាំដើមចាស់ស្ថិតនៅក្នុង `src/shared/constants/visionBridgeDefaults.ts`;
-តម្លៃលំនាំដើមថ្មីសម្រាប់ mode/task-aware/cache និង settings resolver ស្ថិតនៅក្នុង
-`src/shared/constants/modalityBridgeDefaults.ts`។ Guardrail បង្ហាញ constructor option
-`deps` ដើម្បីឱ្យ tests អាច inject implementations ក្លែងក្លាយរបស់ `getSettings` និង
+លំនាំដើមចាស់ស្ថិតនៅក្នុង `src/shared/constants/visionBridgeDefaults.ts`;
+លំនាំដើមថ្មីសម្រាប់ mode/task-aware/cache និង resolver សម្រាប់ការកំណត់ ស្ថិតនៅក្នុង
+`src/shared/constants/modalityBridgeDefaults.ts`។ Guardrail ផ្ដល់ជម្រើស constructor
+`deps` ដើម្បីឱ្យតេស្តអាចបញ្ចូល implementation ក្លែងក្លាយនៃ `getSettings` និង
 `callVisionModel`។
 
 ### Audio Bridge (`audioBridge.ts`) — Modality Bridge PR-3
 
-ស្ទាក់ចាប់ chat requests ដែលផ្ទុក audio មុនពេលពួកវាទៅដល់ target ដែលមិនត្រូវបាន
-ដឹងថាអាចទទួល audio input។ វាមិនដែល reroute chat request ទេ៖ audio parts ត្រូវបាន
-transcribe តាមរយៈ OpenAI-compatible multipart endpoint ដែលមានស្រាប់ ហើយ
-chat model ដែលបានជ្រើសរើសបន្តដំណើរការជាមួយ text transcripts។
+ស្ទាក់ចាប់សំណើ chat ដែលមាន audio មុនពេលវាទៅដល់គោលដៅដែលមិនត្រូវបានដឹងថា
+អាចទទួលយក audio input។ វាមិនដែលបង្វែរផ្លូវសំណើ chat ឡើយ៖ ផ្នែក audio ត្រូវបាន
+បម្លែងជាអត្ថបទតាមរយៈ endpoint multipart ដែលឆបគ្នាជាមួយ OpenAI ដែលមានស្រាប់
+ហើយម៉ូដែល chat ដែលបានជ្រើសរើសបន្តដំណើរការជាមួយអត្ថបទដែលបានចម្លង។
 
 លំហូរ៖
 
-1. Resolve `supportsAudio` តាមរយៈ `getResolvedModelCapabilities()`។ Metadata ក្នុង
-   provider-registry ដែលបានកំណត់ច្បាស់លាស់មានអាទិភាព បន្ទាប់មក static model metadata ហើយបន្ទាប់មក
-   `modalities_input` ដែលបាន sync។ Input list ដែលបានប្រកាសដោយគ្មាន `audio` គឺ `false`; បើគ្មាន
-   capability evidence នោះវានៅជា `null`។ ទាំង `false` និង `null` ធ្វើឱ្យ conservative
-   bridge សកម្ម ខណៈដែល `true` រំលងវា។
-2. Resolve settings `modalityBridgeAudio*` និងស្រង់ top-level audio parts ដែលអាច splice
-   បានពី message នីមួយៗ តាមរយៈ detector `detectMediaParts()` ដែលប្រើរួមគ្នា។
-   Wire shapes ដែលគាំទ្រគឺ OpenAI `input_audio`, `audio_url` និង
-   `source.media_type: "audio/*"`។ Nested audio ត្រូវបានរកឃើញសម្រាប់ routing ប៉ុន្តែមិនត្រូវបាន
-   លុបដោយ splice path ទេ។ ការងារត្រូវបានកំណត់ត្រឹម `modalityBridgeAudioMaxClips`;
-   parts បន្ទាប់នៅមិនផ្លាស់ប្ដូរ។
-3. គោរពតាម `provider/model` ដែលបានកំណត់ ឬឱ្យ `selectAudioBridgeModel()` ស្វែងរកតាម
-   `AUDIO_TRANSCRIPTION_PROVIDERS` ក្នុងលំដាប់ catalog ថេរ ហើយជ្រើសរើស model ដំបូង
-   ដែលមាន active provider credential អាចប្រើបាន។
-4. `callAudioTranscription()` បម្លែង base64/data-URI audio ទៅជា multipart
-   `file` ឬទាញយក remote `audio_url` តាមរយៈ public-only outbound
-   guard ដែលមាន DNS pinning និងដែនកំណត់ 25 MB។ បន្ទាប់មកវា POSTs file និង model ដែលបានជ្រើសរើស
-   ទៅកាន់ local `/v1/audio/transcriptions` self-loop ដោយផ្ទៀងផ្ទាត់ជាមួយ
-   `resolveSelfLoopBearer()`។ Transcription route ដែលមានស្រាប់អនុវត្ត
-   credential lookup, cooldown/rate-limit handling និង provider dispatch ជាធម្មតា។
-5. Calls ដែលជោគជ័យជំនួស parts របស់វាដោយ `[Audio N]: <transcript>`។ Calls
-   ដំណើរការជាមួយ `Promise.allSettled`: failure នីមួយៗរក្សា audio part ដើមនោះ
-   (#4012 contract)។ ប្រសិនបើ calls ទាំងអស់បរាជ័យ ហើយ target ត្រូវបានបញ្ជាក់ថា
-   `supportsAudio === false`, parts នឹងក្លាយជា
-   `[Audio N]: (unavailable — no STT provider connected)` (#8430 contract)។ សម្រាប់
-   target មិនស្គាល់ (`null`), លទ្ធផលដែលបរាជ័យទាំងអស់នៅតែមិនផ្លាស់ប្ដូរ។ Target ដែលបានបញ្ជាក់ថា
-   text-only និងគ្មាន STT credential អាចប្រើបាន នឹងទទួល explicit
-   stub ដូចគ្នា ដោយមិនធ្វើ network call។
+1. ដោះស្រាយ `supportsAudio` តាមរយៈ `getResolvedModelCapabilities()`។ metadata
+   ច្បាស់លាស់ពី provider-registry មានអាទិភាព បន្ទាប់មក metadata ម៉ូដែលថេរ ហើយ
+   បន្ទាប់មក `modalities_input` ដែលបានធ្វើសមកាលកម្ម។ បញ្ជី input ដែលបានប្រកាស
+   ដោយគ្មាន `audio` មានតម្លៃ `false`; ប្រសិនបើគ្មានភស្តុតាងអំពីសមត្ថភាព វានឹងមាន
+   តម្លៃ `null`។ ទាំង `false` និង `null` នឹងបើកដំណើរការ bridge បែបប្រុងប្រយ័ត្ន
+   ខណៈដែល `true` រំលងវា។
+2. ដោះស្រាយការកំណត់ `modalityBridgeAudio*` និងស្រង់ផ្នែក audio កម្រិតកំពូល
+   ដែលអាច splice បានពីគ្រប់សារ តាមរយៈ detector រួម `detectMediaParts()`។
+   ទម្រង់ wire ដែលគាំទ្រគឺ OpenAI `input_audio`, `audio_url`, និង
+   `source.media_type: "audio/*"`។ audio ដែលដាក់ជាន់នៅខាងក្នុងត្រូវបានរកឃើញ
+   សម្រាប់ការកំណត់ផ្លូវ ប៉ុន្តែមិនត្រូវបានដកចេញដោយ splice path ទេ។ បរិមាណការងារ
+   ត្រូវបានកំណត់ដោយ `modalityBridgeAudioMaxClips`; ផ្នែកបន្ទាប់ៗនៅតែមិនត្រូវបាន
+   កែប្រែ។
+3. គោរពតាម `provider/model` ដែលបានកំណត់ ឬអនុញ្ញាតឱ្យ
+   `selectAudioBridgeModel()` ស្វែងរកតាម `AUDIO_TRANSCRIPTION_PROVIDERS`
+   ក្នុងលំដាប់ catalog ថេរ ហើយជ្រើសរើសម៉ូដែលដំបូងដែលមានព័ត៌មានសម្ងាត់
+   provider សកម្ម និងអាចប្រើបាន។
+4. `callAudioTranscription()` បម្លែង audio ប្រភេទ base64/data-URI ទៅជា
+   `file` ប្រភេទ multipart ឬទាញយក `audio_url` ពីចម្ងាយតាមរយៈការការពារ outbound
+   សម្រាប់សាធារណៈប៉ុណ្ណោះ ជាមួយ DNS pinning និងដែនកំណត់ 25 MB។ បន្ទាប់មកវា
+   POST ឯកសារ និងម៉ូដែលដែលបានជ្រើសរើសទៅកាន់ self-loop ក្នុងមូលដ្ឋាន
+   `/v1/audio/transcriptions` ដែលបានផ្ទៀងផ្ទាត់ដោយ `resolveSelfLoopBearer()`។
+   route transcription ដែលមានស្រាប់អនុវត្តការស្វែងរកព័ត៌មានសម្ងាត់ធម្មតា,
+   ការគ្រប់គ្រង cooldown/rate-limit និងការបញ្ជូនទៅ provider។
+5. ការហៅដែលជោគជ័យជំនួសផ្នែករបស់វាដោយ `[Audio N]: <transcript>`។ ការហៅ
+   ដំណើរការជាមួយ `Promise.allSettled`៖ ការបរាជ័យនីមួយៗរក្សាទុកផ្នែក audio
+   ដើមនោះ (#4012 contract)។ ប្រសិនបើការហៅទាំងអស់បរាជ័យ ហើយគោលដៅត្រូវបាន
+   បញ្ជាក់ថា `supportsAudio === false` ផ្នែកទាំងនោះនឹងក្លាយជា
+   `[Audio N]: (មិនអាចប្រើបាន — គ្មាន STT provider ត្រូវបានភ្ជាប់)` (#8430 contract)។
+   សម្រាប់គោលដៅដែលមិនស្គាល់ (`null`) លទ្ធផលដែលបរាជ័យទាំងអស់នៅតែមិនត្រូវបាន
+   កែប្រែ។ គោលដៅដែលត្រូវបានបញ្ជាក់ថាទទួលតែអត្ថបទ និងគ្មានព័ត៌មានសម្ងាត់ STT
+   ដែលអាចប្រើបាន នឹងទទួល stub ច្បាស់លាស់ដូចគ្នា ដោយមិនចេញការហៅតាមបណ្ដាញ។
 
-Transcripts ដែលជោគជ័យប្រើ process-wide Modality Bridge LRU/TTL cache។ Key
-ផ្សំ audio reference, operation label ថេរ `audio-transcription`
-និង STT model ដែលបានជ្រើសរើស; failures មិនត្រូវបាន cache ឡើយ។ Audio attempts ធ្វើបច្ចុប្បន្នភាព
-shared counters `bridged`, `cacheHits`, `failures` និង `lastUsedAt`។
-Responses ដែលបាន transform មាន
-`x-omniroute-modality-bridge: audio->text;model=<sttModel>;parts=<n>`; requests ដែលមិនបាន
-ផ្លាស់ប្ដូរ មិនទទួល Audio Bridge segment ទេ។
+អត្ថបទចម្លងដែលជោគជ័យប្រើ cache LRU/TTL របស់ Modality Bridge ដែលចែករំលែកទូទាំង
+ដំណើរការ។ key រួមបញ្ចូល audio reference, ស្លាកប្រតិបត្តិការថេរ
+`audio-transcription` និងម៉ូដែល STT ដែលបានជ្រើសរើស។ ការបរាជ័យមិនត្រូវបានរក្សាទុក
+ក្នុង cache ឡើយ។ ការប៉ុនប៉ង audio ធ្វើបច្ចុប្បន្នភាពចំនួនរាប់រួម `bridged`,
+`cacheHits`, `failures`, និង `lastUsedAt`។ response ដែលបានបម្លែងមាន
+`x-omniroute-modality-bridge: audio->text;model=<sttModel>;parts=<n>`; សំណើដែល
+មិនត្រូវបានកែប្រែមិនទទួលបាន segment របស់ Audio Bridge ទេ។
 
-Runtime settings ត្រូវបានរក្សាទុកក្នុង DB និង validate ដោយ Zod៖
+ការកំណត់ពេលដំណើរការត្រូវបានគាំទ្រដោយ DB និងផ្ទៀងផ្ទាត់ដោយ Zod៖
 
-| សោ                            | លំនាំដើម | ជួរ                    |
+| កូនសោ                         | លំនាំដើម | ចន្លោះតម្លៃ            |
 | ----------------------------- | -------- | ---------------------- |
 | `modalityBridgeAudioEnabled`  | `true`   | —                      |
 | `modalityBridgeAudioModel`    | `""`     | ស្វ័យប្រវត្តិ ឬ STT ID |
@@ -311,299 +316,394 @@ Runtime settings ត្រូវបានរក្សាទុកក្នុង
 
 ### ស្ពានវីដេអូ (`videoBridge.ts`, `videoBridgePipeline.ts`)
 
-ស្ទាក់ចាប់ផ្នែកវីដេអូកម្រិតកំពូលនៅក្នុង `messages` របស់ Chat Completions និង
-`input` របស់ Responses API មុនពេលគោលដៅដែលមិនត្រូវបានដឹងថាមានការគាំទ្រវីដេអូដើមត្រូវបានហៅ។
-ទម្រង់ដែលគាំទ្ររួមមាន `input_video`, `video_url`, `video_source`, HTTPS URLs
-និង data URIs ប្រភេទ `data:video/*;base64,...`។ ឈ្មោះឯកសារធម្មតានៅក្នុងអត្ថបទមិនត្រូវបានចាត់ទុក
-ជាវីដេអូទេ។
+ស្ទាក់ចាប់ផ្នែកវីដេអូកម្រិតកំពូលក្នុង `messages` របស់ Chat Completions និង
+`input` របស់ Responses API មុនពេលហៅគោលដៅដែលមិនមានការគាំទ្រវីដេអូដើមដែលបានស្គាល់។
+ទម្រង់ដែលគាំទ្ររួមមាន `input_video`, `video_url`, `video_source`, URL ប្រភេទ HTTPS
+និង URI ទិន្នន័យ `data:video/*;base64,...`។ ឈ្មោះឯកសារធម្មតានៅក្នុងអត្ថបទមិនត្រូវបានចាត់ទុក
+ថាជាវីដេអូទេ។
 
-`VideoBridgeGuardrail.preCall` (`videoBridge.ts`) ទទួលខុសត្រូវលើការឆ្លងកាត់សំណើ ការត្រួតពិនិត្យ
-សមត្ថភាព/គោលការណ៍ ការប្រមូលផ្តុំក្នុងមួយសំណើ និង payload នៃការឆ្លើយតប។
-ការងារក្នុងមួយវីដេអូ — ការទទួលយក ឃ្លាំងសម្ងាត់លទ្ធផលទាំងមូល ការពិពណ៌នាលំដាប់ស៊ុម
-(ដែលបញ្ចូលបញ្ចូលគ្នានូវប្រតិចារឹកសំឡេងណាមួយដែលអ្នកហៅបានប្រកាស) និង
-ម៉ែត្រ/ការបោះបង់/ការសម្អាតក្នុងមួយដងសាកល្បង — ត្រូវបានលាក់នៅពីក្រោយ `processVideoPart` ក្នុង
-`videoBridgePipeline.ts` ដែលត្រូវបានហៅម្តងសម្រាប់ផ្នែកវីដេអូនីមួយៗនៅក្នុងរង្វិលជុំរបស់ `preCall`។
-ម៉ូឌុលនោះក៏កំណត់ព្រំដែនច្រកច្បាស់លាស់ `VideoMediaBrokerPort`
-(ការទទួលយកបៃ និងការស្រង់ស៊ុមដែលបានយកគំរូ), `VideoAudioTranscriptionPort`
-(ការបញ្ចូលបញ្ចូលគ្នានូវប្រតិចារឹកសំឡេងដែលអ្នកហៅបានប្រកាសជាមួយចំណងជើងស៊ុមដែលបានយកគំរូ) និង
-`VideoDrilldownPort` (ព្រំដែនរក្សាទុកការវិភាគស៊ីជម្រៅនៃស៊ុម; មិនទាន់បានភ្ជាប់ទៅក្នុង
-`processVideoPart` ទេ — បច្ចុប្បន្នមានតែ route `/api/modality-bridge/video/drilldown`
-ដាច់ដោយឡែកប៉ុណ្ណោះដែលសរសេរធាតុវិភាគស៊ីជម្រៅ)។
+`VideoBridgeGuardrail.preCall` (`videoBridge.ts`) គ្រប់គ្រងការឆ្លងកាត់សំណើ ការត្រួតពិនិត្យ
+សមត្ថភាព/គោលការណ៍ ការប្រមូលផ្តុំតាមសំណើនីមួយៗ និង payload ឆ្លើយតប។
+ការងារតាមវីដេអូនីមួយៗ — ការទទួលយក ឃ្លាំងសម្ងាត់លទ្ធផលទាំងមូល ការពណ៌នាលំដាប់
+ស៊ុម (ដែលបញ្ចូលគ្នាជាមួយប្រតិចារិកអូឌីយ៉ូដែលអ្នកហៅបានប្រកាស ប្រសិនបើមាន) និង
+ម៉ែត្រ/ការបោះបង់/ការសម្អាតតាមការព្យាយាមនីមួយៗ — ត្រូវបានលាក់នៅពីក្រោយ `processVideoPart` ក្នុង
+`videoBridgePipeline.ts` ដែលត្រូវបានហៅម្តងសម្រាប់ផ្នែកវីដេអូនីមួយៗនៅក្នុងវដ្តរបស់ `preCall`។
+ម៉ូឌុលនោះក៏កំណត់ព្រំដែនច្រកជាក់លាក់ `VideoMediaBrokerPort`
+(ទទួលយកបៃ និងស្រង់ស៊ុមគំរូ), `VideoAudioTranscriptionPort`
+(បញ្ចូលប្រតិចារិកអូឌីយ៉ូដែលអ្នកហៅបានប្រកាសជាមួយចំណងជើងស៊ុមគំរូ) និង
+`VideoDrilldownPort` (ព្រំដែនរក្សាទុកការពិនិត្យលម្អិតតាមស៊ុម; មិនទាន់បានភ្ជាប់
+ទៅក្នុង `processVideoPart` ទេ — បច្ចុប្បន្ន មានតែ route ដាច់ដោយឡែក
+`/api/modality-bridge/video/drilldown` ប៉ុណ្ណោះដែលសរសេរធាតុការពិនិត្យលម្អិត)។
 
-ផ្លូវសំណើសាធារណៈ `/v1` មិនដែល import ឬហៅដំណើរការរងទេ។ វីដេអូពីចម្ងាយ
-ត្រូវបានទាញយកក្រោមដែនកំណត់ 50 MiB; វីដេអូ base64 ក្នុងបន្ទាត់មាន
-ដែនកំណត់អតិបរមាបែបប្រុងប្រយ័ត្ន 36 MiB ដែលបានឌិកូដក្នុងមួយវីដេអូ ដើម្បីឱ្យស្រោម
-model/messages/framing អាចស្ថិតនៅក្នុងដែនកំណត់អនុញ្ញាតសំណើ JSON សាធារណៈ 50 MiB។
-ប្រវែងក្នុងបន្ទាត់ និងការប៉ាន់ស្មានទំហំដែលបានឌិកូដត្រូវបានត្រួតពិនិត្យមុនពេលបែងចែកអង្គចងចាំ។ HTTPS
-ត្រូវបានទាមទារនៅលើ URL ពីចម្ងាយដំបូង និងរាល់ការបញ្ជូនបន្ត ដោយប្រើ
-ការការពារចរាចរណ៍ចេញដែលអនុញ្ញាតតែសាធារណៈដែលមានស្រាប់ ជាមួយនឹងការចាក់សោ DNS។ បន្ទាប់មក បៃទាំងនោះ
-ឆ្លងកាត់ព្រំដែន broker ខាងក្នុងពិតប្រាកដ `POST /api/modality-bridge/video/extract`។
+ផ្លូវសំណើសាធារណៈ `/v1` មិនដែល import ឬដំណើរការដំណើរការរងទេ។ វីដេអូពីចម្ងាយ
+ត្រូវបានទាញយកក្រោមដែនកំណត់ 50 MiB; វីដេអូ base64 ក្នុងតួមានដែនកំណត់អភិរក្ស
+36 MiB បន្ទាប់ពីឌិកូដ សម្រាប់វីដេអូនីមួយៗ ដើម្បីឱ្យស្រោម model/messages/framing
+អាចស្ថិតនៅក្នុងដែនកំណត់ទទួលសំណើ JSON សាធារណៈ 50 MiB។ ប្រវែងក្នុងតួ និង
+ការប៉ាន់ស្មានទំហំបន្ទាប់ពីឌិកូដត្រូវបានត្រួតពិនិត្យមុនការបែងចែកអង្គចងចាំ។ HTTPS
+ត្រូវបានតម្រូវនៅលើ URL ពីចម្ងាយដំបូង និងគ្រប់ការបញ្ជូនបន្ត ដោយប្រើឧបករណ៍ការពារ
+ការតភ្ជាប់ចេញដែលអនុញ្ញាតតែសាធារណៈដែលមានស្រាប់ ជាមួយការភ្ជាប់ DNS ថេរ។ បន្ទាប់មក បៃ
+ឆ្លងកាត់ព្រំដែន broker ខាងក្នុងជាក់លាក់ `POST /api/modality-bridge/video/extract`។
 route នោះគឺទាំង `LOCAL_ONLY` និង `SPAWN_CAPABLE` ទទួលយកតែសំណើ
-trusted-loopback ដែលបានផ្ទៀងផ្ទាត់ក្នុងមួយដំណើរការ ហើយមិនដែលទទួលយក URL, ផ្លូវប្រព័ន្ធឯកសារ,
-កម្មវិធីប្រតិបត្តិ ឬបញ្ជីអាគុយម៉ង់ឡើយ។ pipeline ទំហំតួរបស់ API និងកម្មវិធីអានតួជាបន្តបន្ទាប់
-របស់ handler អនុវត្តដែនកំណត់អតិបរមាសម្រាប់ធាតុចូល broker 50 MiB ដោយឯករាជ្យពីគ្នា។
-ជួររង់ចាំមានដែនកំណត់របស់វាដំណើរការការស្រង់ម្តងមួយ អនុញ្ញាតការងារកំពុងរង់ចាំចំនួនបួន និង
-កំណត់ធាតុចូលកំពុងរង់ចាំត្រឹម 100 MiB។
+trusted-loopback ដែលបានផ្ទៀងផ្ទាត់តាមដំណើរការនីមួយៗ ហើយមិនដែលទទួលយក URL,
+ផ្លូវប្រព័ន្ធឯកសារ ឯកសារប្រតិបត្តិ ឬបញ្ជីអាគុយម៉ង់ឡើយ។ បំពង់កំណត់ទំហំ body របស់ API
+និងកម្មវិធីអាន body ជាបន្តបន្ទាប់របស់ handler អនុវត្តដែនកំណត់ input broker 50 MiB
+ដោយឯករាជ្យពីគ្នា។ ជួរកំណត់របស់វាដំណើរការការស្រង់ចេញម្តងមួយ អនុញ្ញាតឱ្យមានការងារ
+កំពុងរង់ចាំចំនួនបួន និងកំណត់ input កំពុងរង់ចាំត្រឹម 100 MiB។
 
-នៅខាងក្នុង broker, `ffprobe` អានឯកសារមូលដ្ឋានឯកជន; បញ្ជីអនុញ្ញាតទ្រង់ទ្រាយថេរ
-មិនរាប់បញ្ចូលទ្រង់ទ្រាយបញ្ជីចាក់ និង manifest។ សម្រាប់ container គ្រួសារ MOV ដែលបានអនុញ្ញាត
-សេចក្ដីយោងទិន្នន័យ MOV ខាងក្រៅនៅតែត្រូវបានបិទតាមលំនាំដើម ហើយពាក្យបញ្ជាថេរ
-មិនបើកប្រើវាទេ។ ទាំង `ffprobe` និង `ffmpeg` ប្រើបញ្ជីអនុញ្ញាត protocol សម្រាប់តែ
-`file` ប៉ុណ្ណោះ, thread មួយ, អារេអាគុយម៉ង់ថេរ, គ្មាន shell និងកម្មវិធីប្រតិបត្តិ
-ដែលត្រូវបានដោះស្រាយពី `PATH`។ stream រូបភាពគម្របដែលបានភ្ជាប់មិនមែនជាបេក្ខជនដែលអាចចាក់បានទេ។
-stream ដែលអាចចាក់បានទាំងអស់ត្រូវតែបំពេញដែនកំណត់ ហើយ stream លំនាំដើមច្បាស់លាស់ត្រូវបានផ្តល់អាទិភាព
-មុន fallback លិបិក្រមទាបបំផុតដែលកំណត់ជាក់លាក់។ វីដេអូត្រូវបានកំណត់ត្រឹម 600 វិនាទី,
+នៅខាងក្នុង broker, `ffprobe` អានឯកសារមូលដ្ឋានឯកជនមួយ; បញ្ជីអនុញ្ញាតទម្រង់ថេរ
+មិនរាប់បញ្ចូលទម្រង់បញ្ជីចាក់ និង manifest ទេ។ សម្រាប់ container ក្នុងគ្រួសារ MOV
+ដែលបានអនុញ្ញាត សេចក្តីយោងទិន្នន័យ MOV ខាងក្រៅនៅតែត្រូវបានបិទតាមលំនាំដើម ហើយ
+ពាក្យបញ្ជាថេរមិនបើកប្រើវាទេ។ ទាំង `ffprobe` និង `ffmpeg` ប្រើបញ្ជីអនុញ្ញាត
+protocol តែ `file` ប៉ុណ្ណោះ ប្រើ thread មួយ អារេអាគុយម៉ង់ថេរ គ្មាន shell
+និងឯកសារប្រតិបត្តិដែលត្រូវបានស្វែងរកពី `PATH`។ stream រូបគម្របដែលបានភ្ជាប់
+មិនមែនជាបេក្ខភាពដែលអាចចាក់បានទេ។ stream ដែលអាចចាក់បានទាំងអស់ត្រូវតែបំពេញ
+ដែនកំណត់ ហើយ stream លំនាំដើមជាក់លាក់ត្រូវបានផ្តល់អាទិភាព មុនជម្រើស fallback
+នៃ index ទាបបំផុតដែលកំណត់បានជានិច្ច។ វីដេអូត្រូវបានកំណត់ត្រឹម 600 វិនាទី,
 8,192 ភីកសែលក្នុងមួយវិមាត្រ និង 33,554,432 ភីកសែលប្រភព។ FFmpeg យកគំរូ
-ស៊ុម JPEG ចំណុចកណ្ដាលចំនួន 1–16 បន្ថយមាត្រដ្ឋានជ្រុងវែងមកត្រឹមយ៉ាងច្រើន 1,024 ភីកសែល
-ដោយមិនពង្រីកធាតុចូលតូចជាង ហើយមិនដែលទទួល URL ទេ។ ការយកគំរូគឺ `uniform`
-តាមលំនាំដើម។ គោលការណ៍ `scene_aware` ដែលជាជម្រើស និង `segment_aware` ដែលជាការពិសោធន៍
-អនុវត្ត FFmpeg pass ថេរបន្ថែមមួយលើ stream មូលដ្ឋានដែលបានផ្ទៀងផ្ទាត់រួច
-ជ្រើសរើស timestamp ឈុតឆាក `showinfo` ដែលមានដែនកំណត់ ហើយត្រឡប់ទៅចំណុចកណ្ដាល
-`uniform` ដូចគ្នាដោយកំណត់ជាក់លាក់ នៅពេលកម្មវិធីរកឃើញបរាជ័យ អស់ពេលកំណត់ លទ្ធផលខុសទ្រង់ទ្រាយ
-ឬសំណុំបេក្ខជនទទេ។ របៀប segment-aware បែងចែកគំរូចំណុចកណ្ដាលតាមសមាមាត្រ
-ទៅតាមចន្លោះឈុតឆាកដែលបានផ្ទៀងផ្ទាត់; ភស្តុតាង segment-aware និងឥរិយាបថ fallback
-ត្រូវបានរៀបរាប់លម្អិតខាងក្រោម។ ដែនកំណត់រឹង 16 ស៊ុមត្រូវបាន
-អនុវត្តបន្ទាប់ពីការជ្រើសរើសក្នុងគ្រប់គោលការណ៍។ នៅពេលសំណើ scene-aware មានតែ
-ថវិកាមួយស៊ុម វាប្រើចំណុចកណ្ដាល `uniform` នៃវីដេអូពេញដែលសកម្ម ឬចន្លោះផ្ដោត
-ហើយរាយការណ៍ `policyEffective: uniform`៖ ស៊ុមឈុតឆាកតែមួយដែលបានជ្រើសរើស
-មិនអាចរក្សាចុងពេលវេលាទាំងពីរបានទេ។ អ្នកហៅអាចផ្តល់ជាជម្រើសនូវ
-ចន្លោះផ្ដោតកំណត់ (`start`/`end` ជាវិនាទី); ព្រំដែនត្រូវបានកាត់ឱ្យស្ថិតក្នុងរយៈពេលមេឌៀ,
-ចន្លោះដែលបញ្ច្រាស ឬមិនមែនជាចំនួនកំណត់ត្រូវបានបដិសេធ ហើយគោលការណ៍យកគំរូទាំងអស់
-ត្រូវបានអនុវត្តតែនៅក្នុងចន្លោះដែលបានធ្វើឱ្យមានស្តង់ដារប៉ុណ្ណោះ។ ចន្លោះដែលទទួលបាន
-ត្រូវបានរួមបញ្ចូលក្នុង metadata នៃការយកគំរូ និងក្នុងបុព្វបទសេចក្ដីពិពណ៌នាដែលមិនគួរទុកចិត្ត
-ដើម្បីឱ្យម៉ូដែលបន្តបន្ទាប់អាចបែងចែកផ្នែកដកស្រង់ដែលបានផ្ដោតពីបន្ទាត់ពេលវេលាពេញលេញ។
+ស៊ុម JPEG ចំណុចកណ្តាលចំនួន 1–16 បន្ថយមាត្រដ្ឋានគែមវែងឱ្យមិនលើស 1,024 ភីកសែល
+ដោយមិនពង្រីក input តូចជាងនេះ ហើយមិនដែលទទួល URL ទេ។ ការយកគំរូគឺ `uniform`
+តាមលំនាំដើម។ គោលការណ៍ជាជម្រើស `scene_aware` និង `segment_aware` ដែលកំពុងពិសោធន៍
+អនុវត្តការឆ្លងកាត់ FFmpeg ថេរបន្ថែមមួយលើ stream មូលដ្ឋានដែលបានផ្ទៀងផ្ទាត់រួចហើយ
+ជ្រើសរើស timestamp ឈុតឆាក `showinfo` ដែលមានដែនកំណត់ ហើយ fallback តាមរបៀប
+ដែលកំណត់បានជានិច្ចទៅចំណុចកណ្តាល uniform ដូចគ្នា នៅពេលឧបករណ៍រកឃើញបរាជ័យ
+អស់ពេលកំណត់ output ខូចទ្រង់ទ្រាយ ឬសំណុំបេក្ខភាពទទេ។ របៀប segment-aware
+បែងចែកគំរូចំណុចកណ្តាលតាមសមាមាត្រទៅនឹងចន្លោះឈុតឆាកដែលបានផ្ទៀងផ្ទាត់;
+ភស្តុតាង segment-aware និងឥរិយាបថ fallback ត្រូវបានរៀបរាប់លម្អិតខាងក្រោម។
+ដែនកំណត់រឹង 16 ស៊ុមត្រូវបានអនុវត្តបន្ទាប់ពីការជ្រើសរើសក្នុងគ្រប់គោលការណ៍។
+នៅពេលសំណើ scene-aware មានថវិកាត្រឹមមួយស៊ុម វាប្រើចំណុចកណ្តាល uniform នៃ
+វីដេអូពេញដែលកំពុងសកម្ម ឬផ្ទាំង focus ហើយរាយការណ៍ `policyEffective: uniform`៖
+ស៊ុមឈុតឆាកតែមួយដែលបានជ្រើសរើសមិនអាចរក្សាបានទាំងចុងពេលវេលាទាំងពីរទេ។
+អ្នកហៅអាចផ្តល់ផ្ទាំង focus មានកំណត់ (`start`/`end` គិតជាវិនាទី) ជាជម្រើស;
+ព្រំដែនត្រូវបានកាត់តម្រឹមតាមរយៈពេលមេឌៀ ផ្ទាំងដែលបញ្ច្រាស ឬមិនមែនជាតម្លៃមានកំណត់
+ត្រូវបានបដិសេធ ហើយគោលការណ៍យកគំរូទាំងអស់ត្រូវបានអនុវត្តតែក្នុងចន្លោះដែលបាន
+ធ្វើឱ្យស្របប៉ុណ្ណោះ។ ផ្ទាំងលទ្ធផលត្រូវបានបញ្ចូលក្នុង metadata ការយកគំរូ និងក្នុង
+បុព្វបទពណ៌នាដែលមិនអាចទុកចិត្តបាន ដើម្បីឱ្យ model ខាងក្រោមអាចបែងចែកផ្នែកដកស្រង់
+ដែលបានផ្តោតពី timeline ពេញលេញ។
 
-ការផ្ដោតអត្ថន័យនៃចំណងជើងគឺជាការកំណត់ច្បាស់លាស់ដាច់ដោយឡែក។ របៀបវិភាគ `full`
-លំនាំដើមរក្សា prompt ស៊ុមដែលមានស្រាប់ ហើយមិនដែលបញ្ជូនបន្តអត្ថបទសំណើ
-ទៅម៉ូដែលចំណងជើងទេ។ ក្នុងរបៀប `focused` ស្ពានអានតែ
-`text`/`input_text` ដែលមិនទទេចុងក្រោយបំផុតដែលបង្កើតដោយអ្នកប្រើ ពី container Chat ឬ Responses
-ដូចគ្នា ធ្វើឱ្យវាមានស្តង់ដារទៅជា NFC បង្រួមតួអក្សរបញ្ជា និងចន្លោះទទេ
-ហើយកំណត់វាត្រឹម 500 Unicode code points។ លទ្ធផលទទេត្រឡប់ទៅ prompt
-`full` ដូចដើមទាំងស្រុង។ គន្លឹះដែលអាចប្រើបានត្រូវបាន serialize ជា JSON ក្នុងប្លុក
-បរិបទអ្នកប្រើដែលមិនគួរទុកចិត្តដាច់ដោយឡែក ហើយអាចផ្តល់អាទិភាពតែព័ត៌មានលម្អិតដែលអាចសង្កេតបានប៉ុណ្ណោះ;
-វាមិនអាចជំនួសការព្រមានដាច់ដោយឡែកប្រឆាំងនឹងការធ្វើតាមសេចក្ដីណែនាំដែលអាចមើលឃើញ
-ឬអាចស្តាប់ឮនៅក្នុងមេឌៀបានទេ។ ការផ្ដោតតាមអត្ថបទមិនដែលសន្និដ្ឋាន `start`/`end` ឬផ្លាស់ប្ដូរ
-កម្មវិធីយកគំរូតាមពេលវេលាទេ។
+ការផ្តោតចំណងជើងតាមន័យគឺជាការកំណត់ដាច់ដោយឡែក និងច្បាស់លាស់។ របៀបវិភាគ
+`full` លំនាំដើមរក្សា prompt ស៊ុមដែលមានស្រាប់ និងមិនដែលបញ្ជូនអត្ថបទសំណើទៅ
+model ចំណងជើងទេ។ ក្នុងរបៀប `focused` ស្ពានអានតែ `text`/`input_text`
+ដែលមិនទទេចុងក្រោយបំផុតដែលសរសេរដោយអ្នកប្រើ ពី container Chat ឬ Responses
+ដូចគ្នា ធ្វើឱ្យវាស្របតាម NFC បង្រួមតួអក្សរត្រួតពិនិត្យ និងចន្លោះស ហើយកំណត់វា
+ត្រឹម 500 code point Unicode។ លទ្ធផលទទេនឹង fallback ទៅ prompt `full`
+ដូចគ្នាបេះបិទ។ hint ដែលអាចប្រើបានត្រូវបាន serialize ជា JSON ក្នុងប្លុក
+untrusted-user-context ដាច់ដោយឡែក ហើយអាចផ្តល់អាទិភាពតែព័ត៌មានលម្អិតដែលអាច
+សង្កេតឃើញប៉ុណ្ណោះ; វាមិនអាចបដិសេធការព្រមានដាច់ដោយឡែកអំពីការមិនធ្វើតាម
+សេចក្តីណែនាំដែលអាចមើលឃើញ ឬឮនៅក្នុងមេឌៀបានទេ។ focus អត្ថបទមិនដែលសន្និដ្ឋាន
+`start`/`end` ឬផ្លាស់ប្តូរឧបករណ៍យកគំរូតាមពេលវេលាទេ។
 
-#### ភស្តុតាងផ្នែកតាមរចនាសម្ព័ន្ធ FU-07
+#### ភស្តុតាងផ្នែករចនាសម្ព័ន្ធ FU-07
 
-`segment_aware` ប្រើការវិភាគជាមុនតែមួយជុំដែលមានដែនកំណត់ លើស្ទ្រីមវីដេអូមូលដ្ឋានដែលបានផ្ទៀងផ្ទាត់រួចហើយ។ ខ្សែសង្វាក់តម្រងថេរ ដំបូងបន្ថយទំហំឱ្យមានទទឹងអតិបរមា 320 ភីកសែល ស្វែងរកការផ្លាស់ប្តូរឆាក និងចន្លោះពេលដែលរូបភាពជាប់គាំង បន្ទាប់មកយកសំណាកក្នុងអត្រា 1 ហ្វ្រេមក្នុងមួយវិនាទី ដើម្បីវាស់ភាពព្រិល កម្រិតពន្លឺមធ្យម និងព័ត៌មានលំហ/ពេលវេលា។ ជុំនេះត្រូវបានកំណត់ត្រឹមសំណាករចនាសម្ព័ន្ធចំនួន 600 ខ្សែដំណើរការ FFmpeg/តម្រងមួយ បញ្ជីអនុញ្ញាតដូចគ្នាសម្រាប់ពិធីការ `file` តែប៉ុណ្ណោះ និងកុងតឺន័រ ដែនកំណត់លទ្ធផលដំណើរការ 1 MiB និងរយៈពេលអតិបរមា 30 វិនាទី នៅក្នុងពេលវេលាបោះបង់/កាលកំណត់រួមរបស់ broker។ វាមិនដែលទទួលយកពាក្យបញ្ជា តម្រង ផ្លូវឯកសារ ឬ URL ពីសំណើឡើយ។
+`segment_aware` ប្រើការវិភាគជាមុនដែលមានព្រំដែនកំណត់តែមួយដង លើស្ទ្រីមវីដេអូមូលដ្ឋានដែលបានផ្ទៀងផ្ទាត់រួច។ ខ្សែសង្វាក់តម្រងថេរ ដំបូងបន្ថយទំហំឱ្យទទឹងមិនលើសពី 320 ភីកសែល រកឃើញការផ្លាស់ប្តូរឈុតឆាក និងចន្លោះពេលដែលរូបភាពជាប់គាំង បន្ទាប់មកយកសំណាកក្នុងអត្រា 1 ហ្វ្រេមក្នុងមួយវិនាទី ដើម្បីវាស់ភាពព្រិល ពន្លឺមធ្យម និងព័ត៌មានលំហ/ពេលវេលា។ ដំណើរការនេះត្រូវបានកំណត់ត្រឹមសំណាករចនាសម្ព័ន្ធ 600 ប្រើខ្សែស្រឡាយ FFmpeg/តម្រងមួយ បញ្ជីអនុញ្ញាតពិធីការ `file`-តែប៉ុណ្ណោះ និងកុងតឺន័រដូចគ្នា ព្រំដែនទិន្នផលដំណើរការ 1 MiB និងរយៈពេលមិនលើសពី 30 វិនាទីនៅក្នុងការបោះបង់/កាលកំណត់រួមរបស់ broker។ វាមិនទទួលយកពាក្យបញ្ជា តម្រង ផ្លូវឯកសារ ឬ URL ណាមួយពីសំណើទេ។
 
-តម្លៃរចនាសម្ព័ន្ធគឺជាភស្តុតាងនៃការយកសំណាកដែលអាចកំណត់ទុកជាមុនបាន មិនមែនជាការយល់ដឹងអំពីអត្ថន័យរបស់វីដេអូទេ។ ពួកវាមិនធ្វើការសន្និដ្ឋានអំពីប្រធានបទ សកម្មភាព ចំណងជើង សំឡេងនិយាយ ឬចេតនារបស់អ្នកប្រើទេ។ ព្រំដែនឆាក និងព្រំដែនជាប់គាំងបង្កើតជាផ្នែកៗ។ វិសាលភាពនៃការជាប់គាំង ភាពព្រិល កម្រិតពន្លឺ ព័ត៌មានលម្អិតលំហ និងការផ្លាស់ប្តូរតាមពេលវេលា មានឥទ្ធិពលតែលើរបៀបបែងចែកថវិកា 1–16 ហ្វ្រេមដែលមានស្រាប់ប៉ុណ្ណោះ។ ផ្នែកដែលជាប់គាំងទាំងស្រុងត្រូវបានកំណត់ត្រឹមមួយហ្វ្រេម ខណៈផ្នែកដែលមិនជាប់គាំងប្រកួតគ្នាសម្រាប់ថវិកាដែលនៅសល់។ នៅពេលចំនួនព្រំដែនច្រើនជាងចំនួនហ្វ្រេម ការគ្របដណ្តប់ឯកសណ្ឋានលើខ្សែពេលវេលាត្រូវបានរក្សាទុក ដើម្បីកុំឱ្យការកាត់ឆាកញឹកញាប់នៅដើមវីដេអូអាចបិទបាំងផ្នែកវែងនៅខាងចុង។ ព្រំដែនឆាកដែលស្ថិតនៅក្នុងកម្រិតវិភាគ 1 វិនាទីពីព្រំដែនជាប់គាំង ត្រូវបានបញ្ចូលគ្នា។
+តម្លៃរចនាសម្ព័ន្ធគឺជាភស្តុតាងនៃការយកសំណាកដែលអាចកំណត់ឡើងវិញបាន មិនមែនជាការយល់ដឹងអំពីអត្ថន័យវីដេអូទេ។ តម្លៃទាំងនេះមិនធ្វើការសន្និដ្ឋានអំពីប្រធានបទ សកម្មភាព ចំណងជើងរូបភាព សំឡេងនិយាយ ឬចេតនារបស់អ្នកប្រើទេ។ ព្រំដែនឈុតឆាក និងព្រំដែនភាពជាប់គាំងបង្កើតជាផ្នែកៗ។ វិសាលភាពភាពជាប់គាំង ភាពព្រិល កម្រិតពន្លឺ ព័ត៌មានលម្អិតតាមលំហ និងការផ្លាស់ប្តូរតាមពេលវេលា មានឥទ្ធិពលតែលើរបៀបបែងចែកកញ្ចប់ថវិកាហ្វ្រេមដែលមានស្រាប់ចំនួន 1–16 ប៉ុណ្ណោះ។ ផ្នែកដែលជាប់គាំងទាំងស្រុងត្រូវបានកំណត់អតិបរមាត្រឹមមួយហ្វ្រេម ខណៈផ្នែកដែលមិនជាប់គាំងប្រកួតគ្នាសម្រាប់ថវិកាដែលនៅសល់។ នៅពេលចំនួនព្រំដែនច្រើនជាងចំនួនហ្វ្រេម ការគ្របដណ្តប់ស្មើៗគ្នាលើបន្ទាត់ពេលវេលាត្រូវបានរក្សាទុក ដើម្បីកុំឱ្យការកាត់ប្តូររហ័សនៅដើមអាចលាក់ផ្នែកវែងនៅចុងបាន។ ព្រំដែនឈុតឆាកដែលស្ថិតនៅក្នុងរយៈពេលវិភាគ 1 វិនាទីនៃព្រំដែនភាពជាប់គាំង ត្រូវបានបញ្ចូលគ្នា។
 
-តម្រងដែលបាត់ ភស្តុតាងខូចទ្រង់ទ្រាយ/ទទេ កំហុសរបស់ឧបករណ៍រកឃើញ ឬការអស់ពេលនៃការវិភាគជាមុនដែលមានដែនកំណត់ នឹងបើកឱ្យដំណើរការបន្តដោយប្រើគោលការណ៍ចំណុចកណ្តាលឯកសណ្ឋានដូចដើមយ៉ាងពិតប្រាកដ។ ការបោះបង់ដោយអ្នកហៅ ឬកាលកំណត់របស់ broker មិនបើកឱ្យដំណើរការបន្តទេ៖ វាបញ្ចប់ដំណើរការរងដែលកំពុងដំណើរការ រារាំងការស្រង់ហ្វ្រេមនៅពេលក្រោយ ហើយដើមឈើថតបណ្តោះអាសន្នឯកជនត្រូវបានលុបចេញនៅក្នុង `finally`។
+តម្រងដែលបាត់ ភស្តុតាងខុសទម្រង់/ទទេ កំហុសឧបករណ៍រកឃើញ ឬការអស់ពេលនៃការវិភាគជាមុនដែលមានព្រំដែនកំណត់ នឹងបរាជ័យបែបបើក ដោយត្រឡប់ទៅគោលការណ៍ចំណុចកណ្តាលស្មើៗគ្នាដដែល។ ការបោះបង់ដោយអ្នកហៅ ឬកាលកំណត់របស់ broker មិនបរាជ័យបែបបើកទេ៖ វាបញ្ចប់ដំណើរការរងដែលកំពុងដំណើរការ ទប់ស្កាត់ការស្រង់ហ្វ្រេមនៅពេលក្រោយ ហើយមែកធាងបណ្ដោះអាសន្នឯកជនត្រូវបានលុបចេញក្នុង `finally`។
 
-`scripts/perf/video-bridge-fu07-eval.ts` បង្កើតទិន្នន័យសាកល្បង FFmpeg ពិតដែលអាចកំណត់ទុកជាមុនបាន សម្រាប់វាស់ការសន្សំចំនួនការហៅបង្កើតចំណងជើងក្រោយការដកធាតុស្ទួន ការបែងចែកថវិកាសម្រាប់ចលនាក្រាស់ ភស្តុតាងភាពព្រិល/កម្រិតពន្លឺ/SI-TI ការកាត់ឆាកញឹកញាប់ដែលមានផ្នែកវែងនៅខាងចុង និងលទ្ធផលវិជ្ជមានក្លែងក្លាយពីការបន្ថយពន្លឺបន្តិចម្តងៗ។ វាកត់ត្រារយៈពេលជាក់ស្តែងនៃការវិភាគជាមុន ហើយនៅកន្លែងដែលមាន `/usr/bin/time` វាកត់ត្រា CPU របស់ដំណើរការរង និងតម្លៃ RSS អតិបរមា។ ការត្រួតពិនិត្យគុណភាពរបស់វាគឺជាក្បួនវាយតម្លៃផ្នែករចនាសម្ព័ន្ធតែប៉ុណ្ណោះ។ គុណភាពពិតរបស់ម៉ូដែលបង្កើតចំណងជើងនៅតែជា `HOLD` ព្រោះឧបករណ៍សាកល្បងនេះមិនមានចំណុចចូលប្រើដែលបានអនុញ្ញាត ឬអ្នកវិនិច្ឆ័យដែលបានកំណត់ថេរទេ។ ការសន្សំប្រាក់ក៏នៅតែជា `HOLD` ដែរ លុះត្រាតែ `--caption-cost-per-call-usd` ផ្តល់តម្លៃប៉ាន់ស្មានវិជ្ជមានច្បាស់លាស់ក្នុងមួយការហៅ។ ស្គ្រីបនេះមិនដែលប្រឌិតលទ្ធផលណាមួយក្នុងចំណោមលទ្ធផលទាំងពីរនោះទេ។
+`scripts/perf/video-bridge-fu07-eval.ts` បង្កើត fixture FFmpeg ពិតប្រាកដដែលអាចកំណត់ឡើងវិញបាន សម្រាប់ការសន្សំចំនួនការហៅបង្កើតចំណងជើងរូបភាពក្រោយការដកធាតុស្ទួន ការបែងចែកថវិកាសម្រាប់ចលនាក្រាស់ ភស្តុតាងភាពព្រិល/ពន្លឺ/SI-TI ការកាត់ប្តូររហ័សដែលមានផ្នែកវែងនៅចុង និងលទ្ធផលវិជ្ជមានក្លែងក្លាយពីការរលាយរូបភាពបន្តិចម្តងៗ។ វាកត់ត្រាពេលវេលាពិតនៃការវិភាគជាមុន ហើយនៅកន្លែងដែលមាន `/usr/bin/time` វាក៏កត់ត្រា CPU របស់ដំណើរការរង និង RSS អតិបរមាផងដែរ។ ការត្រួតពិនិត្យគុណភាពរបស់វាគ្រាន់តែជាតម្លៃយោងសម្រាប់រចនាសម្ព័ន្ធប៉ុណ្ណោះ។ គុណភាពនៃម៉ូដែលបង្កើតចំណងជើងរូបភាពពិតប្រាកដនៅតែជា `HOLD` ព្រោះ harness នេះមិនមាន endpoint ដែលបានអនុញ្ញាត ឬអ្នកវិនិច្ឆ័យថេរទេ។ ការសន្សំប្រាក់ក៏នៅតែជា `HOLD` ដែរ លុះត្រាតែ `--caption-cost-per-call-usd` ផ្តល់ការប៉ាន់ស្មានវិជ្ជមានជាក់លាក់នៃថ្លៃក្នុងមួយការហៅ។ ស្គ្រីបនេះមិនប្រឌិតលទ្ធផលណាមួយក្នុងចំណោមលទ្ធផលទាំងពីរទេ។
 
-ហ្វ្រេមនីមួយៗត្រូវបានកំណត់ត្រឹម 4 MiB ហ្វ្រេមឆៅទាំងអស់រួមគ្នាត្រឹម 23 MiB និងការឆ្លើយតបរបស់ broker ដែលបានធ្វើសៀរៀលកម្មត្រឹម 32 MiB។ ថតបណ្តោះអាសន្នឯកជនមួយត្រូវបានលុបចេញនៅក្នុង `finally`។ OmniRoute មិនភ្ជាប់ FFmpeg មកជាមួយទេ ហើយមិនទទួលយកផ្លូវឯកសារប្រតិបត្តិដែលកំណត់ផ្ទាល់ខ្លួនឡើយ។ មុនពេលបង្កើតចំណងជើង bridge អនុវត្តការដករូបភាពស្ទួនតាមបែបប្រុងប្រយ័ត្ន៖ JPEG នីមួយៗត្រូវបានបន្ថយទៅជាសតិបណ្ដោះអាសន្នមាត្រដ្ឋានប្រផេះ 16×16 ហើយប្រៀបធៀបតែជាមួយហ្វ្រេមចុងក្រោយដែលបានរក្សាទុកប៉ុណ្ណោះ។ សម្រាប់ថវិកាចំណងជើងដែលបានស្នើសុំលើសពីមួយហ្វ្រេម ការស្រង់ផ្តល់ក្រុមហ្វ្រេមបេក្ខជនដែលមានដែនកំណត់រហូតដល់ពីរដងនៃថវិកានោះ និងមិនលើសពី 16 ហ្វ្រេមឡើយ។ ចំនួនអតិបរមាដែលបានស្នើសុំត្រូវបានអនុវត្តតែក្រោយពេលដកធាតុស្ទួន ដោយរក្សាបេក្ខជនដំបូង និងចុងក្រោយដែលបានជ្រើសរើស ក្នុងអំឡុងពេលកាត់បន្ថយចុងក្រោយ នៅពេលថវិកាមានយ៉ាងហោចណាស់ពីរ។ គោលការណ៍មានកំណែ
-`grayscale-16x16-mean-cells-v2` ប្រើតម្លៃដែលធំជាងរវាងភាពខុសគ្នានៃកម្រិតពន្លឺមធ្យម និងសមាមាត្រនៃក្រឡារូបភាពតូចដែលភាពខុសគ្នាបន្ទាប់ពីនិយ័តកម្មមានតម្លៃយ៉ាងហោចណាស់ 0.05។ កម្រិតកំណត់សម្រាប់ធាតុស្ទួនគឺជាថេរ 0.04 ដែលត្រូវបានជ្រើសរើសដើម្បីភាពអាចទស្សន៍ទាយបាន ជាជាងបង្ហាញវាជាការកំណត់ពេលដំណើរការ។ សញ្ញាបន្ទាប់បន្សំដែលមានកម្រិតផ្ទុយខ្ពស់នេះរក្សាទុកចលនាតូចៗ និងការផ្លាស់ប្តូរអត្ថបទដែលអាចមើលឃើញ ដែលការប្រៀបធៀបដោយផ្អែកតែលើមធ្យមភាគអាចបិទបាំង។ កំហុសឧបករណ៍ប្រៀបធៀប ឬឧបករណ៍ឌិកូដ នឹងបើកឱ្យដំណើរការបន្ត និងរក្សាការគ្របដណ្តប់។ ទិន្នន័យមេតាលទ្ធផលបែងចែកបេក្ខជនដែលបានស្រង់ ហ្វ្រេមដែលបានប្រើដោយជោគជ័យ និងរូបភាពស្ទួនដែលបានបោះចោល។
+ហ្វ្រេមនីមួយៗត្រូវបានកំណត់ត្រឹម 4 MiB ហ្វ្រេមឆៅទាំងអស់រួមគ្នាត្រឹម 23 MiB និងការឆ្លើយតបរបស់ broker ដែលបានធ្វើស៊េរីកម្មត្រឹម 32 MiB។ ថតបណ្ដោះអាសន្នឯកជនត្រូវបានលុបចេញក្នុង `finally`។ OmniRoute មិនភ្ជាប់ FFmpeg មកជាមួយទេ ហើយក៏មិនទទួលយកផ្លូវ executable ផ្ទាល់ខ្លួនដែរ។ មុនពេលបង្កើតចំណងជើងរូបភាព bridge អនុវត្តដំណើរការដករូបភាពស្ទួនបែបប្រុងប្រយ័ត្ន៖ JPEG នីមួយៗត្រូវបានបន្ថយទៅជាប៊ូហ្វ័រមាត្រដ្ឋានប្រផេះ 16×16 ហើយប្រៀបធៀបតែជាមួយហ្វ្រេមចុងក្រោយដែលបានរក្សាទុកប៉ុណ្ណោះ។ សម្រាប់ថវិកាបង្កើតចំណងជើងរូបភាពដែលបានស្នើលើសពីមួយហ្វ្រេម ការស្រង់ផ្តល់បណ្តុំបេក្ខភាពមានព្រំដែនកំណត់រហូតដល់ពីរដងនៃថវិកានោះ និងមិនលើសពី 16 ហ្វ្រេមឡើយ។ កម្រិតអតិបរមាដែលបានស្នើត្រូវបានអនុវត្តតែបន្ទាប់ពីដកធាតុស្ទួនរួច ដោយរក្សាបេក្ខភាពដែលបានជ្រើសដំបូង និងចុងក្រោយ ក្នុងអំឡុងពេលកាត់បន្ថយជាចុងក្រោយ នៅពេលថវិកាមានយ៉ាងហោចណាស់ពីរ។ គោលការណ៍ដែលមានកំណែ
+`grayscale-16x16-mean-cells-v2` ប្រើតម្លៃធំជាងរវាងបម្រែបម្រួលពន្លឺមធ្យម និងសមាមាត្រនៃក្រឡារូបភាពតូចដែលបម្រែបម្រួលបានធ្វើនិយ័តកម្មរបស់វាមានយ៉ាងហោចណាស់ 0.05។ កម្រិតកំណត់ភាពស្ទួនគឺជាថេរ 0.04 ដែលត្រូវបានជ្រើសសម្រាប់ភាពអាចព្យាករបាន ជាជាងបង្ហាញជាការកំណត់ពេលដំណើរការ។ សញ្ញាកម្រិតពណ៌ខ្លាំងបន្ទាប់បន្សំនេះរក្សាទុកចលនាតូចៗ និងការផ្លាស់ប្តូរអត្ថបទដែលអាចមើលឃើញ ដែលការប្រៀបធៀបតាមតម្លៃមធ្យមតែប៉ុណ្ណោះអាចលាក់បាំងបាន។ កំហុសឧបករណ៍ប្រៀបធៀប ឬឧបករណ៍ឌិកូដ បរាជ័យបែបបើក និងរក្សាការគ្របដណ្តប់។ ទិន្នន័យមេតាទិន្នផលបំបែកបេក្ខភាពដែលបានស្រង់ ហ្វ្រេមដែលបានប្រើដោយជោគជ័យ និងរូបភាពស្ទួនដែលបានទម្លាក់ចេញពីគ្នា។
 
-ផ្នែកវីដេអូដែលបានសម្គាល់យ៉ាងច្បាស់អាចស្នើសុំសន្លឹករូបភាពសង្ខេបដែលមានត្រាពេលវេលា។ bridge បង្កើតក្រឡា JPEG ដែលមានអតិបរមា 4 ជួរឈរ និង 16 ហ្វ្រេម។ ក្រឡាទំហំ 512 ភីកសែលនីមួយៗដាក់ត្រាពេលវេលាប្រភពរបស់វាទៅក្នុងបន្ទះខាងក្រោមដែលមានកម្រិតផ្ទុយខ្ពស់ ខណៈត្រាពេលវេលាដូចគ្នានោះនៅតែមានក្នុងទិន្នន័យមេតាអត្ថបទ សម្រាប់ការភ្ជាប់ទំនាក់ទំនង និងការធ្វើសវនកម្មនៅដំណាក់កាលបន្ទាប់។ JPEG ពេញលេញនៅតែត្រូវបានកំណត់ត្រឹម 32 MiB។ ប្រសិនបើ `sharp` មិនអាចឌិកូដ ឬផ្សំក្រឡាបាន bridge នឹងត្រឡប់ទៅប្រើហ្វ្រេម JPEG នីមួយៗវិញ។ ការបោះបង់ដោយម៉ាស៊ីនភ្ញៀវនៅតែត្រូវបានបញ្ជូនបន្តឆ្លងកាត់ប្រតិបត្តិការសន្លឹករូបភាព។
+ផ្នែកវីដេអូដែលបានសម្គាល់យ៉ាងច្បាស់អាចស្នើសុំសន្លឹកទំនាក់ទំនងដែលមានត្រាពេលវេលា។ bridge បង្កើតក្រឡាចត្រង្គ JPEG ដែលមានអតិបរមា 4 ជួរឈរ និង 16 ហ្វ្រេម។ ក្រឡា 512 ភីកសែលនីមួយៗបង្កប់ត្រាពេលវេលានៃប្រភពរបស់វាទៅក្នុងបន្ទះខាងក្រោមដែលមានកម្រិតពណ៌ខ្លាំង ខណៈត្រាពេលវេលាដូចគ្នានៅតែមានក្នុងទិន្នន័យមេតាជាអត្ថបទ សម្រាប់ការភ្ជាប់ទំនាក់ទំនង និងការធ្វើសវនកម្មនៅដំណាក់កាលបន្ទាប់។ JPEG ពេញលេញនៅតែត្រូវបានកំណត់ត្រឹម 32 MiB។ ប្រសិនបើ `sharp` មិនអាចឌិកូដ ឬផ្គុំក្រឡាចត្រង្គបាន bridge នឹងត្រឡប់ទៅប្រើហ្វ្រេម JPEG នីមួយៗវិញ។ ការបោះបង់ដោយម៉ាស៊ីនភ្ញៀវនៅតែបន្តឆ្លងកាត់ប្រតិបត្តិការសន្លឹក។
 
-ភស្តុតាងសម្រាប់ការដំឡើងទៅការប្រើប្រាស់ពិត ត្រូវបានបំបែកដោយចេតនាចេញពីការវាស់ស្ទង់ខ្នាតតូចនៃការផ្សំសំយោគ។ `scripts/perf/video-bridge-contact-sheet-eval.ts` កំណត់ឧបករណ៍សាកល្បង A/B ដែលមានកំណែស្គីមា សម្រាប់ម៉ូដែលចក្ខុវិស័យដែលឆបគ្នាជាមួយ OpenAI ពិតប្រាកដ។ វាវាស់ token ដែលអ្នកផ្តល់សេវារាយការណ៍ រយៈពេលឆ្លើយតបសរុបពីដើមដល់ចប់ រួមទាំងការផ្សំសន្លឹករូបភាព ចំនួនការហៅម៉ូដែល និងការរក្សាទុកអង្គហេតុដែលបានកំណត់ដោយ manifest។ ការឆ្លើយតបឆៅរបស់ម៉ូដែលមិនត្រូវបានសរសេរទៅក្នុងរបាយការណ៍ទេ។ មានតែសេចក្តីសង្ខេប SHA-256 និង ID អង្គហេតុដែលត្រូវគ្នាប៉ុណ្ណោះដែលត្រូវបានរក្សាទុក។ ឧបករណ៍សាកល្បងនេះមិនធ្វើការហៅបណ្តាញ ឬម៉ូដែលគិតថ្លៃឡើយ លុះត្រាតែបានផ្តល់ `--execute-real` ហើយ `--model`, `OMNIROUTE_BASE_URL` និង `OMNIROUTE_API_KEY` ត្រូវបានកំណត់រចនាសម្ព័ន្ធ។ បើគ្មានការដំណើរការពិតយ៉ាងច្បាស់លាស់នោះ សេចក្តីវិនិច្ឆ័យដែលម៉ាស៊ីនអាចអានបានរបស់វានៅតែជា `HOLD`។ ការវាស់ទំហំទិន្នន័យសំយោគ/ចំនួនការហៅតែឯង មិនមែនជាភស្តុតាងសម្រាប់ការដំឡើងទៅការប្រើប្រាស់ពិតទេ។
+ភស្តុតាងសម្រាប់ការដំឡើងទៅប្រើប្រាស់ ត្រូវបានបំបែកដោយចេតនាពី microbenchmark នៃការផ្គុំសំយោគ។ `scripts/perf/video-bridge-contact-sheet-eval.ts` កំណត់ harness A/B ដែលមានកំណែស្គីមា សម្រាប់ម៉ូដែលចក្ខុវិស័យពិតប្រាកដដែលត្រូវគ្នាជាមួយ OpenAI។ វាវាស់ token ដែលរាយការណ៍ដោយអ្នកផ្តល់សេវា រយៈពេលរង់ចាំពិតពីដើមដល់ចប់ (រួមទាំងការផ្គុំសន្លឹក) ចំនួនការហៅម៉ូដែល និងការរក្សាទុកព័ត៌មានពិតដែលបានកំណត់ក្នុង manifest។ ការឆ្លើយតបឆៅរបស់ម៉ូដែលមិនត្រូវបានសរសេរទៅក្នុងរបាយការណ៍ទេ។ មានតែ digest SHA-256 និង ID ព័ត៌មានពិតដែលត្រូវគ្នាប៉ុណ្ណោះដែលត្រូវបានរក្សាទុក។ harness មិនធ្វើការហៅតាមបណ្ដាញ ឬហៅម៉ូដែលដែលមានថ្លៃសេវាទេ លុះត្រាតែបានបញ្ជូន `--execute-real` ហើយ `--model`, `OMNIROUTE_BASE_URL` និង `OMNIROUTE_API_KEY` ត្រូវបានកំណត់រចនាសម្ព័ន្ធ។ បើគ្មានការដំណើរការពិតប្រាកដដែលបានបញ្ជាក់ច្បាស់នោះទេ សាលក្រមដែលម៉ាស៊ីនអាចអានបានរបស់វានៅតែជា `HOLD`។ ការវាស់ payload/ចំនួនការហៅសំយោគតែប៉ុណ្ណោះ មិនមែនជាភស្តុតាងសម្រាប់ការដំឡើងទៅប្រើប្រាស់ទេ។
 
-អ្នកហៅអាចភ្ជាប់អារេ `transcript.cues` ជាជម្រើសទៅផ្នែកវីដេអូដែលគាំទ្រ នៅពេលពួកគេមានអត្ថបទដែលបានតម្រឹមរួចហើយ។ cue នីមួយៗត្រូវតែមាន `text` ចន្លោះពេល `start`/`end` ដែលមានកំណត់ និងស្ថិតក្នុងរយៈពេលដែលបានវាស់ ព្រមទាំង `source` ដែលស្ថិតក្នុងបញ្ជីអនុញ្ញាត (`client`, `embedded`, ឬ `audio-bridge`)។ `confidence` មានតម្លៃលំនាំដើមជា `1` ហើយត្រូវស្ថិតនៅចន្លោះ `0` និង `1`។ cue ដែលស្ទួនគ្នាពិតប្រាកដត្រូវបានបញ្ចូលជាមួយគ្នា។ OmniRoute មិនដែលចាប់ផ្តើមការបម្លែងសំឡេងទៅជាអត្ថបទពីទិន្នន័យមេតានេះទេ៖ cue ដែលបានផ្ទៀងផ្ទាត់ត្រូវបានចម្លងទៅក្នុងលទ្ធផលដែលបានពិពណ៌នា ជាមួយប្រភព កម្រិតទំនុកចិត្ត និងចន្លោះពេល ហើយត្រូវបានបង្ហាញជាការសង្កេតដែលមិនទុកចិត្ត រួមជាមួយចំណងជើងហ្វ្រេម។ អត្ថបទដែលមិនត្រឹមត្រូវ នៅក្រៅជួរ ឬគ្មានប្រភពដើមច្បាស់លាស់ ត្រូវបានបដិសេធ ជាជាងលាយបញ្ចូលទៅក្នុងស្ទ្រីមចំណងជើង។ ឆានែលប្រតិចារឹកទាំងពីរក្នុងតួសំណើ ធ្វើនិយ័តកម្មប្រភពដើមដែលបានផ្តល់ឱ្យទៅជា `client` រួមទាំងស្លាក `embedded` ឬ `audio-bridge` ដែលអះអាងដោយខ្លួនឯងផងដែរ។ មានតែអាដាប់ទ័រដែលគ្រប់គ្រងដោយម៉ាស៊ីនមេប៉ុណ្ណោះដែលអាចកំណត់ស្លាកដែលទុកចិត្តទាំងនោះ តាមរយៈអាគុយម៉ង់សម្រាប់កូដតែប៉ុណ្ណោះ `trustedSource`។ វាល JSON ក្នុងសំណើមិនអាចចូលដល់អាគុយម៉ង់នោះទេ។ អត្ថបទប្រតិចារឹកនៅតែជាខ្លឹមសារដែលមិនទុកចិត្ត និងបានមកពីមេឌៀ ដោយមិនគិតពីប្រភពដើមរបស់វា ហើយមិនត្រូវប្រើដើម្បីកំណត់ការអនុញ្ញាតជាដាច់ខាត។
+អ្នកហៅអាចភ្ជាប់អារេ `transcript.cues` ជាជម្រើស ទៅផ្នែកវីដេអូដែលគាំទ្រ នៅពេលពួកគេមានអត្ថបទដែលបានតម្រឹមរួចហើយ។ cue នីមួយៗត្រូវតែមាន `text` ចន្លោះពេល `start`/`end` ដែលមានកំណត់ និងស្ថិតក្នុងរយៈពេលដែលបានស្ទង់ ព្រមទាំង `source` ដែលស្ថិតក្នុងបញ្ជីអនុញ្ញាត (`client`, `embedded` ឬ `audio-bridge`)។ `confidence` មានតម្លៃលំនាំដើមជា `1` ហើយត្រូវស្ថិតនៅចន្លោះ `0` និង `1`។ cue ដែលស្ទួនគ្នាទាំងស្រុងត្រូវបានបញ្ចូលជាមួយគ្នា។ OmniRoute មិនដែលចាប់ផ្តើមការបម្លែងសំឡេងទៅជាអត្ថបទពីទិន្នន័យមេតានេះទេ៖ cue ដែលបានផ្ទៀងផ្ទាត់ត្រូវបានចម្លងទៅក្នុងលទ្ធផលដែលបានពិពណ៌នា ជាមួយប្រភព កម្រិតទំនុកចិត្ត និងចន្លោះពេល ហើយត្រូវបានបង្ហាញជាការសង្កេតដែលមិនគួរឱ្យទុកចិត្ត អមជាមួយចំណងជើងរូបភាពនៃហ្វ្រេម។ អត្ថបទដែលមិនត្រឹមត្រូវ នៅក្រៅជួរ ឬគ្មានប្រភពដើម ត្រូវបានបដិសេធ ជាជាងលាយបញ្ចូលទៅក្នុងស្ទ្រីមចំណងជើងរូបភាព។ ឆានែលប្រតិចារឹកទាំងពីរនៅក្នុងតួសំណើ ធ្វើនិយ័តកម្មប្រភពដើមដែលបានផ្តល់ឱ្យទៅជា `client` រួមទាំងស្លាក `embedded` ឬ `audio-bridge` ដែលបានអះអាងដោយខ្លួនឯងផងដែរ។ មានតែ adapter ដែលគ្រប់គ្រងដោយម៉ាស៊ីនបម្រើប៉ុណ្ណោះដែលអាចកំណត់ស្លាកដែលគួរឱ្យទុកចិត្តទាំងនោះ តាមរយៈអាគុយម៉ង់សម្រាប់កូដតែប៉ុណ្ណោះ `trustedSource`។ វាល JSON ក្នុងសំណើមិនអាចចូលដល់អាគុយម៉ង់នោះបានទេ។ អត្ថបទប្រតិចារឹកនៅតែជាមាតិកាមិនគួរឱ្យទុកចិត្តដែលបានមកពីមេឌៀ ដោយមិនគិតពីប្រភពដើមរបស់វា ហើយមិនត្រូវប្រើដើម្បីកំណត់ការអនុញ្ញាតជាដាច់ខាត។
 
-អ្នកហៅកម្រិតខ្ពស់អាចផ្តល់ track `audioTranscript` សម្រាប់វីដេអូដូចគ្នា;
-វាត្រូវបានចាត់ទុកជាអត្ថបទដែលផ្តល់ដោយ client មិនមែនជាភស្តុតាងនៃការបម្លែងសំឡេងជាអត្ថបទដោយ server ទេ។
-ចំណុចប្រសព្វនៃការបញ្ចូលគ្នាដំណើរការការសង្កេតផ្នែករូបភាព និងសំឡេងក្រោម
-កាលកំណត់ និងសញ្ញាបោះបង់តែមួយ រៀបចំពួកវាតាមបន្ទាត់ពេលវេលារួម បង្រួម
-ធាតុស្ទួនដែលដូចគ្នាទាំងស្រុង និងរាយការណ៍លទ្ធផលមួយផ្នែកនៅពេលមានតែផ្នែកមួយជោគជ័យ។
-`audioTranscript` ដែលមិនត្រឹមត្រូវនឹងបន្ថយទៅជាលទ្ធផលមួយផ្នែកនោះ — ការពិពណ៌នា
+អ្នកហៅកម្រិតខ្ពស់អាចផ្ដល់ត្រាក់ `audioTranscript` សម្រាប់វីដេអូដូចគ្នា;
+វាត្រូវបានចាត់ទុកជាអត្ថបទដែលផ្ដល់ដោយម៉ាស៊ីនភ្ញៀវ មិនមែនជាភស្តុតាងនៃការធ្វើប្រតិចារឹកដោយម៉ាស៊ីនមេទេ។
+ចំណុចតភ្ជាប់នៃការបញ្ចូលគ្នាដំណើរការការសង្កេតរូបភាព និងសំឡេងក្រោម
+កាលកំណត់ និងសញ្ញាបោះបង់តែមួយ រៀបពួកវាតាមបន្ទាត់ពេលវេលារួម បង្រួម
+ធាតុស្ទួនដូចគ្នាបេះបិទ និងរាយការណ៍លទ្ធផលមិនពេញលេញនៅពេលមានតែផ្នែកមួយជោគជ័យ។
+`audioTranscript` ដែលមិនត្រឹមត្រូវនឹងបន្ថយទៅជាលទ្ធផលមិនពេញលេញនោះ — ការពិពណ៌នា
 រូបភាពត្រូវបានរក្សាទុក ហើយសាខាសំឡេងកត់ត្រាកូដបរាជ័យដែលបានសម្អាត —
-ជំនួសឱ្យការធ្វើឱ្យវីដេអូទាំងមូលបរាជ័យ។ ភាពអាចប្រើបានតាមសាខានីមួយៗ ទង់សម្គាល់លទ្ធផលមួយផ្នែក
+ជំនួសឱ្យការធ្វើឱ្យវីដេអូទាំងមូលបរាជ័យ។ ភាពអាចប្រើបានតាមសាខានីមួយៗ ទង់សម្គាល់ភាពមិនពេញលេញ
 និងកូដបរាជ័យដែលបានសម្អាត ត្រូវបានរក្សាទុកក្នុងលទ្ធផលដែលបានពិពណ៌នា ក្នុង
-metadata របស់ guardrail (`audioFusionRuns`/`audioFusionPartials`/
-`audioFusionFailureCodes`) ក្នុង metadata របស់ cache លទ្ធផល និងក្នុង counter
-នៃការបញ្ចូលគ្នារបស់ bridge។ ផ្លូវលំនាំដើមរបស់ Video Bridge មិនហៅការបម្លែងសំឡេងជាអត្ថបទ
-ឬទាញយកច្បាប់ចម្លង media ទីពីរទេ; ប្រសិនបើគ្មាន track ដែលបានបញ្ជាក់ច្បាស់នោះ វានៅតែ
-ដំណើរការតែវីដេអូប៉ុណ្ណោះ។
+មេតាទិន្នន័យនៃរបាំងការពារ (`audioFusionRuns`/`audioFusionPartials`/
+`audioFusionFailureCodes`) ក្នុងមេតាទិន្នន័យឃ្លាំងសម្ងាត់លទ្ធផល និងក្នុងបញ្ជរបញ្ចូលគ្នា
+របស់ស្ពាន។ ផ្លូវ Video Bridge លំនាំដើមមិនហៅការបម្លែងសំឡេងទៅជាអត្ថបទ
+ឬទាញយកច្បាប់ចម្លងមេឌៀទីពីរទេ; បើគ្មានត្រាក់ដែលបានបញ្ជាក់ច្បាស់នោះ វានៅតែជា
+វីដេអូតែប៉ុណ្ណោះ។
 
-**ការរក្សាទុកប្រតិចារឹក (#12150 P1)។** វាអនុវត្តដោយស្វ័យប្រវត្តិរាល់ពេលដែល
-Video Bridge (ដែលខ្លួនវាត្រូវបានបើកប្រើដោយជ្រើសរើស) បង្ហាញ cue នៃប្រតិចារឹក — មិនមាន
-ទង់សម្គាល់ការរក្សាទុកដាច់ដោយឡែកទេ។ នៅពេលសំណើមួយបង្ហាញ cue នៃប្រតិចារឹកណាមួយ (ទាំង
-`transcript` ដែលប្រកាសដោយអ្នកហៅ ឬ `audioTranscript` ដែលបានបញ្ចូលគ្នា) guardrail សម្គាល់វាជា
-`videoBridgeObserved` និងបង្កើតច្បាប់ចម្លងស្រមោលដែលបានលុបព័ត៌មានរសើបចេញពីការពិពណ៌នាវីដេអូ —
-ជាការបង្ហាញដូចគ្នាបេះបិទ ដែលក្នុងនោះខ្លឹមសារអត្ថបទសេរីរបស់ cue នីមួយៗត្រូវបានជំនួសដោយ
-`[redacted-video-transcript]` ដោយបង្កើតឡើងតាមរយៈការជំនួស field របស់ cue ដែលមានរចនាសម្ព័ន្ធ
-មុនពេល string ត្រូវបានផ្គុំ (មិនដែលធ្វើដោយ parse អត្ថបទដែលបានរាបស្មើទេ ដូច្នេះគ្មានខ្លឹមសារ
-cue ណាមួយ — មិនថាមានចេតនាបង្កគ្រោះថ្នាក់ ឬធម្មតា រួមទាំងខ្លឹមសារដែលមាន `]` ដូចជា
-`[inaudible]`/`[music]` — អាចនៅសេសសល់ឡើយ)។ request body នៃ call-log ដែលបានរក្សាទុក
-ប្ដូរ text part នីមួយៗដែលបានមកពីវីដេអូ ជាមួយច្បាប់ចម្លងស្រមោលដែលបានលុបព័ត៌មានរសើបនោះ
-ដោយផ្គូផ្គងតាមភាពស្មើគ្នានៃខ្លឹមសារ; anchor `fullText` ត្រូវបានអានឡើងវិញពី payload guardrail
-មុនការហៅដែលបានបញ្ចប់ ដូច្នេះការផ្គូផ្គងនៅតែជោគជ័យបន្ទាប់ពី chain guardrail នៅពេលក្រោយ
-(ឧបករណ៍បិទបាំង PII និងព័ត៌មានសម្ងាត់ ដែលមានអាទិភាព 10/95) សរសេរឡើងវិញលើអត្ថបទពិពណ៌នា
-នៅនឹងកន្លែង និងបន្ទាប់ពីការបញ្ចូល system-prompt/handoff/memory កែទម្រង់ message array។
-body ដែលបានផ្ញើទៅខាងលើទៅ model មិនត្រូវបានផ្លាស់ប្ដូរទេ។ សំណើដែលបានសង្កេតក៏មិនបញ្ចូល
-អ្វីទៅក្នុង Memory អចិន្ត្រៃយ៍ដែរ (ការស្រង់ចេញពីទាំងសំណើ និងការឆ្លើយតបត្រូវបានរំលង)
-ដូច្នេះការឆ្លើយតបផ្ទាល់របស់ model មិនអាចបន្ទរអត្ថបទប្រតិចារឹកចូលទៅក្នុង Memory បានទេ។
+**ការរក្សាទុកប្រតិចារឹក (#12150 P1)។** វាត្រូវបានអនុវត្តដោយស្វ័យប្រវត្តិ នៅពេលណាក៏ដោយដែល
+Video Bridge (ដែលខ្លួនវាត្រូវតែបើកប្រើជាមុន) បង្ហាញសញ្ញាប្រតិចារឹក — មិនមានទង់សម្គាល់
+ការរក្សាទុកដាច់ដោយឡែកទេ។ នៅពេលសំណើមួយបង្ហាញសញ្ញាប្រតិចារឹកណាមួយ (ប្រតិចារឹកដែលអ្នកហៅបានប្រកាស
+`transcript` ឬ `audioTranscript` ដែលបានបញ្ចូលគ្នា) របាំងការពារសម្គាល់វាជា
+`videoBridgeObserved` និងបង្កើតច្បាប់ចម្លងស្រមោលដែលបានលាក់ព័ត៌មាននៃការពិពណ៌នាវីដេអូ —
+ការបង្ហាញដូចគ្នាបេះបិទ ដែលតួអត្ថបទសេរីរបស់សញ្ញានីមួយៗត្រូវបានជំនួសដោយ
+`[redacted-video-transcript]` ដែលបង្កើតឡើងដោយជំនួសវាលសញ្ញាដែលមានរចនាសម្ព័ន្ធ
+មុនពេលផ្គុំខ្សែអក្សរ (មិនដែលធ្វើដោយញែកអត្ថបទដែលបានបង្រួមឱ្យរាបស្មើទេ ដូច្នេះគ្មានខ្លឹមសារ
+សញ្ញាណាមួយ — មិនថាមានលក្ខណៈវាយប្រហារ ឬធម្មតា រួមទាំងតួអត្ថបទដែលមាន `]` ដូចជា
+`[inaudible]`/`[music]` — អាចនៅសល់បានទេ)។ តួសំណើនៃកំណត់ហេតុការហៅដែលបានរក្សាទុក
+ប្ដូរផ្នែកអត្ថបទនីមួយៗដែលកើតចេញពីវីដេអូជាមួយច្បាប់ចម្លងស្រមោលដែលបានលាក់ព័ត៌មាននោះ ដោយផ្គូផ្គងតាមភាពស្មើគ្នា
+នៃខ្លឹមសារ; យុថ្កា `fullText` ត្រូវបានអានឡើងវិញពី payload របាំងការពារមុនការហៅដែលបានបញ្ចប់
+ដូច្នេះការផ្គូផ្គងនៅតែជោគជ័យ បន្ទាប់ពីរបាំងការពារជាបន្តបន្ទាប់នៅពេលក្រោយ (ឧបករណ៍លាក់ PII និង
+ព័ត៌មានសម្ងាត់ដែលមានអាទិភាព 10/95) សរសេរអត្ថបទពិពណ៌នាឡើងវិញនៅនឹងកន្លែង និង
+បន្ទាប់ពីការបញ្ចូលប្រអប់បញ្ចូលប្រព័ន្ធ/ការផ្ទេរ/អង្គចងចាំ កែទម្រង់អារេសារ។ តួដែលបានផ្ញើ
+ទៅម៉ូដែលនៅផ្នែកខាងលើមិនត្រូវបានផ្លាស់ប្ដូរទេ។ សំណើដែលបានសង្កេតក៏មិនបញ្ចូលអ្វីទៅក្នុង
+Memory អចិន្ត្រៃយ៍ដែរ (ការស្រង់ចេញដែលកើតពីទាំងសំណើ និងការឆ្លើយតបត្រូវបានរំលង)
+ដូច្នេះការឆ្លើយតបរបស់ម៉ូដែលផ្ទាល់មិនអាចបន្ទរអត្ថបទប្រតិចារឹកចូលទៅក្នុង Memory បានទេ។
 
-**Field វីដេអូដើម (#12430)។** នៅពេល bridge ត្រូវបានបើក ហើយការគាំទ្រវីដេអូ native មិនត្រូវបានដឹង ឬមិនមាន field `transcript`/`audioTranscript` ដែលបានកំណត់ក៏ធ្វើឱ្យ `videoBridgeObserved` សកម្មផងដែរ សូម្បីតែបន្ទាប់ពីការពិពណ៌នាបរាជ័យ ឬដល់ដែនកំណត់ `maxVideos`។ `null` និង string ទទេត្រូវបានរាប់បញ្ចូល; field ដែលអវត្តមាន និង metadata ដែលមិនមែនជាវីដេអូមិនត្រូវបានរាប់បញ្ចូលទេ។ ច្បាប់ចម្លងដែលបានរក្សាទុកនឹងលុបព័ត៌មានរសើបចេញពី field ទាំងនេះ ឬលុបសំណើចោល ហើយ cache/Memory ត្រូវបានរំលង។
+**វាលវីដេអូឆៅ (#12430)។** នៅពេលស្ពានត្រូវបានបើក ហើយការគាំទ្រវីដេអូដើមមិនត្រូវបានដឹង ឬមិនមាន វាល `transcript`/`audioTranscript` ដែលបានកំណត់ក៏ធ្វើឱ្យ `videoBridgeObserved` សកម្មដែរ សូម្បីតែបន្ទាប់ពីការពិពណ៌នាបរាជ័យ ឬដល់កម្រិត `maxVideos`។ `null` និងខ្សែអក្សរទទេត្រូវបានរាប់; វាលដែលអវត្តមាន និងមេតាទិន្នន័យមិនមែនវីដេអូមិនត្រូវបានរាប់ទេ។ ច្បាប់ចម្លងដែលបានរក្សាទុកនឹងលាក់ព័ត៌មានវាលទាំងនេះ ឬលុបសំណើចោល ហើយឃ្លាំងសម្ងាត់/Memory ត្រូវបានរំលង។
 
-នៅលើផ្លូវ fallback ទាំងនោះ cue ត្រឹមត្រូវដែលផ្តល់ដោយអ្នកហៅក្លាយជា part `text`/`input_text`
-ដែលត្រូវបានគាំទ្រ ជំនួសឱ្យ field មិនស្តង់ដាររបស់ provider។ track ទាំងពីរដែលផ្តល់ដោយសំណើ
-នៅតែជាការសង្កេត `client` ដែលមិនគួរទុកចិត្ត ជាមួយការព្រមានច្បាស់លាស់ថាវីដេអូមិនត្រូវបាន
-ពិពណ៌នា ហើយ timestamp មិនត្រូវបានផ្ទៀងផ្ទាត់ធៀបនឹង media ទេ។ ដែនកំណត់ដែលមានស្រាប់
-256 cue/64-KiB សរុប និងតាម cue នីមួយៗ អនុវត្តចំពោះ track ទាំងពីររួមគ្នា;
-timestamp ត្រូវតែស្ថិតក្នុងដែនអតិបរមា 600 វិនាទីរបស់ broker និងក្នុង
-focus window ណាមួយដែលបានផ្តល់។ track ដែលមិនត្រឹមត្រូវត្រូវបានបោះបង់ មិនត្រូវបានបញ្ជូនបន្ត
-ជាអត្ថបទតាមអំពើចិត្តទេ; track រួមជំនាន់ដែលត្រឹមត្រូវនៅតែអាចប្រើបាន លុះត្រាតែ budget រួមរបស់ពួកវា
-ត្រូវបានលើស។ field `null`/ទទេមិនបន្ថែមអត្ថបទទេ។ fallback នេះមិនបន្ថែមការទាញយក media
-ឬការបម្លែងសំឡេងជាអត្ថបទទេ។ field ផ្នែកបន្ថែមនៃប្រតិចារឹកត្រូវបានដកចេញពីធាតុផ្ទុកវីដេអូ
-fallback និង object `video_url`/`source` របស់វា។ allowlist ខ្សែបញ្ជូនរបស់ OpenAI នៅតែតឹងរ៉ឹង;
-ធាតុផ្ទុកវីដេអូ native ដែលមិនស្គាល់នៅតែមាន ហើយ target ដែលត្រូវបានដឹងថាគាំទ្រតែអត្ថបទ
-រក្សា marker ដែលមានសុវត្ថិភាព។ ច្បាប់ចម្លងស្រមោលសម្រាប់លុបព័ត៌មានរសើបដែលមានរចនាសម្ព័ន្ធ
-ការពារអត្ថបទប្រតិចារឹកដែលបានបន្ថែម ខណៈសំណើដើមដែលជាកម្មសិទ្ធិរបស់អ្នកហៅនៅតែមិនផ្លាស់ប្ដូរ។
-target ដែលគាំទ្រ native និង bridge ដែលត្រូវបានបិទ រក្សាឥរិយាបថរំលងដែលមានស្រាប់របស់ពួកវា។
+នៅលើផ្លូវជំនួសទាំងនោះ សញ្ញាត្រឹមត្រូវរបស់អ្នកហៅក្លាយជាផ្នែក `text`/`input_text`
+ដែលត្រូវបានគាំទ្រ ជំនួសឱ្យវាលរបស់អ្នកផ្ដល់សេវាដែលមិនមែនជាស្តង់ដារ។ ត្រាក់ទាំងពីរដែលផ្ដល់ជាមួយសំណើ
+នៅតែជាការសង្កេត `client` ដែលមិនគួរឱ្យទុកចិត្ត ដោយមានការព្រមានច្បាស់ថាវីដេអូ
+មិនត្រូវបានពិពណ៌នា ហើយត្រាពេលវេលាមិនត្រូវបានផ្ទៀងផ្ទាត់ជាមួយមេឌៀទេ។ ថវិកា
+256 សញ្ញា/64-KiB សរុប និងក្នុងមួយសញ្ញាដែលមានស្រាប់ អនុវត្តចំពោះត្រាក់ទាំងពីររួមគ្នា;
+ត្រាពេលវេលាត្រូវតែស្ថិតក្នុងពិដាន 600 វិនាទីរបស់ឈ្មួញកណ្ដាល និងចន្លោះផ្ដោតណាមួយ
+ដែលបានផ្ដល់។ ត្រាក់មិនត្រឹមត្រូវត្រូវបានបោះចោល មិនមែនបញ្ជូនបន្តជាអត្ថបទតាមអំពើចិត្តទេ; ត្រាក់រួមកំណើត
+ដែលត្រឹមត្រូវនៅតែអាចប្រើបាន លុះត្រាតែថវិការួមរបស់ពួកវាត្រូវបានលើស។ វាល null/ទទេ
+មិនបន្ថែមអត្ថបទទេ។ ផ្លូវជំនួសនេះមិនបន្ថែមការទាញយកមេឌៀ ឬការធ្វើប្រតិចារឹកទេ។
+វាលបន្ថែមនៃប្រតិចារឹកត្រូវបានដកចេញពីធាតុផ្ទុកវីដេអូជំនួស និងវត្ថុ
+`video_url`/`source` របស់វា។ បញ្ជីអនុញ្ញាតតាមខ្សែរបស់ OpenAI នៅតែតឹងរ៉ឹង; ធាតុផ្ទុកវីដេអូ
+ដែលមិនស្គាល់ថាគាំទ្រដើមនៅតែអាចប្រើបាន ហើយគោលដៅដែលដឹងថាគាំទ្រតែអត្ថបទរក្សាទុកសញ្ញាសម្គាល់សុវត្ថិភាព។
+ច្បាប់ចម្លងស្រមោលលាក់ព័ត៌មានដែលមានរចនាសម្ព័ន្ធការពារអត្ថបទប្រតិចារឹកដែលបានបន្ថែម ខណៈដែលសំណើ
+ដើមដែលជាកម្មសិទ្ធិរបស់អ្នកហៅនៅតែមិនផ្លាស់ប្ដូរ។ គោលដៅដែលគាំទ្រដើម និង
+ស្ពានដែលត្រូវបានបិទរក្សាឥរិយាបថរំលងដែលមានស្រាប់របស់ពួកវា។
 
-ច្បាប់ចម្លងដែលបានរក្សាទុកបន្ថែម ប្រើសញ្ញាសំណើដែលបានសង្កេតដូចគ្នា។ snapshot ដើមនៃ
-client-request មុន guardrail, សំណើកំពុងរង់ចាំក្នុង memory និង log សំណើដែលត្រូវបានបដិសេធមុនពេល
-កំណត់ field ប្រតិចារឹកក្នុង video part ឡើងវិញតាមរចនាសម្ព័ន្ធ; string prompt ដែលបានសំយោគ
-ដោយដំណាក់កាល pipeline និង context handoff ត្រូវបានលុបព័ត៌មានរសើបនៅ sink នៃ persisted-request-body។
-marker `video_content_removed` ដែលបានរក្សាទុក ធ្វើឱ្យការបន្តតាម `previous_response_id`
-បរាជ័យដោយបិទសុវត្ថិភាព ជំនួសឱ្យការស្ថាបនាឡើងវិញនូវអត្ថបទដែលត្រូវបានបោះបង់ដោយចេតនា។
-ប្រសិនបើសំណើដែលបានសង្កេតបាត់បង់ច្បាប់ចម្លងស្រមោលសម្រាប់លុបព័ត៌មានរសើបតាម part របស់វា
-មុនពេលកត់ត្រា ឬសូម្បីតែច្បាប់ចម្លងស្រមោលវីដេអូមួយក្នុងចំណោមច្រើនមិនអាចផ្គូផ្គងបាន
-បន្ទាប់ពីការកែប្រែសំណើនៅពេលក្រោយ request body ដែលត្រូវរក្សាទុកនឹងត្រូវលុបចោលទាំងស្រុង
-ជំនួសឱ្យការរក្សាទុកប្រតិចារឹកដែលបានលុបព័ត៌មានរសើបតែមួយផ្នែក។
+ច្បាប់ចម្លងបន្ថែមដែលបានរក្សាទុកប្រើសញ្ញាសំណើដែលបានសង្កេតដូចគ្នា។ រូបថតចម្លងឆៅ
+នៃសំណើម៉ាស៊ីនភ្ញៀវមុនរបាំងការពារ សំណើកំពុងរង់ចាំក្នុងអង្គចងចាំ និងកំណត់ហេតុ
+សំណើដែលត្រូវបានបដិសេធមុនពេលកំណត់ ជំនួសវាលប្រតិចារឹកតាមរចនាសម្ព័ន្ធនៅក្នុងផ្នែកវីដេអូ;
+ប្រអប់បញ្ចូលជាខ្សែអក្សរដែលបានសំយោគដោយដំណាក់កាលបំពង់ដំណើរការ និងការផ្ទេរបរិបទ ត្រូវបានលាក់ព័ត៌មាន
+នៅត្រង់ចំណុចទទួលតួសំណើដែលបានរក្សាទុក។ សញ្ញាសម្គាល់ `video_content_removed` ដែលបានរក្សាទុក
+ធ្វើឱ្យការបន្ត `previous_response_id` បរាជ័យដោយបិទសុវត្ថិភាព ជំនួសឱ្យការស្ថាបនាអត្ថបទឡើងវិញ
+ដែលត្រូវបានបោះចោលដោយចេតនា។ ប្រសិនបើសំណើដែលបានសង្កេតបាត់បង់
+ច្បាប់ចម្លងស្រមោលលាក់ព័ត៌មានតាមផ្នែករបស់វាមុនការកត់ត្រា ឬសូម្បីតែស្រមោលវីដេអូមួយក្នុងចំណោមច្រើន
+មិនអាចផ្គូផ្គងបានបន្ទាប់ពីការកែប្រែសំណើនៅពេលក្រោយ តួសំណើដែលបានរក្សាទុកត្រូវបាន
+លុបចោលទាំងស្រុង ជំនួសឱ្យការរក្សាទុកប្រតិចារឹកដែលបានលាក់ព័ត៌មានតែផ្នែកខ្លះ។
 
-សម្រាប់សំណើដែលបានសង្កេត ការឆ្លើយតបរបស់ model អាចដកស្រង់ផ្នែកណាមួយនៃ
-ប្រតិចារឹកដោយគ្មានព្រំដែន cue ដែលមានរចនាសម្ព័ន្ធ។ ដូច្នេះ `responseBody` របស់ call-log
-ដែលបានរក្សាទុក ត្រូវបានជំនួសដោយ marker បង្ហាញការលុបចោល; artifact pipeline លម្អិត
-(ដែលអាចរួមបញ្ចូល body របស់ upstream/client និង stream chunk) មិនត្រូវបានរក្សាទុកទេ។
-cache សម្រាប់ semantic, idempotency និង reasoning-replay រំលងការអាន និងការសរសេរ
-សម្រាប់សំណើនោះ។ សំណើទៅ provider និងការឆ្លើយតបដែល client អាចមើលឃើញនៅតែមិនផ្លាស់ប្ដូរ។
-byte keepalive ដំបូងៗត្រូវបានបង្ហូរចេញពី buffer បណ្ដោះអាសន្ន នៅពេល artifact លម្អិត
-ត្រូវបានលុបចោល។ ការព្រមាន EventStream ខុសទម្រង់របស់ Kiro រាយការណ៍តែចំនួន byte របស់
-payload ប៉ុណ្ណោះ មិនដែលរាយការណ៍ខ្លឹមសាររបស់វា ឬ error ដើមរបស់ JSON parser ទេ។
-នេះមិនមែនជាការអះអាងថា diagnostic របស់ provider/plugin ដែលមិនពាក់ព័ន្ធទាំងអស់
-ត្រូវបានធ្វើសវនកម្មរួចហើយទេ; ការត្រួតពិនិត្យ retained-sink ទូលំទូលាយជាងនេះត្រូវបានតាមដានក្នុង #11658។
+សម្រាប់សំណើដែលបានសង្កេត ការឆ្លើយតបរបស់ម៉ូដែលអាចដកស្រង់ផ្នែកណាមួយនៃ
+ប្រតិចារឹកដោយគ្មានព្រំដែនសញ្ញាដែលមានរចនាសម្ព័ន្ធ។ ដូច្នេះ `responseBody` នៃកំណត់ហេតុការហៅ
+ដែលបានរក្សាទុករបស់វាត្រូវបានជំនួសដោយសញ្ញាសម្គាល់ការលុបចោល; វត្ថុបង្កើតលម្អិតរបស់
+បំពង់ដំណើរការ (ដែលអាចរួមបញ្ចូលតួទិន្នន័យខាងលើ/ម៉ាស៊ីនភ្ញៀវ និងបំណែកស្ទ្រីម)
+មិនត្រូវបានរក្សាទុកទេ។ ឃ្លាំងសម្ងាត់សេម៉ង់ទិក អត្តសញ្ញាណភាព និងការចាក់ឡើងវិញនៃការវែកញែក រំលង
+ការអាន និងការសរសេរសម្រាប់សំណើនោះ។ សំណើរបស់អ្នកផ្ដល់សេវា និងការឆ្លើយតបដែលម៉ាស៊ីនភ្ញៀវអាចមើលឃើញ
+នៅតែមិនផ្លាស់ប្ដូរ។ បៃ keepalive ដំបូងៗត្រូវបានបង្ហូរចេញពីសតិបណ្ដោះអាសន្ន
+នៅពេលវត្ថុបង្កើតលម្អិតត្រូវបានលុបចោល។ ការព្រមាន EventStream ដែលមានទ្រង់ទ្រាយមិនត្រឹមត្រូវ
+របស់ Kiro រាយការណ៍តែចំនួនបៃនៃ payload ប៉ុណ្ណោះ មិនដែលរាយការណ៍ខ្លឹមសាររបស់វា ឬកំហុសឆៅ
+របស់កម្មវិធីញែក JSON ទេ។
+នេះមិនអះអាងថារាល់ការវិនិច្ឆ័យរបស់អ្នកផ្ដល់សេវា/កម្មវិធីជំនួយដែលមិនពាក់ព័ន្ធទាំងអស់
+ត្រូវបានធ្វើសវនកម្មហើយទេ; ការត្រួតពិនិត្យទូលំទូលាយលើចំណុចទទួលដែលបានរក្សាទុក ត្រូវបានតាមដានក្នុង #11658។
 
-វដ្តជីវិតខាងក្នុងរបស់ `/api/modality-bridge/video/drilldown` គឺជាស្រទាប់មូលដ្ឋានឃ្លាំងសម្ងាត់ដាច់ដោយឡែកមួយ ដែលប្រើ loopback/ការផ្ទៀងផ្ទាត់តាម token។ ប្រតិបត្តិការនីមួយៗក៏តម្រូវឱ្យមាន ID អង្គសំខាន់អស្រអាប់ canonical មួយផងដែរ។ មុនពេលអនុញ្ញាតឱ្យអ្នកហៅក្នុងបរិស្ថាន production ប្រើប្រាស់ វាត្រូវតែទាញយក ID នោះពី tenant ដែលបានផ្ទៀងផ្ទាត់ ហើយមិនត្រូវបញ្ជូនបន្តតម្លៃដែលអតិថិជនបានជ្រើសរើសជាដាច់ខាត។ សោឃ្លាំងសម្ងាត់ភ្ជាប់អង្គសំខាន់នោះទៅនឹង ID សម័យ និង ID យោងវីដេអូ canonical រក្សាទុកតែសោដែលបានមកពី SHA-256 របស់ពួកវា ហើយកំណត់វិសាលភាពទាំងការអាន និងការលុបឱ្យស្ថិតក្រោមអង្គសំខាន់ដូចគ្នា។ ឃ្លាំងសម្ងាត់រក្សាទុកស៊ុម JPEG ដែលបានបង្កើតមកមិនលើសពី 16 ក្នុងមួយធាតុ កំណត់ឱ្យពួកវាផុតកំណត់បន្ទាប់ពីដប់នាទី និងគាំទ្រការអានមានដែនកំណត់ដោយ `start`/`end` ឬការលុបសម័យដោយច្បាស់លាស់។
+វដ្តជីវិតខាងក្នុងរបស់ `/api/modality-bridge/video/drilldown` គឺជាស្រទាប់មូលដ្ឋានឃ្លាំងសម្ងាត់ដាច់ដោយឡែក ដែលប្រើ loopback និងការផ្ទៀងផ្ទាត់ដោយ token។ ប្រតិបត្តិការនីមួយៗក៏តម្រូវឱ្យមាន
+លេខសម្គាល់ principal អស្រអាប់បែប canonical ផងដែរ។ មុនពេលអនុញ្ញាតឱ្យ caller សម្រាប់ production ប្រើប្រាស់ វាត្រូវតែ
+ទាញយកលេខសម្គាល់នោះពី tenant ដែលបានផ្ទៀងផ្ទាត់ ហើយមិនត្រូវបញ្ជូនបន្តតម្លៃដែល
+client បានជ្រើសរើសឡើយ។ Cache keys ចង principal នោះទៅនឹង session និង
+លេខសម្គាល់ video-reference បែប canonical ដោយរក្សាទុកតែ keys ដែលបានទាញយកតាម SHA-256 ប៉ុណ្ណោះ ហើយកំណត់វិសាលភាពទាំងការអាន
+និងការលុបឱ្យស្ថិតក្រោម principal ដូចគ្នា។ ឃ្លាំងសម្ងាត់រក្សាទុក frame JPEG ដែលបានទាញយកមកមិនលើសពី 16
+ក្នុងមួយ entry ផុតកំណត់ពួកវាបន្ទាប់ពីដប់នាទី និងគាំទ្រការអាន `start`/`end`
+ដែលមានព្រំដែន ឬការលុប session ដោយច្បាស់លាស់។
 
-អង្គសំខាន់នីមួយៗត្រូវបានកំណត់ត្រឹម 16 ធាតុ និងទិន្នន័យ JPEG canonical ទំហំ 64 MiB។ ដែនកំណត់ទាំងនោះដាច់ដោយឡែកពីពិដានសកល 64 ធាតុ/256 MiB៖ សម្ពាធកូតារបស់អង្គសំខាន់នឹងបណ្តេញចេញតែធាតុដែលត្រូវបានប្រើថ្មីៗតិចបំផុតរបស់អង្គសំខាន់នោះ មុននឹងពិចារណាការបណ្តេញចេញតាម LRU សកល។ ធាតុដែលផុតកំណត់ត្រូវបានសម្អាតចេញពីការគណនាទាំងកម្រិតអង្គសំខាន់ និងសកល នៅពេលមានសកម្មភាពឃ្លាំងសម្ងាត់ ខណៈដែលការបោះបង់ និងការផ្ទៀងផ្ទាត់បរាជ័យមិនធ្វើ commit ការជំនួសដែលមិនពេញលេញឡើយ។
+principal នីមួយៗត្រូវបានកំណត់ត្រឹម 16 entries និងទិន្នន័យ JPEG បែប canonical ទំហំ 64 MiB។ ព្រំដែនទាំងនោះ
+ដំណើរការដាច់ដោយឡែកពីពិដានសកល 64-entry/256 MiB៖ សម្ពាធលើកូតារបស់ principal
+នឹងបណ្តេញចេញតែ entries ដែលបានប្រើថ្មីបំផុតតិចជាងគេរបស់ principal នោះ មុនពេលពិចារណា
+ការបណ្តេញចេញតាម LRU សកល។ Entries ដែលផុតកំណត់ត្រូវបានសម្អាតចេញពីទាំងការគណនារបស់ principal និង
+ការគណនាសកល នៅពេលមានសកម្មភាពឃ្លាំងសម្ងាត់ ខណៈដែលការបោះបង់ និងការផ្ទៀងផ្ទាត់បរាជ័យ
+មិន commit ការជំនួសមិនពេញលេញឡើយ។
 
-ឃ្លាំងសម្ងាត់បដិសេធ Base64 ដែលមិនមែនជា canonical, padding លើសកំណត់, មេឌៀដែលមិនមែនជា JPEG, JPEG ដែលមានទ្រង់ទ្រាយខុស ឬត្រូវបានកាត់ខ្លី និង JPEG ដែលបង្កើតការព្រមានក្នុងអំឡុងពេល decode រូបភាពពេញដោយ `sharp` ដែលមានដែនកំណត់។ វា encode រូបភាពនីមួយៗដែលបានទទួលយកឡើងវិញជា JPEG canonical ទាញយកទទឹង និងកម្ពស់ពីបៃដែលបាន decode ជំនួសឱ្យការជឿទុកចិត្តលើ field របស់អ្នកហៅ ហើយបោះចោលបៃ polyglot ដែលនៅខាងចុង ជំនួសឱ្យការរក្សាទុកពួកវា។ មានតែ buffer ដែលបានបង្ហាប់ជា canonical និងមានដែនកំណត់ប៉ុណ្ណោះ ដែលត្រូវបានរាប់បញ្ចូលក្នុងកូតាទាំងពីរ។ ដែនកំណត់នៃ JSON wire រួមបញ្ចូល overhead របស់ Base64 សម្រាប់ពិដាន input ដែលបាន decode ទំហំ 32 MiB។ រាល់ការបង្កើតដែលបានរក្សាទុក កត់ត្រាទ្រង់ទ្រាយ/កម្រិតភាពច្បាស់ JPEG ដែលបានផ្ទៀងផ្ទាត់ គោលការណ៍ sampling កំណែការបង្កើត ពេលវេលាបង្កើត content hash ដែលគណនាដោយម៉ាស៊ីនមេ និងឯកសារយោងមេដែលបាន hash ព្រមទាំង parent-content hash របស់អ្នកហៅដែលគួរឱ្យទុកចិត្ត។ ការបោះបង់ត្រូវបានពិនិត្យនៅចន្លោះដំណាក់កាល decode/hash អសមកាល មុនពេលធ្វើ commit ឃ្លាំងសម្ងាត់បែប atomic។
+ឃ្លាំងសម្ងាត់បដិសេធ Base64 ដែលមិនមែនជា canonical, padding លើសកម្រិត, media ដែលមិនមែនជា JPEG, JPEG ដែលខូចទ្រង់ទ្រាយ ឬ
+ត្រូវបានកាត់ខ្លី និង JPEG ដែលបង្កើតការព្រមានអំឡុងពេល decode រូបភាពពេញលេញដោយ `sharp`
+ដែលមានព្រំដែន។ វា encode រូបភាពដែលបានទទួលយកនីមួយៗឡើងវិញជា JPEG បែប canonical ទាញយកទទឹង និងកម្ពស់
+ពី bytes ដែលបាន decode ជំនួសឱ្យការជឿទុកចិត្តលើ fields របស់ caller ហើយបោះចោល
+polyglot bytes ដែលនៅខាងចុង ជំនួសឱ្យការរក្សាទុកពួកវា។ មានតែ buffer បង្ហាប់បែប canonical ដែលមានព្រំដែនប៉ុណ្ណោះ
+ដែលត្រូវបានគិតបញ្ចូលទៅក្នុងកូតាទាំងពីរ។ ព្រំដែន JSON តាមខ្សែបញ្ជូនរួមបញ្ចូល overhead របស់ Base64 សម្រាប់ពិដាន
+decoded-input ទំហំ 32 MiB។ រាល់
+derivation ដែលបានរក្សាទុក កត់ត្រាទ្រង់ទ្រាយ/គុណភាពបង្ហាញ JPEG ដែលបានផ្ទៀងផ្ទាត់របស់វា គោលការណ៍ sampling
+កំណែ derivation ពេលវេលាបង្កើត content hash ដែល server បានគណនា និង parent
+reference ដែលបាន hash ព្រមទាំង parent-content hash របស់ caller ដែលទុកចិត្តបាន។ ការបោះបង់ត្រូវបានពិនិត្យ
+នៅចន្លោះដំណាក់កាល decode/hash អសមកាល មុនពេល atomic cache commit។
 
-ផ្នែកការងារនេះមិនទាន់ភ្ជាប់ producer សម្រាប់ production ទៅកាន់ route ទេ ហើយក៏មិនផ្តល់ការជ្រើសរើស variant ដែលមានកម្រិតភាពច្បាស់ច្រើនដែរ។ ដូច្នេះ ផ្លូវសំណើ Video Bridge ដែលមានតម្លាភាពមិនបង្កើតការងារបន្ថែមឡើយ ខណៈដែលការទាញយកអង្គសំខាន់ដែលចងភ្ជាប់នឹង tenant និងវដ្តជីវិតពហុកម្រិតភាពច្បាស់ FU-08 ពេញលេញ នៅតែជាការងារបន្តដែលបានកំណត់ច្បាស់លាស់ ជំនួសឱ្យការចងក្រងជាឯកសារថាជាឥរិយាបថដែលបានបញ្ចប់។
+ផ្នែកការងារនេះមិនទាន់ភ្ជាប់ production producer ទៅ route នៅឡើយទេ ហើយក៏មិន
+ផ្តល់ការជ្រើសរើស variant ពហុគុណភាពបង្ហាញដែរ។ ដូច្នេះ ផ្លូវ request របស់ Video Bridge ដែលមានតម្លាភាព
+មិនបង្កើតការងារបន្ថែមទេ ខណៈដែលការទាញយក principal ដែលចងជាប់ tenant និង
+វដ្តជីវិតពហុគុណភាពបង្ហាញ FU-08 ពេញលេញ នៅតែជាការងារបន្តដែលបានកំណត់ច្បាស់
+ជំនួសឱ្យការចងក្រងឯកសារថាជាឥរិយាបថដែលបានបញ្ចប់។
 
-ស៊ុមត្រូវបានបង្កើតចំណងជើងពណ៌នាតាមលំដាប់ ដោយប្រើ model Video ដែលបានកំណត់រចនាសម្ព័ន្ធ។ ការកំណត់ override សម្រាប់ Video ដែលទទេ នឹងទទួលការកំណត់ពី Vision; ប្រសិនបើទាំងពីរទទេ auto-router របស់ Vision នឹងជ្រើសរើស model ដែលអាចដំណើរការ vision បានជាក់ស្តែង។ ចំណងជើងពណ៌នាដែលជោគជ័យ ជំនួសផ្នែកដើមដោយ prefix មានស្ថិរភាព `[Video description:` ដែលក៏សម្គាល់អត្ថបទថាជាការសង្កេតបានពីមេឌៀដែលមិនគួរឱ្យទុកចិត្ត និងប្រាប់ model ខ្សែបន្តកុំឱ្យធ្វើតាមសេចក្តីណែនាំដែលរកឃើញក្នុងមេឌៀ។ សោឃ្លាំងសម្ងាត់សម្រាប់ចំណងជើងពណ៌នាស៊ុម រួមមានបៃ JPEG, prompt, timestamp និង model ជាក់ស្តែង; មានតែចំណងជើងពណ៌នាដែលជោគជ័យប៉ុណ្ណោះដែលត្រូវបានរក្សាទុកក្នុងឃ្លាំងសម្ងាត់។ ធាតុឃ្លាំងសម្ងាត់រក្សាទុក model producer ដែលបានជោគជ័យពិតប្រាកដ រួមទាំង fallback model; bridge រាយការណ៍ជា `mixed` នៅពេលស៊ុមផ្សេងៗត្រូវបានផលិតដោយ model ផ្សេងៗគ្នា។ ការរកឃើញក្នុងឃ្លាំងសម្ងាត់ប្រើអត្តសញ្ញាណ producer នោះឡើងវិញ ជំនួសឱ្យការដាក់ស្លាកវាឡើងវិញជា routing plan ដែលបានស្នើ។ ឃ្លាំងសម្ងាត់លទ្ធផលសម្រាប់វីដេអូទាំងមូល ត្រូវបានកំណត់សោដោយគ្រប់ input ដែលផ្លាស់ប្តូរ output — prompt, model ជាក់ស្តែង, គោលការណ៍ sampling, ចំនួនស៊ុម, mode វិភាគ semantic, fingerprint SHA-256 នៃ focus hint ដែលបានធ្វើ normalization, focus window, `transcript`, `audioTranscript` និង flag contact-sheet — ដូច្នេះ ការផ្លាស់ប្តូរវិមាត្រណាមួយក្នុងចំណោមនោះ គឺជា cache miss មិនមែនជាការប្រើទិន្នន័យចាស់ឡើងវិញឡើយ។ កំណែគោលការណ៍ visual dedup, threshold និងចំនួនស៊ុមបេក្ខភាពដែលមានដែនកំណត់ ក៏ត្រូវបានបញ្ជាក់ច្បាស់លាស់ក្នុងសោ និង metadata របស់ឃ្លាំងសម្ងាត់លទ្ធផលផងដែរ; ដូច្នេះ ការផ្លាស់ប្តូរគោលការណ៍មិនអាចប្រើសេចក្តីពិពណ៌នាវីដេអូទាំងមូលដែលហួសសម័យឡើងវិញបានទេ។ metadata v4 របស់ឃ្លាំងសម្ងាត់លទ្ធផល រក្សាទុក mode និង fingerprint ប៉ុន្តែមិនដែលរក្សាទុកកិច្ចការដើមរបស់អ្នកប្រើឡើយ។ metadata របស់ guardrail រាយការណ៍ទាំង mode វិភាគដែលបានស្នើ និង mode ជាក់ស្តែង; mode `focused` ដែលបានស្នើដោយគ្មានអត្ថបទអ្នកប្រើដែលអាចប្រើបាន ត្រូវបានរាយការណ៍ថាមានប្រសិទ្ធភាពជា `full`។
+Frames ត្រូវបានដាក់ចំណងជើងតាមលំដាប់ដោយប្រើ Video model ដែលបានកំណត់រចនាសម្ព័ន្ធ។ Video override ទទេ
+ទទួលមរតកការកំណត់ Vision; ប្រសិនបើទាំងពីរទទេ Vision
+auto-router នឹងជ្រើសរើស model ដែលគាំទ្រ vision ឱ្យមានប្រសិទ្ធភាព។ ចំណងជើងដែលបានជោគជ័យ
+ជំនួស part ដើមដោយ prefix `[Video description:` ដែលមានស្ថិរភាព ហើយក៏
+សម្គាល់អត្ថបទថាជាការសង្កេតពី media ដែលមិនគួរឱ្យទុកចិត្ត និងណែនាំ downstream
+models មិនឱ្យធ្វើតាមសេចក្តីណែនាំដែលរកឃើញក្នុង media។ Frame-caption cache keys
+រួមបញ្ចូល JPEG bytes, prompt, timestamp និង effective model; មានតែ
+ចំណងជើងដែលជោគជ័យប៉ុណ្ណោះដែលត្រូវបានរក្សាទុកក្នុងឃ្លាំងសម្ងាត់។ Cache entries រក្សាទុក producer model ដែលបានជោគជ័យពិតប្រាកដ
+រួមទាំង fallback model; bridge រាយការណ៍ `mixed` នៅពេល frames ផ្សេងៗគ្នា
+ត្រូវបានបង្កើតដោយ models ផ្សេងៗគ្នា។ Cache hit ប្រើ producer identity នោះឡើងវិញ
+ជំនួសឱ្យការដាក់ស្លាកវាឡើងវិញជា routing plan ដែលបានស្នើ។ ឃ្លាំងសម្ងាត់លទ្ធផលសម្រាប់វីដេអូទាំងមូល
+ប្រើគ្រប់ input ដែលផ្លាស់ប្តូរ output ជា key — prompt, effective
+model, sampling policy, frame count, semantic analysis mode, fingerprint SHA-256
+របស់ normalized focus hint, focus window, `transcript`,
+`audioTranscript` និង contact-sheet flag — ដូច្នេះ ការផ្លាស់ប្តូរវិមាត្រណាមួយក្នុងចំណោមវាទាំងនេះ
+គឺជា cache miss មិនមែនការប្រើឡើងវិញនូវទិន្នន័យហួសសម័យឡើយ។ កំណែគោលការណ៍ visual dedup
+threshold និងចំនួន candidate-frame ដែលមានព្រំដែន ក៏ត្រូវបានកំណត់យ៉ាងច្បាស់ក្នុង
+result-cache key និង metadata ផងដែរ; ដូច្នេះ ការផ្លាស់ប្តូរគោលការណ៍មិនអាចប្រើឡើងវិញនូវ
+សេចក្តីពិពណ៌នាវីដេអូទាំងមូលដែលហួសសម័យបានទេ។ Metadata របស់ result-cache v4 រក្សាទុក mode និង
+fingerprint ដោយមិនរក្សាទុក user task ដើមឡើយ។ Guardrail metadata រាយការណ៍ទាំង
+analysis modes ដែលបានស្នើ និងដែលមានប្រសិទ្ធភាព; mode `focused` ដែលបានស្នើដោយគ្មាន
+អត្ថបទអ្នកប្រើប្រាស់ដែលអាចប្រើបាន ត្រូវបានរាយការណ៍ថាមានប្រសិទ្ធភាពជា `full`។
 
-guardrail ស្រង់យកគ្រប់ផ្នែកវីដេអូដែលបានគាំទ្រ ប៉ុន្តែពិពណ៌នាមិនលើសពី `modalityBridgeVideoMaxVideos` ឡើយ។ សម្រាប់គោលដៅដែលបានបញ្ជាក់ថាមាន `supportsVideo === false` វីដេអូដែលបរាជ័យ និងលើសដែនកំណត់ ត្រូវបានបម្លែងជាសញ្ញាសម្គាល់អត្ថបទសុវត្ថិភាពយ៉ាងច្បាស់ ដើម្បីកុំឱ្យវីដេអូឆៅនៅសេសសល់។ នៅពេលសមត្ថភាពមិនត្រូវបានដឹង ផ្នែកទាំងនោះរក្សាទុក video carrier របស់ខ្លួន; fallback transcript ណាមួយ អនុវត្តតាមការបម្លែងអត្ថបទមានដែនកំណត់ខាងលើ។ គោលដៅដែលមាន `supportsVideo === true` រំលង bridge។ សញ្ញាបោះបង់សំណើរបស់ client ត្រូវបានបញ្ជូនតាមរយៈការទាញយក broker queue, subprocess និងការហៅបង្កើតចំណងជើងពណ៌នា; ការបោះបង់បញ្ឈប់នៅចន្លោះវីដេអូ ហើយមិនដែល fail open ទៅមេឌៀឆៅឡើយ។
+guardrail ទាញយកគ្រប់ video part ដែលគាំទ្រ ប៉ុន្តែពិពណ៌នាមិនលើសពី
+`modalityBridgeVideoMaxVideos`។ សម្រាប់ target ដែលបានបញ្ជាក់ថាមាន
+`supportsVideo === false` វីដេអូដែលបរាជ័យ និងលើសព្រំដែន ក្លាយជាសញ្ញាសម្គាល់អត្ថបទសុវត្ថិភាពដែលច្បាស់លាស់
+ដើម្បីកុំឱ្យវីដេអូឆៅណាមួយនៅសល់។ នៅពេលមិនស្គាល់សមត្ថភាព parts ទាំងនោះ
+រក្សា video carrier របស់វា; fallback transcript ណាមួយនឹងអនុវត្តតាមការបម្លែងអត្ថបទដែលមានព្រំដែន
+ខាងលើ។ Targets ដែលមាន `supportsVideo === true` នឹងរំលង bridge។
+សញ្ញា abort របស់ client request ត្រូវបានបញ្ជូនបន្តតាមរយៈ download, broker queue,
+subprocesses និង caption calls; ការបោះបង់នឹងបញ្ឈប់នៅចន្លោះវីដេអូនីមួយៗ ហើយមិនដែល fail open
+ទៅកាន់ media ឆៅឡើយ។
 
-ការកំណត់ runtime មានមូលដ្ឋានលើ DB និងត្រូវបានផ្ទៀងផ្ទាត់ដោយ Zod៖
+ការកំណត់ runtime គាំទ្រដោយ DB និងត្រូវបានផ្ទៀងផ្ទាត់ដោយ Zod៖
 
-| គន្លឹះ                              | លំនាំដើម    | ជួរ / ឥរិយាបថ                                                                                             |
-| ----------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
-| `modalityBridgeVideoEnabled`        | `false`     | runtime ជាជម្រើស ដែលត្រូវបើកប្រើដោយចេតនា                                                                  |
-| `modalityBridgeVideoAnalysisMode`   | `"full"`    | `full` រក្សាចំណងជើងទូទៅ; `focused` ប្រើបរិបទអ្នកប្រើចុងក្រោយដែលមានដែនកំណត់ និងមិនគួរឱ្យទុកចិត្ត           |
-| `modalityBridgeVideoModel`          | `""`        | ទទួលបន្តម៉ូដែល Vision Bridge                                                                              |
-| `modalityBridgeVideoFrameCount`     | `8`         | 1–16                                                                                                      |
-| `modalityBridgeVideoSamplingPolicy` | `"uniform"` | `uniform`, `scene_aware` ឬ `segment_aware` តាមសមាមាត្រ; ការបរាជ័យរបស់ឧបករណ៍រកឃើញនឹងត្រឡប់ទៅប្រើ `uniform` |
-| `modalityBridgeVideoMaxVideos`      | `1`         | 1–4                                                                                                       |
-| `modalityBridgeVideoTimeout`        | `120000`    | 1000–120000 ms                                                                                            |
+| សោ                                  | លំនាំដើម    | ជួរ / ឥរិយាបថ                                                                                         |
+| ----------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
+| `modalityBridgeVideoEnabled`        | `false`     | Runtime ស្រេចចិត្ត ដែលត្រូវបើកប្រើដោយចេតនា                                                            |
+| `modalityBridgeVideoAnalysisMode`   | `"full"`    | `full` រក្សាចំណងជើងពណ៌នាទូទៅ; `focused` ប្រើបរិបទអ្នកប្រើចុងក្រោយដែលមានដែនកំណត់ និងមិនគួរឱ្យទុកចិត្ត  |
+| `modalityBridgeVideoModel`          | `""`        | ទទួលមរតកម៉ូដែល Vision Bridge                                                                          |
+| `modalityBridgeVideoFrameCount`     | `8`         | 1–16                                                                                                  |
+| `modalityBridgeVideoSamplingPolicy` | `"uniform"` | `uniform`, `scene_aware` ឬ `segment_aware` តាមសមាមាត្រ; ការបរាជ័យរបស់ឧបករណ៍រកឃើញនឹងត្រឡប់ទៅ `uniform` |
+| `modalityBridgeVideoMaxVideos`      | `1`         | 1–4                                                                                                   |
+| `modalityBridgeVideoTimeout`        | `120000`    | 1000–120000 ms                                                                                        |
 
-តម្លៃ timeout របស់ Video ដែលបានរក្សាទុកពីប្រព័ន្ធចាស់ ហើយលើសពី 120 វិនាទី នឹងត្រូវបានកម្រិតត្រឹម
-ពេលផុតកំណត់របស់ broker; ការសរសេរការកំណត់ថ្មីដែលលើសដែនកំណត់នោះ នឹងត្រូវបានបដិសេធ។
-`GET /api/modality-bridge/video/runtime` ទាមទារ locality របស់ loopback ដែលបានបោះត្រាថាគួរឱ្យទុកចិត្ត
-មុនពេលធ្វើការផ្ទៀងផ្ទាត់អត្តសញ្ញាណ ឬស្ទង់មើល runtime បន្ទាប់មកទាមទារ
-សិទ្ធិគ្រប់គ្រង។ វាត្រឡប់តែ `available`, កំណែ FFmpeg/ffprobe ដែលបានសម្អាត និងហេតុផលថេរមួយ
-នៅពេល runtime មិនអាចប្រើបាន។ endpoint ស្រង់ទិន្នន័យខាងក្នុង មិនមែនជា
-API សាធារណៈសម្រាប់ផ្ទុកឡើងទេ៖ ការកកស្ទះ queue ត្រឡប់ `503` ជាមួយ `Retry-After`, ការផ្តាច់
-ការតភ្ជាប់ពីអ្នកហៅ ត្រឡប់ `499` ហើយពេលផុតកំណត់ថេររបស់ broker ត្រឡប់ `504`។ response ដែលបានបម្លែង បន្ថែម
-`video->text;model=<visionModel>;parts=<videos>` ទៅកាន់ header កណ្តាល
-`x-omniroute-modality-bridge` ដោយមិនលុបផ្នែក Vision ឬ Audio ឡើយ។
+តម្លៃអស់ពេល Video ចាស់ដែលបានរក្សាទុក និងលើសពី 120 វិនាទី ត្រូវបានកម្រិតត្រឹម
+ពេលកំណត់របស់ broker; ការសរសេរការកំណត់ថ្មីដែលលើសដែនកំណត់នោះត្រូវបានបដិសេធ។
+`GET /api/modality-bridge/video/runtime` តម្រូវឱ្យមាន locality ជា loopback
+ដែលគួរឱ្យទុកចិត្ត និងបានបោះត្រា មុនពេលផ្ទៀងផ្ទាត់អត្តសញ្ញាណ ឬស្ទង់ពិនិត្យ runtime
+បន្ទាប់មកតម្រូវឱ្យមានការផ្ទៀងផ្ទាត់សិទ្ធិគ្រប់គ្រង។
+វាត្រឡប់តែ `available`, កំណែ FFmpeg/ffprobe ដែលបានសម្អាត និងមូលហេតុថេរមួយ
+នៅពេល runtime មិនអាចប្រើបាន។ Endpoint សម្រាប់ការស្រង់ទិន្នន័យខាងក្នុង មិនមែនជា
+API សាធារណៈសម្រាប់ផ្ទុកឡើងទេ៖ ការឆ្អែតរបស់ជួររង់ចាំត្រឡប់ `503` រួមជាមួយ `Retry-After`,
+ការផ្តាច់ការតភ្ជាប់ដោយអ្នកហៅត្រឡប់ `499` ហើយពេលកំណត់ថេររបស់ broker ត្រឡប់ `504`។ Response ដែលបានបម្លែងនឹងបន្ថែម
+`video->text;model=<visionModel>;parts=<videos>` ទៅក្នុង header កណ្ដាល
+`x-omniroute-modality-bridge` ដោយមិនលុប segment របស់ Vision ឬ Audio ឡើយ។
 
-### កម្មវិធីបិទបាំង PII (`piiMasker.ts`)
+### កម្មវិធីលាក់ PII (`piiMasker.ts`)
 
-ដំណើរការនៅលើដំណាក់កាល **ទាំងពីរ**។
+ដំណើរការនៅ **ទាំងពីរ** ដំណាក់កាល។
 
-- **`preCall`** ចម្លង payload, ដើរឆ្លងកាត់ `system`, `messages`, `input` និង
-  `prompt` (រួមទាំងធាតុជា string ធម្មតា) ហើយអនុវត្ត `processPII()` (មកពី
-  `@/shared/utils/inputSanitizer`) ទៅលើ field `content`/`text` ដែលជា string។ នៅពេល
-  `PII_REDACTION_ENABLED=true`, PII ដែលបានរកឃើញត្រូវបានលាក់នៅក្នុង payload
-  ចេញ។ វាមិនអាស្រ័យលើ `INPUT_SANITIZER_MODE` ទេ (ដែលគ្រប់គ្រងតែ
-  គោលការណ៍ prompt-injection ប៉ុណ្ណោះ)។ នៅពេលបិទការលាក់ ការ call នឹងកត់ត្រា
+- **`preCall`** ក្លូន payload, ពិនិត្យឆ្លងកាត់ `system`, `messages`, `input` និង
+  `prompt` (រួមទាំង item ជា string ធម្មតា) ហើយអនុវត្ត `processPII()` (ពី
+  `@/shared/utils/inputSanitizer`) ទៅលើ field `content`/`text` ជា string។ នៅពេល
+  `PII_REDACTION_ENABLED=true` PII ដែលបានរកឃើញត្រូវបានលាក់ក្នុង payload
+  ដែលផ្ញើចេញ។ នេះមិនពឹងផ្អែកលើ `INPUT_SANITIZER_MODE` ទេ (ដែលគ្រប់គ្រងតែ
+  គោលការណ៍ prompt-injection ប៉ុណ្ណោះ)។ នៅពេលបិទការលាក់ ការហៅនឹងកត់ត្រា
   ចំនួននៃការរកឃើញដោយមិនសរសេរខ្លឹមសារឡើងវិញ។
-- **`postCall`** ធ្វើ deep-clone លើ response, ដំណើរការ `sanitizePIIResponse()` រួមជាមួយ
-  កម្មវិធីបិទបាំងទម្រង់ Responses-API (`maskResponsesOutput` — គ្របដណ្តប់
+- **`postCall`** ក្លូន response ជ្រៅ រួចដំណើរការ `sanitizePIIResponse()` រួមជាមួយ
+  កម្មវិធីលាក់សម្រាប់ទម្រង់ Responses API (`maskResponsesOutput` — គ្របដណ្ដប់
   `output_text` និង `output[].content[].text`)។ ប្រសិនបើមានការលាក់ណាមួយកើតឡើង
   response ដែលបានកែប្រែនឹងជំនួស response ដើម។
 
-guardrail មិនដែលរារាំងទេ; វាគ្រាន់តែបន្ថែមចំណារពន្យល់ (`meta.detections`,
+Guardrail នេះមិនដែលទប់ស្កាត់ឡើយ; វាគ្រាន់តែបន្ថែមចំណារពន្យល់ (`meta.detections`,
 `meta.redacted`) ឬសរសេរឡើងវិញប៉ុណ្ណោះ។
 
-### Prompt Injection (`promptInjection.ts`)
+#### ការជ្រើសរើសតាមប្រភេទ លំនាំផ្ទាល់ខ្លួន និងឧបករណ៍រាប់ការរកឃើញ
 
-រកឃើញរចនាសម្ព័ន្ធប្រឆាំងនៅក្នុងខ្លឹមសារដែលផ្តល់ដោយអ្នកប្រើ និងអនុវត្ត
-គោលការណ៍ដែលបានកំណត់រចនាសម្ព័ន្ធ។ ឥរិយាបថត្រូវបានគ្រប់គ្រងដោយ environment variables និងជម្រើស
-constructor៖
+**Dashboard → Settings → Security → PII masking** ជ្រើសរើស _អ្វី_ ដែលត្រូវលាក់។ វា
+មិនបើកការលាក់ទេ៖ ការបើកនៅតែត្រូវកំណត់ដោយ `PII_REDACTION_ENABLED` (request) និង
+`PII_RESPONSE_SANITIZATION` (response + SSE) ដែលទាំងពីរត្រូវបានបិទតាមលំនាំដើម។
 
-| ការកំណត់       | Env var                                                                                                    | លំនាំដើម | ឥទ្ធិពល                                                                                                                                                                                                                       |
-| -------------- | ---------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| បានបើកដំណើរការ | `INPUT_SANITIZER_ENABLED`                                                                                  | `true`   | នៅពេល `false`, guardrail នឹងបញ្ចប់ដំណើរការភ្លាមៗ។                                                                                                                                                                             |
-| របៀប           | `INJECTION_GUARD_MODE` / `INPUT_SANITIZER_MODE`                                                            | `warn`   | គោលការណ៍ injection៖ `block`, `warn` ឬ `log`។ (`redact` ត្រូវបានទទួលយកសម្រាប់ភាពឆបគ្នាជាមួយកំណែចាស់ ប៉ុន្តែវា **មិន** លុបអត្ថបទ injection ទេ; ការសរសេរ PII ក្នុង request ឡើងវិញ ត្រូវបានគ្រប់គ្រងដោយ `PII_REDACTION_ENABLED`។) |
-| កម្រិតរារាំង   | ជម្រើស `blockThreshold` / `INPUT_SANITIZER_BLOCK_THRESHOLD` (ឈ្មោះជំនួស `INJECTION_GUARD_BLOCK_THRESHOLD`) | `high`   | កម្រិតធ្ងន់ធ្ងរអប្បបរមាដែលត្រូវការដើម្បីរារាំង។ កម្រិតមធ្យមគឺសម្រាប់សង្កេតតែប៉ុណ្ណោះតាមលំនាំដើម។                                                                                                                              |
+- **ការជ្រើសរើសតាមប្រភេទ** — id ដែលមានស្រាប់ត្រូវបានរាយក្នុង
+  `src/shared/constants/piiTypes.ts` (`PII_BUILTIN_TYPES`)។ ការមិនកំណត់មានន័យថា
+  គ្រប់ប្រភេទទាំងអស់ (ឥរិយាបថមុនពេលមានការកំណត់នេះ)។ លំនាំ `ssn_us` របស់
+  engine សម្រាប់ request ត្រូវបានផ្គូផ្គងទៅ `ssn`។ Template (Minimal, Standard, Financial,
+  Brazilian, USA, Full) គ្រាន់តែបំពេញប្រអប់ធីកនៅក្នុង UI ប៉ុណ្ណោះ។
+- **លំនាំផ្ទាល់ខ្លួន** — អាចមានលំនាំ regex ឬ wildcard រហូតដល់ 20 (`*` = តួអក្សរ
+  មិនមែនដកឃ្លារហូតដល់ 64 តួ, `?` = មួយតួ)។ លទ្ធផលដែលផ្គូផ្គងនឹងក្លាយជា `[CUSTOM_REDACTED]`។
+  រាល់លំនាំទាំងអស់ត្រូវឆ្លងកាត់ `compilePiiCustomPattern()`
+  (`src/shared/utils/piiCustomPatterns.ts`)៖ អតិបរមា 500 តួអក្សរ, flag ត្រូវបានកំណត់
+  ត្រឹម `g i m s u`, ត្រូវតែ compile បាន, ត្រូវតែឆ្លងកាត់ `safe-regex` (ការត្រឡប់ថយក្រោយ
+  ដ៏ធ្ងន់ធ្ងរ) ហើយមិនត្រូវផ្គូផ្គង string ទទេ ឬ placeholder សម្រាប់ការលាក់ឡើយ។
+  លំនាំដែលបរាជ័យត្រូវបានបដិសេធនៅពេលរក្សាទុក និងនៅពេលសាកល្បង ហើយ row ដែលបានរក្សាទុក
+  ដែលបរាជ័យនឹងត្រូវបានរំលងនៅ runtime ជំនួសឱ្យការធ្វើ compile។ លំនាំផ្ទាល់ខ្លួន
+  ដំណើរការតែនៅពេលបើកការលាក់ប៉ុណ្ណោះ។
+- **ឧបករណ៍រាប់ការរកឃើញ** — ចំនួនតាមប្រភេទ (មិនរក្សាទុកតម្លៃដែលបានផ្គូផ្គងឡើយ) ត្រូវបានរក្សាទុកក្នុង
+  memory ហើយកំណត់ទៅសូន្យវិញនៅពេលចាប់ផ្ដើមឡើងវិញ (`src/lib/pii/piiDetectionStats.ts`)។ វាកើនឡើង
+  តែនៅពេលបើកការលាក់ប៉ុណ្ណោះ។
+
+ការកំណត់ទាំងនេះស្ថិតក្នុងតារាង `key_value` (namespace `pii_settings`,
+`src/lib/db/piiSettings.ts`) ហើយត្រូវបានអានតាមរយៈ cache រយៈពេល 1 វិនាទី។ API៖
+
+| វិធីសាស្ត្រ | ផ្លូវ                    | គោលបំណង                                                                         |
+| ----------- | ------------------------ | ------------------------------------------------------------------------------- |
+| `GET`       | `/api/settings/pii`      | ស្ថានភាព flag, `enabledTypes`, `customPatterns`, ឧបករណ៍រាប់ការរកឃើញ             |
+| `PUT`       | `/api/settings/pii`      | ជំនួស `enabledTypes` (`null` = ទាំងអស់) និង/ឬ `customPatterns`                  |
+| `POST`      | `/api/settings/pii/test` | សាកល្បងលំនាំមួយដោយមិនរក្សាទុក លើ sample អតិបរមា 8 KB; គ្មានអ្វីត្រូវបានរក្សាទុក |
+
+ទាំងបីតម្រូវឱ្យមានការផ្ទៀងផ្ទាត់សិទ្ធិគ្រប់គ្រង និងធ្វើសុពលភាព body ដោយប្រើ Zod
+(`src/shared/validation/schemas/piiSettings.ts`)។
+
+### ការចាក់បញ្ចូល Prompt (`promptInjection.ts`)
+
+រកឃើញរចនាសម្ព័ន្ធប្រឆាំងនៅក្នុងខ្លឹមសារដែលអ្នកប្រើបានផ្ដល់ និងអនុវត្ត
+គោលការណ៍ដែលបានកំណត់។ ឥរិយាបថត្រូវបានកំណត់ដោយ environment variable និង option
+របស់ constructor៖
+
+| ការកំណត់                       | អថេរបរិស្ថាន                                                                                               | លំនាំដើម | ឥទ្ធិពល                                                                                                                                                                                                                   |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| បានបើក                         | `INPUT_SANITIZER_ENABLED`                                                                                  | `true`   | នៅពេលជា `false` guardrail នឹងរំលងដំណើរការភ្លាមៗ។                                                                                                                                                                          |
+| របៀប                           | `INJECTION_GUARD_MODE` / `INPUT_SANITIZER_MODE`                                                            | `warn`   | គោលការណ៍ injection៖ `block`, `warn` ឬ `log`។ (`redact` ត្រូវបានទទួលយកសម្រាប់ភាពឆបគ្នាជាមួយកំណែចាស់ ប៉ុន្តែវា **មិន** ដកអត្ថបទ injection ចេញទេ។ ការសរសេរ PII ក្នុងសំណើឡើងវិញត្រូវបានគ្រប់គ្រងដោយ `PII_REDACTION_ENABLED`។) |
+| កម្រិតកំណត់សម្រាប់ការទប់ស្កាត់ | ជម្រើស `blockThreshold` / `INPUT_SANITIZER_BLOCK_THRESHOLD` (ឈ្មោះជំនួស `INJECTION_GUARD_BLOCK_THRESHOLD`) | `high`   | កម្រិតធ្ងន់ធ្ងរអប្បបរមាដែលតម្រូវឱ្យទប់ស្កាត់។ តាមលំនាំដើម កម្រិតមធ្យមគឺសម្រាប់តែការសង្កេតប៉ុណ្ណោះ។                                                                                                                        |
 
 **លំដាប់អាទិភាពនៃរបៀប** (`getMode`)៖ `options.mode` របស់អ្នកហៅ →
-ការកំណត់ជាន់លើដោយ **DB feature-flag** របស់ `INJECTION_GUARD_MODE` (Dashboard → Settings →
+ការកំណត់ជាន់លើដោយ **DB feature flag** `INJECTION_GUARD_MODE` (Dashboard → Settings →
 Feature Flags) → env `INJECTION_GUARD_MODE` → env `INPUT_SANITIZER_MODE` →
-`warn`។ ដូច្នេះ ការកំណត់ជាន់លើពី dashboard មានអាទិភាពលើ env vars ហេតុនេះ UI របស់ Feature
-Flags អាចគ្រប់គ្រង guard ដែលកំពុងដំណើរការភ្លាមៗ (មិនចាំបាច់ restart)។ ការអាន DB មានសុវត្ថិភាពពេលមានបញ្ហា៖
-ប្រសិនបើវាមានកំហុស guard នឹងត្រឡប់ទៅឥរិយាបថផ្អែកលើ env ហើយនៅពេលគ្មាន
-ការកំណត់ជាន់លើ ឥរិយាបថនឹងដូចគ្នាបេះបិទនឹងការដោះស្រាយដោយប្រើតែ env។
+`warn`។ ដូច្នេះ ការកំណត់ជាន់លើពី dashboard មានអាទិភាពជាងអថេរ env ដែលធ្វើឱ្យ UI
+Feature Flags អាចគ្រប់គ្រង guard ដែលកំពុងដំណើរការបានភ្លាមៗ (មិនចាំបាច់ចាប់ផ្ដើមឡើងវិញ)។ ការអានពី DB មានសុវត្ថិភាពពេលបរាជ័យ៖
+ប្រសិនបើវាមានកំហុស guard នឹងត្រឡប់ទៅប្រើឥរិយាបថផ្អែកលើ env ហើយនៅពេលមិនមាន
+ការកំណត់ជាន់លើ ឥរិយាបថនឹងដូចគ្នាទាំងស្រុងនឹងការកំណត់ដោយ env តែប៉ុណ្ណោះ។
 
 ប្រភពនៃការរកឃើញ៖
 
-1. `sanitizeRequest()` មកពី `@/shared/utils/inputSanitizer` (សំណុំឧបករណ៍រកឃើញរួម
-   ដែលត្រូវបានប្រើនៅកន្លែងផ្សេងក្នុង pipeline)។
-2. `DEFAULT_GUARD_PATTERNS` ដែលភ្ជាប់មកជាមួយ (បច្ចុប្បន្នមាន `system_override_inline` និង
+1. `sanitizeRequest()` ពី `@/shared/utils/inputSanitizer` (សំណុំឧបករណ៍រកឃើញរួម
+   ដែលត្រូវបានប្រើនៅកន្លែងផ្សេងទៀតក្នុង pipeline)។
+2. `DEFAULT_GUARD_PATTERNS` ដែលមានស្រាប់ (បច្ចុប្បន្នគឺ `system_override_inline` និង
    `markdown_system_block` ដែលទាំងពីរមានកម្រិតធ្ងន់ធ្ងរ `high`)។
-3. `customPatterns` ជាជម្រើស ដែលបានបញ្ជូនតាមជម្រើស constructor (strings, regex,
+3. `customPatterns` ជាជម្រើស ដែលបានបញ្ជូនតាមជម្រើស constructor (string, regex
    ឬ record `{ name, pattern, severity }`)។
 
-នៅពេល `mode === "block"` **និង** ការរកឃើញយ៉ាងហោចណាស់មួយឈានដល់កម្រិតភាពធ្ងន់ធ្ងរ
-`preCall` នឹងត្រឡប់ `{ block: true, message: "Request rejected:
-suspicious content detected" }`។ នៅក្នុងម៉ូដ `warn`/`log` guardrail នឹងកត់ត្រា ប៉ុន្តែ
-អនុញ្ញាតឱ្យការហៅដំណើរការ។ Helper រួម `evaluatePromptInjection()` ក៏ត្រូវបាន export
-សម្រាប់អ្នកហៅដែលត្រូវការវាយតម្លៃ prompt ដោយមិនឆ្លងកាត់ registry ផងដែរ។
+នៅពេល `mode === "block"` **និង** មានការរកឃើញយ៉ាងហោចណាស់មួយដែលឈានដល់កម្រិត
+ធ្ងន់ធ្ងរកំណត់ `preCall` នឹងត្រឡប់ `{ block: true, message: "សំណើត្រូវបានបដិសេធ៖
+បានរកឃើញមាតិកាគួរឱ្យសង្ស័យ" }`។ ក្នុងរបៀប `warn`/`log` guardrail នឹងកត់ត្រា ប៉ុន្តែ
+អនុញ្ញាតឱ្យការហៅបន្ត។ Helper រួម `evaluatePromptInjection()` ក៏ត្រូវបាន export
+សម្រាប់អ្នកហៅដែលត្រូវវាយតម្លៃ prompt ដោយមិនឆ្លងកាត់ registry ផងដែរ។
 
-**ដែនកំណត់ការស្កេន (v3.8.20):** detector ពិនិត្យតែ **16 KB ដំបូង** នៃ
-អត្ថបទ prompt ដែលបានភ្ជាប់ — `MAX_INJECTION_SCAN_BYTES = 16 * 1024` (16 384 bytes) នៅក្នុង
+**ដែនកំណត់ការស្កេន (v3.8.20)៖** ឧបករណ៍រកឃើញពិនិត្យតែ **16 KB ដំបូង** នៃ
+អត្ថបទ prompt ដែលបានភ្ជាប់ — `MAX_INJECTION_SCAN_BYTES = 16 * 1024` (16 384 bytes) ក្នុង
 `src/shared/utils/inputSanitizer.ts`។ ទាំង `detectInjection()` និង
-`evaluatePromptInjection()` ប្រើ `slice(0, MAX_INJECTION_SCAN_BYTES)` មុនពេលដំណើរការ
+`evaluatePromptInjection()` ប្រើ `slice(0, MAX_INJECTION_SCAN_BYTES)` មុននឹងដំណើរការ
 pattern loop។ សេចក្ដីបង្គាប់ injection ស្ថិតនៅជិតផ្នែកខាងលើនៃ input ដូច្នេះវា
-កំណត់ការប្រើប្រាស់ CPU/GC របស់ regex លើ payload ដែលមានទំហំរាប់រយ KB ដោយមិនធ្វើឱ្យការរកឃើញចុះខ្សោយឡើយ (សូមមើល
+កំណត់ការប្រើ CPU/GC របស់ regex លើ payload ដែលមានទំហំរាប់រយ KB ដោយមិនបន្ថយប្រសិទ្ធភាពនៃការរកឃើញទេ (សូមមើល
 #3932, #4041)។
 
 ### ឧបករណ៍បិទបាំងព័ត៌មានសម្ងាត់ (`credentialMasker.ts`)
 
-ដំណើរការនៅលើដំណាក់កាល **ទាំងពីរ** និងនៅចុងក្រោយក្នុងខ្សែសង្វាក់លំនាំដើម (អាទិភាព `95`)។ លុបបាំង
-pattern របស់ API key / secret token ដែលគេស្គាល់ទូទៅពី outbound payload (ខ្លឹមសារ
-សារ, argument នៃ tool-call, លទ្ធផលពី tool) **និង** response របស់ provider ដើម្បីកុំឱ្យ
-ព័ត៌មានសម្ងាត់ដែលបានបិទភ្ជាប់ក្នុង prompt (ឬត្រូវបាន tool result ឆ្លើយតបត្រឡប់មកវិញ) លេចធ្លាយ
-ទៅកាន់ upstream provider ឬត្រឡប់ទៅ client វិញ។
+ដំណើរការនៅលើដំណាក់កាល **ទាំងពីរ** និងនៅចុងក្រោយក្នុង chain លំនាំដើម (អាទិភាព `95`)។ វាបិទបាំង
+pattern របស់ API key / secret token ដែលគេស្គាល់ច្បាស់ពី payload ផ្ញើចេញ (មាតិកាសារ
+argument នៃ tool call និងលទ្ធផល tool) **ព្រមទាំង** response របស់ provider ដើម្បីឱ្យ
+ព័ត៌មានសម្ងាត់ដែលបានបិទភ្ជាប់ក្នុង prompt (ឬដែលត្រូវបានបង្ហាញឡើងវិញដោយលទ្ធផល tool) មិនលេចធ្លាយ
+ទៅកាន់ provider ខាងលើ ឬត្រឡប់ទៅ client វិញ។
 
-- **ត្រូវតែជ្រើសបើកប្រើប៉ុណ្ណោះ** ដោយប្រើគោលការណ៍ដូចគ្នានឹងការលុបបាំង PII (នៅជិត Hard Rule #20)៖
+- **បើកប្រើតាមការជ្រើសរើសតែប៉ុណ្ណោះ** ដោយអនុវត្តតាមគោលការណ៍ដូចគ្នានឹងការបិទបាំង PII (នៅក្បែរ Hard Rule #20)៖
   ត្រូវបានបិទ លុះត្រាតែ `settings.credentialRedactionEnabled === true` **ឬ**
-  `CREDENTIAL_REDACTION_ENABLED=true`។ នៅពេលវាត្រូវបានបិទ guardrail នឹងមិនធ្វើអ្វីទាំងអស់ —
-  វាមិនដែលរារាំង និងមិនដែលសរសេរឡើងវិញទេ។
-- `redactCredentials()` ឆ្លងកាត់ payload/response tree ទាំងមូល (`walkValue()`,
-  មានសុវត្ថិភាពពី prototype pollution និងមានសុវត្ថិភាពពី cycle តាមរយៈ `WeakSet`) ហើយជំនួសការផ្គូផ្គងដោយ
-  placeholder `[REDACTED:<type>]` ដោយ clone តែ branch ដែលពិតជាបានផ្លាស់ប្ដូរប៉ុណ្ណោះ។
+  `CREDENTIAL_REDACTION_ENABLED=true`។ នៅពេលវាត្រូវបានបិទ guardrail នឹងមិនធ្វើអ្វីឡើយ —
+  វាមិនទប់ស្កាត់ និងមិនសរសេរឡើងវិញទេ។
+- `redactCredentials()` ឆ្លងកាត់ tree ទាំងមូលរបស់ payload/response (`walkValue()`
+  មានសុវត្ថិភាពពី prototype pollution និងមានសុវត្ថិភាពចំពោះ cycle តាមរយៈ `WeakSet`) ហើយជំនួសតម្លៃដែលត្រូវគ្នាដោយ
+  placeholder `[REDACTED:<type>]` ដោយ clone តែ branch ដែលបានផ្លាស់ប្ដូរជាក់ស្ដែងប៉ុណ្ណោះ។
 - `CREDENTIAL_PATTERNS` គ្របដណ្ដប់លើ key របស់ LLM provider (OpenAI, OpenAI-proj,
   Anthropic, Google, Hugging Face, Replicate), token របស់ VCS/SaaS (GitHub, Slack,
-  Linear, Notion, npm, Postman, Discord), payment key (Stripe, Square), cloud
-  key (AWS access key, Twilio, SendGrid, Mailgun), private key / JWT,
-  connection string ដែលមានព័ត៌មានសម្ងាត់ (`mongodb://user:pass@...` ជាដើម) និង
+  Linear, Notion, npm, Postman, Discord), key ទូទាត់ប្រាក់ (Stripe, Square), key
+  សេវា cloud (AWS access key, Twilio, SendGrid, Mailgun), private key / JWT,
+  connection string ដែលមានព័ត៌មានសម្គាល់អត្តសញ្ញាណ (`mongodb://user:pass@...` ជាដើម) និង
   pattern ទូទៅសម្រាប់តម្លៃ header `Authorization`/`x-api-key`/`api-key`/`apikey`។
-  Key ដែលមានទម្រង់ជា header (`authorization`, `x-api-key`, `api-key`,
-  `apikey`) ត្រូវបានលុបបាំងតាមរចនាសម្ព័ន្ធ (តែតម្លៃប៉ុណ្ណោះ ដោយរក្សាទុក scheme prefix ដូចជា
-  `Bearer `/`Basic `) ជំនួសឱ្យការប្រើ generic text regex។
-- Guardrail មិនដែលរារាំងទេ; វាគ្រាន់តែសរសេរឡើងវិញ (`modifiedPayload` /
-  `modifiedResponse`) និងបន្ថែម annotation (`meta.credentialsRedacted`, `meta.count`)។
+  key ដែលមានទម្រង់ជា header (`authorization`, `x-api-key`, `api-key`,
+  `apikey`) ត្រូវបានបិទបាំងតាមរចនាសម្ព័ន្ធ (តែតម្លៃប៉ុណ្ណោះ ដោយរក្សាទុកបុព្វបទ scheme ដូចជា
+  `Bearer `/`Basic `) ជាជាងតាមរយៈ text regex ទូទៅ។
+- guardrail មិនដែលទប់ស្កាត់ទេ។ វាគ្រាន់តែសរសេរឡើងវិញ (`modifiedPayload` /
+  `modifiedResponse`) និងដាក់ចំណារពន្យល់ (`meta.credentialsRedacted`, `meta.count`)។
 
-ឧបករណ៍ការពារ regression៖ `tests/unit/credential-masker-guardrail.test.ts`។
+ការការពារប្រឆាំង regression៖ `tests/unit/credential-masker-guardrail.test.ts`។
 
 ## កិច្ចសន្យាមូលដ្ឋាន (`base.ts`)
 

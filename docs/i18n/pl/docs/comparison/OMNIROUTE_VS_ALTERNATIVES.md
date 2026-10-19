@@ -39,11 +39,11 @@ Obiektywne porównanie funkcji z popularnymi routerami AI typu open source.
 
 ## Kiedy wybrać OmniRoute
 
-- Korzystasz z samodzielnego hostowania i zależy Ci na **maksymalnym wsparciu dostawców** (372 dostawców, 155 bezpłatnych pozycji w katalogu, niewymagających uwierzytelniania)
+- Samodzielnie hostujesz rozwiązanie i zależy Ci na **maksymalnym pokryciu dostawców** (374 dostawców, 155 bezpłatnych pozycji w katalogu, niewymagających uwierzytelniania)
 - Potrzebujesz **wbudowanego serwera MCP** (narzędzia LLM, pamięć i umiejętności udostępniane jako narzędzia)
 - Potrzebujesz **protokołu A2A** do przepływów pracy między agentami
-- Zależy Ci na **ukrywaniu odcisku cyfrowego** (JA3/JA4), aby uniknąć wykrycia przez mechanizmy CAPTCHA usług nadrzędnych
-- Potrzebujesz **funkcji klasy korporacyjnej** (mechanizmy ochronne, ewaluacje, ścieżka audytu) bez opłat za SaaS
+- Zależy Ci na **maskowaniu odcisku palca** (JA3/JA4), aby uniknąć wykrycia przez systemy CAPTCHA dostawców nadrzędnych
+- Potrzebujesz **funkcji klasy korporacyjnej** (mechanizmy zabezpieczające, ewaluacje, ścieżka audytu) bez opłat za SaaS
 
 ## Kiedy wybrać LiteLLM
 

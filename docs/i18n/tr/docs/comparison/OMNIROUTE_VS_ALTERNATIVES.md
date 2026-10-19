@@ -39,11 +39,11 @@ Popüler açık kaynaklı yapay zekâ yönlendiricileriyle nesnel özellik karş
 
 ## OmniRoute ne zaman tercih edilmeli?
 
-- Kendi sunucunuzda barındırıyorsanız ve **maksimum sağlayıcı kapsamı** (372 sağlayıcı, 155 ücretsiz/kimlik doğrulamasız katalog girdisi) istiyorsanız
-- **Yerleşik bir MCP sunucusuna** (araç olarak sunulan LLM araçları, bellek ve beceriler) ihtiyacınız varsa
+- Kendi sunucunuzda barındırma yapıyorsanız ve **maksimum sağlayıcı kapsamı** istiyorsanız (374 sağlayıcı, 155 ücretsiz/kimlik doğrulamasız katalog girdisi)
+- **Yerleşik bir MCP sunucusuna** ihtiyacınız varsa (LLM araçları, bellek ve araç olarak sunulan beceriler)
 - Ajanlar arası iş akışları için **A2A protokolüne** ihtiyacınız varsa
-- Üst sistemlerdeki CAPTCHA'lar tarafından tespit edilmekten kaçınmak için **parmak izi gizliliği** (JA3/JA4) istiyorsanız
-- SaaS faturası olmadan **kurumsal özelliklere** (koruma kuralları, değerlendirmeler, denetim izi) ihtiyacınız varsa
+- Üst kaynaklardaki CAPTCHA'lar tarafından algılanmamak için **parmak izi gizliliği** (JA3/JA4) istiyorsanız
+- SaaS faturası olmadan **kurumsal özelliklere** (koruma mekanizmaları, değerlendirmeler, denetim izi) ihtiyacınız varsa
 
 ## LiteLLM ne zaman tercih edilmeli?
 

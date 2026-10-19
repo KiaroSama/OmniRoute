@@ -96,30 +96,44 @@ kun Kimis modeller.
 ## Onboarding-blok på dashboardet
 
 Claude-værktøjskortet (**Dashboard → CLI Code**) viser det nøjagtige `settings.json`-fragment
-for denne instans ved siden af infoknappen for discovery-aliasset sammen med en kopieringsknap:
+for denne instans ved siden af infoknappen for discovery-aliaset og med en kopieringsknap:
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<your OmniRoute>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<your OmniRoute API key>",
+    "ANTHROPIC_BASE_URL": "http://<din OmniRoute>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<din OmniRoute API-nøgle>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-Basis-URL'en er den, som kortet har fundet (inklusive en brugerdefineret tilsidesættelse, du har indtastet), og er allerede
+Basis-URL'en er den, som kortet har fundet (inklusive en brugerdefineret tilsidesættelse, du har indtastet), og den er allerede
 normaliseret — intet `/v1`-suffiks og ingen afsluttende skråstreg. **Nøglen vises aldrig**: blokken indeholder en
-pladsholder, så et skærmbillede eller et indsat kodestykke ikke kan lække en nøgle. Indsæt din nøgle i stedet for den.
+pladsholder, så et skærmbillede eller et indsat kodestykke ikke kan lække den. Erstat pladsholderen med din nøgle.
 
 Tilføj `CLAUDE_CODE_AUTO_COMPACT_WINDOW` under den samme `env`-blok for enhver model, hvis reelle
-kontekstvindue ikke er 200K — Claude Code antager 200K for hvert id, den ikke genkender, så
-automatisk komprimering ellers aktiveres på det forkerte tidspunkt (se advarslen i forrige afsnit).
-Kodestykke-generatoren accepterer også denne værdi, så en kalder, der kender målmodellens vindue,
-kan generere den direkte.
+kontekstvindue ikke er 200K — Claude Code antager 200K for alle id'er, som det ikke genkender, så
+automatisk komprimering ellers udløses på det forkerte tidspunkt (se advarslen i forrige afsnit).
+Kodestykke-generatoren accepterer også denne værdi, så en kalder, der kender målmodellens vinduesstørrelse,
+kan inkludere den direkte.
 
 Kilde: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (ren
-generator, enhedstestet), vist af `ClaudeGatewayOnboardingBlock`.
+generator, enhedstestet), som vises af `ClaudeGatewayOnboardingBlock`.
+
+### Fastlås én konto (valgfrit)
+
+Hvis alle Claude Code-anmodninger skal sendes gennem én bestemt udbyderkonto, skal du tilføje
+`x-omniroute-connection`-headeren via `ANTHROPIC_CUSTOM_HEADERS` i den samme `env`-blok:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Kopiér id'et fra `xxxxxxxx…`-chippen på forbindelsesrækken på udbydersiden. Fastlåsningen gælder kun
+for id'er med én model (`provider/model`), ikke for kombinationer. Se
+[Kontofastlåsning pr. anmodning](../reference/API_REFERENCE.md#account-pinning-per-request) for den
+præcise fallback-adfærd.
 
 ---
 

@@ -16,34 +16,34 @@ AgentBridge የOmniRoute MITM (Man-in-the-Middle) ፕሮክሲ ሲሆን፣ ከI
 
 ### AgentBridge ምንድን ነው?
 
-የIDE ኤጀንት (ለምሳሌ፣ GitHub Copilot፣ Cursor፣ Claude Code) የAPI ጥሪ ሲያደርግ፣ በቀጥታ ከዋናው የAI አቅራቢ (OpenAI፣ Anthropic፣ ወዘተ) ጋር ይገናኛል። AgentBridge ይህን ግንኙነት ምንም ዓይነት የኤጀንት ውቅር ለውጥ ሳያስፈልግ በTLS ደረጃ በማይታይ ሁኔታ ይጠልፈዋል፣ እና ጥያቄውን በOmniRoute በኩል እንደገና ይጽፈዋል።
+የIDE ወኪል (ለምሳሌ፣ GitHub Copilot፣ Cursor፣ Claude Code) የAPI ጥሪ ሲያደርግ፣ በቀጥታ ከላይኛው የAI አቅራቢ (OpenAI፣ Anthropic፣ ወዘተ) ጋር ይገናኛል። AgentBridge ምንም የወኪል ውቅር ለውጥ ሳያስፈልግ — ግንኙነቱን በTLS ደረጃ በግልጽነት ጣልቃ ይገባል — እና ጥያቄውን በOmniRoute በኩል እንደገና ይጽፈዋል።
 
-ይህም የሚከተሉትን እንዲያደርጉ ያስችልዎታል፦
+ይህም የሚከተሉትን እንድታደርጉ ያስችላችኋል፦
 
-- **ማንኛውንም ኤጀንት ወደ ማንኛውም አቅራቢ መልሶ ማዘዋወር**፦ Copilot ከOpenAI ጋር እየተገናኘ ነው? ወደ Anthropic Claude፣ Gemini ወይም ወደ ማንኛውም የOmniRoute 372 አቅራቢዎች ያዘዋውሩት።
-- **የሞዴል ማዛመጃዎችን መተግበር**፦ `gemini-3-flash` → `claude-sonnet-4.7` በአስተናጋጅ ደረጃ በማይታይ ሁኔታ።
-- **ሁሉንም የኤጀንት ትራፊክ መከታተል**፦ እያንዳንዱ የተጠለፈ ጥያቄ ወደ [የትራፊክ መርማሪ](./TRAFFIC_INSPECTOR.md) ይታተማል።
-- **የOmniRoute የጽናት ባህሪያትን መተግበር**፦ ጥምር ማዘዋወር፣ የወረዳ ሰባሪዎች፣ አማራጭ ዘዴዎች እና የወጪ ክትትል ለIDE ኤጀንት ትራፊክም ይሠራሉ።
+- **ማንኛውንም ወኪል ወደ ማንኛውም አቅራቢ እንደገና ማዘዋወር**፦ Copilot ከOpenAI ጋር እየተገናኘ ነው? ወደ Anthropic Claude፣ Gemini ወይም ከOmniRoute 374 አቅራቢዎች ወደ ማንኛውም አቅራቢ ያዛውሩት።
+- **የሞዴል ማዛመጃዎችን መተግበር**፦ `gemini-3-flash` → `claude-sonnet-4.7` በተቆጣጣሪ ደረጃ በግልጽነት።
+- **ሁሉንም የወኪል ትራፊክ መከታተል**፦ ጣልቃ የተገባበት እያንዳንዱ ጥያቄ ወደ [ትራፊክ መርማሪ](./TRAFFIC_INSPECTOR.md) ይታተማል።
+- **የOmniRoute የመቋቋም ችሎታን መተግበር**፦ ጥምር ማዘዋወር፣ የወረዳ ሰባሪዎች፣ አማራጭ መንገዶች እና የወጪ ክትትል ለIDE ወኪል ትራፊክም ይሠራሉ።
 
-### በገበያው ውስጥ ያለው አቀማመጥ
+### ከገበያው ጋር ያለው አቀማመጥ
 
-| ባህሪ               | 9router | anti-api | llm-interceptor | **OmniRoute AgentBridge** |
-| ----------------- | :-----: | :------: | :-------------: | :-----------------------: |
-| Antigravity       |    ✓    |    ✓     |        —        |             ✓             |
-| GitHub Copilot    |    ✓    |    ✓     |        —        |             ✓             |
-| Kiro (AWS)        |    ✓    |    ✓     |        —        |             ✓             |
-| OpenAI Codex      |    —    |    ✓     |        —        |             ✓             |
-| Cursor IDE        |    ✓    |    ✓     |        —        |             ✓             |
-| Zed Industries    |    —    |    ✓     |        —        |             ✓             |
-| Claude Code       |    —    |    —     |        ✓        |             ✓             |
-| Open Code         |    —    |    —     |        ✓        |             ✓             |
-| Trae              |    —    |    —     |        —        |        🔍 በምርመራ ላይ        |
-| የዳሽቦርድ UI         |    ✓    |    ✗     |        ✗        |             ✓             |
-| የትራፊክ መርማሪ        |    ✗    |    ✗     |        ✓        |             ✓             |
-| የOmniRoute ማዘዋወር  |    ✗    |    ✗     |        ✗        |             ✓             |
-| የሞዴል ማዛመጃ UI      |    ✗    |    ✗     |        ✗        |             ✓             |
-| የማለፊያ ዝርዝር        |    ✗    |    ✗     |        ✓        |             ✓             |
-| የዋና ምንጭ CA ሰርተፊኬት |    ✗    |    ✗     |        ✓        |             ✓             |
+| ባህሪ                     | 9router | anti-api | llm-interceptor | **OmniRoute AgentBridge** |
+| ----------------------- | :-----: | :------: | :-------------: | :-----------------------: |
+| Antigravity             |    ✓    |    ✓     |        —        |             ✓             |
+| GitHub Copilot          |    ✓    |    ✓     |        —        |             ✓             |
+| Kiro (AWS)              |    ✓    |    ✓     |        —        |             ✓             |
+| OpenAI Codex            |    —    |    ✓     |        —        |             ✓             |
+| Cursor IDE              |    ✓    |    ✓     |        —        |             ✓             |
+| Zed Industries          |    —    |    ✓     |        —        |             ✓             |
+| Claude Code             |    —    |    —     |        ✓        |             ✓             |
+| Open Code               |    —    |    —     |        ✓        |             ✓             |
+| Trae                    |    —    |    —     |        —        |        🔍 በምርመራ ላይ        |
+| የዳሽቦርድ UI               |    ✓    |    ✗     |        ✗        |             ✓             |
+| የትራፊክ መርማሪ              |    ✗    |    ✗     |        ✓        |             ✓             |
+| የOmniRoute ማዘዋወር        |    ✗    |    ✗     |        ✗        |             ✓             |
+| የሞዴል ማዛመጃ UI            |    ✗    |    ✗     |        ✗        |             ✓             |
+| የማለፊያ ዝርዝር              |    ✗    |    ✗     |        ✓        |             ✓             |
+| የላይኛው አቅራቢ CA ምስክር ወረቀት |    ✗    |    ✗     |        ✓        |             ✓             |
 
 ---
 

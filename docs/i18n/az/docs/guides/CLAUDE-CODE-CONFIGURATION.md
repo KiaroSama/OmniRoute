@@ -74,7 +74,7 @@ Claude Code-da bunlardan birini seçdiyiniz zaman OmniRoute marşrutlaşdırmada
 
 ## İdarəetmə panelində ilkin quraşdırma bloku
 
-Claude alət kartı (**İdarəetmə paneli → CLI Code**) bu instansiya üçün dəqiq `settings.json` fraqmentini kəşfetmə aliası məlumat düyməsinin yanında, kopyalama düyməsi ilə birlikdə göstərir:
+Claude alət kartı (**İdarəetmə paneli → CLI Code**) bu instansiya üçün dəqiq `settings.json` fraqmentini aşkarlama aliası məlumat düyməsinin yanında, kopyalama düyməsi ilə birlikdə göstərir:
 
 ```jsonc
 {
@@ -86,11 +86,21 @@ Claude alət kartı (**İdarəetmə paneli → CLI Code**) bu instansiya üçün
 }
 ```
 
-Baza URL-i kart tərəfindən müəyyən edilmiş ünvandır (daxil etdiyiniz fərdi əvəzləmə də daxil olmaqla) və artıq normallaşdırılıb — `/v1` suffiksi və sonda əyri xətt yoxdur. **Açar heç vaxt göstərilmir**: blok yer tutucu ilə təqdim olunur, buna görə ekran görüntüsü və ya yapışdırılmış fraqment açarı sızdıra bilməz. Açarınızı onun yerinə yapışdırın.
+Baza URL-i kart tərəfindən müəyyən edilən (yazdığınız fərdi əvəzləmə də daxil olmaqla) və artıq normallaşdırılmış ünvandır — `/v1` suffiksi və sonunda əyri xətt yoxdur. **Açar heç vaxt göstərilmir**: blokda yer tutucu təqdim olunur, buna görə ekran görüntüsü və ya yapışdırılmış fraqment açarı sızdıra bilməz. Açarınızı onun yerinə yapışdırın.
 
-Real kontekst pəncərəsi 200K olmayan istənilən model üçün eyni `env` blokunun altına `CLAUDE_CODE_AUTO_COMPACT_WINDOW` əlavə edin — Claude Code tanımadığı hər bir id üçün 200K nəzərdə tutur, buna görə əks halda avtomatik sıxlaşdırma yanlış nöqtədə işə düşür (əvvəlki bölmədəki xəbərdarlığa baxın). Fraqment qurucusu bu dəyəri də qəbul edir, beləliklə hədəf modelin pəncərəsini bilən çağırıcı onu birbaşa yarada bilər.
+Real kontekst pəncərəsi 200K olmayan istənilən model üçün eyni `env` blokuna `CLAUDE_CODE_AUTO_COMPACT_WINDOW` əlavə edin — Claude Code tanımadığı hər bir id üçün 200K nəzərdə tutur, buna görə əks halda avtomatik sıxlaşdırma yanlış nöqtədə işə düşür (əvvəlki bölmədəki xəbərdarlığa baxın). Fraqment qurucusu bu dəyəri də qəbul edir, beləliklə hədəf modelin pəncərəsini bilən çağıran tərəf onu birbaşa yarada bilər.
 
-Mənbə: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (`ClaudeGatewayOnboardingBlock` tərəfindən göstərilən, vahid testlərlə yoxlanmış saf qurucu).
+Mənbə: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (saf qurucu, vahid testlərdən keçirilib), `ClaudeGatewayOnboardingBlock` tərəfindən göstərilir.
+
+### Bir hesabı sabitləyin (ixtiyari)
+
+Bütün Claude Code sorğularını müəyyən bir provayder hesabı vasitəsilə göndərmək üçün eyni `env` blokunda `ANTHROPIC_CUSTOM_HEADERS` vasitəsilə `x-omniroute-connection` başlığını əlavə edin:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+ID-ni provayder səhifəsindəki bağlantı sətrində yerləşən `xxxxxxxx…` nişanından kopyalayın. Sabitləmə yalnız tək model ID-lərinə (`provider/model`) tətbiq olunur, kombinasiyalara deyil. Dəqiq geri dönüş davranışı üçün [Hər sorğu üzrə hesab sabitləməsi](../reference/API_REFERENCE.md#account-pinning-per-request) bölməsinə baxın.
 
 ---
 

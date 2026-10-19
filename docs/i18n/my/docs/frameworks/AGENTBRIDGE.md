@@ -14,18 +14,18 @@ AgentBridge သည် IDE AI agent များထံမှ HTTPS traffic ကိ
 
 ## §1 ခြုံငုံသုံးသပ်ချက်
 
-### AgentBridge ဆိုတာဘာလဲ?
+### AgentBridge ဆိုသည်မှာ အဘယ်နည်း?
 
-IDE agent တစ်ခု (ဥပမာ GitHub Copilot၊ Cursor၊ Claude Code) က API ခေါ်ဆိုမှုတစ်ခု ပြုလုပ်သည့်အခါ upstream AI provider (OpenAI၊ Anthropic စသည်) ထံ တိုက်ရိုက်ချိတ်ဆက်ပါသည်။ AgentBridge သည် agent configuration ကို ပြောင်းလဲရန် မလိုအပ်ဘဲ ထိုချိတ်ဆက်မှုကို TLS အဆင့်တွင် ပွင့်လင်းမြင်သာစွာ ကြားဖြတ်ပြီး request ကို OmniRoute မှတစ်ဆင့် ပြန်လည်ရေးသားပေးပါသည်။
+IDE agent တစ်ခု (ဥပမာ GitHub Copilot၊ Cursor၊ Claude Code) က API ခေါ်ဆိုမှုတစ်ခု ပြုလုပ်သောအခါ ၎င်းသည် upstream AI provider (OpenAI၊ Anthropic စသည်) ထံသို့ တိုက်ရိုက်ချိတ်ဆက်ပါသည်။ AgentBridge သည် agent ၏ configuration ကို ပြောင်းလဲရန်မလိုဘဲ ထိုချိတ်ဆက်မှုကို TLS အဆင့်တွင် ပွင့်လင်းမြင်သာစွာ ကြားဖြတ်ပြီး request ကို OmniRoute မှတစ်ဆင့် ပြန်လည်ရေးသားပေးပါသည်။
 
-ထို့ကြောင့် သင်သည် အောက်ပါတို့ကို လုပ်ဆောင်နိုင်ပါသည်-
+ဆိုလိုသည်မှာ သင်သည် အောက်ပါတို့ကို လုပ်ဆောင်နိုင်ပါသည်-
 
-- **မည်သည့် agent ကိုမဆို မည်သည့် provider ထံမဆို လမ်းကြောင်းပြောင်းနိုင်ခြင်း**: Copilot က OpenAI နှင့် ဆက်သွယ်နေပါသလား? ၎င်းကို Anthropic Claude၊ Gemini သို့မဟုတ် OmniRoute ၏ provider 372 ခုအနက် မည်သည့်တစ်ခုထံမဆို လမ်းကြောင်းပြောင်းပေးနိုင်ပါသည်။
-- **Model mapping များ အသုံးချနိုင်ခြင်း**: `gemini-3-flash` → `claude-sonnet-4.7` ကို handler အဆင့်တွင် ပွင့်လင်းမြင်သာစွာ mapping ပြုလုပ်နိုင်ပါသည်။
-- **Agent traffic အားလုံးကို စောင့်ကြည့်နိုင်ခြင်း**: ကြားဖြတ်ရယူထားသော request တိုင်းကို [Traffic Inspector](./TRAFFIC_INSPECTOR.md) သို့ ထုတ်ပြန်ပေးပါသည်။
-- **OmniRoute ၏ ကြံ့ခိုင်ခံနိုင်မှုဆိုင်ရာ လုပ်ဆောင်ချက်များကို အသုံးချနိုင်ခြင်း**: combo routing၊ circuit breaker များ၊ fallback များနှင့် ကုန်ကျစရိတ်ခြေရာခံခြင်းတို့သည် IDE agent traffic အတွက်လည်း အလုပ်လုပ်ပါသည်။
+- **မည်သည့် agent ကိုမဆို မည်သည့် provider ထံမဆို လမ်းကြောင်းပြောင်းပေးခြင်း**: Copilot က OpenAI နှင့် ဆက်သွယ်နေပါသလား? ၎င်းကို Anthropic Claude၊ Gemini သို့မဟုတ် OmniRoute ၏ provider 374 ခုအနက် မည်သည့်တစ်ခုသို့မဆို ပြန်လည်ညွှန်းပေးနိုင်ပါသည်။
+- **Model mapping များ အသုံးချခြင်း**: handler အဆင့်တွင် `gemini-3-flash` → `claude-sonnet-4.7` ဟု ပွင့်လင်းမြင်သာစွာ ပြောင်းလဲသတ်မှတ်နိုင်ပါသည်။
+- **Agent traffic အားလုံးကို စောင့်ကြည့်ခြင်း**: ကြားဖြတ်ရယူထားသော request တိုင်းကို [Traffic Inspector](./TRAFFIC_INSPECTOR.md) သို့ ပို့ပေးပါသည်။
+- **OmniRoute ၏ ခံနိုင်ရည်စွမ်းရည်များ အသုံးချခြင်း**: combo routing၊ circuit breaker များ၊ fallback များနှင့် ကုန်ကျစရိတ်ခြေရာခံခြင်းတို့ကို IDE agent traffic အတွက်လည်း အသုံးပြုနိုင်ပါသည်။
 
-### စျေးကွက်ရှိ အခြားထုတ်ကုန်များနှင့် နှိုင်းယှဉ်ထားသော ရပ်တည်ချက်
+### ဈေးကွက်ရှိ အခြားထုတ်ကုန်များနှင့် နှိုင်းယှဉ်နေရာချထားမှု
 
 | လုပ်ဆောင်ချက်     | 9router | anti-api | llm-interceptor | **OmniRoute AgentBridge** |
 | ----------------- | :-----: | :------: | :-------------: | :-----------------------: |

@@ -13,28 +13,28 @@
 
 ## Čo to je
 
-OmniRoute registruje 372 poskytovateľov vrátane 155 položiek katalógu označených ako **bezplatné/bez autentifikácie**
+OmniRoute registruje 374 poskytovateľov vrátane 155 katalógových položiek označených ako **bezplatné/bez autentifikácie**
 (bez autentifikácie,
 OAuth s bezplatnou úrovňou alebo API kľúč s bezplatnou úrovňou — pozrite si
 [Sprievodcu bezplatnými úrovňami](../getting-started/FREE-TIERS-GUIDE.md) a úplný
 [adresár bezplatných úrovní](../reference/FREE_TIERS.md)). Háčik je v tom, že bezplatní poskytovatelia sa
-výrazne líšia kvalitou modelov. Poskytovateľ bez autentifikácie, ktorý ponúka špičkový model, je oveľa užitočnejší
+výrazne líšia kvalitou modelov. Poskytovateľ bez autentifikácie, ktorý ponúka špičkový model, je omnoho užitočnejší
 než poskytovateľ ponúkajúci malý zastaraný model.
 
-**Rebríček bezplatných poskytovateľov** odpovedá na otázku „**ktorý bezplatný poskytovateľ mi ponúkne najlepší model?**“ tým, že
-prepája katalóg každého bezplatného poskytovateľa s **komunitne získanými hodnoteniami kvality** z
-**rebríčka Arena AI** (ELO založené na preferenciách ľudí, rovnaký princíp ako pri
-chatbotovej aréne LMArena). Poskytovatelia sú následne zoradení podľa kvality svojho **najlepšieho bezplatného modelu**.
+**Rebríček bezplatných poskytovateľov** odpovedá na otázku „**ktorý bezplatný poskytovateľ mi ponúka najlepší model?**“ tým, že
+prepája katalóg každého bezplatného poskytovateľa s **komunitne zostavenými hodnoteniami kvality** z
+**rebríčka Arena AI** (ELO založené na ľudských preferenciách, rovnaký princíp, na ktorom je založená
+arĕna chatbotov LMArena). Poskytovatelia sú potom zoradení podľa kvality svojho **najlepšieho bezplatného modelu**.
 
-Rebríček sa vypočítava z troch reálnych zdrojov:
+Rebríček sa vypočítava z troch skutočných zdrojov:
 
 1. Zoznamy bezplatných poskytovateľov — `NOAUTH_PROVIDERS` spolu s položkami `OAUTH_PROVIDERS` /
    `APIKEY_PROVIDERS` označenými príznakom `hasFree`
    (`src/shared/constants/providers.ts`).
 2. Katalóg modelov každého poskytovateľa z registra poskytovateľov
    (`open-sse/config/providerRegistry.ts`).
-3. Skóre vhodnosti pre úlohy odvodené od ELO, ktoré synchronizačný mechanizmus Arena ELO ukladá do databázovej tabuľky
-   `model_intelligence` (`src/lib/arenaEloSync.ts`).
+3. Skóre vhodnosti pre úlohy odvodené od ELO a uložené v databázovej tabuľke `model_intelligence`
+   synchronizačným mechanizmom Arena ELO (`src/lib/arenaEloSync.ts`).
 
 Logika prepájania sa nachádza v súbore `src/lib/freeProviderRankings.ts`.
 

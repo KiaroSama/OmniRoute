@@ -23,11 +23,8 @@ import { resolveProxyForConnection } from "@/lib/db/settings";
 import { runWithProxyContext } from "@omniroute/open-sse/utils/proxyFetch.ts";
 import { safePercentage } from "@/shared/utils/formatting";
 import { isQuotaWindowBoundedParkEnabled } from "@/shared/utils/featureFlags";
-import {
-  saveQuotaSnapshot,
-  cleanupOldSnapshots,
-  getLatestQuotaSnapshotsForConnection,
-} from "@/lib/db/quotaSnapshots";
+import { saveQuotaSnapshot, getLatestQuotaSnapshotsForConnection } from "@/lib/db/quotaSnapshots";
+import { runQuotaSnapshotCleanup } from "./quotaSnapshotCleanup";
 import { recordProviderQuotaResetEventIfChanged } from "@/lib/db/quotaResetEvents";
 import {
   CODEX_SPARK_QUOTA_SESSION,
@@ -1134,7 +1131,7 @@ async function backgroundRefreshTick() {
   state.tickRunning = true;
 
   try {
-    cleanupOldSnapshots();
+    if (!(await runQuotaSnapshotCleanup())) return;
     const now = Date.now();
     const pending = [...state.cache.values()].filter((e) => needsRefresh(e, now));
 

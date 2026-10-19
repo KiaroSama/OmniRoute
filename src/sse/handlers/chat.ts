@@ -32,7 +32,7 @@ import { getCombo, getComboForModel, getModelInfo } from "../services/model";
 import { stripContextWindowSuffix } from "@omniroute/open-sse/services/model.ts";
 import { resolveBareModelToConnectionDefault } from "@omniroute/open-sse/services/model.ts";
 import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
-import { getImageModelEntry } from "@omniroute/open-sse/config/imageRegistry.ts";
+import { getImageModelEntry, isImageOnlyModel } from "@omniroute/open-sse/config/imageRegistry.ts";
 import { acceptHeaderForcesStream } from "@omniroute/open-sse/utils/aiSdkCompat.ts";
 import { applyNoThinkingAlias } from "@omniroute/open-sse/utils/noThinkingAlias.ts";
 import { resolveCcDiscoveryAliasStrip } from "@/lib/ccDiscoveryAliasResolve";
@@ -60,7 +60,6 @@ import {
   detectFormatFromUrl,
 } from "@omniroute/open-sse/services/provider.ts";
 import {
-  getModelsByProviderId,
   getModelTargetFormat,
   PROVIDER_ID_TO_ALIAS,
 } from "@omniroute/open-sse/config/providerModels.ts";
@@ -419,6 +418,19 @@ const managedComboRejection = () =>
 
 const comboPromoteDeps = { updateCombo, info: log.info, warn: log.warn };
 
+// The provider breaker lives in the process-wide registry and getCircuitBreaker() replaces its
+// callbacks on every call. A callback created inside the request handler shares that handler's
+// V8 context, so the breaker kept the last request's whole scope alive — its body included: a
+// 100k-token /v1/messages body survived forced GC through `onStateChange` (JON-562). The
+// callbacks the breaker stores therefore never close over request state.
+function breakerCountsAsFailure(error: unknown): boolean {
+  return !isLocalStreamLifecycleError(error);
+}
+
+function logBreakerStateChange(name: string, from: string, to: string): void {
+  log.info("CIRCUIT", `${name}: ${from} → ${to}`);
+}
+
 export { shouldTripProviderBreakerForResult } from "./chatPredicates";
 
 async function handleChatImplementation(
@@ -730,10 +742,7 @@ async function handleChatImplementation(
   // Keep this narrower than getComboForModel() so mappings and synthetic aliases
   // retain their existing resolution order.
   const isExactStoredCombo = imageModel ? Boolean(await getComboByName(modelStr)) : false;
-  const isChatCatalogModel = imageModel
-    ? getModelsByProviderId(imageModel.provider).some((model) => model.id === imageModel.model)
-    : false;
-  if (imageModel && !isExactStoredCombo && !isChatCatalogModel) {
+  if (imageModel && !isExactStoredCombo && isImageOnlyModel(modelStr)) {
     log.warn("CHAT", `Rejecting image-generation model on chat endpoint: ${modelStr}`);
     return logHandlerRejection(
       errorResponse(
@@ -1747,9 +1756,8 @@ async function handleSingleModelChat(
     failureThreshold: providerProfile.failureThreshold,
     resetTimeout: providerProfile.resetTimeoutMs,
     // A local stream lifecycle error never reached the provider.
-    isFailure: (e) => !isLocalStreamLifecycleError(e),
-    onStateChange: (name: string, from: string, to: string) =>
-      log.info("CIRCUIT", `${name}: ${from} → ${to}`),
+    isFailure: breakerCountsAsFailure,
+    onStateChange: logBreakerStateChange,
     ...(useHints429
       ? {
           cooldownByKind: {

@@ -95,8 +95,8 @@ endast Kimis modeller.
 
 ## Introduktionsblock på instrumentpanelen
 
-Claude-verktygskortet (**Instrumentpanel → CLI Code**) visar det exakta `settings.json`-fragmentet
-för den här instansen, bredvid informationsknappen för identifieringsalias, med en kopieringsknapp:
+Claude-verktygskortet (**Dashboard → CLI Code**) visar det exakta `settings.json`-fragmentet
+för den här instansen, bredvid informationsknappen för identifieringsaliaset, med en kopieringsknapp:
 
 ```jsonc
 {
@@ -108,19 +108,32 @@ för den här instansen, bredvid informationsknappen för identifieringsalias, m
 }
 ```
 
-Bas-URL:en är den som kortet har fastställt (inklusive en anpassad åsidosättning som du har angett)
-och är redan normaliserad — inget `/v1`-suffix och inget avslutande snedstreck. **Nyckeln visas aldrig**:
-blocket innehåller en platshållare, så en skärmbild eller ett inklistrat kodavsnitt kan inte läcka
-någon nyckel. Ersätt platshållaren med din nyckel.
+Bas-URL:en är den som kortet har fastställt (inklusive en anpassad åsidosättning som du har angett) och är redan
+normaliserad — inget `/v1`-suffix och inget avslutande snedstreck. **Nyckeln visas aldrig**: blocket innehåller en
+platshållare, så en skärmbild eller ett inklistrat kodavsnitt kan inte läcka någon nyckel. Ersätt platshållaren med din nyckel.
 
 Lägg till `CLAUDE_CODE_AUTO_COMPACT_WINDOW` under samma `env`-block för alla modeller vars faktiska
-kontextfönster inte är 200K — Claude Code förutsätter 200K för varje id som det inte känner igen, så
-automatisk komprimering utlöses annars vid fel tidpunkt (se varningen i föregående avsnitt).
-Kodavsnittsbyggaren accepterar även det värdet, så en anropare som känner till målmodellens
-fönsterstorlek kan generera det direkt.
+kontextfönster inte är 200K — Claude Code förutsätter 200K för varje id som det inte känner igen, vilket innebär att
+automatisk komprimering annars utlöses vid fel tidpunkt (se varningen i föregående avsnitt).
+Kodavsnittsbyggaren accepterar även detta värde, så en anropare som känner till målmodellens kontextfönster
+kan generera det direkt.
 
 Källa: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (ren
-byggare, enhetstestad), renderad av `ClaudeGatewayOnboardingBlock`.
+byggfunktion, enhetstestad) som renderas av `ClaudeGatewayOnboardingBlock`.
+
+### Lås till ett konto (valfritt)
+
+För att skicka varje Claude Code-begäran via ett specifikt leverantörskonto lägger du till
+`x-omniroute-connection`-headern via `ANTHROPIC_CUSTOM_HEADERS` i samma `env`-block:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Kopiera id:t från `xxxxxxxx…`-brickan på anslutningsraden på leverantörssidan. Låsningen gäller endast
+id:n för enskilda modeller (`provider/model`), inte kombinationer. Se
+[Kontolåsning per begäran](../reference/API_REFERENCE.md#account-pinning-per-request) för det
+exakta reservbeteendet.
 
 ---
 

@@ -16,11 +16,11 @@ AgentBridge es el proxy MITM (Man-in-the-Middle, intermediario) de OmniRoute que
 
 ### ¿Qué es AgentBridge?
 
-Cuando un agente de IDE (p. ej., GitHub Copilot, Cursor, Claude Code) realiza una llamada a la API, se conecta directamente con el proveedor de IA de origen (OpenAI, Anthropic, etc.). AgentBridge intercepta esa conexión de forma transparente en la capa TLS —sin requerir ningún cambio en la configuración del agente— y reescribe la solicitud a través de OmniRoute.
+Cuando un agente de IDE (p. ej., GitHub Copilot, Cursor, Claude Code) realiza una llamada a una API, se conecta directamente con el proveedor de IA de origen (OpenAI, Anthropic, etc.). AgentBridge intercepta esa conexión de forma transparente en la capa TLS —sin requerir ningún cambio en la configuración del agente— y redirige la solicitud a través de OmniRoute.
 
-Esto permite:
+Esto significa que puede:
 
-- **Redirigir cualquier agente a cualquier proveedor**: ¿Copilot se comunica con OpenAI? Rediríjalo a Anthropic Claude, Gemini o cualquiera de los 372 proveedores de OmniRoute.
+- **Redirigir cualquier agente a cualquier proveedor**: ¿Copilot se comunica con OpenAI? Rediríjalo a Anthropic Claude, Gemini o cualquiera de los 374 proveedores de OmniRoute.
 - **Aplicar asignaciones de modelos**: `gemini-3-flash` → `claude-sonnet-4.7` de forma transparente en el nivel del controlador.
 - **Observar todo el tráfico de los agentes**: cada solicitud interceptada se publica en el [Inspector de tráfico](./TRAFFIC_INSPECTOR.md).
 - **Aplicar la resiliencia de OmniRoute**: el enrutamiento combinado, los disyuntores, las alternativas y el seguimiento de costes también funcionan con el tráfico de los agentes de IDE.
@@ -37,10 +37,10 @@ Esto permite:
 | Zed Industries                    |    —    |    ✓     |        —        |             ✓             |
 | Claude Code                       |    —    |    —     |        ✓        |             ✓             |
 | Open Code                         |    —    |    —     |        ✓        |             ✓             |
-| Trae                              |    —    |    —     |        —        |       🔍 En estudio       |
+| Trae                              |    —    |    —     |        —        |    🔍 En investigación    |
 | Interfaz del panel                |    ✓    |    ✗     |        ✗        |             ✓             |
 | Inspector de tráfico              |    ✗    |    ✗     |        ✓        |             ✓             |
-| Enrutamiento de OmniRoute         |    ✗    |    ✗     |        ✗        |             ✓             |
+| Enrutamiento OmniRoute            |    ✗    |    ✗     |        ✗        |             ✓             |
 | Interfaz de asignación de modelos |    ✗    |    ✗     |        ✗        |             ✓             |
 | Lista de exclusión                |    ✗    |    ✗     |        ✓        |             ✓             |
 | Certificado de CA de origen       |    ✗    |    ✗     |        ✓        |             ✓             |

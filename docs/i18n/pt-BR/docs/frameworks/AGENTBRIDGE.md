@@ -16,14 +16,14 @@ AgentBridge é o proxy MITM (Man-in-the-Middle) do OmniRoute que intercepta o tr
 
 ### O que é o AgentBridge?
 
-Quando um agente de IDE (por exemplo, GitHub Copilot, Cursor, Claude Code) faz uma chamada de API, ele se conecta diretamente ao provedor de IA upstream (OpenAI, Anthropic etc.). O AgentBridge intercepta essa conexão de forma transparente no nível TLS — sem exigir nenhuma alteração na configuração do agente — e reescreve a solicitação por meio do OmniRoute.
+Quando um agente de IDE (por exemplo, GitHub Copilot, Cursor, Claude Code) faz uma chamada de API, ele se conecta diretamente ao provedor de IA upstream (OpenAI, Anthropic etc.). O AgentBridge intercepta essa conexão de forma transparente na camada TLS — sem exigir nenhuma alteração na configuração do agente — e reescreve a solicitação por meio do OmniRoute.
 
 Isso significa que você pode:
 
-- **Redirecionar qualquer agente para qualquer provedor**: o Copilot está se comunicando com a OpenAI? Redirecione-o para Anthropic Claude, Gemini ou qualquer um dos 372 provedores do OmniRoute.
+- **Redirecionar qualquer agente para qualquer provedor**: o Copilot está se comunicando com a OpenAI? Redirecione-o para Anthropic Claude, Gemini ou qualquer um dos 374 provedores do OmniRoute.
 - **Aplicar mapeamentos de modelos**: `gemini-3-flash` → `claude-sonnet-4.7` de forma transparente no nível do handler.
-- **Observar todo o tráfego dos agentes**: cada solicitação interceptada é publicada no [Inspetor de tráfego](./TRAFFIC_INSPECTOR.md).
-- **Aplicar a resiliência do OmniRoute**: roteamento combinado, circuit breakers, fallbacks e rastreamento de custos também funcionam para o tráfego dos agentes de IDE.
+- **Observar todo o tráfego dos agentes**: cada solicitação interceptada é publicada no [Inspetor de Tráfego](./TRAFFIC_INSPECTOR.md).
+- **Aplicar a resiliência do OmniRoute**: roteamento combinado, circuit breakers, fallbacks e rastreamento de custos também funcionam para o tráfego de agentes de IDE.
 
 ### Posicionamento em relação ao mercado
 
@@ -38,8 +38,8 @@ Isso significa que você pode:
 | Claude Code                        |    —    |    —     |        ✓        |             ✓             |
 | Open Code                          |    —    |    —     |        ✓        |             ✓             |
 | Trae                               |    —    |    —     |        —        |    🔍 Em investigação     |
-| Interface do painel                |    ✓    |    ✗     |        ✗        |             ✓             |
-| Inspetor de tráfego                |    ✗    |    ✗     |        ✓        |             ✓             |
+| Interface do dashboard             |    ✓    |    ✗     |        ✗        |             ✓             |
+| Inspetor de Tráfego                |    ✗    |    ✗     |        ✓        |             ✓             |
 | Roteamento do OmniRoute            |    ✗    |    ✗     |        ✗        |             ✓             |
 | Interface de mapeamento de modelos |    ✗    |    ✗     |        ✗        |             ✓             |
 | Lista de bypass                    |    ✗    |    ✗     |        ✓        |             ✓             |

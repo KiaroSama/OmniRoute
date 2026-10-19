@@ -485,11 +485,11 @@ Detta hanterar:
 
 | Fil                           | Syfte                                                          |
 | ----------------------------- | -------------------------------------------------------------- |
-| `providerRegistry.ts`         | Register över chattmodeller för katalogen med 372 leverantörer |
+| `providerRegistry.ts`         | Register över chattmodeller för katalogen med 374 leverantörer |
 | `providerModels.ts`           | Modellalias och formatmappning                                 |
 | `constants.ts`                | Tidsgränser, begränsningar och statuskoder                     |
-| `defaultThinkingSignature.ts` | Standardsignatur för Claudes tänkande                          |
-| `modelStrip.ts` (i tjänster)  | Leverantörsspecifik borttagning av fält                        |
+| `defaultThinkingSignature.ts` | Standardsignatur för Claude-resonemang                         |
+| `modelStrip.ts` (i services)  | Leverantörsspecifik borttagning av fält                        |
 
 ### Schema för leverantörsregistret
 

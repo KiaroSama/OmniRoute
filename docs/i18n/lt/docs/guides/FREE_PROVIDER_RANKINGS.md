@@ -13,30 +13,30 @@
 
 ## Kas tai yra
 
-„OmniRoute“ registruoja 372 paslaugų teikėjus, įskaitant 155 katalogo įrašus, pažymėtus kaip **nemokamus / nereikalaujančius autentifikavimo**
+„OmniRoute“ registruoja 374 teikėjus, įskaitant 155 katalogo įrašus, pažymėtus kaip **nemokamus / nereikalaujančius autentifikavimo**
 (be autentifikavimo,
 nemokamo lygio OAuth arba nemokamo lygio API raktas — žr.
 [Nemokamų lygių vadovą](../getting-started/FREE-TIERS-GUIDE.md) ir visą
-[Nemokamų lygių katalogą](../reference/FREE_TIERS.md)). Tačiau yra viena išlyga: nemokamų paslaugų teikėjų
-modelių kokybė labai skiriasi. Be autentifikavimo pasiekiamas paslaugų teikėjas, siūlantis pažangiausią modelį, yra gerokai naudingesnis
-už teikėją, siūlantį nedidelį senesnį modelį.
+[Nemokamų lygių katalogą](../reference/FREE_TIERS.md)). Tačiau yra viena išlyga: nemokamų teikėjų
+modelių kokybė labai skiriasi. Autentifikavimo nereikalaujantis teikėjas, siūlantis pažangiausią modelį, yra kur kas naudingesnis
+už teikėją, siūlantį mažą pasenusį modelį.
 
-**Nemokamų paslaugų teikėjų reitingai** atsako į klausimą „**kuris nemokamas paslaugų teikėjas siūlo geriausią modelį?**“,
-susiedami kiekvieno nemokamo paslaugų teikėjo katalogą su **bendruomenės surinktais kokybės įverčiais** iš
-**Arena AI lyderių lentelės** (žmonių pasirinkimais pagrįstas ELO — ta pati idėja, kuria paremta LMArena
-pokalbių robotų arena). Tada paslaugų teikėjai reitinguojami pagal jų **geriausio nemokamo modelio** pajėgumą.
+**Nemokamų teikėjų reitingai** atsako į klausimą „**kuris nemokamas teikėjas siūlo geriausią modelį?**“,
+susiedami kiekvieno nemokamo teikėjo katalogą su **bendruomenės sudarytais kokybės įverčiais** iš
+**Arena AI lyderių lentelės** (žmonių pasirinkimais pagrįstas ELO — ta pati idėja, kuria grindžiama LMArena
+pokalbių robotų arena). Tada teikėjai reitinguojami pagal jų **geriausio nemokamo modelio** pajėgumą.
 
-Reitingas apskaičiuojamas naudojant tris tikrus šaltinius:
+Reitingas apskaičiuojamas iš trijų tikrų šaltinių:
 
-1. Nemokamų paslaugų teikėjų sąrašus — `NOAUTH_PROVIDERS` ir `OAUTH_PROVIDERS` /
-   `APIKEY_PROVIDERS` įrašus, pažymėtus `hasFree`
+1. Nemokamų teikėjų sąrašai — `NOAUTH_PROVIDERS`, taip pat `OAUTH_PROVIDERS` /
+   `APIKEY_PROVIDERS` įrašai, pažymėti `hasFree`
    (`src/shared/constants/providers.ts`).
-2. Kiekvieno paslaugų teikėjo modelių katalogą iš paslaugų teikėjų registro
+2. Kiekvieno teikėjo modelių katalogas iš teikėjų registro
    (`open-sse/config/providerRegistry.ts`).
-3. Iš ELO išvestus tinkamumo užduotims įverčius, kuriuos `model_intelligence` DB lentelėje saugo
-   Arena ELO sinchronizavimo variklis (`src/lib/arenaEloSync.ts`).
+3. Iš ELO išvesti tinkamumo užduotims įverčiai, kuriuos „Arena ELO“ sinchronizavimo variklis saugo
+   DB lentelėje `model_intelligence` (`src/lib/arenaEloSync.ts`).
 
-Susiejimo logika pateikta faile `src/lib/freeProviderRankings.ts`.
+Susiejimo logika yra faile `src/lib/freeProviderRankings.ts`.
 
 ---
 

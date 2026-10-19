@@ -64,30 +64,78 @@ Content-Type: application/json
 
 ### Vlastní hlavičky
 
-| Hlavička                 | Směr      | Popis                                                                                                                                                                                                                   |
-| ------------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `X-OmniRoute-No-Cache`   | Požadavek | Nastavením na `true` obejdete mezipaměť                                                                                                                                                                                 |
-| `x-omniroute-no-memory`  | Požadavek | Nastavením na `true` přeskočíte pro tento požadavek vkládání paměti a dovedností (obdobně jako bez mezipaměti; zabrání režii tokenů a nákladů na jednotlivá volání)                                                     |
-| `X-OmniRoute-Progress`   | Požadavek | Nastavením na `true` povolíte události průběhu                                                                                                                                                                          |
-| `X-Session-Id`           | Požadavek | Klíč připnuté relace pro externí afinitu relací                                                                                                                                                                         |
-| `x_session_id`           | Požadavek | Přijímána je také varianta s podtržítkem (přímé HTTP)                                                                                                                                                                   |
-| `X-OmniRoute-Session-Id` | Požadavek | Značka relace/konverzace zadaná volajícím (používá ji také paměť). Pokud je uvedena, uloží se beze změny do `call_logs.session_tag` pro přiřazení nákladů jednotlivým relacím (#8249) — pokud chybí, nikdy se nevytváří |
-| `Idempotency-Key`        | Požadavek | Klíč pro odstranění duplicit (časové okno 5 s)                                                                                                                                                                          |
-| `X-Request-Id`           | Požadavek | Alternativní klíč pro odstranění duplicit                                                                                                                                                                               |
-| `X-OmniRoute-Cache`      | Odpověď   | `HIT` nebo `MISS` (bez streamování)                                                                                                                                                                                     |
-| `X-OmniRoute-Idempotent` | Odpověď   | `true`, pokud byly odstraněny duplicity                                                                                                                                                                                 |
-| `X-OmniRoute-Progress`   | Odpověď   | `enabled`, pokud je zapnuto sledování průběhu                                                                                                                                                                           |
-| `X-OmniRoute-Session-Id` | Odpověď   | Efektivní ID relace používané službou OmniRoute                                                                                                                                                                         |
-| `X-OmniRoute-Request-Id` | Odpověď   | ID pro korelaci požadavku (pokud je známo)                                                                                                                                                                              |
-| `X-OmniRoute-Version`    | Odpověď   | Verze sestavení OmniRoute (vždy uvedena)                                                                                                                                                                                |
-| `X-OmniRoute-Cost-Saved` | Odpověď   | Částka v USD, kterou mezipaměť ušetřila při výsledku HIT (pouze při nalezení v mezipaměti)                                                                                                                              |
-| `X-OmniRoute-Decision`   | Odpověď   | Trasování směrování: `strategy=<name>; provider=<alias>; latency_ms=<n>` (`<name>` je strategie kombinace, nebo `single` u požadavku bez kombinace) — vždy uvedeno v odpovědích po dokončení                            |
+| Hlavička                 | Směr      | Popis                                                                                                                                                                                                                      |
+| ------------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `X-OmniRoute-No-Cache`   | Požadavek | Nastavením na `true` se obejde mezipaměť                                                                                                                                                                                   |
+| `x-omniroute-no-memory`  | Požadavek | Nastavením na `true` se pro tento požadavek přeskočí vložení paměti a dovedností (odpovídá režimu bez mezipaměti; zamezuje režii tokenů a nákladů pro jednotlivá volání)                                                   |
+| `X-OmniRoute-Progress`   | Požadavek | Nastavením na `true` se aktivují události průběhu                                                                                                                                                                          |
+| `X-Session-Id`           | Požadavek | Klíč trvalé relace pro externí afinitu relace                                                                                                                                                                              |
+| `x_session_id`           | Požadavek | Přijímána je také varianta s podtržítky (přímé HTTP)                                                                                                                                                                       |
+| `X-OmniRoute-Session-Id` | Požadavek | Značka relace/konverzace poskytnutá volajícím (také se předává paměti). Je-li přítomna, uloží se beze změny do `call_logs.session_tag` pro přiřazení nákladů jednotlivým relacím (#8249) — pokud chybí, nikdy se nevytváří |
+| `Idempotency-Key`        | Požadavek | Klíč pro deduplikaci (okno 5 s)                                                                                                                                                                                            |
+| `X-Request-Id`           | Požadavek | Alternativní klíč pro deduplikaci                                                                                                                                                                                          |
+| `x-omniroute-connection` | Požadavek | Připne požadavek na jeden model k jednomu připojení poskytovatele (účtu) podle jeho ID — viz [Připnutí účtu pro jednotlivý požadavek](#account-pinning-per-request)                                                        |
+| `X-OmniRoute-Cache`      | Odpověď   | `HIT` nebo `MISS` (bez streamování)                                                                                                                                                                                        |
+| `X-OmniRoute-Idempotent` | Odpověď   | `true`, pokud byl požadavek deduplikován                                                                                                                                                                                   |
+| `X-OmniRoute-Progress`   | Odpověď   | `enabled`, pokud je zapnuté sledování průběhu                                                                                                                                                                              |
+| `X-OmniRoute-Session-Id` | Odpověď   | Efektivní ID relace použité službou OmniRoute                                                                                                                                                                              |
+| `X-OmniRoute-Request-Id` | Odpověď   | Korelační ID požadavku (je-li známé)                                                                                                                                                                                       |
+| `X-OmniRoute-Version`    | Odpověď   | Verze sestavení OmniRoute (vždy přítomna)                                                                                                                                                                                  |
+| `X-OmniRoute-Cost-Saved` | Odpověď   | Částka v USD ušetřená díky mezipaměti při zásahu `HIT` (pouze zásahy mezipaměti)                                                                                                                                           |
+| `X-OmniRoute-Decision`   | Odpověď   | Záznam směrování: `strategy=<name>; provider=<alias>; latency_ms=<n>` (`<name>` je kombinovaná strategie nebo `single` u nekombinovaného požadavku) — vždy přítomen v odpovědích po dokončení                              |
 
-> Poznámka k Nginx: pokud spoléháte na hlavičky s podtržítky (například `x_session_id`), povolte `underscores_in_headers on;`.
+> Poznámka k Nginx: pokud používáte hlavičky s podtržítky (například `x_session_id`), povolte `underscores_in_headers on;`.
 
-> **Hlavičky telemetrie nákladů:** úspěšné odpovědi bez streamování obsahují také sadu telemetrie nákladů `X-OmniRoute-*` — `X-OmniRoute-Response-Cost` (USD, pevně 10 desetinných míst; `0.0000000000` pro bezplatné položky nebo položky bez stanovené ceny), `X-OmniRoute-Tokens-In` / `X-OmniRoute-Tokens-Out`, `X-OmniRoute-Model`, `X-OmniRoute-Provider`, `X-OmniRoute-Latency-Ms`, `X-OmniRoute-Cache-Hit` a `X-OmniRoute-Fallback-Attempts` (pouze pokud > 0) spolu s `X-OmniRoute-Request-Id` a `X-OmniRoute-Version`. Tyto hlavičky vracejí dokončení chatu, `/v1/responses`, `/v1/messages` **i koncové body pro média** — `/v1/embeddings`, `/v1/images/generations`, `/v1/audio/speech`, `/v1/audio/transcriptions`, `/v1/rerank`, `/v1/videos/generations`, `/v1/music/generations` a `/v1/moderations` (náklady jsou vždy `0`). Náklady na média se počítají podle modality (za obrázek, za sekundu, za znak, za vyhledávací jednotku), pokud jsou k dispozici cenové údaje; jinak jsou `0` (při chybě se pokračuje).
+#### Připnutí účtu pro jednotlivý požadavek
 
-> **Sémantika nákladů při zásahu do mezipaměti:** při ZÁSAHU do sémantické mezipaměti (`X-OmniRoute-Cache-Hit: true`) není provedeno žádné volání upstreamu, takže `X-OmniRoute-Response-Cost` je `0.0000000000` (**přírůstkové** náklady na obsloužení zásahu). Původní/předpokládané náklady jsou vykázány samostatně v `X-OmniRoute-Cost-Saved`. Systémy zpracovávající fakturační údaje by měly sčítat `X-OmniRoute-Response-Cost` (zásahy nic nestojí); analytické systémy mezipaměti mohou agregovat `X-OmniRoute-Cost-Saved`.
+Pokud má poskytovatel několik připojení (účtů nebo klíčů), OmniRoute obvykle jedno z nich vybere
+pomocí své strategie výběru účtu. Požadavek může místo toho připnout konkrétní připojení
+pomocí hlavičky `x-omniroute-connection`:
+
+```bash
+curl http://localhost:20128/v1/chat/completions \
+  -H "Authorization: Bearer <your OmniRoute API key>" \
+  -H "Content-Type: application/json" \
+  -H "x-omniroute-connection: <connection id>" \
+  -d '{"model": "codex/gpt-5.5", "messages": [{"role": "user", "content": "hi"}]}'
+```
+
+- **Kde najít id.** Otevřete stránku poskytovatele v ovládacím panelu
+  (**Ovládací panel → Poskytovatelé → <provider>**) a klikněte na štítek id `xxxxxxxx…` na řádku
+  připojení — tím zkopírujete celé id připojení.
+- **Které požadavky jej respektují.** Požadavky na jeden model (`provider/model`) na
+  `/v1/chat/completions`, `/v1/messages` a `/v1/responses`. Kombinace tuto hlavičku ignorují:
+  účet pro každý krok kombinace připněte prostřednictvím vlastního připojení daného kroku.
+- **Připnutí je striktní, nikoli pouze preferované.** Připnuté připojení se používá výhradně.
+  Selhání během požadavku zaznamená dobu zablokování účtu, ale **nepřepne** na jiný účet
+  stejného poskytovatele.
+- **Doba zablokování a kvóta připnutí uvolní.** Pokud je připnuté připojení dočasně
+  zablokované, má vyčerpanou kvótu nebo je blokováno zásadou kvót, další požadavky přejdou
+  na ostatní připojení poskytovatele, stejně jako nepřipnutý provoz.
+- **Neznámá nebo deaktivovaná id způsobí selhání.** Id, které není v aktivním fondu
+  poskytovatele (bylo smazáno, deaktivováno nebo patří jinému poskytovateli), nezanechá žádný
+  způsobilý účet, takže požadavek selže namísto tichého přesměrování jinam.
+
+Claude Code odesílá vlastní hlavičky prostřednictvím `ANTHROPIC_CUSTOM_HEADERS`. Vložte jej do
+bloku `env` v `~/.claude/settings.json` nebo do projektového souboru `.claude/settings.json`,
+chcete-li pro každý projekt připnout jiný účet:
+
+```jsonc
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://<your OmniRoute>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<your OmniRoute API key>",
+    "ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>",
+  },
+}
+```
+
+Zdroj: `src/sse/handlers/chat.ts` (načtení hlavičky), `src/sse/services/auth.ts` a
+`src/sse/services/sessionAffinityPin.ts` (uvolnění připnutí a kontrola nepřítomnosti ve fondu).
+
+> **Hlavičky telemetrie nákladů:** úspěšné odpovědi bez streamování obsahují také sadu telemetrie nákladů `X-OmniRoute-*` — `X-OmniRoute-Response-Cost` (USD, pevně 10 desetinných míst; `0.0000000000` pro bezplatné položky nebo položky bez uvedené ceny), `X-OmniRoute-Tokens-In` / `X-OmniRoute-Tokens-Out`, `X-OmniRoute-Model`, `X-OmniRoute-Provider`, `X-OmniRoute-Latency-Ms`, `X-OmniRoute-Cache-Hit` a `X-OmniRoute-Fallback-Attempts` (pouze pokud > 0) spolu s `X-OmniRoute-Request-Id` a `X-OmniRoute-Version`. Tyto hlavičky jsou generovány dokončeními chatu, koncovými body `/v1/responses`, `/v1/messages` **a také koncovými body pro média** — `/v1/embeddings`, `/v1/images/generations`, `/v1/audio/speech`, `/v1/audio/transcriptions`, `/v1/rerank`, `/v1/videos/generations`, `/v1/music/generations` a `/v1/moderations` (cena je vždy `0`). Náklady na média se počítají podle modality (za obrázek, za sekundu, za znak, za vyhledávací jednotku), pokud jsou ceny k dispozici; jinak jsou `0` (při chybě se pokračuje).
+
+> **Nákladová sémantika zásahu do mezipaměti:** při ZÁSAHU do sémantické mezipaměti (`X-OmniRoute-Cache-Hit: true`) není provedeno žádné volání upstream služby, takže `X-OmniRoute-Response-Cost` je `0.0000000000` (**přírůstkové** náklady na obsloužení zásahu). Původní/předpokládané náklady jsou uvedeny samostatně v `X-OmniRoute-Cost-Saved`. Systémy zpracovávající fakturaci by měly sčítat `X-OmniRoute-Response-Cost` (zásahy nic nestojí); analytika mezipaměti může agregovat `X-OmniRoute-Cost-Saved`.
 
 ## Výhradní pronájmy spravovaných relací
 
@@ -413,7 +461,7 @@ jinak je projekt odvozen z `project_id` v JSON Service Account a jako výchozí 
 
 ---
 
-## Seznam modelů
+## Výpis modelů
 
 ```bash
 GET /v1/models
@@ -422,54 +470,99 @@ Authorization: Bearer your-api-key
 → Vrátí všechny chatovací, embeddingové a obrázkové modely + kombinace ve formátu OpenAI
 ```
 
-### Prefixy ID modelů (`?prefix=`)
+### Předpony ID modelů (`?prefix=`)
 
-Většina modelů je zveřejňována pod **prefixem poskytovatele**. To, který prefix získáte, určuje
-příznak funkce `MODELS_CATALOG_PREFIX_MODE` a lze jej přepsat **pro jednotlivé požadavky** pomocí
-parametru dotazu — což je užitečné pro klienta, který chce přehledný seznam bez změny nastavení
-celého serveru pro všechny ostatní:
+Většina modelů je zveřejněna pod **předponou poskytovatele**. To, jakou předponu získáte, řídí
+příznak funkce `MODELS_CATALOG_PREFIX_MODE` a lze ji přepsat **pro každý požadavek** pomocí
+parametru dotazu — to je užitečné pro klienta, který chce přehledný seznam, aniž by měnil
+celoserverové nastavení pro všechny ostatní:
 
 ```bash
-GET /v1/models?prefix=alias        # jedno ID na model — krátký aliasový prefix
+GET /v1/models?prefix=alias        # jedno ID na model — krátká předpona aliasu
 GET /v1/models?prefix=dual         # obě podoby (výchozí nastavení serveru)
-GET /v1/models?prefix=canonical    # pouze úplný prefix ID poskytovatele
+GET /v1/models?prefix=canonical    # pouze úplná předpona ID poskytovatele
 ```
 
-| Režim       | Vypisuje                                                | Poznámky                                                                                                                                                                                 |
-| ----------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **a** `claude/claude-sonnet-4-6` | **Výchozí.** Obě ID směrují na stejný model; zachováno proto, aby nadále fungovaly konfigurace klientů, které napevno používají jednu či druhou podobu. Přibližně zdvojnásobuje katalog. |
-| `alias`     | `cc/claude-sonnet-4-6`                                  | Jedna položka na model. Poskytovatelé bez odlišného aliasu svou položku stále vypisují, takže se nic neztratí.                                                                           |
-| `canonical` | `claude/claude-sonnet-4-6`                              | Jedna položka na model pod úplným prefixem ID poskytovatele. Poskytovatelé bez odlišného aliasu (např. `antigravity/…`, `agy/…`) zde také vypisují své jediné ID, takže se nic neztratí. |
+| Režim       | Vrací                                                   | Poznámky                                                                                                                                                                                       |
+| ----------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **a** `claude/claude-sonnet-4-6` | **Výchozí.** Obě ID směrují na stejný model; zachováno proto, aby nadále fungovaly konfigurace klientů, které mají napevno nastavenou jednu či druhou podobu. Přibližně zdvojnásobuje katalog. |
+| `alias`     | `cc/claude-sonnet-4-6`                                  | Jedna položka na model. Poskytovatelé bez odlišného aliasu svou položku stále vracejí, takže se nic neztratí.                                                                                  |
+| `canonical` | `claude/claude-sonnet-4-6`                              | Jedna položka na model pod úplnou předponou ID poskytovatele. Poskytovatelé bez odlišného aliasu (např. `antigravity/…`, `agy/…`) zde také vracejí své jediné ID, takže se nic neztratí.       |
 
-Zrcadlovou položku v režimu `dual` lze rozpoznat i bez parametru dotazu: obsahuje pole `parent`
+Zrcadlenou položku v režimu `dual` lze rozpoznat také bez parametru dotazu: obsahuje pole `parent`
 odkazující na primární ID.
 
 Klienti, kteří vykreslují výběr modelu, by měli požadovat `?prefix=alias` — takto postupuje
 [rozšíření OmniCopilot pro VS Code](../guides/VSCODE-COPILOT.md).
 
+### Filtry vyhledávání (`?capability=`, `?min_context=`, `?kind=`, `?q=`)
+
+`GET /v1/models` podporuje volitelné filtry vyhledávání. Bez kteréhokoli z nich zůstává odpověď
+beze změny. Filtry zužují katalog, který volající již vidí (oprávnění klíče API se uplatní jako první),
+a použijí se před stránkováním ve stylu OpenAI pomocí `limit` / `after`:
+
+```bash
+GET /v1/models?capability=vision&capability=tool_calling   # každá uvedená schopnost musí být podporována
+GET /v1/models?capability=vision,reasoning&min_context=200000
+GET /v1/models?kind=embedding                              # `type` v katalogu; řádky bez něj jsou typu `chat`
+GET /v1/models?q=sonnet&limit=10                           # shoda ID nebo názvu bez rozlišení velikosti písmen
+```
+
+| Parametr      | Hodnoty                                                                                             |
+| ------------- | --------------------------------------------------------------------------------------------------- |
+| `capability`  | `attachment`, `reasoning`, `structured_output`, `temperature`, `thinking`, `tool_calling`, `vision` |
+| `min_context` | nezáporné celé číslo porovnávané s `context_length`                                                 |
+| `kind`        | `chat`, `audio`, `embedding`, `image`, `moderation`, `music`, `rerank`, `video`                     |
+| `q`           | 1–200 znaků                                                                                         |
+
+Neznámá hodnota nebo `min_context`, který není nezáporným celým číslem (například `1.5`),
+vrátí HTTP `400` a zpráva uvede platné hodnoty. Implementace:
+`src/app/api/v1/models/catalogFilters.ts`.
+
+### Užší výběr modelů (`POST /v1/models/query`)
+
+`POST /v1/models/query` vrací krátký deterministický seznam ze stejného katalogu se stejným
+ověřováním a viditelností pro jednotlivé klíče jako `GET /v1/models`:
+
+```bash
+POST /v1/models/query
+Authorization: Bearer your-api-key
+Content-Type: application/json
+
+{ "capabilities": ["vision", "tool_calling"], "min_context": 128000, "max_output": 16000,
+  "kind": "chat", "q": "gpt", "owned_by": "openai", "exclude": ["openai/gpt-4o"], "limit": 5 }
+
+→ { "object": "list", "data": [ ...models ] }
+```
+
+Každé pole je volitelné. `capabilities` a `exclude` přijímají pole nebo řetězec oddělený čárkami;
+`max_output` se porovnává s `max_output_tokens`. Výsledky jsou seřazeny podle `owned_by` a poté podle `id`.
+Výchozí hodnota `limit` je `20` a hodnoty nad `100` jsou omezeny na `100`. Neplatný JSON, neznámé
+pole nebo neplatná hodnota vrátí HTTP `400`.
+
 ### Jednotlivě skryté chatovací modely
 
-Model označený na stránce svého poskytovatele jako **Skrytý** je vyloučen z katalogu a při
-explicitním požadavku odmítnut pomocí HTTP `404` / `model_not_found`. Kontrola používá přeloženého
-poskytovatele a model, včetně aliasů poskytovatelů, prefixů uzlů kompatibilních poskytovatelů a
-výchozích hodnot připojení. Kombinace přeskočí skryté cíle a může použít viditelný související model;
-pokud nezůstane žádný spustitelný cíl, vrátí stejný chybový kód. Zrušení skrytí se projeví při dalším
-požadavku. Přepsání viditelnosti pouze pro obrázky neskryje chatovací model se stejným ID.
+Model označený na stránce svého poskytovatele jako **Skrytý** je z katalogu vyloučen a při
+explicitním požadavku odmítnut s HTTP `404` / `model_not_found`. Kontrola používá vyhodnoceného
+poskytovatele a model, včetně aliasů poskytovatelů, předpon uzlů kompatibilních poskytovatelů
+a výchozích nastavení připojení. Kombinace přeskočí skryté cíle a může použít viditelný alternativní
+model; pokud nezůstane žádný spustitelný cíl, vrátí stejný chybový kód. Zrušení skrytí se projeví
+při příštím požadavku. Přepsání viditelnosti pouze pro obrázky neskryje chatovací model se stejným ID.
 
-Toto individuální nastavení modelu je oddělené od
+Toto nastavení jednotlivých modelů je oddělené od
 [seznamů povolených/zakázaných zveřejněných modelů](../routing/MODEL_EXPOSURE_LIST.md), které filtrují
-zveřejňování v katalogu a kandidáty pro automatické směrování, přičemž zachovávají explicitní odesílání.
-Oprávnění modelů pro klíče API se nadále uplatňují nezávisle. Výchozí režim prefixu katalogu zůstává `dual`.
+zveřejnění v katalogu a kandidáty pro automatické směrování, přičemž zachovávají explicitní odesílání.
+Oprávnění modelů pro klíče API se nadále uplatňují nezávisle. Výchozím režimem předpony katalogu zůstává `dual`.
 
 ### Varianty modelů bez přemýšlení
 
-Pro modely Claude podporující přemýšlení zveřejňuje `/v1/models` také variantu **bez přemýšlení**, jejíž ID má prefix `claude-3-omniroute-no-thinking/`:
+Pro modely Claude podporující přemýšlení `/v1/models` zveřejňuje také variantu **bez přemýšlení**, jejíž ID má předponu `claude-3-omniroute-no-thinking/`:
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-Výběr tohoto ID (např. v konfiguraci Claude Code, která vždy připojuje blok `thinking`) se přeloží zpět na skutečný model `<provider>/<model>` s potlačeným uvažováním — `thinking:{type:"disabled"}` na cestě `/v1/messages`, nebo s vynechanými poli `reasoning`/`reasoning_effort` na cestě `/v1/chat/completions`. Varianta je uvedena pouze pro modely rodiny Claude, které podporují přemýšlení **a** respektují hodnotu `disabled` (takže jsou například vyloučeny modely pouze s adaptivním režimem, které hodnotu `disabled` odmítají). Operátoři mohou tuto variantu pro jednotlivé modely vynutit nebo zakázat prostřednictvím `ModelSpec.noThinkingAlias`.
+Výběr tohoto ID (např. v konfiguraci Claude Code, která vždy připojuje blok `thinking`) se přeloží zpět na skutečný `<provider>/<model>` s potlačeným uvažováním — pomocí `thinking:{type:"disabled"}` na cestě `/v1/messages` nebo vynecháním polí `reasoning`/`reasoning_effort` na cestě `/v1/chat/completions`. Varianta je uvedena pouze u modelů z rodiny Claude, které podporují uvažování **a zároveň** respektují hodnotu `disabled` (takže jsou např. vyloučeny modely podporující pouze adaptivní režim, které hodnotu `disabled` odmítají). Operátoři mohou tuto variantu pro jednotlivé modely vynutit nebo zakázat pomocí `ModelSpec.noThinkingAlias`.
 
 ---
 
@@ -489,7 +582,7 @@ přímo importovat `open-sse/config/providerPluginManifestRegistry.ts`.
 
 ---
 
-## Koncové body kompatibility
+## Kompatibilní koncové body
 
 | Metoda | Cesta                                     | Formát                               |
 | ------ | ----------------------------------------- | ------------------------------------ |
@@ -503,11 +596,12 @@ přímo importovat `open-sse/config/providerPluginManifestRegistry.ts`.
 | POST   | `/v1/music/generations`                   | Generování hudby ve stylu OpenAI     |
 | POST   | `/v1/audio/transcriptions`                | OpenAI Audio (STT)                   |
 | POST   | `/v1/audio/speech`                        | OpenAI TTS (vrací zvuková data)      |
-| POST   | `/v1/rerank`                              | Řazení ve stylu Cohere/Voyage        |
+| POST   | `/v1/rerank`                              | Přeřazení ve stylu Cohere/Voyage     |
 | POST   | `/v1/classify`                            | Klasifikace Jina (`api.jina.ai`)     |
 | POST   | `/v1/segment`                             | Segmentátor Jina (`segment.jina.ai`) |
 | POST   | `/v1/moderations`                         | OpenAI Moderations                   |
 | GET    | `/v1/models`                              | OpenAI                               |
+| POST   | `/v1/models/query`                        | Filtrovaný užší výběr modelů         |
 | POST   | `/v1/messages/count_tokens`               | Anthropic                            |
 | GET    | `/v1beta/models`                          | Gemini                               |
 | POST   | `/v1beta/models/{...path}`                | Gemini generateContent               |
@@ -519,12 +613,12 @@ přímo importovat `open-sse/config/providerPluginManifestRegistry.ts`.
 | POST   | `/api/v1/vscode/{token}/api/chat`         | Tokenizovaný alias Ollama            |
 | GET    | `/api/v1/vscode/{token}/api/tags`         | Tokenizovaný alias značek Ollama     |
 
-Všechny trasy POST mají stejnou strukturu: `Bearer your-api-key` + tělo JSON ověřené pomocí Zod (`v1RerankSchema`, `v1ModerationSchema`, `v1AudioSpeechSchema` atd., viz `src/shared/validation/schemas.ts`). Při selhání validace schématu je vrácena odpověď 4xx.
+Všechny trasy POST používají stejnou strukturu: `Bearer your-api-key` + tělo JSON ověřené pomocí Zod (`v1RerankSchema`, `v1ModerationSchema`, `v1AudioSpeechSchema` atd., viz `src/shared/validation/schemas.ts`). Při selhání validace podle schématu se vrací stavový kód 4xx.
 
-Pro klienty, kteří nemohou připojit hlavičku `Authorization: Bearer ...`, přijímá OmniRoute také klíče API v adrese URL, a to buď prostřednictvím kompatibilních parametrů dotazu (`?token=...`, `?apiKey=...`, `?api_key=...`, `?key=...`), nebo pomocí vyhrazených koncových bodů `/api/v1/vscode/{token}/...` zdokumentovaných níže.
+Klientům, kteří nemohou připojit hlavičku `Authorization: Bearer ...`, OmniRoute umožňuje předat klíče API také v adrese URL, a to buď prostřednictvím kompatibilních parametrů řetězce dotazu (`?token=...`, `?apiKey=...`, `?api_key=...`, `?key=...`), nebo pomocí vyhrazených koncových bodů `/api/v1/vscode/{token}/...` popsaných níže.
 
 ```bash
-# Řazení (poskytovatel z cloudového registru nebo uzel poskytovatele kompatibilní s OpenAI jako "<prefix>/<model>")
+# Přeřazení (poskytovatel z cloudového registru nebo uzel poskytovatele kompatibilního s OpenAI ve formátu "<prefix>/<model>")
 POST /v1/rerank      { "model": "jina-ai/jina-reranker-v3.5", "query": "...", "documents": ["..."] }
 
 # Klasifikace Jina (přihlašovací údaje k Foundation API)
@@ -549,37 +643,37 @@ POST /v1/audio/speech { "model": "soniox/tts-rt-v1", "input": "Xin chào", "voic
 # Úprava obrázku (multipart)
 POST /v1/images/edits  -F image=@input.png -F prompt="..." -F mask=@mask.png
 
-# Generování videa / hudby (ID modelu s předponou poskytovatele)
+# Generování videa / hudby (ID modelu s prefixem poskytovatele)
 POST /v1/videos/generations { "model": "runway/gen-3", "prompt": "..." }
 POST /v1/music/generations  { "model": "kie/suno-v4.0",   "prompt": "..." }
 ```
 
-> **Uzly poskytovatelů pro řazení:** `POST /v1/rerank` také směruje požadavky na uzly poskytovatelů kompatibilní s OpenAI
+> **Uzly poskytovatelů pro přerazení:** `POST /v1/rerank` směruje požadavky také na uzly poskytovatelů kompatibilní s OpenAI
 > (oMLX, vLLM, Infinity, TEI za bránou, …), adresované jako `<node-prefix>/<model>`. Uzly zpětné smyčky
-> (`localhost`, `127.0.0.1`, `172.16.0.0/12`) jsou způsobilé vždy, stejně jako názvy hostitelů, které
-> provozovatel uvede v `OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS` (např. název služby Docker/Compose, jako
-> je `http://reranker:8080/v1`; tyto uzly jsou volány přímo, nikdy prostřednictvím `HTTP(S)_PROXY` ani
-> proxy připnuté ke spojení). Uzly na jakémkoli jiném
-> hostiteli — počítači v síti LAN nebo uzlu Tailscale — jsou způsobilé pouze tehdy, když provozovatel povolí
-> příznak funkce `RERANK_REMOTE_PROVIDER_NODES` **a zároveň** základní adresa URL uzlu splňuje zásady pro
-> odchozí adresy URL poskytovatele (`OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS` / `OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS`).
-> Krok řazení paměťového enginu volá tuto trasu přes
-> zpětnou smyčku, takže stejné pravidlo řídí také `rerankProviderModel` v nastavení paměti.
+> (`localhost`, `127.0.0.1`, `172.16.0.0/12`) jsou vždy způsobilé, stejně jako názvy hostitelů, které
+> provozovatel uvede v `OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS` (např. název služby Docker/Compose, jako je
+> `http://reranker:8080/v1`; ty jsou volány přímo, nikdy přes `HTTP(S)_PROXY` ani připnutý proxy server
+> daného připojení). Uzly na jakémkoli jiném
+> hostiteli — zařízení v síti LAN nebo peer Tailscale — jsou způsobilé pouze tehdy, když provozovatel povolí
+> příznak funkce `RERANK_REMOTE_PROVIDER_NODES` **a zároveň** základní URL uzlu vyhoví zásadám poskytovatele
+> pro odchozí URL (`OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS` / `OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS`).
+> Krok přerazení paměťového enginu volá tuto trasu přes
+> zpětnou smyčku, takže stejné pravidlo se v nastavení paměti vztahuje i na `rerankProviderModel`.
 >
-> **Struktury lokálních serverů:** uzel je volán na adrese `<base>/v1/rerank` a při odpovědi 404 na adrese `<base>/rerank`
-> (Infinity, TEI). Tělo požadavku odesílaného nadřazenému serveru obsahuje jak zápis Cohere/OpenAI (`documents`,
-> `return_documents`), tak zápis TEI (`texts`, `return_text`), a odpověď nadřazeného serveru je
+> **Podoby lokálních serverů:** uzel je volán na `<base>/v1/rerank` a při odpovědi 404 na `<base>/rerank`
+> (Infinity, TEI). Tělo požadavku odesílaného upstreamu obsahuje jak zápis Cohere/OpenAI (`documents`,
+> `return_documents`), tak zápis TEI (`texts`, `return_text`), a odpověď upstreamu je
 > normalizována do obálky Cohere: holé pole TEI `[{index, score, text}]`, objekt `{results: [{index, score}]}`
-> z jednoduchých bran a struktura Voyage `{data: [...]}` jsou klientovi vráceny jako
-> `{results: [{index, relevance_score, document?}]}`, seřazené podle skóre a omezené hodnotou `top_n`.
+> z jednoduchých bran i objekt ve stylu Voyage `{data: [...]}` jsou klientovi vráceny jako
+> `{results: [{index, relevance_score, document?}]}`, seřazené podle skóre a omezené na `top_n`.
 
-> **Zjišťování uzlů poskytovatele:** modely v uzlu poskytovatele kompatibilního s OpenAI se zobrazují v `GET /v1/models`
-> pod prefixem uzlu. Řádky, které neobsahují metadata koncového bodu (typické pro lokální výpisy `/v1/models`),
+> **Zjišťování uzlů poskytovatelů:** modely na uzlu poskytovatele kompatibilním s OpenAI se zobrazují v `GET /v1/models`
+> pod prefixem uzlu. Řádky, které neobsahují žádná metadata koncového bodu (typicky u lokálních výpisů `/v1/models`),
 > dědí `apiType` uzlu, takže modely uzlu `embeddings` mají `type: "embedding"` a modely
-> uzlu `rerank` mají `type: "rerank"` namísto výchozího nastavení na chat; explicitní
-> `supportedEndpoints` v synchronizovaném nebo ručně přidaném řádku má i nadále přednost.
+> uzlu `rerank` mají `type: "rerank"` namísto výchozího typu chat; explicitně uvedené
+> `supportedEndpoints` v synchronizovaném nebo ručně přidaném řádku má stále přednost.
 
-### Vyhrazené trasy poskytovatele
+### Vyhrazené trasy poskytovatelů
 
 ```bash
 POST /v1/providers/{provider}/chat/completions
@@ -587,7 +681,7 @@ POST /v1/providers/{provider}/embeddings
 POST /v1/providers/{provider}/images/generations
 ```
 
-Pokud prefix poskytovatele chybí, je automaticky přidán. Neshodující se modely vracejí `400`.
+Pokud prefix poskytovatele chybí, přidá se automaticky. Neshodující se modely vracejí `400`.
 
 ---
 
@@ -631,24 +725,59 @@ volajícím bez relace (načtení, smazání, zrušení a kontrola `input_file_i
 
 ---
 
-## Vyhledávací API
+## API pro vyhledávání
 
 Abstrakce poskytovatelů webového vyhledávání (Tavily, Brave, Exa, Serper atd.).
 
-| Metoda | Cesta                  | Popis                                                                                                |
-| ------ | ---------------------- | ---------------------------------------------------------------------------------------------------- |
-| GET    | `/v1/search`           | Vypíše nakonfigurované poskytovatele vyhledávání a jejich možnosti                                   |
-| POST   | `/v1/search`           | Spustí vyhledávací dotaz — tělo ověřuje `v1SearchSchema`, podporuje ukládání do mezipaměti/slučování |
-| GET    | `/v1/search/analytics` | Statistiky zásahů, latence a mezipaměti pro jednotlivé poskytovatele                                 |
+| Metoda | Cesta                  | Popis                                                                                                                         |
+| ------ | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/v1/search`           | Vypíše nakonfigurované poskytovatele vyhledávání a jejich možnosti                                                            |
+| POST   | `/v1/search`           | Spustí vyhledávací dotaz — tělo je validováno pomocí `v1SearchSchema`, podporuje ukládání do mezipaměti a slučování požadavků |
+| GET    | `/v1/search/analytics` | Statistiky zásahů, latence a mezipaměti pro jednotlivé poskytovatele                                                          |
 
-**Ověření:** API klíč typu Bearer (`extractApiKey` + `isValidApiKey`). Zásady vyhledávání jsou vynucovány prostřednictvím `enforceApiKeyPolicy`.
+**Ověření:** API klíč typu Bearer (`extractApiKey` + `isValidApiKey`). Zásady vyhledávání se vynucují pomocí `enforceApiKeyPolicy`.
+
+### `provider_options` pro Exa a Tavily
+
+Exa a Tavily načítají pole specifická pro poskytovatele z jmenného kontejneru:
+`provider_options.exa` (nebo `provider_options["exa-search"]`) a `provider_options.tavily`
+(nebo `provider_options["tavily-search"]`). Předávají se pouze níže uvedené klíče. Každý z nich je
+kontrolován podle vlastního schématu Zod v `open-sse/handlers/search/providerOptionsPassthrough.ts`
+a klíč s nesprávným typem je vynechán. Všechny ostatní klíče jsou ignorovány, včetně ověřování, základní URL,
+`stream` a `outputSchema`. Ploché klíče používané ostatními poskytovateli (`cx`, `depth`, ...) fungují
+stejně jako dříve.
+
+| Poskytovatel | Pole nejvyšší úrovně                                                                                                                                                                                                                                                                                                                                                      | Vnořená                                                                                                                                                                 |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Exa          | `type`, `category`, `userLocation`, `moderation`, `additionalQueries`, `objective`, `systemPrompt`, `compliance` (ploché primitivní hodnoty), `startPublishedDate`, `endPublishedDate`                                                                                                                                                                                    | `contents.{text, highlights, summary, extras, subpages, subpageTarget, livecrawlTimeout, maxAgeHours}` sloučené přes výchozí hodnotu `{ text: true, highlights: true }` |
+| Tavily       | `search_depth`, `chunks_per_source`, `time_range`, `start_date`, `end_date`, `include_published_date`, `filter_by_published_date`, `include_answer`, `include_raw_content`, `include_images`, `include_image_descriptions`, `include_favicon`, `include_domains_mode`, `language`, `filter_by_language`, `auto_parameters`, `exact_match`, `include_usage`, `safe_search` | —                                                                                                                                                                       |
+
+Obecná pole mají vždy přednost: `query`, `max_results`, `filters` (domény), `country` a
+téma odvozené z `search_type`. U Exa zachovává `search_type: "news"` hodnotu `category: "news"`.
+Tavily také přijímá `search_type: "finance"` (`topic: "finance"`).
+
+Obecné pole `time_range` se nyní předává oběma poskytovatelům: Exa obdrží `startPublishedDate` (časové
+razítko ISO) a Tavily obdrží `start_date` (`YYYY-MM-DD`). Explicitní datum v `provider_options`
+má přednost před namapovanou hodnotou.
+
+Výsledky Exa zachovávají `id`, `highlight_scores`, `summary`, `subpages`, `entities` a `extras` v
+`provider_raw`. Výsledky Tavily zachovávají `images` a `favicon`.
+
+Účtování nákladů je nadále založeno na plochém registru `costPerQuery`. Tavily účtuje
+`search_depth: "advanced"` vyšším počtem kreditů za volání a tento rozdíl se nepromítá do
+`usage.search_cost_usd`.
 
 ---
 
-## API pro načítání webu
+## Web Fetch API
 
-Extrahuje obsah z URL prostřednictvím nakonfigurovaného poskytovatele načítání webu (Firecrawl, Jina
-Reader, Tavily Extract, TinyFish Fetch, Nimble Extract).
+Extrahuje obsah z adresy URL prostřednictvím nakonfigurovaného poskytovatele webového načítání (Firecrawl, Jina
+Reader, Tavily Extract, TinyFish Fetch, Nimble Extract, Parallel Extract).
+
+Parallel Extract (`parallel-search`, stejný API klíč jako Parallel Search) vrací pouze Markdown
+— jakýkoli jiný `format` vede k chybě `400` — a omezuje obsah na 100 000 znaků. Pokud
+samotnou cílovou stránku nelze extrahovat, nadřazená služba to oznámí v rámci odpovědi HTTP 200;
+OmniRoute tuto odpověď převede na `422` s pevně danou zprávou.
 
 | Metoda | Cesta           | Popis                                                 |
 | ------ | --------------- | ----------------------------------------------------- |
@@ -656,18 +785,20 @@ Reader, Tavily Extract, TinyFish Fetch, Nimble Extract).
 
 **Ověření:** API klíč typu Bearer (`extractApiKey` + `isValidApiKey`). Zásady jsou vynucovány prostřednictvím `enforceApiKeyPolicy`.
 
-**Záložní přepínání zohledňující kvóty (#8297):** pokud není zadán explicitní `provider`, fond
-(`firecrawl` → `jina-reader` → `tavily-search` → `tinyfish` → `nimble-search`) je
-procházen v pevném
-pořadí priorit (fill-first) — nakonfigurovaný poskytovatel s omezenou četností požadavků je přeskočen,
-místo aby požadavek okamžitě ukončil, a opakovatelná chyba upstreamu nebo chyba kvóty
-(HTTP 429 vždy; 402/403 pro bezplatné úrovně Firecrawl/Tavily/TinyFish se stylem kvót —
+**Záložní mechanismus zohledňující kvóty (#8297):** pokud není explicitně zadán `provider`, fond
+(`firecrawl` → `jina-reader` → `tavily-search` → `tinyfish` → `nimble-search` →
+`parallel-search`) se
+prochází v pevném
+pořadí priorit (nejprve se využije první poskytovatel naplno) — poskytovatel s omezenou rychlostí, ale s platnou konfigurací, je přeskočen,
+namísto aby byl požadavek okamžitě ukončen, a opakovatelná chyba nebo chyba kvóty nadřazené služby
+(vždy HTTP 429; 402/403 pro bezplatné tarify Firecrawl/Tavily/TinyFish ve stylu kvót —
 nikoli pro Jina Reader a nikdy pro běžný chybný požadavek 400) způsobí za běhu požadavku přechod
-k dalšímu dosud nevyzkoušenému poskytovateli s přihlašovacími údaji. Když jsou vyčerpáni všichni poskytovatelé
-ve fondu, koncový bod vrátí jedinou odpověď `429` (s hlavičkou `Retry-After`)
-namísto dřívější obecné odpovědi `400`. Pokud je vyžádán explicitní `provider`,
-k žádnému tichému záložnímu přepnutí **nedojde** — explicitní poskytovatel s omezenou četností požadavků nebo s chybou
-vrátí svou vlastní chybu (`429` při omezení četnosti požadavků, jinak stav upstreamu).
+k dalšímu dosud nevyzkoušenému poskytovateli s přihlašovacími údaji. Když jsou vyčerpáni všichni poskytovatelé ve
+fondu, koncový bod vrátí jedinou odpověď `429` (s hlavičkou `Retry-After`)
+namísto dřívější obecné chyby `400`. Pokud je explicitně vyžádán `provider`,
+k žádnému tichému přechodu na záložního poskytovatele **nedojde** — explicitně zadaný poskytovatel s omezenou rychlostí nebo s chybou
+vrátí vlastní chybu (`429` při omezení rychlosti, jinak stavový kód
+nadřazené služby).
 
 ---
 
@@ -931,49 +1062,49 @@ X-OmniRoute-No-Cache: true
 
 ## Řídicí panel a správa
 
-Trasy pro správu (`/api/*` s výjimkou veřejného ověřování/přihlášení) **nejsou** autorizovány
-běžnými API klíči pro inferenci. Rodiny přihlašovacích údajů, rozsahy a příklady použití curl:
+Trasy správy (`/api/*` kromě veřejného ověřování/přihlášení) **nejsou** autorizovány
+běžnými API klíči pro inferenci. Rodiny přihlašovacích údajů, rozsahy a příklady curl:
 [Ověřování pro správu](../guides/MANAGEMENT-AUTH.md).
 
 ### Ověřování
 
-| Koncový bod                   | Metoda  | Popis                            |
-| ----------------------------- | ------- | -------------------------------- |
-| `/api/auth/login`             | POST    | Přihlášení                       |
-| `/api/auth/logout`            | POST    | Odhlášení                        |
-| `/api/settings/require-login` | GET/PUT | Přepnutí požadavku na přihlášení |
+| Koncový bod                   | Metoda   | Popis                                                                                                                                                                                                                                                                                                                                 |
+| ----------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/auth/login`             | POST     | Přihlášení                                                                                                                                                                                                                                                                                                                            |
+| `/api/auth/logout`            | POST     | Odhlášení                                                                                                                                                                                                                                                                                                                             |
+| `/api/settings/require-login` | GET/POST | Stav přihlášení (GET, veřejný). POST nastavuje heslo / přepíná požadavek na přihlášení: jakmile heslo existuje, je operace dostupná pouze operátorovi (relace řídicího panelu, místní CLI nebo zakázané přihlašování — API klíče a tokeny `oma_` obdrží `403`); relace řídicího panelu odesílá `currentPassword`, aby nahradila heslo |
 
 ### Správa poskytovatelů
 
-| Koncový bod                             | Metoda                    | Popis                                                                                                                                                                     |
-| --------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/api/providers`                        | GET/POST                  | Výpis / vytvoření poskytovatelů                                                                                                                                           |
-| `/api/providers/[id]`                   | GET/PUT/DELETE            | Správa poskytovatele                                                                                                                                                      |
-| `/api/providers/[id]/test`              | POST                      | Test připojení poskytovatele                                                                                                                                              |
-| `/api/providers/[id]/models`            | GET                       | Výpis modelů poskytovatele                                                                                                                                                |
-| `/api/providers/validate`               | POST                      | Ověření konfigurace poskytovatele                                                                                                                                         |
-| `/api/providers/bulk`                   | POST                      | Hromadné přidání API klíčů pro JEDNOHO poskytovatele                                                                                                                      |
-| `/api/providers/import`                 | POST                      | Import heterogenního SEZNAMU poskytovatelů z analyzovaného souboru CSV/JSON (#6836); výsledky částečných selhání pro jednotlivé řádky                                     |
-| `/api/provider-nodes*`                  | Různé                     | Správa uzlů poskytovatele                                                                                                                                                 |
-| `/api/provider-models`                  | GET/POST/PUT/PATCH/DELETE | Vlastní modely a přepsání nastavení jednotlivých modelů (přidání, aktualizace, skrytí/zobrazení, odstranění)                                                              |
-| `/api/provider-models/validate-and-add` | POST                      | Striktní ověření připojení, které vyžaduje ověření pro správu a je volitelné, a atomická registrace vlastního modelu; viz [Ověření modelu](../guides/MODEL-VALIDATION.md) |
+| Koncový bod                             | Metoda                    | Popis                                                                                                                                                             |
+| --------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/providers`                        | GET/POST                  | Výpis / vytvoření poskytovatelů                                                                                                                                   |
+| `/api/providers/[id]`                   | GET/PUT/DELETE            | Správa poskytovatele                                                                                                                                              |
+| `/api/providers/[id]/test`              | POST                      | Test připojení k poskytovateli                                                                                                                                    |
+| `/api/providers/[id]/models`            | GET                       | Výpis modelů poskytovatele                                                                                                                                        |
+| `/api/providers/validate`               | POST                      | Ověření konfigurace poskytovatele                                                                                                                                 |
+| `/api/providers/bulk`                   | POST                      | Hromadné přidání API klíčů pro JEDNOHO poskytovatele                                                                                                              |
+| `/api/providers/import`                 | POST                      | Import heterogenního SEZNAMU poskytovatelů z analyzovaného souboru CSV/JSON (#6836); výsledky s částečnými selháními pro jednotlivé řádky                         |
+| `/api/provider-nodes*`                  | Různé                     | Správa uzlů poskytovatelů                                                                                                                                         |
+| `/api/provider-models`                  | GET/POST/PUT/PATCH/DELETE | Vlastní modely a přepsání nastavení jednotlivých modelů (přidání, aktualizace, skrytí/zobrazení, odstranění)                                                      |
+| `/api/provider-models/validate-and-add` | POST                      | Volitelně aktivované striktní ověření připojení s ověřením pro správu a atomická registrace vlastního modelu; viz [Ověření modelu](../guides/MODEL-VALIDATION.md) |
 
 Pro synchronizované/importované modely přijímá `PUT /api/provider-models` hodnoty `provider`, `modelId` a
 `maxOutputTokenOverride`: kladné celé číslo nastaví ruční limit výstupních tokenů a hodnota `null`
-jej odstraní a obnoví výchozí nastavení. `GET /api/provider-models?provider=<provider>` vrací tyto
-hodnoty v `modelOutputOverrides`, včetně modelů bez záznamu vlastního modelu. Přepsání
-využívá běhovou schopnost `max_output_tokens` a zůstává zachováno i po opětovné synchronizaci modelu. Stránka poskytovatele
-kompatibilního s OpenAI nabízí stejné ovládací prvky pro úpravu/odstranění a označuje modely s explicitní podporou obrazového vstupu.
+jej zruší a obnoví výchozí nastavení. `GET /api/provider-models?provider=<provider>` vrací tyto
+hodnoty v `modelOutputOverrides`, včetně modelů bez řádku vlastního modelu. Přepsání
+využívá běhovou schopnost `max_output_tokens` a přetrvá opětovnou synchronizaci modelu. Stránka poskytovatele
+kompatibilního s OpenAI nabízí stejné ovládací prvky pro úpravu/vymazání a označuje modely s explicitní podporou obrazu.
 
-Vlastní uzly Chat Completions přizpůsobují explicitní vypnutí uvažování nadřazenému backendu. Úspěšný
-test připojení automaticky vybere ovládací prvky šablony chatu pro každé přesné ID modelu,
-jehož položka `/models` potvrzuje rozpoznanou hodnotu `owned_by`: `vllm`, `sglang` nebo `llamacpp`.
+Vlastní uzly Chat Completions přizpůsobují explicitní vypnutí uvažování nadřazenému backendu.
+Úspěšný test připojení automaticky vybere ovládací prvky šablony chatu pro každé přesné ID modelu,
+jehož položka `/models` prokazuje rozpoznanou hodnotu `owned_by`: `vllm`, `sglang` nebo `llamacpp`.
 Transparentní obálky kompatibilní s OpenAI mohou zachovat původní položku modelu uvnitř vnořeného
 objektu `openai`; detekce prochází až třemi takovými obálkami. Modely s chybějícím, neznámým nebo
-konfliktním vlastnictvím zachovávají běžné chování OpenAI. Detekce opakovaně využívá existující požadavek na katalog,
+konfliktním vlastnictvím zachovávají běžné chování OpenAI. Detekce znovu používá existující požadavek na katalog,
 negeneruje žádné tokeny dokončení a je zneplatněna při změně koncového bodu připojení.
 
-Chcete-li toto chování pevně nastavit pro backend, který daná metadata nezpřístupňuje, použijte existující API
+Chcete-li toto chování pevně nastavit pro backend, který tato metadata nezpřístupňuje, použijte existující API
 pro částečnou aktualizaci poskytovatele:
 
 ```json
@@ -984,20 +1115,20 @@ pro částečnou aktualizaci poskytovatele:
 }
 ```
 
-Odešlete toto tělo pomocí `PUT /api/providers/<connection-id>`. U tohoto připojení je explicitní
-úsilí o uvažování s hodnotou `none` odesláno jako `chat_template_kwargs.thinking=false` a
+Odešlete toto tělo pomocí `PUT /api/providers/<connection-id>`. U tohoto připojení se explicitní
+míra uvažování `none` odesílá jako `chat_template_kwargs.thinking=false` a
 `chat_template_kwargs.enable_thinking=false`. Explicitní nativní hodnoty šablony zůstávají rozhodující,
-pokud pravidlo uvažování na straně serveru nevynutí určitou úroveň úsilí. Nastavení se použije pouze tehdy, když vlastní
+pokud pravidlo uvažování na straně serveru nevynutí určitou míru. Nastavení se použije pouze tehdy, když vlastní
 připojení kompatibilní s OpenAI odesílá tělo Chat Completions; požadavky Responses a běžní
-poskytovatelé zachovávají svůj nativní tvar požadavku. Nastavte `reasoningControl` na `openai`, chcete-li vynutit běžné předávání
-`reasoning_effort` OpenAI, nebo tuto hodnotu vynechte/nastavte na `null`, chcete-li použít automatickou detekci.
+poskytovatelé si zachovávají svůj nativní formát požadavku. Nastavte `reasoningControl` na `openai`, chcete-li vynutit běžné
+předání `reasoning_effort` služby OpenAI, nebo jej vynechte či nastavte na `null`, chcete-li použít automatickou detekci.
 
-Požadavky klasifikátoru automatického režimu Claude Code ve výchozím nastavení zakazují nativní přemýšlení, pokud neobsahují
-žádné explicitní řízení uvažování. Detekce používá systémovou značku klasifikátoru v požadavcích
-ve formátu Claude, nikoli názvy modelů ani limity dokončení. Explicitní řízení v těle požadavku, podporované hlavičky úsilí/přemýšlení,
-pravidla směrování a vyhodnocená úroveň úsilí modelu si zachovávají svou stávající prioritu. Obě fáze klasifikátoru
-si zachovávají své prompty, limity dokončení, ukončovací sekvence i skutečná rozhodnutí nadřazené služby
-o oprávnění; druhá fáze může své požadované viditelné uvažování nadále generovat jako běžný text.
+Požadavky klasifikátoru automatického režimu Claude Code ve výchozím nastavení deaktivují nativní uvažování, pokud
+neobsahují žádné explicitní ovládací prvky uvažování. Detekce používá systémovou značku klasifikátoru v požadavcích
+ve formátu Claude, nikoli názvy modelů ani limity dokončení. Explicitní ovládací prvky v těle, podporované hlavičky pro míru
+uvažování, pravidla směrování a výsledná míra uvažování modelu si zachovávají svou stávající prioritu. Obě fáze klasifikátoru
+si zachovávají své prompty, limity dokončení, ukončovací sekvence a skutečná rozhodnutí nadřazené služby o oprávnění;
+druhá fáze může nadále vytvářet požadované viditelné uvažování jako běžný text.
 
 ### Toky OAuth
 
@@ -1017,49 +1148,50 @@ o oprávnění; druhá fáze může své požadované viditelné uvažování na
 
 ### Využití a analytika
 
-| Koncový bod                      | Metoda          | Popis                                                                                                                                                                                                                                                                                                                 |
-| -------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/api/usage/history`             | GET             | Historie využití                                                                                                                                                                                                                                                                                                      |
-| `/api/usage/logs`                | GET             | Protokoly využití                                                                                                                                                                                                                                                                                                     |
-| `/api/usage/request-logs`        | GET             | Protokoly na úrovni požadavků                                                                                                                                                                                                                                                                                         |
-| `/api/usage/[connectionId]`      | GET             | Využití podle jednotlivých připojení                                                                                                                                                                                                                                                                                  |
-| `/api/usage/token-limits`        | GET/POST/DELETE | Rozpočty limitů tokenů pro jednotlivé klíče API                                                                                                                                                                                                                                                                       |
-| `/api/usage/model-latency-stats` | GET             | Průběžný agregát latence podle poskytovatele/modelu (průměr/p50/p95/p99, míra úspěšnosti); filtry: `windowHours`/`minSamples`/`maxRows`/`provider`/`model` (#6873)                                                                                                                                                    |
-| `/api/usage/cache-health`        | GET             | Souhrn stavu mezipaměti promptů nad `call_logs` — poměr zápisů/čtení, rozdělení velikosti zápisů p50/p90/p99, koncentrace rozsáhlých zápisů, rozdělení podle modelů a verdikt `healthy`/`degraded`/`thrash`/`no-data`; parametry dotazu `range` (`1h`\|`24h`\|`7d`\|`30d`, výchozí `24h`) a volitelný `model` (#8827) |
+| Koncový bod                      | Metoda          | Popis                                                                                                                                                                                                                                                                                                                   |
+| -------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/usage/history`             | GET             | Historie využití                                                                                                                                                                                                                                                                                                        |
+| `/api/usage/logs`                | GET             | Protokoly využití                                                                                                                                                                                                                                                                                                       |
+| `/api/usage/request-logs`        | GET             | Protokoly na úrovni jednotlivých požadavků                                                                                                                                                                                                                                                                              |
+| `/api/usage/[connectionId]`      | GET             | Využití podle připojení                                                                                                                                                                                                                                                                                                 |
+| `/api/usage/token-limits`        | GET/POST/DELETE | Rozpočty limitů tokenů podle jednotlivých klíčů API                                                                                                                                                                                                                                                                     |
+| `/api/usage/model-latency-stats` | GET             | Průběžný agregát latence podle poskytovatele/modelu (průměr/p50/p95/p99, míra úspěšnosti); filtry: `windowHours`/`minSamples`/`maxRows`/`provider`/`model` (#6873)                                                                                                                                                      |
+| `/api/usage/cache-health`        | GET             | Souhrn stavu mezipaměti promptů nad `call_logs` — poměr zápisů a čtení, rozdělení velikosti zápisů p50/p90/p99, koncentrace objemných zápisů, rozdělení podle modelů a výsledek `healthy`/`degraded`/`thrash`/`no-data`; parametry dotazu `range` (`1h`\|`24h`\|`7d`\|`30d`, výchozí `24h`) a volitelný `model` (#8827) |
 
 ### Oprávnění klíčů API
 
-`PATCH /api/keys/{id}` aktualizuje oprávnění existujícího klíče. Stejně jako každá trasa `/api/keys*` vyžaduje oprávnění ke správě (viz [Autentizace pro správu](../guides/MANAGEMENT-AUTH.md)), nikoli inferenční klíč. Odesílejte pouze pole, která chcete změnit; požadavek bez kteréhokoli z nich je odmítnut s hlášením `No valid fields to update`. Přijímaná pole definuje `updateKeyPermissionsSchema` v `src/shared/validation/schemas/keys.ts`.
+`PATCH /api/keys/{id}` aktualizuje oprávnění existujícího klíče. Stejně jako každá trasa `/api/keys*` vyžaduje autorizaci pro správu (viz [Autentizace pro správu](../guides/MANAGEMENT-AUTH.md)), nikoli klíč pro inferenci. Odesílejte pouze pole, která chcete změnit; požadavek bez kteréhokoli z nich bude odmítnut s chybou `No valid fields to update`. Přijímaná pole definuje `updateKeyPermissionsSchema` v `src/shared/validation/schemas/keys.ts`.
 
-| Pole                                        | Typ                                                                            | Poznámky                                                                                                                         |
-| ------------------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| `name`                                      | řetězec, 1–200 znaků                                                           |                                                                                                                                  |
-| `isActive`                                  | logická hodnota                                                                |                                                                                                                                  |
-| `isBanned`                                  | logická hodnota                                                                |                                                                                                                                  |
-| `expiresAt`                                 | datum a čas ve formátu ISO 8601 nebo `null`                                    | `null` zruší nastavení vypršení platnosti                                                                                        |
-| `modelAccessMode`                           | `all` \| `restricted`                                                          | `allowedModels` musí být prázdné, když je režim nastaven na `all`                                                                |
-| `allowedModels`, `blockedModels`            | pole řetězců, maximálně 1000 položek                                           |                                                                                                                                  |
-| `allowedCombos`                             | pole řetězců, maximálně 500 položek                                            | Určuje, která komba může klíč volat; přímé modely se řídí nastaveními `modelAccessMode` / `allowedModels`                        |
-| `connectionAccessMode`                      | `all` \| `restricted`                                                          | `allowedConnections` nesmí být prázdné při hodnotě `restricted` a musí být prázdné při hodnotě `all`                             |
-| `allowedConnections`                        | pole UUID, maximálně 100 položek                                               |                                                                                                                                  |
-| `allowAutoCombos`                           | logická hodnota                                                                | `false` odmítne požadavky na modely `auto/*` s tímto klíčem; klíče, u kterých tato hodnota nikdy nebyla nastavena, jsou povoleny |
-| `catalogScope`                              | `all` \| `combos` \| `models`                                                  | Určuje, co `GET /v1/models` vypíše pro tento klíč (pouze komba, pouze modely, nebo obojí); nemění, co smí klíč volat             |
-| `noLog`, `autoResolve`                      | logická hodnota                                                                |                                                                                                                                  |
-| `throttleDelayMs`                           | celé číslo, 0–300000                                                           |                                                                                                                                  |
-| `maxSessions`                               | celé číslo, 0–10000                                                            |                                                                                                                                  |
-| `rateLimits`                                | pole objektů `{ limit, window }` (kladná celá čísla, maximálně 50) nebo `null` | `null` zruší limity                                                                                                              |
-| `accessSchedule`                            | objekt plánu nebo `null`                                                       | `null` zruší plán                                                                                                                |
-| `scopes`                                    | pole řetězců, maximálně 32 položek                                             |                                                                                                                                  |
-| `allowedEndpoints`                          | pole řetězců, maximálně 20 položek                                             |                                                                                                                                  |
-| `streamDefaultMode`                         | `legacy` \| `json`                                                             |                                                                                                                                  |
-| `cacheDefaultMode`                          | `legacy` \| `bypass`                                                           | Viz [Obcházení mezipaměti pro jednotlivé klíče](#per-key-cache-bypass)                                                           |
-| `compressionEnabled`                        | logická hodnota                                                                |                                                                                                                                  |
-| `codexServiceMode`                          | jeden z režimů služby Codex                                                    |                                                                                                                                  |
-| `disableNonPublicModels`                    | logická hodnota                                                                |                                                                                                                                  |
-| `allowUsageCommand`                         | boolean                                                                        |                                                                                                                                  |
-| `usageLimitEnabled`                         | boolean                                                                        |                                                                                                                                  |
-| `dailyUsageLimitUsd`, `weeklyUsageLimitUsd` | number >= 0 nebo `null`                                                        |                                                                                                                                  |
-| `chaosModeEnabled`                          | boolean                                                                        |                                                                                                                                  |
+| Pole                                        | Typ                                                                    | Poznámky                                                                                                                         |
+| ------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                                      | řetězec, 1–200 znaků                                                   |                                                                                                                                  |
+| `isActive`                                  | boolean                                                                |                                                                                                                                  |
+| `isBanned`                                  | boolean                                                                |                                                                                                                                  |
+| `expiresAt`                                 | datum a čas ve formátu ISO 8601 nebo `null`                            | `null` zruší nastavení vypršení platnosti                                                                                        |
+| `modelAccessMode`                           | `all` \| `restricted`                                                  | `allowedModels` musí být prázdné, pokud je režim nastaven na `all`                                                               |
+| `allowedModels`, `blockedModels`            | pole řetězců, maximálně 1000                                           |                                                                                                                                  |
+| `allowedCombos`                             | pole řetězců, maximálně 500                                            | Určuje, která komba může klíč volat; přímé modely se řídí nastavením `modelAccessMode` / `allowedModels`                         |
+| `connectionAccessMode`                      | `all` \| `restricted`                                                  | `allowedConnections` nesmí být prázdné při nastavení `restricted` a musí být prázdné při nastavení `all`                         |
+| `allowedConnections`                        | pole UUID, maximálně 100                                               |                                                                                                                                  |
+| `allowAutoCombos`                           | boolean                                                                | `false` odmítne požadavky na modely `auto/*` s tímto klíčem; klíče, u kterých tato hodnota nikdy nebyla nastavena, jsou povoleny |
+| `catalogScope`                              | `all` \| `combos` \| `models`                                          | Určuje, co pro tento klíč vypisuje `GET /v1/models` (pouze komba, pouze modely nebo obojí); nemění, co smí klíč volat            |
+| `forcedModel`                               | řetězec o maximálně 300 znacích nebo `null`                            | Směruje chatovací požadavky na tento model/kombo s předností před `X-Route-Model` a `body.model`; omezení klíče stále platí      |
+| `noLog`, `autoResolve`                      | boolean                                                                |                                                                                                                                  |
+| `throttleDelayMs`                           | celé číslo, 0–300000                                                   |                                                                                                                                  |
+| `maxSessions`                               | celé číslo, 0–10000                                                    |                                                                                                                                  |
+| `rateLimits`                                | pole `{ limit, window }` (kladná celá čísla, maximálně 50) nebo `null` | `null` zruší omezení                                                                                                             |
+| `accessSchedule`                            | objekt plánu nebo `null`                                               | `null` zruší plán                                                                                                                |
+| `scopes`                                    | pole řetězců, maximálně 32                                             |                                                                                                                                  |
+| `allowedEndpoints`                          | pole řetězců, maximálně 20                                             |                                                                                                                                  |
+| `streamDefaultMode`                         | `legacy` \| `json`                                                     |                                                                                                                                  |
+| `cacheDefaultMode`                          | `legacy` \| `bypass`                                                   | Viz [Obcházení mezipaměti pro jednotlivé klíče](#per-key-cache-bypass)                                                           |
+| `compressionEnabled`                        | boolean                                                                |                                                                                                                                  |
+| `codexServiceMode`                          | jeden z režimů služby Codex                                            |                                                                                                                                  |
+| `disableNonPublicModels`                    | boolean                                                                |                                                                                                                                  |
+| `allowUsageCommand`                         | boolean                                                                |                                                                                                                                  |
+| `usageLimitEnabled`                         | boolean                                                                |                                                                                                                                  |
+| `dailyUsageLimitUsd`, `weeklyUsageLimitUsd` | number >= 0 nebo `null`                                                |                                                                                                                                  |
+| `chaosModeEnabled`                          | boolean                                                                |                                                                                                                                  |
 
 ```bash
 curl -X PATCH "$OMNIROUTE_URL/api/keys/$KEY_ID" \
@@ -1070,88 +1202,89 @@ curl -X PATCH "$OMNIROUTE_URL/api/keys/$KEY_ID" \
 
 ### Nastavení
 
-| Koncový bod                           | Metoda        | Popis                                                                                                                                                                                               |
-| ------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/api/settings`                       | GET/PUT/PATCH | Obecná nastavení                                                                                                                                                                                    |
-| `/api/settings/proxy`                 | GET/PUT       | Konfigurace síťového proxy serveru                                                                                                                                                                  |
-| `/api/settings/proxy/test`            | POST          | Otestování připojení k proxy serveru                                                                                                                                                                |
-| `/api/settings/ip-filter`             | GET/PUT       | Seznam povolených/blokovaných IP adres                                                                                                                                                              |
-| `/api/settings/thinking-budget`       | GET/PUT       | Režim přepisování **požadavků** na přemýšlení/uvažování (beze změny / automatické odstranění / vlastní / adaptivní). Nezávislý na kompresi. Viz [THINKING_BUDGET.md](../guides/THINKING_BUDGET.md). |
-| `/api/settings/system-prompt`         | GET/PUT       | Globální systémová výzva                                                                                                                                                                            |
-| `/api/settings/compression`           | GET/PUT       | Globální konfigurace komprese                                                                                                                                                                       |
-| `/api/settings/purge-request-history` | POST          | Vymazání řádků protokolu požadavků a místních artefaktů protokolu volání                                                                                                                            |
+| Koncový bod                           | Metoda        | Popis                                                                                                                                                                                                                                                                                |
+| ------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/api/settings`                       | GET/PUT/PATCH | Obecná nastavení. Klíče zásad zabezpečení (`requireLogin`, `newPassword`, `oidc*`, `corsOrigins`, `bruteForceProtection`) vyžadují `currentPassword` a přihlašovací údaj operátora — API klíče a tokeny `oma_` obdrží `403`; každá změna vyžaduje rozsah přístupového tokenu `admin` |
+| `/api/settings/proxy`                 | GET/PUT       | Konfigurace síťového proxy serveru                                                                                                                                                                                                                                                   |
+| `/api/settings/proxy/test`            | POST          | Otestování připojení přes proxy server                                                                                                                                                                                                                                               |
+| `/api/settings/ip-filter`             | GET/PUT       | Seznam povolených/blokovaných IP adres                                                                                                                                                                                                                                               |
+| `/api/settings/thinking-budget`       | GET/PUT       | Režim přepisování **požadavku** na rozpočet přemýšlení/uvažování (beze změny / automatické odstranění / vlastní / adaptivní). Nezávislé na kompresi. Viz [THINKING_BUDGET.md](../guides/THINKING_BUDGET.md).                                                                         |
+| `/api/settings/system-prompt`         | GET/PUT       | Globální systémová výzva                                                                                                                                                                                                                                                             |
+| `/api/settings/compression`           | GET/PUT       | Globální konfigurace komprese                                                                                                                                                                                                                                                        |
+| `/api/settings/purge-request-history` | POST          | Vymazání řádků protokolu požadavků a místních artefaktů protokolu volání                                                                                                                                                                                                             |
 
 ### Kontext a komprese
 
-| Koncový bod                            | Metoda         | Popis                                                                                     |
+| Endpoint                               | Metoda         | Popis                                                                                     |
 | -------------------------------------- | -------------- | ----------------------------------------------------------------------------------------- |
 | `/api/compression/preview`             | POST           | Náhled komprese off/lite/standard/aggressive/ultra/RTK/stacked                            |
-| `/api/compression/language-packs`      | GET            | Výpis dostupných jazykových balíčků Caveman                                               |
-| `/api/compression/rules`               | GET            | Výpis metadat pravidel Caveman                                                            |
-| `/api/context/caveman/config`          | GET/PUT        | Alias nastavení specifických pro Caveman                                                  |
+| `/api/compression/language-packs`      | GET            | Seznam dostupných jazykových balíčků Caveman                                              |
+| `/api/compression/rules`               | GET            | Seznam metadat pravidel Caveman                                                           |
+| `/api/context/caveman/config`          | GET/PUT        | Alias pro nastavení specifická pro Caveman                                                |
 | `/api/context/rtk/config`              | GET/PUT        | Nastavení specifická pro RTK, včetně vlastních filtrů a uchovávání nezpracovaného výstupu |
 | `/api/context/rtk/filters`             | GET            | Katalog filtrů RTK a diagnostika vlastních filtrů                                         |
-| `/api/context/rtk/test`                | POST           | Spuštění náhledu/testu RTK nad textovými daty                                             |
+| `/api/context/rtk/test`                | POST           | Spuštění náhledu/testu RTK nad textovým obsahem                                           |
 | `/api/context/rtk/raw-output/[id]`     | GET            | Načtení uchovaného redigovaného nezpracovaného výstupu podle ID ukazatele                 |
-| `/api/context/combos`                  | GET/POST       | Výpis/vytvoření kombinací komprese                                                        |
+| `/api/context/combos`                  | GET/POST       | Seznam/vytvoření kombinací komprese                                                       |
 | `/api/context/combos/[id]`             | GET/PUT/DELETE | Podrobnosti/aktualizace/odstranění kombinace komprese                                     |
 | `/api/context/combos/[id]/assignments` | GET/PUT        | Přiřazení kombinací komprese ke kombinacím směrování                                      |
-| `/api/context/analytics`               | GET            | Alias analytiky komprese                                                                  |
+| `/api/context/analytics`               | GET            | Alias pro analytiku komprese                                                              |
 
 ### Monitorování
 
-| Endpoint                             | Metoda     | Popis                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| ------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/api/sessions`                      | GET        | Sledování aktivních relací                                                                                                                                                                                                                                                                                                                                                                                                |
-| `/api/rate-limits`                   | GET        | Limity požadavků pro jednotlivé účty                                                                                                                                                                                                                                                                                                                                                                                      |
-| `/api/monitoring/health`             | GET        | Kontrola stavu + souhrn poskytovatelů (`catalogCount`, `configuredCount`, `activeCount`, `monitoredCount`). Zobrazení pro správu zahrnuje `credentialHealth`: skalární hodnoty mezipaměti sond, `failedConnections`, když `failed>0`, a `staleDbNonOkCount` (setrvalý `test_status` v SQLite, nikoli ukazatel). Viz [MONITORING_GUIDE.md](../ops/MONITORING_GUIDE.md#credentialhealth-probe-cache-vs-sqlite-test_status). |
-| `/api/cache/stats`                   | GET/DELETE | Statistiky mezipaměti / vymazání                                                                                                                                                                                                                                                                                                                                                                                          |
-| `/api/modality-bridge/stats`         | GET        | Hodnoty `attempts` v paměti, úspěchy/`bridged`, selhání, zásahy mezipaměti, `totalLatencyMs`, `latencySamples`, `averageLatencyMs` počítaná ze vzorků a čas posledního použití (resetuje se při restartu; vyžaduje ověření pro správu)                                                                                                                                                                                    |
-| `/api/modality-bridge/video/runtime` | GET        | Striktní kontrola důvěryhodného loopbacku před ověřením pro správu/sondou; sanitizované informace o dostupnosti a verzích FFmpeg/ffprobe (bez ukládání do mezipaměti)                                                                                                                                                                                                                                                     |
-| `/api/modality-bridge/video/extract` | POST       | Interní ověřený zprostředkovatel bajtů přes důvěryhodný loopback; vstup 50 MiB, omezená fronta/výstup 32 MiB, `503` při vyčerpání kapacity, `499` při odpojení, `504` při překročení časového limitu; nejde o veřejné API pro nahrávání                                                                                                                                                                                   |
+| Endpoint                             | Metoda     | Popis                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------ | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/sessions`                      | GET        | Sledování aktivních relací                                                                                                                                                                                                                                                                                                                                                                                              |
+| `/api/rate-limits`                   | GET        | Limity požadavků pro jednotlivé účty                                                                                                                                                                                                                                                                                                                                                                                    |
+| `/api/monitoring/health`             | GET        | Kontrola stavu + souhrn poskytovatelů (`catalogCount`, `configuredCount`, `activeCount`, `monitoredCount`). Zobrazení pro správu zahrnuje `credentialHealth`: skalární hodnoty mezipaměti sond, `failedConnections`, když `failed>0`, a `staleDbNonOkCount` (trvalé `test_status` v SQLite, nikoli ukazatel). Viz [MONITORING_GUIDE.md](../ops/MONITORING_GUIDE.md#credentialhealth-probe-cache-vs-sqlite-test_status). |
+| `/api/cache/stats`                   | GET/DELETE | Statistiky mezipaměti / vymazání                                                                                                                                                                                                                                                                                                                                                                                        |
+| `/api/modality-bridge/stats`         | GET        | Hodnoty v paměti: `attempts`, úspěchy/`bridged`, selhání, zásahy do mezipaměti, `totalLatencyMs`, `latencySamples`, hodnota `averageLatencyMs` počítaná podle počtu vzorků a čas posledního použití (resetuje se při restartu; ověření pro správu)                                                                                                                                                                      |
+| `/api/modality-bridge/video/runtime` | GET        | Striktní kontrola důvěryhodného zpětného rozhraní před ověřením/sondou pro správu; očištěné informace o dostupnosti a verzích FFmpeg/ffprobe (bez ukládání do mezipaměti)                                                                                                                                                                                                                                               |
+| `/api/modality-bridge/video/extract` | POST       | Interní ověřovaný zprostředkovatel bajtů přes důvěryhodné zpětné rozhraní; vstup 50 MiB, omezená fronta/výstup 32 MiB, `503` při vyčerpání kapacity, `499` při odpojení, `504` při překročení časového limitu; nejde o veřejné API pro nahrávání                                                                                                                                                                        |
 
 ### Zálohování a export/import
 
-| Endpoint                    | Metoda | Popis                                                                                 |
-| --------------------------- | ------ | ------------------------------------------------------------------------------------- |
-| `/api/db-backups`           | GET    | Výpis dostupných záloh                                                                |
-| `/api/db-backups`           | PUT    | Vytvoření ruční zálohy                                                                |
-| `/api/db-backups`           | POST   | Obnovení z konkrétní zálohy                                                           |
-| `/api/db-backups/export`    | GET    | Stažení databáze jako soubor .sqlite                                                  |
-| `/api/db-backups/import`    | POST   | Nahrání souboru .sqlite, který nahradí databázi (`?dryRun=true` pouze ověří platnost) |
-| `/api/db-backups/exportAll` | GET    | Stažení úplné zálohy jako archivu .tar.gz                                             |
+| Endpoint                    | Metoda | Popis                                                                     |
+| --------------------------- | ------ | ------------------------------------------------------------------------- |
+| `/api/db-backups`           | GET    | Vypsat dostupné zálohy                                                    |
+| `/api/db-backups`           | PUT    | Vytvořit ruční zálohu                                                     |
+| `/api/db-backups`           | POST   | Obnovit z konkrétní zálohy                                                |
+| `/api/db-backups`           | PATCH  | Uložit nastavení uchovávání záloh (pouze pro operátora)                   |
+| `/api/db-backups`           | DELETE | Odstranit uložené zálohy podle nastavení uchovávání (pouze pro operátora) |
+| `/api/db-backups/export`    | GET    | Stáhnout databázi jako soubor .sqlite                                     |
+| `/api/db-backups/import`    | POST   | Nahrát soubor .sqlite a nahradit databázi (`?dryRun=true` pouze ověří)    |
+| `/api/db-backups/exportAll` | GET    | Stáhnout úplnou zálohu jako archiv .tar.gz                                |
 
 `/api/db-backups/export`, `/api/db-backups/exportAll` a `/api/settings/export-json` zpřístupňují
 všechny uložené přihlašovací údaje, proto vyžadují relaci řídicího panelu nebo místní CLI (případně
-vypnuté přihlašování). API klíče libovolného rozsahu a přístupové tokeny `oma_` obdrží `403`.
-
-`/api/db-backups/export`, `/api/db-backups/exportAll` and `/api/settings/export-json` hand out
-every stored credential, so they require the dashboard session or the local CLI (or login
-disabled). API keys of any scope and `oma_` access tokens get `403`. The restores hold the same
-boundary: `POST /api/db-backups/import` (`dryRun=true` included), `POST /api/db-backups` (restore
-by id) and `POST /api/settings/import-json` replace the live database or settings, so a machine
-credential gets `403` there too; `omniroute sync import` sends the local CLI credential.
+vypnuté přihlašování). Klíče API libovolného rozsahu a přístupové tokeny `oma_` obdrží `403`. Pro
+obnovení platí stejná hranice: `POST /api/db-backups/import` (včetně `dryRun=true`), `POST /api/db-backups`
+(obnovení podle id) a `POST /api/settings/import-json` nahrazují aktivní databázi nebo nastavení,
+takže přihlašovací údaje stroje obdrží `403` také; `omniroute sync import` odesílá přihlašovací údaje
+místního CLI. Totéž platí pro `DELETE /api/db-backups` (odstranění uložených záloh) a
+`PATCH /api/db-backups` (nastavení uchovávání: uložené hodnoty řídí automatické odstraňování po každé
+záloze). Výpis (`GET`) a vytvoření ruční zálohy (`PUT`) nadále používají běžné ověřování pro správu.
 
 ### Cloudová synchronizace
 
 | Endpoint               | Metoda | Popis                          |
 | ---------------------- | ------ | ------------------------------ |
 | `/api/sync/cloud`      | Různé  | Operace cloudové synchronizace |
-| `/api/sync/initialize` | POST   | Inicializace synchronizace     |
+| `/api/sync/initialize` | POST   | Inicializovat synchronizaci    |
 | `/api/cloud/*`         | Různé  | Správa cloudu                  |
 
 ### Tunely
 
-| Koncový bod                | Metoda | Popis                                                                |
-| -------------------------- | ------ | -------------------------------------------------------------------- |
-| `/api/tunnels/cloudflared` | GET    | Načte stav instalace a běhu Cloudflare Quick Tunnel pro řídicí panel |
-| `/api/tunnels/cloudflared` | POST   | Povolí nebo zakáže Cloudflare Quick Tunnel (`action=enable/disable`) |
-| `/api/tunnels/ngrok`       | GET    | Načte stav běhu ngrok Tunnel pro řídicí panel                        |
-| `/api/tunnels/ngrok`       | POST   | Povolí nebo zakáže ngrok Tunnel (`action=enable/disable`)            |
+| Endpoint                   | Metoda | Popis                                                                  |
+| -------------------------- | ------ | ---------------------------------------------------------------------- |
+| `/api/tunnels/cloudflared` | GET    | Načíst stav instalace a běhu Cloudflare Quick Tunnel pro řídicí panel  |
+| `/api/tunnels/cloudflared` | POST   | Povolit nebo zakázat Cloudflare Quick Tunnel (`action=enable/disable`) |
+| `/api/tunnels/ngrok`       | GET    | Načíst stav běhu ngrok Tunnel pro řídicí panel                         |
+| `/api/tunnels/ngrok`       | POST   | Povolit nebo zakázat ngrok Tunnel (`action=enable/disable`)            |
 
 ### Nástroje CLI
 
-| Koncový bod                        | Metoda | Popis                       |
+| Endpoint                           | Metoda | Popis                       |
 | ---------------------------------- | ------ | --------------------------- |
 | `/api/cli-tools/claude-settings`   | GET    | Stav Claude CLI             |
 | `/api/cli-tools/codex-settings`    | GET    | Stav Codex CLI              |
@@ -1159,71 +1292,71 @@ credential gets `403` there too; `omniroute sync import` sends the local CLI cre
 | `/api/cli-tools/openclaw-settings` | GET    | Stav OpenClaw CLI           |
 | `/api/cli-tools/runtime/[toolId]`  | GET    | Obecné běhové prostředí CLI |
 
-Odpovědi CLI obsahují: `installed`, `runnable`, `command`, `commandPath`, `runtimeMode`, `reason`.
+Odpovědi CLI zahrnují: `installed`, `runnable`, `command`, `commandPath`, `runtimeMode`, `reason`.
 
 ### Agenti ACP
 
-| Koncový bod       | Metoda | Popis                                                                    |
-| ----------------- | ------ | ------------------------------------------------------------------------ |
-| `/api/acp/agents` | GET    | Vypíše všechny zjištěné agenty (vestavěné + vlastní) včetně jejich stavu |
-| `/api/acp/agents` | POST   | Přidá vlastního agenta nebo obnoví mezipaměť detekce                     |
-| `/api/acp/agents` | DELETE | Odebere vlastního agenta podle parametru dotazu `id`                     |
+| Endpoint          | Metoda | Popis                                                          |
+| ----------------- | ------ | -------------------------------------------------------------- |
+| `/api/acp/agents` | GET    | Vypsat všechny zjištěné agenty (vestavěné i vlastní) se stavem |
+| `/api/acp/agents` | POST   | Přidat vlastního agenta nebo obnovit mezipaměť detekce         |
+| `/api/acp/agents` | DELETE | Odebrat vlastního agenta podle parametru dotazu `id`           |
 
-Odpověď GET obsahuje `agents[]` (id, name, binary, version, installed, protocol, isCustom) a `summary` (total, installed, notFound, builtIn, custom).
+Odpověď GET zahrnuje `agents[]` (id, name, binary, version, installed, protocol, isCustom) a `summary` (total, installed, notFound, builtIn, custom).
 
 ### Odolnost a limity požadavků
 
-| Koncový bod                       | Metoda    | Popis                                                                                                  |
-| --------------------------------- | --------- | ------------------------------------------------------------------------------------------------------ |
-| `/api/resilience`                 | GET/PATCH | Získá/aktualizuje frontu požadavků, interval čekání připojení, jistič poskytovatele a nastavení čekání |
-| `/api/resilience/reset`           | POST      | Resetuje jističe okruhů poskytovatelů                                                                  |
-| `/api/resilience/model-cooldowns` | GET       | Vypíše aktivní blokace pro kombinace (poskytovatel, připojení, model), seřazené podle zbývající doby   |
-| `/api/resilience/model-cooldowns` | DELETE    | Zruší blokaci modelu — tělo `{provider, model}` nebo `{all: true}` pro vymazání všech                  |
-| `/api/rate-limits`                | GET       | Stav limitů požadavků pro jednotlivé účty                                                              |
-| `/api/rate-limit`                 | GET       | Globální konfigurace limitu požadavků                                                                  |
+| Endpoint                          | Metoda    | Popis                                                                                                             |
+| --------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------- |
+| `/api/resilience`                 | GET/PATCH | Získat/aktualizovat frontu požadavků, prodlevu připojení, jistič poskytovatele a nastavení čekání                 |
+| `/api/resilience/reset`           | POST      | Resetovat jističe okruhů poskytovatelů                                                                            |
+| `/api/resilience/model-cooldowns` | GET       | Vypsat aktivní blokace pro jednotlivé kombinace (poskytovatel, připojení, model), seřazené podle zbývajícího času |
+| `/api/resilience/model-cooldowns` | DELETE    | Zrušit blokaci modelu — tělo `{provider, model}` nebo `{all: true}` pro zrušení všech blokací                     |
+| `/api/rate-limits`                | GET       | Stav limitu požadavků pro jednotlivé účty                                                                         |
+| `/api/rate-limit`                 | GET       | Globální konfigurace limitu požadavků                                                                             |
 
-> Všechny čtyři trasy `/api/resilience/*` vyžadují **ověření pro správu** (`requireManagementAuth`). Úplný rozbor jističe poskytovatele, intervalu čekání připojení a blokace modelu najdete v části [Odolnost (rozšířené)](#resilience-extended).
+> Všechny čtyři trasy `/api/resilience/*` vyžadují **ověření pro správu** (`requireManagementAuth`). Úplný rozbor jističe poskytovatele, prodlevy připojení a blokace modelu najdete v části [Odolnost (rozšířená)](#resilience-extended).
 
 ### Vyhodnocení
 
-| Koncový bod  | Metoda   | Popis                                        |
-| ------------ | -------- | -------------------------------------------- |
-| `/api/evals` | GET/POST | Vypíše sady vyhodnocení / spustí vyhodnocení |
+| Endpoint     | Metoda   | Popis                                         |
+| ------------ | -------- | --------------------------------------------- |
+| `/api/evals` | GET/POST | Vypsat sady vyhodnocení / spustit vyhodnocení |
 
 ### Zásady
 
-| Koncový bod     | Metoda          | Popis                     |
-| --------------- | --------------- | ------------------------- |
-| `/api/policies` | GET/POST/DELETE | Spravuje zásady směrování |
+| Endpoint        | Metoda          | Popis                      |
+| --------------- | --------------- | -------------------------- |
+| `/api/policies` | GET/POST/DELETE | Spravovat zásady směrování |
 
-### Dodržování předpisů
+### Soulad s předpisy
 
-| Koncový bod                 | Metoda | Popis                                             |
-| --------------------------- | ------ | ------------------------------------------------- |
-| `/api/compliance/audit-log` | GET    | Protokol auditu souladu s předpisy (posledních N) |
+| Endpoint                    | Metoda | Popis                                |
+| --------------------------- | ------ | ------------------------------------ |
+| `/api/compliance/audit-log` | GET    | Protokol auditu shody (posledních N) |
 
 ### v1beta (kompatibilní s Gemini)
 
-| Koncový bod                | Metoda | Popis                                |
-| -------------------------- | ------ | ------------------------------------ |
-| `/v1beta/models`           | GET    | Vypíše modely ve formátu Gemini      |
-| `/v1beta/models/{...path}` | POST   | Koncový bod Gemini `generateContent` |
+| Endpoint                   | Metoda | Popis                             |
+| -------------------------- | ------ | --------------------------------- |
+| `/v1beta/models`           | GET    | Seznam modelů ve formátu Gemini   |
+| `/v1beta/models/{...path}` | POST   | Endpoint Gemini `generateContent` |
 
-Tyto koncové body kopírují formát rozhraní API Gemini pro klienty, kteří očekávají nativní kompatibilitu se sadou Gemini SDK.
+Tyto endpointy kopírují formát API Gemini pro klienty, kteří očekávají nativní kompatibilitu se sadou Gemini SDK.
 
-### Interní / systémová rozhraní API
+### Interní / systémová API
 
-| Koncový bod              | Metoda | Popis                                                           |
-| ------------------------ | ------ | --------------------------------------------------------------- |
-| `/api/init`              | GET    | Kontrola inicializace aplikace (používá se při prvním spuštění) |
-| `/api/tags`              | GET    | Značky modelů kompatibilní s Ollama (pro klienty Ollama)        |
-| `/api/restart`           | POST   | Spustí korektní restart serveru                                 |
-| `/api/shutdown`          | POST   | Spustí korektní vypnutí serveru                                 |
-| `/api/system/env/repair` | POST   | Opraví proměnné prostředí poskytovatele OAuth                   |
-| `/api/system/version`    | GET    | Aktuální/nejnovější verze, stav aktualizace a kanál vydání      |
-| `/api/system/version`    | POST   | Spustí aktualizaci na nejnovější verzi s ohledem na nasazení    |
+| Endpoint                 | Metoda | Popis                                                               |
+| ------------------------ | ------ | ------------------------------------------------------------------- |
+| `/api/init`              | GET    | Kontrola inicializace aplikace (používá se při prvním spuštění)     |
+| `/api/tags`              | GET    | Značky modelů kompatibilní s Ollama (pro klienty Ollama)            |
+| `/api/restart`           | POST   | Spustí kontrolovaný restart serveru                                 |
+| `/api/shutdown`          | POST   | Spustí kontrolované vypnutí serveru                                 |
+| `/api/system/env/repair` | POST   | Opraví proměnné prostředí poskytovatele OAuth                       |
+| `/api/system/version`    | GET    | Aktuální/nejnovější verze, stav aktualizace a kanál vydání          |
+| `/api/system/version`    | POST   | Spustí aktualizaci na nejnovější verzi s ohledem na způsob nasazení |
 
-> **Poznámka:** Tyto koncové body systém používá interně nebo slouží ke kompatibilitě s klienty Ollama. Koncoví uživatelé je obvykle nevolají.
+> **Poznámka:** Tyto endpointy používá interně systém nebo slouží ke kompatibilitě s klienty Ollama. Koncoví uživatelé je obvykle nevolají.
 
 ### Oprava prostředí OAuth _(v3.6.1+)_
 
@@ -1252,10 +1385,10 @@ Opraví chybějící nebo poškozené proměnné prostředí OAuth pro konkrétn
 GET /api/system/version
 ```
 
-Trasa pro správu dostupná pouze přes loopback (ověření správce). Vrací běžící verzi, nejnovější
+Trasa správy dostupná pouze přes loopback (ověření správce). Vrací spuštěnou verzi, nejnovější
 publikovanou verzi a stav automatických aktualizací. `releaseChannel` a `channels` jsou doplňková
-pole (řada 3.8.54); `channel` si zachovává svůj význam — režim nasazení, který používá aktualizační
-nástroj řídicího panelu (`npm`, `source` nebo `docker-compose`).
+pole (větev 3.8.54); `channel` si zachovává svůj význam — režim nasazení, který používá aktualizační
+nástroj ovládacího panelu (`npm`, `source` nebo `docker-compose`).
 
 ```json
 {
@@ -1271,18 +1404,17 @@ nástroj řídicího panelu (`npm`, `source` nebo `docker-compose`).
 }
 ```
 
-- `releaseChannel` — npm kanál běžícího sestavení: `nightly` pro verze `-nightly.*`,
+- `releaseChannel` — kanál npm spuštěného sestavení: `nightly` pro verze `-nightly.*`,
   `next` pro ostatní předběžná vydání (`-rc.*`, `-beta.*`, `-alpha.*`), `lts` pro stabilní verzi
-  starší hlavní řady než `channels.latest`, jinak `latest`. Stejná pravidla jako v
-  `scripts/release/dist-tag.mjs`, který při publikování vybírá npm dist-tag.
-- `channels` — nejnovější publikovaná verze každého dist-tagu získaná pomocí `npm view omniroute dist-tags`
-  (s náhradním použitím HTTP registru), uložená do mezipaměti se stejnou 10minutovou dobou TTL jako `latest`.
-  `latest` je vždy přítomen (jako náhradní hodnota se použije pole `latest` a poté `"unavailable"`); `next`,
-  `nightly` a `lts` se zobrazí pouze tehdy, když daný dist-tag existuje. Požadavek s
-  `Cache-Control: no-cache` obnoví obě vyhledávání.
+  starší hlavní řady, než je `channels.latest`, jinak `latest`. Platí stejná pravidla jako v
+  `scripts/release/dist-tag.mjs`, který při publikování vybírá dist-tag npm.
+- `channels` — nejnovější publikovaná verze každého dist-tagu získaná pomocí `npm view omniroute dist-tags` (se záložním
+  dotazem přes HTTP registru), uložená do mezipaměti se stejnou 10minutovou dobou platnosti jako `latest`. `latest` je vždy přítomen
+  (použije se náhradní hodnota z pole `latest`, poté `"unavailable"`); `next`, `nightly` a `lts` se zobrazí
+  pouze v případě, že daný dist-tag existuje. Požadavek s `Cache-Control: no-cache` obnoví obě vyhledávání.
 
-Model kanálů (`latest` = v3 až do vydání 4.0 GA, `next` = rc, `nightly` = sestavení z větve `develop`,
-`lts` = opravy v3 po vydání 4.0 GA) je popsán v `docs/ops/RELEASE_STRATEGY.md`.
+Model kanálů (`latest` = v3 až do obecné dostupnosti verze 4.0, `next` = rc, `nightly` = sestavení z větve `develop`,
+`lts` = opravy v3 po obecné dostupnosti verze 4.0) je popsán v `docs/ops/RELEASE_STRATEGY.md`.
 
 ---
 

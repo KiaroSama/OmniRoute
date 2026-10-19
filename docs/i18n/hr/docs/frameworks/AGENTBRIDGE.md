@@ -16,14 +16,14 @@ AgentBridge je MITM (Man-in-the-Middle, „čovjek u sredini”) proxy poslužit
 
 ### Što je AgentBridge?
 
-Kada IDE agent (npr. GitHub Copilot, Cursor, Claude Code) uputi API poziv, izravno se povezuje s izvornim pružateljem usluga umjetne inteligencije (OpenAI, Anthropic itd.). AgentBridge transparentno presreće tu vezu na TLS razini — bez potrebe za bilo kakvom promjenom konfiguracije agenta — i preusmjerava zahtjev kroz OmniRoute.
+Kada IDE agent (npr. GitHub Copilot, Cursor, Claude Code) uputi API poziv, povezuje se izravno s izvornim pružateljem usluge umjetne inteligencije (OpenAI, Anthropic itd.). AgentBridge transparentno presreće tu vezu na TLS razini — bez potrebe za promjenom konfiguracije agenta — i preusmjerava zahtjev kroz OmniRoute.
 
 To znači da možete:
 
-- **Preusmjeriti bilo kojeg agenta na bilo kojeg pružatelja**: Copilot komunicira s OpenAI-jem? Preusmjerite ga na Anthropic Claude, Gemini ili bilo kojeg od 372 pružatelja dostupnih u OmniRouteu.
+- **Preusmjeriti bilo kojeg agenta na bilo kojeg pružatelja usluge**: Copilot komunicira s OpenAI-jem? Preusmjerite ga na Anthropic Claude, Gemini ili bilo kojeg od 374 pružatelja usluge dostupnih u sustavu OmniRoute.
 - **Primijeniti mapiranja modela**: `gemini-3-flash` → `claude-sonnet-4.7` transparentno na razini rukovatelja.
-- **Nadzirati sav promet agenata**: svaki presretnuti zahtjev objavljuje se u [Inspektoru prometa](./TRAFFIC_INSPECTOR.md).
-- **Primijeniti otpornost sustava OmniRoute**: kombinirano usmjeravanje, prekidači strujnog kruga, pričuvne opcije i praćenje troškova funkcioniraju i za promet IDE agenata.
+- **Nadzirati sav promet agenata**: svaki presretnuti zahtjev objavljuje se u alatu [Traffic Inspector](./TRAFFIC_INSPECTOR.md).
+- **Primijeniti otpornost sustava OmniRoute**: kombinirano usmjeravanje, automatski prekidači, pričuvne opcije i praćenje troškova funkcioniraju i za promet IDE agenata.
 
 ### Pozicioniranje u odnosu na tržište
 
@@ -39,7 +39,7 @@ To znači da možete:
 | Open Code                              |    —    |    —     |        ✓        |             ✓             |
 | Trae                                   |    —    |    —     |        —        |      🔍 Istražuje se      |
 | Korisničko sučelje nadzorne ploče      |    ✓    |    ✗     |        ✗        |             ✓             |
-| Inspektor prometa                      |    ✗    |    ✗     |        ✓        |             ✓             |
+| Traffic Inspector                      |    ✗    |    ✗     |        ✓        |             ✓             |
 | Usmjeravanje OmniRoute                 |    ✗    |    ✗     |        ✗        |             ✓             |
 | Korisničko sučelje za mapiranje modela |    ✗    |    ✗     |        ✗        |             ✓             |
 | Popis zaobilaženja                     |    ✗    |    ✗     |        ✓        |             ✓             |

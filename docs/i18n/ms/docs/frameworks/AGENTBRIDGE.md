@@ -20,10 +20,10 @@ Apabila ejen IDE (cth., GitHub Copilot, Cursor, Claude Code) membuat panggilan A
 
 Ini bermakna anda boleh:
 
-- **Halakan semula mana-mana ejen kepada mana-mana penyedia**: Copilot berkomunikasi dengan OpenAI? Halakan semula kepada Anthropic Claude, Gemini, atau mana-mana daripada 372 penyedia OmniRoute.
-- **Gunakan pemetaan model**: `gemini-3-flash` → `claude-sonnet-4.7` secara telus pada peringkat pengendali.
-- **Pantau semua trafik ejen**: setiap permintaan yang dipintas diterbitkan kepada [Pemeriksa Trafik](./TRAFFIC_INSPECTOR.md).
-- **Gunakan daya tahan OmniRoute**: penghalaan kombo, pemutus litar, mekanisme sandaran, dan penjejakan kos turut berfungsi untuk trafik ejen IDE.
+- **Menghalakan semula mana-mana ejen kepada mana-mana penyedia**: Copilot berkomunikasi dengan OpenAI? Halakan semula kepada Anthropic Claude, Gemini, atau mana-mana daripada 374 penyedia OmniRoute.
+- **Menggunakan pemetaan model**: `gemini-3-flash` → `claude-sonnet-4.7` secara telus pada peringkat pengendali.
+- **Memantau semua trafik ejen**: setiap permintaan yang dipintas diterbitkan kepada [Pemeriksa Trafik](./TRAFFIC_INSPECTOR.md).
+- **Menggunakan daya tahan OmniRoute**: penghalaan gabungan, pemutus litar, sandaran, dan penjejakan kos turut berfungsi untuk trafik ejen IDE.
 
 ### Kedudukan berbanding pasaran
 
@@ -37,7 +37,7 @@ Ini bermakna anda boleh:
 | Zed Industries       |    —    |    ✓     |        —        |             ✓             |
 | Claude Code          |    —    |    —     |        ✓        |             ✓             |
 | Open Code            |    —    |    —     |        ✓        |             ✓             |
-| Trae                 |    —    |    —     |        —        |     🔍 Dalam siasatan     |
+| Trae                 |    —    |    —     |        —        |    🔍 Sedang disiasat     |
 | UI papan pemuka      |    ✓    |    ✗     |        ✗        |             ✓             |
 | Pemeriksa Trafik     |    ✗    |    ✗     |        ✓        |             ✓             |
 | Penghalaan OmniRoute |    ✗    |    ✗     |        ✗        |             ✓             |

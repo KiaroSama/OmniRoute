@@ -485,11 +485,11 @@ Jis apdoroja:
 
 | Failas                        | Paskirtis                                                  |
 | ----------------------------- | ---------------------------------------------------------- |
-| `providerRegistry.ts`         | Pokalbių modelių registras, apimantis 372 teikėjų katalogą |
+| `providerRegistry.ts`         | Pokalbių modelių registras, apimantis 374 teikėjų katalogą |
 | `providerModels.ts`           | Modelių alternatyvūs pavadinimai, formatų susiejimas       |
 | `constants.ts`                | Skirtojo laiko reikšmės, apribojimai, būsenos kodai        |
 | `defaultThinkingSignature.ts` | Numatytasis Claude mąstymo parašas                         |
-| `modelStrip.ts` (paslaugose)  | Kiekvienam teikėjui skirtų laukų pašalinimas               |
+| `modelStrip.ts` (paslaugose)  | Kiekvienam teikėjui pritaikytas laukų pašalinimas          |
 
 ### Teikėjų registro schema
 
@@ -506,7 +506,7 @@ interface ProviderConfig {
 }
 ```
 
-Zod validavimas įkeliant modulį užtikrina, kad visos teikėjų konfigūracijos yra tinkamos.
+Zod validacija modulio įkėlimo metu užtikrina, kad visos teikėjų konfigūracijos yra tinkamos.
 
 ---
 

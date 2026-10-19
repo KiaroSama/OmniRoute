@@ -37,12 +37,12 @@ Kwatancen siffofi na haƙiƙa da mashahuran na’urorin ba da hanya ga AI masu b
 | **Tallafin tunnel (Cloudflared, Tailscale, Ngrok)**   |                     ✅                      |       ❌        |       babu        |    babu    |
 | **Lasisi**                                            |                     MIT                     |       MIT       |    na mallaka     | na mallaka |
 
-## Lokutan da ya dace a zaɓi OmniRoute
+## Lokacin da ya kamata a zaɓi OmniRoute
 
-- Kana gudanar da tsarin a kan sabarka kuma kana son **mafi faɗin tallafin masu samarwa** (masu samarwa 372, shigarwar kasida 155 na kyauta/marasa buƙatar tantancewa)
-- Kana buƙatar **sabar MCP da aka haɗa a ciki** (kayan aikin LLM, ma’adanar ƙwaƙwalwa, da ƙwarewa da aka samar a matsayin kayan aiki)
+- Kana ɗaukar nauyin baƙuncin tsarin da kanka kuma kana son **mafi girman goyon bayan masu samarwa** (masu samarwa 374, shigarwar katalog 155 na kyauta/mara buƙatar tantancewa)
+- Kana buƙatar **sabar MCP da aka haɗa a ciki** (kayan aikin LLM, ƙwaƙwalwa, ƙwarewa da aka samar a matsayin kayan aiki)
 - Kana buƙatar **yarjejeniyar A2A** don ayyukan wakili-zuwa-wakili
-- Kana son **ɓoye sawun yatsa** (JA3/JA4) don kauce wa ganowa daga CAPTCHA na masu samar da sabis na sama
+- Kana son **ɓoye sawun yatsa** (JA3/JA4) don guje wa ganowa daga CAPTCHA na sabis na sama
 - Kana buƙatar **fasalolin matakin kamfani** (matakan kariya, kimantawa, tarihin bincike) ba tare da biyan kuɗin SaaS ba
 
 ## Lokacin zaɓar LiteLLM

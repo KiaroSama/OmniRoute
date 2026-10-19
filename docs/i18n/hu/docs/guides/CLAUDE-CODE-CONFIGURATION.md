@@ -98,7 +98,7 @@ globális beállítás és bekapcsolt Kimi-szolgáltató mellett csak a Kimi mod
 
 ## Bevezetési blokk az irányítópulton
 
-A Claude eszközkártya (**Irányítópult → CLI-kód**) megjeleníti az adott példányhoz tartozó pontos `settings.json`-részletet a felderítési alias információs gombja mellett, egy másolás gombbal:
+A Claude eszközkártya (**Irányítópult → CLI Code**) megjeleníti az adott példányhoz tartozó pontos `settings.json`-részletet a felderítési alias információs gombja mellett, egy másolás gombbal:
 
 ```jsonc
 {
@@ -110,11 +110,21 @@ A Claude eszközkártya (**Irányítópult → CLI-kód**) megjeleníti az adott
 }
 ```
 
-Az alap URL a kártya által feloldott cím (beleértve az Ön által megadott egyéni felülbírálást is), már normalizálva — `/v1` utótag és záró perjel nélkül. **A kulcs soha nem jelenik meg**: a blokk helyőrzőt tartalmaz, így sem képernyőkép, sem beillesztett kódrészlet nem szivárogtathatja ki. Cserélje le a helyőrzőt a saját kulcsára.
+Az alap-URL a kártya által feloldott cím (beleértve az Ön által megadott egyéni felülbírálást is), már normalizálva — `/v1` utótag és záró perjel nélkül. **A kulcs soha nem jelenik meg**: a blokk helyőrzőt tartalmaz, így sem képernyőkép, sem beillesztett kódrészlet nem szivárogtathatja ki. Írja felül a helyőrzőt a saját kulcsával.
 
-Adja hozzá a `CLAUDE_CODE_AUTO_COMPACT_WINDOW` változót ugyanahhoz az `env` blokkhoz minden olyan modellnél, amelynek valós kontextusablaka nem 200K — a Claude Code minden általa nem felismert azonosító esetében 200K méretet feltételez, ezért enélkül az automatikus tömörítés rossz ponton indul el (lásd az előző szakasz figyelmeztetését). A kódrészlet-összeállító ezt az értéket is elfogadja, így a célmodell ablakméretét ismerő hívó közvetlenül belefoglalhatja azt.
+Adja hozzá a `CLAUDE_CODE_AUTO_COMPACT_WINDOW` változót ugyanahhoz az `env` blokkhoz minden olyan modellnél, amelynek tényleges kontextusablaka nem 200K — a Claude Code minden általa nem felismert azonosító esetén 200K méretet feltételez, ezért az automatikus tömörítés enélkül rossz ponton aktiválódik (lásd az előző szakasz figyelmeztetését). A kódrészlet-generátor ezt az értéket is elfogadja, így a célmodell ablakméretét ismerő hívó közvetlenül kiírhatja azt.
 
-Forrás: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (tiszta, egységtesztekkel lefedett összeállító), amelyet a `ClaudeGatewayOnboardingBlock` jelenít meg.
+Forrás: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (tiszta, egységtesztekkel lefedett generátor), amelyet a `ClaudeGatewayOnboardingBlock` jelenít meg.
+
+### Egy fiók rögzítése (opcionális)
+
+Ha minden Claude Code-kérést egy adott szolgáltatói fiókon keresztül szeretne küldeni, adja hozzá az `x-omniroute-connection` fejlécet az `ANTHROPIC_CUSTOM_HEADERS` használatával ugyanabban az `env` blokkban:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Másolja ki az azonosítót a szolgáltatói oldal kapcsolatának sorában található `xxxxxxxx…` címkéről. A rögzítés csak egyetlen modellhez tartozó azonosítókra (`provider/model`) vonatkozik, kombinációkra nem. A pontos tartalék viselkedést lásd a [Fiók rögzítése kérésenként](../reference/API_REFERENCE.md#account-pinning-per-request) szakaszban.
 
 ---
 

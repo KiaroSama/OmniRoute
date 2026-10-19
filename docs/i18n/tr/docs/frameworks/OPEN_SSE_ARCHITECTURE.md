@@ -481,15 +481,15 @@ Bu, şunları işler:
 
 ## Yapılandırma
 
-`open-sse/config/`, yapılandırma katmanını içerir:
+`open-sse/config/`, yapılandırma katmanını barındırır:
 
-| Dosya                         | Amaç                                                   |
-| ----------------------------- | ------------------------------------------------------ |
-| `providerRegistry.ts`         | 372 sağlayıcılı katalog üzerindeki sohbet modeli kaydı |
-| `providerModels.ts`           | Model takma adları, biçim eşlemesi                     |
-| `constants.ts`                | Zaman aşımları, sınırlar, durum kodları                |
-| `defaultThinkingSignature.ts` | Varsayılan Claude düşünme imzası                       |
-| `modelStrip.ts` (servislerde) | Sağlayıcı bazında alan çıkarma                         |
+| Dosya                         | Amaç                                                 |
+| ----------------------------- | ---------------------------------------------------- |
+| `providerRegistry.ts`         | 374 sağlayıcılı katalog üzerinde sohbet modeli kaydı |
+| `providerModels.ts`           | Model takma adları, biçim eşlemesi                   |
+| `constants.ts`                | Zaman aşımları, sınırlar, durum kodları              |
+| `defaultThinkingSignature.ts` | Varsayılan Claude düşünme imzası                     |
+| `modelStrip.ts` (hizmetlerde) | Sağlayıcı bazında alan kaldırma                      |
 
 ### Sağlayıcı Kayıt Şeması
 
@@ -506,7 +506,7 @@ interface ProviderConfig {
 }
 ```
 
-Modül yüklenirken yapılan Zod doğrulaması, tüm sağlayıcı yapılandırmalarının geçerli olmasını sağlar.
+Modül yüklenirken gerçekleştirilen Zod doğrulaması, tüm sağlayıcı yapılandırmalarının geçerli olmasını sağlar.
 
 ---
 

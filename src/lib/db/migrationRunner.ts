@@ -623,6 +623,14 @@ function isSchemaAlreadyApplied(
       // Same shape as 179/181/183/184/187: ensureProxyLogsColumns may have
       // added headers_ms at boot. Keyed by version only.
       return hasColumn(db, "proxy_logs", "headers_ms");
+    case "212":
+      // Provider-reported cost columns (#16087, renumbered 206 -> 212: the 206 slot
+      // went to 206_codex_wakeup_tasks first). A DB that already applied the old
+      // 206 file has both columns, and a bare ADD COLUMN would throw on the re-run.
+      return (
+        hasColumn(db, "usage_history", "provider_credits") &&
+        hasColumn(db, "usage_history", "provider_cost_usd")
+      );
     default:
       return false;
   }

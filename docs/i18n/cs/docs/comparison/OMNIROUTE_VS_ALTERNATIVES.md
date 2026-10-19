@@ -39,10 +39,10 @@ Objektivní srovnání funkcí s populárními open-source AI routery.
 
 ## Kdy zvolit OmniRoute
 
-- Provozujete řešení na vlastní infrastruktuře a chcete **maximální pokrytí poskytovatelů** (372 poskytovatelů, 155 bezplatných položek katalogu bez nutnosti ověření)
+- Provozujete řešení ve vlastní infrastruktuře a chcete **maximální pokrytí poskytovatelů** (374 poskytovatelů, 155 bezplatných položek katalogu bez nutnosti ověření)
 - Potřebujete **vestavěný server MCP** (nástroje LLM, paměť a dovednosti zpřístupněné jako nástroje)
 - Potřebujete **protokol A2A** pro pracovní postupy mezi agenty
-- Chcete **maskování otisku** (JA3/JA4), abyste se vyhnuli detekci ze strany nadřazených systémů CAPTCHA
+- Chcete **maskování otisku** (JA3/JA4), abyste se vyhnuli detekci systémy CAPTCHA na straně upstream poskytovatelů
 - Potřebujete **podnikové funkce** (ochranná pravidla, vyhodnocování, auditní stopu) bez poplatků za SaaS
 
 ## Kdy zvolit LiteLLM

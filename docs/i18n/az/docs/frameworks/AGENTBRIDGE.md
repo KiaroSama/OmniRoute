@@ -16,34 +16,34 @@ AgentBridge, IDE süni intellekt agentlərindən gələn HTTPS trafikini ələ k
 
 ### AgentBridge nədir?
 
-IDE agenti (məsələn, GitHub Copilot, Cursor, Claude Code) API çağırışı etdikdə birbaşa yuxarı axındakı süni intellekt provayderinə (OpenAI, Anthropic və s.) qoşulur. AgentBridge heç bir agent konfiqurasiyası dəyişikliyi tələb etmədən həmin bağlantını TLS səviyyəsində şəffaf şəkildə ələ keçirir və sorğunu OmniRoute vasitəsilə yenidən yönləndirir.
+IDE agenti (məsələn, GitHub Copilot, Cursor, Claude Code) API çağırışı etdikdə birbaşa yuxarı səviyyəli süni intellekt provayderinə (OpenAI, Anthropic və s.) qoşulur. AgentBridge heç bir agent konfiqurasiyası dəyişikliyi tələb etmədən həmin bağlantını TLS səviyyəsində şəffaf şəkildə ələ keçirir və sorğunu OmniRoute vasitəsilə yenidən yönləndirir.
 
 Bu o deməkdir ki, siz:
 
-- **İstənilən agenti istənilən provayderə yönləndirə bilərsiniz**: Copilot OpenAI ilə əlaqə saxlayır? Onu Anthropic Claude, Gemini və ya OmniRoute-un 372 provayderindən hər hansı birinə yönləndirin.
+- **İstənilən agenti istənilən provayderə yönləndirə bilərsiniz**: Copilot OpenAI ilə əlaqə saxlayır? Onu Anthropic Claude, Gemini və ya OmniRoute-un 374 provayderindən hər hansı birinə yönləndirin.
 - **Model uyğunlaşdırmalarını tətbiq edə bilərsiniz**: `gemini-3-flash` → `claude-sonnet-4.7` işləyici səviyyəsində şəffaf şəkildə.
-- **Bütün agent trafikini müşahidə edə bilərsiniz**: ələ keçirilən hər bir sorğu [Trafik İnspektoruna](./TRAFFIC_INSPECTOR.md) ötürülür.
-- **OmniRoute dayanıqlılıq imkanlarını tətbiq edə bilərsiniz**: kombinə edilmiş marşrutlaşdırma, dövrə açarları, ehtiyat keçidlər və xərc izləmə IDE agent trafiki üçün də işləyir.
+- **Bütün agent trafikini müşahidə edə bilərsiniz**: ələ keçirilən hər bir sorğu [Trafik İnspektorunda](./TRAFFIC_INSPECTOR.md) yayımlanır.
+- **OmniRoute dayanıqlılıq imkanlarını tətbiq edə bilərsiniz**: kombinə edilmiş yönləndirmə, dövrə kəsiciləri, ehtiyat keçidlər və xərc izləmə IDE agentlərinin trafiki üçün də işləyir.
 
-### Bazardakı mövqeləndirmə
+### Bazardakı mövqeyi
 
-| Funksiya                       | 9router | anti-api | llm-interceptor | **OmniRoute AgentBridge** |
-| ------------------------------ | :-----: | :------: | :-------------: | :-----------------------: |
-| Antigravity                    |    ✓    |    ✓     |        —        |             ✓             |
-| GitHub Copilot                 |    ✓    |    ✓     |        —        |             ✓             |
-| Kiro (AWS)                     |    ✓    |    ✓     |        —        |             ✓             |
-| OpenAI Codex                   |    —    |    ✓     |        —        |             ✓             |
-| Cursor IDE                     |    ✓    |    ✓     |        —        |             ✓             |
-| Zed Industries                 |    —    |    ✓     |        —        |             ✓             |
-| Claude Code                    |    —    |    —     |        ✓        |             ✓             |
-| Open Code                      |    —    |    —     |        ✓        |             ✓             |
-| Trae                           |    —    |    —     |        —        |      🔍 Araşdırılır       |
-| İdarəetmə paneli interfeysi    |    ✓    |    ✗     |        ✗        |             ✓             |
-| Trafik İnspektoru              |    ✗    |    ✗     |        ✓        |             ✓             |
-| OmniRoute marşrutlaşdırması    |    ✗    |    ✗     |        ✗        |             ✓             |
-| Model uyğunlaşdırma interfeysi |    ✗    |    ✗     |        ✗        |             ✓             |
-| Yan keçmə siyahısı             |    ✗    |    ✗     |        ✓        |             ✓             |
-| Yuxarı axın CA sertifikatı     |    ✗    |    ✗     |        ✓        |             ✓             |
+| Funksiya                        | 9router | anti-api | llm-interceptor | **OmniRoute AgentBridge** |
+| ------------------------------- | :-----: | :------: | :-------------: | :-----------------------: |
+| Antigravity                     |    ✓    |    ✓     |        —        |             ✓             |
+| GitHub Copilot                  |    ✓    |    ✓     |        —        |             ✓             |
+| Kiro (AWS)                      |    ✓    |    ✓     |        —        |             ✓             |
+| OpenAI Codex                    |    —    |    ✓     |        —        |             ✓             |
+| Cursor IDE                      |    ✓    |    ✓     |        —        |             ✓             |
+| Zed Industries                  |    —    |    ✓     |        —        |             ✓             |
+| Claude Code                     |    —    |    —     |        ✓        |             ✓             |
+| Open Code                       |    —    |    —     |        ✓        |             ✓             |
+| Trae                            |    —    |    —     |        —        |      🔍 Araşdırılır       |
+| İdarəetmə paneli UI-si          |    ✓    |    ✗     |        ✗        |             ✓             |
+| Trafik İnspektoru               |    ✗    |    ✗     |        ✓        |             ✓             |
+| OmniRoute yönləndirməsi         |    ✗    |    ✗     |        ✗        |             ✓             |
+| Model uyğunlaşdırma UI-si       |    ✗    |    ✗     |        ✗        |             ✓             |
+| Yan keçmə siyahısı              |    ✗    |    ✗     |        ✓        |             ✓             |
+| Yuxarı səviyyəli CA sertifikatı |    ✗    |    ✗     |        ✓        |             ✓             |
 
 ---
 

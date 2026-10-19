@@ -14,18 +14,18 @@ AgentBridge yra „OmniRoute“ MITM („Man-in-the-Middle“, tarpininko) tarpi
 
 ## §1 Apžvalga
 
-### Kas yra AgentBridge?
+### Kas yra „AgentBridge“?
 
-Kai IDE agentas (pvz., GitHub Copilot, Cursor, Claude Code) atlieka API iškvietimą, jis tiesiogiai prisijungia prie pirminio DI paslaugų teikėjo (OpenAI, Anthropic ir kt.). AgentBridge skaidriai perima šį ryšį TLS lygmeniu — nereikalaujant keisti jokios agento konfigūracijos — ir peradresuoja užklausą per OmniRoute.
+Kai IDE agentas (pvz., „GitHub Copilot“, „Cursor“, „Claude Code“) atlieka API iškvietimą, jis tiesiogiai prisijungia prie pirminio DI paslaugų teikėjo („OpenAI“, „Anthropic“ ir kt.). „AgentBridge“ skaidriai perima šį ryšį TLS lygmeniu — nereikalaujant keisti jokios agento konfigūracijos — ir perrašo užklausą, nukreipdamas ją per „OmniRoute“.
 
-Tai leidžia:
+Tai suteikia galimybę:
 
-- **Peradresuoti bet kurį agentą į bet kurį paslaugų teikėją**: Copilot komunikuoja su OpenAI? Peradresuokite jį į Anthropic Claude, Gemini arba bet kurį iš 372 OmniRoute paslaugų teikėjų.
-- **Taikyti modelių susiejimus**: `gemini-3-flash` → `claude-sonnet-4.7` skaidriai apdorojimo programos lygmeniu.
-- **Stebėti visą agentų srautą**: kiekviena perimta užklausa paskelbiama [srauto inspektoriuje](./TRAFFIC_INSPECTOR.md).
-- **Taikyti OmniRoute atsparumo mechanizmus**: kombinuotasis maršruto parinkimas, grandinės pertraukikliai, atsarginiai maršrutai ir išlaidų stebėjimas taip pat veikia IDE agentų srautui.
+- **Peradresuoti bet kurį agentą į bet kurį paslaugų teikėją**: „Copilot“ komunikuoja su „OpenAI“? Nukreipkite jį į „Anthropic Claude“, „Gemini“ ar bet kurį iš 374 „OmniRoute“ paslaugų teikėjų.
+- **Taikyti modelių susiejimus**: `gemini-3-flash` → `claude-sonnet-4.7` skaidriai apdorojimo modulio lygmeniu.
+- **Stebėti visą agentų srautą**: kiekviena perimta užklausa publikuojama [srauto inspektoriuje](./TRAFFIC_INSPECTOR.md).
+- **Taikyti „OmniRoute“ atsparumo mechanizmus**: kombinuotas maršrutizavimas, grandinės pertraukikliai, atsarginiai maršrutai ir sąnaudų stebėjimas taip pat veikia IDE agentų srautui.
 
-### Pozicionavimas rinkoje
+### Pozicionavimas rinkos atžvilgiu
 
 | Funkcija                          | 9router | anti-api | llm-interceptor | **OmniRoute AgentBridge** |
 | --------------------------------- | :-----: | :------: | :-------------: | :-----------------------: |
@@ -38,12 +38,12 @@ Tai leidžia:
 | Claude Code                       |    —    |    —     |        ✓        |             ✓             |
 | Open Code                         |    —    |    —     |        ✓        |             ✓             |
 | Trae                              |    —    |    —     |        —        |        🔍 Tiriama         |
-| Valdymo skydelio UI               |    ✓    |    ✗     |        ✗        |             ✓             |
+| Valdymo skydelio sąsaja           |    ✓    |    ✗     |        ✗        |             ✓             |
 | Srauto inspektorius               |    ✗    |    ✗     |        ✓        |             ✓             |
-| OmniRoute maršruto parinkimas     |    ✗    |    ✗     |        ✗        |             ✓             |
-| Modelių susiejimo UI              |    ✗    |    ✗     |        ✗        |             ✓             |
+| „OmniRoute“ maršrutizavimas       |    ✗    |    ✗     |        ✗        |             ✓             |
+| Modelių susiejimo sąsaja          |    ✗    |    ✗     |        ✗        |             ✓             |
 | Apėjimo sąrašas                   |    ✗    |    ✗     |        ✓        |             ✓             |
-| Pirminės sistemos CA sertifikatas |    ✗    |    ✗     |        ✓        |             ✓             |
+| Pirminio serverio CA sertifikatas |    ✗    |    ✗     |        ✓        |             ✓             |
 
 ---
 

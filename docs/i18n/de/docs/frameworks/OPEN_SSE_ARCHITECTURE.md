@@ -485,7 +485,7 @@ Dabei werden folgende Elemente verarbeitet:
 
 | Datei                         | Zweck                                                 |
 | ----------------------------- | ----------------------------------------------------- |
-| `providerRegistry.ts`         | Chatmodell-Registry für den Katalog mit 372 Anbietern |
+| `providerRegistry.ts`         | Chatmodell-Registry für den Katalog mit 374 Anbietern |
 | `providerModels.ts`           | Modellaliase, Formatzuordnung                         |
 | `constants.ts`                | Zeitüberschreitungen, Grenzwerte, Statuscodes         |
 | `defaultThinkingSignature.ts` | Standardmäßige Claude-Denksignatur                    |

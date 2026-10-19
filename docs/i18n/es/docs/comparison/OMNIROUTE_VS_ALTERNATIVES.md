@@ -39,11 +39,11 @@ Comparación objetiva de funcionalidades frente a routers de IA populares de có
 
 ## Cuándo elegir OmniRoute
 
-- Alojas la solución en tu propia infraestructura y quieres la **máxima cobertura de proveedores** (372 proveedores, 155 entradas gratuitas/sin autenticación en el catálogo)
+- Te autoalojas y quieres la **máxima cobertura de proveedores** (374 proveedores, 155 entradas de catálogo gratuitas/sin autenticación)
 - Necesitas un **servidor MCP integrado** (herramientas de LLM, memoria y habilidades expuestas como herramientas)
-- Necesitas el **protocolo A2A** para flujos de trabajo entre agentes
-- Quieres **ocultación de huella digital** (JA3/JA4) para evitar la detección mediante CAPTCHA de servicios ascendentes
-- Necesitas **funciones empresariales** (barreras de seguridad, evaluaciones y registro de auditoría) sin pagar por un SaaS
+- Necesitas el **protocolo A2A** para flujos de trabajo de agente a agente
+- Quieres **ocultación de huella digital** (JA3/JA4) para evitar la detección por parte de los CAPTCHA de servicios upstream
+- Necesitas **funciones empresariales** (barreras de protección, evaluaciones y registro de auditoría) sin pagar una factura de SaaS
 
 ## Cuándo elegir LiteLLM
 

@@ -12,28 +12,28 @@
 
 ## Mis see on
 
-OmniRoute registreerib 372 teenusepakkujat, sealhulgas 155 kataloogikirjet, mis on märgitud kui **tasuta/autentimiseta**
+OmniRoute registreerib 374 teenusepakkujat, sealhulgas 155 kataloogikirjet, mis on märgitud kui **tasuta/autentimiseta**
 (autentimiseta,
 tasuta taseme OAuth või tasuta taseme API-võti — vt
-[tasuta tasemete juhendit](../getting-started/FREE-TIERS-GUIDE.md) ja täielikku
+[Tasuta tasemete juhendit](../getting-started/FREE-TIERS-GUIDE.md) ja täielikku
 [tasuta tasemete kataloogi](../reference/FREE_TIERS.md)). Konks on selles, et tasuta teenusepakkujate mudelite kvaliteet
 varieerub suuresti. Autentimiseta teenusepakkuja, mis pakub tipptasemel mudelit, on palju kasulikum
-kui teenusepakkuja, mis pakub väikest pärandmudelit.
+kui väikest pärandmudelit pakkuv teenusepakkuja.
 
-**Tasuta teenusepakkujate pingerida** vastab küsimusele „**milline tasuta teenusepakkuja pakub mulle parimat mudelit?**”,
-ühendades iga tasuta teenusepakkuja kataloogi **kasutajate kogutud kvaliteediskooridega**
-**Arena AI edetabelist** (inimeste eelistustel põhinev ELO, sama põhimõte, millel põhineb LMArena
-vestlusrobotite areen). Seejärel järjestatakse teenusepakkujad nende **parima tasuta mudeli** tugevuse alusel.
+**Tasuta teenusepakkujate pingerida** vastab küsimusele „**milline tasuta teenusepakkuja pakub mulle parimat mudelit?**“,
+ühendades iga tasuta teenusepakkuja kataloogi **ühisloome korras kogutud kvaliteediskooridega**
+**Arena AI edetabelist** (inimeelistustel põhinev ELO, sama põhimõte, millel põhineb LMArena
+vestlusrobotite areen). Seejärel järjestatakse teenusepakkujad nende **parima tasuta mudeli** võimekuse alusel.
 
 Pingerida arvutatakse kolme tegeliku allika põhjal:
 
 1. Tasuta teenusepakkujate loendid — `NOAUTH_PROVIDERS` ning `OAUTH_PROVIDERS` /
-   `APIKEY_PROVIDERS` kirjed, millel on märge `hasFree`
+   `APIKEY_PROVIDERS` kirjed, millel on lipp `hasFree`
    (`src/shared/constants/providers.ts`).
 2. Iga teenusepakkuja mudelikataloog teenusepakkujate registrist
    (`open-sse/config/providerRegistry.ts`).
-3. ELO-st tuletatud ülesandesobivuse skoorid, mille Arena ELO sünkroonimismootor talletab
-   andmebaasi tabelisse `model_intelligence` (`src/lib/arenaEloSync.ts`).
+3. ELO-põhised ülesandesobivuse skoorid, mille Arena ELO sünkroonimismootor
+   (`src/lib/arenaEloSync.ts`) salvestab andmebaasi tabelisse `model_intelligence`.
 
 Ühendamisloogika asub failis `src/lib/freeProviderRankings.ts`.
 

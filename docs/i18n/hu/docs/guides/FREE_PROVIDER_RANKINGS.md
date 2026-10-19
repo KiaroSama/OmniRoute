@@ -12,29 +12,29 @@
 
 ---
 
-## Mi ez?
+## Mi ez
 
-Az OmniRoute 372 szolgáltatót regisztrál, köztük 155 olyan katalógusbejegyzést, amely **ingyenes/nem igényel hitelesítést**
-(nincs hitelesítés,
+Az OmniRoute 374 szolgáltatót regisztrál, köztük 155 olyan katalógusbejegyzést, amely **ingyenes/hitelesítés nélküli**
+(hitelesítés nélküli,
 ingyenes csomagú OAuth vagy ingyenes csomagú API-kulcs — lásd az
 [Ingyenes csomagok útmutatóját](../getting-started/FREE-TIERS-GUIDE.md) és a teljes
 [Ingyenes csomagok jegyzékét](../reference/FREE_TIERS.md)). A bökkenő: az ingyenes szolgáltatók
-modellminősége rendkívül eltérő. Egy élvonalbeli modellt kínáló, hitelesítést nem igénylő szolgáltató sokkal hasznosabb,
-mint egy kisebb, régebbi modellt kínáló szolgáltató.
+modellminősége rendkívül eltérő. Egy élvonalbeli modellt kínáló, hitelesítés nélküli szolgáltató sokkal hasznosabb,
+mint egy kis méretű, elavult modellt kínáló.
 
-Az **Ingyenes szolgáltatók rangsora** arra ad választ, hogy „**melyik ingyenes szolgáltató biztosítja számomra a legjobb modellt?**”: ehhez
-összekapcsolja az egyes ingyenes szolgáltatók katalógusát az
-**Arena AI ranglistájáról** származó, **közösségi forrásból gyűjtött minőségi pontszámokkal** (emberi preferenciákon alapuló ELO, ugyanaz az elv, amely az LMArena
-chatbotarénája mögött is áll). A szolgáltatók rangsorolása ezután a **legjobb ingyenes modelljük** teljesítménye alapján történik.
+Az **Ingyenes szolgáltatók rangsora** arra ad választ, hogy „**melyik ingyenes szolgáltató kínálja számomra a legjobb modellt?**” úgy,
+hogy összekapcsolja az egyes ingyenes szolgáltatók katalógusát az **Arena AI ranglistáról** származó,
+**közösségi forrásból gyűjtött minőségi pontszámokkal** (emberi preferenciákon alapuló ELO, ugyanaz az elgondolás, amelyre az LMArena
+chatbot-arénája is épül). A szolgáltatók rangsorolása ezután a **legjobb ingyenes modelljük** teljesítménye alapján történik.
 
-A rangsor három valós forrásból készül:
+A rangsor három valós forrásból kerül kiszámításra:
 
 1. Az ingyenes szolgáltatók listái — `NOAUTH_PROVIDERS`, valamint az `OAUTH_PROVIDERS` /
    `APIKEY_PROVIDERS` `hasFree` jelölésű bejegyzései
    (`src/shared/constants/providers.ts`).
 2. Az egyes szolgáltatók modellkatalógusa a szolgáltatói nyilvántartásból
    (`open-sse/config/providerRegistry.ts`).
-3. Az ELO-ból származtatott, feladathoz való illeszkedést jelző pontszámok, amelyeket az Arena ELO szinkronizáló motor
+3. Az ELO alapján származtatott, feladatokhoz való alkalmassági pontszámok, amelyeket az Arena ELO szinkronizációs motor
    (`src/lib/arenaEloSync.ts`) tárol a `model_intelligence` adatbázistáblában.
 
 Az összekapcsolási logika a `src/lib/freeProviderRankings.ts` fájlban található.

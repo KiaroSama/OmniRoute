@@ -93,33 +93,47 @@ biss il-mudelli ta’ Kimi.
 
 ---
 
-## Blokka ta' onboarding fid-dashboard
+## Blokka ta’ onboarding fid-dashboard
 
-Il-kard tal-għodda Claude (**Dashboard → CLI Code**) tirrendi l-framment eżatt ta' `settings.json`
-għal din l-istanza, ħdejn il-buttuna tal-informazzjoni dwar id-discovery alias, flimkien ma' buttuna għall-ikkupjar:
+Il-kard tal-għodda Claude (**Dashboard → CLI Code**) turi l-framment eżatt ta’ `settings.json`
+għal din l-istanza, ħdejn il-buttuna tal-informazzjoni dwar l-alias tal-iskoperta, flimkien ma’ buttuna għall-ikkupjar:
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<l-OmniRoute tiegħek>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<il-kjavi API tal-OmniRoute tiegħek>",
+    "ANTHROPIC_BASE_URL": "http://<OmniRoute tiegħek>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<iċ-ċavetta API ta’ OmniRoute tiegħek>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-Il-URL bażi huwa dak riżolt mill-kard (inkluża sostituzzjoni personalizzata li tkun daħħalt), diġà
-normalizzat — mingħajr is-suffiss `/v1` u mingħajr slash fl-aħħar. **Il-kjavi qatt ma tiġi rrenduta**: il-blokka tinkludi
-placeholder, għalhekk screenshot jew framment imwaħħal ma jistax jiżvelaha. Waħħal il-kjavi tiegħek minflokha.
+Il-URL bażi huwa dak riżolt mill-kard (inkluża sovrascrittura personalizzata li daħħalt), diġà
+normalizzat — mingħajr is-suffiss `/v1` u mingħajr slash finali. **Iċ-ċavetta qatt ma tintwera**: il-blokka tinkludi
+placeholder, sabiex screenshot jew snippet imwaħħal ma jkunux jistgħu jiżvelawha. Issostitwixxih biċ-ċavetta tiegħek.
 
 Żid `CLAUDE_CODE_AUTO_COMPACT_WINDOW` taħt l-istess blokka `env` għal kwalunkwe mudell li t-tieqa
 tal-kuntest reali tiegħu mhijiex 200K — Claude Code jassumi 200K għal kull id li ma jagħrafx, għalhekk
-il-kompattazzjoni awtomatika inkella tibda fil-punt ħażin (ara t-twissija fit-taqsima preċedenti).
-Il-bennej tal-framment jaċċetta wkoll dak il-valur, sabiex min isejjaħ u jkun jaf id-daqs tat-tieqa
-tal-mudell fil-mira jkun jista' jiġġenerah direttament.
+il-kompattazzjoni awtomatika inkella tibda fil-punt żbaljat (ara t-twissija fit-taqsima preċedenti).
+Il-bennej tas-snippet jaċċetta wkoll dak il-valur, sabiex min isejjaħ u jaf id-daqs tat-tieqa tal-mudell fil-mira
+jkun jista’ joħorġu direttament.
 
 Sors: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (bennej
-pur, ittestjat b'testijiet tal-unità) irrendut minn `ClaudeGatewayOnboardingBlock`.
+pur, ittestjat b’testijiet tal-unità) muri minn `ClaudeGatewayOnboardingBlock`.
+
+### Waħħal kont wieħed (mhux obbligatorju)
+
+Biex tibgħat kull talba ta’ Claude Code permezz ta’ kont speċifiku wieħed ta’ fornitur, żid il-header
+`x-omniroute-connection` permezz ta’ `ANTHROPIC_CUSTOM_HEADERS` fl-istess blokka `env`:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Ikkopja l-id miċ-ċippa `xxxxxxxx…` fir-ringiela tal-konnessjoni fil-paġna tal-fornitur. L-iffissar japplika biss
+għal ids ta’ mudell wieħed (`provider/model`), mhux għal kombinazzjonijiet. Ara
+[It-twaħħil ta’ kont għal kull talba](../reference/API_REFERENCE.md#account-pinning-per-request) għall-imġiba
+eżatta ta’ fallback.
 
 ---
 

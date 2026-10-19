@@ -489,7 +489,7 @@ Az `open-sse/config/` tartalmazza a konfigurációs réteget:
 
 | Fájl                                  | Rendeltetés                                                     |
 | ------------------------------------- | --------------------------------------------------------------- |
-| `providerRegistry.ts`                 | Chatmodell-regiszter a 372 szolgáltatót tartalmazó katalógushoz |
+| `providerRegistry.ts`                 | Chatmodell-regiszter a 374 szolgáltatót tartalmazó katalógushoz |
 | `providerModels.ts`                   | Modellálnevek, formátumleképezés                                |
 | `constants.ts`                        | Időtúllépések, korlátok, állapotkódok                           |
 | `defaultThinkingSignature.ts`         | Alapértelmezett Claude-gondolkodási aláírás                     |

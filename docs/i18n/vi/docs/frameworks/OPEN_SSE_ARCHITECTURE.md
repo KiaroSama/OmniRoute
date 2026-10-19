@@ -483,15 +483,15 @@ Bộ biến đổi này xử lý:
 
 `open-sse/config/` chứa lớp cấu hình:
 
-| Tệp                              | Mục đích                                                    |
-| -------------------------------- | ----------------------------------------------------------- |
-| `providerRegistry.ts`            | Sổ đăng ký mô hình trò chuyện cho danh mục 372 nhà cung cấp |
-| `providerModels.ts`              | Bí danh mô hình, ánh xạ định dạng                           |
-| `constants.ts`                   | Thời gian chờ, giới hạn, mã trạng thái                      |
-| `defaultThinkingSignature.ts`    | Chữ ký suy luận mặc định của Claude                         |
-| `modelStrip.ts` (trong services) | Loại bỏ trường theo từng nhà cung cấp                       |
+| Tệp                              | Mục đích                                                   |
+| -------------------------------- | ---------------------------------------------------------- |
+| `providerRegistry.ts`            | Registry mô hình trò chuyện trên danh mục 374 nhà cung cấp |
+| `providerModels.ts`              | Bí danh mô hình, ánh xạ định dạng                          |
+| `constants.ts`                   | Thời gian chờ, giới hạn, mã trạng thái                     |
+| `defaultThinkingSignature.ts`    | Chữ ký suy luận Claude mặc định                            |
+| `modelStrip.ts` (trong services) | Loại bỏ trường theo từng nhà cung cấp                      |
 
-### Lược đồ sổ đăng ký nhà cung cấp
+### Schema Registry Nhà cung cấp
 
 ```ts
 interface ProviderConfig {

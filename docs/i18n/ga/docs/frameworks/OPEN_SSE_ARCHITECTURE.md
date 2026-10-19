@@ -485,7 +485,7 @@ Coinníonn `open-sse/config/` an tsraith chumraíochta:
 
 | Comhad                        | Cuspóir                                               |
 | ----------------------------- | ----------------------------------------------------- |
-| `providerRegistry.ts`         | Clárlann samhlacha comhrá thar chatalóg 372 soláthraí |
+| `providerRegistry.ts`         | Clárlann samhlacha comhrá thar chatalóg 374 soláthraí |
 | `providerModels.ts`           | Ailiasanna samhlacha, mapáil formáide                 |
 | `constants.ts`                | Teorainneacha ama, teorainneacha, cóid stádais        |
 | `defaultThinkingSignature.ts` | Síniú réamhshocraithe smaointeoireachta Claude        |
@@ -506,7 +506,7 @@ interface ProviderConfig {
 }
 ```
 
-Cinntíonn bailíochtú Zod tráth lódála an mhodúil go bhfuil gach cumraíocht soláthraí bailí.
+Cinntíonn bailíochtú Zod agus an modúl á lódáil go bhfuil gach cumraíocht soláthraí bailí.
 
 ---
 

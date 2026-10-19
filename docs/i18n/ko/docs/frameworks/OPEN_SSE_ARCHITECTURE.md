@@ -483,13 +483,13 @@ createResponsesApiTransformStream(): TransformStream
 
 `open-sse/config/`에는 구성 계층이 포함되어 있습니다.
 
-| 파일                          | 용도                                                       |
-| ----------------------------- | ---------------------------------------------------------- |
-| `providerRegistry.ts`         | 372개 제공자 카탈로그를 기반으로 하는 채팅 모델 레지스트리 |
-| `providerModels.ts`           | 모델 별칭 및 형식 매핑                                     |
-| `constants.ts`                | 시간 제한, 한도 및 상태 코드                               |
-| `defaultThinkingSignature.ts` | 기본 Claude 사고 서명                                      |
-| `modelStrip.ts` (서비스 내)   | 제공자별 필드 제거                                         |
+| 파일                          | 용도                                              |
+| ----------------------------- | ------------------------------------------------- |
+| `providerRegistry.ts`         | 374개 제공자 카탈로그 기반의 채팅 모델 레지스트리 |
+| `providerModels.ts`           | 모델 별칭, 형식 매핑                              |
+| `constants.ts`                | 시간 제한, 한도, 상태 코드                        |
+| `defaultThinkingSignature.ts` | 기본 Claude 사고 서명                             |
+| `modelStrip.ts` (서비스 내)   | 제공자별 필드 제거                                |
 
 ### 제공자 레지스트리 스키마
 

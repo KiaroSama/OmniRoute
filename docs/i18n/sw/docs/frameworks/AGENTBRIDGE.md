@@ -16,14 +16,14 @@ AgentBridge ni proksi ya MITM (Mtu-katikati) ya OmniRoute ambayo hunasa trafiki 
 
 ### AgentBridge ni nini?
 
-Wakati wakala wa IDE (kwa mfano, GitHub Copilot, Cursor, Claude Code) anapopiga simu ya API, huunganishwa moja kwa moja na mtoa huduma wa AI wa upstream (OpenAI, Anthropic, n.k.). AgentBridge huingilia muunganisho huo kwa uwazi katika kiwango cha TLS — bila kuhitaji mabadiliko yoyote ya usanidi wa wakala — na huandika upya ombi kupitia OmniRoute.
+Wakati ajenti wa IDE (kwa mfano, GitHub Copilot, Cursor, Claude Code) anapopiga simu ya API, huunganisha moja kwa moja na mtoa huduma wa AI wa juu (OpenAI, Anthropic, n.k.). AgentBridge hunasa muunganisho huo kwa uwazi katika kiwango cha TLS — bila kuhitaji mabadiliko yoyote ya usanidi wa ajenti — na huandika upya ombi hilo kupitia OmniRoute.
 
 Hii inamaanisha unaweza:
 
-- **Kuelekeza upya wakala yeyote kwa mtoa huduma yeyote**: Copilot inawasiliana na OpenAI? Ielekeze upya kwa Anthropic Claude, Gemini, au yeyote kati ya watoa huduma 372 wa OmniRoute.
+- **Kuelekeza upya ajenti yoyote kwa mtoa huduma yeyote**: Copilot inawasiliana na OpenAI? Ielekeze upya kwa Anthropic Claude, Gemini, au yeyote kati ya watoa huduma 374 wa OmniRoute.
 - **Kutumia ulinganishaji wa modeli**: `gemini-3-flash` → `claude-sonnet-4.7` kwa uwazi katika kiwango cha kishughulikiaji.
-- **Kufuatilia trafiki yote ya mawakala**: kila ombi lililoingiliwa huchapishwa kwenye [Kikaguzi cha Trafiki](./TRAFFIC_INSPECTOR.md).
-- **Kutumia ustahimilivu wa OmniRoute**: uelekezaji wa mseto, vivunja saketi, njia mbadala, na ufuatiliaji wa gharama hufanya kazi kwa trafiki ya mawakala wa IDE pia.
+- **Kufuatilia trafiki yote ya ajenti**: kila ombi linalonaswa huchapishwa kwenye [Kikaguzi cha Trafiki](./TRAFFIC_INSPECTOR.md).
+- **Kutumia ustahimilivu wa OmniRoute**: uelekezaji wa mchanganyiko, vivunja saketi, njia mbadala, na ufuatiliaji wa gharama hufanya kazi pia kwa trafiki ya ajenti wa IDE.
 
 ### Nafasi ikilinganishwa na soko
 
@@ -42,8 +42,8 @@ Hii inamaanisha unaweza:
 | Kikaguzi cha Trafiki                  |    ✗    |    ✗     |        ✓        |             ✓             |
 | Uelekezaji wa OmniRoute               |    ✗    |    ✗     |        ✗        |             ✓             |
 | Kiolesura cha ulinganishaji wa modeli |    ✗    |    ✗     |        ✗        |             ✓             |
-| Orodha ya kuruka                      |    ✗    |    ✗     |        ✓        |             ✓             |
-| Cheti cha CA cha upstream             |    ✗    |    ✗     |        ✓        |             ✓             |
+| Orodha ya kukwepa                     |    ✗    |    ✗     |        ✓        |             ✓             |
+| Cheti cha CA cha juu                  |    ✗    |    ✗     |        ✓        |             ✓             |
 
 ---
 

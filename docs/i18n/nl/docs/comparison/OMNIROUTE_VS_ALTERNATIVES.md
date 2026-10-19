@@ -39,11 +39,11 @@ Objectieve functievergelijking met populaire opensource-AI-routers.
 
 ## Wanneer u voor OmniRoute kiest
 
-- U host zelf en wilt **maximale providerdekking** (372 providers, 155 gratis catalogusvermeldingen zonder authenticatie)
+- U host zelf en wilt **maximale providerdekking** (374 providers, 155 gratis catalogusitems zonder authenticatie)
 - U hebt een **ingebouwde MCP-server** nodig (LLM-tools, geheugen en vaardigheden beschikbaar als tools)
 - U hebt het **A2A-protocol** nodig voor workflows tussen agents
-- U wilt **vingerafdrukverhulling** (JA3/JA4) om detectie door CAPTCHA's van upstreamproviders te voorkomen
-- U hebt **bedrijfsfuncties** nodig (beveiligingsregels, evaluaties, audittrail) zonder SaaS-kosten
+- U wilt **vingerafdrukverberging** (JA3/JA4) om detectie door CAPTCHA's van upstreamproviders te voorkomen
+- U hebt **bedrijfsfuncties** nodig (vangrails, evaluaties, audittrail) zonder kosten voor een SaaS-abonnement
 
 ## Wanneer kies je voor LiteLLM?
 

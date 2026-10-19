@@ -485,11 +485,11 @@ Dan jittratta:
 
 | Fajl                           | Għan                                                          |
 | ------------------------------ | ------------------------------------------------------------- |
-| `providerRegistry.ts`          | Reġistru tal-mudelli taċ-chat fuq il-katalgu ta’ 372 fornitur |
+| `providerRegistry.ts`          | Reġistru tal-mudelli taċ-chat fuq il-katalgu ta' 374 fornitur |
 | `providerModels.ts`            | Psewdonimi tal-mudelli, immappjar tal-format                  |
-| `constants.ts`                 | Ħinijiet ta’ stennija, limiti, kodiċijiet tal-istatus         |
-| `defaultThinkingSignature.ts`  | Firma predefinita tal-ħsieb ta’ Claude                        |
-| `modelStrip.ts` (fis-servizzi) | Tneħħija ta’ oqsma skont il-fornitur                          |
+| `constants.ts`                 | Limiti ta' żmien, limiti, kodiċijiet tal-istatus              |
+| `defaultThinkingSignature.ts`  | Firma predefinita tal-ħsieb ta' Claude                        |
+| `modelStrip.ts` (fis-servizzi) | Tneħħija ta' oqsma għal kull fornitur                         |
 
 ### Skema tar-Reġistru tal-Fornituri
 
@@ -506,7 +506,7 @@ interface ProviderConfig {
 }
 ```
 
-Il-validazzjoni permezz ta’ Zod waqt it-tagħbija tal-modulu tiżgura li l-konfigurazzjonijiet kollha tal-fornituri huma validi.
+Il-validazzjoni b'Zod waqt it-tagħbija tal-modulu tiżgura li l-konfigurazzjonijiet kollha tal-fornituri jkunu validi.
 
 ---
 

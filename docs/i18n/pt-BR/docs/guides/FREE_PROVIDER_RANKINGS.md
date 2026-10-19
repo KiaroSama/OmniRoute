@@ -13,30 +13,30 @@
 
 ## O que é
 
-O OmniRoute registra 372 provedores, incluindo 155 entradas de catálogo marcadas como **gratuitas/sem autenticação**
+O OmniRoute registra 374 provedores, incluindo 155 entradas de catálogo marcadas como **gratuitas/sem autenticação**
 (sem autenticação,
 OAuth de nível gratuito ou chave de API de nível gratuito — consulte o
 [Guia de níveis gratuitos](../getting-started/FREE-TIERS-GUIDE.md) e o
 [Diretório completo de níveis gratuitos](../reference/FREE_TIERS.md)). O porém: os provedores gratuitos variam
-muito em termos de qualidade dos modelos. Um provedor sem autenticação que oferece um modelo de fronteira é muito mais útil
+muito em termos de qualidade dos modelos. Um provedor sem autenticação que oferece um modelo de ponta é muito mais útil
 do que um que oferece um modelo legado pequeno.
 
-**Classificações de provedores gratuitos** responde à pergunta "**qual provedor gratuito oferece o melhor modelo?**" ao
-combinar o catálogo de cada provedor gratuito com **pontuações de qualidade obtidas coletivamente** do
+**Classificações de provedores gratuitos** responde à pergunta "**qual provedor gratuito me oferece o melhor modelo?**" ao
+combinar o catálogo de cada provedor gratuito com **pontuações de qualidade colaborativas** do
 **ranking Arena AI** (ELO de preferência humana, a mesma ideia por trás da arena de
-chatbots LMArena). Os provedores são então classificados pela capacidade de seu **melhor modelo gratuito**.
+chatbots LMArena). Em seguida, os provedores são classificados com base na capacidade de seu **melhor modelo gratuito**.
 
-A classificação é calculada a partir de três fontes reais:
+A classificação é calculada com base em três fontes reais:
 
 1. As listas de provedores gratuitos — `NOAUTH_PROVIDERS`, além das entradas de `OAUTH_PROVIDERS` /
    `APIKEY_PROVIDERS` sinalizadas com `hasFree`
    (`src/shared/constants/providers.ts`).
 2. O catálogo de modelos de cada provedor no registro de provedores
    (`open-sse/config/providerRegistry.ts`).
-3. Pontuações de adequação à tarefa derivadas de ELO e armazenadas na tabela `model_intelligence` do banco de dados pelo
-   mecanismo de sincronização de ELO da Arena (`src/lib/arenaEloSync.ts`).
+3. Pontuações de adequação a tarefas derivadas do ELO armazenadas na tabela `model_intelligence` do banco de dados pelo
+   mecanismo de sincronização ELO do Arena (`src/lib/arenaEloSync.ts`).
 
-A lógica de combinação está em `src/lib/freeProviderRankings.ts`.
+A lógica de combinação está localizada em `src/lib/freeProviderRankings.ts`.
 
 ---
 

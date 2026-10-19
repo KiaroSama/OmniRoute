@@ -483,15 +483,15 @@ See käsitleb järgmist:
 
 `open-sse/config/` sisaldab konfiguratsioonikihti:
 
-| Fail                          | Otstarve                                                    |
-| ----------------------------- | ----------------------------------------------------------- |
-| `providerRegistry.ts`         | Vestlusmudelite register 372 teenusepakkuja kataloogi jaoks |
-| `providerModels.ts`           | Mudelite aliased, vormingute vastendus                      |
-| `constants.ts`                | Ajalõpud, piirangud, olekukoodid                            |
-| `defaultThinkingSignature.ts` | Claude'i vaikimisi mõtlemissignatuur                        |
-| `modelStrip.ts` (teenustes)   | Väljade eemaldamine teenusepakkujate kaupa                  |
+| Fail                          | Otstarve                                             |
+| ----------------------------- | ---------------------------------------------------- |
+| `providerRegistry.ts`         | Vestlusmudelite register 374 pakkuja kataloogi jaoks |
+| `providerModels.ts`           | Mudelite aliased, vormingute vastendus               |
+| `constants.ts`                | Ajalõpud, piirangud, olekukoodid                     |
+| `defaultThinkingSignature.ts` | Claude'i vaikimisi mõtlemissignatuur                 |
+| `modelStrip.ts` (teenustes)   | Pakkujapõhine väljade eemaldamine                    |
 
-### Teenusepakkuja registri skeem
+### Pakkujaregistri skeem
 
 ```ts
 interface ProviderConfig {
@@ -506,7 +506,7 @@ interface ProviderConfig {
 }
 ```
 
-Zodi valideerimine mooduli laadimisel tagab, et kõik teenusepakkujate konfiguratsioonid on kehtivad.
+Zodi valideerimine mooduli laadimisel tagab, et kõik pakkujate konfiguratsioonid on kehtivad.
 
 ---
 

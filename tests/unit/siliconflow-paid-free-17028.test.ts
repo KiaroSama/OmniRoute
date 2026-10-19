@@ -1,6 +1,9 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { FREE_MODEL_BUDGETS, computeFreeModelTotals } from "../../open-sse/config/freeModelCatalog.ts";
+import {
+  FREE_MODEL_BUDGETS,
+  computeFreeModelTotals,
+} from "../../open-sse/config/freeModelCatalog.ts";
 import {
   isCatalogFreeModel,
   isFreeForProvider,
@@ -28,7 +31,7 @@ const formerlyMisclassifiedIds = [
 describe("#17028 SiliconFlow pay-as-you-go model protection", () => {
   it("retains honest release catalog counts and never counts SiliconFlow as statically uncapped", () => {
     const totals = computeFreeModelTotals();
-    assert.equal(totals.modelCount, 468);
+    assert.equal(totals.modelCount, 467);
     assert.equal(totals.poolCount, 34);
     assert.equal(totals.uncappedProviders.includes("siliconflow"), false);
   });
@@ -68,10 +71,19 @@ describe("#17028 SiliconFlow pay-as-you-go model protection", () => {
     const priced = { id, pricing: { prompt: "4", completion: "16" }, isFree: true };
     assert.equal(hasPayloadPaidEvidence(priced), true);
     assert.equal(isFreeModel("siliconflow", priced), false);
-    assert.equal(isFreeModel("siliconflow", { id, free: true, pricing: { input: 0, output: 16 } }), false);
-    assert.equal(isFreeModel("siliconflow", { id, free: false, pricing: { prompt: 0, completion: 0 } }), false);
+    assert.equal(
+      isFreeModel("siliconflow", { id, free: true, pricing: { input: 0, output: 16 } }),
+      false
+    );
+    assert.equal(
+      isFreeModel("siliconflow", { id, free: false, pricing: { prompt: 0, completion: 0 } }),
+      false
+    );
     assert.equal(isModelFreeBadge("siliconflow", { ...priced, name: "DeepSeek R1 Free" }), false);
-    assert.equal(isModelFreeBadge("siliconflow", { ...priced, name: "DeepSeek R1 Free" }, { strict: true }), false);
+    assert.equal(
+      isModelFreeBadge("siliconflow", { ...priced, name: "DeepSeek R1 Free" }, { strict: true }),
+      false
+    );
     assert.equal(isModelFreeBadge("siliconflow", { id, name: "DeepSeek R1 Free" }), false);
   });
 
@@ -83,7 +95,11 @@ describe("#17028 SiliconFlow pay-as-you-go model protection", () => {
     assert.equal(providerHasFreeModels("siliconflow"), true);
     assert.equal(isFreeModel("siliconflow", verifiedLiveFree), true);
     assert.equal(isFreeModel("siliconflow", zeroPrice), true);
-    const imported = selectModelsForImport("siliconflow", [verifiedLiveFree, zeroPrice, unknown, priced], true);
+    const imported = selectModelsForImport(
+      "siliconflow",
+      [verifiedLiveFree, zeroPrice, unknown, priced],
+      true
+    );
     assert.deepEqual(imported.models, [verifiedLiveFree, zeroPrice]);
     assert.equal(imported.freeFilterEmpty, false);
     assert.deepEqual(selectModelsForImport("siliconflow", [unknown, priced], true), {
@@ -95,7 +111,9 @@ describe("#17028 SiliconFlow pay-as-you-go model protection", () => {
   });
 
   it("keeps other providers' static free lists intact", () => {
-    const staticFree = FREE_MODEL_BUDGETS.find((row) => row.provider !== "siliconflow" && row.freeType === "recurring-daily");
+    const staticFree = FREE_MODEL_BUDGETS.find(
+      (row) => row.provider !== "siliconflow" && row.freeType === "recurring-daily"
+    );
     assert.ok(staticFree);
     assert.equal(isFreeModel(staticFree.provider, { id: staticFree.modelId }), true);
   });

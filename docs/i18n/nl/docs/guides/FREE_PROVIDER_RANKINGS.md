@@ -13,30 +13,30 @@
 
 ## Wat het is
 
-OmniRoute registreert 372 providers, waaronder 155 catalogusvermeldingen die zijn gemarkeerd als **gratis/geen authenticatie**
+OmniRoute registreert 374 providers, waaronder 155 catalogusvermeldingen die zijn gemarkeerd als **gratis/geen authenticatie**
 (geen authenticatie,
-OAuth met gratis laag of API-sleutel met gratis laag — zie de
-[Gids voor gratis lagen](../getting-started/FREE-TIERS-GUIDE.md) en de volledige
-[Map met gratis lagen](../reference/FREE_TIERS.md)). Het addertje onder het gras: gratis providers verschillen
-enorm in modelkwaliteit. Een provider zonder authenticatie die een geavanceerd model aanbiedt, is veel nuttiger
+OAuth met gratis niveau of API-sleutel met gratis niveau — zie de
+[Gids voor gratis niveaus](../getting-started/FREE-TIERS-GUIDE.md) en de volledige
+[Map met gratis niveaus](../reference/FREE_TIERS.md)). Het aandachtspunt: gratis providers verschillen
+sterk in modelkwaliteit. Een provider zonder authenticatie die een geavanceerd model aanbiedt, is veel nuttiger
 dan een provider die een klein verouderd model aanbiedt.
 
-**Ranglijsten van gratis providers** beantwoordt de vraag "**welke gratis provider biedt mij het beste model?**" door
-de catalogus van elke gratis provider te koppelen aan **via crowdsourcing verzamelde kwaliteitsscores** van het
-**Arena AI-klassement** (ELO op basis van menselijke voorkeuren, hetzelfde idee achter de LMArena-
-chatbotarena). Providers worden vervolgens gerangschikt op basis van de kracht van hun **beste gratis model**.
+**Ranglijsten van gratis providers** beantwoordt de vraag: "**welke gratis provider biedt mij het beste model?**" door
+de catalogus van elke gratis provider te combineren met **via crowdsourcing verzamelde kwaliteitsscores** uit het
+**Arena AI-klassement** (ELO op basis van menselijke voorkeuren, hetzelfde concept achter de chatbotarena
+van LMArena). Providers worden vervolgens gerangschikt op basis van de kwaliteit van hun **beste gratis model**.
 
-De rangschikking wordt berekend aan de hand van drie echte bronnen:
+De ranglijst wordt berekend op basis van drie echte bronnen:
 
 1. De lijsten met gratis providers — `NOAUTH_PROVIDERS`, plus vermeldingen in `OAUTH_PROVIDERS` /
    `APIKEY_PROVIDERS` die zijn gemarkeerd met `hasFree`
    (`src/shared/constants/providers.ts`).
 2. De modelcatalogus van elke provider uit het providerregister
    (`open-sse/config/providerRegistry.ts`).
-3. Van ELO afgeleide scores voor taakgeschiktheid die door de
-   Arena ELO-synchronisatie-engine worden opgeslagen in de DB-tabel `model_intelligence` (`src/lib/arenaEloSync.ts`).
+3. Van ELO afgeleide scores voor taakgeschiktheid die door de Arena ELO-synchronisatie-engine in de DB-tabel `model_intelligence` zijn opgeslagen
+   (`src/lib/arenaEloSync.ts`).
 
-De koppellogica bevindt zich in `src/lib/freeProviderRankings.ts`.
+De combinatielogica bevindt zich in `src/lib/freeProviderRankings.ts`.
 
 ---
 

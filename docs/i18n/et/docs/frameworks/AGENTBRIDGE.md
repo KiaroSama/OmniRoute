@@ -16,14 +16,14 @@ AgentBridge on OmniRoute'i MITM-puhverserver (vahendusrünne ehk Man-in-the-Midd
 
 ### Mis on AgentBridge?
 
-Kui IDE agent (nt GitHub Copilot, Cursor, Claude Code) teeb API-kutse, loob see ühenduse otse ülesvoolu AI-teenusepakkujaga (OpenAI, Anthropic jne). AgentBridge püüab selle ühenduse läbipaistvalt TLS-i tasandil kinni — ilma et agendi konfiguratsiooni oleks vaja muuta — ja suunab päringu OmniRoute'i kaudu ümber.
+Kui IDE agent (nt GitHub Copilot, Cursor, Claude Code) teeb API-kutse, loob see otseühenduse ülesvoolu AI-teenusepakkujaga (OpenAI, Anthropic jne). AgentBridge püüab selle ühenduse TLS-i tasandil läbipaistvalt kinni — ilma et oleks vaja muuta agendi konfiguratsiooni — ning suunab päringu ümber OmniRoute'i kaudu.
 
-See tähendab, et saate:
+See võimaldab teil:
 
-- **Suunata mis tahes agendi ümber mis tahes teenusepakkujale**: Copilot suhtleb OpenAI-ga? Suunake see ümber Anthropic Claude'i, Gemini või ükskõik millise OmniRoute'i 372 teenusepakkuja juurde.
-- **Rakendada mudelite vastendusi**: `gemini-3-flash` → `claude-sonnet-4.7` läbipaistvalt töötleja tasandil.
-- **Jälgida kogu agentide liiklust**: iga kinnipüütud päring avaldatakse [liikluse inspektoris](./TRAFFIC_INSPECTOR.md).
-- **Rakendada OmniRoute'i tõrkekindlust**: kombineeritud marsruutimine, kaitselülitid, varuvariandid ja kulude jälgimine toimivad ka IDE-agentide liikluse puhul.
+- **Suuna mis tahes agent ümber mis tahes teenusepakkujale**: kas Copilot suhtleb OpenAI-ga? Suunake see ümber Anthropic Claude'i, Gemini või mõne muu OmniRoute'i 374 teenusepakkuja juurde.
+- **Rakenda mudelite vastendusi**: `gemini-3-flash` → `claude-sonnet-4.7` läbipaistvalt töötleja tasandil.
+- **Jälgi kogu agendiliiklust**: iga kinnipüütud päring avaldatakse [liiklusinspektoris](./TRAFFIC_INSPECTOR.md).
+- **Rakenda OmniRoute'i töökindlusfunktsioone**: kombineeritud marsruutimine, kaitselülitid, varuvariandid ja kulude jälgimine töötavad ka IDE agentide liiklusega.
 
 ### Positsioon turul
 
@@ -38,11 +38,11 @@ See tähendab, et saate:
 | Claude Code                          |    —    |    —     |        ✓        |             ✓             |
 | Open Code                            |    —    |    —     |        ✓        |             ✓             |
 | Trae                                 |    —    |    —     |        —        |       🔍 Uurimisel        |
-| Juhtpaneeli kasutajaliides           |    ✓    |    ✗     |        ✗        |             ✓             |
-| Liikluse inspektor                   |    ✗    |    ✗     |        ✓        |             ✓             |
+| Töölaua kasutajaliides               |    ✓    |    ✗     |        ✗        |             ✓             |
+| Liiklusinspektor                     |    ✗    |    ✗     |        ✓        |             ✓             |
 | OmniRoute'i marsruutimine            |    ✗    |    ✗     |        ✗        |             ✓             |
 | Mudelite vastendamise kasutajaliides |    ✗    |    ✗     |        ✗        |             ✓             |
-| Möödumisloend                        |    ✗    |    ✗     |        ✓        |             ✓             |
+| Möödapääsuloend                      |    ✗    |    ✗     |        ✓        |             ✓             |
 | Ülesvoolu CA-sertifikaat             |    ✗    |    ✗     |        ✓        |             ✓             |
 
 ---

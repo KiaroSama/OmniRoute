@@ -46,7 +46,7 @@ OpenAI 互換プロトコルおよびプロバイダー機能マトリックス�
 
 ---
 
-## チャット補完
+## Chat Completions
 
 ```bash
 POST /v1/chat/completions
@@ -56,7 +56,7 @@ Content-Type: application/json
 {
   "model": "cc/claude-opus-4-6",
   "messages": [
-    {"role": "user", "content": "関数を作成してください..."}
+    {"role": "user", "content": "Write a function to..."}
   ],
   "stream": true
 }
@@ -64,30 +64,78 @@ Content-Type: application/json
 
 ### カスタムヘッダー
 
-| ヘッダー                 | 方向       | 説明                                                                                                                                                                                                             |
-| ------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `X-OmniRoute-No-Cache`   | リクエスト | キャッシュをバイパスするには`true`に設定します                                                                                                                                                                   |
-| `x-omniroute-no-memory`  | リクエスト | このリクエストでメモリとスキルの注入をスキップするには`true`に設定します（no-cacheと同様に動作し、呼び出しごとのトークン／コストのオーバーヘッドを回避します）                                                   |
-| `X-OmniRoute-Progress`   | リクエスト | 進捗イベントを有効にするには`true`に設定します                                                                                                                                                                   |
-| `X-Session-Id`           | リクエスト | 外部セッションアフィニティ用の固定セッションキー                                                                                                                                                                 |
-| `x_session_id`           | リクエスト | アンダースコア形式も受け付けます（直接HTTP通信）                                                                                                                                                                 |
-| `X-OmniRoute-Session-Id` | リクエスト | 呼び出し元が指定するセッション／会話タグ（メモリにも渡されます）。指定された場合、セッションごとのコスト帰属用に、そのまま`call_logs.session_tag`へ永続化されます（#8249）。指定されていない場合は生成されません |
-| `Idempotency-Key`        | リクエスト | 重複排除キー（5秒間のウィンドウ）                                                                                                                                                                                |
-| `X-Request-Id`           | リクエスト | 代替の重複排除キー                                                                                                                                                                                               |
-| `X-OmniRoute-Cache`      | レスポンス | `HIT`または`MISS`（非ストリーミング）                                                                                                                                                                            |
-| `X-OmniRoute-Idempotent` | レスポンス | 重複排除された場合は`true`                                                                                                                                                                                       |
-| `X-OmniRoute-Progress`   | レスポンス | 進捗追跡が有効な場合は`enabled`                                                                                                                                                                                  |
-| `X-OmniRoute-Session-Id` | レスポンス | OmniRouteが使用した実効セッションID                                                                                                                                                                              |
-| `X-OmniRoute-Request-Id` | レスポンス | リクエスト相関ID（判明している場合）                                                                                                                                                                             |
-| `X-OmniRoute-Version`    | レスポンス | OmniRouteのビルドバージョン（常に含まれます）                                                                                                                                                                    |
-| `X-OmniRoute-Cost-Saved` | レスポンス | HITによってキャッシュが節約した金額（USD、キャッシュヒット時のみ）                                                                                                                                               |
-| `X-OmniRoute-Decision`   | レスポンス | ルーティングトレース：`strategy=<name>; provider=<alias>; latency_ms=<n>`（`<name>`はコンボ戦略、コンボ以外のリクエストでは`single`）。完了レスポンスには常に含まれます                                          |
+| ヘッダー                 | 方向       | 説明                                                                                                                                                                                                       |
+| ------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `X-OmniRoute-No-Cache`   | リクエスト | キャッシュをバイパスするには `true` に設定                                                                                                                                                                 |
+| `x-omniroute-no-memory`  | リクエスト | このリクエストでメモリとスキルの注入をスキップするには `true` に設定（キャッシュ無効化と同様に動作し、呼び出しごとのトークンおよびコストのオーバーヘッドを回避）                                           |
+| `X-OmniRoute-Progress`   | リクエスト | 進捗イベントを有効にするには `true` に設定                                                                                                                                                                 |
+| `X-Session-Id`           | リクエスト | 外部セッションアフィニティ用のスティッキーセッションキー                                                                                                                                                   |
+| `x_session_id`           | リクエスト | アンダースコア形式も使用可能（直接 HTTP）                                                                                                                                                                  |
+| `X-OmniRoute-Session-Id` | リクエスト | 呼び出し元が指定するセッション／会話タグ（メモリにも渡される）。指定された場合、セッションごとのコスト配賦のために、そのまま `call_logs.session_tag` に永続化される（#8249）— 指定がない場合は生成されない |
+| `Idempotency-Key`        | リクエスト | 重複排除キー（5秒間のウィンドウ）                                                                                                                                                                          |
+| `X-Request-Id`           | リクエスト | 代替の重複排除キー                                                                                                                                                                                         |
+| `x-omniroute-connection` | リクエスト | 単一モデルのリクエストを、ID で指定した1つのプロバイダー接続（アカウント）に固定 — [リクエストごとのアカウント固定](#account-pinning-per-request)を参照                                                    |
+| `X-OmniRoute-Cache`      | レスポンス | `HIT` または `MISS`（非ストリーミング）                                                                                                                                                                    |
+| `X-OmniRoute-Idempotent` | レスポンス | 重複排除された場合は `true`                                                                                                                                                                                |
+| `X-OmniRoute-Progress`   | レスポンス | 進捗追跡が有効な場合は `enabled`                                                                                                                                                                           |
+| `X-OmniRoute-Session-Id` | レスポンス | OmniRoute が使用した実効セッション ID                                                                                                                                                                      |
+| `X-OmniRoute-Request-Id` | レスポンス | リクエスト相関 ID（判明している場合）                                                                                                                                                                      |
+| `X-OmniRoute-Version`    | レスポンス | OmniRoute のビルドバージョン（常に含まれる）                                                                                                                                                               |
+| `X-OmniRoute-Cost-Saved` | レスポンス | HIT によってキャッシュが削減した金額（USD、キャッシュヒット時のみ）                                                                                                                                        |
+| `X-OmniRoute-Decision`   | レスポンス | ルーティングトレース：`strategy=<name>; provider=<alias>; latency_ms=<n>`（`<name>` は組み合わせ戦略。組み合わせではないリクエストの場合は `single`）— 完了レスポンスには常に含まれる                      |
 
-> Nginxに関する注記：アンダースコアを含むヘッダー（例：`x_session_id`）を利用する場合は、`underscores_in_headers on;`を有効にしてください。
+> Nginx に関する注意：アンダースコアを含むヘッダー（例：`x_session_id`）を使用する場合は、`underscores_in_headers on;` を有効にしてください。
 
-> **コストテレメトリヘッダー:** 非ストリーミングの成功レスポンスには、`X-OmniRoute-*` コストテレメトリセットも含まれます。これには、`X-OmniRoute-Response-Cost`（USD、固定小数点以下10桁。無料または価格未設定の場合は `0.0000000000`）、`X-OmniRoute-Tokens-In` / `X-OmniRoute-Tokens-Out`、`X-OmniRoute-Model`、`X-OmniRoute-Provider`、`X-OmniRoute-Latency-Ms`、`X-OmniRoute-Cache-Hit`、`X-OmniRoute-Fallback-Attempts`（0より大きい場合のみ）、さらに `X-OmniRoute-Request-Id` と `X-OmniRoute-Version` が含まれます。これらは、チャット補完、`/v1/responses`、`/v1/messages`、**およびメディアエンドポイント**（`/v1/embeddings`、`/v1/images/generations`、`/v1/audio/speech`、`/v1/audio/transcriptions`、`/v1/rerank`、`/v1/videos/generations`、`/v1/music/generations`、`/v1/moderations`（コストは常に `0`））から出力されます。メディアのコストは、価格情報が利用可能な場合はモダリティごと（画像単位、秒単位、文字単位、検索単位）に計算され、それ以外の場合は `0` になります（フェイルオープン）。
+#### リクエストごとのアカウント固定
 
-> **キャッシュヒット時のコストのセマンティクス:** セマンティックキャッシュのヒット時（`X-OmniRoute-Cache-Hit: true`）にはアップストリーム呼び出しが行われないため、`X-OmniRoute-Response-Cost` は `0.0000000000`（ヒットを提供するための**増分**コスト）になります。元のコスト、つまりキャッシュがなければ発生していたはずのコストは、`X-OmniRoute-Cost-Saved` で別途報告されます。請求処理を行うコンシューマーは `X-OmniRoute-Response-Cost` を合計してください（ヒットのコストはゼロです）。キャッシュ分析では、`X-OmniRoute-Cost-Saved` を集計できます。
+プロバイダーに複数の接続（アカウントまたはキー）がある場合、通常 OmniRoute は
+アカウント選択戦略を使用してそのうちの1つを選択します。代わりに、リクエストで
+`x-omniroute-connection` ヘッダーを使用して特定の接続を1つ固定できます：
+
+```bash
+curl http://localhost:20128/v1/chat/completions \
+  -H "Authorization: Bearer <your OmniRoute API key>" \
+  -H "Content-Type: application/json" \
+  -H "x-omniroute-connection: <connection id>" \
+  -d '{"model": "codex/gpt-5.5", "messages": [{"role": "user", "content": "hi"}]}'
+```
+
+- **id の確認場所。** ダッシュボードでプロバイダーページ
+  （**Dashboard → Providers → <provider>**）を開き、接続行にある `xxxxxxxx…` の id チップをクリックすると、
+  完全な接続 id がコピーされます。
+- **対象となるリクエスト。** `/v1/chat/completions`、`/v1/messages`、
+  `/v1/responses` に対する単一モデルリクエスト（`provider/model`）が対象です。コンボではこのヘッダーは無視されます。
+  代わりに、各ステップ独自の接続を通じて、コンボのステップごとにアカウントを固定してください。
+- **固定は優先設定ではなく厳格に適用されます。** 固定された接続のみが使用されます。リクエスト内で
+  障害が発生すると、そのアカウントのクールダウンは記録されますが、同じプロバイダーの
+  別アカウントへローテーションされることは**ありません**。
+- **クールダウンとクォータにより固定が解除されます。** 固定された接続がクールダウン中、
+  クォータ超過、またはクォータポリシーによってブロックされている間、後続のリクエストは、固定されていないトラフィックと
+  まったく同様に、プロバイダーの他の接続へフォールバックします。
+- **不明または無効な id は失敗します。** プロバイダーのアクティブプールに存在しない id（削除済み、
+  無効化済み、または別のプロバイダーに属するもの）では、利用可能なアカウントがなくなるため、リクエストは
+  暗黙的に別の接続へルーティングされることなく失敗します。
+
+Claude Code は `ANTHROPIC_CUSTOM_HEADERS` を通じてカスタムヘッダーを送信します。プロジェクトごとに異なる
+アカウントへ固定するには、`~/.claude/settings.json` の `env` ブロック、またはプロジェクトレベルの
+`.claude/settings.json` に設定してください。
+
+```jsonc
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "http://<your OmniRoute>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<your OmniRoute API key>",
+    "ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>",
+  },
+}
+```
+
+出典：`src/sse/handlers/chat.ts`（ヘッダーの読み取り）、`src/sse/services/auth.ts` および
+`src/sse/services/sessionAffinityPin.ts`（固定の解除とプール内に存在しないことの確認）。
+
+> **コストテレメトリヘッダー：** 非ストリーミングの成功レスポンスには、`X-OmniRoute-*` コストテレメトリ一式も含まれます。具体的には、`X-OmniRoute-Response-Cost`（USD、小数点以下10桁固定。無料または価格未設定の場合は `0.0000000000`）、`X-OmniRoute-Tokens-In` / `X-OmniRoute-Tokens-Out`、`X-OmniRoute-Model`、`X-OmniRoute-Provider`、`X-OmniRoute-Latency-Ms`、`X-OmniRoute-Cache-Hit`、`X-OmniRoute-Fallback-Attempts`（> 0 の場合のみ）、および `X-OmniRoute-Request-Id` と `X-OmniRoute-Version` です。これらは、チャット補完、`/v1/responses`、`/v1/messages`、**およびメディアエンドポイント**（`/v1/embeddings`、`/v1/images/generations`、`/v1/audio/speech`、`/v1/audio/transcriptions`、`/v1/rerank`、`/v1/videos/generations`、`/v1/music/generations`、`/v1/moderations`〔コストは常に `0`〕）から出力されます。価格情報が利用可能な場合、メディアコストはモダリティごと（画像単位、秒単位、文字単位、検索ユニット単位）に計算され、それ以外の場合は `0` になります（フェイルオープン）。
+
+> **キャッシュヒット時のコストセマンティクス：** セマンティックキャッシュの HIT（`X-OmniRoute-Cache-Hit: true`）ではアップストリーム呼び出しが行われないため、`X-OmniRoute-Response-Cost` は `0.0000000000`（ヒットを処理するための**増分**コスト）になります。元のコスト、またはキャッシュがなければ発生していたコストは、`X-OmniRoute-Cost-Saved` で個別に報告されます。課金処理では `X-OmniRoute-Response-Cost` を合計してください（ヒットのコストはゼロです）。キャッシュ分析では `X-OmniRoute-Cost-Saved` を集計できます。
 
 ## 排他的マネージドセッションリース
 
@@ -390,10 +438,7 @@ Authorization: Bearer your-api-key
 
 ### モデル ID のプレフィックス（`?prefix=`）
 
-ほとんどのモデルは、**プロバイダープレフィックス**付きで公開されます。使用されるプレフィックスは
-`MODELS_CATALOG_PREFIX_MODE` 機能フラグによって制御されます。また、クエリパラメーターを使用して
-**リクエストごと**に上書きできます。これは、他のすべてのユーザーに適用されるサーバー全体の設定を
-変更せずに、クリーンな一覧を必要とするクライアントに便利です。
+ほとんどのモデルは、**プロバイダープレフィックス**付きで公開されます。どのプレフィックスが使用されるかは、`MODELS_CATALOG_PREFIX_MODE` 機能フラグによって制御されます。また、クエリパラメーターを使用して**リクエストごと**に上書きできます。これは、他のすべてのユーザーに適用されるサーバー全体の設定を変更せずに、整理された一覧を取得したいクライアントに便利です。
 
 ```bash
 GET /v1/models?prefix=alias        # モデルごとに 1 つの ID — 短いエイリアスプレフィックス
@@ -401,42 +446,69 @@ GET /v1/models?prefix=dual         # 両方の形式（サーバーのデフォ�
 GET /v1/models?prefix=canonical    # 完全なプロバイダー ID プレフィックスのみ
 ```
 
-| モード      | 出力                                                         | 備考                                                                                                                                                                                                        |
-| ----------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dual`      | `cc/claude-sonnet-4-6` **および** `claude/claude-sonnet-4-6` | **デフォルト。** 両方の ID が同じモデルにルーティングされます。どちらかの形式をハードコードしたクライアント設定が引き続き動作するように維持されています。カタログのサイズはおよそ 2 倍になります。          |
-| `alias`     | `cc/claude-sonnet-4-6`                                       | モデルごとに 1 エントリです。個別のエイリアスを持たないプロバイダーもそのエントリを出力するため、失われるものはありません。                                                                                 |
-| `canonical` | `claude/claude-sonnet-4-6`                                   | 完全なプロバイダー ID プレフィックスの下に、モデルごとに 1 エントリです。個別のエイリアスを持たないプロバイダー（例：`antigravity/…`、`agy/…`）もここで単一の ID を出力するため、失われるものはありません。 |
+| モード      | 出力                                                         | 備考                                                                                                                                                                                                          |
+| ----------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dual`      | `cc/claude-sonnet-4-6` **および** `claude/claude-sonnet-4-6` | **デフォルト。** 両方の ID が同じモデルにルーティングされます。どちらかの形式をハードコードしたクライアント設定が引き続き機能するよう維持されています。カタログのサイズはおおよそ 2 倍になります。            |
+| `alias`     | `cc/claude-sonnet-4-6`                                       | モデルごとに 1 エントリです。個別のエイリアスを持たないプロバイダーも引き続きエントリを出力するため、失われるものはありません。                                                                               |
+| `canonical` | `claude/claude-sonnet-4-6`                                   | 完全なプロバイダー ID プレフィックス配下で、モデルごとに 1 エントリです。個別のエイリアスを持たないプロバイダー（例：`antigravity/…`、`agy/…`）も、ここで単一の ID を出力するため、失われるものはありません。 |
 
-`dual` モードのミラーは、クエリパラメーターがなくても識別できます。プライマリ ID を指す `parent`
-フィールドが含まれています。
+`dual` モードのミラーは、クエリパラメーターがなくても識別できます。プライマリ ID を指す `parent` フィールドを持っています。
 
-モデルピッカーを表示するクライアントは、`?prefix=alias` をリクエストする必要があります。これは
-[OmniCopilot VS Code 拡張機能](../guides/VSCODE-COPILOT.md)が採用している方法です。
+モデルピッカーを表示するクライアントは、`?prefix=alias` をリクエストする必要があります。[OmniCopilot VS Code 拡張機能](../guides/VSCODE-COPILOT.md)もこの方法を使用しています。
+
+### 検出フィルター（`?capability=`、`?min_context=`、`?kind=`、`?q=`）
+
+`GET /v1/models` は、オプトインの検出フィルターを受け付けます。これらを指定しない場合、レスポンスは変更されません。フィルターは、呼び出し元にすでに表示されているカタログを絞り込み（API キーの権限が先に適用されます）、OpenAI 形式の `limit` / `after` ページングより前に実行されます。
+
+```bash
+GET /v1/models?capability=vision&capability=tool_calling   # 一覧に指定したすべての機能が true である必要があります
+GET /v1/models?capability=vision,reasoning&min_context=200000
+GET /v1/models?kind=embedding                              # カタログの `type`。指定のない行は `chat` です
+GET /v1/models?q=sonnet&limit=10                           # ID または名前に対する、大文字と小文字を区別しない一致
+```
+
+| パラメーター  | 値                                                                                                  |
+| ------------- | --------------------------------------------------------------------------------------------------- |
+| `capability`  | `attachment`、`reasoning`、`structured_output`、`temperature`、`thinking`、`tool_calling`、`vision` |
+| `min_context` | 非負整数。`context_length` と比較されます                                                           |
+| `kind`        | `chat`、`audio`、`embedding`、`image`、`moderation`、`music`、`rerank`、`video`                     |
+| `q`           | 1～200 文字                                                                                         |
+
+不明な値、または非負整数ではない `min_context`（例：`1.5`）を指定すると、HTTP `400` が返され、メッセージに有効な値の一覧が示されます。実装：
+`src/app/api/v1/models/catalogFilters.ts`。
+
+### モデルのショートリスト（`POST /v1/models/query`）
+
+`POST /v1/models/query` は、`GET /v1/models` と同じカタログから、同じ認証およびキーごとの可視性を適用した、短く決定論的な一覧を返します。
+
+```bash
+POST /v1/models/query
+Authorization: Bearer your-api-key
+Content-Type: application/json
+
+{ "capabilities": ["vision", "tool_calling"], "min_context": 128000, "max_output": 16000,
+  "kind": "chat", "q": "gpt", "owned_by": "openai", "exclude": ["openai/gpt-4o"], "limit": 5 }
+
+→ { "object": "list", "data": [ ...models ] }
+```
+
+すべてのフィールドは任意です。`capabilities` と `exclude` には、配列またはカンマ区切りの文字列を指定できます。`max_output` は `max_output_tokens` と比較されます。結果は `owned_by`、次に `id` の順でソートされます。`limit` のデフォルトは `20` で、`100` を超える値は `100` に制限されます。無効な JSON、不明なフィールド、または無効な値を指定すると、HTTP `400` が返されます。
 
 ### 個別に非表示にされたチャットモデル
 
-プロバイダーページで **Hidden** に設定されたモデルはカタログから除外され、明示的にリクエストされた場合は
-HTTP `404` / `model_not_found` で拒否されます。このチェックでは、解決済みの
-プロバイダーとモデルが使用されます。これには、プロバイダーエイリアス、互換プロバイダーノードのプレフィックス、
-および接続のデフォルトが含まれます。コンボは非表示のターゲットをスキップし、表示されている兄弟モデルを使用できます。
-実行可能なターゲットが残っていない場合は、同じエラーコードを返します。非表示設定を解除すると、次の
-リクエストから反映されます。画像専用の表示設定の上書きによって、同じ ID を持つチャットモデルが非表示になることはありません。
+プロバイダーページで **Hidden** とマークされたモデルはカタログから除外され、明示的にリクエストされた場合は HTTP `404` / `model_not_found` で拒否されます。このチェックでは、解決済みのプロバイダーとモデルが使用され、プロバイダーエイリアス、互換プロバイダーのノードプレフィックス、および接続のデフォルト設定も考慮されます。コンボは非表示のターゲットをスキップし、表示されている同系列のモデルを使用できます。実行可能なターゲットが残っていない場合は、同じエラーコードが返されます。非表示を解除すると、次のリクエストから有効になります。画像専用の可視性オーバーライドによって、同じ ID を持つチャットモデルが非表示になることはありません。
 
-この個別モデル設定は、
-[モデル公開の許可／拒否リスト](../routing/MODEL_EXPOSURE_LIST.md)とは別のものです。このリストは、明示的なディスパッチを維持しながら、
-カタログでの公開と自動ルーティングの候補をフィルタリングします。API キーのモデル権限も引き続き独立して適用されます。
-デフォルトのカタログプレフィックスモードは `dual` のままです。
+この個別モデル設定は、[モデル公開の許可／拒否リスト](../routing/MODEL_EXPOSURE_LIST.md)とは別のものです。後者は、明示的なディスパッチを維持しつつ、カタログでの公開と自動ルーティングの候補をフィルタリングします。API キーのモデル権限も引き続き独立して適用されます。デフォルトのカタログプレフィックスモードは `dual` のままです。
 
-### 思考なしモデルのバリアント
+### thinking なしのモデルバリアント
 
-思考機能を備えた Claude モデルについては、`/v1/models` は ID の先頭に `claude-3-omniroute-no-thinking/` が付いた
-**思考なし**のバリアントも公開します。
+thinking 対応の Claude モデルについては、`/v1/models` で、ID の先頭に `claude-3-omniroute-no-thinking/` が付いた **thinking なし**のバリアントも公開されます。
 
 ```
 claude-3-omniroute-no-thinking/<provider>/<model>
 ```
 
-この ID を選択すると（たとえば、常に `thinking` ブロックを付加する Claude Code の設定で使用する場合）、推論が抑制された状態で実際の `<provider>/<model>` に解決されます。`/v1/messages` パスでは `thinking:{type:"disabled"}` が使用され、`/v1/chat/completions` パスでは `reasoning` / `reasoning_effort` フィールドが削除されます。このバリアントは、思考をサポートし、**かつ** `disabled` を受け入れる Claude ファミリーのモデルについてのみ一覧表示されます（したがって、たとえば `disabled` を拒否する adaptive 専用モデルは除外されます）。運用者は、`ModelSpec.noThinkingAlias` を使用して、モデルごとにこのバリアントを強制的に有効または無効にできます。
+この id を選択すると（例: 常に `thinking` ブロックを付加する Claude Code の設定内）、推論を抑制した実際の `<provider>/<model>` に解決されます。具体的には、`/v1/messages` パスでは `thinking:{type:"disabled"}` が設定され、`/v1/chat/completions` パスでは `reasoning`/`reasoning_effort` フィールドが削除されます。このバリアントは、thinking をサポートし、かつ `disabled` を受け付ける Claude ファミリーのモデルにのみ表示されます（そのため、たとえば `disabled` を拒否する adaptive 専用モデルは除外されます）。オペレーターは、`ModelSpec.noThinkingAlias` を使用して、モデルごとにこのバリアントを強制的に有効または無効にできます。
 
 ---
 
@@ -461,16 +533,17 @@ Bifrost、CLIProxyAPI、および将来のサイドカールーターで使用�
 | POST     | `/v1/responses`                           | OpenAI Responses                         |
 | POST     | `/v1/embeddings`                          | OpenAI                                   |
 | POST     | `/v1/images/generations`                  | OpenAI Images                            |
-| POST     | `/v1/images/edits`                        | OpenAI Images（編集/インペイント）       |
+| POST     | `/v1/images/edits`                        | OpenAI Images（編集／インペイント）      |
 | POST     | `/v1/videos/generations`                  | OpenAI形式の動画生成                     |
 | POST     | `/v1/music/generations`                   | OpenAI形式の音楽生成                     |
 | POST     | `/v1/audio/transcriptions`                | OpenAI Audio（STT）                      |
-| POST     | `/v1/audio/speech`                        | OpenAI TTS（音声本体を返す）             |
+| POST     | `/v1/audio/speech`                        | OpenAI TTS（音声ボディを返す）           |
 | POST     | `/v1/rerank`                              | Cohere/Voyage形式のリランキング          |
 | POST     | `/v1/classify`                            | Jina分類（`api.jina.ai`）                |
 | POST     | `/v1/segment`                             | Jinaセグメンター（`segment.jina.ai`）    |
 | POST     | `/v1/moderations`                         | OpenAI Moderations                       |
 | GET      | `/v1/models`                              | OpenAI                                   |
+| POST     | `/v1/models/query`                        | フィルタリングされたモデル候補一覧       |
 | POST     | `/v1/messages/count_tokens`               | Anthropic                                |
 | GET      | `/v1beta/models`                          | Gemini                                   |
 | POST     | `/v1beta/models/{...path}`                | Gemini generateContent                   |
@@ -482,9 +555,9 @@ Bifrost、CLIProxyAPI、および将来のサイドカールーターで使用�
 | POST     | `/api/v1/vscode/{token}/api/chat`         | Ollamaのトークン付きエイリアス           |
 | GET      | `/api/v1/vscode/{token}/api/tags`         | Ollamaタグのトークン付きエイリアス       |
 
-すべてのPOSTルートは同じ形式に従います：`Bearer your-api-key` + Zodで検証されたJSONボディ（`v1RerankSchema`、`v1ModerationSchema`、`v1AudioSpeechSchema`など。`src/shared/validation/schemas.ts`を参照）。スキーマ検証に失敗した場合は4xxが返されます。
+すべてのPOSTルートは同じ形式に従います。`Bearer your-api-key`と、Zodで検証されたJSONボディ（`v1RerankSchema`、`v1ModerationSchema`、`v1AudioSpeechSchema`など。`src/shared/validation/schemas.ts`を参照）です。スキーマ検証に失敗した場合は4xxが返されます。
 
-`Authorization: Bearer ...`を付加できないクライアント向けに、OmniRouteはクエリ文字列による互換方式（`?token=...`、`?apiKey=...`、`?api_key=...`、`?key=...`）または以下に記載する専用の`/api/v1/vscode/{token}/...`エンドポイントを介して、URL内のAPIキーも受け付けます。
+`Authorization: Bearer ...`を付与できないクライアント向けに、OmniRouteでは、クエリ文字列による互換方式（`?token=...`、`?apiKey=...`、`?api_key=...`、`?key=...`）または以下に記載する専用の`/api/v1/vscode/{token}/...`エンドポイントを通じて、URL内のAPIキーも受け付けます。
 
 ```bash
 # リランキング（クラウドレジストリプロバイダー、または"<prefix>/<model>"形式のOpenAI互換プロバイダーノード）
@@ -496,7 +569,7 @@ POST /v1/classify    { "model": "jina-embeddings-v5-text-small", "input": ["..."
 # Jinaセグメンター
 POST /v1/segment     { "content": "...", "return_chunks": true }
 
-# Jina検索（s.jina.ai；プロバイダーエイリアス：jina-search、jina-ai、jina）
+# Jina検索（s.jina.ai、プロバイダーエイリアス：jina-search、jina-ai、jina）
 POST /v1/search      { "query": "...", "provider": "jina-search" }
 
 # モデレーション
@@ -505,45 +578,44 @@ POST /v1/moderations { "model": "omni-moderation-latest", "input": "..." }
 # TTS — audio/mpeg（または指定された形式）のボディを返す
 POST /v1/audio/speech { "model": "openai/tts-1", "input": "Hello", "voice": "alloy" }
 
-# Soniox TTSには言語と音声が必要：`language`のデフォルトは"en"；音声が指定されていない場合、または
-# OpenAIの標準音声名（alloy、nova、…）の場合は"Adrian"になる
+# Soniox TTSには言語と音声が必要。`language`のデフォルトは"en"。音声が指定されていない場合、
+# またはOpenAIの標準音声名（alloy、nova、…）が指定された場合は"Adrian"になる
 POST /v1/audio/speech { "model": "soniox/tts-rt-v1", "input": "Xin chào", "voice": "Adrian", "language": "vi" }
 
 # 画像編集（multipart）
 POST /v1/images/edits  -F image=@input.png -F prompt="..." -F mask=@mask.png
 
-# 動画/音楽生成（プロバイダープレフィックス付きモデルID）
+# 動画／音楽生成（プロバイダーのプレフィックス付きモデルID）
 POST /v1/videos/generations { "model": "runway/gen-3", "prompt": "..." }
 POST /v1/music/generations  { "model": "kie/suno-v4.0",   "prompt": "..." }
 ```
 
-> **リランキングプロバイダーノード：** `POST /v1/rerank`は、`<node-prefix>/<model>`として指定されたOpenAI互換プロバイダーノード
-> （oMLX、vLLM、ゲートウェイ背後のInfinityやTEIなど）にもルーティングします。ループバック
-> ノード（`localhost`、`127.0.0.1`、`172.16.0.0/12`）は常に利用可能です。また、運用者が
-> `OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS`に列挙したホスト名（たとえば
-> `http://reranker:8080/v1`のようなDocker/Composeサービス名）も利用可能です。これらは直接呼び出され、
-> `HTTP(S)_PROXY`や接続に固定されたプロキシを経由することはありません。それ以外の
-> ホスト上のノード（LAN内のマシンやTailscaleピア）は、運用者が
-> `RERANK_REMOTE_PROVIDER_NODES`機能フラグを有効にし、かつノードのベースURLがプロバイダーの
-> アウトバウンドURLポリシー（`OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS` / `OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS`）
-> を通過した場合にのみ利用できます。メモリエンジンのリランキングステップは、このルートを
-> ループバック経由で呼び出すため、Memory設定の`rerankProviderModel`にも同じルールが適用されます。
+> **リランキングプロバイダーノード:** `POST /v1/rerank` は、`<node-prefix>/<model>` として指定される OpenAI 互換プロバイダーノード
+> （oMLX、vLLM、Infinity、ゲートウェイ配下の TEI など）にもルーティングされます。ループバック
+> ノード（`localhost`、`127.0.0.1`、`172.16.0.0/12`）は常に対象となり、オペレーターが
+> `OMNIROUTE_LOCAL_PROVIDER_NODE_HOSTS` に列挙したホスト名（たとえば
+> `http://reranker:8080/v1` のような Docker/Compose サービス名）も対象となります。これらは直接呼び出され、
+> `HTTP(S)_PROXY` や接続に固定されたプロキシを経由することはありません。その他の
+> ホスト上のノード（LAN 内のマシンや Tailscale ピア）が対象となるのは、オペレーターが
+> `RERANK_REMOTE_PROVIDER_NODES` 機能フラグを有効にし、**かつ**ノードのベース URL がプロバイダーの
+> アウトバウンド URL ポリシー（`OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS` / `OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS`）を満たす場合のみです。
+> メモリエンジンのリランキングステップはループバック経由でこのルートを呼び出すため、
+> Memory 設定の `rerankProviderModel` にも同じルールが適用されます。
 >
-> **ローカルサーバーの形式：** ノードは`<base>/v1/rerank`で呼び出され、404の場合は`<base>/rerank`
-> （Infinity、TEI）で呼び出されます。アップストリームのボディには、Cohere/OpenAI形式
-> （`documents`、`return_documents`）とTEI形式（`texts`、`return_text`）の両方が含まれます。
-> また、アップストリームのレスポンスはCohereエンベロープに正規化されます。TEIの素の
-> `[{index, score, text}]`、薄いゲートウェイからの`{results: [{index, score}]}`、
-> およびVoyage形式の`{data: [...]}`は、いずれも`{results: [{index, relevance_score, document?}]}`
-> としてクライアントに返され、スコア順に並べ替えられたうえで`top_n`件に制限されます。
+> **ローカルサーバーの形式:** ノードは `<base>/v1/rerank` で呼び出され、404 の場合は `<base>/rerank`
+> （Infinity、TEI）で呼び出されます。アップストリームのボディには、Cohere/OpenAI 形式のフィールド名（`documents`、
+> `return_documents`）と TEI 形式のフィールド名（`texts`、`return_text`）の両方が含まれ、アップストリームのレスポンスは
+> Cohere のエンベロープ形式に正規化されます。TEI のベア形式 `[{index, score, text}]`、簡易ゲートウェイからの
+> `{results: [{index, score}]}`、および Voyage 形式の `{data: [...]}` は、すべて
+> `{results: [{index, relevance_score, document?}]}` としてクライアントに返され、スコア順にソートされたうえで `top_n` 件に制限されます。
 
-> **プロバイダーノードの検出:** OpenAI 互換プロバイダーノード上のモデルは、ノードプレフィックス配下の `GET /v1/models`
-> に表示されます。エンドポイントのメタデータを持たない行（ローカルの `/v1/models` リストでは一般的）は、
-> ノードの `apiType` を継承します。そのため、デフォルトでチャットになるのではなく、`embeddings` ノードのモデルは `type: "embedding"`、
-> `rerank` ノードのモデルは `type: "rerank"` になります。同期された行または手動で追加された行に明示的な
-> `supportedEndpoints` がある場合は、引き続きそちらが優先されます。
+> **プロバイダーノードの検出:** OpenAI 互換プロバイダーノード上のモデルは、ノードプレフィックス付きで `GET /v1/models`
+> に表示されます。エンドポイントメタデータを持たない行（ローカルの `/v1/models` リストでは一般的）は、
+> ノードの `apiType` を継承します。そのため、`embeddings` ノードのモデルは `type: "embedding"`、`rerank`
+> ノードのモデルは `type: "rerank"` となり、デフォルトで chat にはなりません。同期された行または手動で追加された行に
+> 明示的な `supportedEndpoints` がある場合は、引き続きそちらが優先されます。
 
-### プロバイダー専用ルート
+### 専用プロバイダールート
 
 ```bash
 POST /v1/providers/{provider}/chat/completions
@@ -551,7 +623,7 @@ POST /v1/providers/{provider}/embeddings
 POST /v1/providers/{provider}/images/generations
 ```
 
-プロバイダープレフィックスがない場合は自動的に追加されます。モデルが一致しない場合は `400` が返されます。
+プロバイダープレフィックスがない場合は自動的に追加されます。一致しないモデルに対しては `400` が返されます。
 
 ---
 
@@ -597,41 +669,75 @@ OpenAI 互換のバッチ処理。
 
 ## Search API
 
-Web/検索プロバイダーの抽象化レイヤー（Tavily、Brave、Exa、Serper など）。
+Web/検索プロバイダーの抽象化（Tavily、Brave、Exa、Serper など）。
 
 | メソッド | パス                   | 説明                                                                                                   |
 | -------- | ---------------------- | ------------------------------------------------------------------------------------------------------ |
-| GET      | `/v1/search`           | 設定済みの検索プロバイダーと機能を一覧表示                                                             |
+| GET      | `/v1/search`           | 設定済みの検索プロバイダーと機能の一覧を取得                                                           |
 | POST     | `/v1/search`           | 検索クエリを実行 — リクエストボディは `v1SearchSchema` で検証され、キャッシュ/コアレッシングをサポート |
 | GET      | `/v1/search/analytics` | プロバイダーごとのヒット数/レイテンシ/キャッシュ統計                                                   |
 
-**認証:** Bearer APIキー（`extractApiKey` + `isValidApiKey`）。検索ポリシーは `enforceApiKeyPolicy` によって適用されます。
+**認証:** Bearer API キー（`extractApiKey` + `isValidApiKey`）。検索ポリシーは `enforceApiKeyPolicy` によって適用されます。
+
+### Exa と Tavily の `provider_options`
+
+Exa と Tavily は、名前空間付きのオプションバッグからプロバイダー固有のフィールドを読み取ります。
+Exa は `provider_options.exa`（または `provider_options["exa-search"]`）、Tavily は `provider_options.tavily`
+（または `provider_options["tavily-search"]`）を使用します。以下のキーのみが転送されます。各キーは
+`open-sse/handlers/search/providerOptionsPassthrough.ts` 内の独自の Zod スキーマに照らして
+検証され、型が正しくないキーは破棄されます。認証、ベース URL、`stream`、`outputSchema` を含む、
+その他のキーはすべて無視されます。他のプロバイダーで使用されるフラットなキー（`cx`、`depth`、...）は、
+従来どおり機能します。
+
+| プロバイダー | トップレベルフィールド                                                                                                                                                                                                                                                                                                                                                    | ネスト                                                                                                                                                                    |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Exa          | `type`、`category`、`userLocation`、`moderation`、`additionalQueries`、`objective`、`systemPrompt`、`compliance`（フラットなプリミティブ）、`startPublishedDate`、`endPublishedDate`                                                                                                                                                                                      | `contents.{text, highlights, summary, extras, subpages, subpageTarget, livecrawlTimeout, maxAgeHours}` はデフォルトの `{ text: true, highlights: true }` にマージされます |
+| Tavily       | `search_depth`、`chunks_per_source`、`time_range`、`start_date`、`end_date`、`include_published_date`、`filter_by_published_date`、`include_answer`、`include_raw_content`、`include_images`、`include_image_descriptions`、`include_favicon`、`include_domains_mode`、`language`、`filter_by_language`、`auto_parameters`、`exact_match`、`include_usage`、`safe_search` | —                                                                                                                                                                         |
+
+汎用フィールドが常に優先されます。対象は `query`、`max_results`、`filters`（ドメイン）、`country`、
+および `search_type` から導出されるトピックです。Exa では、`search_type: "news"` の場合、
+`category: "news"` が維持されます。Tavily は `search_type: "finance"`（`topic: "finance"`）も受け付けます。
+
+汎用の `time_range` は、両方のプロバイダーに渡されるようになりました。Exa には
+`startPublishedDate`（ISO タイムスタンプ）、Tavily には `start_date`（`YYYY-MM-DD`）として渡されます。
+`provider_options` で日付を明示的に指定した場合は、マッピングされた値よりも優先されます。
+
+Exa の結果では、`id`、`highlight_scores`、`summary`、`subpages`、`entities`、`extras` が
+`provider_raw` に保持されます。Tavily の結果では、`images` と `favicon` が保持されます。
+
+コスト計算では、引き続きフラットなレジストリ `costPerQuery` が使用されます。Tavily の
+`search_depth: "advanced"` は、1 回の呼び出しあたりのクレジット消費が多くなりますが、その差は
+`usage.search_cost_usd` には反映されません。
 
 ---
 
 ## Web Fetch API
 
-設定済みのWebフェッチプロバイダー（Firecrawl、Jina
-Reader、Tavily Extract、TinyFish Fetch、Nimble Extract）を使用して、URLからコンテンツを抽出します。
+設定済みの Web Fetch プロバイダー（Firecrawl、Jina
+Reader、Tavily Extract、TinyFish Fetch、Nimble Extract、Parallel Extract）を介して URL からコンテンツを抽出します。
 
-| メソッド | パス            | 説明                                                                            |
-| -------- | --------------- | ------------------------------------------------------------------------------- |
-| POST     | `/v1/web/fetch` | URLを取得/スクレイピング — リクエストボディは `v1WebFetchSchema` で検証されます |
+Parallel Extract（`parallel-search`、Parallel Search と同じ API キー）は Markdown
+のみを返します。それ以外の `format` はすべて `400` となり、コンテンツは 100,000 文字に制限されます。対象ページ自体を抽出できない場合、アップストリームは HTTP 200 内でその旨を報告します。
+OmniRoute はこれを固定メッセージ付きの `422` として返します。
 
-**認証:** Bearer APIキー（`extractApiKey` + `isValidApiKey`）。ポリシーは `enforceApiKeyPolicy` によって適用されます。
+| メソッド | パス            | 説明                                                          |
+| -------- | --------------- | ------------------------------------------------------------- |
+| POST     | `/v1/web/fetch` | URL を取得／スクレイピング — 本文は `v1WebFetchSchema` で検証 |
 
-**クォータを考慮したフォールバック（#8297）:** 明示的な `provider` が指定されていない場合、プール
-（`firecrawl` → `jina-reader` → `tavily-search` → `tinyfish` → `nimble-search`）は、
-固定された
-優先順位（fill-first）で走査されます。レート制限中であっても設定済みのプロバイダーは、
-リクエストをそこで終了させる代わりにスキップされます。また、再試行可能な障害またはクォータに起因するアップストリーム障害
-（HTTP 429 は常に対象。Firecrawl/Tavily/TinyFish のクォータ方式の無料枠では 402/403 も対象 —
-Jina Reader では対象外であり、通常の 400 bad request は一切対象外）は、リクエスト時に、
-まだ試行されていない認証情報設定済みの次のプロバイダーへフォールスルーします。プール内のすべてのプロバイダーを
-使い果たした場合、エンドポイントは従来の汎用的な `400` の代わりに、単一の `429`（`Retry-After`
-ヘッダー付き）を返します。明示的な `provider` が要求された場合、サイレントフォールバックは
-**行われません**。レート制限中または失敗した明示的なプロバイダーは、それ自身のエラーを返します（レート制限中は `429`、それ以外はアップストリームの
-ステータス）。
+**認証:** Bearer API キー（`extractApiKey` + `isValidApiKey`）。ポリシーは `enforceApiKeyPolicy` によって適用されます。
+
+**クォータ対応フォールバック（#8297）:** 明示的な `provider` が指定されていない場合、プール
+（`firecrawl` → `jina-reader` → `tavily-search` → `tinyfish` → `nimble-search` →
+`parallel-search`）は固定された
+優先順位（先詰め方式）で走査されます。レート制限中ではあるものの設定済みのプロバイダーは、
+リクエストを即座に終了させる代わりにスキップされます。また、リトライ可能な障害またはクォータに起因するアップストリーム障害
+（HTTP 429 は常に対象。402/403 は Firecrawl/Tavily/TinyFish のクォータ方式の無料枠で対象 —
+Jina Reader では対象外。また、通常の 400 不正リクエストは一切対象外）は、リクエスト時に認証情報が設定された
+未試行の次のプロバイダーへフォールスルーします。プール内のすべてのプロバイダーを使い果たした場合、
+エンドポイントは従来の汎用的な `400` の代わりに、単一の `429`（`Retry-After`
+ヘッダー付き）を返します。明示的な `provider` が指定された場合、暗黙的なフォールバックは
+**行われません**。レート制限中または障害が発生している明示指定プロバイダーは、そのプロバイダー自身のエラー
+（レート制限の場合は `429`、それ以外の場合はアップストリームのステータス）をそのまま返します。
 
 ---
 
@@ -876,16 +982,16 @@ X-OmniRoute-No-Cache: true
 
 ## ダッシュボードと管理
 
-管理ルート（公開されている認証/ログインを除く `/api/*`）は、通常の推論 API キーでは**認可されません**。認証情報の種類、スコープ、および curl の例については、以下を参照してください：
+管理ルート（公開の認証/ログインを除く `/api/*`）は、通常の推論 API キーでは**認可されません**。認証情報の種類、スコープ、および curl の例については、以下を参照してください：
 [管理認証](../guides/MANAGEMENT-AUTH.md)。
 
 ### 認証
 
-| エンドポイント                | メソッド | 説明                       |
-| ----------------------------- | -------- | -------------------------- |
-| `/api/auth/login`             | POST     | ログイン                   |
-| `/api/auth/logout`            | POST     | ログアウト                 |
-| `/api/settings/require-login` | GET/PUT  | ログイン必須設定の切り替え |
+| エンドポイント                | メソッド | 説明                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/auth/login`             | POST     | ログイン                                                                                                                                                                                                                                                                                                                                                              |
+| `/api/auth/logout`            | POST     | ログアウト                                                                                                                                                                                                                                                                                                                                                            |
+| `/api/settings/require-login` | GET/POST | ログイン状態（GET、公開）。POST はパスワードを設定、またはログインの有効/無効を切り替えます。パスワードが存在する場合はオペレーターのみが実行できます（ダッシュボードセッション、ローカル CLI、またはログイン無効時。API キーおよび `oma_` トークンには `403` が返されます）。ダッシュボードセッションでは、パスワードを変更するために `currentPassword` を送信します |
 
 ### プロバイダー管理
 
@@ -896,28 +1002,29 @@ X-OmniRoute-No-Cache: true
 | `/api/providers/[id]/test`              | POST                      | プロバイダー接続のテスト                                                                                                                          |
 | `/api/providers/[id]/models`            | GET                       | プロバイダーモデルの一覧表示                                                                                                                      |
 | `/api/providers/validate`               | POST                      | プロバイダー設定の検証                                                                                                                            |
-| `/api/providers/bulk`                   | POST                      | 1 つのプロバイダーに対する API キーの一括追加                                                                                                     |
-| `/api/providers/import`                 | POST                      | 解析済みの CSV/JSON ファイルから異種プロバイダーのリストをインポート（#6836）；行ごとの部分的失敗結果                                             |
+| `/api/providers/bulk`                   | POST                      | 1つのプロバイダーに対する API キーの一括追加                                                                                                      |
+| `/api/providers/import`                 | POST                      | 解析済みの CSV/JSON ファイルから異種プロバイダーのリストをインポート（#6836）。行ごとの部分的な失敗結果を返します                                 |
 | `/api/provider-nodes*`                  | 各種                      | プロバイダーノードの管理                                                                                                                          |
-| `/api/provider-models`                  | GET/POST/PUT/PATCH/DELETE | カスタムモデルおよびモデルごとのオーバーライド（追加、更新、表示/非表示、削除）                                                                   |
-| `/api/provider-models/validate-and-add` | POST                      | 管理認証済みの、オプトイン方式による厳格な接続検証とアトミックなカスタムモデル登録；[モデル検証](../guides/MODEL-VALIDATION.md)を参照してください |
+| `/api/provider-models`                  | GET/POST/PUT/PATCH/DELETE | カスタムモデルとモデルごとのオーバーライド（追加、更新、非表示/表示、削除）                                                                       |
+| `/api/provider-models/validate-and-add` | POST                      | 管理認証済みのオプトイン方式による厳密な接続検証と、アトミックなカスタムモデル登録。[モデル検証](../guides/MODEL-VALIDATION.md)を参照してください |
 
-同期またはインポートされたモデルについて、`PUT /api/provider-models` は `provider`、`modelId`、および
-`maxOutputTokenOverride` を受け付けます。正の整数を指定すると出力トークンの上限が手動設定され、`null`
-を指定するとその設定がクリアされ、デフォルトに戻ります。`GET /api/provider-models?provider=<provider>` は、
-カスタムモデルの行がないモデルも含め、これらの値を `modelOutputOverrides` で返します。このオーバーライドは
-実行時の `max_output_tokens` 機能を使用し、モデルを再同期しても維持されます。OpenAI 互換
-プロバイダーページにも同じ編集/クリア用コントロールがあり、明示的なビジョンサポートを持つモデルにはマークが付きます。
+同期またはインポートされたモデルについて、`PUT /api/provider-models` は `provider`、`modelId`、
+および `maxOutputTokenOverride` を受け入れます。正の整数を指定すると出力トークン数の上限が手動で設定され、
+`null` を指定すると設定がクリアされてデフォルトに戻ります。`GET /api/provider-models?provider=<provider>` は、
+カスタムモデルの行が存在しないモデルも含め、これらの値を `modelOutputOverrides` で返します。このオーバーライドは、
+ランタイムの `max_output_tokens` 機能を使用し、モデルを再同期しても維持されます。OpenAI 互換
+プロバイダーのページには、同じ編集/クリア用コントロールがあり、明示的にビジョンをサポートするモデルにはマークが付けられます。
 
-カスタム Chat Completions ノードは、明示的な推論のオプトアウトをアップストリームのバックエンドに適合させます。
-接続テストが成功すると、`/models` エントリで認識済みの `owned_by` 値（`vllm`、`sglang`、または `llamacpp`）が
-確認された各モデル ID に対して、チャットテンプレートの制御が自動的に選択されます。
-透過的な OpenAI 互換ラッパーでは、元のモデルエントリがネストされた `openai` オブジェクト内に保持されることがあります。
-検出では、このようなエンベロープを最大 3 階層まで辿ります。所有者情報が欠落、不明、または競合しているモデルでは、
-通常の OpenAI の動作が維持されます。検出では既存のカタログリクエストを再利用するため、
-completion トークンは生成されず、接続エンドポイントが変更されると無効化されます。
+カスタム Chat Completions ノードは、明示的な推論のオプトアウトをアップストリームバックエンドに適合させます。
+接続テストに成功すると、`/models` のエントリで認識済みの `owned_by` 値（`vllm`、`sglang`、または `llamacpp`）が
+確認された各完全一致モデル ID に対して、チャットテンプレートのコントロールが自動的に選択されます。
+透過的な OpenAI 互換ラッパーでは、ネストされた `openai` オブジェクト内に元のモデルエントリが保持されている場合があります。
+検出では、このようなエンベロープを最大3階層までたどります。所有者情報がない、不明、または競合しているモデルでは、
+通常の OpenAI の動作が維持されます。検出では既存のカタログリクエストが再利用され、
+補完トークンは生成されません。また、接続エンドポイントが変更されると検出結果は無効になります。
 
-このメタデータを公開しないバックエンドで動作を固定するには、既存のプロバイダー部分更新 API を使用します：
+このメタデータを公開していないバックエンドに対して動作を固定するには、既存の部分的な
+プロバイダー更新 API を使用します：
 
 ```json
 {
@@ -927,15 +1034,21 @@ completion トークンは生成されず、接続エンドポイントが変更
 }
 ```
 
-この本文を指定して `PUT /api/providers/<connection-id>` を送信します。その接続では、
-推論強度として `none` が明示的に指定されると、`chat_template_kwargs.thinking=false` および
-`chat_template_kwargs.enable_thinking=false` として送信されます。サーバー側の推論ルールによって強度が強制されない限り、
-明示的なネイティブテンプレート値が優先されます。この設定は、カスタムの OpenAI 互換接続が Chat Completions の本文を
-送信する場合にのみ適用されます。Responses リクエストと通常のプロバイダーでは、ネイティブのリクエスト形式が維持されます。
-通常の OpenAI `reasoning_effort` パススルーを強制するには、`reasoningControl` を `openai` に設定します。
-自動検出を使用するには、省略するか `null` に設定します。
+そのボディを `PUT /api/providers/<connection-id>` で送信します。その接続では、明示的な
+推論 effort `none` は `chat_template_kwargs.thinking=false` および
+`chat_template_kwargs.enable_thinking=false` として送信されます。サーバー側の推論ルールによって effort が強制されない限り、
+明示的なネイティブテンプレート値が優先されます。この設定は、カスタムの
+OpenAI 互換接続が Chat Completions ボディを送信する場合にのみ適用されます。Responses リクエストと通常の
+プロバイダーでは、ネイティブのリクエスト形式が維持されます。通常の OpenAI
+`reasoning_effort` パススルーを強制するには `reasoningControl` を `openai` に設定し、自動検出を使用するには
+省略するか `null` に設定します。
 
-Claude Code のオートモード分類器リクエストに明示的な推論制御が含まれていない場合、ネイティブ思考はデフォルトで無効になります。検出には、モデル名や補完上限ではなく、Claude 形式リクエスト内の分類器のシステムマーカーが使用されます。明示的なボディ制御、サポートされている effort/thinking ヘッダー、ルーティングルール、および解決済みのモデル effort は、既存の優先順位を維持します。分類器の両ステージでは、プロンプト、補完上限、停止シーケンス、および実際のアップストリーム権限判定が維持されます。第2ステージでは、要求された可視の推論を通常のテキストとして引き続き生成できます。
+Claude Code の自動モード分類器リクエストに明示的な推論制御が含まれていない場合、デフォルトでネイティブ thinking は
+無効になります。検出には、モデル名や completion 制限ではなく、Claude 形式の
+リクエスト内にある分類器の system マーカーが使用されます。明示的なボディ制御、サポートされている effort/thinking
+ヘッダー、ルーティングルール、および解決済みのモデル effort では、既存の優先順位が維持されます。分類器の
+両ステージでは、プロンプト、completion 制限、stop sequence、および実際のアップストリーム権限
+判定が維持されます。第2ステージでは、要求された可視の推論を通常のテキストとして引き続き生成できます。
 
 ### OAuth フロー
 
@@ -955,120 +1068,122 @@ Claude Code のオートモード分類器リクエストに明示的な推論�
 
 ### 使用状況と分析
 
-| エンドポイント                   | メソッド        | 説明                                                                                                                                                                                                                                                                                                                     |
-| -------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/api/usage/history`             | GET             | 使用履歴                                                                                                                                                                                                                                                                                                                 |
-| `/api/usage/logs`                | GET             | 使用ログ                                                                                                                                                                                                                                                                                                                 |
-| `/api/usage/request-logs`        | GET             | リクエスト単位のログ                                                                                                                                                                                                                                                                                                     |
-| `/api/usage/[connectionId]`      | GET             | 接続ごとの使用状況                                                                                                                                                                                                                                                                                                       |
-| `/api/usage/token-limits`        | GET/POST/DELETE | API キーごとのトークン上限予算                                                                                                                                                                                                                                                                                           |
-| `/api/usage/model-latency-stats` | GET             | プロバイダー/モデルごとのローリングレイテンシ集計（avg/p50/p95/p99、成功率）。フィルター：`windowHours`/`minSamples`/`maxRows`/`provider`/`model`（#6873）                                                                                                                                                               |
-| `/api/usage/cache-health`        | GET             | `call_logs` に基づくプロンプトキャッシュの健全性サマリー — 書き込み/読み取り比率、書き込みサイズ分布の p50/p90/p99、大規模書き込みの集中度、モデル別内訳、および `healthy`/`degraded`/`thrash`/`no-data` の判定。クエリパラメーターは `range`（`1h`\|`24h`\|`7d`\|`30d`、デフォルトは `24h`）と、任意の `model`（#8827） |
+| エンドポイント                   | メソッド        | 説明                                                                                                                                                                                                                                                                                                                  |
+| -------------------------------- | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/usage/history`             | GET             | 使用履歴                                                                                                                                                                                                                                                                                                              |
+| `/api/usage/logs`                | GET             | 使用ログ                                                                                                                                                                                                                                                                                                              |
+| `/api/usage/request-logs`        | GET             | リクエスト単位のログ                                                                                                                                                                                                                                                                                                  |
+| `/api/usage/[connectionId]`      | GET             | 接続単位の使用状況                                                                                                                                                                                                                                                                                                    |
+| `/api/usage/token-limits`        | GET/POST/DELETE | API キー単位のトークン上限予算                                                                                                                                                                                                                                                                                        |
+| `/api/usage/model-latency-stats` | GET             | プロバイダー/モデル単位のローリングレイテンシ集計（avg/p50/p95/p99、成功率）。フィルター: `windowHours`/`minSamples`/`maxRows`/`provider`/`model` (#6873)                                                                                                                                                             |
+| `/api/usage/cache-health`        | GET             | `call_logs` に基づくプロンプトキャッシュの健全性サマリー — 書き込み/読み取り比率、書き込みサイズ分布の p50/p90/p99、大量書き込みの集中度、モデル別内訳、および `healthy`/`degraded`/`thrash`/`no-data` の判定。クエリパラメーターは `range`（`1h`\|`24h`\|`7d`\|`30d`、デフォルトは `24h`）と、任意の `model` (#8827) |
 
 ### API キーの権限
 
-`PATCH /api/keys/{id}` は、既存のキーの権限を更新します。すべての `/api/keys*` ルートと同様に、推論キーではなく管理認証が必要です（[管理認証](../guides/MANAGEMENT-AUTH.md)を参照）。変更するフィールドのみを送信してください。対象フィールドが1つもないリクエストは、`No valid fields to update` として拒否されます。受け入れられるフィールドは、`src/shared/validation/schemas/keys.ts` の `updateKeyPermissionsSchema` で定義されています。
+`PATCH /api/keys/{id}` は、既存のキーの権限を更新します。すべての `/api/keys*` ルートと同様に、推論キーではなく管理認証が必要です（[管理認証](../guides/MANAGEMENT-AUTH.md)を参照）。変更するフィールドのみを送信してください。対象フィールドが1つもないリクエストは、`No valid fields to update` で拒否されます。受け付けられるフィールドは、`src/shared/validation/schemas/keys.ts` の `updateKeyPermissionsSchema` で定義されています。
 
-| フィールド                                  | 型                                                          | 備考                                                                                                                                     |
-| ------------------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `name`                                      | 文字列、1～200文字                                          |                                                                                                                                          |
-| `isActive`                                  | 真偽値                                                      |                                                                                                                                          |
-| `isBanned`                                  | 真偽値                                                      |                                                                                                                                          |
-| `expiresAt`                                 | ISO 8601日時または`null`                                    | `null`を指定すると有効期限が解除されます                                                                                                 |
-| `modelAccessMode`                           | `all` \| `restricted`                                       | モードが`all`の場合、`allowedModels`は空でなければなりません                                                                             |
-| `allowedModels`, `blockedModels`            | 文字列の配列、最大1000件                                    |                                                                                                                                          |
-| `allowedCombos`                             | 文字列の配列、最大500件                                     | キーが呼び出せるコンボを制限します。モデルの直接呼び出しは`modelAccessMode` / `allowedModels`によって管理されます                        |
-| `connectionAccessMode`                      | `all` \| `restricted`                                       | `restricted`の場合、`allowedConnections`は空であってはならず、`all`の場合は空でなければなりません                                        |
-| `allowedConnections`                        | UUIDの配列、最大100件                                       |                                                                                                                                          |
-| `allowAutoCombos`                           | 真偽値                                                      | `false`の場合、このキーによる`auto/*`モデルへのリクエストは拒否されます。未設定のキーでは許可されます                                    |
-| `catalogScope`                              | `all` \| `combos` \| `models`                               | このキーに対して`GET /v1/models`が一覧表示する対象（コンボのみ、モデルのみ、または両方）を指定します。キーが呼び出せる対象は変更しません |
-| `noLog`, `autoResolve`                      | 真偽値                                                      |                                                                                                                                          |
-| `throttleDelayMs`                           | 整数、0～300000                                             |                                                                                                                                          |
-| `maxSessions`                               | 整数、0～10000                                              |                                                                                                                                          |
-| `rateLimits`                                | `{ limit, window }`の配列（正の整数、最大50件）または`null` | `null`を指定すると制限が解除されます                                                                                                     |
-| `accessSchedule`                            | スケジュールオブジェクトまたは`null`                        | `null`を指定するとスケジュールが解除されます                                                                                             |
-| `scopes`                                    | 文字列の配列、最大32件                                      |                                                                                                                                          |
-| `allowedEndpoints`                          | 文字列の配列、最大20件                                      |                                                                                                                                          |
-| `streamDefaultMode`                         | `legacy` \| `json`                                          |                                                                                                                                          |
-| `cacheDefaultMode`                          | `legacy` \| `bypass`                                        | [キー単位のキャッシュバイパス](#per-key-cache-bypass)を参照してください                                                                  |
-| `compressionEnabled`                        | 真偽値                                                      |                                                                                                                                          |
-| `codexServiceMode`                          | Codexサービスモードのいずれか                               |                                                                                                                                          |
-| `disableNonPublicModels`                    | 真偽値                                                      |                                                                                                                                          |
-| `allowUsageCommand`                         | boolean                                                     |                                                                                                                                          |
-| `usageLimitEnabled`                         | boolean                                                     |                                                                                                                                          |
-| `dailyUsageLimitUsd`, `weeklyUsageLimitUsd` | 0 以上の number または `null`                               |                                                                                                                                          |
-| `chaosModeEnabled`                          | boolean                                                     |                                                                                                                                          |
+| フィールド                                  | 型                                                          | 備考                                                                                                                                          |
+| ------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`                                      | 文字列、1～200文字                                          |                                                                                                                                               |
+| `isActive`                                  | 真偽値                                                      |                                                                                                                                               |
+| `isBanned`                                  | 真偽値                                                      |                                                                                                                                               |
+| `expiresAt`                                 | ISO 8601日時または`null`                                    | `null`を指定すると有効期限がクリアされます                                                                                                    |
+| `modelAccessMode`                           | `all` \| `restricted`                                       | モードが`all`の場合、`allowedModels`は空である必要があります                                                                                  |
+| `allowedModels`, `blockedModels`            | 文字列の配列、最大1000件                                    |                                                                                                                                               |
+| `allowedCombos`                             | 文字列の配列、最大500件                                     | キーが呼び出せるコンボを制限します。直接モデルは`modelAccessMode` / `allowedModels`によって管理されます                                       |
+| `connectionAccessMode`                      | `all` \| `restricted`                                       | `restricted`の場合、`allowedConnections`は空でない必要があり、`all`の場合は空である必要があります                                             |
+| `allowedConnections`                        | UUIDの配列、最大100件                                       |                                                                                                                                               |
+| `allowAutoCombos`                           | 真偽値                                                      | `false`の場合、このキーによる`auto/*`モデルへのリクエストを拒否します。未設定のキーでは許可されます                                           |
+| `catalogScope`                              | `all` \| `combos` \| `models`                               | このキーに対して`GET /v1/models`が一覧表示する対象（コンボのみ、モデルのみ、または両方）を指定します。キーが呼び出せる対象は変更されません    |
+| `forcedModel`                               | 最大300文字の文字列、または`null`                           | チャットリクエストをこのモデルまたはコンボにルーティングし、`X-Route-Model`および`body.model`より優先します。キーの制限は引き続き適用されます |
+| `noLog`, `autoResolve`                      | 真偽値                                                      |                                                                                                                                               |
+| `throttleDelayMs`                           | 整数、0～300000                                             |                                                                                                                                               |
+| `maxSessions`                               | 整数、0～10000                                              |                                                                                                                                               |
+| `rateLimits`                                | `{ limit, window }`の配列（正の整数、最大50件）または`null` | `null`を指定すると制限がクリアされます                                                                                                        |
+| `accessSchedule`                            | スケジュールオブジェクトまたは`null`                        | `null`を指定するとスケジュールがクリアされます                                                                                                |
+| `scopes`                                    | 文字列の配列、最大32件                                      |                                                                                                                                               |
+| `allowedEndpoints`                          | 文字列の配列、最大20件                                      |                                                                                                                                               |
+| `streamDefaultMode`                         | `legacy` \| `json`                                          |                                                                                                                                               |
+| `cacheDefaultMode`                          | `legacy` \| `bypass`                                        | [キーごとのキャッシュバイパス](#per-key-cache-bypass)を参照                                                                                   |
+| `compressionEnabled`                        | 真偽値                                                      |                                                                                                                                               |
+| `codexServiceMode`                          | Codexサービスモードのいずれか                               |                                                                                                                                               |
+| `disableNonPublicModels`                    | boolean                                                     |                                                                                                                                               |
+| `allowUsageCommand`                         | boolean                                                     |                                                                                                                                               |
+| `usageLimitEnabled`                         | boolean                                                     |                                                                                                                                               |
+| `dailyUsageLimitUsd`, `weeklyUsageLimitUsd` | 0 以上の number または `null`                               |                                                                                                                                               |
+| `chaosModeEnabled`                          | boolean                                                     |                                                                                                                                               |
 
 ```bash
 curl -X PATCH "$OMNIROUTE_URL/api/keys/$KEY_ID" \
-  -H "Authorization: Bearer <management-credential>" \
+  -H "Authorization: Bearer <管理用認証情報>" \
   -H "Content-Type: application/json" \
   -d '{ "allowAutoCombos": false, "catalogScope": "combos" }'
 ```
 
 ### 設定
 
-| エンドポイント                        | メソッド      | 説明                                                                                                                                                                                |
-| ------------------------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/api/settings`                       | GET/PUT/PATCH | 一般設定                                                                                                                                                                            |
-| `/api/settings/proxy`                 | GET/PUT       | ネットワークプロキシ設定                                                                                                                                                            |
-| `/api/settings/proxy/test`            | POST          | プロキシ接続をテスト                                                                                                                                                                |
-| `/api/settings/ip-filter`             | GET/PUT       | IP 許可リスト／ブロックリスト                                                                                                                                                       |
-| `/api/settings/thinking-budget`       | GET/PUT       | 思考／推論の**リクエスト**書き換えモード（パススルー／自動削除／カスタム／適応型）。圧縮とは独立しています。[THINKING_BUDGET.md](../guides/THINKING_BUDGET.md) を参照してください。 |
-| `/api/settings/system-prompt`         | GET/PUT       | グローバルシステムプロンプト                                                                                                                                                        |
-| `/api/settings/compression`           | GET/PUT       | グローバル圧縮設定                                                                                                                                                                  |
-| `/api/settings/purge-request-history` | POST          | リクエストログの行とローカルの呼び出しログ成果物を消去                                                                                                                              |
+| エンドポイント                        | メソッド      | 説明                                                                                                                                                                                                                                                                                          |
+| ------------------------------------- | ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/settings`                       | GET/PUT/PATCH | 一般設定。セキュリティポリシーキー（`requireLogin`、`newPassword`、`oidc*`、`corsOrigins`、`bruteForceProtection`）には、`currentPassword` とオペレーター認証情報が必要です。API キーと `oma_` トークンには `403` が返されます。すべての変更にはアクセストークンの `admin` スコープが必要です |
+| `/api/settings/proxy`                 | GET/PUT       | ネットワークプロキシ設定                                                                                                                                                                                                                                                                      |
+| `/api/settings/proxy/test`            | POST          | プロキシ接続をテスト                                                                                                                                                                                                                                                                          |
+| `/api/settings/ip-filter`             | GET/PUT       | IP 許可リスト／ブロックリスト                                                                                                                                                                                                                                                                 |
+| `/api/settings/thinking-budget`       | GET/PUT       | 思考／推論**リクエスト**の書き換えモード（パススルー／自動除去／カスタム／適応型）。圧縮とは独立しています。[THINKING_BUDGET.md](../guides/THINKING_BUDGET.md) を参照してください。                                                                                                           |
+| `/api/settings/system-prompt`         | GET/PUT       | グローバルシステムプロンプト                                                                                                                                                                                                                                                                  |
+| `/api/settings/compression`           | GET/PUT       | グローバル圧縮設定                                                                                                                                                                                                                                                                            |
+| `/api/settings/purge-request-history` | POST          | リクエストログの行とローカルの呼び出しログ生成物を消去                                                                                                                                                                                                                                        |
 
 ### コンテキストと圧縮
 
-| エンドポイント                         | メソッド       | 説明                                                             |
-| -------------------------------------- | -------------- | ---------------------------------------------------------------- |
-| `/api/compression/preview`             | POST           | off/lite/standard/aggressive/ultra/RTK/stacked 圧縮をプレビュー  |
-| `/api/compression/language-packs`      | GET            | 利用可能な Caveman 言語パックを一覧表示                          |
-| `/api/compression/rules`               | GET            | Caveman ルールのメタデータを一覧表示                             |
-| `/api/context/caveman/config`          | GET/PUT        | Caveman 固有設定のエイリアス                                     |
-| `/api/context/rtk/config`              | GET/PUT        | カスタムフィルターや生出力の保持を含む RTK 固有設定              |
-| `/api/context/rtk/filters`             | GET            | RTK フィルターカタログとカスタムフィルターの診断情報             |
-| `/api/context/rtk/test`                | POST           | テキストペイロードに対して RTK のプレビュー／テストを実行        |
-| `/api/context/rtk/raw-output/[id]`     | GET            | ポインター ID を使用して、保持された秘匿化済みの生出力を読み取り |
-| `/api/context/combos`                  | GET/POST       | 圧縮コンボの一覧表示／作成                                       |
-| `/api/context/combos/[id]`             | GET/PUT/DELETE | 圧縮コンボの詳細取得／更新／削除                                 |
-| `/api/context/combos/[id]/assignments` | GET/PUT        | 圧縮コンボをルーティングコンボに割り当て                         |
-| `/api/context/analytics`               | GET            | 圧縮分析のエイリアス                                             |
+| Endpoint                               | Method         | 説明                                                            |
+| -------------------------------------- | -------------- | --------------------------------------------------------------- |
+| `/api/compression/preview`             | POST           | off/lite/standard/aggressive/ultra/RTK/stacked 圧縮をプレビュー |
+| `/api/compression/language-packs`      | GET            | 利用可能な Caveman 言語パックを一覧表示                         |
+| `/api/compression/rules`               | GET            | Caveman ルールのメタデータを一覧表示                            |
+| `/api/context/caveman/config`          | GET/PUT        | Caveman 固有設定のエイリアス                                    |
+| `/api/context/rtk/config`              | GET/PUT        | カスタムフィルターと生出力の保持を含む RTK 固有の設定           |
+| `/api/context/rtk/filters`             | GET            | RTK フィルターカタログとカスタムフィルターの診断                |
+| `/api/context/rtk/test`                | POST           | テキストペイロードに対して RTK のプレビュー/テストを実行        |
+| `/api/context/rtk/raw-output/[id]`     | GET            | ポインター ID により、保持された編集済み生出力を読み取り        |
+| `/api/context/combos`                  | GET/POST       | 圧縮コンボの一覧表示/作成                                       |
+| `/api/context/combos/[id]`             | GET/PUT/DELETE | 圧縮コンボの詳細取得/更新/削除                                  |
+| `/api/context/combos/[id]/assignments` | GET/PUT        | 圧縮コンボをルーティングコンボに割り当て                        |
+| `/api/context/analytics`               | GET            | 圧縮分析のエイリアス                                            |
 
 ### モニタリング
 
-| エンドポイント                       | メソッド   | 説明                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| ------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/api/sessions`                      | GET        | アクティブなセッションの追跡                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `/api/rate-limits`                   | GET        | アカウントごとのレート制限                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `/api/monitoring/health`             | GET        | ヘルスチェックとプロバイダーの概要（`catalogCount`、`configuredCount`、`activeCount`、`monitoredCount`）。管理ビューには `credentialHealth` が含まれます。これには、プローブキャッシュのスカラー値、`failed>0` の場合の `failedConnections`、および `staleDbNonOkCount`（ゲージではなく、SQLite に保持される `test_status`）が含まれます。[MONITORING_GUIDE.md](../ops/MONITORING_GUIDE.md#credentialhealth-probe-cache-vs-sqlite-test_status)を参照してください。 |
-| `/api/cache/stats`                   | GET/DELETE | キャッシュの統計情報の取得 / クリア                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `/api/modality-bridge/stats`         | GET        | メモリ内の `attempts`、成功数/`bridged`、失敗数、キャッシュヒット数、`totalLatencyMs`、`latencySamples`、サンプル数を分母とする `averageLatencyMs`、および最終使用時刻（再起動時にリセット、管理認証が必要）                                                                                                                                                                                                                                                       |
-| `/api/modality-bridge/video/runtime` | GET        | 管理認証/プローブの前に厳格な信頼済みループバックチェックを実施。サニタイズされた FFmpeg/ffprobe の可用性とバージョン（保存不可）                                                                                                                                                                                                                                                                                                                                  |
-| `/api/modality-bridge/video/extract` | POST       | 内部認証済みの信頼済みループバック用バイトブローカー。入力上限 50 MiB、キュー制限/出力上限 32 MiB、容量超過時は `503`、切断時は `499`、期限超過時は `504`。公開アップロード API ではありません                                                                                                                                                                                                                                                                     |
+| Endpoint                             | Method     | 説明                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/sessions`                      | GET        | アクティブなセッションの追跡                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `/api/rate-limits`                   | GET        | アカウントごとのレート制限                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `/api/monitoring/health`             | GET        | ヘルスチェックとプロバイダーの概要（`catalogCount`、`configuredCount`、`activeCount`、`monitoredCount`）。管理ビューには `credentialHealth` が含まれます。これには、プローブキャッシュのスカラー値、`failed>0` の場合の `failedConnections`、および `staleDbNonOkCount`（SQLite の固定的な `test_status`。ゲージではありません）が含まれます。[MONITORING_GUIDE.md](../ops/MONITORING_GUIDE.md#credentialhealth-probe-cache-vs-sqlite-test_status)を参照してください。 |
+| `/api/cache/stats`                   | GET/DELETE | キャッシュの統計情報取得/クリア                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `/api/modality-bridge/stats`         | GET        | メモリ内の `attempts`、成功回数/`bridged`、失敗回数、キャッシュヒット数、`totalLatencyMs`、`latencySamples`、サンプル数を分母とする `averageLatencyMs`、および最終使用時刻（再起動時にリセット。管理認証が必要）                                                                                                                                                                                                                                                       |
+| `/api/modality-bridge/video/runtime` | GET        | 管理認証/プローブの前に厳格な信頼済みループバックチェックを実施。サニタイズされた FFmpeg/ffprobe の可用性とバージョンを返します（no-store）                                                                                                                                                                                                                                                                                                                            |
+| `/api/modality-bridge/video/extract` | POST       | 内部認証済みの信頼済みループバック用バイトブローカー。入力上限は 50 MiB、キュー制限あり、出力上限は 32 MiB。容量超過は `503`、切断は `499`、期限超過は `504`。公開アップロード API ではありません                                                                                                                                                                                                                                                                      |
 
 ### バックアップとエクスポート/インポート
 
-| エンドポイント              | メソッド | 説明                                                                                    |
-| --------------------------- | -------- | --------------------------------------------------------------------------------------- |
-| `/api/db-backups`           | GET      | 利用可能なバックアップを一覧表示                                                        |
-| `/api/db-backups`           | PUT      | 手動バックアップを作成                                                                  |
-| `/api/db-backups`           | POST     | 指定したバックアップから復元                                                            |
-| `/api/db-backups/export`    | GET      | データベースを .sqlite ファイルとしてダウンロード                                       |
-| `/api/db-backups/import`    | POST     | .sqlite ファイルをアップロードしてデータベースを置換（`?dryRun=true` の場合は検証のみ） |
-| `/api/db-backups/exportAll` | GET      | 完全なバックアップを .tar.gz アーカイブとしてダウンロード                               |
+| エンドポイント              | メソッド | 説明                                                                              |
+| --------------------------- | -------- | --------------------------------------------------------------------------------- |
+| `/api/db-backups`           | GET      | 利用可能なバックアップを一覧表示                                                  |
+| `/api/db-backups`           | PUT      | 手動バックアップを作成                                                            |
+| `/api/db-backups`           | POST     | 指定したバックアップから復元                                                      |
+| `/api/db-backups`           | PATCH    | バックアップ保持設定を保存（オペレーター専用）                                    |
+| `/api/db-backups`           | DELETE   | 保存済みバックアップを保持設定に従って削除（オペレーター専用）                    |
+| `/api/db-backups/export`    | GET      | データベースを .sqlite ファイルとしてダウンロード                                 |
+| `/api/db-backups/import`    | POST     | .sqlite ファイルをアップロードしてデータベースを置換（`?dryRun=true` は検証のみ） |
+| `/api/db-backups/exportAll` | GET      | 完全なバックアップを .tar.gz アーカイブとしてダウンロード                         |
 
-`/api/db-backups/export`、`/api/db-backups/exportAll`、および `/api/settings/export-json` は、
+`/api/db-backups/export`、`/api/db-backups/exportAll`、`/api/settings/export-json` は、
 保存されているすべての認証情報を提供するため、ダッシュボードセッションまたはローカル CLI が必要です（ログインが
-無効な場合を除く）。スコープを問わず、API キーおよび `oma_` アクセストークンには `403` が返されます。
-
-`/api/db-backups/export`, `/api/db-backups/exportAll` and `/api/settings/export-json` hand out
-every stored credential, so they require the dashboard session or the local CLI (or login
-disabled). API keys of any scope and `oma_` access tokens get `403`. The restores hold the same
-boundary: `POST /api/db-backups/import` (`dryRun=true` included), `POST /api/db-backups` (restore
-by id) and `POST /api/settings/import-json` replace the live database or settings, so a machine
-credential gets `403` there too; `omniroute sync import` sends the local CLI credential.
+無効の場合を除く）。スコープを問わず API キー、および `oma_` アクセストークンには `403` が返されます。復元にも同じ
+境界が適用されます。`POST /api/db-backups/import`（`dryRun=true` を含む）、`POST /api/db-backups`（id
+による復元）、`POST /api/settings/import-json` は稼働中のデータベースまたは設定を置き換えるため、マシン
+認証情報に対してはこれらでも `403` が返されます。`omniroute sync import` はローカル CLI の認証情報を送信します。
+`DELETE /api/db-backups`（保存済みバックアップの削除）と `PATCH /api/db-backups`（保持設定：
+永続化された値に基づき、各バックアップ後に自動削除が実行される）についても同様です。一覧表示（`GET`）と手動
+バックアップの作成（`PUT`）では、通常の管理認証が引き続き使用されます。
 
 ### クラウド同期
 
@@ -1080,88 +1195,88 @@ credential gets `403` there too; `omniroute sync import` sends the local CLI cre
 
 ### トンネル
 
-| Endpoint                   | Method | 説明                                                                      |
-| -------------------------- | ------ | ------------------------------------------------------------------------- |
-| `/api/tunnels/cloudflared` | GET    | ダッシュボード用の Cloudflare Quick Tunnel のインストール・実行状態を取得 |
-| `/api/tunnels/cloudflared` | POST   | Cloudflare Quick Tunnel を有効化または無効化（`action=enable/disable`）   |
-| `/api/tunnels/ngrok`       | GET    | ダッシュボード用の ngrok Tunnel の実行状態を取得                          |
-| `/api/tunnels/ngrok`       | POST   | ngrok Tunnel を有効化または無効化（`action=enable/disable`）              |
+| エンドポイント             | メソッド | 説明                                                                              |
+| -------------------------- | -------- | --------------------------------------------------------------------------------- |
+| `/api/tunnels/cloudflared` | GET      | ダッシュボード用の Cloudflare Quick Tunnel のインストール／実行時ステータスを取得 |
+| `/api/tunnels/cloudflared` | POST     | Cloudflare Quick Tunnel を有効化または無効化（`action=enable/disable`）           |
+| `/api/tunnels/ngrok`       | GET      | ダッシュボード用の ngrok Tunnel の実行時ステータスを取得                          |
+| `/api/tunnels/ngrok`       | POST     | ngrok Tunnel を有効化または無効化（`action=enable/disable`）                      |
 
 ### CLI ツール
 
-| Endpoint                           | Method | 説明                    |
-| ---------------------------------- | ------ | ----------------------- |
-| `/api/cli-tools/claude-settings`   | GET    | Claude CLI の状態       |
-| `/api/cli-tools/codex-settings`    | GET    | Codex CLI の状態        |
-| `/api/cli-tools/droid-settings`    | GET    | Droid CLI の状態        |
-| `/api/cli-tools/openclaw-settings` | GET    | OpenClaw CLI の状態     |
-| `/api/cli-tools/runtime/[toolId]`  | GET    | 汎用 CLI ランタイム情報 |
+| エンドポイント                     | メソッド | 説明                      |
+| ---------------------------------- | -------- | ------------------------- |
+| `/api/cli-tools/claude-settings`   | GET      | Claude CLI のステータス   |
+| `/api/cli-tools/codex-settings`    | GET      | Codex CLI のステータス    |
+| `/api/cli-tools/droid-settings`    | GET      | Droid CLI のステータス    |
+| `/api/cli-tools/openclaw-settings` | GET      | OpenClaw CLI のステータス |
+| `/api/cli-tools/runtime/[toolId]`  | GET      | 汎用 CLI ランタイム       |
 
-CLI レスポンスには、`installed`、`runnable`、`command`、`commandPath`、`runtimeMode`、`reason` が含まれます。
+CLI のレスポンスには、`installed`、`runnable`、`command`、`commandPath`、`runtimeMode`、`reason` が含まれます。
 
 ### ACP エージェント
 
-| Endpoint          | Method | 説明                                                                      |
-| ----------------- | ------ | ------------------------------------------------------------------------- |
-| `/api/acp/agents` | GET    | 検出されたすべてのエージェント（組み込み + カスタム）を状態付きで一覧表示 |
-| `/api/acp/agents` | POST   | カスタムエージェントの追加、または検出キャッシュの更新                    |
-| `/api/acp/agents` | DELETE | `id` クエリパラメータで指定したカスタムエージェントを削除                 |
+| エンドポイント    | メソッド | 説明                                                                            |
+| ----------------- | -------- | ------------------------------------------------------------------------------- |
+| `/api/acp/agents` | GET      | 検出されたすべてのエージェント（組み込み + カスタム）をステータス付きで一覧表示 |
+| `/api/acp/agents` | POST     | カスタムエージェントを追加、または検出キャッシュを更新                          |
+| `/api/acp/agents` | DELETE   | `id` クエリパラメーターでカスタムエージェントを削除                             |
 
 GET レスポンスには、`agents[]`（id、name、binary、version、installed、protocol、isCustom）と `summary`（total、installed、notFound、builtIn、custom）が含まれます。
 
 ### 耐障害性とレート制限
 
-| Endpoint                          | Method    | 説明                                                                                              |
-| --------------------------------- | --------- | ------------------------------------------------------------------------------------------------- |
-| `/api/resilience`                 | GET/PATCH | リクエストキュー、接続クールダウン、プロバイダーブレーカー、待機設定を取得・更新                  |
-| `/api/resilience/reset`           | POST      | プロバイダーのサーキットブレーカーをリセット                                                      |
-| `/api/resilience/model-cooldowns` | GET       | 有効な（プロバイダー、接続、モデル）単位のロックアウトを、残り時間順で一覧表示                    |
-| `/api/resilience/model-cooldowns` | DELETE    | モデルのロックアウトを解除 — 本文に `{provider, model}`、またはすべて削除する場合は `{all: true}` |
-| `/api/rate-limits`                | GET       | アカウント単位のレート制限状態                                                                    |
-| `/api/rate-limit`                 | GET       | グローバルレート制限設定                                                                          |
+| エンドポイント                    | メソッド  | 説明                                                                                                |
+| --------------------------------- | --------- | --------------------------------------------------------------------------------------------------- |
+| `/api/resilience`                 | GET/PATCH | リクエストキュー、接続クールダウン、プロバイダーブレーカー、待機設定を取得／更新                    |
+| `/api/resilience/reset`           | POST      | プロバイダーのサーキットブレーカーをリセット                                                        |
+| `/api/resilience/model-cooldowns` | GET       | 有効な（プロバイダー、接続、モデル）単位のロックアウトを、残り時間順に一覧表示                      |
+| `/api/resilience/model-cooldowns` | DELETE    | モデルのロックアウトを解除 — 本文に `{provider, model}`、またはすべてを消去する場合は `{all: true}` |
+| `/api/rate-limits`                | GET       | アカウントごとのレート制限ステータス                                                                |
+| `/api/rate-limit`                 | GET       | グローバルなレート制限設定                                                                          |
 
-> 4 つの `/api/resilience/*` ルートはすべて、**管理認証**（`requireManagementAuth`）を必要とします。プロバイダーブレーカー、接続クールダウン、モデルロックアウトの詳細な違いについては、[耐障害性（拡張）](#resilience-extended)を参照してください。
+> 4 つの `/api/resilience/*` ルートはすべて、**管理認証**（`requireManagementAuth`）が必要です。プロバイダーブレーカー、接続クールダウン、モデルロックアウトの違いに関する詳細は、[耐障害性（拡張）](#resilience-extended)を参照してください。
 
 ### 評価
 
-| Endpoint     | Method   | 説明                               |
-| ------------ | -------- | ---------------------------------- |
-| `/api/evals` | GET/POST | 評価スイートの一覧表示・評価の実行 |
+| エンドポイント | メソッド | 説明                               |
+| -------------- | -------- | ---------------------------------- |
+| `/api/evals`   | GET/POST | 評価スイートを一覧表示／評価を実行 |
 
 ### ポリシー
 
-| Endpoint        | Method          | 説明                       |
+| エンドポイント  | メソッド        | 説明                       |
 | --------------- | --------------- | -------------------------- |
 | `/api/policies` | GET/POST/DELETE | ルーティングポリシーを管理 |
 
 ### コンプライアンス
 
-| Endpoint                    | Method | 説明                                  |
-| --------------------------- | ------ | ------------------------------------- |
-| `/api/compliance/audit-log` | GET    | コンプライアンス監査ログ（直近 N 件） |
+| エンドポイント              | メソッド | 説明                                  |
+| --------------------------- | -------- | ------------------------------------- |
+| `/api/compliance/audit-log` | GET      | コンプライアンス監査ログ（直近 N 件） |
 
 ### v1beta（Gemini 互換）
 
-| Endpoint                   | Method | 説明                                       |
-| -------------------------- | ------ | ------------------------------------------ |
-| `/v1beta/models`           | GET    | Gemini 形式でモデルを一覧表示              |
-| `/v1beta/models/{...path}` | POST   | Gemini の `generateContent` エンドポイント |
+| エンドポイント             | メソッド | 説明                                       |
+| -------------------------- | -------- | ------------------------------------------ |
+| `/v1beta/models`           | GET      | Gemini 形式でモデルを一覧表示              |
+| `/v1beta/models/{...path}` | POST     | Gemini の `generateContent` エンドポイント |
 
-これらのエンドポイントは、ネイティブ Gemini SDK との互換性を必要とするクライアント向けに、Gemini の API 形式を再現しています。
+これらのエンドポイントは、ネイティブの Gemini SDK との互換性を必要とするクライアント向けに、Gemini の API 形式を再現しています。
 
 ### 内部 / システム API
 
-| Endpoint                 | Method | 説明                                                 |
-| ------------------------ | ------ | ---------------------------------------------------- |
-| `/api/init`              | GET    | アプリケーションの初期化チェック（初回実行時に使用） |
-| `/api/tags`              | GET    | Ollama 互換のモデルタグ（Ollama クライアント向け）   |
-| `/api/restart`           | POST   | サーバーのグレースフル再起動を開始                   |
-| `/api/shutdown`          | POST   | サーバーのグレースフルシャットダウンを開始           |
-| `/api/system/env/repair` | POST   | OAuth プロバイダーの環境変数を修復                   |
-| `/api/system/version`    | GET    | 現在・最新のバージョン、更新状態、リリースチャネル   |
-| `/api/system/version`    | POST   | デプロイ環境を考慮した最新バージョンへの更新を開始   |
+| エンドポイント           | メソッド | 説明                                                 |
+| ------------------------ | -------- | ---------------------------------------------------- |
+| `/api/init`              | GET      | アプリケーションの初期化チェック（初回実行時に使用） |
+| `/api/tags`              | GET      | Ollama 互換のモデルタグ（Ollama クライアント向け）   |
+| `/api/restart`           | POST     | サーバーの正常な再起動を開始                         |
+| `/api/shutdown`          | POST     | サーバーの正常なシャットダウンを開始                 |
+| `/api/system/env/repair` | POST     | OAuth プロバイダーの環境変数を修復                   |
+| `/api/system/version`    | GET      | 現在/最新のバージョン、更新状態、リリースチャネル    |
+| `/api/system/version`    | POST     | デプロイ方式に対応した最新バージョンへの更新を開始   |
 
-> **注:** これらのエンドポイントは、システム内部または Ollama クライアントとの互換性のために使用されます。通常、エンドユーザーが直接呼び出すことはありません。
+> **注:** これらのエンドポイントは、システム内部または Ollama クライアントとの互換性のために使用されます。通常、エンドユーザーが呼び出すものではありません。
 
 ### OAuth 環境の修復 _(v3.6.1+)_
 
@@ -1190,10 +1305,7 @@ Content-Type: application/json
 GET /api/system/version
 ```
 
-ループバック専用の管理ルート（管理者認証）。実行中のバージョン、公開済みの最新バージョン、
-および自動更新の状態を返します。`releaseChannel` と `channels` は追加フィールドです
-（rail 3.8.54）。`channel` の意味は変わりません。これは、ダッシュボードのアップデーターが
-使用するデプロイ方式（`npm`、`source`、または `docker-compose`）です。
+ループバックからのみアクセス可能な管理ルートです（管理者認証が必要）。実行中のバージョン、公開済みの最新バージョン、および自動更新の状態を返します。`releaseChannel` と `channels` は追加フィールドです（rail 3.8.54）。`channel` の意味は変わらず、ダッシュボードのアップデーターが使用するデプロイ方式（`npm`、`source`、または `docker-compose`）を示します。
 
 ```json
 {
@@ -1209,19 +1321,10 @@ GET /api/system/version
 }
 ```
 
-- `releaseChannel` — 実行中のビルドの npm チャンネル：`-nightly.*` バージョンの場合は
-  `nightly`、その他のプレリリース（`-rc.*`、`-beta.*`、`-alpha.*`）の場合は `next`、
-  `channels.latest` より古いメジャーバージョンの安定版の場合は `lts`、それ以外は
-  `latest`。公開時に npm dist-tag を選択する `scripts/release/dist-tag.mjs` と
-  同じルールです。
-- `channels` — `npm view omniroute dist-tags` から取得した各 dist-tag の公開済み最新バージョン
-  （レジストリ HTTP フォールバック）。`latest` と同じ10分間の TTL でキャッシュされます。
-  `latest` は常に存在します（`latest` フィールド、それもない場合は `"unavailable"` に
-  フォールバック）。`next`、`nightly`、`lts` は、該当する dist-tag が存在する場合にのみ
-  表示されます。`Cache-Control: no-cache` リクエストは両方のルックアップを更新します。
+- `releaseChannel` — 実行中のビルドの npm チャネルです。`-nightly.*` バージョンの場合は `nightly`、その他のプレリリース（`-rc.*`、`-beta.*`、`-alpha.*`）の場合は `next`、`channels.latest` より古いメジャーバージョンの安定版の場合は `lts`、それ以外は `latest` です。公開時に npm dist-tag を選択する `scripts/release/dist-tag.mjs` と同じルールを使用します。
+- `channels` — `npm view omniroute dist-tags`（レジストリ HTTP フォールバック）から取得した各 dist-tag の最新公開バージョンです。`latest` と同じ 10 分間の TTL でキャッシュされます。`latest` は常に存在します（`latest` フィールドへフォールバックし、さらに `"unavailable"` へフォールバックします）。`next`、`nightly`、`lts` は、該当する dist-tag が存在する場合にのみ表示されます。`Cache-Control: no-cache` リクエストにより、両方のルックアップが更新されます。
 
-チャンネルモデル（`latest` = 4.0 GA までは v3、`next` = rc、`nightly` = `develop` ビルド、
-`lts` = 4.0 GA 後の v3 パッチ）については、`docs/ops/RELEASE_STRATEGY.md` で説明されています。
+チャネルモデル（4.0 GA までは `latest` = v3、`next` = rc、`nightly` = `develop` ビルド、4.0 GA 後は `lts` = v3 パッチ）については、`docs/ops/RELEASE_STRATEGY.md` で説明されています。
 
 ---
 
@@ -1356,7 +1459,7 @@ Content-Type: application/json
 }
 ```
 
-> **スキーマに関する注記** (`setBudgetSchema`): `apiKeyId` は必須です。`dailyLimitUsd`、`weeklyLimitUsd`、`monthlyLimitUsd` のうち、少なくとも 1 つはゼロより大きい値である必要があります。オプションのフィールド: `warningThreshold`（0～1）、`resetInterval`（`daily` | `weekly` | `monthly`）、`resetTime`（`HH:MM`）。従来の `{keyId, limit, period}` 形式では `400 Bad Request` が返されます。
+> **スキーマに関する注記** (`setBudgetSchema`): `apiKeyId` は必須です。`dailyLimitUsd`、`weeklyLimitUsd`、`monthlyLimitUsd` のうち、少なくとも 1 つはゼロより大きい値である必要があります。任意のフィールド: `warningThreshold`（0～1）、`resetInterval`（`daily` | `weekly` | `monthly`）、`resetTime`（`HH:MM`）。従来の `{keyId, limit, period}` 形式を使用すると、`400 Bad Request` が返されます。
 
 ## トークン制限
 

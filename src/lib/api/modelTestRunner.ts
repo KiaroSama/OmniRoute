@@ -16,6 +16,7 @@ import { getCustomModels } from "@/lib/db/models";
 import { getProviderNodeById } from "@/lib/db/providers";
 import { requiresWebSessionCredential } from "@/shared/providers/webSessionCredentials";
 import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
+import { isImageOnlyModel } from "@omniroute/open-sse/config/imageRegistry";
 import { withRateLimit } from "@omniroute/open-sse/services/rateLimitManager";
 import {
   isCreditsExhausted,
@@ -375,17 +376,21 @@ export function detectTestKind(modelStr: string, customModel: any, nodeApiType?:
       nodeType === "responses" ||
       supportedEndpoints.includes("responses"));
   // Non-chat generation endpoints (image, music, video) should NOT be dispatched
-  // as chat completions — they incur billable generation costs (#13376).
+  // as chat completions — they incur billable generation costs (#13376). An explicit
+  // generation apiFormat, or an image-only registry model that chat.ts rejects
+  // (#6457), wins over the add-model form's default "chat" tick (#17071).
+  const isGenerationFormat = apiFormat === "images-generations" || apiFormat === "video";
+  const isGenerationOnlyTag =
+    !supportedEndpoints.includes("chat") &&
+    ["images", "images-generations", "music", "videos"].some((endpoint) =>
+      supportedEndpoints.includes(endpoint)
+    );
   const isNonChatGeneration =
     !isAudioTranscription &&
     !isRerank &&
     !isEmbedding &&
     !isResponses &&
-    supportedEndpoints.length > 0 &&
-    !supportedEndpoints.includes("chat") &&
-    (supportedEndpoints.includes("images") ||
-      supportedEndpoints.includes("music") ||
-      supportedEndpoints.includes("videos"));
+    (isGenerationFormat || isGenerationOnlyTag || isImageOnlyModel(modelStr));
 
   return {
     isRerank,
@@ -608,6 +613,7 @@ export async function runSingleModelTest(
       // model's modality cannot be exercised by a chat test. The route passes httpStatus
       // straight to NextResponse — omitting it made Next answer 200 for a skipped test.
       httpStatus: 422,
+      skipped: true,
       error:
         "Skipped: non-chat generation model (images/music/video) — use the corresponding generation endpoint instead",
     };

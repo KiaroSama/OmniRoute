@@ -485,11 +485,11 @@ Bu, aşağıdakıları emal edir:
 
 | Fayl                          | Təyinatı                                          |
 | ----------------------------- | ------------------------------------------------- |
-| `providerRegistry.ts`         | 372 provayderlik kataloq üzrə çat modeli reyestri |
-| `providerModels.ts`           | Model aliasları, format uyğunlaşdırması           |
+| `providerRegistry.ts`         | 374 provayderlik kataloq üzrə çat modeli reyestri |
+| `providerModels.ts`           | Model ləqəbləri, format uyğunlaşdırılması         |
 | `constants.ts`                | Taymautlar, limitlər, status kodları              |
 | `defaultThinkingSignature.ts` | Standart Claude düşünmə imzası                    |
-| `modelStrip.ts` (xidmətlərdə) | Hər provayder üzrə sahələrin çıxarılması          |
+| `modelStrip.ts` (xidmətlərdə) | Provayder üzrə sahələrin çıxarılması              |
 
 ### Provayder Reyestrinin Sxemi
 
@@ -506,7 +506,7 @@ interface ProviderConfig {
 }
 ```
 
-Modul yüklənərkən Zod validasiyası bütün provayder konfiqurasiyalarının etibarlı olmasını təmin edir.
+Modul yüklənərkən Zod yoxlaması bütün provayder konfiqurasiyalarının etibarlı olmasını təmin edir.
 
 ---
 

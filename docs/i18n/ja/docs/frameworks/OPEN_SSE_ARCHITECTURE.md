@@ -481,15 +481,15 @@ createResponsesApiTransformStream(): TransformStream
 
 ## 設定
 
-`open-sse/config/` には設定レイヤーが格納されています。
+`open-sse/config/` には設定レイヤーが含まれています。
 
-| ファイル                      | 目的                                                      |
-| ----------------------------- | --------------------------------------------------------- |
-| `providerRegistry.ts`         | 372プロバイダーカタログに対応するチャットモデルレジストリ |
-| `providerModels.ts`           | モデルエイリアス、形式マッピング                          |
-| `constants.ts`                | タイムアウト、制限、ステータスコード                      |
-| `defaultThinkingSignature.ts` | デフォルトのClaude思考シグネチャ                          |
-| `modelStrip.ts` (サービス内)  | プロバイダーごとのフィールド除去                          |
+| ファイル                       | 目的                                              |
+| ------------------------------ | ------------------------------------------------- |
+| `providerRegistry.ts`          | 374プロバイダーカタログのチャットモデルレジストリ |
+| `providerModels.ts`            | モデルエイリアス、フォーマットマッピング          |
+| `constants.ts`                 | タイムアウト、制限、ステータスコード              |
+| `defaultThinkingSignature.ts`  | デフォルトの Claude 思考シグネチャ                |
+| `modelStrip.ts`（services 内） | プロバイダーごとのフィールド除去                  |
 
 ### プロバイダーレジストリのスキーマ
 
@@ -506,7 +506,7 @@ interface ProviderConfig {
 }
 ```
 
-モジュール読み込み時のZod検証により、すべてのプロバイダー設定が有効であることが保証されます。
+モジュール読み込み時の Zod 検証により、すべてのプロバイダー設定が有効であることが保証されます。
 
 ---
 

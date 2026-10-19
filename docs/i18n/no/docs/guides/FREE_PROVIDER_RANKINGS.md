@@ -13,18 +13,18 @@
 
 ## Hva det er
 
-OmniRoute registrerer 372 leverandører, inkludert 155 katalogoppføringer merket **gratis/uten autentisering**
+OmniRoute registrerer 374 leverandører, inkludert 155 katalogoppføringer merket **gratis/uten autentisering**
 (uten autentisering,
 OAuth med gratisnivå eller API-nøkkel med gratisnivå – se
 [veiledningen for gratisnivåer](../getting-started/FREE-TIERS-GUIDE.md) og den fullstendige
-[oversikten over gratisnivåer](../reference/FREE_TIERS.md)). Utfordringen er at gratisleverandører varierer
+[katalogen over gratisnivåer](../reference/FREE_TIERS.md)). Utfordringen er at gratisleverandører varierer
 kraftig i modellkvalitet. En leverandør uten autentisering som tilbyr en ledende modell, er langt mer nyttig
-enn en som tilbyr en liten, eldre modell.
+enn en som tilbyr en liten eldre modell.
 
 **Rangering av gratisleverandører** besvarer spørsmålet «**hvilken gratisleverandør gir meg den beste modellen?**» ved å
-koble hver gratisleverandørs katalog sammen med **folkebaserte kvalitetspoeng** fra
+koble hver gratisleverandørs katalog med **folkebaserte kvalitetspoeng** fra
 **Arena AI-resultatlisten** (ELO basert på menneskelige preferanser, samme idé som ligger bak LMArena
-chatbotarena). Leverandørene rangeres deretter etter hvor god deres **beste gratis modell** er.
+chatbotarena). Leverandørene rangeres deretter etter kvaliteten på deres **beste gratis modell**.
 
 Rangeringen beregnes fra tre reelle kilder:
 
@@ -33,10 +33,10 @@ Rangeringen beregnes fra tre reelle kilder:
    (`src/shared/constants/providers.ts`).
 2. Modellkatalogen til hver leverandør fra leverandørregisteret
    (`open-sse/config/providerRegistry.ts`).
-3. ELO-avledede poengsummer for oppgaveegnethet, lagret i DB-tabellen `model_intelligence` av
+3. ELO-avledede poengsummer for oppgaveegnethet som lagres i DB-tabellen `model_intelligence` av
    synkroniseringsmotoren for Arena ELO (`src/lib/arenaEloSync.ts`).
 
-Koblingslogikken ligger i `src/lib/freeProviderRankings.ts`.
+Koblingslogikken finnes i `src/lib/freeProviderRankings.ts`.
 
 ---
 

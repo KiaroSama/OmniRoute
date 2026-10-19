@@ -85,6 +85,21 @@ export function resolveCallLogArtifactWorker(context: WorkerResolutionContext = 
   return { workerFile: entryJs ?? cwdJs, execArgv: [] };
 }
 
+/**
+ * Worker options for a resolved worker file. A source checkout runs the worker through tsx, which
+ * lists its whole disk cache (os.tmpdir()/tsx-<uid>) with one readdirSync the first time a thread
+ * transforms a file. A shared dev box grows that directory to hundreds of thousands of entries, and
+ * the worker's first write then waited 5-7 s on the listing (0.4 s without it). The worker only
+ * transforms a handful of small modules, so it runs without the disk cache.
+ */
+export function callLogWorkerOptions(execArgv: string[]): {
+  execArgv: string[];
+  env?: NodeJS.ProcessEnv;
+} {
+  if (!execArgv.includes("tsx/esm")) return { execArgv };
+  return { execArgv, env: { ...process.env, TSX_DISABLE_CACHE: "1" } };
+}
+
 function clearIdleTimer(): void {
   if (!idleTimer) return;
   clearTimeout(idleTimer);
@@ -156,7 +171,10 @@ function ensureWorker(): Worker {
   const { workerFile, execArgv } = workerFileOverride ?? resolveCallLogArtifactWorker();
   // Reflect.construct keeps Next/Turbopack from interpreting the runtime-selected
   // worker path as a build-time glob and tracing tens of thousands of unrelated files.
-  const created = Reflect.construct(Worker, [pathToFileURL(workerFile), { execArgv }]) as Worker;
+  const created = Reflect.construct(Worker, [
+    pathToFileURL(workerFile),
+    callLogWorkerOptions(execArgv),
+  ]) as Worker;
   worker = created;
   created.on("message", (reply: WorkerReply) => {
     if (!active || reply.id !== active.id) return;

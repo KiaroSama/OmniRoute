@@ -98,33 +98,47 @@ thaispeántar ach samhlacha Kimi.
 
 ---
 
-## Bloc ionduchtaithe ar an deais
+## Bloc ionduchtúcháin ar an deais
 
-Taispeánann cárta uirlisí Claude (**Deais → Cód CLI**) an mhír bheacht `settings.json`
-don ásc seo, in aice leis an gcnaipe faisnéise faoin ailias fionnachtana, mar aon le cnaipe cóipeála:
+Taispeánann cárta uirlisí Claude (**Deais → Cód CLI**) an blúire beacht `settings.json`
+don ásc seo, in aice leis an gcnaipe faisnéise faoin ailias fionnachtana, agus cnaipe cóipeála leis:
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<your OmniRoute>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<your OmniRoute API key>",
+    "ANTHROPIC_BASE_URL": "http://<do OmniRoute>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<d'eochair API OmniRoute>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-Is é an bun-URL an ceann a réitigh an cárta (lena n-áirítear sárú saincheaptha a chlóscríobh tú), agus é
-normalaithe cheana féin — gan iarmhír `/v1` ná slais deiridh. **Ní thaispeántar an eochair riamh**: cuirtear
-ionadchoinneálaí sa bhloc, mar sin ní féidir le gabháil scáileáin ná mír ghreamaithe í a sceitheadh. Greamaigh d'eochair ina háit.
+Is é an bun-URL an ceann a réitíonn an cárta (lena n-áirítear sárú saincheaptha a chlóscríobh tú), agus é
+normalaithe cheana féin — gan iarmhír `/v1`, gan slais deiridh. **Ní thaispeántar an eochair riamh**: cuirtear
+ionadchoinneálaí sa bhloc, mar sin ní féidir le gabháil scáileáin ná le blúire greamaithe í a sceitheadh. Greamaigh d'eochair ina áit.
 
-Cuir `CLAUDE_CODE_AUTO_COMPACT_WINDOW` faoin mbloc `env` céanna le haghaidh aon mhúnla nach ionann
-a fhíorfhuinneog chomhthéacs agus 200K — glacann Claude Code leis gur 200K atá ann do gach id nach n-aithníonn sé, mar sin
-tarlaíonn an dlúthú uathoibríoch ag an bpointe mícheart murach sin (féach an rabhadh sa rannán roimhe seo).
-Glacann tógálaí na míre leis an luach sin freisin, ionas gur féidir le glaoiteoir a bhfuil fuinneog an spriocmhúnla ar eolas aige
+Cuir `CLAUDE_CODE_AUTO_COMPACT_WINDOW` faoin mbloc `env` céanna le haghaidh aon samhail nach 200K
+a fíorfhuinneog comhthéacs — glacann Claude Code leis gur 200K atá i gceist do gach id nach n-aithníonn sé, mar sin
+murach sin cuirtear an t-uath-chomhbhrú i ngníomh ag an bpointe mícheart (féach an rabhadh sa roinn roimhe seo).
+Glacann tógálaí na mblúirí leis an luach sin freisin, ionas gur féidir le glaoiteoir a bhfuil fuinneog na sprice-shamhla ar eolas aige
 é a aschur go díreach.
 
-Foinse: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (tógálaí
-íon, tástáilte le tástálacha aonaid) arna thaispeáint ag `ClaudeGatewayOnboardingBlock`.
+Foinse: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (tógálaí íon,
+aonadthástáilte) arna thaispeáint ag `ClaudeGatewayOnboardingBlock`.
+
+### Cuir cuntas amháin in airde (roghnach)
+
+Chun gach iarratas Claude Code a sheoladh trí chuntas soláthraí sonrach amháin, cuir an ceanntásc
+`x-omniroute-connection` leis trí `ANTHROPIC_CUSTOM_HEADERS` sa bhloc `env` céanna:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Cóipeáil an id ón tslis `xxxxxxxx…` ar ró an cheangail ar leathanach an tsoláthraí. Ní bhaineann an socrú seasta
+ach le hidanna aon-samhla (`provider/model`), agus ní bhaineann sé le teaglamaí. Féach
+[Ceangal cuntais de réir iarratais](../reference/API_REFERENCE.md#account-pinning-per-request) chun an
+t-iompar cúltaca beacht a fháil.
 
 ---
 

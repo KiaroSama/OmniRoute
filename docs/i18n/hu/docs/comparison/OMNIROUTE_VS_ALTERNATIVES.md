@@ -39,10 +39,10 @@ Objektív funkció-összehasonlítás népszerű, nyílt forráskódú AI-router
 
 ## Mikor válassza az OmniRoute-ot
 
-- Saját üzemeltetést használ, és **maximális szolgáltatói lefedettséget** szeretne (372 szolgáltató, 155 ingyenes/hitelesítést nem igénylő katalógusbejegyzés)
-- **Beépített MCP-kiszolgálóra** van szüksége (LLM-eszközök, memória és eszközként elérhető készségek)
-- **A2A protokollra** van szüksége az ügynökök közötti munkafolyamatokhoz
-- **Ujjlenyomat-rejtést** (JA3/JA4) szeretne, hogy elkerülje az upstream CAPTCHA-k általi észlelést
+- Saját infrastruktúrán üzemelteti, és **maximális szolgáltatói lefedettséget** szeretne (374 szolgáltató, 155 ingyenes/hitelesítés nélküli katalógusbejegyzés)
+- **Beépített MCP-kiszolgálóra** van szüksége (LLM-eszközök, memória és eszközként elérhetővé tett készségek)
+- Az ügynökök közötti munkafolyamatokhoz **A2A protokollra** van szüksége
+- **Ujjlenyomat-alapú rejtőzködést** (JA3/JA4) szeretne a felsőbb szintű CAPTCHA-rendszerek általi észlelés elkerülésére
 - **Vállalati funkciókra** (védőkorlátok, kiértékelések, auditnapló) van szüksége SaaS-előfizetési díj nélkül
 
 ## Mikor válaszd a LiteLLM-et?

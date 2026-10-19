@@ -12,18 +12,18 @@ AgentBridge shi ne wakilin MITM (Man-in-the-Middle) na OmniRoute wanda ke katse 
 
 ---
 
-## §1 Bayani Gabaɗaya
+## §1 Bayani
 
 ### Mene ne AgentBridge?
 
-Lokacin da wakilin IDE (misali, GitHub Copilot, Cursor, Claude Code) ya yi kiran API, yana haɗuwa kai tsaye da mai samar da AI na sama (OpenAI, Anthropic, da sauransu). AgentBridge yana katse wannan haɗin a bayyane a matakin TLS — ba tare da buƙatar wani sauyin saitin wakili ba — sannan ya sake rubuta buƙatar ta hanyar OmniRoute.
+Lokacin da wakilin IDE (misali, GitHub Copilot, Cursor, Claude Code) ya yi kiran API, yana haɗuwa kai tsaye da mai samar da AI na sama (OpenAI, Anthropic, da sauransu). AgentBridge yana katse wannan haɗin a bayyane a matakin TLS — ba tare da buƙatar wani canji ga saitunan wakilin ba — sannan ya sake rubuta buƙatar ta hanyar OmniRoute.
 
 Wannan yana nufin za ka iya:
 
-- **Mayar da kowanne wakili zuwa kowanne mai samarwa**: Copilot yana sadarwa da OpenAI? Mayar da shi zuwa Anthropic Claude, Gemini, ko ɗaya daga cikin masu samarwa 372 na OmniRoute.
-- **Aiwatar da taswirar samfura**: `gemini-3-flash` → `claude-sonnet-4.7` kai tsaye a matakin handler.
-- **Lura da duk zirga-zirgar wakilai**: ana wallafa kowace buƙatar da aka katse zuwa [Mai Binciken Zirga-zirga](./TRAFFIC_INSPECTOR.md).
-- **Aiwatar da juriya ta OmniRoute**: tsarin tura buƙatu na haɗe, circuit breakers, hanyoyin madadin, da bin diddigin kuɗi suna aiki ga zirga-zirgar wakilan IDE su ma.
+- **Sake karkatar da kowane wakili zuwa kowane mai samarwa**: Copilot yana sadarwa da OpenAI? Karkatar da shi zuwa Anthropic Claude, Gemini, ko ɗaya daga cikin masu samarwa 374 na OmniRoute.
+- **Aiwatar da daidaitawar samfurori**: `gemini-3-flash` → `claude-sonnet-4.7` a bayyane a matakin mai sarrafawa.
+- **Lura da duk zirga-zirgar wakili**: ana wallafa kowace buƙatar da aka katse zuwa [Mai Binciken Zirga-zirga](./TRAFFIC_INSPECTOR.md).
+- **Aiwatar da juriyar OmniRoute**: haɗaɗɗiyar karkatarwa, masu katse da'ira, hanyoyin madadin, da bin diddigin kuɗi suna aiki ga zirga-zirgar wakilan IDE ma.
 
 ### Matsayi idan aka kwatanta da kasuwa
 
@@ -40,8 +40,8 @@ Wannan yana nufin za ka iya:
 | Trae                        |    —    |    —     |        —        |      🔍 Ana bincike       |
 | Fuskar dashboard            |    ✓    |    ✗     |        ✗        |             ✓             |
 | Mai Binciken Zirga-zirga    |    ✗    |    ✗     |        ✓        |             ✓             |
-| Tura buƙatun OmniRoute      |    ✗    |    ✗     |        ✗        |             ✓             |
-| Fuskar taswirar samfura     |    ✗    |    ✗     |        ✗        |             ✓             |
+| Karkatarwar OmniRoute       |    ✗    |    ✗     |        ✗        |             ✓             |
+| Fuskar daidaita samfuri     |    ✗    |    ✗     |        ✗        |             ✓             |
 | Jerin tsallakewa            |    ✗    |    ✗     |        ✓        |             ✓             |
 | Takardar shaidar CA ta sama |    ✗    |    ✗     |        ✓        |             ✓             |
 

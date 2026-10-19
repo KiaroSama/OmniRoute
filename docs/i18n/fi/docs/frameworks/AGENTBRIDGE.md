@@ -16,16 +16,16 @@ AgentBridge on OmniRouten MITM (Man-in-the-Middle) -välityspalvelin, joka siepp
 
 ### Mikä AgentBridge on?
 
-Kun IDE-agentti (esim. GitHub Copilot, Cursor tai Claude Code) tekee API-kutsun, se muodostaa yhteyden suoraan ylemmän tason tekoälypalveluntarjoajaan (OpenAI, Anthropic jne.). AgentBridge sieppaa tämän yhteyden läpinäkyvästi TLS-tasolla — ilman muutoksia agentin määrityksiin — ja ohjaa pyynnön uudelleen OmniRouten kautta.
+Kun IDE-agentti (esim. GitHub Copilot, Cursor tai Claude Code) tekee API-kutsun, se muodostaa yhteyden suoraan alkuperäiseen tekoälypalveluntarjoajaan (OpenAI, Anthropic jne.). AgentBridge sieppaa tämän yhteyden läpinäkyvästi TLS-tasolla — ilman agentin määritysten muuttamista — ja ohjaa pyynnön uudelleen OmniRouten kautta.
 
-Tämän ansiosta voit:
+Tämä mahdollistaa seuraavat asiat:
 
-- **Uudelleenohjata minkä tahansa agentin mille tahansa palveluntarjoajalle**: Keskusteleeko Copilot OpenAI:n kanssa? Ohjaa se sen sijaan Anthropic Claudeen, Geminiin tai mille tahansa OmniRouten 372 palveluntarjoajasta.
-- **Käyttää mallimäärityksiä**: `gemini-3-flash` → `claude-sonnet-4.7` läpinäkyvästi käsittelijätasolla.
-- **Tarkkailla kaikkea agenttiliikennettä**: jokainen siepattu pyyntö julkaistaan [liikenteen tarkastelutyökalussa](./TRAFFIC_INSPECTOR.md).
-- **Hyödyntää OmniRouten vikasietoisuutta**: yhdistelmäreititys, virtakatkaisimet, varareitit ja kustannusten seuranta toimivat myös IDE-agenttiliikenteessä.
+- **Ohjaa mikä tahansa agentti mille tahansa palveluntarjoajalle**: Keskusteleeko Copilot OpenAI:n kanssa? Ohjaa se Anthropic Claudeen, Geminiin tai mille tahansa OmniRouten 374 palveluntarjoajasta.
+- **Käytä mallimäärityksiä**: `gemini-3-flash` → `claude-sonnet-4.7` läpinäkyvästi käsittelijätasolla.
+- **Tarkkaile kaikkea agenttiliikennettä**: jokainen siepattu pyyntö julkaistaan [liikennetarkastelussa](./TRAFFIC_INSPECTOR.md).
+- **Hyödynnä OmniRouten vikasietoisuutta**: yhdistelmäreititys, katkaisijat, varajärjestelyt ja kustannusten seuranta toimivat myös IDE-agenttiliikenteessä.
 
-### Asemointi markkinoihin nähden
+### Asema markkinoihin verrattuna
 
 | Ominaisuus                      | 9router | anti-api | llm-interceptor | **OmniRoute AgentBridge** |
 | ------------------------------- | :-----: | :------: | :-------------: | :-----------------------: |
@@ -37,13 +37,13 @@ Tämän ansiosta voit:
 | Zed Industries                  |    —    |    ✓     |        —        |             ✓             |
 | Claude Code                     |    —    |    —     |        ✓        |             ✓             |
 | Open Code                       |    —    |    —     |        ✓        |             ✓             |
-| Trae                            |    —    |    —     |        —        |      🔍 Tutkittavana      |
+| Trae                            |    —    |    —     |        —        |      🔍 Tutkinnassa       |
 | Hallintapaneelin käyttöliittymä |    ✓    |    ✗     |        ✗        |             ✓             |
-| Liikenteen tarkastelutyökalu    |    ✗    |    ✗     |        ✓        |             ✓             |
+| Liikennetarkastelu              |    ✗    |    ✗     |        ✓        |             ✓             |
 | OmniRoute-reititys              |    ✗    |    ✗     |        ✗        |             ✓             |
 | Mallimääritysten käyttöliittymä |    ✗    |    ✗     |        ✗        |             ✓             |
 | Ohitusluettelo                  |    ✗    |    ✗     |        ✓        |             ✓             |
-| Ylemmän tason CA-varmenne       |    ✗    |    ✗     |        ✓        |             ✓             |
+| Alkuperäpalvelimen CA-varmenne  |    ✗    |    ✗     |        ✓        |             ✓             |
 
 ---
 

@@ -12,7 +12,8 @@ name: Release-Green (continuous)
 #     captain's direct pushes (sync-back — the one ungated write path) AND the merged
 #     COMBINATION right after every PR merge, attributing the offending push range in
 #     the issue. Base-red MTTD drops from ≤24h to ≤~15min after the offending push.
-#   schedule (3×/day) → full --with-build --full-ci (the deep sweep incl. build+suites).
+#   schedule → full --with-build --full-ci (the deep sweep incl. build+suites): 3×/day for
+#     the release branch, 1×/day (05:23) for main, whose SHA only moves on a release.
 #
 # It is NOT a required status check and never touches a contributor PR — it only
 # reports. Ratchet drift (eslint warnings / cognitive-complexity / file-size) is
@@ -38,8 +39,8 @@ on:
       - "tsconfig*.json"
   schedule:
     - cron: "23 5 * * *" # full sweep — off-peak, distinct from other nightlies
-    - cron: "23 12 * * *" # full sweep — midday (WS5.1: 3×/day instead of 1×)
-    - cron: "23 18 * * *" # full sweep — evening
+    - cron: "23 12 * * *" # full sweep — midday (WS5.1: 3×/day instead of 1×); release only
+    - cron: "23 18 * * *" # full sweep — evening; release only (main-green runs at 05:23 only)
   workflow_dispatch:
     inputs:
       branch:
@@ -284,8 +285,12 @@ jobs:
   main-green:
     name: Validate main branch
     # On a push, only run for a push to main — a push to release/* is handled by
-    # release-green above. Schedule/dispatch always run (they also sweep main).
-    if: ${{ (github.event_name != 'push' || github.ref_name == 'main') && (github.event_name != 'schedule' || github.repository == 'diegosouzapw/OmniRoute') }}
+    # release-green above. Dispatch always runs. On schedule, only the 05:23 cron sweeps
+    # main: main's SHA only moves on a release or hotfix, so the midday and evening sweeps
+    # re-validated the same commit and held the single `omni-release` slot for ~2 h each
+    # (2026-10-19: 08:04–10:01 right after the 2 h20 release sweep, while a `--quick` push
+    # run waited ~4 h in the group). The release branch keeps all three sweeps.
+    if: ${{ (github.event_name != 'push' || github.ref_name == 'main') && (github.event_name != 'schedule' || (github.repository == 'diegosouzapw/OmniRoute' && github.event.schedule == '23 5 * * *')) }}
     # Own slot (docs/ops/RUNNER_BOX.md): `omni-release` is omniroute-113-6 only, so the
     # validation no longer queues on the single `omni-build` slot (the 2026-10-18 05:29
     # sweep waited 6 h for it). That slot is capped at 24 GB, so the validation's build

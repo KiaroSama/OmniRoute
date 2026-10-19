@@ -39,11 +39,11 @@ Ntụnyere atụmatụ n'ụzọ ebumnobi megide ndị rawụta AI mepere emepe 
 
 ## Mgbe ị ga-ahọrọ OmniRoute
 
-- Ị na-akwado ya n’onwe gị ma chọọ **mkpuchi kachasị ukwuu nke ndị na-eweta ọrụ** (ndị na-eweta ọrụ 372, ndenye katalọgụ efu/na-achọghị nkwenye 155)
-- Ị chọrọ **sava MCP arụnyere n’ime ya** (ngwaọrụ LLM, ebe nchekwa, na nka ndị e mere ka ha bụrụ ngwaọrụ)
-- Ị chọrọ **protokọl A2A** maka usoro ọrụ sitere n’otu onye nnọchi anya gaa na onye ọzọ
-- Ị chọrọ **nzuzo akara mkpịsị aka** (JA3/JA4) iji zere ka CAPTCHA ndị dị n’elu chọpụta gị
-- Ị chọrọ **njirimara maka ụlọ ọrụ** (usoro nchebe, nyocha, ndekọ nyocha) na-enweghị ụgwọ SaaS
+- Ị na-akwado sistemụ ahụ n'onwe gị ma chọọ **nkwado kachasị ukwuu maka ndị na-enye ọrụ** (ndị na-enye ọrụ 374, ndenye katalọgụ efu/na-achọghị njirimara 155)
+- Ị chọrọ **sava MCP arụnyere n'ime ya** (ngwaọrụ LLM, ebe nchekwa, na nka e gosipụtara dị ka ngwaọrụ)
+- Ị chọrọ **protokọl A2A** maka usoro ọrụ site n'otu ejenti gaa na nke ọzọ
+- Ị chọrọ **izochi akara mkpịsị aka** (JA3/JA4) iji zere ka CAPTCHA ndị dị n'elu chọpụta gị
+- Ị chọrọ **atụmatụ maka ụlọ ọrụ ukwu** (usoro nchebe, nyocha arụmọrụ, ndekọ nyocha) na-enweghị ụgwọ SaaS
 
 ## Mgbe ị ga-ahọrọ LiteLLM
 

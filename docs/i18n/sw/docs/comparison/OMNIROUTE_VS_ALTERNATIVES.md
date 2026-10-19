@@ -39,11 +39,11 @@ Ulinganisho wa vipengele kwa njia yenye lengo dhidi ya vipanga-njia maarufu vya 
 
 ## Wakati wa kuchagua OmniRoute
 
-- Unajihudumia mwenyewe na unataka **ufikiaji wa kiwango cha juu zaidi wa watoa huduma** (watoa huduma 372, maingizo 155 ya katalogi yasiyolipishwa/yasiyohitaji uthibitishaji)
-- Unahitaji **seva ya MCP iliyojengewa ndani** (zana za LLM, kumbukumbu na ujuzi vinavyotolewa kama zana)
-- Unahitaji **itifaki ya A2A** kwa mtiririko wa kazi kutoka wakala mmoja hadi mwingine
-- Unataka **ufichaji wa alama za utambulisho** (JA3/JA4) ili kuepuka kugunduliwa na CAPTCHA za huduma za msingi
-- Unahitaji **vipengele vya kiwango cha biashara** (vizuizi vya usalama, tathmini, rekodi ya ukaguzi) bila bili ya SaaS
+- Unajiendeshea mwenyewe na unataka **ufikiaji mpana zaidi wa watoa huduma** (watoa huduma 374, vipengee 155 vya katalogi visivyolipishwa/visivyohitaji uthibitishaji)
+- Unahitaji **seva ya MCP iliyojengewa ndani** (zana za LLM, kumbukumbu na ujuzi unaopatikana kama zana)
+- Unahitaji **itifaki ya A2A** kwa mtiririko wa kazi kati ya mawakala
+- Unataka **ufichaji wa alama tambulishi** (JA3/JA4) ili kuepuka kugunduliwa na CAPTCHA za huduma za chanzo
+- Unahitaji **vipengele vya kiwango cha biashara** (mipaka ya usalama, tathmini, rekodi ya ukaguzi) bila bili ya SaaS
 
 ## Wakati wa kuchagua LiteLLM
 

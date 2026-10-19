@@ -16,14 +16,14 @@ AgentBridge é o proxy MITM (Man-in-the-Middle) do OmniRoute que interceta o tr�
 
 ### O que é o AgentBridge?
 
-Quando um agente de IDE (por exemplo, GitHub Copilot, Cursor, Claude Code) efetua uma chamada à API, liga-se diretamente ao fornecedor de IA a montante (OpenAI, Anthropic, etc.). O AgentBridge interceta essa ligação de forma transparente ao nível de TLS — sem exigir qualquer alteração à configuração do agente — e reencaminha o pedido através do OmniRoute.
+Quando um agente de IDE (por exemplo, GitHub Copilot, Cursor, Claude Code) efetua uma chamada à API, liga-se diretamente ao fornecedor de IA a montante (OpenAI, Anthropic, etc.). O AgentBridge interceta essa ligação de forma transparente ao nível de TLS — sem exigir qualquer alteração à configuração do agente — e reescreve o pedido através do OmniRoute.
 
 Isto permite-lhe:
 
-- **Reencaminhar qualquer agente para qualquer fornecedor**: o Copilot está a comunicar com a OpenAI? Redirecione-o para o Anthropic Claude, Gemini ou qualquer um dos 372 fornecedores do OmniRoute.
+- **Redirecionar qualquer agente para qualquer fornecedor**: o Copilot está a comunicar com a OpenAI? Redirecione-o para o Anthropic Claude, Gemini ou qualquer um dos 374 fornecedores do OmniRoute.
 - **Aplicar mapeamentos de modelos**: `gemini-3-flash` → `claude-sonnet-4.7` de forma transparente ao nível do processador.
 - **Observar todo o tráfego dos agentes**: todos os pedidos intercetados são publicados no [Inspetor de Tráfego](./TRAFFIC_INSPECTOR.md).
-- **Aplicar a resiliência do OmniRoute**: o encaminhamento combinado, os disjuntores, as alternativas e a monitorização de custos também funcionam para o tráfego dos agentes de IDE.
+- **Aplicar a resiliência do OmniRoute**: o encaminhamento combinado, os disjuntores, as alternativas e o acompanhamento de custos também funcionam para o tráfego dos agentes de IDE.
 
 ### Posicionamento face ao mercado
 
@@ -37,7 +37,7 @@ Isto permite-lhe:
 | Zed Industries                     |    —    |    ✓     |        —        |             ✓             |
 | Claude Code                        |    —    |    —     |        ✓        |             ✓             |
 | Open Code                          |    —    |    —     |        ✓        |             ✓             |
-| Trae                               |    —    |    —     |        —        |    🔍 Em investigação     |
+| Trae                               |    —    |    —     |        —        |       🔍 Em análise       |
 | Interface do painel                |    ✓    |    ✗     |        ✗        |             ✓             |
 | Inspetor de Tráfego                |    ✗    |    ✗     |        ✓        |             ✓             |
 | Encaminhamento do OmniRoute        |    ✗    |    ✗     |        ✗        |             ✓             |

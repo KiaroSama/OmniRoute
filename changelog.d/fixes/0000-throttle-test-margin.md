@@ -1,0 +1,1 @@
+- **release:** the quota-fetch throttle suite (#6911) keeps 100 ms of slack for scheduling noise — it measures spacing at the mocked fetch, and on a loaded runner a 30–50 ms hiccup on the first call alone shrank a 200 ms spacing to 168 ms; it now uses a 400 ms interval with a 300 ms floor (an unthrottled pair still lands 1–2 ms apart) and a 150 ms cache-hit ceiling.

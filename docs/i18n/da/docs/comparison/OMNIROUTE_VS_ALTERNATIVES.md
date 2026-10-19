@@ -39,11 +39,11 @@ Objektiv sammenligning af funktioner med populære open source-AI-routere.
 
 ## Hvornår du bør vælge OmniRoute
 
-- Du hoster selv og ønsker **maksimal udbyderdækning** (372 udbydere, 155 gratis katalogposter uden godkendelse)
+- Du hoster selv og ønsker **maksimal udbyderdækning** (374 udbydere, 155 gratis katalogposter uden godkendelse)
 - Du har brug for en **indbygget MCP-server** (LLM-værktøjer, hukommelse og færdigheder eksponeret som værktøjer)
 - Du har brug for **A2A-protokollen** til arbejdsgange mellem agenter
-- Du ønsker **fingeraftryksskjul** (JA3/JA4) for at undgå registrering af upstream-CAPTCHA'er
-- Du har brug for **virksomhedsfunktioner** (sikkerhedsbegrænsninger, evalueringer og revisionsspor) uden en SaaS-regning
+- Du ønsker **fingeraftryksmaskering** (JA3/JA4) for at undgå registrering af upstream-CAPTCHA'er
+- Du har brug for **virksomhedsfunktioner** (sikkerhedsregler, evalueringer og revisionsspor) uden en SaaS-regning
 
 ## Hvornår du bør vælge LiteLLM
 

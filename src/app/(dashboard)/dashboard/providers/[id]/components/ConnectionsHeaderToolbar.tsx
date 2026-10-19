@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, DistributeProxiesButton, Toggle } from "@/shared/components";
+import { ActionBar, Button, DistributeProxiesButton, Toggle } from "@/shared/components";
 import { providerText, type ProviderMessageTranslator } from "../providerPageHelpers";
 import type { CodexGlobalServiceMode } from "@/lib/providers/codexFastTier";
 import AccountProxyResetButton from "./AccountProxyResetButton";
@@ -235,9 +235,7 @@ export default function ConnectionsHeaderToolbar({
             : t("providerProxy")}
         </button>
       </div>
-      <div
-        className={`flex flex-wrap items-center gap-2 ${providerId === "codex" ? "justify-start" : "shrink-0 justify-end"}`}
-      >
+      <ActionBar align={providerId === "codex" ? "start" : "end"}>
         {connections.length > 0 && (
           <DistributeProxiesButton
             onDistribute={async () => {
@@ -405,7 +403,7 @@ export default function ConnectionsHeaderToolbar({
             </Button>
           )
         )}
-      </div>
+      </ActionBar>
     </div>
   );
 }

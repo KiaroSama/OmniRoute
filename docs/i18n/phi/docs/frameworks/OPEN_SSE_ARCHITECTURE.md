@@ -479,19 +479,19 @@ Pinangangasiwaan nito ang:
 
 ---
 
-## Configuration
+## Konfigurasyon
 
-Nasa `open-sse/config/` ang layer ng configuration:
+Nasa `open-sse/config/` ang layer ng konfigurasyon:
 
 | File                            | Layunin                                                    |
 | ------------------------------- | ---------------------------------------------------------- |
-| `providerRegistry.ts`           | Registry ng chat model para sa catalog na may 372 provider |
+| `providerRegistry.ts`           | Registry ng chat model para sa katalogo ng 374 na provider |
 | `providerModels.ts`             | Mga alias ng model, pagmamapa ng format                    |
-| `constants.ts`                  | Mga timeout, limit, at status code                         |
+| `constants.ts`                  | Mga timeout, limitasyon, at status code                    |
 | `defaultThinkingSignature.ts`   | Default na thinking signature ng Claude                    |
-| `modelStrip.ts` (nasa services) | Pag-aalis ng mga field ayon sa provider                    |
+| `modelStrip.ts` (nasa services) | Pag-aalis ng mga field para sa bawat provider              |
 
-### Schema ng Provider Registry
+### Schema ng Registry ng Provider
 
 ```ts
 interface ProviderConfig {
@@ -506,7 +506,7 @@ interface ProviderConfig {
 }
 ```
 
-Tinitiyak ng Zod validation sa pag-load ng module na valid ang lahat ng configuration ng provider.
+Tinitiyak ng validation ng Zod sa pag-load ng module na valid ang lahat ng configuration ng provider.
 
 ---
 

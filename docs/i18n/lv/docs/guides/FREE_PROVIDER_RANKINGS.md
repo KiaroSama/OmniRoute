@@ -12,30 +12,30 @@
 
 ## Kas tas ir
 
-OmniRoute reģistrē 372 nodrošinātājus, tostarp 155 kataloga ierakstus, kas atzīmēti kā **bezmaksas/bez autentifikācijas**
+OmniRoute reģistrē 374 nodrošinātājus, tostarp 155 kataloga ierakstus, kas atzīmēti kā **bezmaksas/bez autentifikācijas**
 (bez autentifikācijas,
 bezmaksas līmeņa OAuth vai bezmaksas līmeņa API atslēga — skatiet
 [Bezmaksas līmeņu ceļvedi](../getting-started/FREE-TIERS-GUIDE.md) un pilno
-[Bezmaksas līmeņu direktoriju](../reference/FREE_TIERS.md)). Tomēr ir kāds āķis: bezmaksas nodrošinātāju
-modeļu kvalitāte ievērojami atšķiras. Nodrošinātājs bez autentifikācijas, kas piedāvā progresīvāko modeli, ir daudz noderīgāks
-nekā tāds, kas piedāvā nelielu novecojušu modeli.
+[Bezmaksas līmeņu direktoriju](../reference/FREE_TIERS.md)). Taču bezmaksas nodrošinātāju
+modeļu kvalitāte ievērojami atšķiras. Nodrošinātājs bez autentifikācijas, kas piedāvā
+modernāko modeli, ir daudz noderīgāks nekā tāds, kas piedāvā nelielu, novecojušu modeli.
 
-**Bezmaksas nodrošinātāju rangs** atbild uz jautājumu: „**kurš bezmaksas nodrošinātājs piedāvā vislabāko modeli?**”,
-savienojot katra bezmaksas nodrošinātāja katalogu ar **kopienas veidotiem kvalitātes vērtējumiem** no
+**Bezmaksas nodrošinātāju reitings** sniedz atbildi uz jautājumu: „**kurš bezmaksas nodrošinātājs man piedāvā vislabāko modeli?**”, apvienojot
+katra bezmaksas nodrošinātāja katalogu ar **kopienas veidotiem kvalitātes vērtējumiem** no
 **Arena AI līderu saraksta** (uz cilvēku preferencēm balstīts ELO — tā pati ideja, kas ir LMArena
 tērzēšanas robotu arēnas pamatā). Pēc tam nodrošinātāji tiek sarindoti pēc to **labākā bezmaksas modeļa** kvalitātes.
 
-Rangs tiek aprēķināts, izmantojot trīs reālus avotus:
+Reitings tiek aprēķināts, izmantojot trīs reālus avotus:
 
 1. Bezmaksas nodrošinātāju saraksti — `NOAUTH_PROVIDERS`, kā arī `OAUTH_PROVIDERS` /
-   `APIKEY_PROVIDERS` ieraksti, kas atzīmēti ar `hasFree`
+   `APIKEY_PROVIDERS` ieraksti ar atzīmi `hasFree`
    (`src/shared/constants/providers.ts`).
 2. Katra nodrošinātāja modeļu katalogs no nodrošinātāju reģistra
    (`open-sse/config/providerRegistry.ts`).
-3. No ELO atvasināti uzdevumu piemērotības vērtējumi, kurus `model_intelligence` DB tabulā glabā
-   Arena ELO sinhronizācijas programma (`src/lib/arenaEloSync.ts`).
+3. No ELO atvasināti uzdevumu piemērotības vērtējumi, ko Arena ELO sinhronizācijas programma glabā
+   datubāzes tabulā `model_intelligence` (`src/lib/arenaEloSync.ts`).
 
-Savienošanas loģika atrodas failā `src/lib/freeProviderRankings.ts`.
+Savienošanas loģika atrodas `src/lib/freeProviderRankings.ts`.
 
 ---
 

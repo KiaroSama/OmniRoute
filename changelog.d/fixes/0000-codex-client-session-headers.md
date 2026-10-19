@@ -1,0 +1,1 @@
+- **fix(codex):** Recognize `x-opencode-session-id`, `x-session-affinity`, and `x-session-id` as inbound client session aliases for fingerprint convergence and turn-state provenance, preserving native session-header precedence and existing fingerprint-mode boundaries.

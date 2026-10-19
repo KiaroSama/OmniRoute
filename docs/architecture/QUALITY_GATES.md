@@ -26,8 +26,10 @@ cancelled, skipped, pending and unknown results cannot establish PASS. A valid
 docs-only or catalog-only classification can make a code lane inapplicable;
 a draft PR is not an accepted candidate. A `hotfix` label does not waive evidence.
 
-Both workflows cover PRs and pushes to main/release branches, manual dispatch and
-merge-group events. Push, dispatch and merge-group run the full selection. Forks
+Both workflows cover PRs into main/release branches, pushes to `main`, manual dispatch
+and merge-group events. Push, dispatch and merge-group run the full selection. Pushes to
+`release/**` do not start them (2026-10-18): each change already ran the matrix on its PR
+and the merged combination is Release-Green's job (`docs/ops/RUNNER_BOX.md` → Hosted lane). Forks
 and merge groups use hosted runners for jobs that otherwise select self-hosted
 runners; sufficient hosted capacity must be verified before rollout.
 
@@ -65,8 +67,8 @@ The CI source of truth is `.github/workflows/ci.yml`.
 
 ### Release PR fast-path (`quality.yml`)
 
-`.github/workflows/quality.yml` complements CI on main/release PRs, protected-branch
-pushes, dispatch and merge groups. PRs use path-filtered fast checks. The permanently
+`.github/workflows/quality.yml` complements CI on main/release PRs, pushes to `main`,
+dispatch and merge groups. PRs use path-filtered fast checks. The permanently
 disabled duplicate build was removed; the real build/package/boot checks remain in CI.
 
 | Job                                              | Scope                                                                                                                                                                                        | Blocking             |

@@ -483,13 +483,13 @@ Celui-ci gère :
 
 `open-sse/config/` contient la couche de configuration :
 
-| Fichier                             | Rôle                                                               |
-| ----------------------------------- | ------------------------------------------------------------------ |
-| `providerRegistry.ts`               | Registre des modèles de chat pour le catalogue de 372 fournisseurs |
-| `providerModels.ts`                 | Alias de modèles, mappage des formats                              |
-| `constants.ts`                      | Délais d’expiration, limites, codes d’état                         |
-| `defaultThinkingSignature.ts`       | Signature de réflexion Claude par défaut                           |
-| `modelStrip.ts` (dans les services) | Suppression de champs propre à chaque fournisseur                  |
+| Fichier                         | Rôle                                                               |
+| ------------------------------- | ------------------------------------------------------------------ |
+| `providerRegistry.ts`           | Registre des modèles de chat pour le catalogue de 374 fournisseurs |
+| `providerModels.ts`             | Alias de modèles, correspondance des formats                       |
+| `constants.ts`                  | Délais d’expiration, limites, codes d’état                         |
+| `defaultThinkingSignature.ts`   | Signature de raisonnement Claude par défaut                        |
+| `modelStrip.ts` (dans services) | Suppression de champs propre à chaque fournisseur                  |
 
 ### Schéma du registre des fournisseurs
 

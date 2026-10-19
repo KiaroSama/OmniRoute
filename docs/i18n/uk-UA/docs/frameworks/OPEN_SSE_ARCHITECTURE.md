@@ -488,11 +488,11 @@ createResponsesApiTransformStream(): TransformStream
 
 | Файл                          | Призначення                                       |
 | ----------------------------- | ------------------------------------------------- |
-| `providerRegistry.ts`         | Реєстр чат-моделей для каталогу з 372 провайдерів |
+| `providerRegistry.ts`         | Реєстр чат-моделей для каталогу з 374 провайдерів |
 | `providerModels.ts`           | Псевдоніми моделей, зіставлення форматів          |
 | `constants.ts`                | Тайм-аути, обмеження, коди стану                  |
-| `defaultThinkingSignature.ts` | Стандартний підпис міркувань Claude               |
-| `modelStrip.ts` (у services)  | Видалення полів для кожного провайдера            |
+| `defaultThinkingSignature.ts` | Стандартний підпис міркування Claude              |
+| `modelStrip.ts` (у services)  | Видалення полів окремо для кожного провайдера     |
 
 ### Схема реєстру провайдерів
 

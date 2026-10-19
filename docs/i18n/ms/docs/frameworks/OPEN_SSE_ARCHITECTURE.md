@@ -483,13 +483,13 @@ Ini mengendalikan:
 
 `open-sse/config/` mengandungi lapisan konfigurasi:
 
-| Fail                                 | Tujuan                                              |
-| ------------------------------------ | --------------------------------------------------- |
-| `providerRegistry.ts`                | Daftar model sembang merentasi katalog 372 penyedia |
-| `providerModels.ts`                  | Alias model, pemetaan format                        |
-| `constants.ts`                       | Tamat masa, had, kod status                         |
-| `defaultThinkingSignature.ts`        | Tandatangan pemikiran Claude lalai                  |
-| `modelStrip.ts` (dalam perkhidmatan) | Pengguguran medan mengikut penyedia                 |
+| Fail                             | Tujuan                                              |
+| -------------------------------- | --------------------------------------------------- |
+| `providerRegistry.ts`            | Daftar model sembang merentasi katalog 374 penyedia |
+| `providerModels.ts`              | Alias model, pemetaan format                        |
+| `constants.ts`                   | Tamat masa, had, kod status                         |
+| `defaultThinkingSignature.ts`    | Tandatangan pemikiran lalai Claude                  |
+| `modelStrip.ts` (dalam services) | Penyingkiran medan mengikut penyedia                |
 
 ### Skema Daftar Penyedia
 
@@ -506,7 +506,7 @@ interface ProviderConfig {
 }
 ```
 
-Pengesahan Zod semasa modul dimuatkan memastikan semua konfigurasi penyedia adalah sah.
+Pengesahan Zod semasa pemuatan modul memastikan semua konfigurasi penyedia adalah sah.
 
 ---
 

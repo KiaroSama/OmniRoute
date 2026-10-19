@@ -485,13 +485,13 @@ createResponsesApiTransformStream(): TransformStream
 
 | Fáìlì                           | Ìdí                                                |
 | ------------------------------- | -------------------------------------------------- |
-| `providerRegistry.ts`           | Ìforúkọsílẹ̀ àwòṣe ìfọ̀rọ̀wérọ̀ lórí àkójọ olùpèsè 372 |
-| `providerModels.ts`             | Àwọn orúkọ mìíràn fún àwòṣe, ìbáramu ìgúnrégé      |
-| `constants.ts`                  | Àkókò ìdádúró, àwọn ààlà, àwọn kóòdù ipò           |
-| `defaultThinkingSignature.ts`   | Ìfọwọ́sí ìrònú Claude àìyípadà                      |
-| `modelStrip.ts` (nínú services) | Yíyọ àwọn pápá kúrò fún olùpèsè kọ̀ọ̀kan             |
+| `providerRegistry.ts`           | Ìforúkọsílẹ̀ àwòṣe ìbánisọ̀rọ̀ lórí àkójọ olùpèsè 374 |
+| `providerModels.ts`             | Àwọn orúkọ àfidípò àwòṣe, ìbámu fọ́ọ̀mù              |
+| `constants.ts`                  | Àkókò ìdádúró, àwọn òpin, àwọn kóòdù ipò           |
+| `defaultThinkingSignature.ts`   | Ìfọwọ́sí ìrònú Claude àiyipada                      |
+| `modelStrip.ts` (nínú services) | Yíyọ àwọn ààyè kúrò fún olùpèsè kọ̀ọ̀kan             |
 
-### Àwòrán Ìforúkọsílẹ̀ Olùpèsè
+### Àwòṣe Ìforúkọsílẹ̀ Olùpèsè
 
 ```ts
 interface ProviderConfig {
@@ -506,7 +506,7 @@ interface ProviderConfig {
 }
 ```
 
-Ìfọwọ́sí Zod nígbà tí module bá ń kojọpọ̀ ń rí i dájú pé gbogbo àwọn ìṣètò olùpèsè wúlò.
+Ìfọwọ́sí Zod nígbà tí module bá ń kó wọlé ń rí i dájú pé gbogbo àwọn ìṣètò olùpèsè jẹ́ tó tọ́.
 
 ---
 

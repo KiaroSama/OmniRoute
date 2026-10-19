@@ -12,21 +12,21 @@
 
 ---
 
-## Bu nima?
+## Bu nima
 
-OmniRoute 372 ta provayderni roʻyxatdan oʻtkazadi, jumladan **bepul/autentifikatsiyasiz** deb belgilangan 155 ta katalog yozuvini
+OmniRoute 374 ta provayderni roʻyxatdan oʻtkazadi, jumladan **bepul/autentifikatsiyasiz** deb belgilangan 155 ta katalog yozuvini
 (autentifikatsiyasiz,
-bepul darajadagi OAuth yoki bepul darajadagi API kaliti —
-[Bepul darajalar qoʻllanmasi](../getting-started/FREE-TIERS-GUIDE.md) va toʻliq
-[Bepul darajalar katalogi](../reference/FREE_TIERS.md)ga qarang). Ammo bir jihati bor: bepul provayderlar
-model sifati boʻyicha keskin farq qiladi. Eng ilgʻor modelni taqdim etuvchi autentifikatsiyasiz provayder
-kichik, eskirgan modelni taqdim etuvchiga qaraganda ancha foydaliroq.
+bepul tarifli OAuth yoki bepul tarifli API kaliti —
+[Bepul tariflar qoʻllanmasi](../getting-started/FREE-TIERS-GUIDE.md) va toʻliq
+[Bepul tariflar katalogi](../reference/FREE_TIERS.md)ga qarang). Muhim jihati: bepul provayderlar
+model sifati boʻyicha keskin farq qiladi. Ilgʻor modelni taqdim etuvchi autentifikatsiyasiz provayder
+kichik, eskirgan modelni taqdim etuvchidan ancha foydaliroq.
 
 **Bepul provayderlar reytingi** har bir bepul provayder katalogini
-**Arena AI reyting jadvali**dagi **jamoa tomonidan shakllantirilgan sifat ballari** bilan birlashtirish orqali
-“**qaysi bepul provayder menga eng yaxshi modelni taqdim etadi?**” degan savolga javob beradi (inson afzalliklariga asoslangan ELO — LMArena
-chatbotlar arenasidagi gʻoya bilan bir xil). Soʻng provayderlar oʻzlarining **eng yaxshi bepul modeli**
-imkoniyatlariga koʻra tartiblanadi.
+**Arena AI peshqadamlar jadvali**dagi **jamoa tomonidan shakllantirilgan sifat baholari**
+(LMArena chatbot arenasidagi yondashuv bilan bir xil boʻlgan, inson afzalliklariga asoslangan ELO) bilan
+birlashtirish orqali "**qaysi bepul provayder menga eng yaxshi modelni taqdim etadi?**" degan savolga javob beradi.
+Soʻngra provayderlar oʻzlarining **eng yaxshi bepul modeli** salohiyatiga koʻra tartiblanadi.
 
 Reyting uchta haqiqiy manba asosida hisoblanadi:
 
@@ -36,7 +36,7 @@ Reyting uchta haqiqiy manba asosida hisoblanadi:
 2. Provayderlar reyestridagi har bir provayderning modellar katalogi
    (`open-sse/config/providerRegistry.ts`).
 3. Arena ELO sinxronlash mexanizmi (`src/lib/arenaEloSync.ts`) tomonidan
-   `model_intelligence` maʼlumotlar bazasi jadvalida saqlanadigan ELO asosidagi vazifaga moslik ballari.
+   `model_intelligence` maʼlumotlar bazasi jadvalida saqlanadigan, ELO asosida hisoblangan vazifaga moslik ballari.
 
 Birlashtirish mantiqi `src/lib/freeProviderRankings.ts` faylida joylashgan.
 

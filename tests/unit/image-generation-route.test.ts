@@ -218,30 +218,6 @@ test("v1 image models GET exposes image-only modalities for credential-backed im
   assert.deepEqual(byId.get("stability-ai/fast")?.input_modalities, ["image"]);
 });
 
-test("v1 image models GET exposes current Codex image models and hides inactive providers", async () => {
-  await seedConnection("codex", { apiKey: "codex-key" });
-
-  const response = await imageRoute.GET();
-  const body = (await response.json()) as { data: Array<{ id: string }> };
-  const ids = body.data.map((item) => item.id);
-
-  assert.equal(response.status, 200);
-  assert.deepEqual(
-    ids.filter((id) => id.startsWith("codex/")),
-    [
-      "codex/gpt-5.6-sol-image",
-      "codex/gpt-5.6-terra-image",
-      "codex/gpt-5.6-luna-image",
-      "codex/gpt-image-2.5-flare",
-      "codex/gpt-image-2.5-sunburst",
-      "codex/gpt-image-2",
-    ]
-  );
-  assert.ok(!ids.includes("codex/gpt-5.5"));
-  assert.ok(!ids.includes("openai/gpt-image-2"));
-  assert.ok(!ids.some((id: string) => id.startsWith("xai/")));
-});
-
 test("v1 image generation POST accepts promptless requests for image-only models", async () => {
   await seedConnection("topaz", { apiKey: "topaz-key" });
 

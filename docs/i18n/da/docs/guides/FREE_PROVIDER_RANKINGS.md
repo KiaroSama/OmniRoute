@@ -13,20 +13,20 @@
 
 ## Hvad det er
 
-OmniRoute registrerer 372 udbydere, herunder 155 katalogposter markeret som **gratis/uden godkendelse**
+OmniRoute registrerer 374 udbydere, herunder 155 katalogposter markeret som **gratis/uden godkendelse**
 (uden godkendelse,
-OAuth med gratis niveau eller API-nøgle med gratis niveau — se
-[vejledningen til gratis niveauer](../getting-started/FREE-TIERS-GUIDE.md) og den komplette
+gratis OAuth-niveau eller gratis API-nøgleniveau — se
+[Guiden til gratis niveauer](../getting-started/FREE-TIERS-GUIDE.md) og den komplette
 [oversigt over gratis niveauer](../reference/FREE_TIERS.md)). Udfordringen er, at gratis udbydere varierer
-markant i modelkvalitet. En udbyder uden godkendelse, der tilbyder en avanceret model, er langt mere nyttig
-end en, der tilbyder en lille, ældre model.
+markant i modelkvalitet. En udbyder uden godkendelse, der tilbyder en frontlinjemodel, er langt mere nyttig
+end en, der tilbyder en lille ældre model.
 
 **Rangeringer af gratis udbydere** besvarer spørgsmålet "**hvilken gratis udbyder giver mig den bedste model?**" ved at
-kombinere hver gratis udbyders katalog med **crowdsourcede kvalitetsscorer** fra
-**Arena AI-ranglisten** (ELO baseret på menneskelige præferencer, samme idé som bag LMArena-
-chatbotarenaen). Udbyderne rangeres derefter efter kvaliteten af deres **bedste gratis model**.
+sammenkæde hver gratis udbyders katalog med **crowdsourcede kvalitetsscorer** fra
+**Arena AI-resultattavlen** (ELO baseret på menneskelige præferencer, samme idé som ligger bag LMArena-
+chatbotarenaen). Udbyderne rangeres derefter efter styrken af deres **bedste gratis model**.
 
-Rangeringen beregnes ud fra tre reelle kilder:
+Rangeringen beregnes ud fra tre faktiske kilder:
 
 1. Listerne over gratis udbydere — `NOAUTH_PROVIDERS` samt poster i `OAUTH_PROVIDERS` /
    `APIKEY_PROVIDERS`, der er markeret med `hasFree`

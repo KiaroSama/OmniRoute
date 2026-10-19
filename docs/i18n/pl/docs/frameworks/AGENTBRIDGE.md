@@ -12,38 +12,38 @@ AgentBridge to proxy MITM (Man-in-the-Middle) OmniRoute, który przechwytuje ruc
 
 ---
 
-## §1 Przegląd
+## §1 Omówienie
 
 ### Czym jest AgentBridge?
 
-Gdy agent IDE (np. GitHub Copilot, Cursor, Claude Code) wykonuje wywołanie API, łączy się bezpośrednio z nadrzędnym dostawcą AI (OpenAI, Anthropic itp.). AgentBridge przechwytuje to połączenie w sposób transparentny na poziomie TLS — bez konieczności wprowadzania jakichkolwiek zmian w konfiguracji agenta — i przekierowuje żądanie przez OmniRoute.
+Gdy agent IDE (np. GitHub Copilot, Cursor, Claude Code) wykonuje wywołanie API, łączy się bezpośrednio z nadrzędnym dostawcą AI (OpenAI, Anthropic itp.). AgentBridge w sposób przezroczysty przechwytuje to połączenie na poziomie TLS — bez konieczności zmiany konfiguracji agenta — i przekierowuje żądanie przez OmniRoute.
 
 Dzięki temu możesz:
 
-- **Przekierować dowolnego agenta do dowolnego dostawcy**: Copilot komunikuje się z OpenAI? Przekieruj go do Anthropic Claude, Gemini lub dowolnego spośród 372 dostawców OmniRoute.
-- **Stosować mapowania modeli**: `gemini-3-flash` → `claude-sonnet-4.7` w sposób transparentny na poziomie procedury obsługi.
+- **Przekierować dowolnego agenta do dowolnego dostawcy**: Copilot komunikuje się z OpenAI? Przekieruj go do Anthropic Claude, Gemini lub dowolnego spośród 374 dostawców OmniRoute.
+- **Stosować mapowania modeli**: `gemini-3-flash` → `claude-sonnet-4.7` w sposób przezroczysty na poziomie procedury obsługi.
 - **Obserwować cały ruch agentów**: każde przechwycone żądanie jest publikowane w [Inspektorze ruchu](./TRAFFIC_INSPECTOR.md).
-- **Korzystać z mechanizmów odporności OmniRoute**: routing łączony, wyłączniki obwodów, mechanizmy rezerwowe i śledzenie kosztów działają również dla ruchu agentów IDE.
+- **Korzystać z mechanizmów odporności OmniRoute**: routing łączony, wyłączniki obwodu, mechanizmy rezerwowe i śledzenie kosztów działają również dla ruchu agentów IDE.
 
 ### Pozycja na tle rynku
 
-| Funkcja                    | 9router | anti-api | llm-interceptor | **OmniRoute AgentBridge** |
-| -------------------------- | :-----: | :------: | :-------------: | :-----------------------: |
-| Antigravity                |    ✓    |    ✓     |        —        |             ✓             |
-| GitHub Copilot             |    ✓    |    ✓     |        —        |             ✓             |
-| Kiro (AWS)                 |    ✓    |    ✓     |        —        |             ✓             |
-| OpenAI Codex               |    —    |    ✓     |        —        |             ✓             |
-| Cursor IDE                 |    ✓    |    ✓     |        —        |             ✓             |
-| Zed Industries             |    —    |    ✓     |        —        |             ✓             |
-| Claude Code                |    —    |    —     |        ✓        |             ✓             |
-| Open Code                  |    —    |    —     |        ✓        |             ✓             |
-| Trae                       |    —    |    —     |        —        |   🔍 W trakcie analizy    |
-| Interfejs panelu           |    ✓    |    ✗     |        ✗        |             ✓             |
-| Inspektor ruchu            |    ✗    |    ✗     |        ✓        |             ✓             |
-| Routing OmniRoute          |    ✗    |    ✗     |        ✗        |             ✓             |
-| Interfejs mapowania modeli |    ✗    |    ✗     |        ✗        |             ✓             |
-| Lista pomijania            |    ✗    |    ✗     |        ✓        |             ✓             |
-| Certyfikat nadrzędnego CA  |    ✗    |    ✗     |        ✓        |             ✓             |
+| Funkcja                           | 9router | anti-api | llm-interceptor | **OmniRoute AgentBridge** |
+| --------------------------------- | :-----: | :------: | :-------------: | :-----------------------: |
+| Antigravity                       |    ✓    |    ✓     |        —        |             ✓             |
+| GitHub Copilot                    |    ✓    |    ✓     |        —        |             ✓             |
+| Kiro (AWS)                        |    ✓    |    ✓     |        —        |             ✓             |
+| OpenAI Codex                      |    —    |    ✓     |        —        |             ✓             |
+| Cursor IDE                        |    ✓    |    ✓     |        —        |             ✓             |
+| Zed Industries                    |    —    |    ✓     |        —        |             ✓             |
+| Claude Code                       |    —    |    —     |        ✓        |             ✓             |
+| Open Code                         |    —    |    —     |        ✓        |             ✓             |
+| Trae                              |    —    |    —     |        —        |   🔍 W trakcie analizy    |
+| Interfejs panelu                  |    ✓    |    ✗     |        ✗        |             ✓             |
+| Inspektor ruchu                   |    ✗    |    ✗     |        ✓        |             ✓             |
+| Routing OmniRoute                 |    ✗    |    ✗     |        ✗        |             ✓             |
+| Interfejs mapowania modeli        |    ✗    |    ✗     |        ✗        |             ✓             |
+| Lista pomijania                   |    ✗    |    ✗     |        ✓        |             ✓             |
+| Certyfikat CA serwera nadrzędnego |    ✗    |    ✗     |        ✓        |             ✓             |
 
 ---
 
