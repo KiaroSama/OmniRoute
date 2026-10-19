@@ -1,1 +1,0 @@
-- **fix(compression):** Preserve assistant and instruction context during live-zone compression so current tool observations stay complete through the session-dedup and lite pipeline, while completed tool history remains eligible and cached prefixes stay unchanged.
