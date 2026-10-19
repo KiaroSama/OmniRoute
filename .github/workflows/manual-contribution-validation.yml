@@ -14,7 +14,7 @@ on:
         required: true
         default: opencode
         type: choice
-        options: [opencode, streaming-credentials, images]
+        options: [opencode, streaming-credentials, images, sol]
 
 permissions:
   contents: read
@@ -678,5 +678,11 @@ jobs:
   images:
     if: github.repository == 'KiaroSama/OmniRoute' && github.event_name == 'workflow_dispatch' && inputs.validation_scope == 'images'
     uses: ./.github/workflows/manual-image-validation.yml
+    with:
+      candidate_sha: ${{ inputs.candidate_sha }}
+
+  sol:
+    if: github.repository == 'KiaroSama/OmniRoute' && github.event_name == 'workflow_dispatch' && inputs.validation_scope == 'sol'
+    uses: ./.github/workflows/manual-sol-validation.yml
     with:
       candidate_sha: ${{ inputs.candidate_sha }}

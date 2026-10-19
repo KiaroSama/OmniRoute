@@ -1,0 +1,100 @@
+name: Focused Sol candidate validation
+
+on:
+  workflow_call:
+    inputs:
+      candidate_sha:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: github.repository == 'KiaroSama/OmniRoute' && github.event_name == 'workflow_dispatch'
+    name: Sol (${{ matrix.lane }})
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        lane: [sol-runtime, sol-static, sol-types]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+      VALIDATION_WORKFLOW_SHA: ${{ github.workflow_sha }}
+      IMAGE_VALIDATION_LANE: ${{ matrix.lane }}
+      CI: "true"
+      APP_LOG_TO_FILE: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+      OMNIROUTE_SKIP_SYSTEM_TRUST: "1"
+      OMNIROUTE_SKIP_DNS_WRITE: "1"
+      DISABLE_SQLITE_AUTO_BACKUP: "true"
+    steps:
+      - name: Admit immutable input before checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.candidate_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Checkout reviewed validation tooling separately
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.workflow_sha }}
+          path: .claude/validation-tooling
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Verify exact candidate and prepare isolated state
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CANDIDATE_SHA"
+          git merge-base --is-ancestor 11bb5f11f6415ca4fe1417c0ca0ed95b25af6678 HEAD
+          owned="$GITHUB_WORKSPACE/.ci-work/sol-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          echo "IMAGE_VALIDATION_ROOT=$owned" >> "$GITHUB_ENV"
+          echo "OWNED_ROOT=$owned" >> "$GITHUB_ENV"
+          IMAGE_VALIDATION_ROOT="$owned" node .claude/validation-tooling/scripts/ci/sol-validation.mjs prepare
+          {
+            echo "HOME=$owned/isolated-home"
+            echo "USERPROFILE=$owned/isolated-home"
+            echo "APPDATA=$owned/isolated-home"
+            echo "LOCALAPPDATA=$owned/isolated-home"
+            echo "DATA_DIR=$owned/isolated-data"
+            echo "OMNIROUTE_PLUGINS_DIR=$owned/isolated-plugins"
+            echo "TMPDIR=$owned/tmp"
+            echo "TMP=$owned/tmp"
+            echo "TEMP=$owned/tmp"
+            echo "NPM_CONFIG_CACHE=$owned/npm-cache"
+          } >> "$GITHUB_ENV"
+          printf 'Candidate: `%s`\nWorkflow: `%s`\nFocused Sol checks only. Full coverage, broader image matrix and signed distribution remain separate gates.\n' "$CANDIDATE_SHA" "$VALIDATION_WORKFLOW_SHA" >> "$GITHUB_STEP_SUMMARY"
+      - uses: ./.github/actions/npm-ci-retry
+        timeout-minutes: 12
+        with:
+          cache: "false"
+      - name: Run bounded offline focused checks
+        timeout-minutes: 15
+        shell: bash
+        run: node .claude/validation-tooling/scripts/ci/sol-validation.mjs run
+      - name: Verify owned cleanup
+        if: always() && runner.os != 'Windows' && env.IMAGE_VALIDATION_ROOT != ''
+        timeout-minutes: 2
+        shell: bash
+        run: node .claude/validation-tooling/scripts/ci/sol-validation.mjs cleanup
+      - name: Upload synthetic verification receipts only
+        if: always() && env.IMAGE_VALIDATION_ROOT != ''
+        timeout-minutes: 3
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: sol-validation-${{ matrix.lane }}
+          path: ${{ env.IMAGE_VALIDATION_ROOT }}/evidence/
+          if-no-files-found: error
+          retention-days: 7
