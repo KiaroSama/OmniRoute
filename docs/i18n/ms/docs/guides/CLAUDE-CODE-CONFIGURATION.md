@@ -93,10 +93,10 @@ hanya model Kimi.
 
 ---
 
-## Blok penyediaan awal pada papan pemuka
+## Blok penerimaan awal pada papan pemuka
 
 Kad alat Claude (**Papan Pemuka → Kod CLI**) memaparkan serpihan `settings.json` yang tepat
-untuk tika ini, bersebelahan butang maklumat alias penemuan, dengan butang salin:
+untuk tika ini, bersebelahan butang maklumat alias penemuan, berserta butang salin:
 
 ```jsonc
 {
@@ -108,18 +108,32 @@ untuk tika ini, bersebelahan butang maklumat alias penemuan, dengan butang salin
 }
 ```
 
-URL asas ialah URL yang ditentukan oleh kad tersebut (termasuk penggantian tersuai yang anda taip), dan sudah
-dinormalkan — tanpa akhiran `/v1` dan tanpa garis miring di hujung. **Kunci tersebut tidak pernah dipaparkan**: blok ini disertakan dengan
-ruang letak, jadi tangkapan skrin atau cebisan yang ditampal tidak boleh membocorkannya. Tampalkan kunci anda untuk menggantikannya.
+URL asas ialah URL yang ditentukan oleh kad (termasuk penggantian tersuai yang anda taip), yang telah
+dinormalkan — tanpa akhiran `/v1` dan tanpa garis miring penutup. **Kunci tidak pernah dipaparkan**: blok tersebut disertakan dengan
+ruang letak, supaya tangkapan skrin atau serpihan yang ditampal tidak boleh membocorkannya. Tampalkan kunci anda untuk menggantikannya.
 
-Tambahkan `CLAUDE_CODE_AUTO_COMPACT_WINDOW` di bawah blok `env` yang sama bagi mana-mana model yang tetingkap
-konteks sebenarnya bukan 200K — Claude Code mengandaikan 200K untuk setiap id yang tidak dikenalinya, maka
-pemadatan automatik akan tercetus pada titik yang salah (lihat amaran dalam bahagian sebelumnya).
-Pembina cebisan turut menerima nilai tersebut, jadi pemanggil yang mengetahui saiz tetingkap model sasaran
+Tambahkan `CLAUDE_CODE_AUTO_COMPACT_WINDOW` di bawah blok `env` yang sama untuk mana-mana model yang tetingkap
+konteks sebenarnya bukan 200K — Claude Code menganggap 200K untuk setiap id yang tidak dikenalinya, maka
+pemadatan automatik sebaliknya akan dicetuskan pada masa yang salah (lihat amaran dalam bahagian sebelumnya).
+Pembina serpihan turut menerima nilai tersebut, jadi pemanggil yang mengetahui saiz tetingkap model sasaran
 boleh menghasilkannya secara langsung.
 
-Sumber: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (pembina tulen,
-diuji unit) yang dipaparkan oleh `ClaudeGatewayOnboardingBlock`.
+Sumber: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (pembina
+tulen, diuji dengan ujian unit) yang dipaparkan oleh `ClaudeGatewayOnboardingBlock`.
+
+### Sematkan satu akaun (pilihan)
+
+Untuk menghantar setiap permintaan Claude Code melalui satu akaun penyedia tertentu, tambahkan pengepala
+`x-omniroute-connection` melalui `ANTHROPIC_CUSTOM_HEADERS` dalam blok `env` yang sama:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Salin id daripada cip `xxxxxxxx…` pada baris sambungan di halaman penyedia. Penyematan tersebut hanya
+digunakan untuk id model tunggal (`provider/model`), bukan untuk gabungan. Lihat
+[Penyematan akaun bagi setiap permintaan](../reference/API_REFERENCE.md#account-pinning-per-request) untuk
+tingkah laku sandaran yang tepat.
 
 ---
 

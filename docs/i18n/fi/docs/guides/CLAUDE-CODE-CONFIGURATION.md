@@ -95,8 +95,7 @@ näkyviin vain Kimin mallit.
 
 ## Käyttöönotto-osio hallintapaneelissa
 
-Claude-työkalukortti (**Hallintapaneeli → CLI Code**) näyttää täsmälleen tämän instanssin `settings.json`-katkelman
-hakualias-tietopainikkeen vieressä sekä kopiointipainikkeen:
+Claude-työkalukortti (**Hallintapaneeli → CLI Code**) näyttää tämän instanssin tarkan `settings.json`-katkelman tunnistusaliaksen tietopainikkeen vieressä sekä kopiointipainikkeen:
 
 ```jsonc
 {
@@ -108,18 +107,21 @@ hakualias-tietopainikkeen vieressä sekä kopiointipainikkeen:
 }
 ```
 
-Perus-URL on kortin selvittämä osoite (mukaan lukien kirjoittamasi mukautettu ohitus), joka on jo
-normalisoitu — ei `/v1`-päätettä eikä lopun vinoviivaa. **Avainta ei koskaan näytetä**: lohko sisältää
-paikkamerkin, joten kuvakaappaus tai liitetty katkelma ei voi vuotaa avainta. Korvaa paikkamerkki avaimellasi.
+Perus-URL on kortin selvittämä osoite (mukaan lukien kirjoittamasi mukautettu ohitus), joka on jo normalisoitu — ei `/v1`-päätettä eikä lopun vinoviivaa. **Avainta ei koskaan näytetä**: lohko sisältää paikkamerkin, joten kuvakaappaus tai liitetty katkelma ei voi vuotaa avainta. Korvaa paikkamerkki omalla avaimellasi.
 
-Lisää `CLAUDE_CODE_AUTO_COMPACT_WINDOW` samaan `env`-lohkoon kaikille malleille, joiden todellinen
-konteksti-ikkuna ei ole 200K — Claude Code olettaa 200K jokaiselle tunnukselle, jota se ei tunnista, joten
-automaattinen tiivistys käynnistyy muuten väärässä kohdassa (katso edellisen osion varoitus).
-Katkelman muodostin hyväksyy myös tämän arvon, joten kohdemallin ikkunan tunteva kutsuja
-voi tuottaa sen suoraan.
+Lisää `CLAUDE_CODE_AUTO_COMPACT_WINDOW` samaan `env`-lohkoon kaikille malleille, joiden todellinen konteksti-ikkuna ei ole 200K — Claude Code olettaa konteksti-ikkunaksi 200K jokaiselle tunnistamattomalle tunnisteelle, joten automaattinen tiivistys käynnistyy muuten väärässä kohdassa (katso edellisen osion varoitus). Katkelman muodostin hyväksyy myös tämän arvon, joten kutsuja, joka tuntee kohdemallin konteksti-ikkunan, voi sisällyttää sen suoraan.
 
-Lähde: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (puhdas,
-yksikkötestattu muodostin), jonka renderöi `ClaudeGatewayOnboardingBlock`.
+Lähde: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (puhdas muodostin, yksikkötestattu), jonka renderöi `ClaudeGatewayOnboardingBlock`.
+
+### Kiinnitä yksi tili (valinnainen)
+
+Jos haluat lähettää kaikki Claude Code -pyynnöt yhden tietyn palveluntarjoajatilin kautta, lisää `x-omniroute-connection`-otsake `ANTHROPIC_CUSTOM_HEADERS`-muuttujan kautta samaan `env`-lohkoon:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Kopioi tunniste palveluntarjoajasivun yhteysrivillä olevasta `xxxxxxxx…`-tunnisteesta. Kiinnitys koskee vain yksittäisten mallien tunnisteita (`provider/model`), ei yhdistelmiä. Tarkka varatoiminta on kuvattu kohdassa [Tilin kiinnitys pyyntökohtaisesti](../reference/API_REFERENCE.md#account-pinning-per-request).
 
 ---
 

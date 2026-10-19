@@ -331,6 +331,7 @@ function AccessModelsPanelPanelContent({ context }: { context: AccessFormContext
       blockClaudeCodeFamily={form.blockClaudeCodeFamily}
       setCatalogScope={form.setCatalogScope}
       setDisableNonPublicModels={form.setDisableNonPublicModels}
+      setForcedModel={form.setForcedModel}
       errors={form.tabErrors.models}
     />
   );

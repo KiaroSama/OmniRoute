@@ -96,7 +96,7 @@ nhưng nhà cung cấp Kimi bật, thì chỉ các mô hình của Kimi được
 ## Khối hướng dẫn bắt đầu trên bảng điều khiển
 
 Thẻ công cụ Claude (**Dashboard → CLI Code**) hiển thị chính xác đoạn `settings.json`
-dành cho phiên bản này, bên cạnh nút thông tin về bí danh khám phá, kèm theo nút sao chép:
+cho phiên bản này, bên cạnh nút thông tin về bí danh khám phá, cùng với nút sao chép:
 
 ```jsonc
 {
@@ -108,18 +108,32 @@ dành cho phiên bản này, bên cạnh nút thông tin về bí danh khám ph�
 }
 ```
 
-URL cơ sở là URL được thẻ phân giải (bao gồm cả giá trị ghi đè tùy chỉnh mà bạn đã nhập), đã được
-chuẩn hóa — không có hậu tố `/v1`, không có dấu gạch chéo ở cuối. **Khóa không bao giờ được hiển thị**: khối này sử dụng một
-phần giữ chỗ, vì vậy ảnh chụp màn hình hoặc đoạn mã được dán sẽ không thể làm lộ khóa. Hãy thay thế phần đó bằng khóa của bạn.
+URL cơ sở là URL được thẻ phân giải (bao gồm cả giá trị ghi đè tùy chỉnh mà bạn đã nhập) và đã
+được chuẩn hóa — không có hậu tố `/v1`, không có dấu gạch chéo ở cuối. **Khóa không bao giờ được hiển thị**: khối này sử dụng
+một phần giữ chỗ, vì vậy ảnh chụp màn hình hoặc đoạn mã được dán sẽ không thể làm lộ khóa. Hãy thay phần giữ chỗ bằng khóa của bạn.
 
 Thêm `CLAUDE_CODE_AUTO_COMPACT_WINDOW` vào cùng khối `env` cho bất kỳ mô hình nào có
-cửa sổ ngữ cảnh thực tế không phải là 200K — Claude Code giả định 200K cho mọi id mà nó không nhận dạng được, vì vậy
+cửa sổ ngữ cảnh thực tế không phải 200K — Claude Code giả định 200K cho mọi id mà nó không nhận diện, vì vậy
 nếu không, tính năng tự động thu gọn sẽ kích hoạt sai thời điểm (xem cảnh báo trong phần trước).
-Trình tạo đoạn cấu hình cũng chấp nhận giá trị đó, nhờ vậy bên gọi biết cửa sổ của mô hình đích
+Trình tạo đoạn mã cũng chấp nhận giá trị đó, vì vậy bên gọi biết kích thước cửa sổ của mô hình đích
 có thể xuất trực tiếp giá trị này.
 
-Nguồn: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (trình tạo
-thuần túy, đã được kiểm thử đơn vị) được hiển thị bởi `ClaudeGatewayOnboardingBlock`.
+Nguồn: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (trình tạo thuần túy,
+đã được kiểm thử đơn vị) được hiển thị bởi `ClaudeGatewayOnboardingBlock`.
+
+### Ghim một tài khoản (không bắt buộc)
+
+Để gửi mọi yêu cầu Claude Code qua một tài khoản nhà cung cấp cụ thể, hãy thêm header
+`x-omniroute-connection` thông qua `ANTHROPIC_CUSTOM_HEADERS` trong cùng khối `env`:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Sao chép id từ chip `xxxxxxxx…` trên hàng kết nối của trang nhà cung cấp. Việc ghim chỉ
+áp dụng cho các id mô hình đơn (`provider/model`), không áp dụng cho các tổ hợp. Xem
+[Ghim tài khoản theo từng yêu cầu](../reference/API_REFERENCE.md#account-pinning-per-request) để biết
+chính xác hành vi dự phòng.
 
 ---
 

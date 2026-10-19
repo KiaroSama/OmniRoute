@@ -97,8 +97,8 @@ modeli Kimi.
 
 ## Uvodni blok na nadzorni plošči
 
-Kartica orodja Claude (**Nadzorna plošča → Koda CLI**) prikaže natančen fragment `settings.json`
-za ta primerek, poleg informacijskega gumba za vzdevek za odkrivanje in z gumbom za kopiranje:
+Kartica orodja Claude (**Nadzorna plošča → Koda CLI**) prikaže točen fragment `settings.json`
+za ta primerek, poleg informacijskega gumba za vzdevek odkrivanja in z gumbom za kopiranje:
 
 ```jsonc
 {
@@ -110,18 +110,31 @@ za ta primerek, poleg informacijskega gumba za vzdevek za odkrivanje in z gumbom
 }
 ```
 
-Osnovni URL je tisti, ki ga razreši kartica (vključno s preglasitvijo po meri, ki ste jo vnesli), in je že
+Osnovni URL je tisti, ki ga je razrešila kartica (vključno s preglasitvijo po meri, ki ste jo vnesli), in je že
 normaliziran — brez pripone `/v1` in brez končne poševnice. **Ključ ni nikoli prikazan**: blok vsebuje
-nadomestno besedilo, zato ga posnetek zaslona ali prilepljeni izsek ne more razkriti. Nadomestno besedilo zamenjajte s svojim ključem.
+označbo mesta, zato ga posnetek zaslona ali prilepljen izsek ne more razkriti. Označbo mesta nadomestite s svojim ključem.
 
 Dodajte `CLAUDE_CODE_AUTO_COMPACT_WINDOW` v isti blok `env` za vsak model, katerega dejansko
-kontekstno okno ni 200K — Claude Code za vsak ID, ki ga ne prepozna, predpostavlja 200K, zato se
-samodejno strnjevanje sicer sproži ob napačnem času (glejte opozorilo v prejšnjem razdelku).
-Graditelj izseka sprejema tudi to vrednost, zato jo lahko klicatelj, ki pozna velikost kontekstnega okna
-ciljnega modela, vključi neposredno.
+kontekstno okno ni 200K — Claude Code za vsak ID, ki ga ne prepozna, privzame 200K, zato se sicer
+samodejno zgoščevanje sproži ob napačnem trenutku (glejte opozorilo v prejšnjem razdelku).
+Sestavljalnik izsekov sprejme tudi to vrednost, zato jo lahko klicatelj, ki pozna velikost kontekstnega okna
+ciljnega modela, neposredno vključi.
 
 Vir: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (čisti
-graditelj, preizkušen s testi enot), ki ga prikaže `ClaudeGatewayOnboardingBlock`.
+sestavljalnik, pokrit s testi enot), ki ga prikaže `ClaudeGatewayOnboardingBlock`.
+
+### Pripnite en račun (izbirno)
+
+Če želite vse zahteve Claude Code poslati prek enega določenega računa ponudnika, dodajte glavo
+`x-omniroute-connection` prek `ANTHROPIC_CUSTOM_HEADERS` v istem bloku `env`:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+ID kopirajte iz oznake `xxxxxxxx…` v vrstici povezave na strani ponudnika. Pripenjanje velja samo
+za ID-je posameznih modelov (`provider/model`), ne pa za kombinacije. Za natančno
+vedenje ob preklopu glejte [Pripenjanje računa za posamezno zahtevo](../reference/API_REFERENCE.md#account-pinning-per-request).
 
 ---
 

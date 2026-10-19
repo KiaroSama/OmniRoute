@@ -93,9 +93,9 @@ pateikiami tik Kimi modeliai.
 
 ---
 
-## Įvadinis blokas valdymo skydelyje
+## Parengimo blokas prietaisų skydelyje
 
-Claude įrankio kortelėje (**Valdymo skydelis → CLI kodas**), šalia modelių aptikimo pseudonimo informacijos mygtuko, rodomas tikslus šiam egzemplioriui skirtas `settings.json` fragmentas su kopijavimo mygtuku:
+Claude įrankio kortelėje (**Prietaisų skydelis → CLI Code**) pateikiamas tikslus šiam egzemplioriui skirtas `settings.json` fragmentas šalia aptikimo alternatyviojo pavadinimo informacijos mygtuko ir kopijavimo mygtukas:
 
 ```jsonc
 {
@@ -107,11 +107,21 @@ Claude įrankio kortelėje (**Valdymo skydelis → CLI kodas**), šalia modelių
 }
 ```
 
-Bazinis URL yra tas, kurį nustatė kortelė (įskaitant jūsų įvestą pasirinktinę reikšmę), ir jis jau normalizuotas — be `/v1` priesagos ir be baigiamojo pasvirojo brūkšnio. **Raktas niekada nerodomas**: bloke pateikiamas vietaženklis, todėl ekrano kopija ar įklijuotas fragmentas negali jo atskleisti. Pakeiskite vietaženklį savo raktu.
+Bazinis URL yra tas, kurį nustatė kortelė (įskaitant jūsų įvestą pasirinktinį pakeitimą), ir jis jau normalizuotas — be `/v1` priesagos ir be pasvirojo brūkšnio pabaigoje. **Raktas niekada nepateikiamas**: bloke naudojamas vietos rezervavimo tekstas, todėl ekrano kopija ar įklijuotas fragmentas negali jo atskleisti. Vietoje jo įklijuokite savo raktą.
 
-Po tuo pačiu `env` bloku pridėkite `CLAUDE_CODE_AUTO_COMPACT_WINDOW` kiekvienam modeliui, kurio tikrasis konteksto langas nėra 200K — Claude Code kiekvienam neatpažįstamam ID priskiria 200K, todėl kitu atveju automatinis glaudinimas suveikia netinkamu metu (žr. ankstesnio skyriaus įspėjimą). Fragmentų kūrimo priemonė taip pat priima šią reikšmę, todėl iškvietėjas, žinantis tikslinio modelio lango dydį, gali ją pateikti tiesiogiai.
+Į tą patį `env` bloką įtraukite `CLAUDE_CODE_AUTO_COMPACT_WINDOW` bet kuriam modeliui, kurio tikrasis konteksto langas nėra 200K — Claude Code numato 200K kiekvienam neatpažįstamam id, todėl kitu atveju automatinis sutraukimas suaktyvinamas netinkamu metu (žr. ankstesnio skyriaus įspėjimą). Fragmento kūrimo priemonė taip pat priima šią reikšmę, todėl iškviečianti programa, žinanti tikslinio modelio lango dydį, gali ją įtraukti tiesiogiai.
 
-Šaltinis: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (grynoji kūrimo funkcija, patikrinta vienetiniais testais), atvaizduojamas komponento `ClaudeGatewayOnboardingBlock`.
+Šaltinis: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (grynoji kūrimo funkcija, patikrinta vienetų testais), pateikiamas naudojant `ClaudeGatewayOnboardingBlock`.
+
+### Vienos paskyros susiejimas (neprivaloma)
+
+Norėdami kiekvieną Claude Code užklausą siųsti per vieną konkrečią teikėjo paskyrą, tame pačiame `env` bloke per `ANTHROPIC_CUSTOM_HEADERS` pridėkite `x-omniroute-connection` antraštę:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Nukopijuokite id iš teikėjo puslapio ryšio eilutėje esančios `xxxxxxxx…` žymos. Susiejimas taikomas tik vieno modelio id (`provider/model`), o ne deriniams. Tikslus veikimas, kai reikia naudoti atsarginį variantą, aprašytas skyriuje [Paskyros susiejimas kiekvienai užklausai](../reference/API_REFERENCE.md#account-pinning-per-request).
 
 ---
 

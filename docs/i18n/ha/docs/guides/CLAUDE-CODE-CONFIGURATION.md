@@ -93,33 +93,47 @@ samfuran Kimi kawai za a nuna.
 
 ---
 
-## Sashen fara amfani a dashboard
+## Sashen farawa a dashboard
 
 Katin kayan aikin Claude (**Dashboard → CLI Code**) yana nuna ainihin ɓangaren `settings.json`
-na wannan instance ɗin, kusa da maɓallin bayanin discovery-alias, tare da maɓallin kwafi:
+na wannan instance, kusa da maɓallin bayani na discovery-alias, tare da maɓallin kwafi:
 
 ```jsonc
 {
   "env": {
     "ANTHROPIC_BASE_URL": "http://<OmniRoute ɗinka>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<mabuɗin API na OmniRoute ɗinka>",
+    "ANTHROPIC_AUTH_TOKEN": "<mabuɗin OmniRoute API ɗinka>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-Base URL ɗin shi ne wanda katin ya warware (har da custom override da ka shigar), kuma an riga an
-daidaita shi — babu ƙarin `/v1`, babu alamar slash a ƙarshe. **Ba a taɓa nuna mabuɗin ba**: sashen yana zuwa da
-placeholder, don haka screenshot ko snippet da aka liƙa ba zai iya fallasa shi ba. Liƙa mabuɗinka a madadinsa.
+Base URL ɗin shi ne wanda katin ya tantance (har da custom override da ka shigar), kuma an riga
+an daidaita shi — babu ƙarin `/v1`, babu slash a ƙarshensa. **Ba a taɓa nuna mabuɗin ba**: sashen yana zuwa da
+placeholder, don haka screenshot ko snippet da aka manna ba zai iya fallasa shi ba. Manna mabuɗinka a madadinsa.
 
-Ƙara `CLAUDE_CODE_AUTO_COMPACT_WINDOW` ƙarƙashin wannan `env` block ɗin ga duk wani model wanda ainihin
+Ƙara `CLAUDE_CODE_AUTO_COMPACT_WINDOW` a ƙarƙashin wannan sashen `env` ga duk wani model wanda ainihin
 context window ɗinsa ba 200K ba ne — Claude Code yana ɗauka cewa kowane id da bai gane ba yana da 200K, don haka
-auto-compaction zai faru a wurin da bai dace ba idan ba haka ba (duba gargaɗin da ke sashen da ya gabata).
-Snippet builder ɗin ma yana karɓar wannan ƙimar, don haka mai kira da ya san window na target model
+auto-compaction zai fara aiki a lokacin da bai dace ba idan ba a yi haka ba (duba gargaɗin da ke sashen da ya gabata).
+Snippet builder ɗin yana karɓar wannan ƙimar ma, don haka caller da ya san girman window na model ɗin da ake nufi
 zai iya fitar da ita kai tsaye.
 
 Tushe: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (pure
 builder, wanda aka yi wa unit test) wanda `ClaudeGatewayOnboardingBlock` ke nunawa.
+
+### Ƙayyade account ɗaya (na zaɓi)
+
+Don aika kowace buƙatar Claude Code ta takamaiman provider account guda ɗaya, ƙara
+header na `x-omniroute-connection` ta hanyar `ANTHROPIC_CUSTOM_HEADERS` a cikin wannan sashen `env`:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Kwafi id ɗin daga chip na `xxxxxxxx…` da ke kan layin connection a shafin provider. Ƙayyadewar tana
+aiki ne kawai ga single-model ids (`provider/model`), ba ga combos ba. Duba
+[Ƙayyade account ga kowace buƙata](../reference/API_REFERENCE.md#account-pinning-per-request) don sanin
+ainihin yadda fallback yake aiki.
 
 ---
 

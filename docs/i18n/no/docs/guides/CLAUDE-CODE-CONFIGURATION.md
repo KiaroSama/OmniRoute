@@ -93,10 +93,10 @@ for eksempel bare Kimis modeller.
 
 ---
 
-## Introduksjonsblokk på kontrollpanelet
+## Onboarding-blokk på instrumentpanelet
 
-Claude-verktøykortet (**Kontrollpanel → CLI-kode**) viser det nøyaktige `settings.json`-fragmentet
-for denne instansen, ved siden av infoknappen for oppdagelsesaliaset, med en kopieringsknapp:
+Claude-verktøykortet (**Instrumentpanel → CLI Code**) viser det nøyaktige `settings.json`-fragmentet
+for denne instansen, ved siden av informasjonsknappen for discovery-aliaset, med en kopieringsknapp:
 
 ```jsonc
 {
@@ -108,18 +108,32 @@ for denne instansen, ved siden av infoknappen for oppdagelsesaliaset, med en kop
 }
 ```
 
-Basis-URL-en er den kortet finner (inkludert en egendefinert overstyring du skrev inn), allerede
-normalisert — uten `/v1`-suffiks og uten avsluttende skråstrek. **Nøkkelen vises aldri**: blokken leveres med en
-plassholder, slik at et skjermbilde eller en innlimt kodesnutt ikke kan lekke den. Lim inn nøkkelen din over den.
+Basis-URL-en er den som kortet har funnet (inkludert en egendefinert overstyring du skrev inn), og er allerede
+normalisert — uten `/v1`-suffiks og uten avsluttende skråstrek. **Nøkkelen vises aldri**: blokken inneholder en
+plassholder, slik at et skjermbilde eller et innlimt utdrag ikke kan lekke nøkkelen. Lim inn nøkkelen din over plassholderen.
 
 Legg til `CLAUDE_CODE_AUTO_COMPACT_WINDOW` under den samme `env`-blokken for alle modeller der det reelle
 kontekstvinduet ikke er 200K — Claude Code antar 200K for hver id den ikke gjenkjenner, så
 automatisk komprimering utløses ellers på feil tidspunkt (se advarselen i forrige avsnitt).
-Kodesnuttbyggeren godtar også denne verdien, slik at en klient som kjenner målmodellens vindu,
-kan inkludere den direkte.
+Utdragsbyggeren godtar også denne verdien, slik at en anroper som kjenner målmodellens kontekstvindu,
+kan generere den direkte.
 
 Kilde: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (ren
 bygger, enhetstestet), gjengitt av `ClaudeGatewayOnboardingBlock`.
+
+### Fest én konto (valgfritt)
+
+For å sende hver Claude Code-forespørsel gjennom én bestemt leverandørkonto legger du til
+`x-omniroute-connection`-headeren via `ANTHROPIC_CUSTOM_HEADERS` i den samme `env`-blokken:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Kopier id-en fra `xxxxxxxx…`-brikken på tilkoblingsraden på leverandørsiden. Festingen
+gjelder bare enkeltmodell-id-er (`provider/model`), ikke kombinasjoner. Se
+[Kontofesting per forespørsel](../reference/API_REFERENCE.md#account-pinning-per-request) for
+nøyaktig reserveatferd.
 
 ---
 

@@ -215,6 +215,8 @@ Auto-Combo Engine tự động chọn nhà cung cấp/mô hình tốt nhất cho
 | `quality`             | 0.03              | Tín hiệu chất lượng đầu ra dựa trên phản hồi từ trình theo dõi chất lượng sự kiện định tuyến; các ứng viên không có dữ liệu quan sát nhận giá trị trung lập 0.5                                                                                    |
 | `reliability`         | 0.00              | Tỷ lệ thành công quan sát được, `1 - failureRate`, từ lịch sử sử dụng trong 24 giờ với ngưỡng tối thiểu mười mẫu (nếu không thì dùng số liệu thời gian thực); các ứng viên không có dữ liệu quan sát được coi là 1.0. Bị vô hiệu hóa theo mặc định |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Tổng:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` như được khai báo trong `DEFAULT_WEIGHTS`; các trọng số do người dùng cấu hình được `normalizeScoringWeights()` chuẩn hóa lại thành một phân phối trước khi tính điểm.
 
 ## Các gói chế độ

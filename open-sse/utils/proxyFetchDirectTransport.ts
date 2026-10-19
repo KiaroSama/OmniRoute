@@ -8,7 +8,7 @@ import {
 } from "./proxyDispatcher.ts";
 import { maybeReapDispatcherPool } from "./proxyDispatcherReap.ts";
 import { describeFallbackFailure } from "./proxyFetchRedaction.ts";
-import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
+import { isRegisteredFeatureFlagEnabled as isFeatureFlagEnabled } from "./registeredFeatureFlag.ts";
 import {
   directFetchWithBoundedResponseStart,
   isDirectResponseStartTimeout,

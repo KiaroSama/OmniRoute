@@ -11,6 +11,10 @@ import {
   resolveDashboardEmbedMode,
 } from "./scripts/build/dashboardEmbed.mjs";
 import { shouldBuildStandalone } from "./scripts/build/backendOnlyPages.mjs";
+import {
+  filterKnownInfrastructureWarnings,
+  isNextIntlExtractorDynamicImportWarning,
+} from "./scripts/build/knownBuildWarnings.mjs";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const distDir = process.env.NEXT_DIST_DIR || ".build/next";
@@ -64,45 +68,6 @@ const securityHeaders = [
     value: "max-age=63072000; includeSubDomains; preload",
   },
 ];
-
-function isNextIntlExtractorDynamicImportWarning(warning) {
-  const message = typeof warning === "string" ? warning : warning?.message || "";
-  const resource = warning?.module?.resource || warning?.file || "";
-  const target = "next-intl/dist/esm/production/extractor/format/index.js";
-  return (
-    resource.includes(target) &&
-    (message.includes("import(t)") || message.includes("dependency is an expression"))
-  );
-}
-
-const IGNORED_INFRASTRUCTURE_BUILD_DEPENDENCY_MODULES = [
-  "/node_modules/fumadocs-mdx/dist/load-from-file-",
-  "/node_modules/next-intl/dist/esm/production/extractor/format/index.js",
-];
-
-function isKnownInfrastructureBuildDependencyWarning(args) {
-  const message = args
-    .filter((value) => typeof value === "string")
-    .join(" ")
-    .replaceAll("\\", "/");
-  return (
-    message.includes("webpack.FileSystemInfo") &&
-    message.includes("for build dependencies failed at 'import(") &&
-    message.includes("incorrect cache invalidation") &&
-    IGNORED_INFRASTRUCTURE_BUILD_DEPENDENCY_MODULES.some((modulePath) =>
-      message.includes(modulePath)
-    )
-  );
-}
-
-function filterKnownInfrastructureWarnings(baseConsole) {
-  const filteredConsole = Object.create(baseConsole);
-  filteredConsole.warn = (...args) => {
-    if (isKnownInfrastructureBuildDependencyWarning(args)) return;
-    Reflect.apply(baseConsole.warn, baseConsole, args);
-  };
-  return filteredConsole;
-}
 
 // OMNIROUTE_BUILD_PROFILE=minimal physically removes four optional privileged
 // modules (MITM cert install, Zed keychain import, Cloud Sync, 9router

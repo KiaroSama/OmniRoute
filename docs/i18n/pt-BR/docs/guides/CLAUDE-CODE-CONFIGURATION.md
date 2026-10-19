@@ -93,10 +93,10 @@ apenas os modelos da Kimi.
 
 ---
 
-## Bloco de integração no painel
+## Bloco de integração no dashboard
 
-O cartão da ferramenta Claude (**Painel → Código da CLI**) renderiza o fragmento exato de `settings.json`
-para esta instância, ao lado do botão de informações do alias de descoberta, com um botão para copiar:
+O cartão da ferramenta Claude (**Dashboard → CLI Code**) renderiza o fragmento exato de `settings.json`
+para esta instância, ao lado do botão de informações sobre o alias de descoberta, com um botão para copiar:
 
 ```jsonc
 {
@@ -108,18 +108,32 @@ para esta instância, ao lado do botão de informações do alias de descoberta,
 }
 ```
 
-A URL base é a resolvida pelo cartão (incluindo uma substituição personalizada que você digitou), já
+A URL base é a resolvida pelo cartão (incluindo uma substituição personalizada que você tenha digitado), já
 normalizada — sem o sufixo `/v1` e sem barra final. **A chave nunca é renderizada**: o bloco inclui um
 placeholder, portanto uma captura de tela ou um trecho colado não pode expô-la. Substitua-o pela sua chave.
 
-Adicione `CLAUDE_CODE_AUTO_COMPACT_WINDOW` no mesmo bloco `env` para qualquer modelo cuja janela de
-contexto real não seja de 200K — o Claude Code presume 200K para todo id que não reconhece, portanto
-a compactação automática seria acionada no ponto errado (consulte o aviso na seção anterior).
-O gerador de trechos também aceita esse valor, portanto um chamador que conheça a janela do modelo de
-destino pode emiti-lo diretamente.
+Adicione `CLAUDE_CODE_AUTO_COMPACT_WINDOW` ao mesmo bloco `env` para qualquer modelo cuja janela de
+contexto real não seja de 200K — o Claude Code pressupõe 200K para todo id que não reconhece, portanto,
+caso contrário, a compactação automática é acionada no momento errado (consulte o aviso na seção anterior).
+O gerador de trechos também aceita esse valor, portanto um chamador que conheça a janela do modelo de destino
+pode emiti-lo diretamente.
 
 Fonte: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (gerador
-puro, testado com testes unitários) renderizado por `ClaudeGatewayOnboardingBlock`.
+puro, com testes unitários), renderizado por `ClaudeGatewayOnboardingBlock`.
+
+### Fixar uma conta (opcional)
+
+Para enviar todas as solicitações do Claude Code por meio de uma conta específica de um provedor, adicione o
+cabeçalho `x-omniroute-connection` por meio de `ANTHROPIC_CUSTOM_HEADERS` no mesmo bloco `env`:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Copie o id do chip `xxxxxxxx…` na linha da conexão, na página do provedor. A fixação se aplica apenas
+a ids de modelo único (`provider/model`), não a combinações. Consulte
+[Fixação de conta por solicitação](../reference/API_REFERENCE.md#account-pinning-per-request) para saber o
+comportamento exato de fallback.
 
 ---
 

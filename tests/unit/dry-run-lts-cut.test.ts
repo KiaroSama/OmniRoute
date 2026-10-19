@@ -43,6 +43,7 @@ type Facts = Parameters<typeof evaluatePreconditions>[0];
 function goodFacts(overrides: Partial<Facts> = {}): Facts {
   return {
     sourceSha: SHA,
+    sourceIsShallow: false,
     sourceVersion: "3.9.0",
     previousTagExists: true,
     freezeIssues: [{ number: 900, title: "🧊 Release freeze: release/v3.9.0" }],
@@ -126,6 +127,7 @@ test("all preconditions pass on a ready cut", () => {
     checks.map((c) => c.id),
     [
       "source",
+      "source-full-history",
       "tag",
       "version",
       "freeze",
@@ -142,6 +144,10 @@ test("each failing precondition is reported with expected vs actual", () => {
   const opts = parseCutArgs([]);
   const cases: [Partial<Facts>, string, RegExp][] = [
     [{ sourceSha: null }, "source", /does not resolve/],
+    // A shallow checkout cannot push stable/v3: the receiving side rejects the pack with
+    // "did not receive expected object" (rehearsal of 2026-10-16 on the devbox clone).
+    [{ sourceIsShallow: true }, "source-full-history", /shallow/],
+    [{ sourceIsShallow: null }, "source-full-history", /unknown/],
     [{ previousTagExists: false }, "tag", /missing/],
     [{ sourceVersion: "3.8.59" }, "version", /3\.8\.59/],
     [{ freezeIssues: [] }, "freeze", /none open/],

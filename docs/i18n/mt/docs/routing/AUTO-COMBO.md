@@ -205,6 +205,8 @@ L-Auto-Combo Engine jagħżel dinamikament l-aħjar fornitur/mudell għal kull t
 | `quality`             | 0.03           | Sinjal tal-kwalità tal-output ibbażat fuq il-feedback mit-tracker tal-kwalità tal-avvenimenti tar-routing; kandidati mingħajr osservazzjonijiet jirċievu valur newtrali ta’ 0.5                                                             |
 | `reliability`         | 0.00           | Sehem osservat ta’ suċċess, `1 - failureRate`, minn 24 siegħa ta’ storja tal-użu wara limitu minimu ta’ għaxar kampjuni (inkella metriċi f’ħin reali); kandidati mingħajr osservazzjonijiet jitqiesu bħala 1.0. Diżattivat b’mod predefinit |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Total:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` kif iddikjarat f’`DEFAULT_WEIGHTS`; il-piżijiet ikkonfigurati mill-utent jiġu normalizzati mill-ġdid f’distribuzzjoni minn `normalizeScoringWeights()` qabel ma jiġi kkalkolat il-punteġġ.
 
 ## Pakketti tal-Modalità

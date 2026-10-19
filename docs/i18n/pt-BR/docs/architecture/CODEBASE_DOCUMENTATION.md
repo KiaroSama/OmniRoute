@@ -436,7 +436,8 @@ Dividido em subdiretórios específicos:
 
 ## 4. `open-sse/` — Workspace do mecanismo de streaming
 
-Workspace npm separado, publicado como `@omniroute/open-sse`. Responsável pelo processamento de solicitações, executores, tradutores, serviços, transformador e servidor MCP.
+Workspace npm separado, publicado como `@omniroute/open-sse`. É responsável pelo processamento
+de requisições, executores, tradutores, serviços, transformador e servidor MCP.
 
 ```
 open-sse/
@@ -445,12 +446,12 @@ open-sse/
 ├── tsconfig.json
 ├── types.d.ts
 ├── config/                 Registros de provedores, perfis de cabeçalhos, identidade, …
-├── handlers/               Manipuladores de solicitações (chat, embeddings, áudio, imagem, …)
-├── executors/              108 executores HTTP específicos de provedores
+├── handlers/               Manipuladores de requisições (chat, embeddings, áudio, imagem, …)
+├── executors/              150 módulos executores de provedores (classes executoras + auxiliares por provedor)
 ├── translator/             Conversão de formatos (OpenAI ↔ Claude ↔ Gemini ↔ Cursor ↔ Kiro)
 ├── transformer/            Transformador de stream da Responses API ↔ Chat Completions
 ├── services/               Mais de 80 módulos de serviço (combos, fallback, cotas, identidade, …)
-├── utils/                  Utilitários de streaming, cliente TLS, AWS SigV4, busca via proxy, …
+├── utils/                  Auxiliares de streaming, cliente TLS, AWS SigV4, busca via proxy, …
 └── mcp-server/             Servidor MCP (3 transportes, 33 escopos, 110 ferramentas)
 ```
 
@@ -462,8 +463,8 @@ open-sse/
 | `responsesHandler.ts`   | Ponto de entrada da OpenAI Responses API                                                         |
 | `embeddings.ts`         | Embeddings                                                                                       |
 | `imageGeneration.ts`    | Geração de imagens                                                                               |
-| `audioSpeech.ts`        | Texto para fala                                                                                  |
-| `audioTranscription.ts` | Fala para texto                                                                                  |
+| `audioSpeech.ts`        | Conversão de texto em fala                                                                       |
+| `audioTranscription.ts` | Conversão de fala em texto                                                                       |
 | `videoGeneration.ts`    | Geração de vídeos                                                                                |
 | `musicGeneration.ts`    | Geração de músicas                                                                               |
 | `rerank.ts`             | Reclassificação                                                                                  |
@@ -476,23 +477,27 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-148 executores de provedores, cada um estendendo `BaseExecutor` (`base.ts`):
+150 módulos executores de nível superior (`*.ts` menos `base.ts`, `index.ts` e testes — a contagem
+é medida por `npm run check:docs-counts`). Toda classe executora estende `BaseExecutor` (`base.ts`),
+diretamente ou por meio de `DefaultExecutor` ou de outro executor; os módulos restantes são
+auxiliares específicos de cada provedor (esquemas de ferramentas, adaptadores de busca/TTS,
+manipuladores de particularidades). Os executores incluem:
 
 `antigravity`, `azure-openai`, `blackbox-web`, `cliproxyapi`,
 `chatgpt-web-codex`, `cloudflare-ai`, `codex`, `commandCode`, `cursor`, `default`, `devin-cli`,
 `muse-spark-web`, `nlpcloud`, `opencode`, `perplexity-web`, `petals`,
 `pollinations`, `qoder`, `vertex`, `devin-desktop`, além de `claudeIdentity.ts`
-(utilitário de identidade compartilhado) e `index.ts` (registro).
+(auxiliar de identidade compartilhado) e `index.ts` (registro).
 
 > Observação: os provedores não listados aqui são atendidos por `default.ts` usando o executor
-> genérico compatível com a OpenAI. O catálogo completo de provedores (355 provedores) está em
+> genérico compatível com a OpenAI. O catálogo completo de provedores (375 provedores) fica em
 > `src/shared/constants/providers.ts`.
 
 ### 4.3 `open-sse/translator/`
 
 Tradução no modelo hub-and-spoke (a OpenAI é o hub).
 
-- **9 tradutores de solicitações** (`translator/request/`):
+- **9 tradutores de requisições** (`translator/request/`):
   `antigravity-to-openai`, `claude-to-gemini`, `claude-to-openai`,
   `gemini-to-openai`, `openai-responses`, `openai-to-claude`,
   `openai-to-cursor`, `openai-to-gemini`, `openai-to-kiro`.
@@ -500,25 +505,25 @@ Tradução no modelo hub-and-spoke (a OpenAI é o hub).
   `claude-to-openai`, `cursor-to-openai`, `gemini-to-claude`, `gemini-to-openai`,
   `kiro-to-openai`, `openai-responses`, `openai-to-antigravity`,
   `openai-to-claude`.
-- **9 utilitários** (`translator/helpers/`):
+- **9 auxiliares** (`translator/helpers/`):
   `claudeHelper`, `geminiHelper`, `geminiToolsSanitizer`, `maxTokensHelper`,
   `openaiHelper`, `responsesApiHelper`, `schemaCoercion`, `toolCallHelper`, além de
-  testes dos utilitários.
-- **Utilitários de imagem** (`translator/image/sizeMapper.ts`).
+  testes dos auxiliares.
+- **Auxiliares de imagem** (`translator/image/sizeMapper.ts`).
 - Nível superior: `bootstrap.ts`, `formats.ts`, `registry.ts`, `index.ts`.
 
 ### 4.4 `open-sse/transformer/`
 
-- `responsesTransformer.ts` — Conversor Responses API ↔ Chat Completions baseado em
-  `TransformStream` (usado pelo catch-all da rota `responses/`).
+- `responsesTransformer.ts` — conversor baseado em `TransformStream` entre a Responses API ↔ Chat
+  Completions (usado pelo catch-all da rota `responses/`).
 
 ### 4.5 `open-sse/services/`
 
 Destaques (lista completa em `open-sse/services/`):
 
-| Aspecto                    | Arquivos                                                                                                                                                                                                                                                 |
+| Área                       | Arquivos                                                                                                                                                                                                                                                 |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Roteamento Combo           | `combo.ts` (19 estratégias), `comboConfig.ts`, `comboMetrics.ts`, `comboManifestMetrics.ts`, `comboAgentMiddleware.ts`                                                                                                                                   |
+| Roteamento Combo           | `combo.ts` (20 estratégias), `comboConfig.ts`, `comboMetrics.ts`, `comboManifestMetrics.ts`, `comboAgentMiddleware.ts`                                                                                                                                   |
 | Mecanismo Auto Combo       | `autoCombo/` — `engine.ts`, `scoring.ts`, `taskFitness.ts`, `virtualFactory.ts`, `modePacks.ts`, `autoPrefix.ts`, `persistence.ts`, `providerDiversity.ts`, `providerRegistryAccessor.ts`, `routerStrategy.ts`, `selfHealing.ts`, `index.ts`             |
 | Resiliência                | `accountFallback.ts` (tempo de espera + bloqueio), `errorClassifier.ts`, `requestRejectedStreak.ts`, `emergencyFallback.ts`, `rateLimitManager.ts`, `rateLimitSemaphore.ts`, `accountSemaphore.ts`, `accountSelector.ts`                                 |
 | Cotas                      | `quotaMonitor.ts`, `quotaPreflight.ts`, `bailianQuotaFetcher.ts`, `codexQuotaFetcher.ts`, `deepseekQuotaFetcher.ts`, `openrouterQuotaFetcher.ts`, `openrouterFreeWindow.ts`, `llmgatewayQuotaFetcher.ts`, `crofUsageFetcher.ts`, `antigravityCredits.ts` |
@@ -534,11 +539,11 @@ Destaques (lista completa em `open-sse/services/`):
 
 ### 4.6 `open-sse/mcp-server/`
 
-- **110 ferramentas exclusivas** integradas em `server.ts` (45 canônicas em `schemas/tools.ts` +
+- **110 ferramentas únicas** integradas em `server.ts` (45 canônicas em `schemas/tools.ts` +
   módulos de memória, habilidades, habilidades do GitHub, pool, gamificação, plugin, Notion, Obsidian,
   corpus local e compressão — união contabilizada por `countUniqueMcpTools`).
 - **3 transportes**: stdio, HTTP Streamable, SSE.
-- **33 escopos** aplicados em tempo de execução — lista-base em `src/shared/constants/mcpScopes.ts`; o conjunto completo é a união dos escopos declarados por cada módulo de ferramentas.
+- **33 escopos** aplicados em tempo de execução — lista base em `src/shared/constants/mcpScopes.ts`; o conjunto completo é a união dos escopos declarados por cada módulo de ferramenta.
 - Tabela de auditoria: `mcp_tool_audit` (preenchida por `audit.ts`).
 - Arquivos: `server.ts`, `index.ts`, `httpTransport.ts`, `audit.ts`, `scopeEnforcement.ts`,
   `runtimeHeartbeat.ts`, `descriptionCompressor.ts`, `schemas/{tools, a2a, audit, index}.ts`,
@@ -552,10 +557,10 @@ Registros de provedores (`providerRegistry.ts`, `providerModels.ts`,
 `providerHeaderProfiles.ts`), registros de modelos por formato (`audioRegistry.ts`,
 `embeddingRegistry.ts`, `imageRegistry.ts`, `moderationRegistry.ts`,
 `musicRegistry.ts`, `rerankRegistry.ts`, `searchRegistry.ts`, `videoRegistry.ts`),
-utilitários de identidade (`codexIdentity.ts`, `codexInstructions.ts`,
+auxiliares de identidade (`codexIdentity.ts`, `codexInstructions.ts`,
 `anthropicHeaders.ts`, `antigravityUpstream.ts`, `antigravityModelAliases.ts`,
 `cliFingerprints.ts`, `toolCloaking.ts`, `defaultThinkingSignature.ts`),
-utilitários de credenciais (`credentialLoader.ts`, `codexClient.ts`) e adaptadores
+auxiliares de credenciais (`credentialLoader.ts`, `codexClient.ts`) e adaptadores
 de nuvem (`azureAi.ts`, `bedrock.ts`, `datarobot.ts`, `glmProvider.ts`,
 `maritalk.ts`, `oci.ts`, `petals.ts`, `runway.ts`, `sap.ts`, `watsonx.ts`,
 `ollamaModels.ts`, `errorConfig.ts`, `constants.ts`, `registryUtils.ts`).
@@ -667,7 +672,11 @@ Organizado em 6 subpastas por finalidade.
   `v1-ws-bridge.mjs`, `smoke-electron-packaged.mjs`,
   `run-playwright-tests.mjs`, `run-ecosystem-tests.mjs`,
   `run-protocol-clients-tests.mjs`, `sync-env.mjs`, `healthcheck.mjs`,
-  `system-info.mjs`.
+  `system-info.mjs`, além dos utilitários somente leitura para acompanhamento de PRs:
+  `ci-discriminate.sh` (classifica as assinaturas de verificações com falha de um PR como próprias / herdadas /
+  desconhecidas, comparando-as com um PR de referência ou com a issue de falhas na base) e `audit-worktree.sh`
+  (arquivos modificados, superfícies protegidas, asserções removidas, contagens de supressões, tsconfigs
+  temporários remanescentes, head do PR em comparação com o HEAD local — antes que o PR de um worker seja aceito).
 - **`scripts/check/`** — `check-cycles.mjs`, `check-docs-sync.mjs`,
   `check-docs-counts-sync.mjs`, `check-env-doc-sync.mjs`,
   `check-deprecated-versions.mjs`, `check-route-validation.mjs`,

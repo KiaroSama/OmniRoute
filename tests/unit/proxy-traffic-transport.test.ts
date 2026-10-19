@@ -9,7 +9,7 @@ fs.mkdirSync(path.resolve("_artifacts"), { recursive: true });
 const fixtureDir = fs.mkdtempSync(path.resolve("_artifacts/traffic-transport-"));
 const originalEnv = { ...process.env };
 for (const key of Object.keys(process.env)) delete process.env[key];
-for (const key of ["PATH", "SystemRoot", "WINDIR", "COMSPEC", "PATHEXT"]) {
+for (const key of ["PATH", "SystemRoot", "WINDIR", "COMSPEC", "PATHEXT", "NODE_TEST_CONTEXT"]) {
   if (originalEnv[key]) process.env[key] = originalEnv[key];
 }
 for (const key of ["DATA_DIR", "HOME", "USERPROFILE", "APPDATA", "LOCALAPPDATA", "TEMP", "TMP"]) {
@@ -28,6 +28,9 @@ const { dispatchProxyFetch } = await import("../../open-sse/utils/proxyFetchTran
 const { setTlsClientForTest } = await import("../../open-sse/utils/proxyFetchTransportSupport.ts");
 const { tryTlsSend } = await import("../../open-sse/utils/proxyFetchTlsTransport.ts");
 const originalFetch = globalThis.fetch;
+const { proxyFetch, resolveProxyForRequest } = await import("../../open-sse/utils/proxyFetch.ts");
+const { SELF_HOP_HEADER, ownListenerSelfHopToken } =
+  await import("../../open-sse/utils/selfHop.ts");
 const { resetDbInstance } = await import("../../src/lib/db/core.ts");
 test.after(() => {
   resetDbInstance();
@@ -37,6 +40,58 @@ test.after(() => {
   for (const key of Object.keys(process.env)) delete process.env[key];
   Object.assign(process.env, originalEnv);
 });
+
+test(
+  "public proxy fetch keeps upstream environment routing and stamps self hops before sending",
+  { timeout: 2000 },
+  async () => {
+    process.env.PORT = "20128";
+    process.env.HTTPS_PROXY = "http://fixture.invalid:8080";
+    process.env.NO_PROXY = "*.example.test";
+    try {
+      assert.deepEqual(resolveProxyForRequest("https://api.example.test/path"), {
+        source: "direct",
+        proxyUrl: null,
+      });
+      assert.deepEqual(resolveProxyForRequest("https://upstream.invalid/path"), {
+        source: "env",
+        proxyUrl: "http://fixture.invalid:8080",
+      });
+      let sends = 0;
+      const records: Array<{ route: unknown; delta: Record<string, number> }> = [];
+      const response = await proxyFetch(
+        "http://127.0.0.1:20128/v1/messages",
+        { method: "POST", body: "é" },
+        {
+          nativeFetch: async (_input, options) => {
+            sends++;
+            assert.equal(
+              new Headers(options?.headers).get(SELF_HOP_HEADER),
+              ownListenerSelfHopToken()
+            );
+            return new Response("ok");
+          },
+          recordTraffic: (route, delta) => records.push({ route, delta }),
+        }
+      );
+      assert.equal(await response.text(), "ok");
+      assert.equal(sends, 1);
+      assert.ok(records.every(({ route }) => route === null));
+      assert.deepEqual(
+        records.map(({ delta }) => delta),
+        [
+          { attempts: 1, uploadBytes: 2, knownUploadAttempts: 1 },
+          { downloadBytes: 2 },
+          { completedDownloads: 1 },
+        ]
+      );
+    } finally {
+      delete process.env.PORT;
+      delete process.env.HTTPS_PROXY;
+      delete process.env.NO_PROXY;
+    }
+  }
+);
 
 // Only the raw transport dependency is fake. Real proxy selection/retry/counter logic runs.
 test(

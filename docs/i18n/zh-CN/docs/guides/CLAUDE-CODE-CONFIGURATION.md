@@ -92,23 +92,33 @@ glm/glm-5.2              →  claude/glm/glm-5.2         "GLM 5.2 (OmniRoute)"
 
 ## 仪表板上的引导区块
 
-Claude 工具卡片（**仪表板 → CLI Code**）会在发现别名信息按钮旁显示此实例对应的精确 `settings.json` 片段，并提供复制按钮：
+Claude 工具卡片（**Dashboard → CLI Code**）会在发现别名信息按钮旁呈现此实例对应的确切 `settings.json` 片段，并提供复制按钮：
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<你的 OmniRoute>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<你的 OmniRoute API 密钥>",
+    "ANTHROPIC_BASE_URL": "http://<your OmniRoute>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<your OmniRoute API key>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-基础 URL 是卡片解析出的 URL（包括你输入的自定义覆盖值），并且已经过规范化——没有 `/v1` 后缀，也没有尾部斜杠。**密钥绝不会被显示**：该区块使用占位符，因此截图或粘贴的片段都不会泄露密钥。请用你的密钥替换该占位符。
+基础 URL 是卡片解析出的 URL（包括你输入的自定义覆盖值），并且已经过规范化——没有 `/v1` 后缀，也没有尾部斜杠。**密钥绝不会被呈现**：该区块使用占位符，因此屏幕截图或粘贴的片段都不会泄露密钥。请用你的密钥替换该占位符。
 
-对于实际上下文窗口不是 200K 的任何模型，请在同一个 `env` 区块下添加 `CLAUDE_CODE_AUTO_COMPACT_WINDOW`——Claude Code 会假定所有无法识别的 id 都使用 200K，因此否则自动压缩会在错误的时机触发（请参阅上一节中的警告）。片段构建器也接受该值，因此知道目标模型窗口大小的调用方可以直接将其输出。
+对于实际上下文窗口不是 200K 的任何模型，请在同一个 `env` 区块中添加 `CLAUDE_CODE_AUTO_COMPACT_WINDOW`——Claude Code 会假定它无法识别的每个 id 都具有 200K 的上下文窗口，否则自动压缩会在错误的时间点触发（请参阅上一节中的警告）。片段构建器也接受该值，因此知道目标模型窗口大小的调用方可以直接将其输出。
 
-来源：`src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet`（经过单元测试的纯构建器），由 `ClaudeGatewayOnboardingBlock` 渲染。
+来源：`src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet`（经过单元测试的纯构建器），由 `ClaudeGatewayOnboardingBlock` 呈现。
+
+### 固定一个账户（可选）
+
+要通过某个特定的提供者账户发送所有 Claude Code 请求，请在同一个 `env` 区块中通过 `ANTHROPIC_CUSTOM_HEADERS` 添加 `x-omniroute-connection` 标头：
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+从提供者页面连接行中的 `xxxxxxxx…` 标签复制 id。固定仅适用于单模型 id（`provider/model`），不适用于组合。有关确切的回退行为，请参阅[按请求固定账户](../reference/API_REFERENCE.md#account-pinning-per-request)。
 
 ---
 
