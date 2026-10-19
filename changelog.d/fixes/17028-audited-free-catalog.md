@@ -1,1 +1,0 @@
-- fix(models): stop treating Kilo variable-price auto routing as unconditionally free; verify ten existing Kilo and Gemini free-tier evidence records (#17028).

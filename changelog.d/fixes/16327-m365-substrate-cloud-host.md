@@ -1,1 +1,0 @@
-- Accept the exact Microsoft 365 Copilot ChatHub host `substrate.svc.cloud.microsoft` when importing or pasting credentials, preserving the host through validation and execution while rejecting untrusted hosts and malformed URLs (#16327).

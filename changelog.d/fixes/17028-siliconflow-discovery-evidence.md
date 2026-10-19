@@ -1,1 +1,0 @@
-- **fix(providers):** Preserve SiliconFlow live pricing and free/paid flags through model discovery and retain explicit paid verdicts in the discovery cache, so free-only synchronization rejects paid models even with optimistic free hints while retaining explicitly free entries. (#17028)

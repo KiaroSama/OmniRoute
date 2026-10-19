@@ -1,1 +1,0 @@
-- **fix(i18n):** the docs translation pipeline formats each mirror with the repo's Prettier options (`prettier.config.mjs` + `.editorconfig`, printWidth 100) instead of Prettier's defaults, so the commit-time `prettier --write` pass no longer re-wraps code fences and leaves the mirror matching its recorded `target_hash`.

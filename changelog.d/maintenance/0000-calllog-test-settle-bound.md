@@ -1,1 +1,0 @@
-- **test(logs):** call-log readers in ten more suites wait on one shared `CALL_LOG_SETTLE_TIMEOUT_MS` bound instead of 1.5–10 s budgets the artifact worker's cold start outran on a loaded machine.

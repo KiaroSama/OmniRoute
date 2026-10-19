@@ -1,1 +1,0 @@
-- **fix(i18n):** Preserve source-owned `<think>` code examples during documentation translation while continuing to reject added reasoning and malformed or missing examples ([#17088](https://github.com/diegosouzapw/OmniRoute/pull/17088)).

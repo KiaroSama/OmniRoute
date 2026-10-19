@@ -1,1 +1,0 @@
-- **fix(quota):** A locked database (`SQLITE_BUSY`) during the quota snapshot cleanup no longer crashes the server; the background tick retries briefly, logs and skips, and the next tick tries again ([#17101](https://github.com/diegosouzapw/OmniRoute/pull/17101))
