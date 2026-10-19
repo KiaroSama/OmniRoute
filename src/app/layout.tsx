@@ -10,6 +10,7 @@ import { getRootLayoutSettings } from "@/lib/db/rootLayoutSettings";
 import type { Viewport } from "next";
 import { PwaRegister } from "@/shared/components/PwaRegister";
 import { LocaleAutoDetect } from "@/shared/components/LocaleAutoDetect";
+import { HIDDEN_TAB_REVEAL_SCRIPT } from "@/shared/utils/hiddenTabReveal";
 import { BasePathNetworkProvider } from "@/shared/components/BasePathNetworkProvider";
 
 export const viewport: Viewport = {
@@ -67,6 +68,8 @@ export default async function RootLayout({ children }) {
   return (
     <html lang={locale} dir={isRtl ? "rtl" : "ltr"} suppressHydrationWarning>
       <head>
+        {/* #16245: seed React's $RT so Suspense reveals while the tab is hidden. */}
+        <script dangerouslySetInnerHTML={{ __html: HIDDEN_TAB_REVEAL_SCRIPT }} />
         {/* Pre-hydration cleanup: browser extensions (Bitdefender's
             bis_skin_checked, Grammarly's data-gr-ext-installed, LanguageTool's
             data-lt-installed, etc.) inject attributes into the DOM after SSR

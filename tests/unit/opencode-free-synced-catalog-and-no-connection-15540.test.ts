@@ -1,21 +1,9 @@
-/**
- * #15540 round 3 (reporter's logs, 2026-10-09). Two observations from a clean install with only
- * the free providers enabled, every `auto/claude-opus` request ending in 503:
- *
- *   A. While a real "OpenCode Account 1" connection existed, ModelSync logged
- *      "OpenCode Account 1: ✓ 1 models" and 9 of the 10 pool targets were skipped with
- *      "model is not in the live catalog" (only big-pickle got further). Question: does a
- *      synced catalog of ONE model make getModelInfo() reject the other registry free models?
- *   B. After that connection was deleted, all 10 targets were skipped with
- *      "no credentials available or model excluded". Question: with NO opencode row and the
- *      combo's forced "noauth" pin, does getProviderCredentials() still hand back the
- *      synthetic keyless credentials?
- */
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { NOAUTH_PROVIDERS } from "../../src/shared/constants/providers/noauth.ts";
 
 const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-oc-15540c-"));
 process.env.DATA_DIR = TEST_DATA_DIR;
@@ -43,31 +31,31 @@ test.after(async () => {
   fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true });
 });
 
-test("B: no opencode row at all + forced noauth pin still resolves to synthetic keyless credentials", async () => {
+test("retired OpenCode Free never resolves synthetic credentials with a forced noauth pin", async () => {
+  assert.equal(Object.hasOwn(NOAUTH_PROVIDERS, "opencode"), false);
   for (const allowed of [null, [] as string[], ["noauth"]]) {
     const creds = await auth.getProviderCredentials("opencode", null, allowed, "big-pickle", {
       forcedConnectionId: "noauth",
     });
-    assert.ok(creds, `allowed=${JSON.stringify(allowed)}: expected credentials, got null`);
-    assert.equal((creds as { connectionId?: string }).connectionId, "noauth");
+    assert.equal(creds, null, `allowed=${JSON.stringify(allowed)}: Free must remain retired`);
   }
 });
 
-test("A: a real opencode connection whose sync returned ONE model — are the other registry free models still resolvable?", async () => {
+test("authenticated Zen retains live-catalog scoping when one model was synced", async () => {
   const conn = await providersDb.createProviderConnection({
-    provider: "opencode",
+    provider: "opencode-zen",
     authType: "apikey",
     name: "OpenCode Account 1",
-    apiKey: "public",
+    apiKey: "test-zen-key",
     isActive: true,
     testStatus: "active",
   });
-  await replaceSyncedAvailableModelsForConnection("opencode", (conn as { id: string }).id, [
+  await replaceSyncedAvailableModelsForConnection("opencode-zen", (conn as { id: string }).id, [
     { id: "big-pickle", name: "Big Pickle", source: "imported" },
   ]);
 
-  // The combo pool addresses these targets as "oc/<model>" (reporter's log), not "opencode/<model>".
-  for (const prefix of ["opencode", "oc"]) {
+  // The long user alias still resolves to authenticated Zen; retired oc does not.
+  for (const prefix of ["opencode-zen", "opencode"]) {
     const synced = await getModelInfo(`${prefix}/big-pickle`);
     assert.equal(
       synced.errorType,
@@ -79,8 +67,8 @@ test("A: a real opencode connection whose sync returned ONE model — are the ot
       const info = await getModelInfo(`${prefix}/${id}`);
       assert.equal(
         info.errorType,
-        undefined,
-        `${prefix}/${id} rejected while the free tier serves it: ${info.errorMessage}`
+        "model_not_found",
+        `${prefix}/${id} must respect the authenticated connection live catalog`
       );
     }
   }

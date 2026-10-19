@@ -20,7 +20,7 @@
  * Inspired-by upstream 9router commit `79df34ca`.
  */
 
-import { createHash } from "node:crypto";
+import { opaqueTokenFingerprint } from "../utils/opaqueTokenFingerprint.ts";
 
 export const OAUTH_USAGE_429_COOLDOWN_MS = 180_000; // 3 minutes (floor + default)
 export const OAUTH_USAGE_429_MAX_COOLDOWN_MS = 30 * 60_000; // 30 minutes (ceiling)
@@ -32,7 +32,7 @@ const oauthCooldown = new Map<string, number>();
 
 /** Stable, non-reversible map key for a credential. */
 export function hashClaudeCredential(accessToken: string): string {
-  return createHash("sha256").update(accessToken).digest("hex");
+  return opaqueTokenFingerprint(accessToken);
 }
 
 /** Returns true while `accessToken` is still inside its 429 cooldown window. */

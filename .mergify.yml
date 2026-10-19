@@ -62,6 +62,8 @@ queue_rules:
       - "#check-pending=0"
       - "#check-success>=1"
       - check-success=Merge integrity (changelog + generated skills)
+      - check-success=Gate / CI
+      - check-success=Gate / Quality
     # NO batching: 'Merge Queue Batch' requires a paid Mergify tier (live finding
     # 2026-07-15 — the queue command fails with "Cannot use Merge Queue batch" on
     # the free plan; #7220). Serial queue (1 PR at a time) still automates the train.

@@ -95,31 +95,45 @@ apenas os modelos da Kimi.
 
 ## Bloco de integração no painel
 
-O cartão da ferramenta Claude (**Painel → Código CLI**) apresenta o fragmento `settings.json` exato
+O cartão da ferramenta Claude (**Painel → Código CLI**) apresenta o fragmento exato de `settings.json`
 para esta instância, junto ao botão de informações do alias de descoberta, com um botão para copiar:
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<your OmniRoute>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<your OmniRoute API key>",
+    "ANTHROPIC_BASE_URL": "http://<o seu OmniRoute>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<a sua chave de API do OmniRoute>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-O URL base é o resolvido pelo cartão (incluindo uma substituição personalizada que tenha introduzido), já
-normalizado — sem o sufixo `/v1` nem uma barra final. **A chave nunca é apresentada**: o bloco inclui um
-marcador de posição, pelo que uma captura de ecrã ou um fragmento colado não pode divulgá-la. Substitua-o pela sua chave.
+O URL base é o que foi determinado pelo cartão (incluindo uma substituição personalizada introduzida por si), já
+normalizado — sem o sufixo `/v1` e sem uma barra no final. **A chave nunca é apresentada**: o bloco inclui um
+marcador de posição, pelo que uma captura de ecrã ou um fragmento colado não pode expor uma chave. Substitua-o pela sua chave.
 
-Adicione `CLAUDE_CODE_AUTO_COMPACT_WINDOW` no mesmo bloco `env` para qualquer modelo cuja janela
-de contexto real não seja de 200K — o Claude Code assume 200K para todos os IDs que não reconhece, pelo que,
-caso contrário, a compactação automática é acionada no ponto errado (consulte o aviso na secção anterior).
-O gerador de fragmentos também aceita esse valor, pelo que um chamador que conheça a janela do modelo de destino
+Adicione `CLAUDE_CODE_AUTO_COMPACT_WINDOW` no mesmo bloco `env` para qualquer modelo cuja janela de
+contexto real não seja de 200K — o Claude Code pressupõe 200K para todos os ids que não reconhece, pelo que,
+caso contrário, a compactação automática é acionada no momento errado (consulte o aviso na secção anterior).
+O construtor do fragmento também aceita esse valor, pelo que um invocador que conheça a janela do modelo de destino
 pode emiti-lo diretamente.
 
-Fonte: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (gerador
-puro, testado por testes unitários), apresentado por `ClaudeGatewayOnboardingBlock`.
+Origem: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (construtor
+puro, com testes unitários), apresentado por `ClaudeGatewayOnboardingBlock`.
+
+### Fixar uma conta (opcional)
+
+Para enviar todos os pedidos do Claude Code através de uma conta específica do fornecedor, adicione o
+cabeçalho `x-omniroute-connection` através de `ANTHROPIC_CUSTOM_HEADERS` no mesmo bloco `env`:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Copie o id do chip `xxxxxxxx…` na linha da ligação da página do fornecedor. A fixação aplica-se apenas
+a ids de modelo único (`provider/model`), não a combinações. Consulte
+[Fixação de conta por pedido](../reference/API_REFERENCE.md#account-pinning-per-request) para conhecer o
+comportamento de contingência exato.
 
 ---
 

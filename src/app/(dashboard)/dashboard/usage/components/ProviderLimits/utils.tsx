@@ -141,28 +141,6 @@ export function formatResetTime(date) {
 }
 
 /**
- * Get Tailwind color class based on percentage
- * @param {number} percentage - Remaining percentage (0-100)
- * @returns {string} Color name: "green" | "yellow" | "red"
- */
-export function getStatusColor(percentage) {
-  if (percentage > 70) return "green";
-  if (percentage >= 30) return "yellow";
-  return "red"; // 0-29% including 0% (out of quota) - show red
-}
-
-/**
- * Get status emoji based on percentage
- * @param {number} percentage - Remaining percentage (0-100)
- * @returns {string} Emoji: "🟢" | "🟡" | "🔴"
- */
-export function getStatusEmoji(percentage) {
-  if (percentage > 70) return "🟢";
-  if (percentage >= 30) return "🟡";
-  return "🔴"; // 0-29% including 0% (out of quota) - show red
-}
-
-/**
  * Calculate remaining percentage
  * @param {number} used - Used amount
  * @param {number} total - Total amount
@@ -402,18 +380,26 @@ export const STATUS_EMOJI = {
 
 export type CardStatus = keyof typeof STATUS_EMOJI;
 
-const QUOTA_BAR_GREEN_THRESHOLD = 50;
-const QUOTA_BAR_YELLOW_THRESHOLD = 20;
+/** Remaining % strictly above this is healthy (green). */
+export const QUOTA_STATUS_HEALTHY_ABOVE = 50;
+/** Remaining % at or below this is critical (red); in between is an alert (yellow). */
+export const QUOTA_STATUS_CRITICAL_AT_OR_BELOW = 20;
+
+export type QuotaStatusLevel = "critical" | "alert" | "ok";
+
+/** Single source of the quota colour policy — every bar, tone and card status maps from it. */
+export function quotaStatusLevel(remainingPercentage: number): QuotaStatusLevel {
+  if (remainingPercentage <= QUOTA_STATUS_CRITICAL_AT_OR_BELOW) return "critical";
+  if (remainingPercentage <= QUOTA_STATUS_HEALTHY_ABOVE) return "alert";
+  return "ok";
+}
 
 function quotaRemainingPercent(q: any): number {
   return getQuotaRemainingPercentage(q);
 }
 
-function quotaStatus(q: any): "critical" | "alert" | "ok" {
-  const pct = quotaRemainingPercent(q);
-  if (pct <= QUOTA_BAR_YELLOW_THRESHOLD) return "critical";
-  if (pct <= QUOTA_BAR_GREEN_THRESHOLD) return "alert";
-  return "ok";
+function quotaStatus(q: any): QuotaStatusLevel {
+  return quotaStatusLevel(quotaRemainingPercent(q));
 }
 
 export function worstStatus(quotas: any[] | undefined): CardStatus {
@@ -483,10 +469,14 @@ export function getBarColor(remainingPercentage: number): {
   text: string;
   bg: string;
 } {
-  if (remainingPercentage > QUOTA_BAR_GREEN_THRESHOLD) {
+  // A non-numeric value has always rendered red here (the old `>` checks both failed).
+  const level = Number.isNaN(remainingPercentage)
+    ? "critical"
+    : quotaStatusLevel(remainingPercentage);
+  if (level === "ok") {
     return { bar: "#22c55e", text: "#22c55e", bg: "rgba(34,197,94,0.12)" };
   }
-  if (remainingPercentage > QUOTA_BAR_YELLOW_THRESHOLD) {
+  if (level === "alert") {
     return { bar: "#eab308", text: "#eab308", bg: "rgba(234,179,8,0.12)" };
   }
   return { bar: "#ef4444", text: "#ef4444", bg: "rgba(239,68,68,0.12)" };

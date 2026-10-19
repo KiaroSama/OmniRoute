@@ -1,0 +1,1 @@
+- **fix(dashboard):** Model test no longer sends image-generation custom models (e.g. Agnes) as chat completions; it honours the Image Generation API format and reports the probe as skipped ([#17085](https://github.com/diegosouzapw/OmniRoute/pull/17085)) — thanks @quantum-shubham

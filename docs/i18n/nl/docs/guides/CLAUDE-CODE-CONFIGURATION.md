@@ -100,7 +100,7 @@ modellen van Kimi beschikbaar gemaakt.
 ## Onboardingblok op het dashboard
 
 De Claude-toolkaart (**Dashboard → CLI Code**) toont het exacte `settings.json`-fragment
-voor deze instantie, naast de infoknop voor de detectie-alias en met een kopieerknop:
+voor deze instantie, naast de infoknop voor de discovery-alias, met een kopieerknop:
 
 ```jsonc
 {
@@ -113,17 +113,31 @@ voor deze instantie, naast de infoknop voor de detectie-alias en met een kopieer
 ```
 
 De basis-URL is de URL die door de kaart is bepaald (inclusief een aangepaste overschrijving die je hebt ingevoerd) en is al
-genormaliseerd — geen `/v1`-achtervoegsel en geen afsluitende slash. **De sleutel wordt nooit weergegeven**: het blok bevat een
+genormaliseerd — geen `/v1`-achtervoegsel en geen afsluitende slash. **De sleutel wordt nooit getoond**: het blok bevat een
 tijdelijke aanduiding, zodat een schermafbeelding of een geplakt fragment geen sleutel kan lekken. Vervang deze door je sleutel.
 
 Voeg `CLAUDE_CODE_AUTO_COMPACT_WINDOW` toe onder hetzelfde `env`-blok voor elk model waarvan het werkelijke
 contextvenster niet 200K is — Claude Code gaat uit van 200K voor elke id die niet wordt herkend, waardoor
-automatische compactie anders op het verkeerde moment wordt uitgevoerd (zie de waarschuwing in de vorige sectie).
-De fragmentbouwer accepteert deze waarde ook, zodat een aanroeper die het contextvenster van het doelmodel kent
-deze rechtstreeks kan uitvoeren.
+automatische compactie anders op het verkeerde moment wordt geactiveerd (zie de waarschuwing in de vorige sectie).
+De fragmentbuilder accepteert die waarde ook, zodat een aanroeper die het contextvenster van het doelmodel kent
+deze rechtstreeks kan opnemen.
 
-Bron: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (zuivere
-bouwer, getest met unittests), weergegeven door `ClaudeGatewayOnboardingBlock`.
+Bron: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (pure
+builder, getest met unittests), weergegeven door `ClaudeGatewayOnboardingBlock`.
+
+### Eén account vastzetten (optioneel)
+
+Om elk Claude Code-verzoek via één specifiek provideraccount te verzenden, voeg je de
+`x-omniroute-connection`-header via `ANTHROPIC_CUSTOM_HEADERS` toe aan hetzelfde `env`-blok:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Kopieer de id van de `xxxxxxxx…`-chip op de verbindingsrij van de providerpagina. De vastzetting is alleen
+van toepassing op id's van afzonderlijke modellen (`provider/model`), niet op combo's. Zie
+[Account per verzoek vastzetten](../reference/API_REFERENCE.md#account-pinning-per-request) voor het
+exacte fallbackgedrag.
 
 ---
 

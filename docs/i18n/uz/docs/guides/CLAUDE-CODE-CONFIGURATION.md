@@ -95,9 +95,9 @@ global daraja o‘chiq, ammo Kimi provayderi yoqilgan bo‘lsa, faqat Kimi model
 
 ---
 
-## Boshqaruv panelidagi boshlangʻich sozlash bloki
+## Boshqaruv panelidagi ishga tushirish bloki
 
-Claude vositasi kartasi (**Boshqaruv paneli → CLI Code**) ushbu instansiya uchun aniq `settings.json` fragmentini aniqlash taxallusi haqidagi maʼlumot tugmasi yonida, nusxalash tugmasi bilan birga ko‘rsatadi:
+Claude vosita kartasi (**Boshqaruv paneli → CLI Code**) ushbu instansiya uchun aniq `settings.json` fragmentini aniqlash taxallusi haqidagi maʼlumot tugmasi yonida nusxalash tugmasi bilan ko‘rsatadi:
 
 ```jsonc
 {
@@ -109,19 +109,21 @@ Claude vositasi kartasi (**Boshqaruv paneli → CLI Code**) ushbu instansiya uch
 }
 ```
 
-Asosiy URL — karta aniqlagan URL (jumladan, siz kiritgan maxsus almashtirish) bo‘lib, u allaqachon
-normallashtirilgan — `/v1` suffiksisiz va oxirgi qiya chiziqsiz. **Kalit hech qachon ko‘rsatilmaydi**: blok
-to‘ldiruvchi qiymat bilan taqdim etiladi, shu sababli skrinshot yoki joylangan parcha kalitni oshkor qila olmaydi.
-Uning o‘rniga kalitingizni joylang.
+Asosiy URL — kartada aniqlangan (shu jumladan, siz kiritgan maxsus almashtirish bilan) va allaqachon normallashtirilgan manzil: `/v1` suffiksisiz va oxirgi qiya chiziqsiz. **Kalit hech qachon ko‘rsatilmaydi**: blok o‘rinbosar bilan taqdim etiladi, shuning uchun skrinshot yoki joylangan parcha kalitni oshkor qila olmaydi. O‘rinbosar ustiga kalitingizni kiriting.
 
-Haqiqiy kontekst oynasi 200K bo‘lmagan har qanday model uchun xuddi shu `env` bloki ostiga
-`CLAUDE_CODE_AUTO_COMPACT_WINDOW` qo‘shing — Claude Code o‘zi tanimaydigan har bir id uchun 200K deb
-hisoblaydi, shu sababli aks holda avtomatik ixchamlash noto‘g‘ri nuqtada ishga tushadi (oldingi bo‘limdagi
-ogohlantirishga qarang). Parcha tuzuvchisi bu qiymatni ham qabul qiladi, shuning uchun maqsadli model oynasini
-biladigan chaqiruvchi uni bevosita chiqarishi mumkin.
+Haqiqiy kontekst oynasi 200K bo‘lmagan har qanday model uchun o‘sha `env` bloki ichiga `CLAUDE_CODE_AUTO_COMPACT_WINDOW` ni qo‘shing — Claude Code o‘zi tanimaydigan har bir identifikator uchun 200K ni qabul qiladi, shu sababli aks holda avtomatik ixchamlash noto‘g‘ri nuqtada ishga tushadi (oldingi bo‘limdagi ogohlantirishga qarang). Parcha tuzuvchisi bu qiymatni ham qabul qiladi, shuning uchun maqsadli model oynasini biladigan chaqiruvchi uni bevosita chiqarishi mumkin.
 
-Manba: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (sof
-tuzuvchi, birlik testlaridan o‘tkazilgan), `ClaudeGatewayOnboardingBlock` tomonidan ko‘rsatiladi.
+Manba: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (sof tuzuvchi, modul testlari bilan tekshirilgan), `ClaudeGatewayOnboardingBlock` tomonidan ko‘rsatiladi.
+
+### Bitta hisobni biriktirish (ixtiyoriy)
+
+Har bir Claude Code so‘rovini muayyan provayder hisobidan yuborish uchun o‘sha `env` blokidagi `ANTHROPIC_CUSTOM_HEADERS` orqali `x-omniroute-connection` sarlavhasini qo‘shing:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Identifikatorni provayder sahifasidagi ulanish qatorida joylashgan `xxxxxxxx…` belgisidan nusxalang. Biriktirish faqat bitta modelli identifikatorlarga (`provider/model`) taalluqli, kombinatsiyalarga emas. Aniq zaxira xatti-harakati uchun [Har bir so‘rov bo‘yicha hisobni biriktirish](../reference/API_REFERENCE.md#account-pinning-per-request) bo‘limiga qarang.
 
 ---
 

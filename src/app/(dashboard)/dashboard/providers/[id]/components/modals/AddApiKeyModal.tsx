@@ -26,6 +26,7 @@ import {
   combineModalCredential,
   providerText,
   validationBadgeProps,
+  validationErrorMessage,
   type CommandCodeAuthFlowState,
 } from "../../providerPageHelpers";
 import { getWebSessionCredentialRequirement } from "../../webSessionCredentials";
@@ -133,6 +134,16 @@ export default function AddApiKeyModal({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [copiedCommandCodeField, setCopiedCommandCodeField] = useState<string | null>(null);
+  const [mode, setMode] = useState<"single" | "bulk">("single");
+  const [bulkText, setBulkText] = useState("");
+  const [bulkValidateKeys, setBulkValidateKeys] = useState(false);
+  const [bulkResult, setBulkResult] = useState<{
+    success: number;
+    failed: number;
+    total: number;
+    errors: Array<{ index: number; name: string; message: string }>;
+  } | null>(null);
+  const [bulkWarnings, setBulkWarnings] = useState<string[]>([]);
   const resetOpenRouterPreset = openRouterPreset.setValue;
   const wasOpenRef = useRef(false);
   useEffect(() => {
@@ -175,16 +186,6 @@ export default function AddApiKeyModal({
     showsRegion,
   ]);
   const bulkSupported = supportsBulkApiKey(provider);
-  const [mode, setMode] = useState<"single" | "bulk">("single");
-  const [bulkText, setBulkText] = useState("");
-  const [bulkValidateKeys, setBulkValidateKeys] = useState(false);
-  const [bulkResult, setBulkResult] = useState<{
-    success: number;
-    failed: number;
-    total: number;
-    errors: Array<{ index: number; name: string; message: string }>;
-  } | null>(null);
-  const [bulkWarnings, setBulkWarnings] = useState<string[]>([]);
   const apiCredentialLabel = isModal
     ? providerText(t, "modalTokenIdLabel", "Token ID")
     : isAwsPolly
@@ -287,8 +288,9 @@ export default function AddApiKeyModal({
         ok && data.capabilities && typeof data.capabilities === "object" ? data.capabilities : null
       );
       // #5088: surface backend reason (e.g. TLS/EACCES) instead of bare "invalid".
-      if (!ok && !unsupported && typeof data.error === "string" && data.error) {
-        setSaveError(data.error);
+      const reason = validationErrorMessage(data.error);
+      if (!ok && !unsupported && reason) {
+        setSaveError(reason);
       }
     } catch {
       setValidationResult("failed");
@@ -369,8 +371,9 @@ export default function AddApiKeyModal({
           const data = await res.json();
           isValid = !!data.valid;
           isUnsupported = !!data.unsupported;
-          if (!isValid && data.error) {
-            validationError = data.error;
+          const submitReason = validationErrorMessage(data.error);
+          if (!isValid && submitReason) {
+            validationError = submitReason;
           }
           if (
             isValid &&

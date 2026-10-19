@@ -1,0 +1,1 @@
+- **ci:** the nightly a11y axe job boots its prebuilt dashboard on a hosted runner — on the light self-hosted pool the 1.2 GB build artefact took 1,416 s to download and the 30-minute timeout cancelled the job before the axe suite ran; hosted runners pull the same class of artefact in seconds, and the build itself stays on the build pool.

@@ -1,0 +1,1 @@
+- **docs(i18n):** the 66 locale mirrors of `AUTHZ_GUIDE.md` and `REMOTE-MODE.md` carry the current open-mode credential rules (the five changed sections retranslated), which also turns `remote-token-privilege-locales` green.

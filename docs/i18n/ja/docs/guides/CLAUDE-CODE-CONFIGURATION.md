@@ -96,25 +96,35 @@ Kimi プロバイダーがオンの場合、Kimi のモデルだけが公開さ�
 
 ---
 
-## ダッシュボード上のオンボーディングブロック
+## ダッシュボードのオンボーディングブロック
 
-Claude ツールカード（**ダッシュボード → CLI Code**）には、このインスタンス用の正確な `settings.json` フラグメントが、検出エイリアスの情報ボタンとコピーボタンの横に表示されます。
+Claude ツールカード（**ダッシュボード → CLI Code**）には、このインスタンス用の正確な `settings.json` フラグメントが、検出エイリアス情報ボタンおよびコピーボタンとともに表示されます。
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<your OmniRoute>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<your OmniRoute API key>",
+    "ANTHROPIC_BASE_URL": "http://<あなたの OmniRoute>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<あなたの OmniRoute API キー>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-ベース URL には、カードによって解決された URL（入力したカスタムオーバーライドを含む）が使用され、すでに正規化されています。`/v1` サフィックスも末尾のスラッシュもありません。**キーが表示されることはありません**。このブロックにはプレースホルダーが設定されているため、スクリーンショットや貼り付けたスニペットからキーが漏洩することはありません。プレースホルダーを自分のキーで置き換えてください。
+ベース URL には、カードによって解決されたもの（入力したカスタムオーバーライドを含む）が使用され、すでに正規化されています。つまり、`/v1` サフィックスも末尾のスラッシュもありません。**キーが表示されることはありません**。このブロックではプレースホルダーが使用されるため、スクリーンショットや貼り付けたスニペットからキーが漏洩することはありません。プレースホルダーを自分のキーで置き換えてください。
 
-実際のコンテキストウィンドウが 200K ではないモデルについては、同じ `env` ブロックの下に `CLAUDE_CODE_AUTO_COMPACT_WINDOW` を追加してください。Claude Code は認識できないすべての id に対して 200K を想定するため、設定しないと自動コンパクションが誤ったタイミングで実行されます（前のセクションの警告を参照してください）。スニペットビルダーもこの値を受け付けるため、ターゲットモデルのウィンドウサイズを把握している呼び出し元は、その値を直接出力できます。
+実際のコンテキストウィンドウが 200K ではないモデルについては、同じ `env` ブロック内に `CLAUDE_CODE_AUTO_COMPACT_WINDOW` を追加してください。Claude Code は、認識できないすべての ID に対して 200K と想定するため、設定しない場合、自動コンパクションが誤ったタイミングで実行されます（前のセクションの警告を参照）。スニペットビルダーもこの値を受け付けるため、ターゲットモデルのウィンドウサイズを把握している呼び出し元は、その値を直接出力できます。
 
-ソース: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet`（純粋なビルダー、単体テスト済み）。`ClaudeGatewayOnboardingBlock` によってレンダリングされます。
+ソース：`src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet`（単体テスト済みの純粋なビルダー）。`ClaudeGatewayOnboardingBlock` によってレンダリングされます。
+
+### 1 つのアカウントに固定する（任意）
+
+すべての Claude Code リクエストを特定のプロバイダーアカウント経由で送信するには、同じ `env` ブロック内の `ANTHROPIC_CUSTOM_HEADERS` を使用して `x-omniroute-connection` ヘッダーを追加します。
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+プロバイダーページの接続行にある `xxxxxxxx…` チップから ID をコピーしてください。固定は単一モデル ID（`provider/model`）にのみ適用され、コンボには適用されません。正確なフォールバック動作については、[リクエスト単位のアカウント固定](../reference/API_REFERENCE.md#account-pinning-per-request)を参照してください。
 
 ---
 

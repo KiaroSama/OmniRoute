@@ -93,33 +93,47 @@ numai modelele Kimi.
 
 ---
 
-## Blocul de inițiere de pe panoul de control
+## Bloc de integrare pe panoul de control
 
-Cardul instrumentului Claude (**Panou de control → Cod CLI**) afișează fragmentul exact din `settings.json`
+Cardul instrumentului Claude (**Panou de control → Cod CLI**) afișează fragmentul `settings.json` exact
 pentru această instanță, lângă butonul de informații despre aliasul de descoperire, împreună cu un buton de copiere:
 
 ```jsonc
 {
   "env": {
     "ANTHROPIC_BASE_URL": "http://<OmniRoute-ul dvs.>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<cheia API OmniRoute a dvs.>",
+    "ANTHROPIC_AUTH_TOKEN": "<cheia API OmniRoute>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-URL-ul de bază este cel determinat de card (inclusiv o suprascriere personalizată introdusă de dvs.), deja
-normalizat — fără sufixul `/v1` și fără bară oblică la final. **Cheia nu este afișată niciodată**: blocul conține un
-substituent, astfel încât o captură de ecran sau un fragment lipit nu poate divulga cheia. Înlocuiți-l cu cheia dvs.
+URL-ul de bază este cel determinat de card (inclusiv o suprascriere personalizată pe care ați introdus-o), deja
+normalizat — fără sufixul `/v1` și fără bară oblică la final. **Cheia nu este afișată niciodată**: blocul include un
+substitut, astfel încât o captură de ecran sau un fragment lipit să nu poată divulga cheia. Înlocuiți-l cu cheia dvs.
 
 Adăugați `CLAUDE_CODE_AUTO_COMPACT_WINDOW` în același bloc `env` pentru orice model a cărui
-fereastră reală de context nu este de 200K — Claude Code presupune 200K pentru fiecare ID pe care nu îl recunoaște, astfel încât
-compactarea automată este declanșată altfel la momentul greșit (consultați avertismentul din secțiunea anterioară).
-Generatorul de fragmente acceptă și această valoare, astfel încât un apelant care cunoaște dimensiunea ferestrei modelului țintă
+fereastră de context reală nu este de 200K — Claude Code presupune 200K pentru fiecare id pe care nu îl recunoaște, astfel încât
+compactarea automată este declanșată altfel într-un moment greșit (consultați avertismentul din secțiunea precedentă).
+Constructorul fragmentului acceptă și această valoare, astfel încât un apelant care cunoaște dimensiunea ferestrei modelului țintă
 o poate emite direct.
 
-Sursă: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (generator
+Sursă: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (constructor
 pur, testat unitar), afișat de `ClaudeGatewayOnboardingBlock`.
+
+### Fixați un cont (opțional)
+
+Pentru a trimite fiecare solicitare Claude Code printr-un anumit cont de furnizor, adăugați antetul
+`x-omniroute-connection` prin `ANTHROPIC_CUSTOM_HEADERS` în același bloc `env`:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Copiați id-ul din cipul `xxxxxxxx…` de pe rândul conexiunii din pagina furnizorului. Fixarea se
+aplică numai id-urilor de model unic (`provider/model`), nu combinațiilor. Consultați
+[Fixarea contului pentru fiecare solicitare](../reference/API_REFERENCE.md#account-pinning-per-request) pentru
+comportamentul exact de rezervă.
 
 ---
 

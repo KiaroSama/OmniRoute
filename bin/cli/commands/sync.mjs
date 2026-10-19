@@ -244,8 +244,9 @@ const IMPORT_TIMEOUT_MS = 300_000;
 function importFailureHint(status) {
   if (status === 401 || status === 403) {
     return (
-      "importing replaces the whole database: run this on the server host (local CLI " +
-      "credential), sign in to the dashboard, or pass an API key with the 'manage' scope."
+      "importing replaces the whole database, so it requires an operator credential: run this " +
+      "on the server host (local CLI credential) or sign in to the dashboard; API keys and " +
+      "remote access tokens are refused."
     );
   }
   return routeUnavailableHint(status, `POST ${IMPORT_PATH}`);

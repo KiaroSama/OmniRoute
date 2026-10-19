@@ -14,6 +14,7 @@ import {
   DATA_DIR,
 } from "./core";
 import { listBackupIds, resolveBackupFile } from "./backupPaths";
+import { chmodQuiet, DB_SECRET_DIR_MODE, DB_SECRET_FILE_MODE } from "./filePermissions";
 import { resetAllDbModuleState } from "./stateReset";
 import {
   DB_BACKUP_SETTINGS_NAMESPACE,
@@ -371,7 +372,8 @@ export function backupDbFile(reason = "auto") {
     _lastBackupAt = now;
 
     const backupDir = getBackupDir();
-    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+    if (!fs.existsSync(backupDir))
+      fs.mkdirSync(backupDir, { recursive: true, mode: DB_SECRET_DIR_MODE });
 
     if (reason !== "manual" && reason !== "pre-restore") {
       // Shrink detection is useful for automatic safety backups, but it should
@@ -407,6 +409,7 @@ export function backupDbFile(reason = "auto") {
     const db = getDbInstance();
     db.backup(backupFile)
       .then(() => {
+        chmodQuiet(backupFile, DB_SECRET_FILE_MODE);
         console.log(`[DB] Backup created: ${backupFile} (${stat.size} bytes)`);
         cleanupDbBackups();
       })
@@ -526,13 +529,15 @@ export async function restoreDbBackup(backupId: string) {
     if (SQLITE_FILE && fs.existsSync(SQLITE_FILE)) {
       const stat = fs.statSync(SQLITE_FILE);
       if (stat.size >= 4096) {
-        if (!fs.existsSync(backupDirForPre)) fs.mkdirSync(backupDirForPre, { recursive: true });
+        if (!fs.existsSync(backupDirForPre))
+          fs.mkdirSync(backupDirForPre, { recursive: true, mode: DB_SECRET_DIR_MODE });
         const preBackupPath = path.join(
           backupDirForPre,
           `db_${new Date().toISOString().replace(/[:.]/g, "-")}_pre-restore.sqlite`
         );
         const dbForBackup = getDbInstance();
         await dbForBackup.backup(preBackupPath);
+        chmodQuiet(preBackupPath, DB_SECRET_FILE_MODE);
         _lastBackupAt = Date.now();
       }
     }

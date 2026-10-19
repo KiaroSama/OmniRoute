@@ -7,7 +7,10 @@ import {
   isTopLevelCacheWriteOnly,
   pickCacheCreationInPrompt,
 } from "../utils/pickCacheCreationTokens.ts";
-import { normalizeOpenAICompatibleFinishReasonString } from "../utils/finishReason.ts";
+import {
+  normalizeOpenAICompatibleFinishReasonString,
+  openAIFinishReasonToClaudeStopReason,
+} from "../utils/finishReason.ts";
 import { computeFinishReason } from "../translator/response/openai-responses/synthesizeCompletedToolCalls.ts";
 import { containsTextualToolCallMarker } from "../utils/textualToolCall.ts";
 import { stripObfuscationZeroWidth } from "../utils/zeroWidth.ts";
@@ -20,7 +23,6 @@ import { restoreClaudeToolName } from "../services/claudeCodeToolRemapper.ts";
 import { extractReplayableResponsesReasoningText } from "../services/reasoningInputPolicy.ts";
 import { sanitizeToolId } from "../translator/helpers/schemaCoercion.ts";
 import { stripEmptyOptionalToolArgs } from "../translator/response/openai-responses/pureHelpers.ts";
-import { convertFinishReason } from "../translator/response/openai-to-claude.ts";
 import {
   extractThinkingFromContent,
   shouldParseTextualReasoningTags,
@@ -842,7 +844,8 @@ function convertOpenAINonStreamingToClaude(
     for (const tool of messageObj.tool_calls) {
       const toolObj = toRecord(tool);
       const fn = toRecord(toolObj.function);
-      const rawId = toString(toolObj.id, `call_${Date.now()}`);
+      // An id-less call gets a random id; a timestamp collides across calls.
+      const rawId = toString(toolObj.id) || undefined;
       content.push({
         type: "tool_use",
         id: sanitizeToolId(rawId),
@@ -853,7 +856,7 @@ function convertOpenAINonStreamingToClaude(
     }
   }
 
-  const stopReason = convertFinishReason(toString(choiceObj.finish_reason, "stop"));
+  const stopReason = openAIFinishReasonToClaudeStopReason(choiceObj.finish_reason);
 
   const usageSrc = toRecord(openaiResponse.usage);
   const promptTokens = toNumber(usageSrc.prompt_tokens, 0);

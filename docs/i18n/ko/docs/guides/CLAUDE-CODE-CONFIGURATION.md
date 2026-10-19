@@ -74,23 +74,33 @@ Claude Code에서 이러한 항목 중 하나를 선택하면 OmniRoute는 라�
 
 ## 대시보드의 온보딩 블록
 
-Claude 도구 카드(**Dashboard → CLI Code**)는 검색 별칭 정보 버튼 옆에 이 인스턴스에 맞는 정확한 `settings.json` 조각을 복사 버튼과 함께 표시합니다.
+Claude 도구 카드(**대시보드 → CLI 코드**)는 검색 별칭 정보 버튼 옆에 이 인스턴스에 해당하는 정확한 `settings.json` 조각을 복사 버튼과 함께 표시합니다.
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<your OmniRoute>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<your OmniRoute API key>",
+    "ANTHROPIC_BASE_URL": "http://<사용자 OmniRoute>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<사용자 OmniRoute API 키>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-기본 URL은 카드에서 확인된 URL이며(직접 입력한 사용자 지정 재정의 포함), 이미 정규화되어 있습니다. 즉, `/v1` 접미사와 후행 슬래시가 없습니다. **키는 절대 표시되지 않습니다**. 이 블록은 자리표시자를 제공하므로 스크린샷이나 붙여 넣은 코드 조각을 통해 키가 유출될 수 없습니다. 자리표시자를 자신의 키로 교체하세요.
+기본 URL은 카드에서 확인된 값(직접 입력한 사용자 지정 재정의 포함)이며, 이미 정규화되어 있습니다. 즉, `/v1` 접미사와 후행 슬래시가 없습니다. **키는 절대 표시되지 않습니다**. 이 블록은 자리표시자를 제공하므로 스크린샷이나 붙여 넣은 코드 조각을 통해 키가 유출되지 않습니다. 자리표시자를 실제 키로 바꾸세요.
 
-실제 컨텍스트 창이 200K가 아닌 모델의 경우 동일한 `env` 블록 아래에 `CLAUDE_CODE_AUTO_COMPACT_WINDOW`를 추가하세요. Claude Code는 인식하지 못하는 모든 id의 컨텍스트 창을 200K로 가정하므로, 그렇지 않으면 자동 압축이 잘못된 시점에 실행됩니다(이전 섹션의 경고 참조). 코드 조각 빌더도 이 값을 허용하므로, 대상 모델의 컨텍스트 창을 아는 호출자는 이를 직접 출력할 수 있습니다.
+실제 컨텍스트 창이 200K가 아닌 모델의 경우 동일한 `env` 블록 아래에 `CLAUDE_CODE_AUTO_COMPACT_WINDOW`를 추가하세요. Claude Code는 인식하지 못하는 모든 id에 대해 200K라고 가정하므로, 그렇지 않으면 자동 압축이 잘못된 시점에 실행됩니다(이전 섹션의 경고 참조). 코드 조각 빌더도 이 값을 허용하므로, 대상 모델의 창 크기를 아는 호출자는 이를 직접 출력할 수 있습니다.
 
-소스: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet`(`ClaudeGatewayOnboardingBlock`에서 렌더링되는 순수 빌더이며 단위 테스트 완료).
+출처: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet`(단위 테스트를 거친 순수 빌더), `ClaudeGatewayOnboardingBlock`에서 렌더링됩니다.
+
+### 계정 하나 고정하기(선택 사항)
+
+모든 Claude Code 요청을 하나의 특정 제공자 계정을 통해 전송하려면 동일한 `env` 블록에서 `ANTHROPIC_CUSTOM_HEADERS`를 통해 `x-omniroute-connection` 헤더를 추가하세요.
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+제공자 페이지의 연결 행에 있는 `xxxxxxxx…` 칩에서 id를 복사하세요. 고정은 단일 모델 id(`provider/model`)에만 적용되며, 콤보에는 적용되지 않습니다. 정확한 폴백 동작은 [요청별 계정 고정](../reference/API_REFERENCE.md#account-pinning-per-request)을 참조하세요.
 
 ---
 

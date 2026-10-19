@@ -322,3 +322,6 @@ docker-compose.yml.bak
 /plans/
 .ignoreme
 **/.ignoreme
+
+# Scoped tsc incremental state written by the typecheck gates (typecheck:core / open-sse / api)
+.tsbuildinfo-*

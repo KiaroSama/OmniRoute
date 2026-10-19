@@ -59,6 +59,8 @@ export interface FilterToOpenAIFormatOptions {
   preserveVideoUrl?: boolean;
   /** Keep `reasoning_content` on tool-call assistant turns (reasoning-replay providers). */
   preserveReasoningContent?: boolean;
+  /** Keep the `developer` role (targets that accept it); otherwise it is lowered to `system`. */
+  preserveDeveloperRole?: boolean;
 }
 
 function hasToolCalls(msg: { tool_calls?: unknown }): boolean {
@@ -80,13 +82,15 @@ export function filterToOpenAIFormat(body, opts: FilterToOpenAIFormatOptions = {
   // REQUIRE the client's reasoning_content to be passed back, so keep it for them
   // (the caller sets this when the routed model needs reasoning replay).
   const preserveReasoningContent = opts?.preserveReasoningContent === true;
+  const preserveDeveloperRole = opts?.preserveDeveloperRole === true;
   if (!body.messages || !Array.isArray(body.messages)) return body;
 
   body.messages = body.messages.map((msg) => {
     // Normalize OpenAI Responses-style `developer` role to `system` — many
     // OpenAI-compatible providers reject `developer` (ported from
-    // decolua/9router#1011).
-    if (msg.role === "developer") msg = { ...msg, role: "system" };
+    // decolua/9router#1011). Skipped when the role normalizer decided the
+    // target accepts `developer` (provider allowlist / per-model compat toggle).
+    if (msg.role === "developer" && !preserveDeveloperRole) msg = { ...msg, role: "system" };
 
     // Keep tool messages as-is (OpenAI format)
     if (msg.role === "tool") return msg;

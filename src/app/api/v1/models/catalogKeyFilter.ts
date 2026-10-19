@@ -41,7 +41,7 @@ export async function filterCatalogModelsForKey<
 >(
   apiKey: string,
   models: T[],
-  keyMeta: Pick<ApiKeyMetadata, "catalogScope" | "allowedCombos" | "blockedModels">,
+  keyMeta: Pick<ApiKeyMetadata, "catalogScope" | "allowedCombos" | "blockedModels" | "forcedModel">,
   deps: CatalogKeyFilterDeps,
   maybeYieldCatalogBuild: () => Promise<void>
 ): Promise<T[]> {
@@ -49,11 +49,16 @@ export async function filterCatalogModelsForKey<
   // only provider models, `all` (the default) both. This is a listing
   // preference, not an access control — dispatch is unaffected either way.
   const catalogScope = keyMeta.catalogScope ?? "all";
+  // A key pinned to one routing target (forcedModel) is routed there whatever it
+  // asks for, so the catalog advertises only that id. Still subject to the
+  // checks below: the pin never lists a model the key may not call.
+  const forcedModel = keyMeta.forcedModel || null;
   const filtered: T[] = [];
   for (const m of models) {
     // Awaiting cached permission Promises alone does not let timers or
     // unrelated requests run. Share the catalog's cooperative cadence.
     await maybeYieldCatalogBuild();
+    if (forcedModel && m.id !== forcedModel) continue;
     const isComboRow = m.owned_by === "combo";
     if (catalogScope === "combos" && !isComboRow) continue;
     if (catalogScope === "models" && isComboRow) continue;

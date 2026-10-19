@@ -123,7 +123,9 @@
       "maxCostOpt": "Max cost per day (USD)",
       "allowedModelsOpt": "Comma-separated list of allowed models",
       "nothingToSet": "No policy fields provided. Use --rate-limit, --max-cost, or --allowed-models.",
-      "updated": "Policy updated."
+      "updated": "Policy updated.",
+      "modelAccessModeOpt": "Model access mode (all | restricted)",
+      "unrestrictedOpt": "Allow all models (--model-access-mode all)"
     },
     "expiration": {
       "title": "Key Expiration",

@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const parsedLimit = parseIntegerQueryParam(url.searchParams, "limit", 100);
-    if (!parsedLimit.ok) return parsedLimit.response;
+    if (parsedLimit.ok === false) return parsedLimit.response;
     const limit = parsedLimit.value;
     const files =
       listScope.mode === "api_key"

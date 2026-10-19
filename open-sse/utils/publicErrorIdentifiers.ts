@@ -1,5 +1,9 @@
+import { isPublicProviderSafetyCode } from "./providerSafety.ts";
+
 const PUBLIC_ERROR_IDENTIFIER = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 const SAFE_PUBLIC_ERROR_IDENTIFIERS = new Set([
+  "cyber_policy",
+  "content_policy_violation",
   "abort",
   "aborted",
   "account_semaphore_capacity",
@@ -173,6 +177,7 @@ const SAFE_PUBLIC_ERROR_IDENTIFIERS = new Set([
   "native_codex_pinned_model_unavailable",
   "network_error",
   "no_active_connection",
+  "no_eligible_targets",
   "no_free_eligible_connection",
   "no_local_login",
   "no_refresh_token",
@@ -317,7 +322,9 @@ export function isSafePublicErrorIdentifier(value: string): boolean {
   if (!PUBLIC_ERROR_IDENTIFIER.test(value)) return false;
   if (/^[1-5]\d{2}$/.test(value)) return true;
   if (/^HTTP_[1-5]\d{2}$/i.test(value)) return true;
-  return SAFE_PUBLIC_ERROR_IDENTIFIERS.has(value.toLowerCase());
+  return (
+    SAFE_PUBLIC_ERROR_IDENTIFIERS.has(value.toLowerCase()) || isPublicProviderSafetyCode(value)
+  );
 }
 
 /** Project an internal classification onto the bounded client-visible identifier vocabulary. */

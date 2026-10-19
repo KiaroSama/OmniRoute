@@ -233,3 +233,42 @@ export function ensureHistoryDoesNotOpenWithFunctionCall(
   if (!opensWithFunctionCall) return contents;
   return [{ role: "user", parts: [{ text: "(continuing the conversation)" }] }, ...contents];
 }
+
+/**
+ * Recursively sanitize function response objects before forwarding to Gemini.
+ * Google Cloud Code / Gemini API parses '$ref' keys inside function_response.response
+ * as OpenAPI/JSONSchema references. If unresolvable, it throws HTTP 400 INVALID_ARGUMENT:
+ * "The referenced name `...` in function_response.response does not match to a display_name in the function_response.parts."
+ * Prefixes all $-prefixed keys with '_' to prevent parser collision. A renamed key never
+ * overwrites a key the payload already carries (`$ref` next to an existing `_ref` becomes
+ * `__ref`).
+ */
+export function sanitizeFunctionResponseData(val: unknown, depth = 0): unknown {
+  if (depth > 20 || !val || typeof val !== "object") return val;
+  if (Array.isArray(val)) return val.map((item) => sanitizeFunctionResponseData(item, depth + 1));
+  const source = val as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(source)) {
+    if (k.startsWith("$")) continue;
+    out[k] = sanitizeFunctionResponseData(v, depth + 1);
+  }
+  for (const [k, v] of Object.entries(source)) {
+    if (!k.startsWith("$")) continue;
+    let key = `_${k.slice(1)}`;
+    while (Object.prototype.hasOwnProperty.call(out, key)) key = `_${key}`;
+    out[key] = sanitizeFunctionResponseData(v, depth + 1);
+  }
+  return out;
+}
+
+export function sanitizeGeminiPartFunctionResponse(part: GeminiPart): GeminiPart {
+  const fr = part.functionResponse as { response?: unknown } | undefined;
+  if (!fr?.response) return part;
+  return {
+    ...part,
+    functionResponse: {
+      ...fr,
+      response: sanitizeFunctionResponseData(fr.response),
+    },
+  };
+}

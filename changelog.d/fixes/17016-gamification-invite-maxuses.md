@@ -1,0 +1,1 @@
+- **fix(gamification):** `POST /api/gamification/invite` accepted a fractional `maxUses` such as `1.5` (201); the schema now requires a whole number, so a fractional value answers 400 ([#17016](https://github.com/diegosouzapw/OmniRoute/pull/17016)) — thanks @pacocartones

@@ -21,9 +21,9 @@ export async function GET(req: NextRequest) {
 
   const url = new URL(req.url);
   const parsedLimit = parseIntegerQueryParam(url.searchParams, "limit", 50);
-  if (!parsedLimit.ok) return parsedLimit.response;
+  if (parsedLimit.ok === false) return parsedLimit.response;
   const parsedOffset = parseIntegerQueryParam(url.searchParams, "offset", 0);
-  if (!parsedOffset.ok) return parsedOffset.response;
+  if (parsedOffset.ok === false) return parsedOffset.response;
   const limit = Math.min(parsedLimit.value, 200);
   const offset = parsedOffset.value;
 

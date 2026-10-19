@@ -99,30 +99,43 @@ und aktiviertem Kimi-Anbieter nur die Modelle von Kimi angezeigt.
 ## Onboarding-Block im Dashboard
 
 Die Claude-Tool-Karte (**Dashboard → CLI Code**) zeigt das exakte `settings.json`-Fragment
-für diese Instanz neben der Info-Schaltfläche für Discovery-Aliasse sowie eine Kopierschaltfläche an:
+für diese Instanz neben dem Info-Button für den Discovery-Alias sowie einen Kopier-Button an:
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<Ihr OmniRoute>:20128",
+    "ANTHROPIC_BASE_URL": "http://<Ihre OmniRoute>:20128",
     "ANTHROPIC_AUTH_TOKEN": "<Ihr OmniRoute-API-Schlüssel>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-Die Basis-URL ist die von der Karte ermittelte URL (einschließlich einer von Ihnen eingegebenen benutzerdefinierten Überschreibung) und bereits
-normalisiert — kein `/v1`-Suffix und kein abschließender Schrägstrich. **Der Schlüssel wird niemals angezeigt**: Der Block enthält
-einen Platzhalter, sodass weder ein Screenshot noch ein eingefügtes Snippet einen Schlüssel preisgeben kann. Ersetzen Sie den Platzhalter durch Ihren Schlüssel.
+Die Basis-URL ist die von der Karte aufgelöste URL (einschließlich einer von Ihnen eingegebenen benutzerdefinierten Überschreibung) und bereits
+normalisiert – ohne `/v1`-Suffix und ohne abschließenden Schrägstrich. **Der Schlüssel wird niemals angezeigt**: Der Block enthält einen
+Platzhalter, sodass weder ein Screenshot noch ein eingefügtes Snippet einen Schlüssel preisgeben kann. Ersetzen Sie ihn durch Ihren Schlüssel.
 
 Fügen Sie `CLAUDE_CODE_AUTO_COMPACT_WINDOW` für jedes Modell, dessen tatsächliches
-Kontextfenster nicht 200K beträgt, im selben `env`-Block hinzu — Claude Code geht bei jeder nicht erkannten ID von 200K aus, sodass
+Kontextfenster nicht 200K beträgt, demselben `env`-Block hinzu – Claude Code nimmt für jede nicht erkannte ID 200K an, sodass
 die automatische Komprimierung andernfalls zum falschen Zeitpunkt ausgelöst wird (siehe Warnung im vorherigen Abschnitt).
-Der Snippet-Builder akzeptiert diesen Wert ebenfalls, sodass ein Aufrufer, der das Kontextfenster des Zielmodells kennt,
+Der Snippet-Builder akzeptiert diesen Wert ebenfalls, sodass ein Aufrufer, der die Kontextfenstergröße des Zielmodells kennt,
 ihn direkt ausgeben kann.
 
 Quelle: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (reiner,
 durch Unit-Tests geprüfter Builder), dargestellt durch `ClaudeGatewayOnboardingBlock`.
+
+### Ein Konto festlegen (optional)
+
+Um jede Claude-Code-Anfrage über ein bestimmtes Anbieterkonto zu senden, fügen Sie den
+`x-omniroute-connection`-Header über `ANTHROPIC_CUSTOM_HEADERS` demselben `env`-Block hinzu:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Kopieren Sie die ID aus dem `xxxxxxxx…`-Chip in der Verbindungszeile auf der Anbieterseite. Die Festlegung
+gilt nur für Einzelmodell-IDs (`provider/model`), nicht für Kombinationen. Das genaue
+Fallback-Verhalten finden Sie unter [Kontofestlegung pro Anfrage](../reference/API_REFERENCE.md#account-pinning-per-request).
 
 ---
 

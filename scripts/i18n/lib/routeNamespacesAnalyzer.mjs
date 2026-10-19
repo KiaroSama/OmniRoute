@@ -45,14 +45,16 @@ const DASHBOARD_ROOT = join(APP_ROOT, "(dashboard)");
 const SECTIONS_ROOT = join(DASHBOARD_ROOT, "dashboard");
 // The real post-redirect home route (`/dashboard` → `/home`). It renders the
 // companion components that live directly under `dashboard/` and therefore
-// shares the `home` namespace set (#16321).
-const HOME_ROUTE_ROOT = join(DASHBOARD_ROOT, "home");
+// shares the `home` namespace set (#16321). Sibling of dashboard/, not a
+// section beneath it, so the section loop never sees it (#16056).
+export const HOME_ROUTE_DIR = join(DASHBOARD_ROOT, "home");
+const HOME_ROUTE_ROOT = HOME_ROUTE_DIR;
 
 const SKIP_DIRS = new Set(["node_modules", ".next", ".claude", ".git", "_tasks", "__pycache__"]);
 
 const CLIENT_DIRECTIVE = /["']use client["']/;
 
-function walkFiles(dir, out = []) {
+export function walkFiles(dir, out = []) {
   let entries;
   try {
     entries = readdirSync(dir, { withFileTypes: true });
@@ -162,7 +164,7 @@ function readCached(file) {
 }
 
 /** BFS over the import graph from entry files; unions client namespaces. */
-function closureNamespaces(entryFiles) {
+export function closureNamespaces(entryFiles) {
   const namespaces = new Set();
   const visited = new Set();
   const queue = [...entryFiles];

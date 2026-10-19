@@ -72,6 +72,8 @@ export const API_KEY_COLUMN_FALLBACKS = [
     definition:
       "catalog_scope TEXT NOT NULL DEFAULT 'all' CHECK (catalog_scope IN ('all', 'combos', 'models'))",
   },
+  // Per-key enforced routing target (NULL = not pinned). See resolveApiKeyForcedModel.
+  { name: "forced_model", definition: "forced_model TEXT" },
 ] as const;
 
 interface ApiKeySchemaDb {

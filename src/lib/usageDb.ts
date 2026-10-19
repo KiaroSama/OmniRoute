@@ -30,6 +30,7 @@ export {
   appendRequestLog,
   getRecentLogs,
 } from "./usage/usageHistory";
+export { getConnectionSpeedStats } from "./usage/connectionSpeedStats";
 
 export { calculateCost } from "./usage/costCalculator";
 

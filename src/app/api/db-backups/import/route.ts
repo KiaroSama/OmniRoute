@@ -12,8 +12,10 @@ import {
   summarizeImportCandidate,
   unlinkFileWithRetry,
 } from "@/lib/db/backup";
-import { isLocalCliCredential } from "@/lib/api/operatorCredential";
-import { isAuthRequired, isAuthenticated } from "@/shared/utils/apiAuth";
+import {
+  CREDENTIAL_IMPORT_FORBIDDEN_MESSAGE,
+  requireOperatorCredential,
+} from "@/lib/api/operatorCredential";
 import { getSettings } from "@/lib/db/settings";
 import { setSystemPromptConfig } from "@omniroute/open-sse/services/systemPrompt.ts";
 import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
@@ -53,16 +55,6 @@ export function isDryRunValue(value: unknown): boolean {
 
 function badRequest(error: string): Response {
   return NextResponse.json({ error }, { status: 400 });
-}
-
-/**
- * Dashboard session or manage-scoped API key (as before), plus the machine-bound local CLI
- * credential so `omniroute sync import` on the server host works without an API key.
- */
-async function isImportAuthorized(request: Request): Promise<boolean> {
-  if (!(await isAuthRequired(request))) return true;
-  if (await isAuthenticated(request)) return true;
-  return isLocalCliCredential(request);
 }
 
 type Upload = { fileBuffer: Buffer; fileName: string; dryRun: boolean };
@@ -206,13 +198,17 @@ async function replaceLiveDatabase(tmpPath: string, fileName: string): Promise<R
  * returns what WOULD be imported, without the pre-import backup or touching the live
  * database.
  *
- * 🔒 Auth-guarded: requires JWT cookie, Bearer manage API key (finding #258-3), or the
- * machine-bound local CLI credential.
+ * 🔒 Operator-only: dashboard session, the machine-bound local CLI credential (so
+ *    `omniroute sync import` on the server host needs no API key), or login disabled. API
+ *    keys of any scope and `oma_` access tokens get 403 — same boundary as the exports: a
+ *    machine credential must not be able to replace the database. The dry run goes through
+ *    the same guard.
  */
 export async function POST(request: Request) {
-  if (!(await isImportAuthorized(request))) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const operatorVerdict = await requireOperatorCredential(request, {
+    forbiddenMessage: CREDENTIAL_IMPORT_FORBIDDEN_MESSAGE,
+  });
+  if (operatorVerdict.ok === false) return operatorVerdict.response;
   let tmpPath: string | null = null;
 
   try {

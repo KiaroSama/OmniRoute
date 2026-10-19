@@ -40,6 +40,8 @@ import {
   stripCloudCodeThinkingConfig,
 } from "../services/cloudCodeThinking.ts";
 import { buildGeminiTools } from "../translator/helpers/geminiToolsSanitizer.ts";
+import { sanitizeGeminiPartFunctionResponse } from "../translator/request/openai-to-gemini/helpers.ts";
+import { logger } from "../utils/logger.ts";
 import {
   type AntigravityCollectedStream,
   processAntigravitySSEText,
@@ -327,10 +329,34 @@ const COMPETITIVE_AGENT_PROMPT_PATTERNS: RegExp[] = [
 ];
 
 /**
- * Strip competing-agent identity sentences from systemInstruction.parts.
+ * Oh My Pi (OMP) coding-harness markers reported to draw a false 429
+ * RESOURCE_EXHAUSTED from Antigravity on large agent prompts even with quota
+ * left. These are compatibility rewrites, not proof of intentional upstream
+ * blocking: they only neutralize known harness tags/branding, and only inside
+ * systemInstruction text. Order matters ("Oh My Pi coding harness" before
+ * "Oh My Pi").
+ */
+const HARNESS_MARKER_REWRITES: Array<{ from: RegExp; to: string }> = [
+  { from: /<(\/?)system[-_]conventions>/gi, to: "<$1conventions>" },
+  { from: /<(\/?)system[-_]directive>/gi, to: "<$1instructions>" },
+  { from: /<(\/?)critical>/gi, to: "<$1important>" },
+  { from: /Oh My Pi coding harness/gi, to: "AI coding assistant" },
+  { from: /Oh My Pi/gi, to: "coding assistant" },
+  { from: /omp Live/gi, to: "coding assistant live" },
+];
+
+/** Harness telemetry keys stripped from the envelope and from `labels`. */
+const ANTIGRAVITY_HARNESS_TELEMETRY_KEYS = ["used_claude", "used_claude_conservative"] as const;
+
+const promptNormalizeLog = logger("AG_PROMPT_NORMALIZE");
+
+/**
+ * Normalize systemInstruction.parts text before Antigravity dispatch: strip
+ * competing-agent identity sentences (#10420) and rewrite OMP harness markers.
+ * Only string `text` parts are touched; every other part and field is kept.
  * Returns the original reference when nothing matched (no allocation).
  */
-export function stripCompetitiveAgentPrompts(systemInstruction: unknown): unknown {
+export function normalizeAntigravitySystemInstruction(systemInstruction: unknown): unknown {
   const record = asRecord(systemInstruction);
   const parts = Array.isArray(record?.parts)
     ? (record.parts as Array<Record<string, unknown>>)
@@ -351,10 +377,62 @@ export function stripCompetitiveAgentPrompts(systemInstruction: unknown): unknow
         text = stripped;
       }
     }
+    let rewrites = 0;
+    for (const { from, to } of HARNESS_MARKER_REWRITES) {
+      const rewritten = text.replace(from, to);
+      if (rewritten !== text) {
+        rewrites++;
+        text = rewritten;
+      }
+    }
+    if (rewrites > 0) {
+      changed = true;
+      promptNormalizeLog.debug("Rewrote harness markers in systemInstruction", { rewrites });
+    }
     return text === part.text ? part : { ...part, text };
   });
 
   return changed ? { ...record, parts: newParts } : systemInstruction;
+}
+
+/** Legacy name (#10420) kept for existing importers. */
+export const stripCompetitiveAgentPrompts = normalizeAntigravitySystemInstruction;
+
+/**
+ * Drop OMP harness telemetry keys (`used_claude`, `used_claude_conservative`)
+ * from a record and from its `labels` map. Every other key and label is kept.
+ * Returns the original reference when nothing was removed.
+ */
+function stripAntigravityHarnessTelemetry<T>(value: T): T {
+  const record = asRecord(value);
+  if (!record) return value;
+
+  let changed = false;
+  const cleaned: Record<string, unknown> = { ...record };
+  for (const key of ANTIGRAVITY_HARNESS_TELEMETRY_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(cleaned, key)) {
+      delete cleaned[key];
+      changed = true;
+    }
+  }
+
+  const labels = asRecord(cleaned.labels);
+  if (labels) {
+    const cleanedLabels: Record<string, unknown> = { ...labels };
+    let labelsChanged = false;
+    for (const key of ANTIGRAVITY_HARNESS_TELEMETRY_KEYS) {
+      if (Object.prototype.hasOwnProperty.call(cleanedLabels, key)) {
+        delete cleanedLabels[key];
+        labelsChanged = true;
+      }
+    }
+    if (labelsChanged) {
+      cleaned.labels = cleanedLabels;
+      changed = true;
+    }
+  }
+
+  return changed ? (cleaned as T) : value;
 }
 
 function getAntigravitySafetySettings(safetySettings: unknown): unknown[] | undefined {
@@ -364,6 +442,20 @@ function getAntigravitySafetySettings(safetySettings: unknown): unknown[] | unde
     const category = asRecord(setting)?.category;
     return typeof category !== "string" || !ANTIGRAVITY_UNSUPPORTED_SAFETY_CATEGORIES.has(category);
   });
+}
+
+/**
+ * Gemini branch (no field whitelist): apply the same systemInstruction
+ * normalization the Claude branch gets, leaving every other field untouched.
+ */
+function normalizeAntigravityGeminiSystemInstruction<T extends Record<string, unknown>>(
+  request: T
+): T {
+  if (!asRecord(request.systemInstruction)) return request;
+  const systemInstruction = normalizeAntigravitySystemInstruction(request.systemInstruction);
+  return systemInstruction === request.systemInstruction
+    ? request
+    : { ...request, systemInstruction };
 }
 
 function sanitizeAntigravityGeminiRequest(
@@ -379,7 +471,7 @@ function sanitizeAntigravityGeminiRequest(
     // #10420: strip competing-agent identity sentences (e.g. "You are a
     // Claude agent, built on Anthropic's Claude Agent SDK.") that Antigravity
     // flags and answers with 429 RESOURCE_EXHAUSTED.
-    clean.systemInstruction = stripCompetitiveAgentPrompts(request.systemInstruction);
+    clean.systemInstruction = normalizeAntigravitySystemInstruction(request.systemInstruction);
   }
 
   clean.generationConfig = asRecord(request.generationConfig)
@@ -708,19 +800,21 @@ export class AntigravityExecutor extends BaseExecutor {
         const hasFunctionCall = c.parts?.some((p) => p.functionCall) || false;
 
         const parts =
-          c.parts?.filter((p) => {
-            if (typeof p.text === "string" && p.text === "") return false;
-            if (p.functionCall && !p.functionCall.name) return false;
+          c.parts
+            ?.filter((p) => {
+              if (typeof p.text === "string" && p.text === "") return false;
+              if (p.functionCall && !p.functionCall.name) return false;
 
-            // Only strip if it's NOT our bypass sentinel.
-            // Antigravity models (like Gemini) need this sentinel to bypass 400 errors.
-            return (
-              !p.thought &&
-              (hasFunctionCall ||
-                !p.thoughtSignature ||
-                p.thoughtSignature === "skip_thought_signature_validator")
-            );
-          }) || [];
+              // Only strip if it's NOT our bypass sentinel.
+              // Antigravity models (like Gemini) need this sentinel to bypass 400 errors.
+              return (
+                !p.thought &&
+                (hasFunctionCall ||
+                  !p.thoughtSignature ||
+                  p.thoughtSignature === "skip_thought_signature_validator")
+              );
+            })
+            .map(sanitizeGeminiPartFunctionResponse) || [];
         return { ...c, role, parts };
       }) || [];
 
@@ -757,7 +851,9 @@ export class AntigravityExecutor extends BaseExecutor {
           sanitizeAntigravityGeminiRequest(rawTransformedRequest)
         )
       : isGemini
-        ? stripTrailingAntigravityAssistantTurn(rawTransformedRequest)
+        ? stripTrailingAntigravityAssistantTurn(
+            normalizeAntigravityGeminiSystemInstruction(rawTransformedRequest)
+          )
         : rawTransformedRequest;
 
     applyAntigravityGenerationDefaults(transformedRequest, upstreamModel);
@@ -797,8 +893,11 @@ export class AntigravityExecutor extends BaseExecutor {
       model: upstreamModel,
       userAgent: getAntigravityEnvelopeUserAgent(credentials),
       requestType,
-      ...passthroughFields,
+      ...stripAntigravityHarnessTelemetry(passthroughFields),
     };
+    // Harness telemetry is dropped from the inner request too (the Claude branch's
+    // whitelist already omits it; the Gemini/other branches pass the request through).
+    envelope.request = stripAntigravityHarnessTelemetry(envelope.request);
 
     return envelope;
   }

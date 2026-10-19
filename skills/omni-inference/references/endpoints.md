@@ -76,6 +76,7 @@
 - [`POST /api/v1/images/edits`](#post-apiv1imagesedits)
 - [`GET /api/v1/images/upscale`](#get-apiv1imagesupscale)
 - [`POST /api/v1/images/upscale`](#post-apiv1imagesupscale)
+- [`GET /api/v1/media/{id}`](#get-apiv1mediaid)
 - [`POST /api/v1/issues/report`](#post-apiv1issuesreport)
 - [`GET /api/v1/management/proxies`](#get-apiv1managementproxies)
 - [`POST /api/v1/management/proxies`](#post-apiv1managementproxies)
@@ -925,6 +926,17 @@ curl -X POST http://localhost:20128/api/v1/images/upscale \
   -d '{}'
 ```
 
+### GET /api/v1/media/{id}
+
+GET media › <id>
+
+Serves media that a video job stored on this gateway because the provider's own result URL is auth-gated (OpenRouter `unsigned_urls`). The id is returned in the `url` of a `/api/v1/videos/generations` response. Readable by the API key that generated it, a manage-scope key or the dashboard session (same ownership rule as `/api/v1/files/{id}/content`); anything else, an unknown id or an expired file (call-log retention window) answers 404.
+
+```bash
+curl http://localhost:20128/api/v1/media/{id} \
+  -H "Authorization: Bearer $OMNIROUTE_TOKEN"
+```
+
 ### POST /api/v1/issues/report
 
 POST issues › report
@@ -1087,6 +1099,9 @@ curl http://localhost:20128/api/v1/quotas/check \
 
 GET registered keys
 
+Management-only, like `/api/keys`: a dashboard session, the local CLI token, or an API key with `manage`/`admin` scope. Inference-only API keys get 403.
+
+
 ```bash
 curl http://localhost:20128/api/v1/registered-keys \
   -H "Authorization: Bearer $OMNIROUTE_TOKEN"
@@ -1095,6 +1110,9 @@ curl http://localhost:20128/api/v1/registered-keys \
 ### POST /api/v1/registered-keys
 
 POST registered keys
+
+Management-only, like `/api/keys`: a dashboard session, the local CLI token, or an API key with `manage`/`admin` scope. Inference-only API keys get 403.
+
 
 ```bash
 curl -X POST http://localhost:20128/api/v1/registered-keys \
@@ -1107,6 +1125,9 @@ curl -X POST http://localhost:20128/api/v1/registered-keys \
 
 GET registered keys › <id>
 
+Management-only, like `/api/keys`: a dashboard session, the local CLI token, or an API key with `manage`/`admin` scope. Inference-only API keys get 403.
+
+
 ```bash
 curl http://localhost:20128/api/v1/registered-keys/{id} \
   -H "Authorization: Bearer $OMNIROUTE_TOKEN"
@@ -1116,6 +1137,9 @@ curl http://localhost:20128/api/v1/registered-keys/{id} \
 
 DELETE registered keys › <id>
 
+Management-only, like `/api/keys`: a dashboard session, the local CLI token, or an API key with `manage`/`admin` scope. Inference-only API keys get 403.
+
+
 ```bash
 curl -X DELETE http://localhost:20128/api/v1/registered-keys/{id} \
   -H "Authorization: Bearer $OMNIROUTE_TOKEN"
@@ -1124,6 +1148,9 @@ curl -X DELETE http://localhost:20128/api/v1/registered-keys/{id} \
 ### POST /api/v1/registered-keys/{id}/revoke
 
 POST registered keys › <id> › revoke
+
+Management-only, like `/api/keys`: a dashboard session, the local CLI token, or an API key with `manage`/`admin` scope. Inference-only API keys get 403.
+
 
 ```bash
 curl -X POST http://localhost:20128/api/v1/registered-keys/{id}/revoke \

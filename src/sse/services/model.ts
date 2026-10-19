@@ -207,12 +207,16 @@ function findRegistryModel(providerId: string, modelId: string): any {
  * `modelId` with `effort: null` when nothing matches or the provider already owns its
  * own suffix mechanism.
  */
-function resolveSyncedModelIdAndEffort(
+export function resolveSyncedModelIdAndEffort(
   providerId: string,
   modelId: string,
   syncedModels: unknown
 ): { modelId: string; effort: string | null } {
-  if (providerId === "codex" && findRegistryModel(providerId, modelId)) {
+  if (
+    providerId === "codex" &&
+    findRegistryModel(providerId, modelId) &&
+    findSyncedModelMeta(syncedModels, modelId)
+  ) {
     return { modelId, effort: null };
   }
   if (isSyncedEffortSkippedProvider(providerId) || !Array.isArray(syncedModels)) {
@@ -410,9 +414,9 @@ async function lookupModelMeta(
       getActiveSyncedCatalog(providerId),
       // #10898 / #7620: model-compat overrides (apiFormat/targetFormat/
       // supportsVision, isHidden, ...) are stored keyed on the id the operator
-      // wrote them under. For a no-auth alias the model prefix resolves to the
-      // APIKEY gateway id (e.g. "opencode/x" -> providerId "opencode-zen") but
-      // the override was written on the sibling "opencode" row. Merge overrides
+      // wrote them under. For a no-auth alias the model prefix can resolve to an
+      // APIKEY gateway id while the override was written on the sibling no-auth
+      // row (see noAuthProviderSiblings.ts). Merge overrides
       // across the provider AND its no-auth sibling ids (requested id first)
       // instead of canonicalizing the low-level compat key, which would break
       // paths that legitimately key on the raw id (e.g. getHiddenModelsByProvider).

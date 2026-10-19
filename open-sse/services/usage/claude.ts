@@ -22,8 +22,19 @@ import {
 } from "../claudeUsageCooldown.ts";
 import { boundedMap } from "../../../src/lib/quota/boundedMap.ts";
 import { sanitizeErrorMessage } from "../../utils/errorSanitization.ts";
+import { fetchWithConnectionProxy } from "../connectionProxyFetch.ts";
 import { toRecord } from "./scalars.ts";
 import { normalizeClaudeUsageQuotas, type NormalizedClaudeUsageQuotas } from "./claudeQuota.ts";
+
+/** Run one usage request through the proxy when an id is present, else directly. */
+async function proxiedOrDirect(
+  connectionId: string | undefined,
+  url: string,
+  init: RequestInit
+): Promise<Response | null> {
+  if (connectionId) return fetchWithConnectionProxy(connectionId, url, init);
+  return globalThis.fetch(url, init);
+}
 
 // Claude API config
 const CLAUDE_CONFIG = {
@@ -113,8 +124,13 @@ function staleFromCache(cached: CachedClaudeUsage): ClaudeUsageResult {
  */
 export function getClaudeUsage(
   accessToken?: string,
-  options: { forceRefresh?: boolean } = {}
+  connectionIdOrOptions?: string | { forceRefresh?: boolean },
+  maybeOptions: { forceRefresh?: boolean } = {}
 ): Promise<ClaudeUsageResult> {
+  const connectionId =
+    typeof connectionIdOrOptions === "string" ? connectionIdOrOptions : undefined;
+  const options =
+    typeof connectionIdOrOptions === "string" ? maybeOptions : (connectionIdOrOptions ?? {});
   if (!accessToken) {
     return Promise.resolve({
       message: "Claude connected. Access token not available.",
@@ -141,14 +157,22 @@ export function getClaudeUsage(
     });
   }
 
-  const request: Promise<ClaudeUsageResult> = fetchClaudeUsage(accessToken, key).finally(() => {
+  const request: Promise<ClaudeUsageResult> = fetchClaudeUsage(
+    accessToken,
+    key,
+    connectionId
+  ).finally(() => {
     if (inFlightUsage.get(key) === request) inFlightUsage.delete(key);
   });
   inFlightUsage.set(key, request);
   return request;
 }
 
-async function fetchClaudeUsage(accessToken: string, key: string): Promise<ClaudeUsageResult> {
+async function fetchClaudeUsage(
+  accessToken: string,
+  key: string,
+  connectionId?: string
+): Promise<ClaudeUsageResult> {
   // Skip the OAuth usage call while this token is cooling down from a recent 429
   // (chat with the same token still works — only the quota endpoint is throttled).
   if (isClaudeOauthUsageCoolingDown(accessToken)) {
@@ -167,22 +191,28 @@ async function fetchClaudeUsage(accessToken: string, key: string): Promise<Claud
     // (not `claude-cli/...`) and the shape is simpler than /v1/messages.
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 10_000);
-    let oauthResponse: Response;
+    const oauthInit: RequestInit = {
+      method: "GET",
+      headers: {
+        Accept: "application/json, text/plain, */*",
+        "Accept-Encoding": "gzip, compress, deflate, br",
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        "User-Agent": `claude-code/${getClaudeCodeVersion()}`,
+        "anthropic-beta": "oauth-2025-04-20",
+      },
+      signal: ctrl.signal,
+    };
+    let oauthResponse: Response | null;
     try {
-      oauthResponse = await fetch(CLAUDE_CONFIG.oauthUsageUrl, {
-        method: "GET",
-        headers: {
-          Accept: "application/json, text/plain, */*",
-          "Accept-Encoding": "gzip, compress, deflate, br",
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          "User-Agent": `claude-code/${getClaudeCodeVersion()}`,
-          "anthropic-beta": "oauth-2025-04-20",
-        },
-        signal: ctrl.signal,
-      });
+      oauthResponse = await proxiedOrDirect(connectionId, CLAUDE_CONFIG.oauthUsageUrl, oauthInit);
     } finally {
       clearTimeout(timer);
+    }
+
+    if (!oauthResponse) {
+      const legacy = await getClaudeUsageLegacy(accessToken, connectionId);
+      return { ...legacy, bootstrap: await bootstrapPromise };
     }
 
     if (oauthResponse.ok) {
@@ -238,7 +268,7 @@ async function fetchClaudeUsage(accessToken: string, key: string): Promise<Claud
       console.warn(
         `[Claude Usage] OAuth endpoint returned ${oauthResponse.status}, falling back to legacy`
       );
-      const legacy = await getClaudeUsageLegacy(accessToken);
+      const legacy = await getClaudeUsageLegacy(accessToken, connectionId);
       return { ...legacy, bootstrap: await bootstrapPromise };
     }
 
@@ -261,15 +291,23 @@ export function _resetClaudeUsagePollingState(): void {
  * Legacy Claude usage fetcher for API key / org admin users.
  * Uses /v1/settings + /v1/organizations/{org_id}/usage endpoints.
  */
-async function getClaudeUsageLegacy(accessToken?: string) {
+async function getClaudeUsageLegacy(accessToken?: string, connectionId?: string) {
   try {
-    const settingsResponse = await fetch(CLAUDE_CONFIG.settingsUrl, {
+    const settingsInit: RequestInit = {
       method: "GET",
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "anthropic-version": CLAUDE_CONFIG.apiVersion,
       },
-    });
+    };
+    const settingsResponse = await proxiedOrDirect(
+      connectionId,
+      CLAUDE_CONFIG.settingsUrl,
+      settingsInit
+    );
+    if (!settingsResponse) {
+      return { message: "Claude connected. Usage API requires admin permissions." };
+    }
 
     if (settingsResponse.ok) {
       const settings = toRecord(await settingsResponse.json());
@@ -277,16 +315,21 @@ async function getClaudeUsageLegacy(accessToken?: string) {
       const organizationId =
         typeof settings.organization_id === "string" ? settings.organization_id : "";
       if (organizationId) {
-        const usageResponse = await fetch(
+        const usageInit: RequestInit = {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "anthropic-version": CLAUDE_CONFIG.apiVersion,
+          },
+        };
+        const usageResponse = await proxiedOrDirect(
+          connectionId,
           CLAUDE_CONFIG.usageUrl.replace("{org_id}", organizationId),
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "anthropic-version": CLAUDE_CONFIG.apiVersion,
-            },
-          }
+          usageInit
         );
+        if (!usageResponse) {
+          return { message: "Claude connected. Usage API requires admin permissions." };
+        }
 
         if (usageResponse.ok) {
           const usage = await usageResponse.json();

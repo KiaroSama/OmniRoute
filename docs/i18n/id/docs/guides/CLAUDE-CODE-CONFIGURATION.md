@@ -95,8 +95,8 @@ hanya model Kimi.
 
 ## Blok onboarding di dasbor
 
-Kartu alat Claude (**Dasbor → CLI Code**) menampilkan fragmen `settings.json` yang tepat
-untuk instans ini, di sebelah tombol info alias penemuan, lengkap dengan tombol salin:
+Kartu alat Claude (**Dasbor → Kode CLI**) merender fragmen `settings.json` yang tepat
+untuk instans ini, di sebelah tombol info alias penemuan, dengan tombol salin:
 
 ```jsonc
 {
@@ -108,18 +108,32 @@ untuk instans ini, di sebelah tombol info alias penemuan, lengkap dengan tombol 
 }
 ```
 
-URL dasar adalah URL yang dihasilkan oleh kartu tersebut (termasuk penggantian khusus yang Anda masukkan), dan sudah
-dinormalisasi — tanpa sufiks `/v1` dan tanpa garis miring penutup. **Kunci tidak pernah ditampilkan**: blok tersebut menyediakan
-placeholder, sehingga tangkapan layar atau cuplikan yang ditempel tidak dapat membocorkannya. Tempelkan kunci Anda untuk menggantinya.
+URL dasar adalah URL yang ditentukan oleh kartu (termasuk penggantian khusus yang Anda masukkan), dan sudah
+dinormalisasi — tanpa akhiran `/v1` dan tanpa garis miring di akhir. **Kunci tidak pernah dirender**: blok ini menggunakan
+placeholder, sehingga tangkapan layar atau cuplikan yang ditempel tidak dapat membocorkan kunci. Tempelkan kunci Anda untuk menggantinya.
 
-Tambahkan `CLAUDE_CODE_AUTO_COMPACT_WINDOW` di bawah blok `env` yang sama untuk setiap model yang jendela
-konteks sebenarnya bukan 200K — Claude Code mengasumsikan 200K untuk setiap id yang tidak dikenali, sehingga
-pemadatan otomatis akan dijalankan pada titik yang salah (lihat peringatan di bagian sebelumnya).
+Tambahkan `CLAUDE_CODE_AUTO_COMPACT_WINDOW` di bawah blok `env` yang sama untuk model apa pun yang jendela
+konteks sebenarnya bukan 200K — Claude Code mengasumsikan 200K untuk setiap id yang tidak dikenalnya, sehingga
+pemadatan otomatis akan dipicu pada titik yang salah (lihat peringatan di bagian sebelumnya).
 Penyusun cuplikan juga menerima nilai tersebut, sehingga pemanggil yang mengetahui ukuran jendela model target
 dapat menghasilkannya secara langsung.
 
 Sumber: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (penyusun
-murni, diuji dengan pengujian unit) yang ditampilkan oleh `ClaudeGatewayOnboardingBlock`.
+murni, diuji dengan pengujian unit) yang dirender oleh `ClaudeGatewayOnboardingBlock`.
+
+### Sematkan satu akun (opsional)
+
+Untuk mengirim setiap permintaan Claude Code melalui satu akun penyedia tertentu, tambahkan header
+`x-omniroute-connection` melalui `ANTHROPIC_CUSTOM_HEADERS` dalam blok `env` yang sama:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Salin id dari chip `xxxxxxxx…` pada baris koneksi di halaman penyedia. Penyematan hanya
+berlaku untuk id model tunggal (`provider/model`), bukan untuk kombinasi. Lihat
+[Penyematan akun per permintaan](../reference/API_REFERENCE.md#account-pinning-per-request) untuk
+perilaku fallback yang tepat.
 
 ---
 

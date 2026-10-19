@@ -134,11 +134,15 @@ test("integration routing is owner-only, exact-target and separately reviewed", 
 });
 
 test("integration admission retains every ordinary gate and requires both aggregate verdicts", () => {
-  assert.deepEqual(integration?.merge_conditions, [
-    ...(release?.merge_conditions as unknown[]),
-    "check-success=Gate / CI",
-    "check-success=Gate / Quality",
-  ]);
+  assert.deepEqual(integration?.merge_conditions, release?.merge_conditions);
+  for (const rule of config.queue_rules ?? []) {
+    const conditions = rule.merge_conditions as unknown[];
+    assert.ok(conditions.includes("check-success=Gate / CI"), `${rule.name}: missing CI verdict`);
+    assert.ok(
+      conditions.includes("check-success=Gate / Quality"),
+      `${rule.name}: missing Quality verdict`
+    );
+  }
 });
 
 test("ordinary admission keeps its exact failure allowance instead of broadening it", () => {
@@ -149,5 +153,7 @@ test("ordinary admission keeps its exact failure allowance instead of broadening
     "#check-pending=0",
     "#check-success>=1",
     "check-success=Merge integrity (changelog + generated skills)",
+    "check-success=Gate / CI",
+    "check-success=Gate / Quality",
   ]);
 });

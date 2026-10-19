@@ -50,9 +50,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     // No `limit` keeps the unpaginated list; a present one is the page size.
     const parsedLimit = parseIntegerQueryParam(searchParams, "limit", 0);
-    if (!parsedLimit.ok) return parsedLimit.response;
+    if (parsedLimit.ok === false) return parsedLimit.response;
     const parsedOffset = parseIntegerQueryParam(searchParams, "offset", 0);
-    if (!parsedOffset.ok) return parsedOffset.response;
+    if (parsedOffset.ok === false) return parsedOffset.response;
     const result = getWebhooks(
       searchParams.get("limit")
         ? { limit: parsedLimit.value, offset: parsedOffset.value }

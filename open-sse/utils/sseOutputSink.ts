@@ -163,7 +163,9 @@ export function createSSEOutputSink(
   const wrap = <T extends Transformer<Uint8Array, Uint8Array>>(transformer: T): T => {
     if (!deltaStage && frameWindowMs <= 0) return transformer;
     const originalFlush = transformer.flush;
-    const originalCancel = transformer.cancel;
+    const originalCancel = (
+      transformer as T & { cancel?: (reason?: unknown) => void | PromiseLike<void> }
+    ).cancel;
     return {
       ...transformer,
       async flush(controller: OutputController) {

@@ -141,6 +141,17 @@ export const SEARCH_VALIDATOR_CONFIGS: Record<
       }),
     },
   }),
+  // Deliberately incomplete body (no search_queries/objective) so the probe never runs a
+  // real search: an accepted key answers with a request-validation 4xx (< 500 → valid),
+  // a rejected key with 401/403. validateSearchProvider never follows redirects.
+  "parallel-search": (apiKey) => ({
+    url: "https://api.parallel.ai/v1/search",
+    init: {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": apiKey },
+      body: JSON.stringify({ mode: "fast" }),
+    },
+  }),
   "linkup-search": (apiKey) => ({
     url: "https://api.linkup.so/v1/search",
     init: {

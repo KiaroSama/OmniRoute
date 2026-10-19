@@ -21,7 +21,11 @@ import {
 } from "./kiroThinking.ts";
 import { ByteQueue, TEXT_ENCODER, parseEventFrame } from "./kiro/eventstream.ts";
 import { readKiroReasoningText } from "./kiro/reasoning.ts";
-import { kiroRuntimeHost, resolveKiroRuntimeRegion } from "../services/kiroRegion.ts";
+import {
+  kiroApiKeyRuntimeHost,
+  kiroRuntimeHost,
+  resolveKiroRuntimeRegion,
+} from "../services/kiroRegion.ts";
 import {
   KIRO_TOOL_CALL_WRAPPER,
   appendBufferedKiroToolInput,
@@ -32,6 +36,7 @@ import {
   validateKiroToolUse,
   type PendingKiroWrapperToolCall,
 } from "./kiroToolCallValidation.ts";
+import { addKiroCredits } from "./kiroCredits.ts";
 import {
   createKiroToolCallRepairStream,
   isKiroToolCallRepairEnabled,
@@ -42,6 +47,8 @@ export { validateKiroToolUse } from "./kiroToolCallValidation.ts";
 type JsonRecord = Record<string, unknown>;
 
 type UsageSummary = {
+  provider_credits?: number;
+  cost_in_usd_ticks?: number;
   prompt_tokens: number;
   completion_tokens: number;
   total_tokens: number;
@@ -164,9 +171,10 @@ const KIRO_DEFAULT_MAX_INPUT_TOKENS = 200000;
  *
  * Kiro reports only a percentage, so the budget it is a percentage OF decides the
  * result. A fixed 200000 undercounts every model with a larger window by the
- * ratio of the two windows — claude-sonnet-5 (1M) by 5x, gpt-5.6-* (272k) by
- * ~26% — and those numbers land in usage_history and the API-key token-limit
- * counters.
+ * ratio of the two windows — claude-sonnet-5 and gpt-5.6-* (both 1M) by 5x —
+ * and those numbers land in usage_history and the API-key token-limit counters,
+ * and drive clients' compaction decisions. The registry `contextLength` must
+ * therefore track provider-side window changes.
  */
 function resolveKiroMaxInputTokens(model: string): number {
   const entry = getRegistryEntry("kiro");
@@ -201,7 +209,14 @@ function ensureKiroUsage(state: KiroStreamState, model: string) {
       ? Math.floor((state.contextUsagePercentage * resolveKiroMaxInputTokens(model)) / 100)
       : 0;
 
-  if (estimatedTotalTokens <= 0 && estimatedOutputTokens <= 0) return;
+  if (estimatedTotalTokens <= 0 && estimatedOutputTokens <= 0) {
+    // A credit-only response still needs explicit zero token counts so the
+    // usage block is well-formed and its credits reach billing.
+    if (state.usage?.provider_credits !== undefined) {
+      state.usage = { ...state.usage, prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+    }
+    return;
+  }
   // Without a percentage there is no total to split, so the output estimate is
   // all that is known and stands on its own.
   if (estimatedTotalTokens <= 0) {
@@ -395,20 +410,24 @@ export class KiroExecutor extends BaseExecutor {
     // Center accounts (e.g. eu-central-1) are rejected by the default us-east-1 host; only the
     // regional endpoint accepts the region-bound token + profileArn.
     const region = resolveKiroRegion(credentials);
-    const regionalUrl = `${kiroRuntimeHost(region)}/generateAssistantResponse`;
+    const authMethod =
+      typeof credentials.providerSpecificData?.authMethod === "string"
+        ? credentials.providerSpecificData.authMethod
+        : undefined;
+    // Long-lived API keys only work on the regional Amazon Q host (q.<region>), including
+    // us-east-1 where codewhisperer.us-east-1 rejects API-key payloads with
+    // REQUEST_BODY_INVALID. One persisted region, no surface rotation.
+    const runtimeHost =
+      authMethod === "api_key" ? kiroApiKeyRuntimeHost(region) : kiroRuntimeHost(region);
+    const regionalUrl = `${runtimeHost}/generateAssistantResponse`;
 
     // The Kiro IDE's own branded gateway (runtime.*.kiro.dev) only exists for
     // us-east-1 and only accepts Kiro OIDC/social tokens — it rejects
     // TokenType=API_KEY and external-IdP/IdC SSO tokens outright (403 "bearer
     // token invalid"), so those auth methods go straight to the region-resolved
-    // CodeWhisperer/Amazon Q surface (mirrors 9router's getOrderedBaseUrls in
-    // open-sse/executors/kiro.js). For everything else, try the branded gateway
+    // CodeWhisperer/Amazon Q surface. For everything else, try the branded gateway
     // first — it is the surface the native Kiro IDE itself talks to — and fall
     // back to the raw AWS host on an auth/profile-shaped failure.
-    const authMethod =
-      typeof credentials.providerSpecificData?.authMethod === "string"
-        ? credentials.providerSpecificData.authMethod
-        : undefined;
     const isCodeWhispererOnly =
       authMethod === "api_key" || authMethod === "idc" || isExternalIdpAuthMethod(authMethod);
     const candidateUrls =
@@ -971,6 +990,16 @@ export class KiroExecutor extends BaseExecutor {
             // Handle meteringEvent - mark that we received it
             if (eventType === "meteringEvent") {
               state.hasMeteringEvent = true;
+              // A metering frame without a `usage` figure has nothing to add and is
+              // skipped. With KIRO_REQUIRE_CREDITS every frame is validated, so a
+              // malformed one fails the stream; a stream with no credits at all is
+              // rejected in flush().
+              if (
+                event.payload?.usage !== undefined ||
+                process.env.KIRO_REQUIRE_CREDITS === "true"
+              ) {
+                state.usage = addKiroCredits(state.usage, event.payload);
+              }
             }
 
             // Handle token usage. Kiro reports it under more than one frame: the
@@ -1020,6 +1049,7 @@ export class KiroExecutor extends BaseExecutor {
 
                 if (inputTokens > 0 || outputTokens > 0) {
                   state.usage = {
+                    ...state.usage,
                     prompt_tokens: inputTokens,
                     completion_tokens: outputTokens,
                     total_tokens: inputTokens + outputTokens,
@@ -1094,6 +1124,13 @@ export class KiroExecutor extends BaseExecutor {
                 controller.enqueue(TEXT_ENCODER.encode(`data: ${JSON.stringify(chunk)}\n\n`));
               }
             );
+          }
+
+          if (
+            process.env.KIRO_REQUIRE_CREDITS === "true" &&
+            state.usage?.provider_credits === undefined
+          ) {
+            throw new Error("Kiro response ended without credit metering");
           }
 
           // Emit finish chunk if not already sent

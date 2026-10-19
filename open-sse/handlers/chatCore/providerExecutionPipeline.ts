@@ -14,7 +14,8 @@ import { recoverAnthropicThinkingSignature } from "./thinkingSignatureRecovery.t
 import { isAnthropicThinkingSignatureError } from "./passthroughHelpers.ts";
 import {
   isModelUnavailableError,
-  getNextFamilyFallback as defaultGetNextFamilyFallback,
+  getNextEligibleFamilyFallback,
+  isFamilyFallbackEligible,
 } from "../../services/modelFamilyFallback.ts";
 import { COOLDOWN_MS } from "../../config/errorConfig.ts";
 import { normalizeHeaders } from "../../utils/headers.ts";
@@ -73,6 +74,12 @@ export interface PipelineConnectionContext {
   onCredentialsRefreshed: (next: Record<string, unknown>) => void | Promise<void>;
   assertManagedLeaseFence: (connectionId: string) => void;
   getProviderCredentials: typeof getProviderCredentials;
+  /**
+   * Connection allowlist the request was routed under (API key allowlist ∩ combo
+   * step allowlist ∩ quota pool). Account rotation must stay inside it; null means
+   * the request carried no constraint.
+   */
+  allowedConnections?: string[] | null;
   refreshCredentials?: (
     credentials: Record<string, unknown>
   ) => Promise<Record<string, unknown> | null>;
@@ -136,7 +143,7 @@ export interface ProviderExecutionPipelineInput {
     currentModel: string,
     triedModels: Set<string>,
     providerHint?: string | null
-  ) => string | null;
+  ) => string | null | Promise<string | null>;
 }
 
 const LEASE_MISMATCH_STATUS = 409;
@@ -334,6 +341,7 @@ export async function runProviderExecutionPipeline(
 ): Promise<ProviderExecutionOutcome> {
   const { policy, target, connection, wire, state, sendProviderAttempt } = input;
   const maxAttempts = maxAttemptsFor(target.provider);
+  const allowedConnections = connection.allowedConnections ?? null;
   const excludedIds: string[] = [];
   let attempts = 0;
   let lastAttempt: ChatCoreExecutorResult | null = null;
@@ -341,7 +349,29 @@ export async function runProviderExecutionPipeline(
   let authRefreshPending = false;
   let authRefreshed = false;
   let modelFallbackPending = false;
-  const resolveFamilyFallback = input.getNextFamilyFallback ?? defaultGetNextFamilyFallback;
+  const resolveFamilyFallback = async (
+    currentModel: string,
+    triedModels: Set<string>,
+    providerHint?: string | null
+  ) => {
+    const connectionId = currentConnectionId(connection);
+    if (!input.getNextFamilyFallback) {
+      return getNextEligibleFamilyFallback(
+        currentModel,
+        triedModels,
+        providerHint ?? target.provider,
+        connectionId
+      );
+    }
+
+    const excluded = new Set(triedModels);
+    while (true) {
+      const candidate = await input.getNextFamilyFallback(currentModel, excluded, providerHint);
+      if (!candidate || excluded.has(candidate)) return null;
+      if (isFamilyFallbackEligible(candidate, target.provider, connectionId)) return candidate;
+      excluded.add(candidate);
+    }
+  };
 
   while (
     attempts < maxAttempts ||
@@ -406,7 +436,7 @@ export async function runProviderExecutionPipeline(
         await state.onClearSessionAffinity?.({ failedConnectionId: failedId });
       }
       const nextCreds = await connection
-        .getProviderCredentials("codex", null, null, wire.currentModel, {
+        .getProviderCredentials("codex", null, allowedConnections, wire.currentModel, {
           excludeConnectionIds: [...excludedIds],
         })
         .catch(() => null);
@@ -441,7 +471,7 @@ export async function runProviderExecutionPipeline(
           );
         }
         const nextCreds = await connection
-          .getProviderCredentials("antigravity", null, null, wire.currentModel, {
+          .getProviderCredentials("antigravity", null, allowedConnections, wire.currentModel, {
             excludeConnectionIds: [...excludedIds],
           })
           .catch(() => null);
@@ -587,13 +617,16 @@ export async function runProviderExecutionPipeline(
         // keep statusText
       }
       if (isModelUnavailableError(status, fallbackMessage, target.provider)) {
-        const nextModel = resolveFamilyFallback(
+        const nextModel = await resolveFamilyFallback(
           wire.currentModel,
           wire.triedModels,
           target.provider
         );
         if (nextModel) {
-          wire.setBodyAndModel({ ...wire.body, model: nextModel }, nextModel);
+          wire.body = { ...wire.body, model: nextModel };
+          wire.currentModel = nextModel;
+          wire.triedModels.add(nextModel);
+          wire.setBodyAndModel(wire.body, nextModel);
           modelFallbackPending = true;
           continue;
         }

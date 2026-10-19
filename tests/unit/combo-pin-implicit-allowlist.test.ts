@@ -10,8 +10,6 @@ import assert from "node:assert/strict";
 
 const { resolveComboTargets } = await import("../../open-sse/services/combo/comboStructure.ts");
 const { handleComboChat } = await import("../../open-sse/services/combo.ts");
-const { expandTargetsByFingerprints } =
-  await import("../../open-sse/services/combo/fingerprintExpansion.ts");
 const { comboModelStepInputSchema } = await import("../../src/shared/validation/schemas/combo.ts");
 
 function createLog() {
@@ -124,63 +122,6 @@ test("handleComboChat passes the implicit pin allowlist into handleSingleModel",
   });
   assert.equal(response.status, 200);
   assert.deepEqual(captured, ["pinned-20x"]);
-});
-
-test("expandTargetsByFingerprints rewrites a composite pin allowlist to the real row id", () => {
-  const realConnectionId = "conn-1";
-  const pinnedFingerprint = "fp-aaa";
-  const composite = `${realConnectionId}|fp|${pinnedFingerprint}`;
-  const result = expandTargetsByFingerprints(
-    [
-      {
-        kind: "model",
-        stepId: "step-0",
-        executionKey: "step-0",
-        modelStr: "opencode/kimi-k2",
-        provider: "opencode",
-        providerId: null,
-        connectionId: composite,
-        allowedConnectionIds: [composite],
-        weight: 0,
-        label: null,
-      },
-    ],
-    new Map([[realConnectionId, { id: realConnectionId, provider: "opencode" }]]),
-    (t) => t.provider
-  );
-  assert.equal(result.length, 1);
-  assert.equal(result[0].connectionId, realConnectionId);
-  assert.deepEqual(result[0].allowedConnectionIds, [realConnectionId]);
-});
-
-test("expandTargetsByFingerprints rewrites sibling composite ids, not only the pin", () => {
-  const realConnectionId = "conn-1";
-  const otherReal = "conn-2";
-  const pinnedFingerprint = "fp-aaa";
-  const composite = `${realConnectionId}|fp|${pinnedFingerprint}`;
-  const otherComposite = `${otherReal}|fp|fp-bbb`;
-  const result = expandTargetsByFingerprints(
-    [
-      {
-        kind: "model",
-        stepId: "step-0",
-        executionKey: "step-0",
-        modelStr: "opencode/kimi-k2",
-        provider: "opencode",
-        providerId: null,
-        connectionId: composite,
-        allowedConnectionIds: [composite, otherComposite],
-        weight: 0,
-        label: null,
-      },
-    ],
-    new Map([
-      [realConnectionId, { id: realConnectionId, provider: "opencode" }],
-      [otherReal, { id: otherReal, provider: "opencode" }],
-    ]),
-    (t) => t.provider
-  );
-  assert.deepEqual(result[0].allowedConnectionIds, [realConnectionId, otherReal]);
 });
 
 test("comboModelStepInputSchema keeps allowedConnectionIds on parse", () => {

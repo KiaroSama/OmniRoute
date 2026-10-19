@@ -1,4 +1,5 @@
 import { hasTrustedEmptyTurn } from "./emptyTurnPolicy.ts";
+import { createCompletionDrain } from "./streamCompletionDrain.ts";
 import type { StreamControllerOptions } from "./streamControllerTypes.ts";
 import { trackPendingRequest } from "@/lib/usageDb";
 import { STREAM_ACTIVE_TIMEOUT_MS, STREAM_IDLE_TIMEOUT_MS } from "../config/constants.ts";
@@ -316,6 +317,8 @@ export function createStreamController({
     handleDisconnect: (reason = "client_closed") => {
       if (disconnected) return;
       if (clientTerminalSeen) {
+        // Start the drain before completion releases its registered callback.
+        if (clientDisconnectGracePeriodMs > 0) completedToolHandoffDrain?.();
         controller.handleComplete();
         return;
       }
@@ -668,33 +671,10 @@ export function createDisconnectAwareStream(
   let terminalTail = "";
   let clientTerminalSeen = false;
   let bytesWereForwarded = false;
-  let completedToolHandoffDrainStarted = false;
-
-  const drainCompletedToolHandoff = () => {
-    if (completedToolHandoffDrainStarted) return;
-    completedToolHandoffDrainStarted = true;
-    const gracePeriodMs = Math.max(0, Number(streamController.clientDisconnectGracePeriodMs) || 0);
-    const timeoutReason = "completed_tool_handoff_grace_expired";
-    const timeout = setTimeout(() => {
-      streamController.abort();
-      void Promise.allSettled([reader.cancel(timeoutReason), writer.abort(timeoutReason)]);
-    }, gracePeriodMs);
-
-    void (async () => {
-      try {
-        while (true) {
-          const { done } = await reader.read();
-          if (done) break;
-        }
-        streamController.handleComplete();
-      } catch (error) {
-        streamController.handleError(error);
-      } finally {
-        clearTimeout(timeout);
-      }
-    })();
-  };
-  streamController.registerCompletedToolHandoffDrain?.(drainCompletedToolHandoff);
+  const completionDrain = createCompletionDrain(reader, writer, streamController, () =>
+    clientTerminalSeen ? "terminal_stream_grace_expired" : "completed_tool_handoff_grace_expired"
+  );
+  streamController.registerCompletedToolHandoffDrain?.(completionDrain.start);
 
   const noteClientChunk = (chunk: unknown) => {
     if (!(chunk instanceof Uint8Array)) return;
@@ -733,12 +713,13 @@ export function createDisconnectAwareStream(
         if (!streamController.isConnected()) {
           // Closing our side alone leaves the upstream body being pulled by the
           // transform pipe. Cancel it so the provider stops generating for a
-          // client that is gone. Not on a completed stream (clientTerminalSeen)
-          // nor while a completed tool handoff is still draining the reader.
-          if (
-            !clientTerminalSeen &&
-            streamController.shouldDeferCompletedToolHandoff?.() !== true
-          ) {
+          // client that is gone. A completed terminal stream with a grace window
+          // hands the inner reader to the bounded drain so late usage can flush.
+          if (clientTerminalSeen) {
+            if (Number(streamController.clientDisconnectGracePeriodMs) > 0) {
+              completionDrain.start();
+            }
+          } else if (streamController.shouldDeferCompletedToolHandoff?.() !== true) {
             const reason = "client_disconnected";
             void Promise.allSettled([reader.cancel(reason), writer.abort(reason)]);
           }
@@ -802,7 +783,10 @@ export function createDisconnectAwareStream(
           noteClientChunk(value);
         } catch (error) {
           if (!streamController.isConnected()) {
-            reader.cancel(new Error("Downstream disconnected")).catch(() => {});
+            // A pending pull can lose enqueue to cancellation after the drain takes ownership.
+            if (!completionDrain.isStarted()) {
+              reader.cancel(new Error("Downstream disconnected")).catch(() => {});
+            }
             try {
               controller.close();
             } catch {
@@ -853,6 +837,11 @@ export function createDisconnectAwareStream(
         const deferCompletedToolHandoff =
           streamController.shouldDeferCompletedToolHandoff?.() === true;
         if (clientTerminalSeen) {
+          if (Number(streamController.clientDisconnectGracePeriodMs) > 0) {
+            completionDrain.start();
+            streamController.handleComplete();
+            return;
+          }
           streamController.handleComplete();
         } else {
           streamController.handleDisconnect(reason || "cancelled");

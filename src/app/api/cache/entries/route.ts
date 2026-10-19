@@ -17,9 +17,9 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const parsedPage = parseIntegerQueryParam(searchParams, "page", 1);
-    if (!parsedPage.ok) return parsedPage.response;
+    if (parsedPage.ok === false) return parsedPage.response;
     const parsedLimit = parseIntegerQueryParam(searchParams, "limit", 20);
-    if (!parsedLimit.ok) return parsedLimit.response;
+    if (parsedLimit.ok === false) return parsedLimit.response;
     const page = Math.max(1, parsedPage.value);
     const limit = Math.min(100, Math.max(1, parsedLimit.value));
     const search = searchParams.get("search") || "";
@@ -27,7 +27,14 @@ export async function GET(req: NextRequest) {
     const sortBy = searchParams.get("sortBy") || "created_at";
     const sortOrder = searchParams.get("sortOrder") || "desc";
 
-    const { entries, total } = listSemanticCacheEntries({ page, limit, search, model, sortBy, sortOrder });
+    const { entries, total } = listSemanticCacheEntries({
+      page,
+      limit,
+      search,
+      model,
+      sortBy,
+      sortOrder,
+    });
 
     return NextResponse.json({
       entries,

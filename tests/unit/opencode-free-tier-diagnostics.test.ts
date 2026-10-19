@@ -50,6 +50,9 @@ test("public identifier fallback stays bounded and case preserving", { timeout: 
     "http_403",
     "INVALID_API_KEY",
     "kiro_tool_call_repair_retry_failed",
+    "cyber_policy",
+    "content_policy_violation",
+    "no_eligible_targets",
   ]) {
     assert.equal(projectPublicErrorIdentifier(identifier, "error"), identifier);
   }
@@ -73,6 +76,33 @@ test("public identifier fallback stays bounded and case preserving", { timeout: 
     assert.equal(projectPublicErrorIdentifier(identifier, "private_fallback"), "error");
   }
 });
+
+test(
+  "extracted projector retains upstream safety opt-in without widening unknown identifiers",
+  { timeout: 1000 },
+  () => {
+    const key = Symbol.for("omniroute.featureFlagResolver");
+    const store = globalThis as unknown as Record<symbol, unknown>;
+    const previous = store[key];
+    try {
+      store[key] = () => false;
+      assert.equal(projectPublicErrorIdentifier("misalignment_policy_violation", "error"), "error");
+      store[key] = (flag: string) => flag === "PROVIDER_SAFETY_STOPS_TERMINAL";
+      assert.equal(
+        projectPublicErrorIdentifier("misalignment_policy_violation", "error"),
+        "misalignment_policy_violation"
+      );
+      assert.equal(
+        projectPublicErrorIdentifier("provider_safety_rejection", "error"),
+        "provider_safety_rejection"
+      );
+      assert.equal(projectPublicErrorIdentifier("unknown_safety_identifier", "error"), "error");
+    } finally {
+      if (previous === undefined) delete store[key];
+      else store[key] = previous;
+    }
+  }
+);
 
 test("homogeneous explicit refusals retain the known terminal identity", { timeout: 5_000 }, () => {
   const outcomes: ComboErrorEntry[] = [

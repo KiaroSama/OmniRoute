@@ -24,12 +24,18 @@ test("route-guard import and snapshot protection is translated in every mirror",
   assert.equal(entry.source_hash, sourceHash);
   for (const [locale, info] of Object.entries(entry.locales)) {
     const text = readFileSync(resolve(root, "docs/i18n", locale, sourcePath), "utf8");
-    const start = text.indexOf("`SPAWN_CAPABLE_PATTERN_ANCESTORS`");
-    const end = text.indexOf("tests/unit/authz/local-only-bypass-spawn-denylist.test.ts", start);
+    // The policy paragraph runs from the Kiro auto-import deny-list entry (#16691) to the
+    // regex companion constant; the deny-list test reference sits inside it, not after it.
+    const start = text.indexOf("`/api/oauth/kiro/auto-import`");
+    const end = text.indexOf("`SPAWN_CAPABLE_PATTERN_ANCESTORS`", start);
     assert(start > 0 && end > start, `missing localized policy proof: ${locale}`);
     const section = text.slice(start, end);
     assert(section.includes("`/api/settings/import-json`"), `missing import policy: ${locale}`);
     assert(section.includes("`LOCAL_ONLY_API_PREFIXES`"), `missing membership policy: ${locale}`);
+    assert(
+      section.includes("tests/unit/authz/local-only-bypass-spawn-denylist.test.ts"),
+      `missing deny-list proof: ${locale}`
+    );
     assert(!section.includes("The runtime snapshot loader"), `English fallback: ${locale}`);
     assert.equal(info.source_hash, sourceHash, `stale source hash: ${locale}`);
     assert.equal(info.target_hash, hash(text), `stale target hash: ${locale}`);

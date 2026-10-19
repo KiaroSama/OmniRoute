@@ -58,6 +58,7 @@ export const LOCAL_ONLY_API_PREFIXES: ReadonlyArray<string> = [
   "/api/cli-tools/droid-settings", // spawns via getCliRuntimeStatus() to detect the `droid` CLI install (Hard Rules #15 + #17, GHSA-35fw-cv32-2373)
   "/api/cli-tools/kilo-settings", // spawns via getCliRuntimeStatus() to detect the `kilo` CLI install (Hard Rules #15 + #17, GHSA-35fw-cv32-2373)
   "/api/cli-tools/openclaw-settings", // spawns via getCliRuntimeStatus() to detect the `openclaw` CLI install (Hard Rules #15 + #17, GHSA-35fw-cv32-2373). Does NOT cover the non-spawning sibling /api/cli-tools/openclaw/auto-order (different segment).
+  "/api/providers/devin-cli-agentic/auth-status", // GET spawns `devin auth status` via getDevinAgenticAuthStatus() (src/lib/providers/devinAgenticAuthStatus.ts) — RCE-via-tunnel surface (Hard Rules #15 + #17, #15446). Narrow-scoped like /api/providers/cursor/agent-availability.
   "/api/cli-tools/pi-settings", // spawns via getCliRuntimeStatus() to detect the `pi` CLI install (Hard Rules #15 + #17, GHSA-35fw-cv32-2373)
   "/api/cli-tools/smelt-settings", // spawns via getCliRuntimeStatus() to detect the `smelt` CLI install (Hard Rules #15 + #17, GHSA-35fw-cv32-2373)
   "/api/cli-tools/status", // GET calls getCliRuntimeStatus() per CLI_TOOL_IDS entry (Hard Rules #15 + #17, GHSA-35fw-cv32-2373)
@@ -133,11 +134,15 @@ export const LOCAL_ONLY_API_PATTERNS: ReadonlyArray<RegExp> = [
   // S-01 (#15159): spawn(bin, ["acp", "--agent-type", "summarizer"], …) in
   // src/lib/providers/validation/webProvidersB.ts:535 — fixed binary list + fixed argv (not
   // caller-controlled RCE) but Hard Rules #15 + #17 still require loopback enforcement before
-  // any auth check. Exact paths only: the rest of /api/providers/ CRUD must stay
-  // remote-reachable. NOTE: keep this justification on its OWN line — a trailing `//` comment
-  // makes the pattern invisible to check-openapi-security-tiers.mjs, whose `//.*$` strip cannot
-  // match past a CRLF line ending.
-  /^\/api\/providers\/(validate|import|bulk)\/?$/,
+  // any auth check.
+  //
+  // S-01 (#15159): spawn-capable branch of /api/providers/{validate,import,bulk} is
+  // gated INSIDE each route (allowLocalSpawn from the trusted peer-locality header,
+  // #15766 shape), not by a path pattern — a blanket LOCAL_ONLY regex here locked
+  // remote/reverse-proxied dashboards (docker + nginx deployments) out of key
+  // validation for EVERY provider while only the devin CLI-key fallback can spawn.
+  // The routes must keep threading allowLocalSpawn; see
+  // tests/unit/authz/route-guard-providers-spawn-local-only.test.ts.
   // S-01 (#15159) second hop is deliberately NOT a path pattern: /api/providers/{id}/models
   // resolves `{id}` to an arbitrary CONNECTION id, and the spawn
   // (src/lib/providerModels/cursorAgent.ts:17, via fetchCursorAgentModels) only runs on the
@@ -182,6 +187,10 @@ export const ALWAYS_PROTECTED_API_PATHS: ReadonlyArray<string> = [
   // which is false under requireLogin=false. (GHSA-v7g9-7f55-5g46)
   "/api/settings/export-json",
   "/api/settings/import-json",
+  // Selective provider-account transfer: export hands out the selected accounts'
+  // credentials (passphrase-sealed) and import writes connections. Same tier as
+  // the -json siblings above; the prefix covers catalog/export/preview/import.
+  "/api/settings/transfer",
   // Bulk log export: call_logs carries prompts and responses, proxy_logs carries
   // client/public IPs, and the handler only calls requireManagementAuth() with no
   // alwaysRequireAuth. Found sweeping the GHSA-5926-2w35-7h4q class.
@@ -214,6 +223,21 @@ export const ALWAYS_PROTECTED_API_PATHS: ReadonlyArray<string> = [
   // requireLogin=false (GHSA-qxg2-rm3h-4cxp). The dashboard consumers send the
   // session cookie, so ALWAYS_PROTECTED keeps them working through a tunnel.
   "/api/providers/client",
+  // Relay token management. POST mints a reusable inference credential and
+  // returns it in clear once, GET lists every token's id/prefix/limits, and the
+  // [id] child edits, toggles or revokes one. Credential issuance stays
+  // authenticated in open mode (requireLogin=false), like the WebDAV credentials
+  // above: "anonymous" is never the right audience for "mint me a token". The
+  // dashboard sends the session cookie and automation a manage-scoped key, so
+  // both keep working; the plain prefix covers the /{id} child routes.
+  "/api/relay/tokens",
+  // Sync token management. POST mints a token that opens GET /api/sync/bundle,
+  // which returns decrypted provider credentials and plaintext API keys — the
+  // material /api/settings/export-json above hands out — GET lists the tokens
+  // and the [id] child revokes one. Issuance already needed a dashboard session
+  // or the local CLI when login is on; in open mode it fell back to "anyone".
+  // The bundle itself stays a public route: it authenticates with the token.
+  "/api/sync/tokens",
 ];
 
 /**
@@ -307,14 +331,19 @@ export function isPrivateLanHost(hostHeader: string | null): boolean {
  * non-loopback clients when the request method is GET, HEAD, or OPTIONS.
  *
  * Rule: a path belongs here only when the read methods perform NO child-process
- * spawn and expose NO privileged mutation — only the write methods do.
+ * spawn for a non-local caller and expose NO privileged mutation — only the write
+ * methods do. A read handler that probes the host for loopback/LAN callers must
+ * gate that probe at its call site on `getRequestPeerLocality()`.
  *
  * Current exemptions:
  *   /api/system/version — GET reads package.json + npm registry; only POST
  *   triggers the auto-update flow (spawns git checkout + npm install + pm2).
  *   Hard Rules #15/#17 still apply to POST.
- *   /api/tunnels/cloudflared — GET reads tunnel status only; only POST
- *   spawns the cloudflared process (#11531).
+ *   /api/tunnels/cloudflared — GET reports tunnel status; only POST starts/stops
+ *   the cloudflared process (#11531). The status read resolves the binary with a
+ *   PATH lookup (`which cloudflared`), which runs only for loopback/LAN callers:
+ *   a remote caller gets the unprobed status (`probed: false`) with no spawn
+ *   (GHSA-35fw-cv32-2373 class, GHSA-jmq6-8j86-8xqj call-site gate).
  */
 export const LOCAL_ONLY_API_GET_EXEMPTIONS: ReadonlySet<string> = new Set([
   "/api/system/version",

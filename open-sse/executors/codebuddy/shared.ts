@@ -1,5 +1,6 @@
 import { DefaultExecutor } from "../default.ts";
 import type { ExecuteInput, ExecutorExecuteResult, ProviderCredentials } from "../base.ts";
+import { normalizeCodeBuddyResult } from "./sseNormalize.ts";
 
 export const SENSITIVE_CONTENT_REJECTION =
   "抱歉，系统检测到您当前输入的信息存在敏感内容，我无法响应您的请求，请检查后重新输入";
@@ -177,6 +178,8 @@ export function flattenContent(content: unknown): string {
  *  - proactively strips oversized tool descriptions (>64KB)
  *  - retries sensitive-content 400 rejections once with compact tool descriptions
  *    and/or the kept caller system prompt replaced by NEUTRAL_PROMPT
+ *  - drops an empty `tools: []` and normalises SSE dirt (`finish_reason: ""`,
+ *    empty `function_call` shells) on successful streams
  */
 export class CodeBuddyBaseExecutor extends DefaultExecutor {
   constructor(providerId: string) {
@@ -184,6 +187,10 @@ export class CodeBuddyBaseExecutor extends DefaultExecutor {
   }
 
   async execute(input: ExecuteInput): Promise<ExecutorExecuteResult> {
+    return normalizeCodeBuddyResult(await this.executeWithSensitiveRetry(input));
+  }
+
+  private async executeWithSensitiveRetry(input: ExecuteInput): Promise<ExecutorExecuteResult> {
     const result = await super.execute(input);
     if (!(await isSensitiveContentRejection(responseFromResult(result)))) {
       return result;
@@ -226,6 +233,7 @@ export class CodeBuddyBaseExecutor extends DefaultExecutor {
     }
     const out = transformed as Record<string, unknown>;
     out.stream = true;
+    if (Array.isArray(out.tools) && out.tools.length === 0) delete out.tools;
 
     const eff = out.reasoning_effort;
     if (eff === "none" || eff === "off") {

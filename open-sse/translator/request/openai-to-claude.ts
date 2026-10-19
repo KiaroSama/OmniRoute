@@ -134,7 +134,12 @@ export function normalizeContentToString(content: string | unknown[] | null | un
 }
 
 // Convert OpenAI request to Claude format
-export function openaiToClaudeRequest(model, body, stream, credentials = null) {
+export function openaiToClaudeRequest(
+  model,
+  body,
+  stream,
+  credentials: { _provider?: string; [key: string]: unknown } | null = null
+) {
   // Check if tool prefix should be disabled (configured per-provider or global)
   const disableToolPrefix = body?._disableToolPrefix === true;
   const routedProvider = credentials?._provider;
@@ -308,10 +313,10 @@ export function openaiToClaudeRequest(model, body, stream, credentials = null) {
   // Whether the OUTBOUND request actually has extended thinking enabled. Anthropic's
   // schema only requires a precursor thinking/redacted_thinking block before a tool_use
   // block when thinking mode is active for THIS request — never unconditionally (#5945).
-  const thinkingEnabledForRequest = Boolean(result.thinking) && result.thinking.type !== "disabled";
+  const thinkingEnabledForRequest = !!result.thinking && result.thinking.type !== "disabled";
 
   // Messages
-  const systemParts = [];
+  const systemParts: string[] = [];
 
   if (body.messages && Array.isArray(body.messages)) {
     // Extract system messages (T15: handle both string and array content)
@@ -430,8 +435,11 @@ export function openaiToClaudeRequest(model, body, stream, credentials = null) {
 
   // Tools - convert from OpenAI format to Claude format with prefix for OAuth
   if (body.tools && Array.isArray(body.tools)) {
-    result.tools = body.tools
+    const translatedTools: ClaudeTool[] = body.tools
       .map((tool) => {
+        // `tools` is not validated entry by entry: a null (or non-object) entry is dropped, as
+        // an entry without a name already is, instead of failing the whole request.
+        if (!tool || typeof tool !== "object") return null;
         // Function-shaped tools arrive in two flavors from real clients:
         //   (a) openai-spec: { type: "function", function: { name, ... } }
         //   (b) bare/loose:  { function: { name, ... } }   (no parent `type`)
@@ -480,7 +488,7 @@ export function openaiToClaudeRequest(model, body, stream, credentials = null) {
       .filter((tool): tool is ClaudeTool => Boolean(tool));
 
     // Filter out tools with empty names (would cause Claude 400 error)
-    result.tools = result.tools.filter((tool) => tool.name && tool.name?.trim());
+    result.tools = translatedTools.filter((tool) => tool.name && tool.name?.trim());
 
     // OpenAI `allowed_tools` restricts the callable subset; Claude has no equivalent
     // tool_choice, so narrow the declared tools instead (9router#4171).
@@ -596,7 +604,7 @@ function getContentBlocksFromMessage(
   thinkingBinding: { provider?: unknown; model?: unknown; disabled?: boolean } = {},
   pendingToolUseIds: string[] = []
 ) {
-  const blocks = [];
+  const blocks: ClaudeContentBlock[] = [];
 
   if (msg.role === "tool") {
     const sanitizedToolUseId = resolveToolResultId(msg.tool_call_id, pendingToolUseIds); // #7705
@@ -956,4 +964,4 @@ function openaiToClaudeRequestForAntigravity(model, body, stream) {
 export { openaiToClaudeRequestForAntigravity };
 
 // Register
-register(FORMATS.OPENAI, FORMATS.CLAUDE, openaiToClaudeRequest, null);
+register(FORMATS.OPENAI, FORMATS.CLAUDE, openaiToClaudeRequest);

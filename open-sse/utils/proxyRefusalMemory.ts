@@ -406,6 +406,38 @@ export function snapshotProxySetAside(
 }
 
 /**
+ * Read-only set-aside state across every refusal motive still in force for
+ * one proxy egress key. Unlike the latest-event snapshot above, quotaOnly is
+ * true only when every motive in force is a quota refusal, and endsAt is the
+ * end of the real set-aside (the latest motive end), so one stale slow or
+ * transport record cannot pass the quota filter by recency.
+ */
+export interface ProxySetAsideStatus {
+  setAside: boolean;
+  quotaOnly: boolean;
+  endsAt: number | null;
+}
+
+export function proxySetAsideStatus(
+  key: string | null,
+  nowMs: number = Date.now()
+): ProxySetAsideStatus {
+  if (key === null || memory.size === 0) return { setAside: false, quotaOnly: false, endsAt: null };
+  let found = false;
+  let quotaOnly = true;
+  let endsAt = 0;
+  for (const kind of REFUSAL_KINDS) {
+    const state = readState(key, kind, nowMs);
+    if (!state || state.until <= nowMs) continue;
+    found = true;
+    if (kind !== "ip_quota_429") quotaOnly = false;
+    if (state.until > endsAt) endsAt = state.until;
+  }
+  if (!found) return { setAside: false, quotaOnly: false, endsAt: null };
+  return { setAside: true, quotaOnly, endsAt };
+}
+
+/**
  * Read-only snapshot of the set-aside state still in force for one
  * (entry, selector member) pair, or null when the member is not set aside.
  * Same shape as snapshotProxySetAside so the pool visibility route can reuse

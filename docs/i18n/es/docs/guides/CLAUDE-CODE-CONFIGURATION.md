@@ -75,30 +75,44 @@ La variable de entorno `EXPOSE_CC_DISCOVERY_ALIASES` activa forzosamente el nive
 ## Bloque de incorporación en el panel
 
 La tarjeta de la herramienta Claude (**Panel → Código CLI**) muestra el fragmento exacto de `settings.json`
-para esta instancia, junto al botón de información del alias de descubrimiento, con un botón para copiar:
+para esta instancia, junto al botón de información del alias de descubrimiento y con un botón para copiar:
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<your OmniRoute>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<your OmniRoute API key>",
+    "ANTHROPIC_BASE_URL": "http://<tu OmniRoute>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<tu clave de API de OmniRoute>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-La URL base es la resuelta por la tarjeta (incluida cualquier sobrescritura personalizada que hayas introducido), ya
-normalizada: sin el sufijo `/v1` ni una barra final. **La clave nunca se muestra**: el bloque incluye un
+La URL base es la resuelta por la tarjeta (incluida cualquier anulación personalizada que hayas introducido) y ya está
+normalizada: sin el sufijo `/v1` ni una barra diagonal final. **La clave nunca se muestra**: el bloque incluye un
 marcador de posición, por lo que ni una captura de pantalla ni un fragmento pegado pueden filtrarla. Sustitúyelo por tu clave.
 
-Añade `CLAUDE_CODE_AUTO_COMPACT_WINDOW` bajo el mismo bloque `env` para cualquier modelo cuya ventana
-de contexto real no sea de 200K; Claude Code presupone 200K para cada id que no reconoce, por lo que,
+Añade `CLAUDE_CODE_AUTO_COMPACT_WINDOW` en el mismo bloque `env` para cualquier modelo cuya ventana
+de contexto real no sea de 200K. Claude Code presupone 200K para todos los identificadores que no reconoce, por lo que,
 de lo contrario, la compactación automática se activa en el momento equivocado (consulta la advertencia de la sección anterior).
-El generador de fragmentos también acepta ese valor, por lo que un invocador que conozca la ventana del modelo de destino
+El generador de fragmentos también acepta ese valor, de modo que un invocador que conozca la ventana del modelo de destino
 puede incluirlo directamente.
 
 Fuente: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (generador
 puro, con pruebas unitarias), mostrado por `ClaudeGatewayOnboardingBlock`.
+
+### Fijar una cuenta (opcional)
+
+Para enviar todas las solicitudes de Claude Code a través de una cuenta específica del proveedor, añade el
+encabezado `x-omniroute-connection` mediante `ANTHROPIC_CUSTOM_HEADERS` en el mismo bloque `env`:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Copia el identificador del chip `xxxxxxxx…` de la fila de conexión en la página del proveedor. La fijación solo
+se aplica a identificadores de un único modelo (`provider/model`), no a combinaciones. Consulta
+[Fijación de cuenta por solicitud](../reference/API_REFERENCE.md#account-pinning-per-request) para conocer el
+comportamiento alternativo exacto.
 
 ---
 

@@ -1611,6 +1611,7 @@
       "noAuthProvider",
       "oauthModal",
       "providerStats",
+      "providerTransfer",
       "providers",
       "proxyConfigModal",
       "proxyLog",

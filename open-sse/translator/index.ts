@@ -32,7 +32,7 @@ import { applyThinkingBudget } from "../services/thinkingBudget.ts";
 import { applyReasoningRuleDirective } from "@/lib/reasoningRouting/policy";
 import { getModelPreserveVideoUrl } from "@/lib/db/models/modelPreserveVideoUrl";
 import { getResolvedModelCapabilities, supportsReasoning } from "../services/modelCapabilities.ts";
-import { normalizeRoles } from "../services/roleNormalizer.ts";
+import { normalizeRoles, resolvePreserveDeveloperRole } from "../services/roleNormalizer.ts";
 import { hoistLeadingSystemMessage } from "./helpers/strictSystemHoist.ts";
 import { ensurePoeUserTurnHasText } from "./helpers/poeImageOnlyUserTurn.ts";
 import { acceptsInlineToolAdditions, hoistToolAdditions } from "./helpers/claudeDeferredTools.ts";
@@ -322,7 +322,7 @@ function replayOpenAIReasoningMessage(
 }
 
 /** @param options.normalizeToolCallId - When true, use 9-char tool call ids (e.g. Mistral); when false, leave ids as-is */
-/** @param options.preserveDeveloperRole - undefined/true: keep developer for OpenAI format (default); false: map to system */
+/** @param options.preserveDeveloperRole - true: keep developer for OpenAI format; false: map to system; undefined: provider default (resolvePreserveDeveloperRole) */
 /** @param options.preserveCacheControl - When true, preserve client-side cache_control markers (for Claude Code, etc.) */
 // Translate request: source -> openai -> target
 // Client-only assistant "echo" fields that strict OpenAI-compatible upstreams (e.g.
@@ -543,9 +543,13 @@ export function translateRequest(
           const preserveCacheControl =
             options?.preserveCacheControl === true &&
             providerHonorsOpenAIFormatCacheControl(provider, connectionCacheOverride);
+          // Routed provider id lets claudeToOpenAIRequest keep service_tier only for
+          // targets that accept it.
+          const hasStep1Provider = provider != null;
           const step1Credentials =
             options?.copilotClient ||
             hasTargetHint ||
+            hasStep1Provider ||
             preserveCacheControl ||
             preserveResponsesReasoning ||
             isGlmFamilyUpstream
@@ -553,6 +557,7 @@ export function translateRequest(
                   ...(credentials && typeof credentials === "object" ? credentials : {}),
                   ...(options?.copilotClient ? { _copilotClient: true } : {}),
                   ...(hasTargetHint ? { _targetFormat: targetFormat } : {}),
+                  ...(hasStep1Provider ? { _provider: provider } : {}),
                   ...(preserveCacheControl ? { _preserveCacheControl: true } : {}),
                   ...(preserveResponsesReasoning ? { _preserveReasoningContent: true } : {}),
                   ...(isGlmFamilyUpstream ? { _ensureUserTurn: true } : {}),
@@ -668,6 +673,8 @@ export function translateRequest(
       preserveVideoUrl:
         getModelPreserveVideoUrl(normalizedProvider, normalizedModel) ??
         (normalizedProvider === "moonshot" || normalizedProvider === "kimi"),
+      // Same decision normalizeRoles made above — never undo it here.
+      preserveDeveloperRole: resolvePreserveDeveloperRole(preserveDeveloperRole, provider),
     });
   }
 

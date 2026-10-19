@@ -170,6 +170,15 @@ export function isRecoverableUpstreamTimeoutError(err) {
   }
   if (!err || typeof err !== "object") return false;
   const e = /** @type {NodeJS.ErrnoException & { errorCode?: string }} */ (err);
+  // open-sse's withBodyTimeout rejects with a plain Error (no .code). Restrict
+  // this match to its exact name and message shape to preserve crash semantics.
+  if (
+    e.name === "BodyTimeoutError" &&
+    typeof e.message === "string" &&
+    /^Response body read timeout after [1-9]\d*ms$/.test(e.message)
+  ) {
+    return true;
+  }
   return (
     e.code === "DIRECT_RESPONSE_START_TIMEOUT" ||
     e.code === "RELAY_TIMEOUT" ||

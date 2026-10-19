@@ -1,4 +1,5 @@
-import { createHmac, randomBytes } from "node:crypto";
+import { randomBytes } from "node:crypto";
+import { opaqueTokenFingerprint } from "@omniroute/open-sse/utils/opaqueTokenFingerprint.ts";
 import * as log from "../utils/logger";
 
 // Diagnostic correlation is process-local. A private ephemeral key prevents
@@ -62,7 +63,7 @@ export function connectionRestrictionDiagnostics(
         .map((id) =>
           id === "noauth"
             ? id
-            : `hmac-sha256:${createHmac("sha256", DIAGNOSTIC_REFERENCE_KEY).update(id).digest("hex").slice(0, 12)}`
+            : `hmac-sha256:${opaqueTokenFingerprint(id, { key: DIAGNOSTIC_REFERENCE_KEY, length: 12 })}`
         ) ?? null,
   };
 }

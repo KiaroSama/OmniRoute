@@ -74,9 +74,10 @@ Varijabla okruženja `EXPOSE_CC_DISCOVERY_ALIASES` forsira globalni nivo na uklj
 
 ---
 
-## Blok za onboarding na kontrolnoj tabli
+## Blok za početno postavljanje na kontrolnoj ploči
 
-Claude alatna kartica (**Dashboard → CLI Code**) prikazuje tačan `settings.json` fragment za ovu instancu, pored dugmeta za informacije o discovery-alias, sa dugmetom za kopiranje:
+Kartica alata Claude (**Kontrolna ploča → CLI Code**) prikazuje tačan fragment datoteke `settings.json`
+za ovu instancu, pored dugmeta s informacijama o aliasu za otkrivanje, zajedno s dugmetom za kopiranje:
 
 ```jsonc
 {
@@ -88,11 +89,32 @@ Claude alatna kartica (**Dashboard → CLI Code**) prikazuje tačan `settings.js
 }
 ```
 
-Osnovni URL je onaj koji je kartica razriješila (uključujući prilagođeno preusmjeravanje koje ste unijeli), već normalizovan — bez `/v1` sufiksa, bez kose crte na kraju. **Ključ se nikada ne prikazuje**: blok isporučuje placeholder, tako da snimak ekrana ili zalijepljeni isječak ne mogu otkriti ključ. Zalijepite svoj ključ preko njega.
+Osnovni URL je onaj koji je kartica razriješila (uključujući prilagođenu vrijednost koju ste unijeli) i već je
+normalizovan — bez sufiksa `/v1` i bez završne kose crte. **Ključ se nikada ne prikazuje**: blok sadrži
+zamjenski tekst, tako da snimak ekrana ili zalijepljeni isječak ne mogu otkriti ključ. Zalijepite svoj ključ umjesto njega.
 
-Dodajte `CLAUDE_CODE_AUTO_COMPACT_WINDOW` ispod istog `env` bloka za bilo koji model čiji stvarni prozor konteksta nije 200K — Claude Code pretpostavlja 200K za svaki ID koji ne prepoznaje, pa se automatsko sažimanje u suprotnom aktivira u pogrešnom trenutku (pogledajte upozorenje u prethodnom odjeljku). Generator isječaka takođe prihvata tu vrijednost, tako da pozivalac koji zna prozor ciljnog modela može direktno da ga emituje.
+Dodajte `CLAUDE_CODE_AUTO_COMPACT_WINDOW` unutar istog bloka `env` za svaki model čiji stvarni
+kontekstni prozor nije 200K — Claude Code pretpostavlja 200K za svaki ID koji ne prepoznaje, pa se
+automatsko sažimanje u suprotnom pokreće u pogrešnom trenutku (pogledajte upozorenje u prethodnom odjeljku).
+Alat za izradu isječka prihvata i tu vrijednost, tako da je pozivalac koji zna veličinu kontekstnog prozora ciljnog modela
+može direktno dodati.
 
-Izvor: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (čisti generator, jedinično testiran) kojeg renderuje `ClaudeGatewayOnboardingBlock`.
+Izvor: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (čisti
+alat za izradu, pokriven jediničnim testovima) koji prikazuje `ClaudeGatewayOnboardingBlock`.
+
+### Prikvačite jedan račun (opcionalno)
+
+Da biste svaki Claude Code zahtjev slali preko jednog određenog računa pružaoca usluge, dodajte
+zaglavlje `x-omniroute-connection` putem `ANTHROPIC_CUSTOM_HEADERS` u istom bloku `env`:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Kopirajte ID iz oznake `xxxxxxxx…` u redu veze na stranici pružaoca usluge. Prikvačivanje se
+primjenjuje samo na ID-ove pojedinačnih modela (`provider/model`), a ne na kombinacije. Pogledajte
+[Prikvačivanje računa po zahtjevu](../reference/API_REFERENCE.md#account-pinning-per-request) za
+tačno ponašanje rezervnog mehanizma.
 
 ---
 

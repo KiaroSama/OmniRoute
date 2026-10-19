@@ -93,33 +93,47 @@ uniquement les modèles de Kimi.
 
 ---
 
-## Bloc d’intégration sur le tableau de bord
+## Bloc d’intégration dans le tableau de bord
 
-La carte de l’outil Claude (**Tableau de bord → Code CLI**) affiche le fragment `settings.json` exact
+La carte de l’outil Claude (**Tableau de bord → CLI Code**) affiche le fragment `settings.json` exact
 pour cette instance, à côté du bouton d’information sur l’alias de découverte, avec un bouton de copie :
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<your OmniRoute>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<your OmniRoute API key>",
+    "ANTHROPIC_BASE_URL": "http://<votre OmniRoute>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<votre clé API OmniRoute>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-L’URL de base est celle résolue par la carte (y compris une valeur de remplacement personnalisée que vous avez saisie), déjà
-normalisée — sans suffixe `/v1` ni barre oblique finale. **La clé n’est jamais affichée** : le bloc contient un
+L’URL de base est celle résolue par la carte (y compris une valeur personnalisée que vous avez saisie), déjà
+normalisée — sans suffixe `/v1` ni barre oblique finale. **La clé n’est jamais affichée** : le bloc fournit un
 espace réservé, afin qu’une capture d’écran ou un extrait collé ne puisse pas la divulguer. Remplacez-le par votre clé.
 
-Ajoutez `CLAUDE_CODE_AUTO_COMPACT_WINDOW` sous le même bloc `env` pour tout modèle dont la fenêtre
-de contexte réelle n’est pas de 200K — Claude Code suppose une valeur de 200K pour chaque identifiant qu’il ne reconnaît pas, de sorte que
-la compression automatique se déclenche sinon au mauvais moment (consultez l’avertissement de la section précédente).
-Le générateur d’extrait accepte également cette valeur, afin qu’un appelant connaissant la fenêtre du modèle cible
-puisse l’émettre directement.
+Ajoutez `CLAUDE_CODE_AUTO_COMPACT_WINDOW` dans le même bloc `env` pour tout modèle dont la fenêtre
+de contexte réelle n’est pas de 200K — Claude Code suppose une fenêtre de 200K pour chaque identifiant qu’il ne
+reconnaît pas, si bien que la compaction automatique se déclenche autrement au mauvais moment (consultez
+l’avertissement de la section précédente). Le générateur d’extrait accepte également cette valeur, afin qu’un appelant
+connaissant la fenêtre du modèle cible puisse l’émettre directement.
 
 Source : `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (générateur
-pur, testé unitairement) affiché par `ClaudeGatewayOnboardingBlock`.
+pur, couvert par des tests unitaires) affiché par `ClaudeGatewayOnboardingBlock`.
+
+### Épingler un compte (facultatif)
+
+Pour acheminer chaque requête Claude Code via un compte fournisseur spécifique, ajoutez l’en-tête
+`x-omniroute-connection` au moyen de `ANTHROPIC_CUSTOM_HEADERS` dans le même bloc `env` :
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Copiez l’identifiant depuis la puce `xxxxxxxx…` sur la ligne de connexion de la page du fournisseur. L’épinglage ne
+s’applique qu’aux identifiants de modèle unique (`provider/model`), et non aux combinaisons. Consultez
+[Épinglage d’un compte par requête](../reference/API_REFERENCE.md#account-pinning-per-request) pour connaître le
+comportement de repli exact.
 
 ---
 

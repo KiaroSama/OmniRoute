@@ -100,33 +100,46 @@ tylko modele Kimi.
 
 ---
 
-## Blok onboarding w dashboardzie
+## Blok wdrożeniowy na pulpicie
 
-Karta narzędzia Claude (**Dashboard → CLI Code**) renderuje dokładny fragment `settings.json`
-dla tej instancji, obok przycisku info o aliasach discovery, z przyciskiem kopiowania:
+Karta narzędzia Claude (**Pulpit → Kod CLI**) wyświetla dokładny fragment pliku `settings.json`
+dla tej instancji, obok przycisku informacji o aliasie wykrywania, wraz z przyciskiem kopiowania:
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<your OmniRoute>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<your OmniRoute API key>",
+    "ANTHROPIC_BASE_URL": "http://<Twój OmniRoute>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<Twój klucz API OmniRoute>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-Bazowy URL to ten rozwiązany przez kartę (w tym niestandardowe nadpisanie, które wpisałeś), już
-znormalizowany — bez sufiksu `/v1`, bez końcowego ukośnika. **Klucz nigdy nie jest renderowany**: blok dostarcza
-placeholder, więc zrzut ekranu lub wklejony snippet nie mogą go ujawnić. Wklej swój klucz w jego miejsce.
+Bazowy adres URL jest adresem ustalonym przez kartę (z uwzględnieniem wprowadzonego niestandardowego nadpisania) i jest już
+znormalizowany — bez sufiksu `/v1` ani końcowego ukośnika. **Klucz nigdy nie jest wyświetlany**: blok zawiera
+symbol zastępczy, dzięki czemu zrzut ekranu ani wklejony fragment nie ujawnią klucza. Zastąp go swoim kluczem.
 
-Dodaj `CLAUDE_CODE_AUTO_COMPACT_WINDOW` w tym samym bloku `env` dla każdego modelu, którego realne
-okno kontekstu nie wynosi 200K — Claude Code zakłada 200K dla każdego id, którego nie rozpoznaje, więc
-auto-kompaktowanie odpala się w złym momencie (zobacz ostrzeżenie w poprzedniej sekcji).
-Builder snippeta też przyjmuje tę wartość, więc caller znający okno docelowego modelu
-może wyemitować je bezpośrednio.
+Dodaj `CLAUDE_CODE_AUTO_COMPACT_WINDOW` w tym samym bloku `env` dla każdego modelu, którego rzeczywiste
+okno kontekstu nie wynosi 200K — Claude Code zakłada wartość 200K dla każdego nierozpoznanego identyfikatora, przez co
+automatyczna kompakcja jest w przeciwnym razie uruchamiana w niewłaściwym momencie (zobacz ostrzeżenie w poprzedniej sekcji).
+Generator fragmentu również przyjmuje tę wartość, więc kod wywołujący, który zna rozmiar okna modelu docelowego,
+może przekazać ją bezpośrednio.
 
 Źródło: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (czysty
-builder, unit-testowany) renderowany przez `ClaudeGatewayOnboardingBlock`.
+generator, objęty testami jednostkowymi), renderowany przez `ClaudeGatewayOnboardingBlock`.
+
+### Przypnij jedno konto (opcjonalnie)
+
+Aby wysyłać każde żądanie Claude Code przez jedno konkretne konto dostawcy, dodaj nagłówek
+`x-omniroute-connection` za pośrednictwem `ANTHROPIC_CUSTOM_HEADERS` w tym samym bloku `env`:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Skopiuj identyfikator z etykiety `xxxxxxxx…` w wierszu połączenia na stronie dostawcy. Przypięcie
+dotyczy tylko identyfikatorów pojedynczych modeli (`provider/model`), a nie kombinacji. Dokładne
+zachowanie mechanizmu rezerwowego opisano w sekcji [Przypinanie konta dla każdego żądania](../reference/API_REFERENCE.md#account-pinning-per-request).
 
 ---
 

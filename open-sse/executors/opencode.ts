@@ -33,6 +33,7 @@ import {
 } from "../utils/opencodeHeaders.ts";
 import { projectOpencodeSessionBody } from "../utils/opencodeSessionIdentity.ts";
 import { listForRequest, releaseRequestList } from "./opencodeAccountScope.ts";
+import { applyOpencodeToolNameLengthAliases } from "./toolNameLengthAlias.ts";
 import type { ScopedAccount, ScopedAccountHealth } from "./opencodeAccountScope.ts";
 import { guardRequiredAccountProxies } from "./opencodeRequiredProxy.ts";
 import {
@@ -58,6 +59,7 @@ import {
   isOpencodeUserBlocked,
 } from "./opencodeGeoBlock.ts";
 import {
+  FREE_TIER_INFERENCE_BASE_URL,
   attemptFor,
   isGatedFreeTierRequest,
   isPremiumOpencodeModel,
@@ -67,7 +69,7 @@ import {
   surfaceFromBaseUrl,
 } from "./opencodeFreeTierContract.ts";
 import {
-  applyMuseSparkMinOutputTokens,
+  applyOpencodeOutputBudgetFloors,
   createMuseSparkStreamFinishNormalizer,
   isResponsesTerminalLine,
   normalizeMuseSparkFinishReason,
@@ -108,13 +110,17 @@ import {
   isOpencodeRateLimited429EarlyStopEnabled,
   isOpencodeParkAndResumeEnabled,
   isOpencodePoolReselectEnabled,
+  isOpencodePublishedCatalogRoutingEnabled,
+  isOpencodeV2ClientFingerprintEnabled,
 } from "@/shared/utils/featureFlags";
+import { setPublishedCatalogRoutingGate } from "../utils/opencodePublishedCatalog.ts";
 import { isEgressBucketedLockScope } from "../config/providerErrorRules.ts";
 import {
   BURST_PARK_THRESHOLD,
   parkWaitMs,
   readPoolStrainMarker,
   runParkAndReplay,
+  setAsideParkWaitMs,
 } from "./opencodeParkResume.ts";
 
 /**
@@ -186,10 +192,16 @@ export function parseEffortLevel(model: string): { baseModel: string; effort: st
   return null;
 }
 
+// #16798: the published-catalog surface lookup in providerModels.ts is client-reachable and
+// cannot import the server flag resolver; this executor (always loaded with the chat
+// pipeline) hands it the OPENCODE_PUBLISHED_CATALOG_ROUTING_ENABLED reader. Unregistered
+// (client bundle) reads as off.
+setPublishedCatalogRoutingGate(isOpencodePublishedCatalogRoutingEnabled);
+
 /**
  * Resolves the registry `targetFormat` for a model, aliasing `provider` first.
  *
- * `PROVIDER_MODELS` is keyed by the provider's public ALIAS (e.g. `"oc"`), not its
+ * `PROVIDER_MODELS` is keyed by the provider's public ALIAS (e.g. `"opencode-zen"`), not its
  * raw registry id (e.g. `"opencode"`) — mirrors `resolveChatCoreTargetFormat()`
  * (`handlers/chatCore/targetFormat.ts`), which already aliases before calling
  * `getModelTargetFormat()`. Calling it with the raw id here made every entry miss
@@ -271,6 +283,7 @@ export class OpencodeExecutor extends BaseExecutor {
       clientSession: this._clientSession,
       borrowed: attempt?.borrowed,
       clientToolNames: attempt?.clientToolNames ?? [],
+      v2Fingerprint: isOpencodeV2ClientFingerprintEnabled(),
     };
   }
 
@@ -485,11 +498,11 @@ export class OpencodeExecutor extends BaseExecutor {
               const normalized = normalizer(line);
               controller.enqueue(encoder.encode(normalized + "\n"));
               if (isResponsesTerminalLine(line)) {
-                // OpenCode Zen sends a ping after response.completed and may keep
-                // the HTTP connection alive. The Responses terminal event is
-                // authoritative; do not let those post-completion pings hold Chat Completions open.
+                // OpenCode Zen may ping after response.completed and hold the socket.
+                // Close on that terminal event so Chat Completions is not held open.
                 closed = true;
                 void reader.cancel().catch(() => undefined);
+                controller.enqueue(encoder.encode("\n"));
                 controller.close();
                 return;
               }
@@ -567,9 +580,9 @@ export class OpencodeExecutor extends BaseExecutor {
       // muse-spark reasoning models consume the entire output budget on hidden
       // server-side reasoning; small caller budgets come back as empty-message
       // 200s ("Provider returned empty content"). Raise tiny budgets to the
-      // floor before dispatch (see MUSE_SPARK_MIN_OUTPUT_TOKENS).
+      // floor before dispatch (see applyOpencodeOutputBudgetFloors).
       if (input.body && typeof input.body === "object" && !Array.isArray(input.body)) {
-        applyMuseSparkMinOutputTokens(
+        applyOpencodeOutputBudgetFloors(
           String(input.model ?? ""),
           input.body as Record<string, unknown>
         );
@@ -1026,7 +1039,8 @@ export class OpencodeExecutor extends BaseExecutor {
             }
             if (!parked && isOpencodeParkAndResumeEnabled()) {
               const marker = await readPoolStrainMarker();
-              if (burstStreak >= BURST_PARK_THRESHOLD || marker.fresh) {
+              const setAsideWaitMs = setAsideParkWaitMs(accounts.map((a) => keyOfMember(a)));
+              if (burstStreak >= BURST_PARK_THRESHOLD || marker.fresh || setAsideWaitMs !== null) {
                 parked = true;
                 log?.warn?.(
                   "OPENCODE",
@@ -1044,7 +1058,10 @@ export class OpencodeExecutor extends BaseExecutor {
                     replayKeyOfMember: keyOfMember,
                   },
                   input,
-                  parkWaitMs(marker.fresh ? marker.ttlLeftMs : null),
+                  Math.min(
+                    setAsideWaitMs ?? Number.POSITIVE_INFINITY,
+                    parkWaitMs(marker.fresh ? marker.ttlLeftMs : null)
+                  ),
                   result,
                   log,
                   cid
@@ -1279,7 +1296,10 @@ export class OpencodeExecutor extends BaseExecutor {
     void urlIndex;
     void credentials;
 
-    const base = this.config.baseUrl;
+    const base =
+      Boolean(model) && isGatedFreeTierRequest(this._surface(), this.provider, model)
+        ? FREE_TIER_INFERENCE_BASE_URL
+        : this.config.baseUrl;
     switch (this._requestFormat) {
       case "claude":
         return `${base}/messages`;
@@ -1321,6 +1341,14 @@ export class OpencodeExecutor extends BaseExecutor {
       ? this.resolveEffectiveKey(credentials) || credentials.accessToken
       : undefined;
 
+    // The free tier only answers streamed requests (measured 2026-09-17: a non-streamed
+    // body answers 403 FreeTierError), so a JSON client is served by streaming upstream and
+    // rebuilding the JSON body from the event stream — the path chatCore already takes for
+    // any buffered event-stream response. Announcing the stream here keeps that buffering an
+    // expected outcome rather than a warning.
+    const gatedScope =
+      Boolean(model) && isGatedFreeTierRequest(this._surface(), this.provider, model);
+
     if (key) {
       if (this._requestFormat === "claude" || this.usesZenApiKeyAuth()) {
         headers["x-api-key"] = key;
@@ -1332,14 +1360,6 @@ export class OpencodeExecutor extends BaseExecutor {
     if (this._requestFormat === "claude") {
       headers["anthropic-version"] = "2023-06-01";
     }
-
-    // The free tier only answers streamed requests (measured 2026-09-17: a non-streamed
-    // body answers 403 FreeTierError), so a JSON client is served by streaming upstream and
-    // rebuilding the JSON body from the event stream — the path chatCore already takes for
-    // any buffered event-stream response. Announcing the stream here keeps that buffering an
-    // expected outcome rather than a warning.
-    const gatedScope =
-      Boolean(model) && isGatedFreeTierRequest(this._surface(), this.provider, model);
     if (stream || gatedScope) {
       headers["Accept"] = "text/event-stream";
     }
@@ -1349,9 +1369,12 @@ export class OpencodeExecutor extends BaseExecutor {
     // OPENCODE_SYNTHESIZE_CLI_HEADERS=false. Client-supplied headers always win;
     // User-Agent is replaced with the CLI UA unless the client already sends one that
     // looks like the OpenCode CLI. Default values match 9router's proven defaults.
+    // #16571: the OpenCode v2 client fingerprint is opt-in (default off: identity unchanged).
+    const v2Fingerprint = isOpencodeV2ClientFingerprintEnabled();
     const cliDefaults = resolveOpencodeCliDefaults(
       this.config?.id || this.provider || "opencode",
-      gatedScope
+      gatedScope,
+      v2Fingerprint
     );
 
     this._clientSession = clientSuppliedOpencodeSession(clientHeaders, body);
@@ -1361,6 +1384,8 @@ export class OpencodeExecutor extends BaseExecutor {
         cliDefaults,
         keepAgentUserAgent: this._surface() === "go" && !gatedScope, // #15311
         sessionBody: projectOpencodeSessionBody(body),
+        reencodeSession: gatedScope,
+        v2Fingerprint,
       });
     }
 
@@ -1368,8 +1393,6 @@ export class OpencodeExecutor extends BaseExecutor {
     // produced is exactly what the upstream now refuses, and the canonical session it used
     // to overwrite is accepted on that surface (measured 2026-09-17, 200 on
     // muse-spark-1.3-contributor-free via /v1/responses).
-
-    void model;
 
     return headers;
   }
@@ -1382,7 +1405,7 @@ export class OpencodeExecutor extends BaseExecutor {
    */
   private applyDeepSeekJsonSchemaFallback<T>(model: string, body: T): T {
     if (
-      model !== "deepseek-v4-flash-free" ||
+      (model !== "deepseek-v4-flash-free" && model !== "deepseek-v4.1-flash-free") ||
       (this.provider !== "opencode" && this.provider !== "opencode-zen")
     ) {
       return body;
@@ -1463,7 +1486,8 @@ export class OpencodeExecutor extends BaseExecutor {
       this.provider,
       model,
       this._clientSession,
-      body
+      body,
+      isOpencodeV2ClientFingerprintEnabled()
     );
     modifiedBody = prepared.body;
     // OpenCode's upstream 400s a request when a single enum property carries
@@ -1526,6 +1550,8 @@ export class OpencodeExecutor extends BaseExecutor {
     if (isThinkingMessageModel(model)) {
       modifiedBody = injectReasoningContentForThinkingModel(modifiedBody);
     }
+    const toolFormat = this._requestFormat ?? resolveOpencodeTargetFormat(this.provider, model);
+    applyOpencodeToolNameLengthAliases(this.provider, modifiedBody, toolFormat);
     return modifiedBody;
   }
 }

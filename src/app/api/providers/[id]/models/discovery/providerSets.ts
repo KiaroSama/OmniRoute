@@ -97,6 +97,9 @@ export const NAMED_OPENAI_STYLE_PROVIDERS = new Set([
   "internlm",
   "ant-ling",
   "nanogpt",
+  // NaN.Builders — GET https://api.nan.builders/v1/models is key-gated; the registry
+  // seed is only the offline fallback for its frequently-renamed model aliases.
+  "nan",
   "nara",
   // Logfare (https://logfare.ai) — free OpenAI-compatible gateway live-verified
   // 2026-08-21: GET https://logfare.ai/v1/models returns a real 20-model catalog
@@ -127,6 +130,10 @@ export const NAMED_OPENAI_STYLE_PROVIDERS = new Set([
   // connection's model list matches what its key can reach. The registry seed
   // (41-model union of apmix.ai/models) stays as the offline fallback.
   "apmix",
+  // Demon Route has a key-scoped /v1/models endpoint. Without this classification,
+  // the dashboard only shows static seeds and cannot synchronize the live catalog
+  // of vendor-qualified open-weight model IDs (#16979).
+  "demonroute",
 ]);
 
 export function isNamedOpenAIStyleProvider(provider: string): boolean {

@@ -1,5 +1,6 @@
 import { inheritEmptyTurnPolicy } from "../../utils/emptyTurnPolicy.ts";
 import { getCodexClientSessionId } from "../../config/codexIdentity.ts";
+import { modelAfterFamilyFallback } from "../../services/modelFamilyFallbackPolicy.ts";
 import {
   noteCodexTurnStateProvenance,
   readCodexTurnStateHeader,
@@ -60,7 +61,9 @@ import { extractFacts } from "@/lib/memory/extraction";
 import { calculateCost } from "@/lib/usage/costCalculator";
 import { appendRequestLog, trackPendingRequest } from "@/lib/usageDb";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags.ts";
+import { isEmptyStreamSiblingRecoveryEnabled } from "../../services/streamRecovery.ts";
 import { getProviderCredentials } from "@/sse/services/auth";
+import { resolveCredentialGate } from "@/lib/streamingCredentialTransform";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deps bag mirrors the barrel closure
 type Loose = any;
@@ -181,6 +184,12 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
     provider,
     model,
     log,
+    // #16438 opt-in: briefly probe Claude/Codex streams for usable output after the first
+    // lifecycle event so an empty turn can be retried on a sibling connection.
+    contentProbeMs:
+      (provider === "claude" || provider === "codex") && isEmptyStreamSiblingRecoveryEnabled()
+        ? 1000
+        : undefined,
   });
   // A stall is an upstream issue, not an account fault — the executor loop
   // already ended at headers, so this bounded retry is the only recovery left.
@@ -308,10 +317,11 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
     await onRequestSuccess();
   }
 
+  const responseModel = modelAfterFamilyFallback(model, currentModel, effectiveModel, finalBody);
   const responseHeaders = assembleStreamingResponseHeaders({
     providerHeaders: providerResponse.headers,
     provider,
-    model,
+    model: responseModel,
     pendingRequestId,
     compressionResponseMeta,
     comboStrategy,
@@ -727,6 +737,16 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
     );
   }
 
+  // Per-request credential gate: same flag and opt-out name as the
+  // non-streaming post-call guardrail. Only data keys chatCore.ts already
+  // passes (apiKeyInfo, body, clientRawRequest) are read here; the readers
+  // default to the production modules inside resolveCredentialGate, and unit
+  // tests inject fakes by calling that helper directly.
+  const credentialGate = await resolveCredentialGate({
+    apiKeyInfo: deps.apiKeyInfo,
+    body: deps.body,
+    headers: deps.clientRawRequest?.headers,
+  });
   const finalStream = assembleStreamingPipeline({
     providerResponse,
     transformStream,
@@ -734,8 +754,10 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
     createPiiTransform,
     clientRawRequestHeaders: clientRawRequest?.headers,
     clientResponseFormat,
-    echoModel,
+    echoModel: echoModel || (currentModel !== effectiveModel ? responseModel : null),
     responseHeaders,
+    credentialRedactionEnabled: credentialGate.credentialRedactionEnabled,
+    credentialDisabledGuardrails: credentialGate.credentialDisabledGuardrails,
     // Same adaptive budget the pre-handoff readiness gate above just used —
     // reasoning models that legitimately take a while to say anything keep
     // that same patience for their first REAL content, not just their first

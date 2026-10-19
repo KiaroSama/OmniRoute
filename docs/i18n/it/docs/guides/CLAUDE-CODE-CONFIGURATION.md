@@ -95,7 +95,7 @@ solo i modelli Kimi.
 
 ## Blocco di onboarding nella dashboard
 
-La scheda dello strumento Claude (**Dashboard → Codice CLI**) mostra il frammento `settings.json` esatto
+La scheda dello strumento Claude (**Dashboard → CLI Code**) visualizza il frammento esatto di `settings.json`
 per questa istanza, accanto al pulsante informativo sull'alias di rilevamento, con un pulsante per copiarlo:
 
 ```jsonc
@@ -109,17 +109,31 @@ per questa istanza, accanto al pulsante informativo sull'alias di rilevamento, c
 ```
 
 L'URL di base è quello risolto dalla scheda (inclusa un'eventuale sostituzione personalizzata inserita), già
-normalizzato: nessun suffisso `/v1` e nessuna barra finale. **La chiave non viene mai mostrata**: il blocco contiene
-un segnaposto, quindi uno screenshot o un frammento incollato non può divulgarla. Sostituisci il segnaposto con la tua chiave.
+normalizzato, senza suffisso `/v1` né barra finale. **La chiave non viene mai visualizzata**: il blocco include un
+segnaposto, in modo che uno screenshot o un frammento incollato non possano divulgarla. Sostituisci il segnaposto con la tua chiave.
 
-Aggiungi `CLAUDE_CODE_AUTO_COMPACT_WINDOW` nello stesso blocco `env` per qualsiasi modello la cui finestra
-di contesto reale non sia 200K: Claude Code presume 200K per ogni id che non riconosce, quindi
-altrimenti la compattazione automatica si attiva nel momento sbagliato (consulta l'avviso nella sezione precedente).
-Anche il generatore di frammenti accetta questo valore, quindi un chiamante che conosce la finestra del modello di destinazione
-può specificarlo direttamente.
+Aggiungi `CLAUDE_CODE_AUTO_COMPACT_WINDOW` nello stesso blocco `env` per qualsiasi modello la cui finestra di
+contesto effettiva non sia 200K: Claude Code presume 200K per ogni id che non riconosce, quindi, in caso contrario,
+la compattazione automatica viene attivata nel momento sbagliato (consulta l'avviso nella sezione precedente).
+Il generatore di frammenti accetta anche questo valore, quindi un chiamante che conosce la finestra del modello
+di destinazione può includerlo direttamente.
 
-Origine: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (generatore
-puro, sottoposto a unit test), mostrato da `ClaudeGatewayOnboardingBlock`.
+Fonte: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (generatore
+puro, sottoposto a test unitari) visualizzato da `ClaudeGatewayOnboardingBlock`.
+
+### Fissare un account (facoltativo)
+
+Per inviare ogni richiesta di Claude Code tramite uno specifico account del provider, aggiungi l'header
+`x-omniroute-connection` tramite `ANTHROPIC_CUSTOM_HEADERS` nello stesso blocco `env`:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Copia l'id dal chip `xxxxxxxx…` nella riga della connessione della pagina del provider. Il vincolo si
+applica solo agli id di modelli singoli (`provider/model`), non alle combinazioni. Consulta
+[Associazione dell'account per singola richiesta](../reference/API_REFERENCE.md#account-pinning-per-request) per il
+comportamento esatto del fallback.
 
 ---
 

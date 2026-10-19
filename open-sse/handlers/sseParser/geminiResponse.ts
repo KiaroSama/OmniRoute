@@ -138,6 +138,11 @@ function applyUsageMetadata(parsed: Record<string, unknown>, acc: GeminiSSEAccum
     // Gemini may omit totalTokenCount; derive it instead of reporting 0.
     total_tokens: Number(um.totalTokenCount) || promptTokens + completionTokens,
   };
+  const cachedTokens = Number(um.cachedContentTokenCount) || 0;
+  if (cachedTokens > 0) {
+    // Cache reads are a breakdown of the inclusive prompt count, not extra input.
+    acc.usage.prompt_tokens_details = { cached_tokens: cachedTokens };
+  }
 }
 
 /** Parse one `data:` line's JSON payload and fold it into the accumulator (best-effort). */

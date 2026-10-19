@@ -93,10 +93,10 @@ například globálně vypnuto + zapnutý poskytovatel Kimi zobrazí pouze model
 
 ---
 
-## Úvodní blok na řídicím panelu
+## Blok pro úvodní nastavení na řídicím panelu
 
 Karta nástroje Claude (**Řídicí panel → CLI Code**) zobrazuje přesný fragment `settings.json`
-pro tuto instanci vedle informačního tlačítka aliasu pro zjišťování modelů a obsahuje tlačítko pro kopírování:
+pro tuto instanci vedle informačního tlačítka aliasu pro zjišťování a obsahuje tlačítko pro zkopírování:
 
 ```jsonc
 {
@@ -108,18 +108,31 @@ pro tuto instanci vedle informačního tlačítka aliasu pro zjišťování mode
 }
 ```
 
-Základní URL je adresa, kterou karta vyhodnotila (včetně vlastního přepsání, které jste zadali), a je již
+Základní URL je adresa vyhodnocená kartou (včetně vámi zadaného vlastního přepsání), která je již
 normalizovaná — bez přípony `/v1` a bez koncového lomítka. **Klíč se nikdy nezobrazuje**: blok obsahuje
-zástupný text, takže jej nelze vyzradit snímkem obrazovky ani vloženým úryvkem. Nahraďte jej svým klíčem.
+zástupný text, takže jej nelze odhalit snímkem obrazovky ani vloženým úryvkem. Nahraďte jej svým klíčem.
 
-Pro každý model, jehož skutečné kontextové okno nemá velikost 200K, přidejte do stejného bloku `env`
-proměnnou `CLAUDE_CODE_AUTO_COMPACT_WINDOW` — Claude Code předpokládá velikost 200K u každého ID,
-které nerozpozná, takže automatická kompakce by se jinak spustila v nesprávný okamžik (viz upozornění
-v předchozí části). Generátor úryvku tuto hodnotu rovněž přijímá, takže ji volající, který zná velikost
-kontextového okna cílového modelu, může přímo vygenerovat.
+Pro každý model, jehož skutečné kontextové okno není 200K, přidejte do stejného bloku `env`
+proměnnou `CLAUDE_CODE_AUTO_COMPACT_WINDOW` — Claude Code předpokládá 200K u každého id, které
+nerozpozná, takže automatická komprimace by se jinak spustila v nesprávný okamžik (viz upozornění
+v předchozí části). Generátor úryvku přijímá i tuto hodnotu, takže volající, který zná velikost
+kontextového okna cílového modelu, ji může uvést přímo.
 
 Zdroj: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (čistý
 generátor pokrytý jednotkovými testy), vykreslovaný komponentou `ClaudeGatewayOnboardingBlock`.
+
+### Připnutí jednoho účtu (volitelné)
+
+Chcete-li odesílat všechny požadavky Claude Code přes jeden konkrétní účet poskytovatele, přidejte
+hlavičku `x-omniroute-connection` prostřednictvím `ANTHROPIC_CUSTOM_HEADERS` do stejného bloku `env`:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Zkopírujte id z čipu `xxxxxxxx…` na řádku připojení na stránce poskytovatele. Připnutí se vztahuje
+pouze na id jednotlivých modelů (`provider/model`), nikoli na kombinace. Přesné chování při použití
+náhradní možnosti najdete v části [Připnutí účtu pro jednotlivé požadavky](../reference/API_REFERENCE.md#account-pinning-per-request).
 
 ---
 
