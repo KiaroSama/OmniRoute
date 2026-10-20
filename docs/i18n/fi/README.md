@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                                         |        v3.8.50         | **v3.8.51** |      `v3.8.52+`       |
+|                                         |        v3.8.50         | **v3.8.51** |      `v3.8.53+`       |
 | --------------------------------------- | :--------------------: | :---------: | :-------------------: |
 | 🌐 Palveluntarjoajat                    |          352           |   **358**   |          375          |
 | 🧠 Yksilölliset chat-mallitunnukset     |          1320          |  **1374**   |         1475          |
@@ -587,7 +587,7 @@ nykyisestä luettelosta on osoitteessa **[radar.omniroute.online/planos](https:/
 
 </div>
 
-> Viimeaikaiset kohokohdat versioista **v3.8.20 → v3.8.52**. Täydellinen muutoshistoria tiedostossa [`CHANGELOG.md`](CHANGELOG.md).
+> Viimeaikaiset kohokohdat versioista **v3.8.20 → v3.8.53**. Täydellinen muutoshistoria tiedostossa [`CHANGELOG.md`](CHANGELOG.md).
 
 - **⚖️ `quota-weighted`-reititys** — 20. yhdistelmästrategia ohittaa kiintiönsä käyttäneet tilit ja valitsee sitten muiden joukosta suhteessa jäljellä olevaan kiintiöön ÷ käynnissä olevaan kuormaan säilyttäen nykyiset keskustelut kiinnitettyinä. → [Automaattinen yhdistelmä](docs/routing/AUTO-COMBO.md)
 - **🧰 Headless-tila** — `omniroute serve --headless` (tai `OMNIROUTE_HEADLESS=1`) suorittaa vain `/v1/*`-välityspalvelinmoottorin ilman hallintapaneelia ja vain hallintapaneelin käyttämiä alijärjestelmiä. → [Headless-tila](docs/guides/HEADLESS.md)
@@ -1820,7 +1820,7 @@ MIT-lisenssi – lisätietoja on tiedostossa [LICENSE](LICENSE).
 
 **[⬆ Takaisin alkuun](#-omniroute)** · Rakennettu ❤️:llä avoimen lähdekoodin tekoäly-yhteisölle.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · MIT-lisenssi · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · MIT-lisenssi · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- GitHub Discussions on käytössä yhteisön kysymyksiä ja vastauksia varten -->

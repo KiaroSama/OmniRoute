@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                                |         v3.8.50         | **v3.8.51** |      `v3.8.52+`       |
+|                                |         v3.8.50         | **v3.8.51** |      `v3.8.53+`       |
 | ------------------------------ | :---------------------: | :---------: | :-------------------: |
 | 🌐 Poskytovatelia              |           352           |   **358**   |          375          |
 | 🧠 Jedinečné ID modelov chatu  |          1320           |  **1374**   |         1475          |
@@ -578,7 +578,7 @@ Radar je voliteľný a používa iba požiadavky GET. Klient OmniRoute neodosiel
 
 </div>
 
-> Najnovšie zaujímavosti od verzie **v3.8.20 → v3.8.52**. Úplnú históriu nájdete v súbore [`CHANGELOG.md`](CHANGELOG.md).
+> Najnovšie zaujímavosti od verzie **v3.8.20 → v3.8.53**. Úplnú históriu nájdete v súbore [`CHANGELOG.md`](CHANGELOG.md).
 
 - **⚖️ Smerovanie `quota-weighted`** — 20. kombinovaná stratégia preskočí účty s vyčerpanou kvótou a potom vyberá zo zvyšných v pomere zostávajúcej kvóty ÷ aktuálneho zaťaženia, pričom existujúce konverzácie zostávajú pripnuté. → [Automatické kombinácie](docs/routing/AUTO-COMBO.md)
 - **🧰 Bezobslužný režim** — `omniroute serve --headless` (alebo `OMNIROUTE_HEADLESS=1`) spustí iba proxy mechanizmus `/v1/*`, pričom ovládací panel a subsystémy určené výhradne preň zostanú vypnuté. → [Bezobslužný režim](docs/guides/HEADLESS.md)
@@ -1810,7 +1810,7 @@ Licencia MIT – podrobnosti nájdete v súbore [LICENSE](LICENSE).
 
 **[⬆ Späť na začiatok](#-omniroute)** · Vytvorené s ❤️ pre open-source komunitu AI.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · Licencia MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · Licencia MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- GitHub Discussions sú povolené pre komunitné otázky a odpovede -->
