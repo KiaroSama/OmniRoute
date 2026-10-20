@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                                 |            v3.8.50             | **v3.8.51** |      `v3.8.52+`       |
+|                                 |            v3.8.50             | **v3.8.51** |      `v3.8.53+`       |
 | ------------------------------- | :----------------------------: | :---------: | :-------------------: |
 | 🌐 Penyedia                     |              352               |   **358**   |          375          |
 | 🧠 ID model sembang unik        |              1320              |  **1374**   |         1475          |
@@ -578,7 +578,7 @@ Radar adalah secara ikut serta dan GET sahaja. Klien OmniRoute tidak memuat naik
 
 </div>
 
-> Sorotan terkini daripada **v3.8.20 → v3.8.52**. Sejarah penuh dalam [`CHANGELOG.md`](CHANGELOG.md).
+> Sorotan terkini daripada **v3.8.20 → v3.8.53**. Sejarah penuh dalam [`CHANGELOG.md`](CHANGELOG.md).
 
 - **⚖️ Penghalaan `quota-weighted`** — strategi kombo ke-20 melangkau akaun yang telah kehabisan kuota, kemudian memilih dalam kalangan akaun lain mengikut nisbah baki kuota ÷ beban sedang diproses, sambil mengekalkan perbualan sedia ada pada akaun yang sama. → [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **🧰 Mod tanpa antara muka** — `omniroute serve --headless` (atau `OMNIROUTE_HEADLESS=1`) hanya menjalankan enjin proksi `/v1/*`, dengan papan pemuka dan subsistem khusus papan pemuka dimatikan. → [Mod Tanpa Antara Muka](docs/guides/HEADLESS.md)
@@ -1811,7 +1811,7 @@ Lesen MIT - lihat [LICENSE](LICENSE) untuk butiran.
 
 **[⬆ Kembali ke atas](#-omniroute)** · Dibina dengan ❤️ untuk komuniti AI sumber terbuka.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · Lesen MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · Lesen MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- Perbincangan GitHub didayakan untuk soal jawab komuniti -->

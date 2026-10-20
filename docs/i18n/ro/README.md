@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                                     |          v3.8.50          | **v3.8.51** |      `v3.8.52+`       |
+|                                     |          v3.8.50          | **v3.8.51** |      `v3.8.53+`       |
 | ----------------------------------- | :-----------------------: | :---------: | :-------------------: |
 | 🌐 Furnizori                        |            352            |   **358**   |          375          |
 | 🧠 ID-uri unice de modele de chat   |           1320            |  **1374**   |         1475          |
@@ -586,7 +586,7 @@ catalogul actual la **[radar.omniroute.online/planos](https://radar.omniroute.on
 
 </div>
 
-> Cele mai recente noutăți din **v3.8.20 → v3.8.52**. Istoricul complet este disponibil în [`CHANGELOG.md`](CHANGELOG.md).
+> Cele mai recente noutăți din **v3.8.20 → v3.8.53**. Istoricul complet este disponibil în [`CHANGELOG.md`](CHANGELOG.md).
 
 - **⚖️ Rutare `quota-weighted`** — a 20-a strategie combo omite conturile cu cota epuizată, apoi alege dintre cele rămase proporțional cu cota disponibilă ÷ sarcina în curs, păstrând conversațiile existente fixate. → [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **🧰 Mod headless** — `omniroute serve --headless` (sau `OMNIROUTE_HEADLESS=1`) rulează doar motorul proxy `/v1/*`, cu panoul de control și subsistemele dedicate acestuia dezactivate. → [Modul headless](docs/guides/HEADLESS.md)
@@ -1819,7 +1819,7 @@ Licența MIT - consultați [LICENSE](LICENSE) pentru detalii.
 
 **[⬆ Înapoi sus](#-omniroute)** · Creat cu ❤️ pentru comunitatea AI open-source.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · Licența MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · Licența MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- Discuțiile GitHub sunt activate pentru întrebări și răspunsuri din partea comunității -->

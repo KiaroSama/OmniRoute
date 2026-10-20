@@ -1,1 +1,0 @@
-- Correct the guardrail coverage guide to reflect that prompt-injection middleware no longer receives caller-controlled disable lists; mandatory block-mode behavior is unchanged. Refs #16413.

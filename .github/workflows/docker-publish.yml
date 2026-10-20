@@ -493,7 +493,15 @@ jobs:
         run: |
           set -euo pipefail
           # One digest per arch (amd64 + arm64) at most; more means stale digests leaked in (#15184).
+          # An optional image (bun-web is best-effort) may have produced no digest at all: its
+          # download step then creates no directory, and `find <missing>` under pipefail used to
+          # abort this step with exit 1 and no message, taking every mandatory manifest down with
+          # it (v3.8.52 release run 39316002758). The manifest step already skips such images.
           for dir in base web bun-base bun-web; do
+            if [ ! -d "/tmp/digests/$dir" ]; then
+              echo "digests in $dir: none (optional image produced no digest — skipped)"
+              continue
+            fi
             count=$(find "/tmp/digests/$dir" -type f 2>/dev/null | wc -l)
             if [ "$count" -gt 2 ]; then
               echo "digests in $dir: found $count, expected at most 2 (stale digests leaked in)" >&2

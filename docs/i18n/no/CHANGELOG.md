@@ -18,33 +18,32 @@ _Living section — cycle opened at the v3.8.52 freeze (parallel-cycle model). B
 
 ---
 
+## [3.8.52] — 2026-10-19
 
-## [3.8.52] — TBD
-
-_Living section — reconciled 2026-10-18 from all cycle commits (`2f42a9ac19` → `4d07a26185`, 1,285 non-merge commits). Bullets carry the merged PR and its author; direct pushes are listed with their commit hash. Regenerated at each `/generate-release` phase._
+_Living section — reconciled 2026-10-19 from all cycle commits (`2f42a9ac19` → `0a1265ea81`, 1,386 non-merge commits). Bullets carry the merged PR and its author; direct pushes are listed with their commit hash. Regenerated at each `/generate-release` phase._
 
 ### 📊 Release by the numbers
 
 | | |
 | --- | ---: |
-| 👥 People who contributed | **313** |
-| 📝 Commits in the cycle | **1,285** |
-| 🔀 Pull requests referenced | **1,268** |
-| 📋 Changelog entries | **1,313** |
-| 🙌 Contributors credited in entries | **312** |
+| 👥 People who contributed | **318** |
+| 📝 Commits in the cycle | **1,386** |
+| 🔀 Pull requests referenced | **1,369** |
+| 📋 Changelog entries | **1,442** |
+| 🙌 Contributors credited in entries | **317** |
 | 🤖 Automated dependency commits | 17 |
 
 **Entries by type**
 
 | Type | Count |
 | --- | ---: |
-| 🐛 Fixes | 994 |
-| ✨ Features | 132 |
-| 📚 Docs | 45 |
-| 🧪 Tests | 44 |
-| 🧹 Chore | 41 |
-| ⚙️ CI | 21 |
-| ⚡ Performance | 20 |
+| 🐛 Fixes | 1091 |
+| ✨ Features | 133 |
+| 📚 Docs | 55 |
+| 🧪 Tests | 51 |
+| 🧹 Chore | 45 |
+| ⚙️ CI | 30 |
+| ⚡ Performance | 21 |
 | ♻️ Refactor | 11 |
 | 🏗️ Build | 3 |
 | 🔒 Security | 1 |
@@ -52,35 +51,35 @@ _Living section — reconciled 2026-10-18 from all cycle commits (`2f42a9ac19` �
 
 ### 🏆 Top 25 contributors this cycle
 
-_By commits in `2f42a9ac19..4d07a26185`, author identities consolidated via `.mailmap` and the merged PR's GitHub login. Bots excluded._
+_By commits in `2f42a9ac19..0a1265ea81`, author identities consolidated via `.mailmap` and the merged PR's GitHub login. Bots excluded._
 
 | # | Contributor | Commits |
 | ---: | --- | ---: |
-| 🥇 | diegosouzapw | 538 |
-| 🥈 | Dizzle (@maxmad64bis) | 128 |
-| 🥉 | Paco Cartones (@pacocartones) | 53 |
+| 🥇 | diegosouzapw | 592 |
+| 🥈 | Dizzle (@maxmad64bis) | 134 |
+| 🥉 | Paco Cartones (@pacocartones) | 62 |
 | 4 | Bob.Hou (@HouMinXi) | 49 |
-| 5 | WebPerson (@jonlwheat2-gif) | 38 |
-| 6 | Lance Woodson (@woodsonl) | 37 |
-| 7 | Innokentiy Solntsev (@insoln) | 19 |
-| 8 | Caio Figueiroa (@shipsfromrio) | 18 |
-| 9 | 小妍儿 ✨ (@xiaoyaner0201) | 18 |
-| 10 | lorenzozane (@lorenzozanee) | 16 |
-| 11 | Praveen K Palaniswamy (@yourspraveen) | 15 |
-| 12 | Fabio Junior Gruchovski (@fabioKoruja00) | 14 |
-| 13 | skygunner | 14 |
-| 14 | Junior-HJ | 12 |
+| 5 | WebPerson (@jonlwheat2-gif) | 39 |
+| 6 | Lance Woodson (@woodsonl) | 38 |
+| 7 | Fabio Junior Gruchovski (@fabioKoruja00) | 19 |
+| 8 | Innokentiy Solntsev (@insoln) | 19 |
+| 9 | Caio Figueiroa (@shipsfromrio) | 18 |
+| 10 | 小妍儿 ✨ (@xiaoyaner0201) | 18 |
+| 11 | lorenzozane (@lorenzozanee) | 16 |
+| 12 | Praveen K Palaniswamy (@yourspraveen) | 15 |
+| 13 | Junior-HJ | 14 |
+| 14 | skygunner | 14 |
 | 15 | QuangBlue | 12 |
-| 16 | Jan Leon (@JxnLexn) | 11 |
-| 17 | Fouad Salkini (@fouadSalkini) | 9 |
-| 18 | opensource-elearning | 8 |
+| 16 | Fouad Salkini (@fouadSalkini) | 11 |
+| 17 | Jan Leon (@JxnLexn) | 11 |
+| 18 | opensource-elearning | 10 |
 | 19 | Tiago Rodrigues da Rosa (@tiagolabsit) | 7 |
-| 20 | Ronaldo Davi (@alltomatos) | 6 |
-| 21 | Dmitry Galenko (@D4rk4) | 6 |
-| 22 | Jacob Stoner (@jacobsparts) | 5 |
-| 23 | Kizuno18 | 5 |
-| 24 | Stanislav (@LazyGatto) | 5 |
-| 25 | Casto Colina (@castocolina) | 4 |
+| 20 | Aldo (@aldoeliacim) | 6 |
+| 21 | Ronaldo Davi (@alltomatos) | 6 |
+| 22 | Dmitry Galenko (@D4rk4) | 6 |
+| 23 | Kizuno18 | 6 |
+| 24 | Jacob Stoner (@jacobsparts) | 5 |
+| 25 | Stanislav (@LazyGatto) | 5 |
 
 ### ✨ New Features
 
@@ -1233,6 +1232,107 @@ _By commits in `2f42a9ac19..4d07a26185`, author identities consolidated via `.ma
 - **fix(proxy-subscriptions):** count early selector skips (no control URL / unmapped key, in memory, reset on restart) and show them in the Subscriptions tab only when they concern a configured selector ([#16164](https://github.com/diegosouzapw/OmniRoute/pull/16164)) — thanks @maxmad64bis
 - **fix(auto):** the `auto/*` request path shares one lazy pool preparation (unknown ids never prepare), with candidate members, order and weights unchanged; the opt-in `AUTO_REQUEST_RESOLVED_CAPABILITIES` flag (default off) prepares the pool with resolved capabilities and quality scores, which also feed the snapshot weights ([#16419](https://github.com/diegosouzapw/OmniRoute/pull/16419)) — thanks @maxmad64bis
 - **fix(credential-health):** opt-in retest of connections the gateway switched off by itself (OAuth refresh retry budget, stream expiry, missing Antigravity project, ...). With the `CREDENTIAL_HEALTH_RETEST_AUTO_DISABLED` feature flag on (default off), such a switch-off is marked `autoDisabledAt` and the credential-health sweep retests it at most once per 6 h each and 5 per sweep; a passing test switches it back on. Operator-disabled connections, accounts switched off by the permanent-ban auto-disable (`banDisabledAt`), banned or deactivated accounts and inactive rows with no marker are never retested ([#16190](https://github.com/diegosouzapw/OmniRoute/issues/16190)) ([#16588](https://github.com/diegosouzapw/OmniRoute/pull/16588)) — thanks @shipsfromrio
+- **fix(sse):** a finished `/v1/messages` request no longer stays in memory through the provider circuit breaker — the chat handler handed the process-wide breaker two callbacks created per request (`onStateChange`, `isFailure`), and because a closure shares its function's V8 context the breaker kept the last request's whole scope alive, body included (a 100k-token body survived forced GC, JON-562); both callbacks now live at module scope. ([#17103](https://github.com/diegosouzapw/OmniRoute/pull/17103))
+- **fix(logs):** in a source checkout (dev server, tests) the call-log artifact worker starts with `TSX_DISABLE_CACHE=1`: tsx lists its whole disk cache on a thread's first transform, and on a long-lived dev box (585k entries) the worker's first write waited 5-7 s on that listing instead of ~0.4 s. Compiled workers (npm, standalone, Docker) are unchanged. ([#17133](https://github.com/diegosouzapw/OmniRoute/pull/17133))
+- **release:** the catalog visibility settings suite (#13562) waits for the settings round trip with a realistic window — its switches stay disabled until the settings load, Testing Library's default 1 s wait timed out inside the full Vitest UI suite on a loaded runner (1,203 ms in #17130's CI), and with every response delayed 1.5 s the previous suite failed 7 of 8 cases; the assertions are unchanged. ([#17139](https://github.com/diegosouzapw/OmniRoute/pull/17139))
+- **fix(muse):** `normalizeMuseBaseUrl()` stripped trailing slashes with `/\/+$/`, which backtracks quadratically on a long run of slashes (about 5 s for a 50k-slash base URL). It now uses the linear `stripTrailingSlashes()` helper; two unit tests that picked a mocked upstream by URL substring now compare the parsed host instead (CodeQL #1155, #1153, #1148). ([#17058](https://github.com/diegosouzapw/OmniRoute/pull/17058))
+- **fix(codex):** Recognize `x-opencode-session-id`, `x-session-affinity`, and `x-session-id` as inbound client session aliases for fingerprint convergence and turn-state provenance, preserving native session-header precedence and existing fingerprint-mode boundaries. ([#17096](https://github.com/diegosouzapw/OmniRoute/pull/17096)) — thanks @aldoeliacim
+- **fix(docs):** the `/docs` pages that contain a markdown link render again instead of falling back to the error boundary (#11834 destructured the awaited `fumadocs-ui/mdx` module namespace instead of its default export, so `defaultMdxComponents.a` was `undefined` and every `DocsLink` threw React error #130 during SSR; it also pushed a literal `default` key into the components map, producing `[object Object]` hrefs). Pages without links were never affected. ([#17079](https://github.com/diegosouzapw/OmniRoute/pull/17079)) — thanks @Theadd
+- **fix(i18n):** the docs translation pipeline formats each mirror with the repo's Prettier options (`prettier.config.mjs` + `.editorconfig`, printWidth 100) instead of Prettier's defaults, so the commit-time `prettier --write` pass no longer re-wraps code fences and leaves the mirror matching its recorded `target_hash`. ([#17129](https://github.com/diegosouzapw/OmniRoute/pull/17129))
+- **fix(compression):** Preserve assistant and instruction context during live-zone compression so current tool observations stay complete through the session-dedup and lite pipeline, while completed tool history remains eligible and cached prefixes stay unchanged. ([#17097](https://github.com/diegosouzapw/OmniRoute/pull/17097)) — thanks @aldoeliacim
+- **fix(authz):** management credentials now take a real credential to obtain when login is disabled. With `requireLogin=false`, an anonymous caller could create an API key with the `manage` or `admin` scope, grant that scope to an existing key, regenerate or reveal a management key, or mint a CLI access token at any scope — and each of those credentials passes the always-protected tier (credential and log exports, shutdown). Those operations now need a dashboard session or the local CLI in every login mode, and a manage-scoped key keeps its `write` ceiling for CLI tokens with login off, as it already had with login on. Inference-only keys are unaffected: they are still created, edited, regenerated and revealed exactly as before. ([#17064](https://github.com/diegosouzapw/OmniRoute/pull/17064))
+- **release:** four more release-branch reds drained, all tests left behind by contracts that merged on 2026-10-18 — the ConnectionRow suites mock `useLocale` (#16947), the Docker heap anchor follows build.yml's 10240 MB webpack budget (#16938), and the call-log readers in `upstream-error-call-log-16558` and `reasoning-routing-pipeline` wait for the detail artifact to settle now that rows are inserted before it (#15608). ([#17060](https://github.com/diegosouzapw/OmniRoute/pull/17060))
+- **release:** the quota-fetch throttle suite (#6911) measures the throttle again instead of process start-up — since #15885 the first quota fetch of a process lazily imports the proxy transport and opens SQLite to look up the connection's proxy between the throttle and the upstream call, which bunched the first two DeepSeek fetches together on loaded runners; the suite now answers the proxy lookup without the database and pays those imports once before timing. ([#17102](https://github.com/diegosouzapw/OmniRoute/pull/17102))
+- **release:** the provider translate-path golden records WorkBuddy's gateway-compliance headers (`User-Agent: WorkBuddy/5.5.6`, the `X-Agent-*` / `X-IDE-*` set, `X-Domain`, `X-Requested-With`) that #17046 introduced on purpose without regenerating the snapshot; no other provider entry changed. ([#17102](https://github.com/diegosouzapw/OmniRoute/pull/17102))
+- **release:** the WorkBuddy registry test pins the four gateway-compliance body rewrites #17046 placed ahead of the generic Codex/OpenAI ones (Anthropic billing header dropped, Claude Code and Codex CLI identity sentences reworded); the order is part of the contract. ([#17102](https://github.com/diegosouzapw/OmniRoute/pull/17102))
+- **test(sse):** the specificity detector's `<5ms for 20 messages` check measures the fastest of ten warm runs instead of one cold call, which a busy CI runner stretched to 5-18 ms in 4 of 32 PR Vitest jobs; the 5 ms bound is unchanged. ([#17159](https://github.com/diegosouzapw/OmniRoute/pull/17159))
+- **fix(sync):** sync token management now stays authenticated when login is disabled. With `requireLogin=false`, an anonymous caller could issue a sync token and use it to download the config bundle (decrypted provider credentials and API keys), even though `/api/settings/export-json` already refused the same caller; the token also kept working after login was turned back on. Issuing, listing and revoking sync tokens now need a dashboard session or the local CLI in every login mode (`/api/sync/tokens` joins the always-protected tier), and tokens issued that way by earlier releases (`issuedBy: "open"`) no longer open the bundle — issue a new one from the dashboard or the CLI. ([#17053](https://github.com/diegosouzapw/OmniRoute/pull/17053))
+- **release:** the quota-fetch throttle suite (#6911) keeps 100 ms of slack for scheduling noise — it measures spacing at the mocked fetch, and on a loaded runner a 30–50 ms hiccup on the first call alone shrank a 200 ms spacing to 168 ms; it now uses a 400 ms interval with a 300 ms floor (an unthrottled pair still lands 1–2 ms apart) and a 150 ms cache-hit ceiling. ([#17108](https://github.com/diegosouzapw/OmniRoute/pull/17108))
+- fix(providers): codebuddy-cn thinking models can inline replayed `reasoning_content` as a `<thought>` block across turns, so it survives a gateway that drops the field — opt-in via the default-off `CODEBUDDY_CN_INLINE_REASONING` flag (#13632) ([#14475](https://github.com/diegosouzapw/OmniRoute/pull/14475))
+- Fix the dashboard on phones: Material Symbols icons now honour their Tailwind size classes (the icon font's unlayered `font-size: 24px` overrode every utility), provider screens, filters, toolbars and model cards fit and fill the viewport, page/section titles stay on one line with header actions below, toggle thumbs are centred and spinners rotate around their own centre. Adds shared responsive primitives (`ActionBar`, `FilterPills`, `ReorderControl`, `ProviderCardGrid`, `AutoGrid`, `CapabilityBadge`, compact `Select`). ([#15532](https://github.com/diegosouzapw/OmniRoute/pull/15532)) — thanks @HDBR
+- **docs(quality):** `QUALITY_GATES.md` and `RELEASE_CHECKLIST.md` (and their 66 locale mirrors) no longer call bare `check:cycles` advisory: it exits 1 whenever any cycle exists (fail-closed since #15281), and the release checklist now runs `check:cycles:ratchet`, the frozen-ceiling form CI uses; the `check-cycles.mjs` header comments say the same. The quality-rail membership guard also rejects a plain (non-ratcheted) `cycles` entry in the fast-gates `gates=(...)` array (#15682 — thanks @woodsonl)
+- **fix(usage):** credit-metered providers (Kiro) are billed by the credits the upstream reports (`meteringEvent`, converted with `KIRO_CREDIT_PRICE_USD`, default $0.02/credit) instead of by per-token pricing rows that describe no real tariff and charged the same request twice. The exact provider-reported cost is persisted per request in `usage_history.provider_cost_usd` (any provider, xAI and OpenRouter included) with `provider_credits` as provenance (migration 212), and per-key USD quotas, usage stats, provider window costs, the costs dashboard, retention rollups and the metered budget all read it instead of re-pricing those rows' tokens; `KIRO_REQUIRE_CREDITS=true` fails a Kiro response that reports no credits ([#16087](https://github.com/diegosouzapw/OmniRoute/pull/16087)) — thanks @thotypous
+- Skip family fallback candidates locked under their provider wire alias while preserving the selected account and catalog visibility checks. Refs #16227; complements #16223 and #16810. ([#17113](https://github.com/diegosouzapw/OmniRoute/pull/17113))
+- **fix(plugin):** the v1 plugin no longer fetches `/api/combos/auto` on each catalog refresh; the `auto/*` entries come from `/v1/models` as served by the gateway ([#16228](https://github.com/diegosouzapw/OmniRoute/pull/16228)) — thanks @maxmad64bis
+- **fix(sse):** opt-in `ANTHROPIC_COMPATIBLE_MID_CONVERSATION_SYSTEM` flag (default off) keeps mid-conversation `role: "system"` turns in place on plain `anthropic-compatible-*` relays instead of hoisting them into the top-level `system`, but only when the client itself negotiated the `mid-conversation-system-2026-04-07` beta (forwarded as-is, never invented). Every hoisted turn (environment updates, `<total_tokens>` budget notices) grew `system` on each request and forced the provider to re-write the whole cached history (≈20–30% cache hit on long Claude Code sessions). With the flag on and the beta present only the leading run before the first real turn is hoisted and the global system prompt never lands on a conversation turn. Flag off, beta absent, native `claude` and the CC bridge keep the previous behavior ([#16236](https://github.com/diegosouzapw/OmniRoute/pull/16236)) — thanks @MikeTuev
+- **combo:** a request-scoped 401/403, a 401/403 that names the model as unsupported, and the synthetic stream-early-EOF 502 no longer mark the whole connection exhausted, so the remaining targets that share it stay eligible in the same request (#14313, thanks @asdlombardi4-lang). Opt-in: `COMBO_EMPTY_POOL_NO_ELIGIBLE_TARGETS_ENABLED` makes an `auto` combo whose candidate pool is already empty answer 503 `no_eligible_targets` instead of the legacy 400 tool-calling `capability_mismatch` (off by default). ([#16256](https://github.com/diegosouzapw/OmniRoute/pull/16256))
+- fix(copilot-m365): preserve trusted current and regional ChatHub hosts when importing HAR credentials, share parsing between validation and execution, and reject malformed or unsafe imported URLs. (#16327) ([#16755](https://github.com/diegosouzapw/OmniRoute/pull/16755))
+- Accept the exact Microsoft 365 Copilot ChatHub host `substrate.svc.cloud.microsoft` when importing or pasting credentials, preserving the host through validation and execution while rejecting untrusted hosts and malformed URLs (#16327). ([#17137](https://github.com/diegosouzapw/OmniRoute/pull/17137))
+- **fix(providers):** OpenRouter video models are callable again. `POST /api/v1/videos` answers 202 with a job id, and the synchronous OpenAI video handler reported that as success with an empty `data` array, so a combo stopped instead of trying its next target; `expired` jobs were polled until a misleading 504. `openrouter` now uses a submit→poll preset, the auth-gated `unsigned_urls` result is downloaded with the provider credential and re-served from `GET /api/v1/media/{id}`, and that URL is built from the configured public base URL, a trusted proxy's forwarded host, or the Host the caller dialed (never an untrusted `X-Forwarded-Host`). Served media follows the files API ownership rule (the generating key, a manage-scope key or the dashboard session) and expires on the call-log retention window ([#16372](https://github.com/diegosouzapw/OmniRoute/pull/16372)) — thanks @LuisAlejandro
+- Honor the configured thinking-summary display for native Claude OAuth requests while preserving explicit display settings and disabled thinking modes. (#16407) ([#16772](https://github.com/diegosouzapw/OmniRoute/pull/16772))
+- Discover Muse Code models from the authenticated Meta API and expose synchronized models through the CLI catalog with the shared access filters. ([#16774](https://github.com/diegosouzapw/OmniRoute/pull/16774))
+- Load ChatGPT Web browser dependencies only when a browser operation starts, and resolve installed browser-runtime packs explicitly so absent optional packs do not break metadata and storage helpers. ([#16771](https://github.com/diegosouzapw/OmniRoute/pull/16771))
+- Preserve Windows CLI `.cmd`/`.bat` shell selection in Linux-built bundles without routing direct executables through the shell (#16547). ([#16768](https://github.com/diegosouzapw/OmniRoute/pull/16768))
+- **fix(opencode):** add the OpenCode v2 CLI client fingerprint (v2 `User-Agent`/`x-opencode-client`, v2 session headers without `x-opencode-request`, the v2 CLI `read`/`shell` placeholder schemas and no `tool_choice: "none"` on free-tier requests) behind the opt-in `OPENCODE_V2_CLIENT_FINGERPRINT_ENABLED` flag, default off ([#16571](https://github.com/diegosouzapw/OmniRoute/issues/16571)) ([#16998](https://github.com/diegosouzapw/OmniRoute/pull/16998)) — thanks @Junior-HJ
+- **fix(sse):** opt-in `opencode-zen` egress-IP lockout (`OPENCODE_ZEN_EGRESS_IP_LOCK_ENABLED`) and opt-in full-text error-rule bodies for the opencode family (`OPENCODE_FULL_TEXT_ERROR_RULES_ENABLED`) and `cloudflare-ai` (`CLOUDFLARE_AI_FULL_TEXT_ERROR_RULES_ENABLED`), all off by default so the release behavior is unchanged ([#16797](https://github.com/diegosouzapw/OmniRoute/pull/16797)) — thanks @maxmad64bis
+- **fix(opencode):** opt-in `OPENCODE_PUBLISHED_CATALOG_ROUTING_ENABLED` (default off) lets each key-based OpenCode Zen/Go model without an explicit registry endpoint take the request surface the published `models.opencode.ai` catalog declares (Responses for `@ai-sdk/openai`, Messages for `@ai-sdk/anthropic`); off keeps the registry heuristics and never fetches the catalog ([#16798](https://github.com/diegosouzapw/OmniRoute/pull/16798)) — thanks @maxmad64bis
+- **fix(models):** Keep the unified model catalog cached when OpenRouter capabilities are unchanged, preserve dashboard retry metadata, and retry transient catalog failures once in model pickers without losing saved custom values. Real capability changes still invalidate the cache; pending reads are cancelled when the picker unmounts or changes source. ([#16845](https://github.com/diegosouzapw/OmniRoute/pull/16845))
+- **feat(providers):** Complete the capability-aware model catalog loop: classify Gemini transcription/TTS/Lyria models, retain declared/inferred/defaulted endpoint provenance through import and Auto-Sync, expose editable endpoint badges with endpoint-only reset across dashboard model lists, preserve operator choices and discovered metadata, reject trusted wrong-endpoint requests locally before provider execution, and avoid advertising known-unrunnable specialty models. Surface provider adapter availability in model tests and row badges. Existing unsupported Gemini AI Studio transcription still requires the separate provider adapter tracked in [#16887](https://github.com/diegosouzapw/OmniRoute/issues/16887) (refs [#16929](https://github.com/diegosouzapw/OmniRoute/issues/16929)) ([#16956](https://github.com/diegosouzapw/OmniRoute/pull/16956)) — thanks @fabioKoruja00
+- **fix(workbuddy):** Adapt WorkBuddy AI reverse-proxy headers and tool/turn compliance to prevent gateway errors (`10085`, `11101`, `11128`, `11133`, `11153`). Enforces mandatory `WorkBuddy/5.5.6` client identity, stable turn/conversation tracking header family (`X-Conversation-*`), first-turn system prompt injection, Gemini tool-result turn alignment, and deep tool schema normalization for DeepSeek/Kimi/GLM models. Adds alias `wbai`. ([#16978](https://github.com/diegosouzapw/OmniRoute/issues/16978)) ([#17046](https://github.com/diegosouzapw/OmniRoute/pull/17046)) — thanks @Junior-HJ
+- **fix(gamification):** `advanceStreak` read the stored streak with an `await` before writing it back, so two overlapping first-of-day calls both saw yesterday's date, and both reported `extended: true` (the caller pays the streak bonus on that flag); the read and the write now have no `await` between them ([#17009](https://github.com/diegosouzapw/OmniRoute/pull/17009)) — thanks @pacocartones
+- **fix(api):** `POST /api/plugins` and `PATCH /api/relay/tokens/[id]` called `request.json()` with no guard, so a body that is not JSON made the handler reject instead of answering; both now answer 400 with `Invalid JSON body` ([#17010](https://github.com/diegosouzapw/OmniRoute/pull/17010)) — thanks @pacocartones
+- **fix(sse):** a browser context is no longer served without its assigned proxy when the proxy lookup fails — the request fails visibly instead of egressing from the real IP ([#17011](https://github.com/diegosouzapw/OmniRoute/pull/17011)) — thanks @maxmad64bis
+- **fix(gamification):** the stored streak counters were returned as found, so a negative or fractional `currentStreak` or `longestStreak` in the key-value row was passed on to the level route, the streak badge check and the MCP gamification tool; they are now read as finite, non-negative whole day counts ([#17012](https://github.com/diegosouzapw/OmniRoute/pull/17012)) — thanks @pacocartones
+- **fix(gamification):** the `early-adopter` badge read the first-activity timestamp (SQLite UTC text without a zone marker) as server-local time and added the window with `setDate`, so on a server whose time zone is behind UTC the window ended hours late and a user 30 days and 1 hour in could still unlock it; the timestamp is now read as UTC and the window added in UTC ([#17013](https://github.com/diegosouzapw/OmniRoute/pull/17013)) — thanks @pacocartones
+- **fix(sse):** a Microsoft 365 Copilot turn whose WebSocket frames never terminate now aborts at the same 1 MiB pending-buffer cap as the Claude Web reader instead of growing memory without bound ([#17014](https://github.com/diegosouzapw/OmniRoute/pull/17014)) — thanks @maxmad64bis
+- **fix(gamification):** `POST /api/gamification/invite` accepted a fractional `maxUses` such as `1.5` (201); the schema now requires a whole number, so a fractional value answers 400 ([#17016](https://github.com/diegosouzapw/OmniRoute/pull/17016)) — thanks @pacocartones
+- **fix(gamification):** the transfer history is ordered by `created_at DESC`, which has a one-second resolution, so transfers recorded in the same second had no defined order; ties are now broken by `id DESC`, newest first ([#17019](https://github.com/diegosouzapw/OmniRoute/pull/17019)) — thanks @pacocartones
+- **fix(gamification):** `validateScoreChange` only compared `recentXp + amount` with the per-window limit, so a `NaN` amount passed (every comparison with `NaN` is false) and a negative amount offset the window total; both are now refused with `Invalid XP amount`. The XP amounts come from the `XP_REWARDS` table today, so this guards the function itself ([#17020](https://github.com/diegosouzapw/OmniRoute/pull/17020)) — thanks @pacocartones
+- cli: `omniroute doctor`, `status` and `config` no longer print Node 24's DEP0190 warning on Windows: the CLI tool detector now probes `.cmd`/`.bat` shims through `cmd.exe` with an argument array instead of `shell: true` plus arguments ([#17021](https://github.com/diegosouzapw/OmniRoute/pull/17021)) — thanks @pacocartones
+- **fix(chat):** a `null` entry in `tools` (or in `input`/`messages` for the session fingerprint) made `generateSessionId` and the OpenAI→Claude tool conversion throw a `TypeError` instead of ignoring the entry. `messages: [null]` was already answered with a 400 (#13755); the same entries are now skipped in the session fingerprint and in the tool conversion ([#17023](https://github.com/diegosouzapw/OmniRoute/pull/17023)) — thanks @pacocartones
+- fix(models): stop treating Kilo variable-price auto routing as unconditionally free; verify ten existing Kilo and Gemini free-tier evidence records (#17028). ([#17138](https://github.com/diegosouzapw/OmniRoute/pull/17138))
+- fix(models): require per-model source evidence for new recurring-uncapped free catalog entries, with a shrinking legacy audit list (#17028). ([#17124](https://github.com/diegosouzapw/OmniRoute/pull/17124))
+- **fix(providers):** Preserve SiliconFlow live pricing and free/paid flags through model discovery and retain explicit paid verdicts in the discovery cache, so free-only synchronization rejects paid models even with optimistic free hints while retaining explicitly free entries. (#17028) ([#17121](https://github.com/diegosouzapw/OmniRoute/pull/17121))
+- **fix(providers):** Stop billing-risk misclassification of ten paid SiliconFlow flagship models as unlimited free. Only trust live free evidence; explicit paid flags and positive pricing veto free-only imports and badges (#17028). ([#17031](https://github.com/diegosouzapw/OmniRoute/pull/17031)) — thanks @fabioKoruja00
+- **fix(oauth):** Kimi Coding retains its refresh token after a rejected OAuth refresh so the bounded health-check retries can recover instead of becoming stuck in `no_refresh_token`; Codex/OpenAI token-rotation handling is unchanged ([#17042](https://github.com/diegosouzapw/OmniRoute/pull/17042)) — thanks @fabioKoruja00
+- **fix(sse):** opt-in `PROVIDER_SAFETY_STOPS_TERMINAL` flag (default off): preserve explicit provider safety-stop codes through HTTP, WebSocket and completed-stream diagnostics; stop combo retries and cancel admitted siblings without treating a refusal as successful fallback. Legacy stops retain a local classification without inventing an upstream detector. The `check:any-budget:t11` checker no longer counts property calls such as `AbortSignal.any` as `any` types ([#17049](https://github.com/diegosouzapw/OmniRoute/pull/17049)) — thanks @aldoeliacim
+- **fix(zcode):** the opt-in image-runtime helper (`scripts/ops/zcode-image-runtime.mjs`) gains a second hash-guarded step, `numeric-provider-code-v1`: the ZCode finish-record detector now treats a `code` as a provider business error only when it is numeric, so GLM tool-call text that lands in that field no longer kills a valid long agentic turn with `502 Provider returned a business error`. Explicit failure markers still fail as before, and the receipt records both steps ([#17062](https://github.com/diegosouzapw/OmniRoute/pull/17062)) — thanks @megamen32
+- **fix(vision):** When Claude Code's `Read` tool embeds an image inside `tool_result.content`, a confirmed text-only target no longer receives raw image bytes if captioning fails or exceeds the configured image cap. The bridge inserts an explicit unavailable-text marker, keeps tool-result context intact and still preserves raw images when a target's vision capability is unknown or native. (#17069) ([#17087](https://github.com/diegosouzapw/OmniRoute/pull/17087)) — thanks @fabioKoruja00
+- **fix(oauth):** the dashboard OIDC login now sends a PKCE challenge and a nonce, and the callback refuses an id_token that does not echo the nonce ([#17072](https://github.com/diegosouzapw/OmniRoute/pull/17072)) — thanks @maxmad64bis
+- **fix(dashboard):** Model test no longer sends image-generation custom models (e.g. Agnes) as chat completions; it honours the Image Generation API format and reports the probe as skipped ([#17085](https://github.com/diegosouzapw/OmniRoute/pull/17085)) — thanks @quantum-shubham
+- **fix(i18n):** Preserve source-owned `<think>` code examples during documentation translation while continuing to reject added reasoning and malformed or missing examples ([#17088](https://github.com/diegosouzapw/OmniRoute/pull/17088)).
+- **fix(quota):** A locked database (`SQLITE_BUSY`) during the quota snapshot cleanup no longer crashes the server; the background tick retries briefly, logs and skips, and the next tick tries again ([#17101](https://github.com/diegosouzapw/OmniRoute/pull/17101)) — thanks @tiagovilasboas
+- **perf(api-manager):** load the per-key request, cost and last-used columns from a new `GET /api/usage/analytics?view=apiKeys` view that runs one grouped query, instead of the full all-time analytics report plus 1,000 call logs. On instances with a few hundred thousand `usage_history` rows the full report held the event loop for 10+ seconds on every API Manager visit, stalling all proxied streams; last-used times now also cover keys outside the newest 1,000 call logs. ([#17056](https://github.com/diegosouzapw/OmniRoute/pull/17056)) — thanks @fouadSalkini
+- **fix(api):** new opt-in `CATALOG_MIRROR_REFINEMENTS_ENABLED` flag (default off — `/v1/models` is unchanged until an operator turns it on) stops advertising mirror ids that cannot be used: `claude/` discovery aliases also mirror reasoning-effort variants already in the catalog (e.g. `claude/codex/gpt-6-sol-high`; listing of those variants still follows `OMNIROUTE_DISABLE_THINKING_LEVEL_VARIANTS`), skip built-in `auto/*` ids the request path cannot materialize and never duplicate an alias already listed; functional-gateway mirrors are no longer emitted for combos, for OmniRoute-synthesized ids (`claude/…`, `no-think/…`), for a model whose owner is connected under an alias prefix (e.g. `cx/…` with a `codex` connection), for the gateway's own models, through a gateway disabled in `blockedProviders`, or for models outside the gateway's authoritative live catalog (matched on the full id the gateway receives). Built-in `auto/*` materialization now goes through one pure resolver with unchanged request-path behavior ([#16255](https://github.com/diegosouzapw/OmniRoute/pull/16255)) — thanks @aldoeliacim.
+- Forward adaptive thinking for Kiro Claude Opus 5.5 and preserve its native `max` effort through Responses conversion without changing other providers' effort normalization. ([#16098](https://github.com/diegosouzapw/OmniRoute/pull/16098)) — thanks @Kizuno18
+- **fix(typecheck):** remove duplicate KeyHealth export (direct commit `550f64211d`)
+- **fix(onboarding):** make Auto Combo ToS inclusion explicit (direct commit `a75077fa7c`)
+- **fix(arena):** preserve sync freshness across restarts (direct commit `dadd89f851`)
+- **fix(models):** ignore inactive seats when computing combo catalog limits (direct commit `fc7f47f9a8`)
+- **fix(luna):** disable reasoning for Chat Completions tools (direct commit `b91a10c677`)
+- **fix(opencode-go):** align verified model context limits (direct commit `38afc5bead`)
+- **fix(cli):** repair authenticated key policy commands (direct commit `5348c217e4`)
+- **fix(mitm):** resolve the antigravity bridge cert like the AgentBridge server (direct commit `8189d4d2b9`)
+- **fix(github):** strip temperature for Copilot GPT-5.4+ and GPT-6 models (direct commit `51d40dae86`)
+- **fix(grok-cli):** keep hosted tools and the forced function when capping at 200 tools (direct commit `9a35f7a8ea`)
+- **fix(translator):** keep Gemini literal unions typed and bound $ref expansion (direct commit `65bd855254`)
+- **fix(proxy):** give relay proxy tests 30s to survive free-plan cold starts (direct commit `842f478a2f`)
+- **fix(codebuddy):** normalize empty finish_reason / function_call shells in CodeBuddy SSE (direct commit `dead01403d`)
+- **fix(kiro):** preserve upstream output-token limit in live model discovery (direct commit `325547b8a9`)
+- **fix(logging):** retain upstream error bodies in call logs (direct commit `dc62f1c747`)
+- **fix(docs):** restore public catalog and canonical guide links (direct commit `f1ab2657e6`)
+- **fix(streaming):** drain upstream after terminal client close (direct commit `e50b4848aa`)
+- **fix(providers):** clarify static-only model discovery warning (direct commit `2c9c8e45eb`)
+- **fix(cli):** avoid volatile env warnings for generated defaults (direct commit `685a3025b5`)
+- **fix(free-tiers):** remove unsupported Bytez and Nous free claims (direct commit `6aec22c1ca`)
+- **fix(docs):** validate aggregate provider counts across published surfaces (direct commit `3e704ce8d6`)
+- **fix(skills):** synchronize cli-keys key-policy flags (direct commit `38fdfa28ae`)
+- **fix(docs):** widen the version-claim gate and correct AGENTS.md's coverage floor ([#15966](https://github.com/diegosouzapw/OmniRoute/pull/15966)) — thanks @jonlwheat2-gif
+- **fix(resilience):** limit Anthropic missing-model lockouts ([#16406](https://github.com/diegosouzapw/OmniRoute/pull/16406))
+- **fix(sse):** recover rejected empty streams on eligible sibling accounts ([#16438](https://github.com/diegosouzapw/OmniRoute/pull/16438)) — thanks @fouadSalkini
+- **fix(quality):** reject incomplete complexity outcomes on main ([#16536](https://github.com/diegosouzapw/OmniRoute/pull/16536))
+- **fix(ci):** deliver ONNX install skip through explicit env ([#16782](https://github.com/diegosouzapw/OmniRoute/pull/16782))
+- **fix(docs):** validate aggregate provider counts on main ([#16809](https://github.com/diegosouzapw/OmniRoute/pull/16809))
+- **fix(dashboard):** only switch timeline to pan on an actual drag ([#17024](https://github.com/diegosouzapw/OmniRoute/pull/17024)) — thanks @for-the-zero
+- **fix(compression):** fold role:"developer" into system for the engines ([#17029](https://github.com/diegosouzapw/OmniRoute/pull/17029)) — thanks @DarknessKiller
+- **fix(model-test):** probe speech models through audio endpoint ([#17030](https://github.com/diegosouzapw/OmniRoute/pull/17030)) — thanks @edosulai
+- **fix(autoCombo):** hold browser-backed and local-CLI transports out of the keyless pool ([#17036](https://github.com/diegosouzapw/OmniRoute/pull/17036)) — thanks @opensource-elearning
+- **fix(opencode):** rotate Zen free DeepSeek id to v4.1 ([#17044](https://github.com/diegosouzapw/OmniRoute/pull/17044)) — thanks @coqfu
+- **fix(providers):** keep uncloseai's context window across /v1/models rotations ([#17067](https://github.com/diegosouzapw/OmniRoute/pull/17067)) — thanks @opensource-elearning
+- **fix(release):** reconcile-changelog reads fragments from disk and stops counting closing issues as coverage ([#17068](https://github.com/diegosouzapw/OmniRoute/pull/17068))
+- **fix(release):** drain v3.8.52 base-reds — #16956 fixtures, single customModels read in /api/models, stryker tap.testFiles ([#17090](https://github.com/diegosouzapw/OmniRoute/pull/17090))
+- **fix(quality):** drop two eslint suppressions that no longer match ([#17126](https://github.com/diegosouzapw/OmniRoute/pull/17126))
+- **fix(dashboard):** give nested sidebar items and subtitles AA contrast on the sidebar background ([#17154](https://github.com/diegosouzapw/OmniRoute/pull/17154))
 
 ### 📝 Maintenance
 
@@ -1403,10 +1503,34 @@ _By commits in `2f42a9ac19..4d07a26185`, author identities consolidated via `.ma
 - **docs(guardrails):** describe the injection middleware after #16934 removed its dead disable call ([#17048](https://github.com/diegosouzapw/OmniRoute/pull/17048))
 - **deps:** 17 Dependabot bumps — bump dompurify from 3.4.14 to 3.4.16 ([#15302](https://github.com/diegosouzapw/OmniRoute/pull/15302)); bump @grpc/grpc-js from 1.14.4 to 1.14.5 ([#15304](https://github.com/diegosouzapw/OmniRoute/pull/15304)); chore(deps): bump trunk-io/analytics-uploader from 2.1.3 to 2.1.5 ([#15370](https://github.com/diegosouzapw/OmniRoute/pull/15370)); chore(deps): bump github/codeql-action/init from 4.38.1 to 4.38.2 ([#15371](https://github.com/diegosouzapw/OmniRoute/pull/15371)); chore(deps): bump github/codeql-action from 4.38.1 to 4.38.2 ([#15372](https://github.com/diegosouzapw/OmniRoute/pull/15372)); chore(deps): bump github/codeql-action/analyze from 4.38.1 to 4.38.2 ([#15373](https://github.com/diegosouzapw/OmniRoute/pull/15373)); bump electron from 44.4.3 to 44.5.1 in /electron ([#15577](https://github.com/diegosouzapw/OmniRoute/pull/15577)); chore(deps-dev): bump http-cache-semantics ([#15648](https://github.com/diegosouzapw/OmniRoute/pull/15648)); bump http-cache-semantics ([#15649](https://github.com/diegosouzapw/OmniRoute/pull/15649)); bump the development group across 1 directory with 21 updates ([#15732](https://github.com/diegosouzapw/OmniRoute/pull/15732)); build(deps): bump trunk-io/analytics-uploader from 2.1.5 to 2.1.6 ([#16097](https://github.com/diegosouzapw/OmniRoute/pull/16097)); bump oven/bun from 1.4.2-slim to 1.4.3-slim ([#16560](https://github.com/diegosouzapw/OmniRoute/pull/16560)); bump electron from 44.5.1 to 44.7.0 in /electron ([#16561](https://github.com/diegosouzapw/OmniRoute/pull/16561)); chore(deps): bump github/codeql-action from 4.38.2 to 4.38.3 ([#16882](https://github.com/diegosouzapw/OmniRoute/pull/16882)); chore(deps): bump github/codeql-action/init from 4.38.2 to 4.38.3 ([#16883](https://github.com/diegosouzapw/OmniRoute/pull/16883)); chore(deps): bump github/codeql-action/analyze from 4.38.2 to 4.38.3 ([#16884](https://github.com/diegosouzapw/OmniRoute/pull/16884)); chore(deps): bump ossf/scorecard-action from 2.4.4 to 2.5.0 ([#16885](https://github.com/diegosouzapw/OmniRoute/pull/16885))
 - **fix(docs):** sync v3.8.52 version in readme and llm mirrors ([#15113](https://github.com/diegosouzapw/OmniRoute/pull/15113)) — thanks @doramirdor
-
-
-
-
+- **ci:** the nightly a11y axe job boots its prebuilt dashboard on a hosted runner — on the light self-hosted pool the 1.2 GB build artefact took 1,416 s to download and the 30-minute timeout cancelled the job before the axe suite ran; hosted runners pull the same class of artefact in seconds, and the build itself stays on the build pool. ([#17122](https://github.com/diegosouzapw/OmniRoute/pull/17122))
+- **ci:** the nightly a11y job no longer builds the dashboard on the light runner pool — a new `a11y-build` job builds it once on the build pool and hands the artefact over; the a11y job boots it on a fresh `DATA_DIR` and pipes the server output into the log (#16853). ([#17078](https://github.com/diegosouzapw/OmniRoute/pull/17078))
+- **test(logs):** call-log readers in ten more suites wait on one shared `CALL_LOG_SETTLE_TIMEOUT_MS` bound instead of 1.5–10 s budgets the artifact worker's cold start outran on a loaded machine. ([#17099](https://github.com/diegosouzapw/OmniRoute/pull/17099))
+- **test(logs):** the `upstream-error-call-log-16558` reader waits for the call-log save itself (`waitForCallLogSaves()`) instead of a fixed ~4 s poll, which the artifact worker's cold start outran on a loaded machine. ([#17091](https://github.com/diegosouzapw/OmniRoute/pull/17091))
+- **ci:** the two hosted webpack heap budgets are now recorded with their evidence — build.yml 10240 MB (validated 2026-10-18) and docker-publish 12288 MB (three green publishes) — and a test keeps every Docker heap override at or above the native floor. ([#17089](https://github.com/diegosouzapw/OmniRoute/pull/17089))
+- **docs(i18n):** the 66 locale mirrors of `AUTHZ_GUIDE.md` and `REMOTE-MODE.md` carry the current open-mode credential rules (the five changed sections retranslated), which also turns `remote-token-privilege-locales` green. ([#17098](https://github.com/diegosouzapw/OmniRoute/pull/17098))
+- **i18n:** the translation pipeline treats inline code as a literal — the prompt now says so explicitly, and a chunk whose output loses any of the source's inline code spans (a translated error message, `MemoryHigh=4G` split in two, a dropped backtick that re-pairs the rest of the line) is rejected and retried instead of written; in the 2026-10-18 resync every pass had translated such literals in 7–12 locales. ([#17128](https://github.com/diegosouzapw/OmniRoute/pull/17128))
+- **docs:** SECURITY.md now states the v3.9 LTS support window: `stable/v3` receives security fixes and critical regressions for 12 months after the 3.9.0 cut, or until 90 days after v4.0.0 becomes `latest`, whichever is later (T-GAP-3). ([#17086](https://github.com/diegosouzapw/OmniRoute/pull/17086))
+- **ci:** pull-request and merge-group `Build` jobs run on the hosted pool with webpack instead of queueing for the single self-hosted Turbopack slot, where 18 Builds waited up to 18 h and the release line's own push Build got the slot once in 40 jobs; push and dispatch Builds keep the Turbopack validation of the bundler `npm-publish` ships. The runner box document records the restored 56 GB build-slot budget and how to clear a build whose job GitHub already gave up on. ([#17100](https://github.com/diegosouzapw/OmniRoute/pull/17100))
+- **ci:** the scheduled full Release-Green sweep runs its heavy lanes one after another instead of in one parallel wave: unit as `ci.yml`'s own 8 shards (`test:unit:ci:shard`, as many at once as the slot has cores for), then integration, vitest and the package build. The 2026-10-18 and 10-19 sweeps killed unit, integration and the build at their ceilings inside that wave, and on the 8-core, 20 GB `omni-release` slot the webpack build pushed the cgroup past `memory.high` until the app's own pressure guard answered 503 inside unit tests. ([#17156](https://github.com/diegosouzapw/OmniRoute/pull/17156))
+- **ci:** the `.113` runner box is reorganised by role — `omniroute-113-5` keeps only `omni-build` (Turbopack builds), Release-Green moves to its own `omni-release` slot on webpack and no longer cancels a started run on every push, the light pool keeps the nightlies and `lint-guard`, and every runner has a memory and CPU budget (docs/ops/RUNNER_BOX.md). The VPS deploy job gets a 60-minute timeout. ([#17082](https://github.com/diegosouzapw/OmniRoute/pull/17082))
+- **test(video):** the OpenRouter off-origin test compares parsed hosts with `isUrlHost()` instead of a URL-prefix match (CodeQL #1159, #1160). ([#17093](https://github.com/diegosouzapw/OmniRoute/pull/17093))
+- Correct the guardrail coverage guide to reflect that prompt-injection middleware no longer receives caller-controlled disable lists; mandatory block-mode behavior is unchanged. Refs #16413. ([#17111](https://github.com/diegosouzapw/OmniRoute/pull/17111))
+- **test(providers):** align Gemini validation fixture with signed-in contract (direct commit `83cbf3b96c`)
+- **test(providers):** include Copilot's auto model in the pinned GitHub lineup (direct commit `3d6be13368`)
+- **chore(ci):** rebaseline file-size ceilings from the owner merge batch (direct commit `9dae75f291`)
+- **docs:** slim AGENTS.md under the 40k context limit (62.3k -> 39.4k) ([#12743](https://github.com/diegosouzapw/OmniRoute/pull/12743)) — thanks @wahidsadik371-coder
+- **ci:** make the .113 omni-build slot opt-in on main (USE_VPS_BUILD_RUNNER) ([#16835](https://github.com/diegosouzapw/OmniRoute/pull/16835))
+- **docs(i18n):** refresh approved documentation mirrors for v3.8.52 ([#16980](https://github.com/diegosouzapw/OmniRoute/pull/16980))
+- **fix(deps):** sync the `js-yaml` parser lockfile entry (#17017) ([#17022](https://github.com/diegosouzapw/OmniRoute/pull/17022)) — thanks @fabioKoruja00
+- **docs(release):** v3.8.52 credit audit — CHANGELOG reconciliation and README refresh ([#17066](https://github.com/diegosouzapw/OmniRoute/pull/17066))
+- **ci:** stop starting the full CI and Quality matrices on every push to release/** (hosted queue diet) ([#17092](https://github.com/diegosouzapw/OmniRoute/pull/17092))
+- **docs(i18n):** resync nine drifted sources across all 66 locales ([#17117](https://github.com/diegosouzapw/OmniRoute/pull/17117))
+- **docs(ci):** keep the Build routing comment true after the main-only push trigger ([#17127](https://github.com/diegosouzapw/OmniRoute/pull/17127))
+- **test(nightly):** wait for the fake server before reading its environment ([#17130](https://github.com/diegosouzapw/OmniRoute/pull/17130))
+- **docs(i18n):** re-translate README, CONTRIBUTING and 11 more drifted sources across 66 locales (wave 1018) ([#17142](https://github.com/diegosouzapw/OmniRoute/pull/17142))
+- **docs(i18n):** restore the issue-reference literals in the Uzbek QUALITY_GATES mirror ([#17148](https://github.com/diegosouzapw/OmniRoute/pull/17148))
+- **ci(release-green):** sweep main once a day, keep three daily sweeps for the release branch ([#17160](https://github.com/diegosouzapw/OmniRoute/pull/17160))
 
 ### 🙌 Contributors
 
@@ -1423,7 +1547,7 @@ Thanks to everyone whose work landed in v3.8.52:
 | [@Abhijeet1520](https://github.com/Abhijeet1520) | #13016 |
 | [@adivekar-utexas](https://github.com/adivekar-utexas) | #15565 |
 | [@afonsoft](https://github.com/afonsoft) | #15397, #16109 |
-| [@aldoeliacim](https://github.com/aldoeliacim) | #15259, #15841 |
+| [@aldoeliacim](https://github.com/aldoeliacim) | #15259, #15841, #16255, #17049, #17096, #17097 |
 | [@AlexanderMakarov](https://github.com/AlexanderMakarov) | #16640 |
 | [@alexdrgpy06](https://github.com/alexdrgpy06) | #14719 |
 | [@aliepratama](https://github.com/aliepratama) | #16153 |
@@ -1449,6 +1573,7 @@ Thanks to everyone whose work landed in v3.8.52:
 | [@Ardem2025](https://github.com/Ardem2025) | #15513 |
 | [@aref-alapour](https://github.com/aref-alapour) | #14803, #14821, #14835 |
 | [@artickc](https://github.com/artickc) | #14131, #14269, #16559 |
+| [@asdlombardi4-lang](https://github.com/asdlombardi4-lang) | #14313 |
 | [@askidmobile](https://github.com/askidmobile) | #16524, #16841 |
 | [@asuan-dev](https://github.com/asuan-dev) | #16735, #16950 |
 | [@atescivitci-cmd](https://github.com/atescivitci-cmd) | #12917, #15868, #15918 |
@@ -1479,12 +1604,13 @@ Thanks to everyone whose work landed in v3.8.52:
 | [@CodeSavvy77](https://github.com/CodeSavvy77) | #15886, #16060 |
 | [@coozgan](https://github.com/coozgan) | #16537, #16894 |
 | [@copystring](https://github.com/copystring) | #17000 |
+| [@coqfu](https://github.com/coqfu) | #17044 |
 | [@cryptiklemur](https://github.com/cryptiklemur) | #13868, #15102, #15103, #16866 |
 | [@D4rk4](https://github.com/D4rk4) | #15533, #15750, #15787, #16006, #16017, #16260 |
 | [@dajiaohuang](https://github.com/dajiaohuang) | #15708 |
 | [@DangTAnh](https://github.com/DangTAnh) | #14199 |
 | [@daniadasaya](https://github.com/daniadasaya) | #16642 |
-| [@DarknessKiller](https://github.com/DarknessKiller) | #16999 |
+| [@DarknessKiller](https://github.com/DarknessKiller) | #16999, #17029 |
 | [@dasepmoch](https://github.com/dasepmoch) | #16871 |
 | [@DavyMassoneto](https://github.com/DavyMassoneto) | #16447, #16448 |
 | [@Deepleakk](https://github.com/Deepleakk) | #16644 |
@@ -1496,7 +1622,7 @@ Thanks to everyone whose work landed in v3.8.52:
 | [@dungartoriaaa](https://github.com/dungartoriaaa) | #16287, #16511 |
 | [@DuqueSouza](https://github.com/DuqueSouza) | #16357 |
 | [@ebouther](https://github.com/ebouther) | #15755 |
-| [@edosulai](https://github.com/edosulai) | #15359, #15566 |
+| [@edosulai](https://github.com/edosulai) | #15359, #15566, #17030 |
 | [@ekinnee](https://github.com/ekinnee) | #15668, #15693 |
 | [@elidrissi-amine](https://github.com/elidrissi-amine) | #16879 |
 | [@elielsousa-pathbit](https://github.com/elielsousa-pathbit) | #16621 |
@@ -1510,7 +1636,7 @@ Thanks to everyone whose work landed in v3.8.52:
 | [@espokaos-ops](https://github.com/espokaos-ops) | #13345 |
 | [@exodus2512](https://github.com/exodus2512) | #15669 |
 | [@f-liva](https://github.com/f-liva) | #16293 |
-| [@fabioKoruja00](https://github.com/fabioKoruja00) | #16819, #16856, #16859, #16860, #16863, #16868, #16888, #16934, #16937, #16938, #16947, #16951, #16952, #17001 |
+| [@fabioKoruja00](https://github.com/fabioKoruja00) | #16819, #16856, #16859, #16860, #16863, #16868, #16888, #16934, #16937, #16938, #16947, #16951, #16952, #16956, #17001, #17022, #17031, #17042, #17087 |
 | [@fabioluissilva](https://github.com/fabioluissilva) | #15178 |
 | [@farshadasadpour](https://github.com/farshadasadpour) | #16085 |
 | [@fasilu](https://github.com/fasilu) | #16529 |
@@ -1519,8 +1645,8 @@ Thanks to everyone whose work landed in v3.8.52:
 | [@fidelix](https://github.com/fidelix) | #15299, #15310 |
 | [@FitBBC](https://github.com/FitBBC) | #13191 |
 | [@fomathpro-arch](https://github.com/fomathpro-arch) | #15711 |
-| [@for-the-zero](https://github.com/for-the-zero) | #15255, #15508 |
-| [@fouadSalkini](https://github.com/fouadSalkini) | #14799, #14880, #14885, #14887, #15628, #15630, #15637, #15700, #15990 |
+| [@for-the-zero](https://github.com/for-the-zero) | #15255, #15508, #17024 |
+| [@fouadSalkini](https://github.com/fouadSalkini) | #14799, #14880, #14885, #14887, #15628, #15630, #15637, #15700, #15990, #16438, #17056 |
 | [@foxy1402](https://github.com/foxy1402) | #16403 |
 | [@gabrielalberton](https://github.com/gabrielalberton) | #14907 |
 | [@ggdayup](https://github.com/ggdayup) | #15778 |
@@ -1534,7 +1660,7 @@ Thanks to everyone whose work landed in v3.8.52:
 | [@hamedniroomand](https://github.com/hamedniroomand) | #16628 |
 | [@hartmark](https://github.com/hartmark) | #15757, #15758, #15761, #15881 |
 | [@haumanto](https://github.com/haumanto) | #16542 |
-| [@HDBR](https://github.com/HDBR) | #15262, #15629, #15941 |
+| [@HDBR](https://github.com/HDBR) | #15262, #15532, #15629, #15941 |
 | [@hongkongkiwi](https://github.com/hongkongkiwi) | #15904, #15932 |
 | [@HouMinXi](https://github.com/HouMinXi) | #13603, #14449, #14546, #14548, #14725, #14884, #15035, #15049, #15090, #15099, #15158, #15280, #15355, #15356, #15361, #15363, #15364, #15365, #15368, #15369, #15406, #15407, #15408, #15415, #15416, #15418, #15430, #15461, #15472, #15494, #15495, #15505, #15510, #15516, #15535, #15553, #15624, #15642, #15643, #15674, #15701, #15710, #15830, #15943, #15944, #16018, #16028, #16033, #16054, #16071, #16423, #16673, #16901 |
 | [@huohua-dev](https://github.com/huohua-dev) | #16708 |
@@ -1558,10 +1684,10 @@ Thanks to everyone whose work landed in v3.8.52:
 | [@jiweiyeah](https://github.com/jiweiyeah) | #15131 |
 | [@JJAbrams-eng](https://github.com/JJAbrams-eng) | #13330 |
 | [@jktan0504](https://github.com/jktan0504) | #16248, #16825 |
-| [@jonlwheat2-gif](https://github.com/jonlwheat2-gif) | #12740, #15215, #15217, #15221, #15222, #15226, #15227, #15233, #15242, #15244, #15281, #15282, #15283, #15290, #15291, #15376, #15379, #15381, #15382, #15384, #15388, #15394, #15468, #15520, #15522, #15695, #15766, #15767, #15768, #15771, #15773, #15949, #15950, #15951, #15952, #15964, #15965, #16056 |
+| [@jonlwheat2-gif](https://github.com/jonlwheat2-gif) | #12740, #15215, #15217, #15221, #15222, #15226, #15227, #15233, #15242, #15244, #15281, #15282, #15283, #15290, #15291, #15376, #15379, #15381, #15382, #15384, #15388, #15394, #15468, #15520, #15522, #15695, #15766, #15767, #15768, #15771, #15773, #15949, #15950, #15951, #15952, #15964, #15965, #15966, #16056 |
 | [@Jordannst](https://github.com/Jordannst) | #16493, #16625 |
 | [@JunDev76](https://github.com/JunDev76) | #16682 |
-| [@Junior-HJ](https://github.com/Junior-HJ) | #15572, #15575, #15602, #15791, #15792, #15797, #15799, #16118, #16396, #16427, #16627, #16632, #16922 |
+| [@Junior-HJ](https://github.com/Junior-HJ) | #15572, #15575, #15602, #15791, #15792, #15797, #15799, #16118, #16396, #16427, #16627, #16632, #16922, #16998, #17046 |
 | [@juniorgaudencio00-code](https://github.com/juniorgaudencio00-code) | #16704 |
 | [@Juriseagle](https://github.com/Juriseagle) | #15561 |
 | [@JxnLexn](https://github.com/JxnLexn) | #13554, #15132, #15133, #15135, #15138, #15481, #15486, #15487, #16299, #16404, #16474 |
@@ -1571,7 +1697,7 @@ Thanks to everyone whose work landed in v3.8.52:
 | [@kang-heewon](https://github.com/kang-heewon) | #15219 |
 | [@khanghack222](https://github.com/khanghack222) | #16622 |
 | [@KiaroSama](https://github.com/KiaroSama) | #15574, #16420, #16424, #16599 |
-| [@Kizuno18](https://github.com/Kizuno18) | #15318, #15319, #16099, #16100, #16101 |
+| [@Kizuno18](https://github.com/Kizuno18) | #15318, #15319, #16098, #16099, #16100, #16101 |
 | [@KooshaPari](https://github.com/KooshaPari) | #4165 |
 | [@krzemienski](https://github.com/krzemienski) | #16523 |
 | [@KrzysiekSko](https://github.com/KrzysiekSko) | #16434 |
@@ -1586,18 +1712,19 @@ Thanks to everyone whose work landed in v3.8.52:
 | [@Louayzouaoui1](https://github.com/Louayzouaoui1) | #16204, #16216, #16425 |
 | [@louisphamdev](https://github.com/louisphamdev) | #16294, #16295 |
 | [@lsilveirab39](https://github.com/lsilveirab39) | #16902 |
-| [@LuisAlejandro](https://github.com/LuisAlejandro) | #15975, #15976, #15977, #16378 |
+| [@LuisAlejandro](https://github.com/LuisAlejandro) | #15975, #15976, #15977, #16372, #16378 |
 | [@m00nie](https://github.com/m00nie) | #16725 |
 | [@M3stryX](https://github.com/M3stryX) | #16250 |
 | [@mad-gooze](https://github.com/mad-gooze) | #17004 |
 | [@MakdumIbrohim](https://github.com/MakdumIbrohim) | #16531 |
 | [@mannnrachman](https://github.com/mannnrachman) | #16949 |
 | [@matheusgcdj](https://github.com/matheusgcdj) | #14910 |
-| [@maxmad64bis](https://github.com/maxmad64bis) | #14554, #14805, #15003, #15140, #15224, #15225, #15236, #15239, #15240, #15248, #15314, #15316, #15353, #15354, #15362, #15374, #15375, #15378, #15383, #15386, #15389, #15390, #15392, #15395, #15396, #15398, #15399, #15402, #15432, #15433, #15434, #15435, #15436, #15443, #15449, #15451, #15455, #15462, #15463, #15466, #15469, #15474, #15475, #15482, #15483, #15484, #15560, #15562, #15564, #15737, #15738, #15741, #15748, #15885, #15888, #15908, #15978, #15980, #15981, #16051, #16067, #16082, #16102, #16104, #16162, #16163, #16164, #16166, #16167, #16193, #16194, #16212, #16267, #16268, #16270, #16271, #16272, #16273, #16275, #16276, #16291, #16292, #16300, #16301, #16302, #16303, #16304, #16305, #16331, #16333, #16334, #16335, #16336, #16339, #16340, #16344, #16350, #16353, #16354, #16361, #16362, #16363, #16367, #16371, #16373, #16374, #16376, #16377, #16379, #16382, #16386, #16389, #16390, #16391, #16408, #16419, #16504, #16759, #16760, #16769, #16773, #16775, #16779, #16785, #16786, #16793, #16925, #16927, #16932 |
+| [@maxmad64bis](https://github.com/maxmad64bis) | #14554, #14805, #15003, #15140, #15224, #15225, #15236, #15239, #15240, #15248, #15314, #15316, #15353, #15354, #15362, #15374, #15375, #15378, #15383, #15386, #15389, #15390, #15392, #15395, #15396, #15398, #15399, #15402, #15432, #15433, #15434, #15435, #15436, #15443, #15449, #15451, #15455, #15462, #15463, #15466, #15469, #15474, #15475, #15482, #15483, #15484, #15560, #15562, #15564, #15737, #15738, #15741, #15748, #15885, #15888, #15908, #15978, #15980, #15981, #16051, #16067, #16082, #16102, #16104, #16162, #16163, #16164, #16166, #16167, #16193, #16194, #16212, #16228, #16267, #16268, #16270, #16271, #16272, #16273, #16275, #16276, #16291, #16292, #16300, #16301, #16302, #16303, #16304, #16305, #16331, #16333, #16334, #16335, #16336, #16339, #16340, #16344, #16350, #16353, #16354, #16361, #16362, #16363, #16367, #16371, #16373, #16374, #16376, #16377, #16379, #16382, #16386, #16389, #16390, #16391, #16408, #16419, #16504, #16759, #16760, #16769, #16773, #16775, #16779, #16785, #16786, #16793, #16797, #16798, #16925, #16927, #16932, #17011, #17014, #17072 |
 | [@mdc2122](https://github.com/mdc2122) | #15024 |
 | [@mdigitalbh81](https://github.com/mdigitalbh81) | #15277 |
-| [@megamen32](https://github.com/megamen32) | #16926 |
+| [@megamen32](https://github.com/megamen32) | #16926, #17062 |
 | [@miguelenes](https://github.com/miguelenes) | #15278 |
+| [@MikeTuev](https://github.com/MikeTuev) | #16236 |
 | [@minhtuancn](https://github.com/minhtuancn) | #16282 |
 | [@minthanthtoo](https://github.com/minthanthtoo) | #16877 |
 | [@mohammadraufzahed](https://github.com/mohammadraufzahed) | #15431, #15446 |
@@ -1619,9 +1746,9 @@ Thanks to everyone whose work landed in v3.8.52:
 | [@omnitrixAG](https://github.com/omnitrixAG) | #16498 |
 | [@onexer88-blip](https://github.com/onexer88-blip) | #16077 |
 | [@oooohhoo](https://github.com/oooohhoo) | #16974 |
-| [@opensource-elearning](https://github.com/opensource-elearning) | #16323, #16324, #16341, #16342, #16346, #16355, #16430, #16436 |
+| [@opensource-elearning](https://github.com/opensource-elearning) | #16323, #16324, #16341, #16342, #16346, #16355, #16430, #16436, #17036, #17067 |
 | [@Owaid0723666](https://github.com/Owaid0723666) | #14297 |
-| [@pacocartones](https://github.com/pacocartones) | #15946, #15989, #15991, #15992, #15993, #15994, #15995, #15996, #15997, #15999, #16001, #16005, #16008, #16009, #16043, #16047, #16117, #16119, #16123, #16124, #16168, #16441, #16453, #16456, #16501, #16504, #16507, #16517, #16544, #16556, #16606, #16607, #16609, #16614, #16615, #16620, #16630, #16633, #16636, #16639, #16641, #16647, #16649, #16650, #16651, #16656, #16657, #16658, #16659, #16661, #16668, #16671, #16730, #16991, #16992 |
+| [@pacocartones](https://github.com/pacocartones) | #15946, #15989, #15991, #15992, #15993, #15994, #15995, #15996, #15997, #15999, #16001, #16005, #16008, #16009, #16043, #16047, #16117, #16119, #16123, #16124, #16168, #16441, #16453, #16456, #16501, #16504, #16507, #16517, #16544, #16556, #16606, #16607, #16609, #16614, #16615, #16620, #16630, #16633, #16636, #16639, #16641, #16647, #16649, #16650, #16651, #16656, #16657, #16658, #16659, #16661, #16668, #16671, #16730, #16991, #16992, #17009, #17010, #17012, #17013, #17016, #17019, #17020, #17021, #17023 |
 | [@patrykkopycinski](https://github.com/patrykkopycinski) | #15647, #15724, #15725 |
 | [@pedrohx26](https://github.com/pedrohx26) | #16683 |
 | [@PIKACHUIM](https://github.com/PIKACHUIM) | #16911 |
@@ -1634,6 +1761,7 @@ Thanks to everyone whose work landed in v3.8.52:
 | [@PrinceThummar011](https://github.com/PrinceThummar011) | #16155, #16683, #16764 |
 | [@qirh](https://github.com/qirh) | #15573 |
 | [@QuangBlue](https://github.com/QuangBlue) | #14973, #15117, #15160, #15168, #15186, #15261, #15331, #15332, #15412, #15413, #15423, #15702 |
+| [@quantum-shubham](https://github.com/quantum-shubham) | #17085 |
 | [@rafi-zadanly](https://github.com/rafi-zadanly) | #16961 |
 | [@raflyazf](https://github.com/raflyazf) | #16626, #16710, #16719, #16906, #16915, #16920, #16946 |
 | [@raheemuddin786](https://github.com/raheemuddin786) | #11837 |
@@ -1669,15 +1797,15 @@ Thanks to everyone whose work landed in v3.8.52:
 | [@suhanrain](https://github.com/suhanrain) | #16821 |
 | [@tasarren](https://github.com/tasarren) | #16912 |
 | [@TechNickAI](https://github.com/TechNickAI) | #16397 |
-| [@Theadd](https://github.com/Theadd) | #15340, #16605 |
+| [@Theadd](https://github.com/Theadd) | #15340, #16605, #17079 |
 | [@TheCrabe](https://github.com/TheCrabe) | #16481, #16499 |
 | [@TheDemonTuan](https://github.com/TheDemonTuan) | #13739 |
 | [@themirzaalibaig](https://github.com/themirzaalibaig) | #16858, #16895 |
 | [@TheViniAlmeida](https://github.com/TheViniAlmeida) | #15594 |
 | [@thienpvt](https://github.com/thienpvt) | #16541 |
-| [@thotypous](https://github.com/thotypous) | #16086, #16088 |
+| [@thotypous](https://github.com/thotypous) | #16086, #16087, #16088 |
 | [@tiagolabsit](https://github.com/tiagolabsit) | #16462, #16463, #16464, #16465, #16466, #16467, #16514 |
-| [@tiagovilasboas](https://github.com/tiagovilasboas) | #15800, #15925 |
+| [@tiagovilasboas](https://github.com/tiagovilasboas) | #15800, #15925, #17101 |
 | [@tikhomirov](https://github.com/tikhomirov) | #15900 |
 | [@timootten](https://github.com/timootten) | #15754, #15756 |
 | [@tommyyzhao](https://github.com/tommyyzhao) | #16960 |
@@ -1691,13 +1819,14 @@ Thanks to everyone whose work landed in v3.8.52:
 | [@vianhanif](https://github.com/vianhanif) | #16511, #16539, #16645, #16945 |
 | [@VihaanR](https://github.com/VihaanR) | #15301 |
 | [@W25X80](https://github.com/W25X80) | #16181 |
+| [@wahidsadik371-coder](https://github.com/wahidsadik371-coder) | #12743 |
 | [@wakqasahmed](https://github.com/wakqasahmed) | #15905 |
 | [@waleedkkk](https://github.com/waleedkkk) | #15878 |
 | [@wallerjenifernk530-hash](https://github.com/wallerjenifernk530-hash) | #16722 |
 | [@webzidev](https://github.com/webzidev) | #14988 |
 | [@wedreamer](https://github.com/wedreamer) | #15548 |
 | [@WellArtDev](https://github.com/WellArtDev) | #16295 |
-| [@woodsonl](https://github.com/woodsonl) | #15137, #15206, #15209, #15296, #15298, #15345, #15346, #15571, #15583, #15587, #15589, #15590, #15591, #15592, #15593, #15596, #15599, #15600, #15601, #15603, #15604, #15605, #15607, #15609, #15610, #15612, #15613, #15614, #15617, #15618, #15801, #15857, #16277, #16278, #16366, #16392, #16445 |
+| [@woodsonl](https://github.com/woodsonl) | #15137, #15206, #15209, #15296, #15298, #15345, #15346, #15571, #15583, #15587, #15589, #15590, #15591, #15592, #15593, #15596, #15599, #15600, #15601, #15603, #15604, #15605, #15607, #15609, #15610, #15612, #15613, #15614, #15617, #15618, #15682, #15801, #15857, #16277, #16278, #16366, #16392, #16445 |
 | [@wray-lee](https://github.com/wray-lee) | #12914, #16351 |
 | [@wusaki0723](https://github.com/wusaki0723) | #16674 |
 | [@WYSTAF](https://github.com/WYSTAF) | #16698, #16702, #16722, #16913 |
@@ -1718,7 +1847,6 @@ Thanks to everyone whose work landed in v3.8.52:
 | [@diegosouzapw](https://github.com/diegosouzapw) | maintainer |
 
 ---
-
 ## [3.8.51] — 2026-09-29
 
 _Living section — reconciled 2026-09-29 from all cycle commits (`091589089c` → `4aed4b4a08`, 1,972 non-merge commits). Bullets carry the merged PR and its author; direct pushes are listed with their commit hash. Regenerated at each `/generate-release` phase._

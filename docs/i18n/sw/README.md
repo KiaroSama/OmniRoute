@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                                                 |         v3.8.50          | **v3.8.51** |      `v3.8.52+`       |
+|                                                 |         v3.8.50          | **v3.8.51** |      `v3.8.53+`       |
 | ----------------------------------------------- | :----------------------: | :---------: | :-------------------: |
 | 🌐 Watoa huduma                                 |           352            |   **358**   |          375          |
 | 🧠 Vitambulisho vya kipekee vya modeli za gumzo |           1320           |  **1374**   |         1475          |
@@ -511,7 +511,7 @@ Radar ni ya kujiunga kwa hiari na hutumia GET pekee. Kiteja cha OmniRoute hakipa
 
 </div>
 
-> Vivutio vya hivi karibuni kutoka **v3.8.20 → v3.8.52**. Historia kamili ipo katika [`CHANGELOG.md`](CHANGELOG.md).
+> Vivutio vya hivi karibuni kutoka **v3.8.20 → v3.8.53**. Historia kamili ipo katika [`CHANGELOG.md`](CHANGELOG.md).
 
 - **⚖️ Uelekezaji wa `quota-weighted`** — mkakati wa 20 wa michanganyiko huruka akaunti zilizomaliza mgao, kisha huchagua kutoka kwa zilizosalia kwa uwiano wa mgao uliobaki ÷ mzigo unaoendelea, huku ukiweka mazungumzo yaliyopo kwenye akaunti zilezile. → [Mchanganyiko Otomatiki](docs/routing/AUTO-COMBO.md)
 - **🧰 Hali isiyo na kiolesura** — `omniroute serve --headless` (au `OMNIROUTE_HEADLESS=1`) huendesha injini ya proksi ya `/v1/*` pekee, huku dashibodi na mifumo midogo ya dashibodi pekee ikiwa imezimwa. → [Hali Isiyo na Kiolesura](docs/guides/HEADLESS.md)
@@ -1744,7 +1744,7 @@ Leseni ya MIT - tazama [LICENSE](LICENSE) kwa maelezo.
 
 **[⬆ Rudi juu](#-omniroute)** · Imetengenezwa kwa ❤️ kwa ajili ya jumuiya ya AI ya programu huria.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · Leseni ya MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · Leseni ya MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- Majadiliano ya GitHub yamewezeshwa kwa maswali na majibu ya jumuiya -->

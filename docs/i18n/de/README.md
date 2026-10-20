@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                               |         v3.8.50         | **v3.8.51** |         `v3.8.52+`         |
+|                               |         v3.8.50         | **v3.8.51** |         `v3.8.53+`         |
 | ----------------------------- | :---------------------: | :---------: | :------------------------: |
 | 🌐 Anbieter                   |           352           |   **358**   |            375             |
 | 🧠 Eindeutige Chatmodell-IDs  |          1320           |  **1374**   |            1475            |
@@ -587,7 +587,7 @@ zum aktuellen Katalog finden Sie unter **[radar.omniroute.online/planos](https:/
 
 </div>
 
-> Aktuelle Highlights von **v3.8.20 → v3.8.52**. Den vollständigen Verlauf finden Sie in [`CHANGELOG.md`](CHANGELOG.md).
+> Aktuelle Highlights von **v3.8.20 → v3.8.53**. Den vollständigen Verlauf finden Sie in [`CHANGELOG.md`](CHANGELOG.md).
 
 - **⚖️ `quota-weighted`-Routing** — die 20. Combo-Strategie überspringt Konten mit ausgeschöpftem Kontingent und wählt anschließend unter den übrigen proportional zum verbleibenden Kontingent ÷ laufender Last aus, wobei bestehende Unterhaltungen weiterhin fest zugeordnet bleiben. → [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **🧰 Headless-Modus** — `omniroute serve --headless` (oder `OMNIROUTE_HEADLESS=1`) führt ausschließlich die `/v1/*`-Proxy-Engine aus; das Dashboard und ausschließlich dafür benötigte Subsysteme bleiben deaktiviert. → [Headless-Modus](docs/guides/HEADLESS.md)
@@ -1819,7 +1819,7 @@ MIT-Lizenz – Details finden Sie unter [LICENSE](LICENSE).
 
 **[⬆ Zurück nach oben](#-omniroute)** · Mit ❤️ für die Open-Source-KI-Community entwickelt.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · MIT-Lizenz · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · MIT-Lizenz · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- GitHub Discussions für Fragen und Antworten der Community aktiviert -->

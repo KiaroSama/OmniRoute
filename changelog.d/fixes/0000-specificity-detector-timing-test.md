@@ -1,1 +1,0 @@
-- **test(sse):** the specificity detector's `<5ms for 20 messages` check measures the fastest of ten warm runs instead of one cold call, which a busy CI runner stretched to 5-18 ms in 4 of 32 PR Vitest jobs; the 5 ms bound is unchanged.

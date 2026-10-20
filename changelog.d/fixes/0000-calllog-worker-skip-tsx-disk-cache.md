@@ -1,1 +1,0 @@
-- **fix(logs):** in a source checkout (dev server, tests) the call-log artifact worker starts with `TSX_DISABLE_CACHE=1`: tsx lists its whole disk cache on a thread's first transform, and on a long-lived dev box (585k entries) the worker's first write waited 5-7 s on that listing instead of ~0.4 s. Compiled workers (npm, standalone, Docker) are unchanged.

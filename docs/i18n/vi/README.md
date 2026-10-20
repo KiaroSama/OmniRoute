@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                             |            v3.8.50             | **v3.8.51** |      `v3.8.52+`       |
+|                             |            v3.8.50             | **v3.8.51** |      `v3.8.53+`       |
 | --------------------------- | :----------------------------: | :---------: | :-------------------: |
 | 🌐 Nhà cung cấp             |              352               |   **358**   |          375          |
 | 🧠 ID mô hình chat duy nhất |              1320              |  **1374**   |         1475          |
@@ -578,7 +578,7 @@ Radar hoạt động theo cơ chế chọn tham gia và chỉ sử dụng GET. �
 
 </div>
 
-> Những điểm nổi bật gần đây từ **v3.8.20 → v3.8.52**. Xem toàn bộ lịch sử trong [`CHANGELOG.md`](CHANGELOG.md).
+> Những điểm nổi bật gần đây từ **v3.8.20 → v3.8.53**. Xem toàn bộ lịch sử trong [`CHANGELOG.md`](CHANGELOG.md).
 
 - **⚖️ Định tuyến `quota-weighted`** — chiến lược combo thứ 20 bỏ qua các tài khoản đã cạn hạn mức, sau đó chọn trong số còn lại theo tỷ lệ hạn mức còn dư ÷ tải đang xử lý, đồng thời giữ các cuộc hội thoại hiện có được ghim cố định. → [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **🧰 Chế độ headless** — `omniroute serve --headless` (hoặc `OMNIROUTE_HEADLESS=1`) chỉ chạy công cụ proxy `/v1/*`, đồng thời tắt bảng điều khiển và các hệ thống con chỉ dành cho bảng điều khiển. → [Chế độ Headless](docs/guides/HEADLESS.md)
@@ -1811,7 +1811,7 @@ Giấy phép MIT - xem [LICENSE](LICENSE) để biết chi tiết.
 
 **[⬆ Quay lại đầu trang](#-omniroute)** · Được xây dựng với ❤️ dành cho cộng đồng AI mã nguồn mở.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · Giấy phép MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · Giấy phép MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- GitHub Discussions được bật để cộng đồng hỏi đáp -->

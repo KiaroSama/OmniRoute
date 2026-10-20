@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                                  |           v3.8.50            | **v3.8.51** |       `v3.8.52+`        |
+|                                  |           v3.8.50            | **v3.8.51** |       `v3.8.53+`        |
 | -------------------------------- | :--------------------------: | :---------: | :---------------------: |
 | 🌐 Provedores                    |             352              |   **358**   |           375           |
 | 🧠 IDs únicos de modelos de chat |             1320             |  **1374**   |          1475           |
@@ -578,7 +578,7 @@ O Radar é opcional e usa apenas GET. O cliente OmniRoute não envia prompts, tr
 
 </div>
 
-> Destaques recentes da **v3.8.20 → v3.8.52**. Histórico completo em [`CHANGELOG.md`](CHANGELOG.md).
+> Destaques recentes da **v3.8.20 → v3.8.53**. Histórico completo em [`CHANGELOG.md`](CHANGELOG.md).
 
 - **⚖️ Roteamento `quota-weighted`** — a 20ª estratégia de combo ignora contas com cota esgotada e, depois, seleciona entre as restantes proporcionalmente à cota disponível ÷ carga em andamento, mantendo as conversas existentes fixadas. → [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **🧰 Modo headless** — `omniroute serve --headless` (ou `OMNIROUTE_HEADLESS=1`) executa somente o mecanismo de proxy `/v1/*`, com o dashboard e os subsistemas exclusivos do dashboard desativados. → [Modo Headless](docs/guides/HEADLESS.md)
@@ -1811,7 +1811,7 @@ Licença MIT — consulte [LICENSE](LICENSE) para mais detalhes.
 
 **[⬆ Voltar ao topo](#-omniroute)** · Feito com ❤️ para a comunidade de IA de código aberto.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · Licença MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · Licença MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- GitHub Discussions habilitado para perguntas e respostas da comunidade -->

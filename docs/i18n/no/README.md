@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                               |       v3.8.50        | **v3.8.51** |      `v3.8.52+`       |
+|                               |       v3.8.50        | **v3.8.51** |      `v3.8.53+`       |
 | ----------------------------- | :------------------: | :---------: | :-------------------: |
 | 🌐 Leverandører               |         352          |   **358**   |          375          |
 | 🧠 Unike chatmodell-ID-er     |         1320         |  **1374**   |         1475          |
@@ -587,7 +587,7 @@ den gjeldende katalogen på **[radar.omniroute.online/planos](https://radar.omni
 
 </div>
 
-> Nylige høydepunkter fra **v3.8.20 → v3.8.52**. Fullstendig historikk i [`CHANGELOG.md`](CHANGELOG.md).
+> Nylige høydepunkter fra **v3.8.20 → v3.8.53**. Fullstendig historikk i [`CHANGELOG.md`](CHANGELOG.md).
 
 - **⚖️ `quota-weighted`-ruting** — den 20. kombinasjonsstrategien hopper over kontoer med oppbrukt kvote og velger deretter blant resten proporsjonalt med gjenstående kvote ÷ pågående belastning, samtidig som eksisterende samtaler forblir festet. → [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **🧰 Hodeløs modus** — `omniroute serve --headless` (eller `OMNIROUTE_HEADLESS=1`) kjører bare `/v1/*`-proxymotoren, med kontrollpanelet og undersystemene som kun brukes av kontrollpanelet, slått av. → [Hodeløs modus](docs/guides/HEADLESS.md)
@@ -1820,7 +1820,7 @@ MIT-lisens – se [LICENSE](LICENSE) for detaljer.
 
 **[⬆ Tilbake til toppen](#-omniroute)** · Bygget med ❤️ for AI-fellesskapet med åpen kildekode.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · MIT-lisens · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · MIT-lisens · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- GitHub Discussions er aktivert for spørsmål og svar i fellesskapet -->

@@ -1,1 +1,0 @@
-- **test(logs):** the `upstream-error-call-log-16558` reader waits for the call-log save itself (`waitForCallLogSaves()`) instead of a fixed ~4 s poll, which the artifact worker's cold start outran on a loaded machine.
