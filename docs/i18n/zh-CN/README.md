@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                     |        v3.8.50        | **v3.8.51** |      `v3.8.52+`       |
+|                     |        v3.8.50        | **v3.8.51** |      `v3.8.53+`       |
 | ------------------- | :-------------------: | :---------: | :-------------------: |
 | 🌐 提供者           |          352          |   **358**   |          375          |
 | 🧠 唯一聊天模型 ID  |         1320          |  **1374**   |         1475          |
@@ -578,7 +578,7 @@ Radar 需主动选择启用，且仅使用 GET 请求。OmniRoute 客户端不�
 
 </div>
 
-> **v3.8.20 → v3.8.52** 的近期亮点。完整历史记录请参阅 [`CHANGELOG.md`](CHANGELOG.md)。
+> **v3.8.20 → v3.8.53** 的近期亮点。完整历史记录请参阅 [`CHANGELOG.md`](CHANGELOG.md)。
 
 - **⚖️ `quota-weighted` 路由** — 第 20 种组合策略会跳过配额已耗尽的账户，然后按照剩余配额 ÷ 进行中负载的比例从其余账户中抽取，同时保持现有对话固定到原账户。→ [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **🧰 无头模式** — `omniroute serve --headless`（或 `OMNIROUTE_HEADLESS=1`）仅运行 `/v1/*` 代理引擎，并关闭仪表板及仅供仪表板使用的子系统。→ [无头模式](docs/guides/HEADLESS.md)
@@ -1810,7 +1810,7 @@ MIT 许可证——详情请参阅 [LICENSE](LICENSE)。
 
 **[⬆ 返回顶部](#-omniroute)** · 用 ❤️ 为开源 AI 社区打造。
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · MIT 许可证 · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · MIT 许可证 · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- 已启用 GitHub Discussions，供社区问答 -->

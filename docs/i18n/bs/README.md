@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                                          |        v3.8.50        | **v3.8.51** |      `v3.8.52+`       |
+|                                          |        v3.8.50        | **v3.8.51** |      `v3.8.53+`       |
 | ---------------------------------------- | :-------------------: | :---------: | :-------------------: |
 | 🌐 Pružatelji usluga                     |          352          |   **358**   |          375          |
 | 🧠 Jedinstveni ID-ovi modela za razgovor |         1320          |  **1374**   |         1475          |
@@ -586,7 +586,7 @@ trenutnom katalogu na **[radar.omniroute.online/planos](https://radar.omniroute.
 
 </div>
 
-> Najnovije istaknute promjene od **v3.8.20 → v3.8.52**. Cijela historija dostupna je u [`CHANGELOG.md`](CHANGELOG.md).
+> Najnovije istaknute promjene od **v3.8.20 → v3.8.53**. Cijela historija dostupna je u [`CHANGELOG.md`](CHANGELOG.md).
 
 - **⚖️ `quota-weighted` usmjeravanje** — 20. kombinovana strategija preskače račune s iscrpljenom kvotom, a zatim bira među preostalima proporcionalno odnosu preostale kvote i trenutnog opterećenja, zadržavajući postojeće razgovore vezane za isti račun. → [Automatsko kombinovanje](docs/routing/AUTO-COMBO.md)
 - **🧰 Bezglavi način rada** — `omniroute serve --headless` (ili `OMNIROUTE_HEADLESS=1`) pokreće samo `/v1/*` proxy mehanizam, dok su kontrolna ploča i podsistemi namijenjeni isključivo njoj isključeni. → [Bezglavi način rada](docs/guides/HEADLESS.md)
@@ -1820,7 +1820,7 @@ MIT licenca – pogledajte [LICENSE](LICENSE) za detalje.
 
 **[⬆ Nazad na vrh](#-omniroute)** · Napravljeno s ❤️ za AI zajednicu otvorenog koda.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · MIT licenca · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · MIT licenca · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- GitHub Discussions je omogućen za pitanja i odgovore zajednice -->

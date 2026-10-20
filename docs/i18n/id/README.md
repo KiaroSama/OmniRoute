@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                               |         v3.8.50         | **v3.8.51** |      `v3.8.52+`       |
+|                               |         v3.8.50         | **v3.8.51** |      `v3.8.53+`       |
 | ----------------------------- | :---------------------: | :---------: | :-------------------: |
 | 🌐 Penyedia                   |           352           |   **358**   |          375          |
 | 🧠 ID model chat unik         |          1320           |  **1374**   |         1475          |
@@ -578,7 +578,7 @@ Radar bersifat pilihan dan hanya menggunakan GET. Klien OmniRoute tidak mengungg
 
 </div>
 
-> Sorotan terbaru dari **v3.8.20 → v3.8.52**. Riwayat lengkap tersedia di [`CHANGELOG.md`](CHANGELOG.md).
+> Sorotan terbaru dari **v3.8.20 → v3.8.53**. Riwayat lengkap tersedia di [`CHANGELOG.md`](CHANGELOG.md).
 
 - **⚖️ Perutean `quota-weighted`** — strategi kombo ke-20 melewati akun yang kuotanya telah habis, lalu memilih dari akun yang tersisa secara proporsional berdasarkan kuota tersisa ÷ beban yang sedang diproses, sembari mempertahankan percakapan yang ada tetap tersemat. → [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **🧰 Mode headless** — `omniroute serve --headless` (atau `OMNIROUTE_HEADLESS=1`) hanya menjalankan mesin proksi `/v1/*`, dengan dasbor dan subsistem khusus dasbor dinonaktifkan. → [Mode Headless](docs/guides/HEADLESS.md)
@@ -1811,7 +1811,7 @@ Lisensi MIT - lihat [LICENSE](LICENSE) untuk detailnya.
 
 **[⬆ Kembali ke atas](#-omniroute)** · Dibuat dengan ❤️ untuk komunitas AI sumber terbuka.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · Lisensi MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · Lisensi MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- GitHub Discussions diaktifkan untuk tanya jawab komunitas -->

@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                                |        v3.8.50         | **v3.8.51** |      `v3.8.52+`       |
+|                                |        v3.8.50         | **v3.8.51** |      `v3.8.53+`       |
 | ------------------------------ | :--------------------: | :---------: | :-------------------: |
 | 🌐 Leverantörer                |          352           |   **358**   |          375          |
 | 🧠 Unika chattmodell-ID:n      |          1320          |  **1374**   |         1475          |
@@ -586,7 +586,7 @@ den aktuella katalogen på **[radar.omniroute.online/planos](https://radar.omnir
 
 </div>
 
-> De senaste höjdpunkterna från **v3.8.20 → v3.8.52**. Fullständig historik finns i [`CHANGELOG.md`](CHANGELOG.md).
+> De senaste höjdpunkterna från **v3.8.20 → v3.8.53**. Fullständig historik finns i [`CHANGELOG.md`](CHANGELOG.md).
 
 - **⚖️ `quota-weighted`-dirigering** — den 20:e kombinationsstrategin hoppar över konton vars kvot är förbrukad och väljer sedan bland de återstående i proportion till återstående kvot ÷ pågående belastning, samtidigt som befintliga konversationer förblir bundna. → [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **🧰 Headless-läge** — `omniroute serve --headless` (eller `OMNIROUTE_HEADLESS=1`) kör endast proxymotorn för `/v1/*`, med instrumentpanelen och dess undersystem avstängda. → [Headless-läge](docs/guides/HEADLESS.md)
@@ -1819,7 +1819,7 @@ MIT-licens – se [LICENSE](LICENSE) för mer information.
 
 **[⬆ Tillbaka till toppen](#-omniroute)** · Byggd med ❤️ för AI-communityn kring öppen källkod.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · MIT-licens · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · MIT-licens · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- GitHub Discussions är aktiverat för frågor och svar i communityn -->

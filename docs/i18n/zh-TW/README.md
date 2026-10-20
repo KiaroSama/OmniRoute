@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                        |        v3.8.50        | **v3.8.51** |      `v3.8.52+`       |
+|                        |        v3.8.50        | **v3.8.51** |      `v3.8.53+`       |
 | ---------------------- | :-------------------: | :---------: | :-------------------: |
 | 🌐 提供者              |          352          |   **358**   |          375          |
 | 🧠 不重複的聊天模型 ID |         1320          |  **1374**   |         1475          |
@@ -578,7 +578,7 @@ Radar 採選擇加入制，且僅使用 GET。OmniRoute 用戶端不會上傳提
 
 </div>
 
-> **v3.8.20 → v3.8.52** 的近期亮點。完整歷史記錄請參閱 [`CHANGELOG.md`](CHANGELOG.md)。
+> **v3.8.20 → v3.8.53** 的近期亮點。完整歷史記錄請參閱 [`CHANGELOG.md`](CHANGELOG.md)。
 
 - **⚖️ `quota-weighted` 路由** — 第 20 種組合策略會略過配額已耗盡的帳戶，然後依剩餘配額 ÷ 處理中負載的比例，從其餘帳戶中抽選，同時讓現有對話固定於原帳戶。→ [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **🧰 無介面模式** — `omniroute serve --headless`（或 `OMNIROUTE_HEADLESS=1`）僅執行 `/v1/*` 代理引擎，並停用儀表板及僅供儀表板使用的子系統。→ [無介面模式](docs/guides/HEADLESS.md)
@@ -1810,7 +1810,7 @@ MIT 授權條款 - 詳情請參閱 [LICENSE](LICENSE)。
 
 **[⬆ 返回頂部](#-omniroute)** · 用 ❤️ 為開源 AI 社群打造。
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · MIT 授權條款 · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · MIT 授權條款 · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- 已啟用 GitHub Discussions，供社群問答使用 -->

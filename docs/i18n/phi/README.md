@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                                  |          v3.8.50          | **v3.8.51** |       `v3.8.52+`       |
+|                                  |          v3.8.50          | **v3.8.51** |       `v3.8.53+`       |
 | -------------------------------- | :-----------------------: | :---------: | :--------------------: |
 | 🌐 Mga provider                  |            352            |   **358**   |          375           |
 | 🧠 Mga natatanging chat model ID |           1320            |  **1374**   |          1475          |
@@ -578,7 +578,7 @@ Ang Radar ay opt-in at GET-only. Hindi nag-a-upload ang OmniRoute client ng mga 
 
 </div>
 
-> Mga kamakailang tampok mula **v3.8.20 → v3.8.52**. Nasa [`CHANGELOG.md`](CHANGELOG.md) ang buong kasaysayan.
+> Mga kamakailang tampok mula **v3.8.20 → v3.8.53**. Nasa [`CHANGELOG.md`](CHANGELOG.md) ang buong kasaysayan.
 
 - **⚖️ `quota-weighted` na pagruruta** — nilalaktawan ng ika-20 combo strategy ang mga account na naubusan na, pagkatapos ay pumipili mula sa natitira nang proporsyonal sa natitirang quota ÷ kasalukuyang load, habang pinananatiling naka-pin ang mga umiiral na pag-uusap. → [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **🧰 Headless mode** — pinapatakbo ng `omniroute serve --headless` (o `OMNIROUTE_HEADLESS=1`) ang `/v1/*` proxy engine lamang, habang naka-off ang dashboard at mga subsystem na para lamang sa dashboard. → [Headless Mode](docs/guides/HEADLESS.md)
@@ -1811,7 +1811,7 @@ Lisensyang MIT - tingnan ang [LICENSE](LICENSE) para sa mga detalye.
 
 **[⬆ Bumalik sa itaas](#-omniroute)** · Binuo nang may ❤️ para sa open-source na komunidad ng AI.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · Lisensyang MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · Lisensyang MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- Pinagana ang GitHub Discussions para sa mga tanong at sagot ng komunidad -->

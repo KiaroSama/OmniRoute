@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                         |          v3.8.50          | **v3.8.51** |      `v3.8.52+`       |
+|                         |          v3.8.50          | **v3.8.51** |      `v3.8.53+`       |
 | ----------------------- | :-----------------------: | :---------: | :-------------------: |
 | 🌐 제공업체             |            352            |   **358**   |          375          |
 | 🧠 고유 채팅 모델 ID    |           1320            |  **1374**   |         1475          |
@@ -578,7 +578,7 @@ Radar는 선택적으로 사용할 수 있으며 GET 전용입니다. OmniRoute 
 
 </div>
 
-> **v3.8.20 → v3.8.52**의 주요 업데이트입니다. 전체 변경 이력은 [`CHANGELOG.md`](CHANGELOG.md)에서 확인하세요.
+> **v3.8.20 → v3.8.53**의 주요 업데이트입니다. 전체 변경 이력은 [`CHANGELOG.md`](CHANGELOG.md)에서 확인하세요.
 
 - **⚖️ `quota-weighted` 라우팅** — 20번째 콤보 전략으로, 할당량을 소진한 계정을 제외한 다음 남은 계정 중 잔여 할당량 ÷ 처리 중인 부하에 비례해 선택하며 기존 대화는 동일한 계정에 고정합니다. → [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **🧰 헤드리스 모드** — `omniroute serve --headless`(또는 `OMNIROUTE_HEADLESS=1`)는 대시보드와 대시보드 전용 하위 시스템을 끄고 `/v1/*` 프록시 엔진만 실행합니다. → [헤드리스 모드](docs/guides/HEADLESS.md)
@@ -1810,7 +1810,7 @@ MIT 라이선스 - 자세한 내용은 [LICENSE](LICENSE)를 참조하세요.
 
 **[⬆ 맨 위로 돌아가기](#-omniroute)** · 오픈 소스 AI 커뮤니티를 위해 ❤️를 담아 만들었습니다.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · MIT 라이선스 · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · MIT 라이선스 · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- 커뮤니티 Q&A를 위해 GitHub Discussions가 활성화되어 있습니다 -->

@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                                   |         v3.8.50         | **v3.8.51** |      `v3.8.52+`       |
+|                                   |         v3.8.50         | **v3.8.51** |      `v3.8.53+`       |
 | --------------------------------- | :---------------------: | :---------: | :-------------------: |
 | 🌐 Poskytovatelé                  |           352           |   **358**   |          375          |
 | 🧠 Unikátní ID chatovacích modelů |          1320           |  **1374**   |         1475          |
@@ -1818,7 +1818,7 @@ Licence MIT – podrobnosti naleznete v souboru [LICENSE](LICENSE).
 
 **[⬆ Zpět nahoru](#-omniroute)** · Vytvořeno s ❤️ pro open-source AI komunitu.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · Licence MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · Licence MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- GitHub Discussions jsou povoleny pro komunitní otázky a odpovědi -->

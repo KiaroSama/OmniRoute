@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                                           |          v3.8.50          | **v3.8.51** |      `v3.8.52+`       |
+|                                           |          v3.8.50          | **v3.8.51** |      `v3.8.53+`       |
 | ----------------------------------------- | :-----------------------: | :---------: | :-------------------: |
 | 🌐 Provayderlar                           |            352            |   **358**   |          375          |
 | 🧠 Noyob chat modeli ID’lari              |           1320            |  **1374**   |         1475          |
@@ -578,7 +578,7 @@ Radar ixtiyoriy ravishda yoqiladi va faqat GET so‘rovlaridan foydalanadi. Omni
 
 </div>
 
-> **v3.8.20 → v3.8.52** versiyalaridagi soʻnggi muhim yangiliklar. Toʻliq tarix [`CHANGELOG.md`](CHANGELOG.md) faylida.
+> **v3.8.20 → v3.8.53** versiyalaridagi soʻnggi muhim yangiliklar. Toʻliq tarix [`CHANGELOG.md`](CHANGELOG.md) faylida.
 
 - **⚖️ `quota-weighted` marshrutlash** — 20-kombinatsiya strategiyasi kvotasi tugagan hisoblarni oʻtkazib yuboradi, soʻng qolganlari orasidan qoldiq kvota ÷ bajarilayotgan yuk nisbatiga mutanosib ravishda tanlaydi va mavjud suhbatlarni biriktirilgan holda saqlaydi. → [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **🧰 Interfeyssiz rejim** — `omniroute serve --headless` (yoki `OMNIROUTE_HEADLESS=1`) faqat `/v1/*` proksi mexanizmini ishga tushiradi, boshqaruv paneli va faqat unga tegishli quyi tizimlar esa oʻchiriladi. → [Interfeyssiz rejim](docs/guides/HEADLESS.md)
@@ -1810,7 +1810,7 @@ MIT litsenziyasi — batafsil maʼlumot uchun [LICENSE](LICENSE) fayliga qarang.
 
 **[⬆ Yuqoriga qaytish](#-omniroute)** · Ochiq kodli sunʼiy intellekt hamjamiyati uchun ❤️ bilan yaratildi.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · MIT litsenziyasi · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · MIT litsenziyasi · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- Hamjamiyatning savol-javoblari uchun GitHub Discussions yoqilgan -->
