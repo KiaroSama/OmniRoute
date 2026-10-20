@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                                       |         v3.8.50          | **v3.8.51** |      `v3.8.52+`       |
+|                                       |         v3.8.50          | **v3.8.51** |      `v3.8.53+`       |
 | ------------------------------------- | :----------------------: | :---------: | :-------------------: |
 | 🌐 Sağlayıcılar                       |           352            |   **358**   |          375          |
 | 🧠 Benzersiz sohbet modeli kimlikleri |           1320           |  **1374**   |         1475          |
@@ -578,7 +578,7 @@ Radar isteğe bağlıdır ve yalnızca GET kullanır. OmniRoute istemcisi isteml
 
 </div>
 
-> **v3.8.20 → v3.8.52** sürümlerindeki son önemli yenilikler. Geçmişin tamamı [`CHANGELOG.md`](CHANGELOG.md) dosyasında.
+> **v3.8.20 → v3.8.53** sürümlerindeki son önemli yenilikler. Geçmişin tamamı [`CHANGELOG.md`](CHANGELOG.md) dosyasında.
 
 - **⚖️ `quota-weighted` yönlendirme** — 20. kombinasyon stratejisi, kotası tükenen hesapları atlar ve ardından kalanlar arasından kalan kota ÷ devam eden yük oranına göre seçim yaparken mevcut konuşmaları sabit tutar. → [Otomatik Kombinasyon](docs/routing/AUTO-COMBO.md)
 - **🧰 Başsız mod** — `omniroute serve --headless` (veya `OMNIROUTE_HEADLESS=1`), kontrol paneli ve yalnızca kontrol paneline özgü alt sistemler kapalıyken sadece `/v1/*` proxy motorunu çalıştırır. → [Başsız Mod](docs/guides/HEADLESS.md)

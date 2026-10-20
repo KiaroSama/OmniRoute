@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                                         |          v3.8.50          | **v3.8.51** |      `v3.8.52+`       |
+|                                         |          v3.8.50          | **v3.8.51** |      `v3.8.53+`       |
 | --------------------------------------- | :-----------------------: | :---------: | :-------------------: |
 | 🌐 Dostawcy                             |            352            |   **358**   |          375          |
 | 🧠 Unikalne identyfikatory modeli czatu |           1320            |  **1374**   |         1475          |
@@ -587,7 +587,7 @@ aktualnym katalogu znajdziesz na stronie **[radar.omniroute.online/planos](https
 
 </div>
 
-> Najważniejsze zmiany od **v3.8.20 → v3.8.52**. Pełna historia znajduje się w [`CHANGELOG.md`](CHANGELOG.md).
+> Najważniejsze zmiany od **v3.8.20 → v3.8.53**. Pełna historia znajduje się w [`CHANGELOG.md`](CHANGELOG.md).
 
 - **⚖️ Routing `quota-weighted`** — 20. strategia combo pomija konta z wyczerpanym limitem, a następnie wybiera spośród pozostałych proporcjonalnie do pozostałego limitu ÷ bieżącego obciążenia, zachowując przypisanie istniejących konwersacji. → [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **🧰 Tryb bez interfejsu** — `omniroute serve --headless` (lub `OMNIROUTE_HEADLESS=1`) uruchamia wyłącznie silnik proxy `/v1/*`, z wyłączonym panelem i podsystemami używanymi tylko przez panel. → [Tryb bez interfejsu](docs/guides/HEADLESS.md)
@@ -1819,7 +1819,7 @@ Licencja MIT — szczegółowe informacje znajdziesz w pliku [LICENSE](LICENSE).
 
 **[⬆ Powrót na górę](#-omniroute)** · Stworzone z ❤️ dla społeczności open source zajmującej się AI.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · Licencja MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · Licencja MIT · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- GitHub Discussions włączone na potrzeby pytań i odpowiedzi społeczności -->

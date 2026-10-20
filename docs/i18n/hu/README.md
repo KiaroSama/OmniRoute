@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                                    |          v3.8.50           | **v3.8.51** |      `v3.8.52+`       |
+|                                    |          v3.8.50           | **v3.8.51** |      `v3.8.53+`       |
 | ---------------------------------- | :------------------------: | :---------: | :-------------------: |
 | 🌐 Szolgáltatók                    |            352             |   **358**   |          375          |
 | 🧠 Egyedi csevegőmodell-azonosítók |            1320            |  **1374**   |         1475          |
@@ -578,7 +578,7 @@ A Radar használata opcionális, és kizárólag GET-kéréseket alkalmaz. Az Om
 
 </div>
 
-> A **v3.8.20 → v3.8.52** verziók legfontosabb újdonságai. A teljes előzmény a [`CHANGELOG.md`](CHANGELOG.md) fájlban található.
+> A **v3.8.20 → v3.8.53** verziók legfontosabb újdonságai. A teljes előzmény a [`CHANGELOG.md`](CHANGELOG.md) fájlban található.
 
 - **⚖️ `quota-weighted` útválasztás** — a 20. kombinált stratégia kihagyja a kimerített fiókokat, majd a fennmaradókból a megmaradt kvóta ÷ folyamatban lévő terhelés arányában választ, miközben a meglévő beszélgetéseket a kiválasztott útvonalon tartja. → [Automatikus kombináció](docs/routing/AUTO-COMBO.md)
 - **🧰 Headless mód** — az `omniroute serve --headless` (vagy az `OMNIROUTE_HEADLESS=1`) csak a `/v1/*` proxymotort futtatja, az irányítópult és a kizárólag ahhoz tartozó alrendszerek nélkül. → [Headless mód](docs/guides/HEADLESS.md)
@@ -1810,7 +1810,7 @@ MIT-licenc – a részletekért lásd: [LICENSE](LICENSE).
 
 **[⬆ Vissza a tetejére](#-omniroute)** · ❤️-vel készült a nyílt forráskódú MI-közösség számára.
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · MIT-licenc · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · MIT-licenc · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- A GitHub Discussions engedélyezve van a közösségi kérdésekhez és válaszokhoz -->

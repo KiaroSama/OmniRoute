@@ -69,7 +69,7 @@
 
 <div align="center">
 
-|                                 |          v3.8.50          | **v3.8.51** |      `v3.8.52+`       |
+|                                 |          v3.8.50          | **v3.8.51** |      `v3.8.53+`       |
 | ------------------------------- | :-----------------------: | :---------: | :-------------------: |
 | 🌐 プロバイダー                 |            352            |   **358**   |          375          |
 | 🧠 一意のチャットモデル ID      |           1320            |  **1374**   |         1475          |
@@ -578,7 +578,7 @@ Radarはオプトイン方式で、GETリクエストのみを使用します。
 
 </div>
 
-> **v3.8.20 → v3.8.52** の最近のハイライトです。完全な履歴は [`CHANGELOG.md`](CHANGELOG.md) をご覧ください。
+> **v3.8.20 → v3.8.53** の最近のハイライトです。完全な履歴は [`CHANGELOG.md`](CHANGELOG.md) をご覧ください。
 
 - **⚖️ `quota-weighted` ルーティング** — 20番目のコンボ戦略では、クォータを使い切ったアカウントを除外し、残りのアカウントから「残存クォータ ÷ 処理中の負荷」に比例して選択します。既存の会話は同じアカウントに固定されます。 → [Auto-Combo](docs/routing/AUTO-COMBO.md)
 - **🧰 ヘッドレスモード** — `omniroute serve --headless`（または `OMNIROUTE_HEADLESS=1`）は `/v1/*` プロキシエンジンのみを実行し、ダッシュボードとダッシュボード専用サブシステムを無効にします。 → [ヘッドレスモード](docs/guides/HEADLESS.md)
@@ -1811,7 +1811,7 @@ MIT License - 詳細は [LICENSE](LICENSE) をご覧ください。
 
 **[⬆ トップに戻る](#-omniroute)** · オープンソースAIコミュニティのために❤️を込めて開発されています。
 
-<sub>OmniRoute v3.8.52 · Node ≥22.22.2 · MIT License · <a href="https://omniroute.online">omniroute.online</a></sub>
+<sub>OmniRoute v3.8.53 · Node ≥22.22.2 · MIT License · <a href="https://omniroute.online">omniroute.online</a></sub>
 
 </div>
 <!-- コミュニティのQ&A向けにGitHub Discussionsが有効化されています -->
