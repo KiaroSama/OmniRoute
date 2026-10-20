@@ -184,6 +184,16 @@ function resolveModelPricing(
   return resolved;
 }
 
+function getPriceableTokens(row: Record<string, unknown>): Record<string, number> {
+  return {
+    input: toNumber(row.costPromptTokens ?? row.promptTokens),
+    output: toNumber(row.costCompletionTokens ?? row.completionTokens),
+    cacheRead: toNumber(row.costCacheReadTokens ?? row.cacheReadTokens),
+    cacheCreation: toNumber(row.costCacheCreationTokens ?? row.cacheCreationTokens),
+    reasoning: toNumber(row.costReasoningTokens ?? row.reasoningTokens),
+  };
+}
+
 export function computeUsageRowCost(
   row: Record<string, unknown>,
   pricingByProvider: PricingByProvider,
@@ -223,22 +233,12 @@ export function computeUsageRowCost(
 
   return (
     rawStoredCost +
-    computeCostFromPricing(
-      pricing,
-      {
-        input: toNumber(row.costPromptTokens ?? row.promptTokens),
-        output: toNumber(row.costCompletionTokens ?? row.completionTokens),
-        cacheRead: toNumber(row.costCacheReadTokens ?? row.cacheReadTokens),
-        cacheCreation: toNumber(row.costCacheCreationTokens ?? row.cacheCreationTokens),
-        reasoning: toNumber(row.costReasoningTokens ?? row.reasoningTokens),
-      },
-      {
-        provider,
-        model,
-        serviceTier,
-        flatRateAsZero,
-      }
-    )
+    computeCostFromPricing(pricing, getPriceableTokens(row), {
+      provider,
+      model,
+      serviceTier,
+      flatRateAsZero,
+    })
   );
 }
 
