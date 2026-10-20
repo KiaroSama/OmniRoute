@@ -20,10 +20,7 @@ import {
 // Import from the server-free constants leaf, NOT from `@/server/authz/routeGuard`:
 // this schema is reachable from client components (dashboard onboarding wizard), and
 // routeGuard drags in server runtime (→ ioredis) that breaks the client/CLI build.
-import {
-  SPAWN_CAPABLE_PREFIXES,
-  SPAWN_CAPABLE_PATTERN_ANCESTORS,
-} from "@/shared/constants/spawnCapablePrefixes";
+import { isSpawnCapableBypassPrefix } from "@/shared/constants/spawnCapablePrefixes";
 import { isHttpUrl } from "@/shared/validation/schemas/misc";
 
 const signatureCacheModeValues = ["enabled", "bypass", "bypass-strict"] as const;
@@ -197,11 +194,13 @@ export const updateSettingsSchema = z.object({
   showProviderTopologyOnHome: z.boolean().optional(),
   localOnlyManageScopeBypassEnabled: z.boolean().optional(),
   // Layer 1 of the spawn-capable guard (Hard Rules #15/#17): reject any bypass
-  // prefix that reaches a SPAWN_CAPABLE_PREFIXES path, or a
+  // prefix that overlaps a SPAWN_CAPABLE_PREFIXES path or a
   // SPAWN_CAPABLE_PATTERN_ANCESTORS ancestor (e.g. /api/providers/, the
   // shared ancestor of the dynamic-segment routes in SPAWN_CAPABLE_PATTERNS
-  // such as /login and /refresh-cursor), at PATCH time, with the
-  // BYPASS_PREFIX_NOT_ALLOWED code the settings route handler translates.
+  // such as /login and /refresh-cursor) — as a child OR as a covering parent —
+  // at PATCH time, with the BYPASS_PREFIX_NOT_ALLOWED code the settings route
+  // handler translates. Same predicate as the runtime layers
+  // (isSpawnCapableBypassPrefix), so the three checks cannot drift apart.
   // Layer 2 (isLocalOnlyBypassableByManageScope) still refuses spawn paths at
   // runtime even if a malformed DB row claims otherwise. This refine was in the
   // routeGuard.ts contract docs but missing from the live schema — restored by
@@ -211,19 +210,10 @@ export const updateSettingsSchema = z.object({
       z
         .string()
         .max(200)
-        .refine(
-          (prefix) => {
-            const normalized = prefix.endsWith("/") ? prefix : `${prefix}/`;
-            return (
-              !SPAWN_CAPABLE_PREFIXES.some((sp) => normalized.startsWith(sp)) &&
-              !SPAWN_CAPABLE_PATTERN_ANCESTORS.some((sp) => normalized.startsWith(sp))
-            );
-          },
-          {
-            message:
-              "BYPASS_PREFIX_NOT_ALLOWED: spawn-capable prefixes cannot be added to the manage-scope bypass list",
-          }
-        )
+        .refine((prefix) => !isSpawnCapableBypassPrefix(prefix.trim()), {
+          message:
+            "BYPASS_PREFIX_NOT_ALLOWED: spawn-capable prefixes cannot be added to the manage-scope bypass list",
+        })
     )
     .optional(),
   customBannedSignals: z.array(z.string().max(200)).optional(),
@@ -617,11 +607,16 @@ export const databaseSettingsSchema = z
       quotaSnapshots: z.number().int().min(1).max(3650), // Max 10 years
       compressionAnalytics: z.number().int().min(1).max(365),
       mcpAudit: z.number().int().min(1).max(365),
+      configAudit: z.number().int().min(1).max(365).optional(),
       a2aEvents: z.number().int().min(1).max(365),
       callLogs: z.number().int().min(1).max(3650),
+      conversationTurnNodes: z.number().int().min(1).max(3650).optional(),
       usageHistory: z.number().int().min(1).max(3650),
       memoryEntries: z.number().int().min(1).max(3650),
+      domainCostHistory: z.number().int().min(1).max(365).optional(),
+      compressionCacheStats: z.number().int().min(1).max(365).optional(),
       xpAuditLog: z.number().int().min(1).max(365),
+      compressionRunTelemetry: z.number().int().min(1).max(365).optional(),
       autoCleanupEnabled: z.boolean(),
     }),
 

@@ -17,6 +17,7 @@ import {
   getAccountCostRows,
   getAccountUsageRows,
   getApiKeyUsageRows,
+  getApiKeyTotalsRows,
   getServiceTierUsageRows,
   getApiKeyMetadataRows,
   getWeeklyPatternRows,
@@ -35,6 +36,12 @@ import {
   type PricingResolutionContext,
 } from "@/lib/usage/analyticsPricing";
 import { getCachedInputAnalytics } from "@/lib/db/cachedInputAnalytics";
+import {
+  addApiKeyAlias,
+  buildApiKeyTotals,
+  buildApiKeyUsage,
+  makeApiKeyUsageGroup,
+} from "@/lib/usage/analyticsApiKeys";
 
 function getRangeStartIso(range: string): string | null {
   const end = new Date();
@@ -77,16 +84,6 @@ type PricingByProvider = Record<string, Record<string, Record<string, unknown>>>
 type UsageRows = Array<Record<string, unknown>>;
 function appendWhereCondition(whereClause: string, condition: string): string {
   return whereClause ? `${whereClause} AND (${condition})` : `WHERE (${condition})`;
-}
-
-function makeApiKeyUsageGroup(apiKeyId: string, fallbackName: string): string {
-  return apiKeyId ? `id:${apiKeyId}` : `name:${fallbackName}`;
-}
-
-function addApiKeyAlias(target: Set<string>, value: unknown): void {
-  if (typeof value !== "string") return;
-  const trimmed = value.trim();
-  if (trimmed) target.add(trimmed);
 }
 
 function formatUtcDate(date: Date): string {
@@ -220,6 +217,28 @@ async function computeAnalyticsResponse(
       ...(misses ? { misses } : {}),
     };
 
+    const apiKeyWhereClause = appendWhereCondition(
+      whereClause,
+      "(api_key_id IS NOT NULL AND api_key_id != '') OR (api_key_name IS NOT NULL AND api_key_name != '')"
+    );
+    if (searchParams.get("view") === "apiKeys") {
+      const byApiKey = buildApiKeyTotals(
+        getApiKeyTotalsRows(apiKeyWhereClause, params),
+        apiKeys,
+        (row) =>
+          computeUsageRowCost(
+            row as unknown as Record<string, unknown>,
+            pricingByProvider,
+            PROVIDER_ID_TO_ALIAS,
+            normalizeModelName,
+            computeCostFromPricing,
+            !includeFlatRateEstimates,
+            pricingContext
+          )
+      );
+      return NextResponse.json({ byApiKey });
+    }
+
     const summaryRow = getUsageSummary(unifiedSource, unifiedParams) as Record<string, unknown>;
 
     const dailyRows = getDailyUsage(unifiedSource, unifiedParams) as UsageRows;
@@ -260,10 +279,6 @@ async function computeAnalyticsResponse(
 
     const accountRows = getAccountUsageRows(accountCostWhereClause, params) as UsageRows;
 
-    const apiKeyWhereClause = appendWhereCondition(
-      whereClause,
-      "(api_key_id IS NOT NULL AND api_key_id != '') OR (api_key_name IS NOT NULL AND api_key_name != '')"
-    );
     const apiKeyRows = getApiKeyUsageRows(apiKeyWhereClause, params) as UsageRows;
 
     const serviceTierRows = getServiceTierUsageRows(unifiedSource, unifiedParams) as UsageRows;
@@ -519,48 +534,8 @@ async function computeAnalyticsResponse(
       cost: roundCost(accountCostByAccount.get(toStringValue(row.accountKey, "unknown")) || 0),
     }));
 
-    const apiKeyMap = new Map<
-      string,
-      {
-        apiKey: string;
-        apiKeyId: string | null;
-        apiKeyName: string;
-        historicalApiKeyNames: string[];
-        requests: number;
-        promptTokens: number;
-        completionTokens: number;
-        totalTokens: number;
-        cost: number;
-      }
-    >();
-    for (const row of apiKeyRows) {
-      const apiKeyId = toStringValue(row.apiKeyId);
-      const apiKeyGroupKey = toStringValue(row.apiKeyGroupKey, "unknown");
-      const key = makeApiKeyUsageGroup(apiKeyId, apiKeyGroupKey);
-      const metadata = apiKeyMetadata.get(key);
-      const apiKeyName =
-        (apiKeyId ? currentApiKeyNames.get(apiKeyId) : undefined) ||
-        metadata?.latestName ||
-        apiKeyId ||
-        apiKeyGroupKey ||
-        "Unknown API key";
-      const existing = apiKeyMap.get(key) || {
-        apiKey: apiKeyId && apiKeyName !== apiKeyId ? `${apiKeyName} (${apiKeyId})` : apiKeyName,
-        apiKeyId: apiKeyId || null,
-        apiKeyName,
-        historicalApiKeyNames: Array.from(metadata?.aliases || []),
-        requests: 0,
-        promptTokens: 0,
-        completionTokens: 0,
-        totalTokens: 0,
-        cost: 0,
-      };
-
-      existing.requests += Number(row.requests);
-      existing.promptTokens += Number(row.promptTokens);
-      existing.completionTokens += Number(row.completionTokens);
-      existing.totalTokens += Number(row.totalTokens);
-      existing.cost += computeUsageRowCost(
+    const byApiKey = buildApiKeyUsage(apiKeyRows, apiKeyMetadata, currentApiKeyNames, (row) =>
+      computeUsageRowCost(
         row,
         pricingByProvider,
         PROVIDER_ID_TO_ALIAS,
@@ -568,12 +543,8 @@ async function computeAnalyticsResponse(
         computeCostFromPricing,
         !includeFlatRateEstimates,
         pricingContext
-      );
-      apiKeyMap.set(key, existing);
-    }
-    const byApiKey = Array.from(apiKeyMap.values())
-      .map((row) => ({ ...row, cost: roundCost(row.cost) }))
-      .sort((left, right) => right.cost - left.cost);
+      )
+    );
 
     const serviceTierMap = new Map<
       string,

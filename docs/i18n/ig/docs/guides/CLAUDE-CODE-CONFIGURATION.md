@@ -93,9 +93,9 @@ naanị ụdịdị Kimi ka a ga-egosipụta.
 
 ---
 
-## Ngalaba nnabata na dashboard
+## Nkwado mbido na dashboard
 
-Kaadị ngwáọrụ Claude (**Dashboard → CLI Code**) na-egosipụta kpọmkwem iberibe `settings.json`
+Kaadị ngwaọrụ Claude (**Dashboard → CLI Code**) na-egosipụta kpọmkwem akụkụ `settings.json`
 maka instance a, n'akụkụ bọtịnụ ozi discovery-alias, yana bọtịnụ idetuo:
 
 ```jsonc
@@ -108,18 +108,32 @@ maka instance a, n'akụkụ bọtịnụ ozi discovery-alias, yana bọtịnụ
 }
 ```
 
-URL ntọala ahụ bụ nke kaadị ahụ chọpụtara (gụnyere override ahaziri iche nke ị pịnyere), nke
-emelarị ka ọ bụrụ otu ụkpụrụ — enweghị mgbakwunye `/v1`, enweghị slash n'azụ. **A naghị egosipụta key ahụ ma ọlị**: ngalaba ahụ na-eji
-placeholder abịa, ya mere screenshot ma ọ bụ snippet e tinyere enweghị ike ikpughe ya. Dochie ya na key gị.
+URL ntọala bụ nke kaadị ahụ chọpụtara (gụnyere nhazi omenala i tinyere), nke ahazilarị nke ọma
+— enweghị suffix `/v1`, enweghị slash n'azụ. **A naghị egosipụta key ahụ ma ọlị**: block ahụ na-eji
+placeholder abịa, ya mere screenshot ma ọ bụ snippet e nyefere agaghị ekpughe ya. Tapawa key gị n'ọnọdụ ya.
 
-Tinye `CLAUDE_CODE_AUTO_COMPACT_WINDOW` n'okpuru otu ngalaba `env` ahụ maka model ọ bụla nke ezigbo
-context window ya na-abụghị 200K — Claude Code na-ewere na ọ bụ 200K maka id ọ bụla ọ na-amaghị, ya mere
-auto-compaction ga-eme n'ebe na-ekwesịghị ekwesị ma ọ bụghị ya (lee ịdọ aka ná ntị dị na ngalaba gara aga).
-Onye na-ewu snippet na-anabatakwa value ahụ, ya mere caller maara window nke model a na-achọ
-nwere ike iwepụta ya ozugbo.
+Tinye `CLAUDE_CODE_AUTO_COMPACT_WINDOW` n'okpuru otu block `env` ahụ maka model ọ bụla nke ezigbo
+context window ya na-abụghị 200K — Claude Code na-ewere na id ọ bụla ọ na-amataghị nwere 200K, ya mere
+auto-compaction ga-eme n'oge na-ekwesịghị ekwesị ma ọ bụghị ya (lee ịdọ aka ná ntị dị na ngalaba gara aga).
+Onye na-ewu snippet ahụ na-anabatakwa uru ahụ, ya mere onye na-akpọ ya nke maara window nke model ezubere
+iche nwere ike iwepụta ya ozugbo.
 
 Isi mmalite: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (builder dị ọcha,
 nke e ji unit test nwalee) nke `ClaudeGatewayOnboardingBlock` na-egosipụta.
+
+### Kpọchie otu akaụntụ (nhọrọ)
+
+Iji zipụ arịrịọ Claude Code niile site n'otu akaụntụ provider akọwapụtara, tinye header
+`x-omniroute-connection` site na `ANTHROPIC_CUSTOM_HEADERS` n'ime otu block `env` ahụ:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Detuo id ahụ site na chip `xxxxxxxx…` dị n'ahịrị connection na peeji provider ahụ. Mkpọchi ahụ na-emetụta
+naanị id nke otu model (`provider/model`), ọ bụghị combo. Lee
+[Ịkpọchi akaụntụ maka arịrịọ ọ bụla](../reference/API_REFERENCE.md#account-pinning-per-request) maka
+omume fallback ya kpọmkwem.
 
 ---
 

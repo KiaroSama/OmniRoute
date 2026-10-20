@@ -101,23 +101,33 @@ olduğunda yalnızca Kimi'nin modelleri gösterilir.
 
 ## Kontrol panelindeki ilk kullanım bloğu
 
-Claude araç kartı (**Kontrol Paneli → CLI Code**), kopyalama düğmesiyle birlikte keşif takma adı bilgi düğmesinin yanında bu örneğe ait tam `settings.json` parçasını görüntüler:
+Claude araç kartı (**Kontrol Paneli → CLI Code**), bu örneğe ait tam `settings.json` parçasını keşif takma adı bilgi düğmesinin yanında bir kopyalama düğmesiyle birlikte görüntüler:
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<your OmniRoute>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<your OmniRoute API key>",
+    "ANTHROPIC_BASE_URL": "http://<OmniRoute adresiniz>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<OmniRoute API anahtarınız>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-Temel URL, kart tarafından çözümlenen URL'dir (yazdığınız özel geçersiz kılma değeri dahil) ve önceden normalleştirilmiştir — `/v1` son eki veya sonda eğik çizgi içermez. **Anahtar hiçbir zaman görüntülenmez**: blok bir yer tutucuyla sunulur; dolayısıyla ekran görüntüsü veya yapıştırılmış bir kod parçası anahtarı sızdıramaz. Kendi anahtarınızı bunun üzerine yapıştırın.
+Temel URL, kart tarafından çözümlenen URL'dir (yazdığınız özel geçersiz kılma değeri dâhil) ve önceden normalleştirilmiştir — `/v1` son eki ve sonda eğik çizgi yoktur. **Anahtar hiçbir zaman görüntülenmez**: blok bir yer tutucuyla sunulur; böylece ekran görüntüsü veya yapıştırılan bir kod parçası anahtarı sızdıramaz. Yer tutucunun üzerine anahtarınızı yapıştırın.
 
-Gerçek bağlam penceresi 200K olmayan tüm modeller için aynı `env` bloğunun altına `CLAUDE_CODE_AUTO_COMPACT_WINDOW` ekleyin — Claude Code, tanımadığı her kimlik için 200K varsayar; bu nedenle otomatik sıkıştırma aksi takdirde yanlış noktada devreye girer (önceki bölümdeki uyarıya bakın). Kod parçası oluşturucu da bu değeri kabul eder; böylece hedef modelin pencere boyutunu bilen bir çağıran, değeri doğrudan oluşturabilir.
+Gerçek bağlam penceresi 200K olmayan tüm modeller için aynı `env` bloğunun altına `CLAUDE_CODE_AUTO_COMPACT_WINDOW` ekleyin — Claude Code, tanımadığı her kimlik için 200K varsayar; dolayısıyla aksi hâlde otomatik sıkıştırma yanlış noktada tetiklenir (önceki bölümdeki uyarıya bakın). Kod parçası oluşturucu da bu değeri kabul eder; böylece hedef modelin bağlam penceresini bilen bir çağıran, bu değeri doğrudan üretebilir.
 
-Kaynak: `ClaudeGatewayOnboardingBlock` tarafından görüntülenen `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (saf oluşturucu, birim testli).
+Kaynak: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (saf oluşturucu, birim testli); `ClaudeGatewayOnboardingBlock` tarafından görüntülenir.
+
+### Tek bir hesabı sabitleme (isteğe bağlı)
+
+Her Claude Code isteğini belirli bir sağlayıcı hesabı üzerinden göndermek için aynı `env` bloğunda `ANTHROPIC_CUSTOM_HEADERS` aracılığıyla `x-omniroute-connection` üstbilgisini ekleyin:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Kimliği, sağlayıcı sayfasındaki bağlantı satırında bulunan `xxxxxxxx…` çipinden kopyalayın. Sabitleme yalnızca tek modelli kimlikler (`provider/model`) için geçerlidir, kombinasyonlar için geçerli değildir. Tam geri dönüş davranışı için [İstek başına hesap sabitleme](../reference/API_REFERENCE.md#account-pinning-per-request) bölümüne bakın.
 
 ---
 

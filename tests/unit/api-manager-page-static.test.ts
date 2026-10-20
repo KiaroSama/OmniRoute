@@ -107,6 +107,15 @@ test("API manager page renders purpose-first header", () => {
   assert.match(headerBlock, /\{t\("createKey"\)\}/);
 });
 
+test("API manager loads per-key usage from the lightweight totals view", () => {
+  const source = readApiManagerPage();
+
+  // The full analytics report blocks the server for seconds on large usage histories.
+  assert.match(source, /fetch\("\/api\/usage\/analytics\?range=all&view=apiKeys"\)/);
+  assert.doesNotMatch(source, /\/api\/usage\/analytics\?range=all"/);
+  assert.doesNotMatch(source, /\/api\/usage\/call-logs/);
+});
+
 test("general tab converts API key expiration ISO timestamps to local datetime input values", () => {
   const source = readGeneralTab();
   const expirationBlock = source.slice(

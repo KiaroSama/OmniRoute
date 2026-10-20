@@ -95,30 +95,45 @@ modelo lamang ng Kimi ang inilalantad.
 ## Block ng onboarding sa dashboard
 
 Ipinapakita ng card ng Claude tool (**Dashboard → CLI Code**) ang eksaktong fragment ng `settings.json`
-para sa instance na ito, katabi ng button ng impormasyon para sa discovery alias, kasama ang isang button para kumopya:
+para sa instance na ito, katabi ng button ng impormasyon tungkol sa discovery alias, kasama ang isang button para kumopya:
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<iyong OmniRoute>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<iyong OmniRoute API key>",
+    "ANTHROPIC_BASE_URL": "http://<your OmniRoute>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<your OmniRoute API key>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-Ang base URL ay ang ni-resolve ng card (kabilang ang custom override na inilagay mo), at naka-normalize na
-— walang `/v1` suffix at walang trailing slash. **Hindi kailanman ipinapakita ang key**: placeholder ang
-kasama sa block, kaya hindi ito maaaring malantad sa screenshot o na-paste na snippet. Palitan ito ng iyong key.
+Ang base URL ang siyang ni-resolve ng card (kabilang ang custom override na inilagay mo) at
+na-normalize na — walang `/v1` suffix at walang trailing slash. **Hindi kailanman ipinapakita ang key**:
+placeholder ang kasama sa block, kaya hindi ito maaaring mailantad ng screenshot o na-paste na snippet.
+I-paste ang iyong key kapalit nito.
 
-Idagdag ang `CLAUDE_CODE_AUTO_COMPACT_WINDOW` sa ilalim ng parehong `env` block para sa anumang model na ang tunay
-na context window ay hindi 200K — ipinapalagay ng Claude Code na 200K ang bawat id na hindi nito nakikilala, kaya
-kung hindi ay magti-trigger ang auto-compaction sa maling punto (tingnan ang babala sa nakaraang seksyon).
-Tinatanggap din ng snippet builder ang value na iyon, kaya maaari itong direktang ilabas ng caller na nakakaalam
-sa laki ng window ng target na model.
+Idagdag ang `CLAUDE_CODE_AUTO_COMPACT_WINDOW` sa parehong `env` block para sa anumang model na ang
+aktuwal na context window ay hindi 200K — ipinapalagay ng Claude Code na 200K ang bawat id na hindi nito
+nakikilala, kaya kung hindi ito idaragdag, gagana ang auto-compaction sa maling punto (tingnan ang babala
+sa nakaraang seksyon). Tinatanggap din ng snippet builder ang value na iyon, kaya maaari itong direktang
+ilabas ng caller na nakakaalam sa window ng target na model.
 
 Source: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (purong
-builder na may mga unit test) na nire-render ng `ClaudeGatewayOnboardingBlock`.
+builder, may unit tests) na nire-render ng `ClaudeGatewayOnboardingBlock`.
+
+### Mag-pin ng isang account (opsyonal)
+
+Upang ipadala ang bawat request ng Claude Code sa isang partikular na provider account, idagdag ang
+`x-omniroute-connection` header sa pamamagitan ng `ANTHROPIC_CUSTOM_HEADERS` sa parehong `env` block:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Kopyahin ang id mula sa `xxxxxxxx…` chip sa connection row ng provider page. Nalalapat lamang ang pin
+sa mga single-model id (`provider/model`), hindi sa mga combo. Tingnan ang
+[Pag-pin ng account sa bawat request](../reference/API_REFERENCE.md#account-pinning-per-request) para sa
+eksaktong fallback behavior.
 
 ---
 

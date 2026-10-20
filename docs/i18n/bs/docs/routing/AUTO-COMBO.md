@@ -214,6 +214,8 @@ Mehanizam automatskih kombinacija dinamički bira najboljeg pružaoca/model za s
 | `quality`             | 0.03                   | Signal kvaliteta izlaza zasnovan na povratnim informacijama iz sistema za praćenje kvaliteta događaja usmjeravanja; kandidati bez zapažanja dobijaju neutralnu vrijednost 0.5                                                                       |
 | `reliability`         | 0.00                   | Zabilježeni udio uspješnosti, `1 - failureRate`, iz 24-satne historije korištenja uz minimalni prag od deset uzoraka (u suprotnom se koriste metrike u stvarnom vremenu); kandidati bez zapažanja imaju vrijednost 1.0. Podrazumijevano onemogućeno |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Zbir:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, kako je deklarisano u `DEFAULT_WEIGHTS`; težine koje konfiguriše korisnik ponovo se normalizuju u distribuciju pomoću `normalizeScoringWeights()` prije bodovanja.
 
 ## Paketi režima

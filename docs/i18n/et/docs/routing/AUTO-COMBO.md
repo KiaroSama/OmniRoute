@@ -194,6 +194,8 @@ Auto-Combo mootor valib iga päringu jaoks dünaamiliselt parima teenusepakkuja/
 | `quality`             | 0.03      | Marsruutimissündmuste kvaliteedijälgija tagasisidel põhinev väljundkvaliteedi signaal; vaatlusteta kandidaadid saavad neutraalse väärtuse 0.5                                                                              |
 | `reliability`         | 0.00      | Vaadeldud edukate päringute osakaal, `1 - failureRate`, 24 tunni kasutusajaloost vähemalt kümne näidise olemasolul (vastasel juhul reaalajamõõdikud); vaatlusteta kandidaatide väärtuseks loetakse 1.0. Vaikimisi keelatud |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Summa:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, nagu on deklareeritud objektis `DEFAULT_WEIGHTS`; kasutaja seadistatud kaalud normaliseeritakse enne hindamist funktsiooniga `normalizeScoringWeights()` uuesti jaotuseks.
 
 ## Režiimipaketid

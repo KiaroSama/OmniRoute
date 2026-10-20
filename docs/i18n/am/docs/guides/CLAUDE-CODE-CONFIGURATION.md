@@ -92,25 +92,46 @@ glm/glm-5.2              →  claude/glm/glm-5.2         "GLM 5.2 (OmniRoute)"
 
 ---
 
-## በዳሽቦርዱ ላይ ያለው የመነሻ ማዋቀሪያ ብሎክ
+## በዳሽቦርዱ ላይ ያለው የመጀመሪያ ማዋቀሪያ ብሎክ
 
-የClaude መሣሪያ ካርድ (**Dashboard → CLI Code**) ለዚህ ኢንስታንስ ትክክለኛውን የ`settings.json` ክፍልፋይ፣ ከdiscovery-alias መረጃ አዝራሩ አጠገብ፣ ከቅጂ አዝራር ጋር ያሳያል፦
+የClaude መሣሪያ ካርድ (**Dashboard → CLI Code**) ለዚህ instance ትክክለኛውን የ`settings.json` ክፍል
+ከdiscovery-alias መረጃ አዝራሩ አጠገብ፣ ከቅጂ አዝራር ጋር ያሳያል፦
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<የእርስዎ OmniRoute>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<የእርስዎ OmniRoute API ቁልፍ>",
+    "ANTHROPIC_BASE_URL": "http://<your OmniRoute>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<your OmniRoute API key>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-መሠረታዊ URL በካርዱ የተወሰነው ነው (እርስዎ ያስገቡትን ብጁ ለውጥ ጨምሮ)፣ እና አስቀድሞ ደረጃውን የጠበቀ ነው — የ`/v1` ቅጥያም ሆነ በመጨረሻ የሚመጣ ስላሽ የለውም። **ቁልፉ በፍጹም አይታይም**፦ ብሎኩ ከቦታ ያዥ ጋር ስለሚቀርብ፣ የማያ ገጽ ቅጂ ወይም የተለጠፈ ቅንጭብ ቁልፉን ሊያጋልጥ አይችልም። ቁልፍዎን በቦታው ላይ ይለጥፉ።
+የመሠረት URL በካርዱ የተወሰነው ነው (እርስዎ ያስገቡትን ብጁ override ጨምሮ)፣ እና አስቀድሞ
+normalized ተደርጓል — የ`/v1` ቅጥያም ሆነ የመጨረሻ slash የለውም። **ቁልፉ ፈጽሞ አይታይም**፦ ብሎኩ
+placeholder ይዞ ይመጣል፣ ስለዚህ screenshot ወይም የተለጠፈ snippet ቁልፍን ሊያጋልጥ አይችልም። ቁልፍዎን በእሱ ላይ ይለጥፉ።
 
-እውነተኛው የአውድ መስኮት 200K ላልሆነ ማንኛውም ሞዴል፣ `CLAUDE_CODE_AUTO_COMPACT_WINDOW`ን በዚያው `env` ብሎክ ስር ያክሉ — Claude Code ለማያውቀው ለእያንዳንዱ id 200K እንዳለው ይገምታል፤ ስለዚህ ካልተዋቀረ ራስ-ሰር ማመቅ በተሳሳተ ነጥብ ላይ ይጀምራል (በቀደመው ክፍል ያለውን ማስጠንቀቂያ ይመልከቱ)። የቅንጭብ ገንቢውም ይህን እሴት ይቀበላል፤ ስለዚህ የዒላማውን ሞዴል የአውድ መስኮት የሚያውቅ ጠሪ በቀጥታ ሊያወጣው ይችላል።
+ትክክለኛው context window 200K ላልሆነ ማንኛውም model፣ `CLAUDE_CODE_AUTO_COMPACT_WINDOW`ን በተመሳሳዩ
+የ`env` ብሎክ ስር ያክሉ — Claude Code ለማያውቀው እያንዳንዱ id 200K እንዳለው ይገምታል፣ ስለዚህ
+ካልታከለ auto-compaction በተሳሳተ ቦታ ይጀምራል (ባለፈው ክፍል ያለውን ማስጠንቀቂያ ይመልከቱ)።
+የsnippet builder ይህን እሴትም ይቀበላል፣ ስለዚህ የዒላማ model windowን የሚያውቅ caller
+በቀጥታ ሊያመነጨው ይችላል።
 
-ምንጭ፦ `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (ንጹሕ ገንቢ፣ በክፍል ሙከራ የተፈተነ) በ`ClaudeGatewayOnboardingBlock` የሚታይ።
+ምንጭ፦ `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (ንጹሕ
+builder፣ unit-tested) በ`ClaudeGatewayOnboardingBlock` የሚታይ።
+
+### አንድ መለያ ይሰኩ (አማራጭ)
+
+እያንዳንዱን የClaude Code request በአንድ የተወሰነ provider account በኩል ለመላክ፣ በተመሳሳዩ የ`env` ብሎክ
+ውስጥ `ANTHROPIC_CUSTOM_HEADERS`ን በመጠቀም የ`x-omniroute-connection` headerን ያክሉ፦
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+idውን በprovider ገጽ ላይ ካለው የconnection ረድፍ `xxxxxxxx…` chip ይቅዱ። pinኑ የሚሠራው
+ለsingle-model ids (`provider/model`) ብቻ ነው፣ ለcombos አይደለም። ትክክለኛውን fallback ባህሪ ለማየት
+[በእያንዳንዱ request የመለያ መሰካት](../reference/API_REFERENCE.md#account-pinning-per-request)ን ይመልከቱ።
 
 ---
 

@@ -194,6 +194,8 @@ L'Auto-Combo Engine seleziona dinamicamente il provider/modello migliore per ogn
 | `quality`             | 0.03             | Segnale della qualità dell'output basato sul feedback proveniente dal rilevatore della qualità degli eventi di instradamento; i candidati senza osservazioni ricevono un valore neutro di 0.5                                                                                     |
 | `reliability`         | 0.00             | Percentuale di successi osservata, `1 - failureRate`, ricavata da 24 ore di cronologia di utilizzo con una soglia minima di dieci campioni (altrimenti metriche in tempo reale); i candidati senza osservazioni assumono il valore 1.0. Disabilitato per impostazione predefinita |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Somma:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, come dichiarato in `DEFAULT_WEIGHTS`; i pesi configurati dall'utente vengono rinormalizzati in una distribuzione da `normalizeScoringWeights()` prima del calcolo del punteggio.
 
 ## Pacchetti modalità

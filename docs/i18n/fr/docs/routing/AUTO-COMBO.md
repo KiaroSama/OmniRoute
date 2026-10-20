@@ -213,6 +213,8 @@ L’Auto-Combo Engine sélectionne dynamiquement le meilleur fournisseur/modèle
 | `quality`             | 0.03                   | Signal de qualité de sortie fondé sur les retours du dispositif de suivi de la qualité des événements de routage ; les candidats sans observations reçoivent une valeur neutre de 0.5                                                                            |
 | `reliability`         | 0.00                   | Part de succès observée, `1 - failureRate`, sur 24 h d’historique d’utilisation avec un seuil minimal de dix échantillons (sinon, métriques en temps réel) ; les candidats sans observations sont considérés comme ayant une valeur de 1.0. Désactivé par défaut |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Somme :** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, comme déclaré dans `DEFAULT_WEIGHTS` ; les pondérations configurées par l’utilisateur sont renormalisées en une distribution par `normalizeScoringWeights()` avant le calcul du score.
 
 ## Packs de modes

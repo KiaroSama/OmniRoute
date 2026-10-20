@@ -74,7 +74,7 @@ Claude Code တွင် ဤအရာများထဲမှ တစ်ခုက
 
 ## ဒက်ရှ်ဘုတ်ပေါ်ရှိ စတင်အသုံးပြုခြင်း ဘလောက်
 
-Claude ကိရိယာကတ် (**Dashboard → CLI Code**) သည် ဤ instance အတွက် အတိအကျဖြစ်သော `settings.json` အပိုင်းကို discovery-alias အချက်အလက်ခလုတ်၏ ဘေးတွင် ကူးယူရန်ခလုတ်နှင့်တကွ ဖော်ပြပေးသည်-
+Claude ကိရိယာကတ် (**Dashboard → CLI Code**) သည် ဤ instance အတွက် အတိအကျဖြစ်သော `settings.json` အပိုင်းကို discovery alias အချက်အလက်ခလုတ်၏ဘေးတွင် ကူးယူရန်ခလုတ်နှင့်အတူ ပြသပေးသည်-
 
 ```jsonc
 {
@@ -86,11 +86,21 @@ Claude ကိရိယာကတ် (**Dashboard → CLI Code**) သည် ဤ in
 }
 ```
 
-Base URL သည် ကတ်က ဖြေရှင်းသတ်မှတ်ထားသည့် URL ဖြစ်ပြီး (သင်ထည့်သွင်းထားသည့် စိတ်ကြိုက် override အပါအဝင်) ပုံမှန်ပုံစံသို့ ပြောင်းလဲပြီးသားဖြစ်သည် — `/v1` suffix မပါသလို နောက်ဆုံး slash လည်း မပါဝင်ပါ။ **Key ကို မည်သည့်အခါမျှ ဖော်ပြမည်မဟုတ်ပါ**- ဘလောက်တွင် placeholder တစ်ခုသာ ပါရှိသောကြောင့် screenshot သို့မဟုတ် ကူးထည့်ထားသော snippet မှတစ်ဆင့် key ပေါက်ကြားနိုင်ခြင်း မရှိပါ။ ထိုနေရာတွင် သင့် key ကို အစားထိုးထည့်ပါ။
+အခြေခံ URL သည် ကတ်က ဖြေရှင်းသတ်မှတ်ပေးထားသော URL ဖြစ်ပြီး (သင်ရိုက်ထည့်ထားသည့် စိတ်ကြိုက် override အပါအဝင်) ပုံမှန်ပုံစံအဖြစ် ပြင်ဆင်ပြီးဖြစ်သည် — `/v1` suffix မပါသလို နောက်ဆုံး slash လည်း မပါဝင်ပါ။ **Key ကို မည်သည့်အခါမျှ မပြသပါ**- ဘလောက်တွင် placeholder တစ်ခုသာ ပါရှိသဖြင့် screenshot သို့မဟုတ် ကူးထည့်ထားသော snippet မှတစ်ဆင့် key ပေါက်ကြားနိုင်မည် မဟုတ်ပါ။ သင့် key ကို ၎င်း၏နေရာတွင် အစားထိုးထည့်သွင်းပါ။
 
-အမှန်တကယ် context window သည် 200K မဟုတ်သော model တိုင်းအတွက် တူညီသည့် `env` ဘလောက်အောက်တွင် `CLAUDE_CODE_AUTO_COMPACT_WINDOW` ကို ထည့်ပါ — Claude Code သည် ၎င်းမသိရှိသော id တိုင်းအတွက် 200K ဟု ယူဆသောကြောင့် ထိုသို့မလုပ်ပါက auto-compaction သည် မှားယွင်းသည့်အချိန်တွင် စတင်မည်ဖြစ်သည် (ယခင်အပိုင်းရှိ သတိပေးချက်ကို ကြည့်ပါ)။ Snippet builder ကလည်း ထိုတန်ဖိုးကို လက်ခံသောကြောင့် target model ၏ window ကို သိရှိသည့် caller သည် ၎င်းကို တိုက်ရိုက် ထုတ်ပေးနိုင်သည်။
+အမှန်တကယ် context window သည် 200K မဟုတ်သော မည်သည့် model အတွက်မဆို တူညီသော `env` ဘလောက်အောက်တွင် `CLAUDE_CODE_AUTO_COMPACT_WINDOW` ကို ထည့်သွင်းပါ — Claude Code သည် ၎င်းမသိရှိသော id တိုင်းအတွက် 200K ဟု ယူဆသောကြောင့် ထိုသို့မလုပ်ပါက auto-compaction သည် မမှန်ကန်သောနေရာတွင် စတင်မည်ဖြစ်သည် (ယခင်အပိုင်းရှိ သတိပေးချက်ကို ကြည့်ပါ)။ Snippet builder သည် ထိုတန်ဖိုးကိုလည်း လက်ခံနိုင်သောကြောင့် ပစ်မှတ် model ၏ window ကို သိရှိသည့် caller က ၎င်းကို တိုက်ရိုက်ထုတ်ပေးနိုင်သည်။
 
-ရင်းမြစ်- `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (`ClaudeGatewayOnboardingBlock` ဖြင့် ဖော်ပြထားသည့် pure builder ဖြစ်ပြီး unit test ပြုလုပ်ထားသည်)။
+ရင်းမြစ်- `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (သီးခြားသန့်စင်သော builder၊ unit test ပြုလုပ်ပြီး) ကို `ClaudeGatewayOnboardingBlock` က ပြသပေးသည်။
+
+### အကောင့်တစ်ခုကို ပင်တွဲသတ်မှတ်ခြင်း (ရွေးချယ်နိုင်သည်)
+
+Claude Code request တိုင်းကို သီးခြား provider account တစ်ခုမှတစ်ဆင့် ပေးပို့ရန် တူညီသော `env` ဘလောက်ရှိ `ANTHROPIC_CUSTOM_HEADERS` မှတစ်ဆင့် `x-omniroute-connection` header ကို ထည့်သွင်းပါ-
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Provider စာမျက်နှာရှိ connection အတန်းမှ `xxxxxxxx…` chip ထဲက id ကို ကူးယူပါ။ ဤပင်တွဲသတ်မှတ်မှုသည် single-model id များ (`provider/model`) အတွက်သာ သက်ရောက်ပြီး combo များအတွက် မသက်ရောက်ပါ။ အတိအကျ fallback ပြုမူပုံအတွက် [Request တစ်ခုချင်းအလိုက် အကောင့်ပင်တွဲသတ်မှတ်ခြင်း](../reference/API_REFERENCE.md#account-pinning-per-request) ကို ကြည့်ပါ။
 
 ---
 

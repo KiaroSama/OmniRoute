@@ -59,6 +59,12 @@ export interface FilterToOpenAIFormatOptions {
   preserveVideoUrl?: boolean;
   /** Keep `reasoning_content` on tool-call assistant turns (reasoning-replay providers). */
   preserveReasoningContent?: boolean;
+  /** Keep the `developer` role (targets that accept it); otherwise it is lowered to `system`. */
+  preserveDeveloperRole?: boolean;
+}
+
+function hasToolCalls(msg: { tool_calls?: unknown }): boolean {
+  return Array.isArray(msg.tool_calls) && msg.tool_calls.length > 0;
 }
 
 export function filterToOpenAIFormat(body, opts: FilterToOpenAIFormatOptions = {}) {
@@ -76,22 +82,32 @@ export function filterToOpenAIFormat(body, opts: FilterToOpenAIFormatOptions = {
   // REQUIRE the client's reasoning_content to be passed back, so keep it for them
   // (the caller sets this when the routed model needs reasoning replay).
   const preserveReasoningContent = opts?.preserveReasoningContent === true;
+  const preserveDeveloperRole = opts?.preserveDeveloperRole === true;
   if (!body.messages || !Array.isArray(body.messages)) return body;
 
   body.messages = body.messages.map((msg) => {
     // Normalize OpenAI Responses-style `developer` role to `system` — many
     // OpenAI-compatible providers reject `developer` (ported from
-    // decolua/9router#1011).
-    if (msg.role === "developer") msg = { ...msg, role: "system" };
+    // decolua/9router#1011). Skipped when the role normalizer decided the
+    // target accepts `developer` (provider allowlist / per-model compat toggle).
+    if (msg.role === "developer" && !preserveDeveloperRole) msg = { ...msg, role: "system" };
 
     // Keep tool messages as-is (OpenAI format)
     if (msg.role === "tool") return msg;
+
+    // An empty `tool_calls: []` carries no tool calls: drop the key (several providers
+    // 400 on an empty array) and let the turn go through the normal content
+    // normalization below instead of being passed through untouched.
+    if (msg.role === "assistant" && Array.isArray(msg.tool_calls) && !hasToolCalls(msg)) {
+      const { tool_calls, ...withoutToolCalls } = msg;
+      msg = withoutToolCalls;
+    }
 
     // Keep assistant messages with tool_calls, but strip reasoning_content —
     // reasoning blobs inflate context on every subsequent agentic turn (O(n^2)).
     // Exception: reasoning-replay providers must keep client-provided
     // reasoning_content (they 400 without it), so preserve it when requested.
-    if (msg.role === "assistant" && msg.tool_calls) {
+    if (msg.role === "assistant" && hasToolCalls(msg)) {
       if (!preserveReasoningContent && msg.reasoning_content !== undefined) {
         const { reasoning_content, ...cleanMsg } = msg;
         return cleanMsg;
@@ -210,7 +226,7 @@ export function filterToOpenAIFormat(body, opts: FilterToOpenAIFormatOptions = {
     // Always keep tool messages
     if (msg.role === "tool") return true;
     // Always keep assistant messages with tool_calls
-    if (msg.role === "assistant" && msg.tool_calls) return true;
+    if (msg.role === "assistant" && hasToolCalls(msg)) return true;
     // Moonshot partial assistant messages are output prefixes, and an empty
     // prefix is valid when `name` supplies the constrained value.
     if (msg.role === "assistant" && msg.partial === true) return true;

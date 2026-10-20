@@ -92,33 +92,35 @@ glm/glm-5.2              →  claude/glm/glm-5.2         "GLM 5.2 (OmniRoute)"
 
 ---
 
-## උපකරණ පුවරුවේ ආරම්භක සැකසුම් කොටස
+## ඩෑෂ්බෝඩ් හි ආරම්භක සැකසුම් කොටස
 
-Claude මෙවලම් කාඩ්පත (**උපකරණ පුවරුව → CLI Code**) මෙම instance එක සඳහා නිවැරදි `settings.json` ඛණ්ඩය
-discovery-alias තොරතුරු බොත්තම අසල, පිටපත් කිරීමේ බොත්තමක් සමඟ පෙන්වයි:
+Claude මෙවලම් කාඩ්පත (**Dashboard → CLI Code**) මෙම instance එක සඳහා නිශ්චිත `settings.json` ඛණ්ඩය, discovery-alias තොරතුරු බොත්තම අසල, පිටපත් කිරීමේ බොත්තමක් සමඟ පෙන්වයි:
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<ඔබේ OmniRoute>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<ඔබේ OmniRoute API යතුර>",
+    "ANTHROPIC_BASE_URL": "http://<ඔබගේ OmniRoute>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<ඔබගේ OmniRoute API යතුර>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-මූලික URL එක කාඩ්පත මඟින් විසඳන ලද URL එකයි (ඔබ ටයිප් කළ අභිරුචි අතික්රමණයක්ද ඇතුළුව), එය දැනටමත්
-සාමාන්යකරණය කර ඇත — `/v1` ප්රත්යයක් හෝ අවසාන slash එකක් නැත. **යතුර කිසිවිටෙක පෙන්වන්නේ නැත**: මෙම කොටස
-placeholder එකක් සමඟ සපයන බැවින් screenshot එකකින් හෝ paste කළ snippet එකකින් යතුරක් කාන්දු විය නොහැක. ඒ වෙනුවට ඔබේ යතුර paste කරන්න.
+මූලික URL එක යනු කාඩ්පත විසින් නිරාකරණය කරන ලද එකයි (ඔබ ඇතුළත් කළ අභිරුචි අතික්රමණයක්ද ඇතුළුව), එය දැනටමත් සාමාන්යකරණය කර ඇත — `/v1` උපසර්ගයක් හෝ අවසානයේ slash එකක් නොමැත. **යතුර කිසිවිටෙක පෙන්වනු නොලැබේ**: මෙම කොටසට placeholder එකක් ඇතුළත් වන බැවින්, තිර රුවකින් හෝ අලවන ලද snippet එකකින් යතුරක් හෙළි විය නොහැක. ඒ මත ඔබගේ යතුර අලවන්න.
 
-සැබෑ context window එක 200K නොවන ඕනෑම model එකක් සඳහා එම `env` කොටස යටතේම `CLAUDE_CODE_AUTO_COMPACT_WINDOW`
-එක් කරන්න — Claude Code තමන් හඳුනා නොගන්නා සෑම ID එකක් සඳහාම 200K ලෙස උපකල්පනය කරන බැවින්, එසේ නොකළහොත්
-ස්වයංක්රීය සම්පීඩනය වැරදි ස්ථානයේ ක්රියාත්මක වේ (පෙර කොටසේ අනතුරු ඇඟවීම බලන්න).
-snippet builder එකද එම අගය පිළිගන්නා බැවින්, ඉලක්කගත model එකේ window ප්රමාණය දන්නා caller එකකට
-එය සෘජුවම නිකුත් කළ හැක.
+සැබෑ context window එක 200K නොවන ඕනෑම model එකක් සඳහා එම `env` කොටස යටතේ `CLAUDE_CODE_AUTO_COMPACT_WINDOW` එක් කරන්න — Claude Code විසින් හඳුනා නොගන්නා සෑම id එකක් සඳහාම 200K ලෙස උපකල්පනය කරන බැවින්, එසේ නොකළහොත් ස්වයංක්රීය සම්පීඩනය වැරදි ස්ථානයකදී ක්රියාත්මක වේ (පෙර කොටසේ අනතුරු ඇඟවීම බලන්න). snippet builder එකද එම අගය පිළිගන්නා බැවින්, ඉලක්ක model එකේ window එක දන්නා caller කෙනෙකුට එය සෘජුවම නිකුත් කළ හැක.
 
-මූලාශ්රය: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (පිරිසිදු
-builder එකක්, unit test කර ඇත), `ClaudeGatewayOnboardingBlock` මඟින් පෙන්වනු ලැබේ.
+මූලාශ්රය: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (pure builder එකක්, unit test කර ඇත), `ClaudeGatewayOnboardingBlock` මඟින් පෙන්වනු ලැබේ.
+
+### එක් ගිණුමක් pin කරන්න (විකල්ප)
+
+සෑම Claude Code ඉල්ලීමක්ම එක් නිශ්චිත provider ගිණුමක් හරහා යැවීමට, එම `env` කොටසෙහි `ANTHROPIC_CUSTOM_HEADERS` හරහා `x-omniroute-connection` header එක එක් කරන්න:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+provider පිටුවේ connection පේළියේ ඇති `xxxxxxxx…` chip එකෙන් id එක පිටපත් කරන්න. pin කිරීම අදාළ වන්නේ single-model ids (`provider/model`) සඳහා පමණක් වන අතර, combos සඳහා නොවේ. නිශ්චිත fallback හැසිරීම සඳහා [එක් එක් ඉල්ලීම අනුව ගිණුම් pin කිරීම](../reference/API_REFERENCE.md#account-pinning-per-request) බලන්න.
 
 ---
 

@@ -7,6 +7,7 @@ import {
   isOAuthInvalidToken,
 } from "./accountFallback.ts";
 import { isSubscriptionQuotaText } from "./quotaTextCooldowns.ts";
+import { isModelScopedAccessDenial } from "./accountFallback/modelScopedAccessDenial.ts";
 import { getProviderCategory, getRegistryEntry } from "../config/providerRegistry.ts";
 
 // Terminal stop signals where an empty content payload is still a legitimate,
@@ -435,6 +436,10 @@ export function classifyProviderError(
   // make an unknown file/item id valid. (#6827)
   if (statusCode === 404) {
     if (isResourceNotFoundResponse(responseBody)) return null;
+    return PROVIDER_ERROR_TYPES.MODEL_NOT_FOUND;
+  }
+
+  if (isModelScopedAccessDenial(provider, statusCode, responseBody)) {
     return PROVIDER_ERROR_TYPES.MODEL_NOT_FOUND;
   }
 

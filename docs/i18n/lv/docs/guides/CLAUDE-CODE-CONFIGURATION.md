@@ -98,8 +98,8 @@ tiek parādīti tikai Kimi modeļi.
 
 ## Darba sākšanas bloks informācijas panelī
 
-Claude rīka kartīte (**Informācijas panelis → CLI Code**) parāda precīzu šīs instances `settings.json` fragmentu
-blakus atklāšanas aizstājvārda informācijas pogai, kā arī kopēšanas pogu:
+Claude rīka kartīte (**Dashboard → CLI Code**) attēlo precīzu šīs instances `settings.json` fragmentu
+blakus atklāšanas aizstājvārda informācijas pogai kopā ar kopēšanas pogu:
 
 ```jsonc
 {
@@ -111,18 +111,31 @@ blakus atklāšanas aizstājvārda informācijas pogai, kā arī kopēšanas pog
 }
 ```
 
-Bāzes URL ir kartītes noteiktais URL (tostarp jūsu ievadītā pielāgotā vērtība), kas jau ir
-normalizēts — bez `/v1` sufiksa un bez noslēdzošās slīpsvītras. **Atslēga nekad netiek parādīta**: blokā ir
+Bāzes URL ir kartītes noteiktā adrese (ieskaitot jūsu ievadītu pielāgotu vērtību), kas jau ir
+normalizēta — bez `/v1` sufiksa un bez beigu slīpsvītras. **Atslēga nekad netiek attēlota**: blokā ir
 vietturis, tāpēc ekrānuzņēmums vai ielīmēts fragments nevar to nopludināt. Aizstājiet vietturi ar savu atslēgu.
 
-Pievienojiet `CLAUDE_CODE_AUTO_COMPACT_WINDOW` tam pašam `env` blokam katram modelim, kura faktiskais
-konteksta logs nav 200K — Claude Code pieņem, ka katram neatpazītam id tas ir 200K, tāpēc
-pretējā gadījumā automātiskā saspiešana tiek aktivizēta nepareizajā brīdī (skatiet brīdinājumu iepriekšējā sadaļā).
-Fragmentu veidotājs pieņem arī šo vērtību, tāpēc izsaucējs, kas zina mērķa modeļa loga
-izmēru, var to norādīt tieši.
+Pievienojiet `CLAUDE_CODE_AUTO_COMPACT_WINDOW` tajā pašā `env` blokā jebkuram modelim, kura faktiskais
+konteksta logs nav 200K — Claude Code pieņem 200K katram neatpazītam id, tāpēc pretējā gadījumā
+automātiskā saspiešana tiek aktivizēta nepareizā brīdī (skatiet brīdinājumu iepriekšējā sadaļā).
+Fragmenta veidotājs pieņem arī šo vērtību, tāpēc izsaucējs, kurš zina mērķa modeļa loga lielumu,
+var to norādīt tieši.
 
 Avots: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (tīrs
 veidotājs, pārbaudīts ar vienībtestiem), ko attēlo `ClaudeGatewayOnboardingBlock`.
+
+### Viena konta piesaiste (neobligāti)
+
+Lai visus Claude Code pieprasījumus nosūtītu caur vienu konkrētu pakalpojumu sniedzēja kontu, pievienojiet
+`x-omniroute-connection` galveni, izmantojot `ANTHROPIC_CUSTOM_HEADERS` tajā pašā `env` blokā:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Nokopējiet id no `xxxxxxxx…` emblēmas pakalpojumu sniedzēja lapas savienojuma rindā. Piesaiste
+attiecas tikai uz viena modeļa id (`provider/model`), nevis uz kombinācijām. Precīzu
+atkāpšanās darbību skatiet sadaļā [Konta piesaiste katram pieprasījumam](../reference/API_REFERENCE.md#account-pinning-per-request).
 
 ---
 

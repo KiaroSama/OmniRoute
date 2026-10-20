@@ -213,6 +213,8 @@ Enjin Auto-Combo memilih penyedia/model terbaik secara dinamik bagi setiap permi
 | `quality`             | 0.03           | Isyarat kualiti output berpandukan maklum balas daripada penjejak kualiti peristiwa penghalaan; calon tanpa pemerhatian menerima nilai neutral 0.5                                                                                      |
 | `reliability`         | 0.00           | Bahagian kejayaan yang diperhatikan, `1 - failureRate`, daripada sejarah penggunaan 24 jam dengan paras minimum sepuluh sampel (jika tidak, metrik masa nyata); calon tanpa pemerhatian dianggap bernilai 1.0. Dilumpuhkan secara lalai |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Jumlah:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` seperti yang diisytiharkan dalam `DEFAULT_WEIGHTS`; pemberat yang dikonfigurasikan pengguna dinormalkan semula menjadi suatu taburan oleh `normalizeScoringWeights()` sebelum pemarkahan.
 
 ## Pek Mod

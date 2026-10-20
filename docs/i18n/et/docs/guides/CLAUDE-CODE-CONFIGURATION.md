@@ -96,31 +96,33 @@ Kimi pakkuja sees kuvab ainult Kimi mudelid.
 
 ## Sisseelamisplokk töölaual
 
-Claude’i tööriistakaart (**Töölaud → CLI-kood**) kuvab selle eksemplari täpse `settings.json`-i fragmendi
-tuvastusaliase teabenupu kõrval koos kopeerimisnupuga:
+Claude'i tööriistakaart (**Töölaud → CLI-kood**) kuvab selle eksemplari täpse `settings.json` fragmendi avastamisaliase teabenupu kõrval koos kopeerimisnupuga:
 
 ```jsonc
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://<your OmniRoute>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<your OmniRoute API key>",
+    "ANTHROPIC_BASE_URL": "http://<teie OmniRoute>:20128",
+    "ANTHROPIC_AUTH_TOKEN": "<teie OmniRoute'i API-võti>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-Baas-URL on kaardi tuvastatud aadress (sealhulgas teie sisestatud kohandatud väärtus), mis on juba
-normaliseeritud — ilma `/v1` järelliite ja lõpetava kaldkriipsuta. **Võtit ei kuvata kunagi**: plokk sisaldab
-kohatäitjat, mistõttu ekraanipilt ega kleebitud koodilõik ei saa võtit lekitada. Asendage see oma võtmega.
+Baas-URL on kaardi lahendatud aadress (sealhulgas teie sisestatud kohandatud alistus), mis on juba normaliseeritud — ilma `/v1` järelliiteta ja lõpetava kaldkriipsuta. **Võtit ei kuvata kunagi**: plokk sisaldab kohatäidet, mistõttu ei saa kuvatõmmis ega kleebitud koodilõik võtit lekitada. Asendage kohatäide oma võtmega.
 
-Lisage `CLAUDE_CODE_AUTO_COMPACT_WINDOW` sama `env` ploki alla iga mudeli puhul, mille tegelik
-kontekstiaken ei ole 200K — Claude Code eeldab 200K iga ID puhul, mida see ei tunne, mistõttu
-automaatne tihendamine käivitub muidu valel hetkel (vt eelmise jaotise hoiatust).
-Koodilõigu koostaja aktsepteerib ka seda väärtust, seega saab sihtmudeli akna suurust teadev kutsuja
-selle otse väljastada.
+Lisage `CLAUDE_CODE_AUTO_COMPACT_WINDOW` samasse `env` plokki iga mudeli puhul, mille tegelik kontekstiaken ei ole 200K — Claude Code eeldab 200K iga tundmatu ID puhul, mistõttu käivitub automaatne tihendamine muidu valel hetkel (vt eelmise jaotise hoiatust). Koodilõigu koostaja aktsepteerib ka seda väärtust, nii et sihtmudeli akna suurust teadev kutsuja saab selle otse väljastada.
 
-Allikas: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (puhas,
-ühiktestidega kaetud koostaja), mida renderdab `ClaudeGatewayOnboardingBlock`.
+Allikas: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (puhas koostaja, ühiktestitud), mida renderdab `ClaudeGatewayOnboardingBlock`.
+
+### Ühe konto kinnistamine (valikuline)
+
+Kõigi Claude Code'i päringute saatmiseks ühe kindla teenusepakkuja konto kaudu lisage samasse `env` plokki `x-omniroute-connection` päis muutuja `ANTHROPIC_CUSTOM_HEADERS` kaudu:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Kopeerige ID teenusepakkuja lehel oleva ühendusrea `xxxxxxxx…` kiibilt. Kinnistamine rakendub ainult ühe mudeli ID-dele (`provider/model`), mitte kombinatsioonidele. Täpse varukäitumise kirjelduse leiate jaotisest [Konto kinnistamine päringu kaupa](../reference/API_REFERENCE.md#account-pinning-per-request).
 
 ---
 

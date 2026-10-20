@@ -1,16 +1,16 @@
 /**
  * Child process for parse-model A/B. Measures parseModel() cost in isolation.
  *
- * The module under test is chosen via env MODEL_VARIANT = baseline | fixed.
+ * The module under test is chosen by the first argument: baseline | fixed.
  * console.* writes from the baseline variant are allowed to hit stdout (a real
  * pipe, as in production) so the synchronous-write cost is genuinely incurred.
  * The timing result is written to STDERR so it never contaminates measured I/O.
  *
- * Usage: node --import tsx/esm scripts/perf/parse-model-ab-child.ts
+ * Usage: node --import tsx/esm scripts/perf/parse-model-ab-child.ts [baseline|fixed]
  */
 import { performance } from "node:perf_hooks";
 
-const variant = process.env.MODEL_VARIANT ?? "baseline";
+const variant = process.argv[2] ?? "baseline";
 const mod =
   variant === "baseline"
     ? await import("../../open-sse/services/modelBaseline.ts")

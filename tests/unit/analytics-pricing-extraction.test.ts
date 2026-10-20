@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { computeUsageRowCost } from "../../src/lib/usage/analyticsPricing.ts";
+import {
+  computeUsageRowCost,
+  computeUsageRowStandardCost,
+} from "../../src/lib/usage/analyticsPricing.ts";
 
 test(
   "analytics pricing extraction retains provider fallback order and archive semantics",
@@ -79,3 +82,47 @@ test(
     );
   }
 );
+
+test("analytics keeps reported cost separate from token-priced usage", { timeout: 1000 }, () => {
+  const row = {
+    provider: "fixture",
+    model: "fixture-model",
+    serviceTier: "flex",
+    promptTokens: 100,
+    completionTokens: 10,
+    cacheReadTokens: 60,
+    storedCost: 0.25,
+    costPromptTokens: 20,
+    costCompletionTokens: 2,
+    costCacheReadTokens: 12,
+    costCacheCreationTokens: 0,
+    costReasoningTokens: 0,
+  };
+  const pricing = { fixture: { "fixture-model": { input: 1 } } };
+  const calculate = (
+    _pricing: Record<string, unknown>,
+    tokens: Record<string, number>,
+    options?: Record<string, unknown>
+  ) => {
+    assert.equal(tokens.input, 20);
+    assert.equal(tokens.output, 2);
+    assert.equal(tokens.cacheRead, 12);
+    return options?.serviceTier === "flex" ? 0.02 : 0.04;
+  };
+  assert.equal(
+    computeUsageRowCost(row, pricing, {}, (m) => m, calculate),
+    0.27
+  );
+  assert.equal(
+    computeUsageRowStandardCost(row, pricing, {}, (m) => m, calculate),
+    0.29
+  );
+  assert.equal(
+    computeUsageRowCost(row, {}, {}, (m) => m, calculate),
+    0.25
+  );
+  assert.equal(
+    computeUsageRowCost({ ...row, provider: "claude" }, {}, {}, (m) => m, calculate),
+    0
+  );
+});

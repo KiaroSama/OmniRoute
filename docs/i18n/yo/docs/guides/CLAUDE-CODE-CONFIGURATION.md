@@ -93,33 +93,47 @@ kọ̀ọ̀kan àti awoṣe kọ̀ọ̀kan máa ń tún un ṣe láti ibẹ̀ �
 
 ---
 
-## Àkọsílẹ̀ ìbẹ̀rẹ̀ lórí dashboard
+## Ìdínà ìtọ́sọ́nà ìbẹ̀rẹ̀ lórí pánẹ́ẹ̀lì ìṣàkóso
 
-Káàdì irinṣẹ́ Claude (**Dashboard → CLI Code**) ń ṣàfihàn àjákù `settings.json` gangan
+Káàdì irinṣẹ́ Claude (**Dashboard → CLI Code**) ń ṣàfihàn àjẹkù `settings.json` gangan
 fún instance yìí, lẹ́gbẹ̀ẹ́ bọ́tìnì ìwífún discovery-alias, pẹ̀lú bọ́tìnì àdàkọ:
 
 ```jsonc
 {
   "env": {
     "ANTHROPIC_BASE_URL": "http://<OmniRoute rẹ>:20128",
-    "ANTHROPIC_AUTH_TOKEN": "<kọ́kọ́rọ́ OmniRoute API rẹ>",
+    "ANTHROPIC_AUTH_TOKEN": "<kọ́kọ́rọ́ API OmniRoute rẹ>",
     "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
   },
 }
 ```
 
-URL ìpìlẹ̀ náà ni èyí tí káàdì náà yànjú (pẹ̀lú àtúnṣe àkànṣe tí o tẹ̀), tí a sì ti
-ṣe àtúnṣe rẹ̀ sí ìlànà tó yẹ — kò ní ìfikún `/v1`, kò sì ní slash ní ìparí. **A kì í ṣe àfihàn kọ́kọ́rọ́ náà láé**: àkọsílẹ̀ náà ní
-ọ̀rọ̀ amúrópò, nítorí náà screenshot tàbí àjákù tí a lẹ̀ mọ́ ibòmíràn kò lè tú u jáde. Lẹ kọ́kọ́rọ́ rẹ sórí rẹ̀.
+URL ìpìlẹ̀ náà ni èyí tí káàdì náà pinnu (pẹ̀lú àtúnṣe àkànṣe tí o tẹ̀), tí a sì ti
+ṣe déédéé — kò ní ìfikún `/v1`, kò sì ní slash ní òpin. **A kì í ṣàfihàn kọ́kọ́rọ́ náà láé**: ìdínà náà ní
+ọrọ̀ amúpòró, nítorí náà àwòrán ojú tàbí àjẹkù tí a lẹ̀ mọ́ ibòmíràn kò le tú ọ̀kan jáde. Lẹ kọ́kọ́rọ́ rẹ sórí rẹ̀.
 
-Ṣàfikún `CLAUDE_CODE_AUTO_COMPACT_WINDOW` lábẹ́ block `env` kan náà fún model èyíkéyìí tí
-context window gidi rẹ̀ kì í ṣe 200K — Claude Code máa ń gbà pé gbogbo id tí kò mọ̀ ní 200K, nítorí náà
-auto-compaction yóò bẹ̀rẹ̀ ní ibi tí kò tọ́ bí kò bá ṣe bẹ́ẹ̀ (wo ìkìlọ̀ ní abala tó ṣáájú).
-Snippet builder náà tún gba iye yẹn, nítorí náà caller tó mọ window model àfojúsùn
-lè ṣe àgbéjáde rẹ̀ ní tààrà.
+Ṣàfikún `CLAUDE_CODE_AUTO_COMPACT_WINDOW` lábẹ́ ìdínà `env` kan náà fún model èyíkéyìí tí
+context window gidi rẹ̀ kì í ṣe 200K — Claude Code máa ń rò pé gbogbo id tí kò mọ̀ ní 200K, nítorí náà
+auto-compaction yóò ṣẹlẹ̀ ní ibi tí kò tọ́ bí kò bá sí èyí (wo ìkìlọ̀ ní abala tó ṣáájú).
+Olùkọ́ àjẹkù náà tún gba iye yẹn, kí olùpè tí ó mọ window model àfojúsùn náà
+le mú un jáde ní tààrà.
 
-Orísun: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (builder
-mímọ́, tí a ti dán wò ní unit test) tí `ClaudeGatewayOnboardingBlock` ṣe àfihàn rẹ̀.
+Orísun: `src/shared/services/claudeCliConfig.ts::buildClaudeDiscoverySettingsSnippet` (olùkọ́
+mímọ́, tí a dánwò pẹ̀lú unit test) tí `ClaudeGatewayOnboardingBlock` ṣàfihàn.
+
+### So account kan mọ́lẹ̀ (àṣàyàn)
+
+Láti fi gbogbo ìbéèrè Claude Code ránṣẹ́ nípasẹ̀ account provider kan pàtó, ṣàfikún header
+`x-omniroute-connection` nípasẹ̀ `ANTHROPIC_CUSTOM_HEADERS` nínú ìdínà `env` kan náà:
+
+```jsonc
+"ANTHROPIC_CUSTOM_HEADERS": "x-omniroute-connection: <connection id>"
+```
+
+Da id náà kọ láti inú chip `xxxxxxxx…` tó wà lórí ìlà connection ní ojú-ewé provider. Ìsopọ̀ mímọ́lẹ̀ náà
+kan àwọn id model kan ṣoṣo (`provider/model`) nìkan, kì í kan combos. Wo
+[Ìsọ account mọ́lẹ̀ fún ìbéèrè kọ̀ọ̀kan](../reference/API_REFERENCE.md#account-pinning-per-request) fún
+ìhùwàsí fallback gangan.
 
 ---
 

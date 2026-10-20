@@ -194,6 +194,8 @@ Auto-Combo-motoren vælger dynamisk den bedste udbyder/model til hver anmodning 
 | `quality`             | 0.03         | Feedbackbaseret signal for outputkvalitet fra routinghændelsernes kvalitetssporing; kandidater uden observationer får den neutrale værdi 0.5                                                                               |
 | `reliability`         | 0.00         | Observeret succesandel, `1 - failureRate`, fra 24 timers brugshistorik med et minimum på ti stikprøver (ellers målinger i realtid); kandidater uden observationer aflæses som 1.0. Deaktiveret som standard                |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **Sum:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` som erklæret i `DEFAULT_WEIGHTS`; brugerkonfigurerede vægte normaliseres igen til en fordeling af `normalizeScoringWeights()` før beregningen af scoren.
 
 ## Tilstandspakker
