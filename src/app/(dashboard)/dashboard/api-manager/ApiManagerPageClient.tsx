@@ -229,42 +229,25 @@ export default function ApiManagerPageClient() {
   const fetchUsageStats = async (apiKeys: ApiKey[]) => {
     if (apiKeys.length === 0) return;
     try {
-      // Fetch analytics (accurate aggregated counts) and recent call-logs
-      // (for lastUsed timestamps) in parallel.
-      // The previous approach matched call-logs by key.id === log.apiKeyId,
-      // but these use different ID schemes and never matched, yielding 0.
-      const [analyticsRes, logsRes] = await Promise.all([
-        fetch("/api/usage/analytics?range=all"),
-        fetch("/api/usage/call-logs?limit=1000"),
-      ]);
-      const analytics = analyticsRes.ok ? await analyticsRes.json() : null;
-      const byApiKey: any[] = analytics?.byApiKey || [];
-      const logs = logsRes.ok ? await logsRes.json() : [];
+      // view=apiKeys returns only per-key lifetime totals and last use, computed
+      // server-side in one query; the full analytics report blocks the server for
+      // seconds on large usage histories.
+      const res = await fetch("/api/usage/analytics?range=all&view=apiKeys");
+      const totals: Array<{
+        apiKeyId: string;
+        requests: number;
+        cost: number;
+        lastUsed: string | null;
+      }> = res.ok ? (await res.json()).byApiKey || [] : [];
+      const totalsById = new Map(totals.map((entry) => [entry.apiKeyId, entry]));
       const stats: Record<string, KeyUsageStats> = {};
       for (const key of apiKeys) {
-        // Match analytics entry by unique API Key ID (isolates usage to this specific key instance)
-        const matches = byApiKey.filter((entry: any) => entry.apiKeyId === key.id);
-        const totalRequests = matches.reduce(
-          (sum: number, entry: any) => sum + (Number(entry.requests) || 0),
-          0
-        );
-        const totalCost = matches.reduce((sum: number, entry: any) => {
-          const cost = Number(entry.cost);
-          return sum + (Number.isFinite(cost) ? cost : 0);
-        }, 0);
-
-        // Match call logs by unique ID as well for the lastUsed timestamp
-        // Prefer an exact apiKeyId match; fall back to name match for legacy
-        // logs that predate per-key IDs (apiKeyId absent).
-        const lastUsed =
-          (logs || []).find(
-            (log: any) => log.apiKeyId === key.id || (!log.apiKeyId && log.apiKeyName === key.name)
-          )?.timestamp || null;
-
+        const entry = totalsById.get(key.id);
+        const cost = Number(entry?.cost);
         stats[key.id] = {
-          totalRequests,
-          totalCost,
-          lastUsed,
+          totalRequests: Number(entry?.requests) || 0,
+          totalCost: Number.isFinite(cost) ? cost : 0,
+          lastUsed: entry?.lastUsed || null,
         };
       }
       setUsageStats(stats);
