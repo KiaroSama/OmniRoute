@@ -1,1 +1,0 @@
-- **fix(sse):** distinguish explicit OpenCode free-tier restrictions from credential failures in combo error messages, without changing upstream status or routing. This diagnostic correction does not restore access to restricted free-tier models.
