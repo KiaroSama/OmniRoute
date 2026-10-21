@@ -90,6 +90,7 @@
     "stats",
     "traeAuthModal",
     "trafficInspector",
+    "usage",
     "vscodeCopilotBanner"
   ],
   "sections": {
@@ -1610,6 +1611,7 @@
       "noAuthProvider",
       "oauthModal",
       "providerStats",
+      "providerTransfer",
       "providers",
       "proxyConfigModal",
       "proxyLog",

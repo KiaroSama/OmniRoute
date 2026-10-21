@@ -17,6 +17,8 @@ import {
   buildNativeCodexPlaygroundRequest,
   isNativeCodexPlaygroundModel,
 } from "../../playground/components/tabs/chatTabEndpointRequest";
+import { playgroundMessagesStorageKey } from "./llmChatStorage";
+import { usePersistedPlaygroundMessages } from "./usePersistedPlaygroundMessages";
 
 const CHAT_COMPLETIONS_ENDPOINT = "/api/v1/chat/completions";
 const RESPONSES_ENDPOINT = "/api/v1/responses";
@@ -58,8 +60,8 @@ const NO_THINKING_PREFIX = "no-think/";
  * contain a slash, so they were sent bare and rejected with
  * "Ambiguous model ... Use provider/model prefix" when the same id exists under
  * several providers (#3050). The routing prefix is normally the provider alias,
- * which can intentionally differ from the provider id (for example `oc` routes
- * OpenCode Free while `opencode` is reserved by the Zen executor).
+ * which can intentionally differ from the provider id (for example `unc` routes
+ * uncloseai).
  */
 export function qualifyPlaygroundModel(
   model: string | null | undefined,
@@ -193,11 +195,23 @@ export function LlmChatCard({
     [onModelChange]
   );
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState<string>("");
+  const storageKey = playgroundMessagesStorageKey(providerId, selectedKey);
+
   const [streaming, setStreaming] = useState<boolean>(false);
-  const [stats, setStats] = useState<Stats | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const abortInFlight = useCallback(() => {
+    const controller = abortRef.current;
+    controller?.abort();
+    return controller !== null;
+  }, []);
+  const [messages, setMessages] = usePersistedPlaygroundMessages(
+    storageKey,
+    streaming,
+    abortInFlight
+  );
+
+  const [input, setInput] = useState<string>("");
+  const [stats, setStats] = useState<Stats | null>(null);
   const nativeCodexThreadRef = useRef<string>(crypto.randomUUID());
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -383,7 +397,7 @@ export function LlmChatCard({
       // Refocus textarea so user can keep typing
       requestAnimationFrame(() => textareaRef.current?.focus());
     }
-  }, [input, streaming, selectedKey, keys, providerId, qualifiedModel, messages, t]);
+  }, [input, streaming, selectedKey, keys, providerId, qualifiedModel, messages, setMessages, t]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -401,7 +415,7 @@ export function LlmChatCard({
     nativeCodexThreadRef.current = crypto.randomUUID();
     setMessages([]);
     setStats(null);
-  }, [streaming]);
+  }, [streaming, setMessages]);
 
   useImperativeHandle(
     controlsRef,

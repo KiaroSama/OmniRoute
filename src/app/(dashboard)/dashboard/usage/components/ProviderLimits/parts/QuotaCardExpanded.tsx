@@ -27,6 +27,7 @@ import {
   sortQuotasByWindow,
 } from "../quotaParsing";
 import KiloPassMeter from "./KiloPassMeter";
+import QuotaCardSpeed from "./QuotaCardSpeed";
 import { hasCodexPaidCredits, type CodexPaidCredits } from "@/lib/providers/codexPaidCredits";
 import AntigravityQuotaGroups, { resolveAntigravityQuotaGroups } from "../AntigravityQuotaGroups";
 
@@ -160,6 +161,8 @@ interface Props {
   hiddenQuotaRows?: any[];
   onHideQuota?: (quota: any) => void;
   onShowQuota?: (quota: any) => void;
+  /** Read-time decode-speed stats from the usage API (`speed` payload). */
+  speed?: unknown;
 }
 
 function QuotaDetailRow({
@@ -346,6 +349,7 @@ export default function QuotaCardExpanded({
   hiddenQuotaRows = [],
   onHideQuota,
   onShowQuota,
+  speed,
 }: Props) {
   const t = useTranslations("usage");
   const tr = (key: string, fallback: string, values?: UsageTranslationValues) =>
@@ -437,6 +441,8 @@ export default function QuotaCardExpanded({
           </span>
         </div>
       )}
+
+      {!error && <QuotaCardSpeed speed={speed} />}
 
       {hiddenQuotaRows.length > 0 && (
         <div className="flex flex-wrap items-center gap-1 border-t border-border/40 pt-1.5 text-[10px] text-text-muted">

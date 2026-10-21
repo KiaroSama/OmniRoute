@@ -397,7 +397,11 @@ function convertStopReason(reason) {
     case "tool_use":
       return "tool_calls";
     case "max_tokens":
+    case "model_context_window_exceeded":
       return "length";
+    case "content_filtered":
+    case "guardrail_intervened":
+      return "content_filter";
     case "stop_sequence":
     case "end_turn":
     default:

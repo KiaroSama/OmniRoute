@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, Button, Badge, ConfirmModal } from "@/shared/components";
 import { useLocale, useTranslations } from "next-intl";
 import DatabaseBackupRetentionCard from "./DatabaseBackupRetentionCard";
+import ProviderTransferPanel from "./ProviderTransferPanel";
 import {
   fetchDatabaseSettingsData,
   isAuthRequiredResponse,
@@ -1395,6 +1396,7 @@ export default function SystemStorageTab() {
             className="hidden"
             onChange={handleJsonSelected}
           />
+          <ProviderTransferPanel />
         </div>
 
         {confirmImport && pendingImportFile && (

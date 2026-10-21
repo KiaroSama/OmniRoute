@@ -23,7 +23,10 @@ import {
   normalizeStreamRecoverySettings,
   normalizeProviderQuotaOverrides,
   normalizeCredentialHealthCheckSettings,
+  pruneResilienceSettingsToProvided,
 } from "./settings/normalize";
+
+export { pruneResilienceSettingsToProvided };
 
 // Re-export the settings shape (moved to ./settings/types) so this module's
 // public API is unchanged.

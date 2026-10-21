@@ -78,24 +78,28 @@ export function applyKimiCodingThinking(
   }
 }
 
+// Only text/thinking/redacted_thinking blocks can be blank; every other typed
+// block is real content. #7777: media-only turns (image/document) must count.
+// container_upload and newer block types must count too — an allowlist here
+// silently deleted those turns (possibly leaving `messages: []`).
+function isNonEmptyClaudeBlock(block: ClaudeContentBlock): boolean {
+  switch (block?.type) {
+    case "text":
+      return !!block.text?.trim();
+    case "thinking":
+      return !!block.thinking?.trim();
+    case "redacted_thinking":
+      return typeof block.data === "string" && !!block.data.trim();
+    default:
+      return typeof block?.type === "string" && block.type.length > 0;
+  }
+}
+
 // Check if message has valid non-empty content
 export function hasValidContent(msg: ClaudeMessage): boolean {
   if (typeof msg.content === "string" && msg.content.trim()) return true;
   if (Array.isArray(msg.content)) {
-    return msg.content.some(
-      (block) =>
-        (block.type === "text" && block.text?.trim()) ||
-        (block.type === "thinking" && block.thinking?.trim()) ||
-        (block.type === "redacted_thinking" &&
-          typeof block.data === "string" &&
-          block.data.trim()) ||
-        block.type === "tool_use" ||
-        block.type === "tool_result" ||
-        // #7777: media-only user turns are real content — dropping them
-        // silently deletes vision input on the CC bridge / Claude paths.
-        block.type === "image" ||
-        block.type === "document"
-    );
+    return msg.content.some(isNonEmptyClaudeBlock);
   }
   return false;
 }
