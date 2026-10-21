@@ -302,26 +302,5 @@ docker-compose.yml.bak
 # run-translation.mjs writes the state atomically via a per-process temp file
 /.i18n-state.json.*.tmp
 
-# Local development records and private artifacts
-/.ai/
-/.specify/
-/specs/
-/secrets.md
-/explain-AI.md
-/reference.md
-/CLAUDE.md
-/AGENTS.md
-/.agents/
-/.kiro/
-/.codex/
-/.cursor/
-/.cline/
-/graphify-out/
-/.codebase-memory/
-/plans/
-.ignoreme
-**/.ignoreme
-/.ci-work/
-
 # Scoped tsc incremental state written by the typecheck gates (typecheck:core / open-sse / api)
 .tsbuildinfo-*
