@@ -117,6 +117,36 @@ function editAccounting(
   return { ...base, endpoint: "/v1/images/edits", provider, model, credentials, comboStrategy };
 }
 
+async function syntxEditPreflight(
+  provider: string,
+  allowedConnections: string[] | null,
+  resolvedModel: string
+): Promise<{ credentials: unknown } | Response> {
+  const credentials = await getProviderCredentialsWithQuotaPreflight(
+    provider,
+    null,
+    allowedConnections,
+    resolvedModel
+  );
+  if (!credentials) {
+    return errorResponse(HTTP_STATUS.UNAUTHORIZED, `No credentials for provider: ${provider}`);
+  }
+  const rateLimit = credentials as {
+    allRateLimited?: boolean;
+    retryAfter?: string | number | Date | null;
+    retryAfterHuman?: string;
+  };
+  if (rateLimit.allRateLimited) {
+    return unavailableResponse(
+      HTTP_STATUS.RATE_LIMITED,
+      `[${provider}] All accounts rate limited`,
+      rateLimit.retryAfter,
+      rateLimit.retryAfterHuman
+    );
+  }
+  return { credentials };
+}
+
 async function handleSyntxEditRequest(params: {
   parsed: ReturnType<typeof parseImageModel>;
   providerConfig: NonNullable<ReturnType<typeof getImageProvider>>;
@@ -128,6 +158,7 @@ async function handleSyntxEditRequest(params: {
   images: Array<{ bytes: Buffer; mime: string }>;
   imageBytes: Buffer | null;
   imageMime: string | null;
+  signal: AbortSignal | null;
 }): Promise<Response> {
   const {
     parsed,
@@ -140,33 +171,12 @@ async function handleSyntxEditRequest(params: {
     images,
     imageBytes,
     imageMime,
+    signal,
   } = params;
 
-  const credentials = await getProviderCredentialsWithQuotaPreflight(
-    parsed.provider,
-    null,
-    allowedConnections,
-    resolvedModel
-  );
-  if (!credentials) {
-    return errorResponse(
-      HTTP_STATUS.UNAUTHORIZED,
-      `No credentials for provider: ${parsed.provider}`
-    );
-  }
-  const rateLimit = credentials as {
-    allRateLimited?: boolean;
-    retryAfter?: string | number | Date | null;
-    retryAfterHuman?: string;
-  };
-  if (rateLimit.allRateLimited) {
-    return unavailableResponse(
-      HTTP_STATUS.RATE_LIMITED,
-      `[${parsed.provider}] All accounts rate limited`,
-      rateLimit.retryAfter,
-      rateLimit.retryAfterHuman
-    );
-  }
+  const preflight = await syntxEditPreflight(parsed.provider, allowedConnections, resolvedModel);
+  if (preflight instanceof Response) return preflight;
+  const credentials = preflight.credentials;
 
   const dataUrls = buildAdobeFireflyEditDataUrls(images, imageBytes, imageMime);
   if (dataUrls.length === 0) {
@@ -188,6 +198,7 @@ async function handleSyntxEditRequest(params: {
     },
     credentials: credentials as Parameters<typeof handleSyntxImageGeneration>[0]["credentials"],
     log,
+    signal,
   });
 
   if ((result as { success?: boolean }).success) {
@@ -396,6 +407,7 @@ async function dispatchImageEditTarget(
       },
       credentials: credentials as never,
       log,
+      signal: request.signal,
     })) as ImageComboDispatchResult;
   }
 
@@ -851,6 +863,7 @@ async function postHandler(request: Request, _context?: unknown) {
       images,
       imageBytes,
       imageMime,
+      signal: request.signal,
     });
   }
 

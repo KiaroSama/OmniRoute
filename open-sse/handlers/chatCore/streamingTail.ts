@@ -658,7 +658,11 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
     clientResponseFormat === FORMATS.OPENAI &&
     !isResponsesEndpoint &&
     !isDroidCLI;
-  const streamStateBody = finalBody || body;
+  // Response arguments belong to the client's schema, before provider cloaking.
+  const streamStateBody =
+    clientResponseFormat === FORMATS.CLAUDE && Array.isArray(body?.tools)
+      ? { ...(finalBody || body), tools: body.tools }
+      : finalBody || body;
 
   // Client's explicit thinking intent (Anthropic Messages shape). Claude Code
   // sends `{type:"enabled"}` or `{type:"adaptive"}` to opt into relaying
@@ -727,7 +731,10 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
       }),
       requestedThinking,
       customToolNames,
-      requestToolIdentityMap
+      requestToolIdentityMap,
+      // The CLIENT's declared tools[]: an Anthropic-format client gets its own
+      // tool-name casing back from any provider (OpenCode `read`, Claude Code `Read`).
+      (body as Record<string, unknown> | null | undefined)?.tools ?? null
     );
   } else {
     log?.debug?.("STREAM", `Standard passthrough mode`);
@@ -742,7 +749,8 @@ export async function runStreamingTail(deps: StreamingTailDeps) {
       apiKeyInfo,
       handleStreamFailure,
       clientResponseFormat,
-      requestToolIdentityMap
+      requestToolIdentityMap,
+      (body as Record<string, unknown> | null | undefined)?.tools ?? null
     );
   }
 

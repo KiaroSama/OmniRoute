@@ -478,6 +478,48 @@ Authorization: Bearer your-api-key
 → Returns all chat, embedding, and image models + combos in OpenAI format
 ```
 
+### Model prices (`pricing`)
+
+An entry carries a `pricing` object when OmniRoute knows the model's price. The price comes
+from the pricing table that cost accounting uses: built-in defaults, synced prices, and
+overrides set through `/api/pricing`. These are list prices, so subscription providers also
+show a per-token price.
+
+```json
+"pricing": {
+  "prompt": "0.000005",
+  "completion": "0.000025",
+  "input_cache_read": "0.0000005",
+  "input_cache_write": "0.00000625",
+  "input": 5,
+  "output": 25,
+  "cached": 0.5,
+  "cache_creation": 6.25
+}
+```
+
+| Fields                                                          | Unit                          | Notes                                                                                                                                      |
+| --------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `prompt`, `completion`, `input_cache_read`, `input_cache_write` | USD per token, decimal string | OpenRouter-compatible, never in exponent notation. The two cache fields appear only when there is a cache price.                           |
+| `input`, `output`, `cached`, `cache_creation`                   | USD per 1M tokens, number     | Fields from earlier catalog versions, kept for existing clients. `reasoning` and `long_context` also appear when the pricing row has them. |
+
+- **Combos** carry the price of their first visible target. Built-in `auto/*` combos pick a
+  target at request time, so they have no `pricing`.
+- **Free models** show `"0"` (and `0`) when their price is zero. A model with no pricing row
+  also shows `"0"` when the catalog marks it free (`free: true`) or the built-in free-model
+  catalog lists it.
+- **Unknown price:** the entry has no `pricing` key.
+- **Credit-metered providers** (such as Kiro) bill per request rather than per token. Their
+  entries keep the numeric per-1M fields they had before and carry no per-token string fields.
+- **Variants** (reasoning-effort ids, no-thinking aliases, discovery and gateway mirrors)
+  copy the price of the model they route to.
+- The fields carry base rates only. Long-context tiers (the numeric `long_context` field) and
+  service-tier multipliers (for example Codex fast or flex) do not change `prompt` or
+  `completion`.
+- The object is the same for every authentication style, including an Anthropic-style
+  request with `x-api-key` and `anthropic-version` (the response stays `{ "object": "list",
+"data": [...] }`). Implementation: `src/app/api/v1/models/catalogPricing.ts`.
+
 ### Model id prefixes (`?prefix=`)
 
 Most models are advertised under a **provider prefix**. Which prefix you get is controlled by
