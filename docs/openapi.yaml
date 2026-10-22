@@ -16109,6 +16109,58 @@ components:
           example: model
         owned_by:
           type: string
+        pricing:
+          $ref: "#/components/schemas/ModelPricing"
+
+    ModelPricing:
+      type: object
+      description: >-
+        Model price from the same pricing table OmniRoute uses for cost accounting.
+        Omitted when the price is unknown. A combo carries the price of its first
+        visible target. A model with no pricing row that the catalog marks free is
+        `"0"`. The string fields are OpenRouter-compatible (USD per token, plain
+        decimals, no exponent). The numeric fields are USD per 1M tokens.
+        Credit-metered providers (billed per request) carry only the numeric fields,
+        so `prompt` and `completion` are absent for them.
+      required: [input, output]
+      properties:
+        prompt:
+          type: string
+          description: USD per input token.
+          example: "0.000005"
+        completion:
+          type: string
+          description: USD per output token.
+          example: "0.000025"
+        input_cache_read:
+          type: string
+          description: USD per cached input token read. Present when there is a cache price.
+          example: "0.0000005"
+        input_cache_write:
+          type: string
+          description: USD per input token written to the cache. Present when there is a cache price.
+          example: "0.00000625"
+        input:
+          type: number
+          description: USD per 1M input tokens.
+          example: 5
+        output:
+          type: number
+          description: USD per 1M output tokens.
+          example: 25
+        cached:
+          type: number
+          description: USD per 1M cached input tokens read.
+        cache_creation:
+          type: number
+          description: USD per 1M input tokens written to the cache.
+        reasoning:
+          type: number
+          description: USD per 1M reasoning tokens, when the pricing row sets one.
+        long_context:
+          type: object
+          additionalProperties: true
+          description: Long-context rate tier from the pricing row, when it has one.
 
     ProxySubscription:
       type: object

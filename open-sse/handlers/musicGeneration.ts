@@ -84,7 +84,7 @@ function normalizeKieMusicTracks(recordData: unknown): Array<Record<string, unkn
 /**
  * Handle music generation request
  */
-export async function handleMusicGeneration({ body, credentials, log }) {
+export async function handleMusicGeneration({ body, credentials, log, signal = null }) {
   const { provider, model } = parseMusicModel(body.model);
 
   if (!provider) {
@@ -164,7 +164,7 @@ export async function handleMusicGeneration({ body, credentials, log }) {
   }
 
   if (providerConfig.format === "syntx-music") {
-    return handleSyntxMusicGeneration({ model, provider, body, credentials, log });
+    return handleSyntxMusicGeneration({ model, provider, body, credentials, log, signal });
   }
 
   return {
