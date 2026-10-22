@@ -2,8 +2,12 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
+import { Field } from "@omniroute/ui-kit/field";
+import Icon from "./Icon";
 import Modal from "./Modal";
 import Button from "./Button";
+import SegmentedControl from "./SegmentedControl";
+import Select from "./Select";
 import {
   readJson,
   fetchAssignmentForScope,
@@ -547,11 +551,9 @@ export default function ProxyConfigModal({
         <div className="flex flex-col gap-5">
           {/* Inheritance indicator */}
           {level !== "global" && !hasOwnProxy && inheritedFrom && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-sm">
-              <span className="material-symbols-outlined text-blue-400 text-base">
-                subdirectory_arrow_right
-              </span>
-              <span className="text-blue-300">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-info/10 border border-info/20 text-sm">
+              <Icon name="subdirectory_arrow_right" size={16} className="text-info" />
+              <span className="text-info">
                 {t("inheritingFrom")} <strong>{inheritedFrom.level}</strong>:{" "}
                 {inheritedFrom.proxy?.type}
                 ://{inheritedFrom.proxy?.host}:{inheritedFrom.proxy?.port}
@@ -560,52 +562,31 @@ export default function ProxyConfigModal({
           )}
 
           {/* Proxy Type Selector */}
-          <div>
-            <label className="text-xs text-text-muted mb-1.5 block uppercase tracking-wider font-medium">
-              {t("source")}
-            </label>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setMode("saved")}
-                className={`px-3 py-2 rounded text-sm border transition-colors ${
-                  mode === "saved"
-                    ? "bg-primary text-white border-primary"
-                    : "bg-bg-subtle text-text-muted border-border"
-                }`}
-              >
-                {t("savedProxy")}
-              </button>
-              <button
-                onClick={() => setMode("custom")}
-                className={`px-3 py-2 rounded text-sm border transition-colors ${
-                  mode === "custom"
-                    ? "bg-primary text-white border-primary"
-                    : "bg-bg-subtle text-text-muted border-border"
-                }`}
-              >
-                {t("custom")}
-              </button>
-            </div>
-          </div>
+          <Field label={t("source")}>
+            <SegmentedControl
+              aria-label={t("source")}
+              value={mode}
+              onChange={(next) => setMode(next as typeof mode)}
+              options={[
+                { value: "saved", label: t("savedProxy") },
+                { value: "custom", label: t("custom") },
+              ]}
+            />
+          </Field>
 
           {mode === "saved" && (
-            <div>
-              <label className="text-xs text-text-muted mb-1.5 block uppercase tracking-wider font-medium">
-                {t("savedProxy")}
-              </label>
-              <select
-                value={selectedProxyId}
-                onChange={(e) => setSelectedProxyId(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-lg bg-bg-subtle border border-border text-sm text-text-primary"
-              >
-                <option value="">{t("selectSavedProxyPlaceholder")}</option>
-                {sortedSavedProxies.map((item: any) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name} ({item.type}://{item.host}:{item.port})
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Select
+              label={t("savedProxy")}
+              value={selectedProxyId}
+              onChange={(e) => setSelectedProxyId(e.target.value)}
+            >
+              <option value="">{t("selectSavedProxyPlaceholder")}</option>
+              {sortedSavedProxies.map((item: any) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} ({item.type}://{item.host}:{item.port})
+                </option>
+              ))}
+            </Select>
           )}
 
           {mode === "custom" && (
@@ -631,7 +612,7 @@ export default function ProxyConfigModal({
 
           {/* Test Result */}
           {formError && (
-            <div className="px-4 py-3 rounded-lg border border-red-500/30 bg-red-500/10 text-sm text-red-400">
+            <div className="px-4 py-3 rounded-lg border border-error/30 bg-error/10 text-sm text-error">
               {formError}
             </div>
           )}
@@ -640,29 +621,27 @@ export default function ProxyConfigModal({
             <div
               className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${
                 testResult.success
-                  ? "bg-emerald-500/10 border-emerald-500/30"
-                  : "bg-red-500/10 border-red-500/30"
+                  ? "bg-success/10 border-success/30"
+                  : "bg-error/10 border-error/30"
               }`}
             >
-              <span
-                className={`material-symbols-outlined text-xl ${
-                  testResult.success ? "text-emerald-400" : "text-red-400"
-                }`}
-              >
-                {testResult.success ? "check_circle" : "error"}
-              </span>
+              <Icon
+                name={testResult.success ? "check_circle" : "error"}
+                size={20}
+                className={testResult.success ? "text-success" : "text-error"}
+              />
               <div className="flex-1">
                 {testResult.success ? (
                   <div>
-                    <span className="text-sm font-medium text-emerald-400">{t("connected")}</span>
+                    <span className="text-sm font-medium text-success">{t("connected")}</span>
                     <span className="text-text-muted text-xs ml-2">
                       {t("ip")}{" "}
-                      <span className="font-mono text-emerald-300">{testResult.publicIp}</span>
+                      <span className="font-mono text-success">{testResult.publicIp}</span>
                       {testResult.latencyMs && ` · ${testResult.latencyMs}ms`}
                     </span>
                   </div>
                 ) : (
-                  <div className="text-sm text-red-400">
+                  <div className="text-sm text-error">
                     {testResult.error || t("connectionFailed")}
                     {testResult.latencyMs && (
                       <span className="text-text-muted text-xs ml-2">
@@ -699,7 +678,7 @@ export default function ProxyConfigModal({
                   icon="delete"
                   onClick={handleClear}
                   disabled={saving}
-                  className="!text-red-400 hover:!bg-red-500/10"
+                  className="!text-error hover:!bg-error/10"
                 >
                   {t("clear")}
                 </Button>

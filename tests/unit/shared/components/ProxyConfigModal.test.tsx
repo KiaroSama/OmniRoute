@@ -14,6 +14,10 @@ vi.mock("next-intl", () => ({
   },
 }));
 
+// Imported once at module scope: the shared Modal is a kit Dialog (KEA-7886) and the first
+// import of the kit pays its transform cost, which must not land inside a 5 s test budget.
+const { default: ProxyConfigModal } = await import("@/shared/components/ProxyConfigModal");
+
 type FetchCall = {
   url: string;
   method: string;
@@ -75,7 +79,6 @@ async function flushEffects() {
 }
 
 async function renderProxyConfigModal(props?: Partial<React.ComponentProps<any>>) {
-  const { default: ProxyConfigModal } = await import("@/shared/components/ProxyConfigModal");
   const container = makeContainer();
   const root: Root = createRoot(container);
   cleanupCallbacks.push(() => root.unmount());
@@ -93,8 +96,9 @@ async function renderProxyConfigModal(props?: Partial<React.ComponentProps<any>>
       />
     );
   });
-  await waitForModalToLoad(container);
-  return { container, root };
+  // The dialog is portaled to document.body (KEA-7886): that is the query root.
+  await waitForModalToLoad(document.body);
+  return { container: document.body, root };
 }
 
 async function waitForModalToLoad(container: HTMLElement) {
