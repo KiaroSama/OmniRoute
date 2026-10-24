@@ -69,10 +69,23 @@ it(
         </NextIntlClientProvider>
       );
       expect(screen.getByRole("status").textContent).toBe(labels.loading);
+      const refresh = screen.getByRole("button", { name: labels.refresh });
+      expect(refresh.classList.contains("ci-button")).toBe(true);
+      expect(refresh).toHaveProperty("disabled", true);
       await act(async () => {
         resolve(Response.json(report));
         await pending;
       });
+      const table = screen.getByRole("table", { name: labels.title });
+      expect(table.getAttribute("data-slot")).toBe("table");
+      expect(within(table).getAllByRole("columnheader")).toHaveLength(9);
+      expect(
+        within(table).getByRole("columnheader", { name: labels.route }).getAttribute("scope")
+      ).toBe("col");
+      expect(
+        within(table).getByRole("rowheader", { name: labels.overall }).getAttribute("scope")
+      ).toBe("row");
+      expect(refresh).toHaveProperty("disabled", false);
       const overall = screen.getByText(labels.overall).closest("tr")!;
       const proxied = screen.getByText(labels.proxied).closest("tr")!;
       expect(within(overall).getByText("10 B")).toBeTruthy();

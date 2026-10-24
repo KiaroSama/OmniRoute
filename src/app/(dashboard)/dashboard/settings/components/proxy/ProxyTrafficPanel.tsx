@@ -1,6 +1,16 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@omniroute/ui-kit/table";
+import Button from "@/shared/components/Button";
 import { fmtFull } from "@/shared/utils/formatting";
 import type { TrafficCounters, TrafficItem } from "@/lib/db/proxyTraffic";
 
@@ -48,9 +58,10 @@ export default function ProxyTrafficPanel() {
         <h3 id="proxy-traffic-heading" className="text-sm font-semibold text-text">
           {t("title")}
         </h3>
-        <button
+        <Button
           type="button"
-          className="text-sm text-primary hover:underline disabled:opacity-50"
+          variant="ghost"
+          size="sm"
           disabled={loading}
           onClick={() => {
             setLoading(true);
@@ -59,7 +70,7 @@ export default function ProxyTrafficPanel() {
           }}
         >
           {t("refresh")}
-        </button>
+        </Button>
       </div>
       <p className="text-xs text-text-muted">{t("description")}</p>
       <p className="text-xs text-text-muted">{t("coverageNote")}</p>
@@ -105,54 +116,48 @@ function TrafficTable({ report }: { report: TrafficReport }) {
   ];
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm text-left">
-        <caption className="sr-only">{t("title")}</caption>
-        <thead className="text-xs text-text-muted">
-          <tr>
-            {[
-              "route",
-              "upload",
-              "download",
-              "attempts",
-              "knownUpload",
-              "completed",
-              "failed",
-              "cancelled",
-              "errored",
-            ].map((key) => (
-              <th key={key} scope="col" className="px-3 py-2 whitespace-nowrap">
-                {t(key)}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.key} className="border-t border-border">
-              <th scope="row" className="px-3 py-2 font-medium text-text whitespace-nowrap">
-                {row.name}
-              </th>
-              <td className="px-3 py-2 whitespace-nowrap tabular-nums">
-                {fmtFull(row.uploadBytes)} B
-              </td>
-              <td className="px-3 py-2 whitespace-nowrap tabular-nums">
-                {fmtFull(row.downloadBytes)} B
-              </td>
-              <td className="px-3 py-2 tabular-nums">{fmtFull(row.attempts)}</td>
-              <td className="px-3 py-2 whitespace-nowrap tabular-nums">
-                {fmtFull(row.knownUploadAttempts)} / {fmtFull(row.attempts)}
-              </td>
-              <td className="px-3 py-2 whitespace-nowrap tabular-nums">
-                {fmtFull(row.completedDownloads)} / {fmtFull(row.attempts)}
-              </td>
-              <td className="px-3 py-2 tabular-nums">{fmtFull(row.failedAttempts)}</td>
-              <td className="px-3 py-2 tabular-nums">{fmtFull(row.cancelledDownloads)}</td>
-              <td className="px-3 py-2 tabular-nums">{fmtFull(row.erroredDownloads)}</td>
-            </tr>
+    <Table persistentScrollbars={false}>
+      <TableCaption className="sr-only">{t("title")}</TableCaption>
+      <TableHeader>
+        <TableRow>
+          {[
+            "route",
+            "upload",
+            "download",
+            "attempts",
+            "knownUpload",
+            "completed",
+            "failed",
+            "cancelled",
+            "errored",
+          ].map((key) => (
+            <TableHead key={key} scope="col">
+              {t(key)}
+            </TableHead>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((row) => (
+          <TableRow key={row.key}>
+            <TableHead scope="row" className="font-medium text-text">
+              {row.name}
+            </TableHead>
+            <TableCell className="tabular-nums">{fmtFull(row.uploadBytes)} B</TableCell>
+            <TableCell className="tabular-nums">{fmtFull(row.downloadBytes)} B</TableCell>
+            <TableCell className="tabular-nums">{fmtFull(row.attempts)}</TableCell>
+            <TableCell className="tabular-nums">
+              {fmtFull(row.knownUploadAttempts)} / {fmtFull(row.attempts)}
+            </TableCell>
+            <TableCell className="tabular-nums">
+              {fmtFull(row.completedDownloads)} / {fmtFull(row.attempts)}
+            </TableCell>
+            <TableCell className="tabular-nums">{fmtFull(row.failedAttempts)}</TableCell>
+            <TableCell className="tabular-nums">{fmtFull(row.cancelledDownloads)}</TableCell>
+            <TableCell className="tabular-nums">{fmtFull(row.erroredDownloads)}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
