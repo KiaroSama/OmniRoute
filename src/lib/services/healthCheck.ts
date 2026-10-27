@@ -1,6 +1,7 @@
 /** Periodic health-check poller for embedded services. */
 
 import type { HealthState } from "./types";
+import { getOriginalFetch } from "@omniroute/open-sse/utils/proxyFetch.ts";
 
 const HEALTH_FETCH_TIMEOUT_MS = 5_000;
 const FAILURE_THRESHOLD = 3;
@@ -50,10 +51,10 @@ export class HealthChecker {
     const timeout = setTimeout(() => controller.abort(), HEALTH_FETCH_TIMEOUT_MS);
 
     try {
+      // Service-health HTTP traffic bypasses provider egress; native cores use their probe.
       const healthy = this.probe
         ? await this.probe(controller.signal)
-        : (await fetch(this.healthUrl(), { signal: controller.signal })).ok;
-      clearTimeout(timeout);
+        : (await getOriginalFetch()(this.healthUrl(), { signal: controller.signal })).ok;
       if (!this.active) return;
 
       if (healthy) {
@@ -63,8 +64,9 @@ export class HealthChecker {
         this.recordFailure();
       }
     } catch {
-      clearTimeout(timeout);
       this.recordFailure();
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
