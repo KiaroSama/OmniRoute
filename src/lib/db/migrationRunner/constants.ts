@@ -167,10 +167,16 @@ export const RENAMED_MIGRATION_COMPATIBILITY = [
     toName: "inspector_custom_hosts",
   },
   {
-    // Published cache reporting used the slot now owned by Codex wake-up tasks.
+    // Published cache reporting used slots now owned by canonical release migrations.
     fromVersion: "206",
     fromName: "daily_cached_input",
-    toVersion: "213",
+    toVersion: "214",
+    toName: "daily_cached_input",
+  },
+  {
+    fromVersion: "213",
+    fromName: "daily_cached_input",
+    toVersion: "214",
     toName: "daily_cached_input",
   },
   {

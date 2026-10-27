@@ -26,15 +26,20 @@ Object.assign(process.env, {
   OMNIROUTE_MIGRATIONS_DIR: fixture,
 });
 const sql = fs.readFileSync(
-  new URL("../../src/lib/db/migrations/213_daily_cached_input.sql", import.meta.url),
+  new URL("../../src/lib/db/migrations/214_daily_cached_input.sql", import.meta.url),
   "utf8"
 );
-fs.writeFileSync(path.join(fixture, "213_daily_cached_input.sql"), sql, "utf8");
-fs.writeFileSync(
-  path.join(fixture, "206_codex_wakeup_tasks.sql"),
-  "CREATE TABLE incoming_206 (id INTEGER PRIMARY KEY);",
-  "utf8"
-);
+fs.writeFileSync(path.join(fixture, "214_daily_cached_input.sql"), sql, "utf8");
+for (const [version, name] of [
+  ["206", "codex_wakeup_tasks"],
+  ["213", "api_key_preferred_connections"],
+]) {
+  fs.writeFileSync(
+    path.join(fixture, `${version}_${name}.sql`),
+    `CREATE TABLE incoming_${version} (id INTEGER PRIMARY KEY);`,
+    "utf8"
+  );
+}
 const { runMigrations } = await import("../../src/lib/db/migrationRunner.ts");
 const makeDb = () => {
   const db = createNodeSqliteAdapterFromDatabase(new DatabaseSync(":memory:"), ":memory:");
@@ -57,7 +62,16 @@ test(
   "cached migration rehomes published ledgers and preserves unknown history",
   { timeout: 3000 },
   () => {
-    for (const versions of [[], ["206"], ["213"], ["206", "213"]]) {
+    for (const versions of [
+      [],
+      ["206"],
+      ["213"],
+      ["214"],
+      ["206", "213"],
+      ["206", "214"],
+      ["213", "214"],
+      ["206", "213", "214"],
+    ]) {
       const db = makeDb();
       try {
         if (versions.length) {
@@ -69,12 +83,13 @@ test(
             "INSERT INTO _omniroute_migrations (version,name,applied_at) VALUES (?,?,?)"
           ).run(version, "daily_cached_input", "fixture-applied");
         }
-        assert.equal(runMigrations(db, { isNewDb: true }), versions.length ? 1 : 2);
+        assert.equal(runMigrations(db, { isNewDb: true }), versions.length ? 2 : 3);
         assert.deepEqual(
           db.prepare("SELECT version,name FROM _omniroute_migrations ORDER BY version").all(),
           [
             { version: "206", name: "codex_wakeup_tasks" },
-            { version: "213", name: "daily_cached_input" },
+            { version: "213", name: "api_key_preferred_connections" },
+            { version: "214", name: "daily_cached_input" },
           ]
         );
         assert.deepEqual(db.prepare("SELECT * FROM daily_usage_summary").all(), [
@@ -84,12 +99,20 @@ test(
           assert.equal(
             (
               db
-                .prepare("SELECT applied_at FROM _omniroute_migrations WHERE version='213'")
+                .prepare("SELECT applied_at FROM _omniroute_migrations WHERE version='214'")
                 .get() as {
                 applied_at: string;
               }
             ).applied_at,
             "fixture-applied"
+          );
+        }
+        for (const version of ["206", "213"]) {
+          assert.ok(
+            db
+              .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?")
+              .get(`incoming_${version}`),
+            `canonical migration ${version} must execute after cache ledger reconciliation`
           );
         }
         assert.equal(runMigrations(db, { isNewDb: true }), 0);
@@ -108,10 +131,10 @@ test(
     try {
       db.exec(sql);
       db.exec(`INSERT INTO _omniroute_migrations (version,name) VALUES
-      ('206','daily_cached_input'),('213','unrelated_migration');
+      ('206','daily_cached_input'),('214','unrelated_migration');
       UPDATE daily_usage_summary SET total_cache_read_tokens=60;`);
       const before = db.prepare("SELECT * FROM _omniroute_migrations ORDER BY version").all();
-      assert.throws(() => runMigrations(db, { isNewDb: true }), /target version 213 is occupied/);
+      assert.throws(() => runMigrations(db, { isNewDb: true }), /target version 214 is occupied/);
       assert.deepEqual(
         db.prepare("SELECT * FROM _omniroute_migrations ORDER BY version").all(),
         before

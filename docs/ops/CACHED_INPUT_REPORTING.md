@@ -29,10 +29,11 @@ page, API-key-filtered cache measurements similarly remain incomplete when relev
 key identity; those tokens are never assigned to a guessed key. Pricing queries keep their previous
 cache-cost columns; the nullable reporting column does not change historical billing fallback.
 
-Migration `213_daily_cached_input.sql` adds the nullable archive count. Startup reconciles the
-previously published `206_daily_cached_input` ledger entry to 213 without replaying the archive
-change, allowing the upstream migration occupying 206 to run. Existing measurements and unknown
-historical counts are retained; an unrelated migration occupying the target slot fails closed.
+Migration `214_daily_cached_input.sql` adds the nullable archive count. Startup reconciles the
+previously published `206_daily_cached_input` and `213_daily_cached_input` ledger entries to 214
+without replaying the archive change, allowing the upstream migrations occupying 206 and 213 to run.
+Existing measurements and unknown historical counts are retained; an unrelated migration occupying
+the target slot fails closed.
 This standalone contribution does not reserve migration numbers across other unmerged PRs.
 
 The existing ingestion convention records zero when raw cache-read metadata is absent; this change
