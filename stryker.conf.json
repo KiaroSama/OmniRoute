@@ -651,7 +651,19 @@
       "tests/unit/quota-share-public-code-17132.test.ts",
       "tests/unit/request-scoped-400.test.ts",
       "tests/unit/semantic-cache-request-controls.test.ts",
-      "tests/unit/shared-wallet-credits.test.ts"
+      "tests/unit/shared-wallet-credits.test.ts",
+      "tests/unit/antigravity-pre-response-nonstream.test.ts",
+      "tests/unit/antigravity-timeout-retry.test.ts",
+      "tests/unit/claude-code-tools-not-capped-18120.test.ts",
+      "tests/unit/codebuddy-intl-request-illegal-5024.test.ts",
+      "tests/unit/combo-hedge-isolation.test.ts",
+      "tests/unit/combo-target-stream-first-output.test.ts",
+      "tests/unit/combo/connection-cooldown-expansion.test.ts",
+      "tests/unit/management-capability-routes-protected.test.ts",
+      "tests/unit/management-writers-always-protected.test.ts",
+      "tests/unit/opencode-410-model-scope.test.ts",
+      "tests/unit/p2c-latency-weight.test.ts",
+      "tests/unit/services/service-status-route-guard.test.ts"
     ],
     "nodeArgs": [
       "--import",
