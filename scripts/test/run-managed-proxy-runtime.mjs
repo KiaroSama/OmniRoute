@@ -21,6 +21,7 @@ Object.assign(env, {
   MANAGED_PROXY_FIXTURE_ROOT: root,
   STORAGE_ENCRYPTION_KEY: "synthetic-managed-fixture-key",
   DISABLE_SQLITE_AUTO_BACKUP: "true",
+  NEXT_TELEMETRY_DISABLED: "1",
 });
 for (const key of [
   "DATA_DIR",
@@ -103,7 +104,7 @@ async function sweepFixtureChildren() {
   assert.equal(survivors, 0, "Owned synthetic children survived test cleanup and were terminated");
 }
 
-async function run(args) {
+async function run(args, wallMs = 120000) {
   const child = spawn(process.execPath, args, {
     cwd: project,
     env,
@@ -143,7 +144,7 @@ async function run(args) {
       output.write(chunk);
     });
   progress();
-  const wall = setTimeout(kill, 120000);
+  const wall = setTimeout(kill, wallMs);
   try {
     const code = await new Promise((resolve, reject) => {
       child.once("error", reject);
@@ -194,6 +195,8 @@ try {
     .sort();
   assert.deepEqual(uiFiles, [
     "managedProxyAuth.test.tsx",
+    "managedProxyDeletionDispatch.test.tsx",
+    "managedProxyDeletionHandlers.test.tsx",
     "managedProxyLifecycle.test.tsx",
     "managedProxyRemoval.test.tsx",
     "managedProxyUi.test.tsx",
@@ -211,6 +214,17 @@ try {
     "--hookTimeout=15000",
     "--retry=0",
   ]);
+  await run(
+    [
+      "--import",
+      "tsx/esm",
+      "--test",
+      "--test-concurrency=1",
+      "--test-timeout=95000",
+      "tests/integration/managed-proxy/deletion-dispatch.test.ts",
+    ],
+    200000
+  );
 } finally {
   if (cleanupVerified) fs.rmSync(root, { recursive: true, force: true });
   else console.error("Managed fixture diagnostics retained because cleanup was not verified");

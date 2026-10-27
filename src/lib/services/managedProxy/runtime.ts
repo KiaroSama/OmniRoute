@@ -12,7 +12,7 @@ const execute = promisify(execFile);
 
 /** No inherited core configuration directories, proxy variables or provider credentials. */
 export function coreEnvironment(): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = {};
+  const env = {} as NodeJS.ProcessEnv;
   for (const key of ["SystemRoot", "WINDIR", "TEMP", "TMP", "PATH", "LANG", "LC_ALL"]) {
     if (process.env[key]) env[key] = process.env[key];
   }

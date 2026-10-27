@@ -8,6 +8,11 @@ on:
       - "src/lib/services/healthCheck.ts"
       - "src/lib/services/types.ts"
       - "src/app/api/services/managed-proxy/**"
+      - "src/server/authz/**"
+      - "src/lib/api/*Proxy*.ts"
+      - "src/lib/api/proxyDeletionHandlers.ts"
+      - "src/app/api/settings/proxies/**"
+      - "tests/integration/managed-proxy/**"
       - "src/shared/components/ProxyCustomFields.tsx"
       - "tests/unit/managedProxy*.test.ts"
       - "tests/unit/managedProxy*.test.tsx"
@@ -70,7 +75,7 @@ jobs:
           cache: npm
       - run: npm ci
       - name: Verify isolated lifecycle, rollback, deletion and existing-field save
-        timeout-minutes: 5
+        timeout-minutes: 8
         run: node scripts/test/run-managed-proxy-runtime.mjs
         env:
           HOOKMAKER_MAX_TEST_WORKERS: "1"

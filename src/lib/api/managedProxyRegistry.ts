@@ -1,7 +1,5 @@
 import { getProxyById, deleteProxyById } from "@/lib/db/proxies";
 import { createErrorResponse } from "./errorResponse";
-import { requireManagementAuth } from "./requireManagementAuth";
-import { AUTHZ_HEADER_PEER_LOCALITY } from "@/server/authz/headers";
 import type { ManagedCore } from "@/lib/services/managedProxy/config";
 
 export function managedProxyIdentity(
@@ -38,21 +36,14 @@ export async function rejectManagedEndpointEdit(
 }
 
 export async function deleteProxyWithManagedCleanup(
-  request: Request,
+  _request: Request,
   id: string,
   force: boolean
 ): Promise<boolean> {
   const proxy = await getProxyById(id, { includeSecrets: false });
-  const identity = managedProxyIdentity(proxy?.notes);
-  if (!identity) return deleteProxyById(id, { force });
-  if (request.headers.get(AUTHZ_HEADER_PEER_LOCALITY) !== "loopback")
-    throw new Error("Managed proxy deletion requires local access");
-  const denied = await requireManagementAuth(request, { alwaysRequireAuth: true });
-  if (denied) throw new Error("Managed proxy deletion requires authenticated management access");
-  const { removeManagedProxy } = await import("@/lib/services/managedProxy/remove");
-  return removeManagedProxy(identity.core, identity.id, async () => {
-    const deleted = await deleteProxyById(id, { force });
-    if (!deleted) throw new Error("Managed proxy registry entry disappeared");
-    return deleted;
-  });
+  if (managedProxyIdentity(proxy?.notes))
+    throw new Error(
+      "Managed proxy deletion requires the authenticated local managed-core endpoint"
+    );
+  return deleteProxyById(id, { force });
 }
