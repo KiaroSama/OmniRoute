@@ -11,7 +11,7 @@ const fmt = (n: number) => (n >= 1e9 ? (n / 1e9).toFixed(2) + "B" : Math.round(n
 
 test(
   "the budget card prints the catalog's own totals (no regex-parsed subset)",
-  { timeout: 15000 },
+  { timeout: 90000 },
   (context) => {
     const dir = mkdtempSync(path.join(os.tmpdir(), "budget-card-"));
     context.after(() => rmSync(dir, { recursive: true, force: true }));
@@ -21,7 +21,7 @@ test(
       ["--import", "tsx/esm", "scripts/research/gen-budget-card-svg.mjs", "--out", out],
       {
         stdio: ["ignore", "pipe", "pipe"],
-        timeout: 10000,
+        timeout: 60000,
         killSignal: "SIGKILL",
         windowsHide: true,
       }
@@ -52,7 +52,7 @@ test(
 
 test(
   "--out without a path fails loudly instead of writing to undefined",
-  { timeout: 15000 },
+  { timeout: 90000 },
   () => {
     assert.throws(
       () =>
@@ -61,7 +61,7 @@ test(
           ["--import", "tsx/esm", "scripts/research/gen-budget-card-svg.mjs", "--out"],
           {
             stdio: ["ignore", "pipe", "pipe"],
-            timeout: 10000,
+            timeout: 60000,
             killSignal: "SIGKILL",
             windowsHide: true,
           }

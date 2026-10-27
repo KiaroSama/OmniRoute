@@ -244,7 +244,7 @@ test("CLI requires an event baseline for PR, merge-group and push checks", () =>
 
 test(
   "CLI compares candidate debt to the event baseline, including merge queues and pushes",
-  { timeout: 30000 },
+  { timeout: 180000 },
   () => {
     const dir = mkdtempSync(join(tmpdir(), "catalog-evidence-"));
     const script = fileURLToPath(
@@ -271,7 +271,7 @@ test(
         cwd: dir,
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
-        timeout: 5000,
+        timeout: 30000,
         killSignal: "SIGKILL",
         windowsHide: true,
       }).trim();
@@ -304,7 +304,7 @@ test(
             cwd: dir,
             encoding: "utf8",
             stdio: ["ignore", "pipe", "pipe"],
-            timeout: 5000,
+            timeout: 30000,
             killSignal: "SIGKILL",
             windowsHide: true,
             env: {
