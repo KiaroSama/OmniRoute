@@ -59,12 +59,14 @@ test(
       });
       let sends = 0;
       const records: Array<{ route: unknown; delta: Record<string, number> }> = [];
+      const headers = { "x-fixture": "﻿fixture​-value" };
       const response = await proxyFetch(
         "http://127.0.0.1:20128/v1/messages",
-        { method: "POST", body: "é" },
+        { method: "POST", body: "é", headers },
         {
           nativeFetch: async (_input, options) => {
             sends++;
+            assert.equal(new Headers(options?.headers).get("x-fixture"), "fixture-value");
             assert.equal(
               new Headers(options?.headers).get(SELF_HOP_HEADER),
               ownListenerSelfHopToken()
@@ -75,6 +77,7 @@ test(
         }
       );
       assert.equal(await response.text(), "ok");
+      assert.equal(headers["x-fixture"], "﻿fixture​-value");
       assert.equal(sends, 1);
       assert.ok(records.every(({ route }) => route === null));
       assert.deepEqual(

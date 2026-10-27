@@ -25,10 +25,10 @@ process.env.OMNIROUTE_PLUGINS_DIR = path.join(fixtureDir, "plugins");
 process.env.OMNIROUTE_MIGRATIONS_DIR = fixtureDir;
 
 const sql = fs.readFileSync(
-  new URL("../../src/lib/db/migrations/214_proxy_payload_traffic.sql", import.meta.url),
+  new URL("../../src/lib/db/migrations/215_proxy_payload_traffic.sql", import.meta.url),
   "utf8"
 );
-fs.writeFileSync(path.join(fixtureDir, "214_proxy_payload_traffic.sql"), sql, "utf8");
+fs.writeFileSync(path.join(fixtureDir, "215_proxy_payload_traffic.sql"), sql, "utf8");
 fs.writeFileSync(
   path.join(fixtureDir, "206_codex_wakeup_tasks.sql"),
   "CREATE TABLE incoming_206 (id INTEGER PRIMARY KEY);",
@@ -42,6 +42,11 @@ fs.writeFileSync(
 fs.writeFileSync(
   path.join(fixtureDir, "213_api_key_preferred_connections.sql"),
   "CREATE TABLE incoming_213 (id INTEGER PRIMARY KEY);",
+  "utf8"
+);
+fs.writeFileSync(
+  path.join(fixtureDir, "214_call_logs_client_session_id.sql"),
+  "CREATE TABLE incoming_214 (id INTEGER PRIMARY KEY);",
   "utf8"
 );
 // All state paths are isolated before loading the real migration orchestrator.
@@ -102,6 +107,12 @@ test(
       ["207", "214"],
       ["213", "214"],
       ["206", "207", "213", "214"],
+      ["215"],
+      ["206", "215"],
+      ["207", "215"],
+      ["213", "215"],
+      ["214", "215"],
+      ["206", "207", "213", "214", "215"],
     ]) {
       const db = createNodeSqliteAdapterFromDatabase(new DatabaseSync(":memory:"), ":memory:");
       try {
@@ -120,14 +131,15 @@ test(
             "INSERT INTO _omniroute_migrations (version, name, applied_at) VALUES (?, ?, ?)"
           ).run(version, "proxy_payload_traffic", "fixture-applied");
         }
-        assert.equal(runMigrations(db, { isNewDb: true }), versions.length ? 3 : 4);
+        assert.equal(runMigrations(db, { isNewDb: true }), versions.length ? 4 : 5);
         assert.deepEqual(
           db.prepare("SELECT version, name FROM _omniroute_migrations ORDER BY version").all(),
           [
             { version: "206", name: "codex_wakeup_tasks" },
             { version: "207", name: "remove_opencode_free_provider" },
             { version: "213", name: "api_key_preferred_connections" },
-            { version: "214", name: "proxy_payload_traffic" },
+            { version: "214", name: "call_logs_client_session_id" },
+            { version: "215", name: "proxy_payload_traffic" },
           ],
           `canonical ledger after ${versions.join(",") || "fresh"} startup`
         );
@@ -152,7 +164,7 @@ test(
           assert.equal(
             (
               db
-                .prepare("SELECT applied_at FROM _omniroute_migrations WHERE version = '214'")
+                .prepare("SELECT applied_at FROM _omniroute_migrations WHERE version = '215'")
                 .get() as {
                 applied_at: string;
               }
@@ -160,7 +172,7 @@ test(
             "fixture-applied"
           );
         }
-        for (const version of ["206", "207", "213"]) {
+        for (const version of ["206", "207", "213", "214"]) {
           assert.ok(
             db
               .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?")
@@ -187,11 +199,11 @@ test(
       version TEXT PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     INSERT INTO _omniroute_migrations (version, name) VALUES
-      ('214', 'unrelated_migration'), ('207', 'proxy_payload_traffic');
+      ('215', 'unrelated_migration'), ('207', 'proxy_payload_traffic');
     INSERT INTO proxy_payload_traffic (route_key, route_kind, attempts, started_at, updated_at)
       VALUES ('direct', 'direct', 9, 'start', 'update');`);
       const before = db.prepare("SELECT * FROM _omniroute_migrations ORDER BY version").all();
-      assert.throws(() => runMigrations(db, { isNewDb: true }), /target version 214 is occupied/);
+      assert.throws(() => runMigrations(db, { isNewDb: true }), /target version 215 is occupied/);
       assert.deepEqual(
         db.prepare("SELECT * FROM _omniroute_migrations ORDER BY version").all(),
         before

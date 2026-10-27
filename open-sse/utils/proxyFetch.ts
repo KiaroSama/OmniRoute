@@ -1,6 +1,7 @@
 // @ts-nocheck
 import "./setupPolyfill.ts";
 import { AsyncLocalStorage } from "node:async_hooks";
+import { sanitizeHeaderValues } from "./headerSanitize.ts";
 import { proxyConfigToUrl, proxyUrlForLogs, isRelayType } from "./proxyDispatcher.ts";
 import { isProxyReachable } from "@/lib/proxyHealth";
 import { isDirectBypassHost } from "./proxyDirectBypass.ts";
@@ -287,6 +288,9 @@ function patchedFetchUnrecorded(
   options: FetchWithDispatcherOptions = {},
   deps: ProxyFetchDeps = {}
 ) {
+  // Preserve upstream header cleanup before every extracted transport path.
+  const cleanHeaders = options?.headers ? sanitizeHeaderValues(options.headers) : undefined;
+  if (cleanHeaders !== options?.headers) options = { ...options, headers: cleanHeaders };
   return dispatchProxyFetch(input, options, deps, {
     originalFetch,
     originalFetchWithDispatcher,
