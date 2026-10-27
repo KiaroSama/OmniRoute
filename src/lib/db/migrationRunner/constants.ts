@@ -170,13 +170,19 @@ export const RENAMED_MIGRATION_COMPATIBILITY = [
     // Published cache reporting used slots now owned by canonical release migrations.
     fromVersion: "206",
     fromName: "daily_cached_input",
-    toVersion: "214",
+    toVersion: "215",
     toName: "daily_cached_input",
   },
   {
     fromVersion: "213",
     fromName: "daily_cached_input",
-    toVersion: "214",
+    toVersion: "215",
+    toName: "daily_cached_input",
+  },
+  {
+    fromVersion: "214",
+    fromName: "daily_cached_input",
+    toVersion: "215",
     toName: "daily_cached_input",
   },
   {
