@@ -50,10 +50,10 @@ direct; automatic fallback proxy sends use the actual fallback identity.
 - Redirects and retries hidden inside a fetch implementation are not distinct invocations at this
   seam. Transports that bypass this fetch layer (for example independent WebSocket/browser transports)
   are not measured. The panel is not complete machine-wide traffic accounting.
-- Totals are additive in `proxy_payload_traffic`, created by migration 213, and survive process
-  restart. Previously applied traffic migrations 206 and 207 are reconciled to 213 without changing
+- Totals are additive in `proxy_payload_traffic`, created by migration 214, and survive process
+  restart. Previously applied traffic migrations 206, 207 and 213 are reconciled to 214 without changing
   counters, freeing those slots for the upstream migrations. An unrelated migration already recorded
-  at 213 stops reconciliation rather than overwriting history.
+  at 214 stops reconciliation rather than overwriting history.
   Totals start when this version begins observing traffic; historical traffic is not inferred.
   Each observed response chunk persists immediately. A database failure emits a credential-free
   warning and marks runtime persistence coverage incomplete; requests continue unaffected.
