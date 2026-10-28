@@ -26,14 +26,16 @@ Object.assign(process.env, {
   OMNIROUTE_MIGRATIONS_DIR: fixture,
 });
 const sql = fs.readFileSync(
-  new URL("../../src/lib/db/migrations/215_daily_cached_input.sql", import.meta.url),
+  new URL("../../src/lib/db/migrations/217_daily_cached_input.sql", import.meta.url),
   "utf8"
 );
-fs.writeFileSync(path.join(fixture, "215_daily_cached_input.sql"), sql, "utf8");
+fs.writeFileSync(path.join(fixture, "217_daily_cached_input.sql"), sql, "utf8");
 for (const [version, name] of [
   ["206", "codex_wakeup_tasks"],
   ["213", "api_key_preferred_connections"],
   ["214", "call_logs_client_session_id"],
+  ["215", "team_cost_centers"],
+  ["216", "team_cost_shapes"],
 ]) {
   fs.writeFileSync(
     path.join(fixture, `${version}_${name}.sql`),
@@ -63,24 +65,9 @@ test(
   "cached migration rehomes published ledgers and preserves unknown history",
   { timeout: 3000 },
   () => {
-    for (const versions of [
-      [],
-      ["206"],
-      ["213"],
-      ["214"],
-      ["206", "213"],
-      ["206", "214"],
-      ["213", "214"],
-      ["206", "213", "214"],
-      ["215"],
-      ["206", "215"],
-      ["213", "215"],
-      ["214", "215"],
-      ["206", "213", "215"],
-      ["206", "214", "215"],
-      ["213", "214", "215"],
-      ["206", "213", "214", "215"],
-    ]) {
+    const publishedSlots = ["206", "213", "214", "215", "217"];
+    for (let mask = 0; mask < 1 << publishedSlots.length; mask++) {
+      const versions = publishedSlots.filter((_, index) => mask & (1 << index));
       const db = makeDb();
       try {
         if (versions.length) {
@@ -92,14 +79,16 @@ test(
             "INSERT INTO _omniroute_migrations (version,name,applied_at) VALUES (?,?,?)"
           ).run(version, "daily_cached_input", "fixture-applied");
         }
-        assert.equal(runMigrations(db, { isNewDb: true }), versions.length ? 3 : 4);
+        assert.equal(runMigrations(db, { isNewDb: true }), versions.length ? 5 : 6);
         assert.deepEqual(
           db.prepare("SELECT version,name FROM _omniroute_migrations ORDER BY version").all(),
           [
             { version: "206", name: "codex_wakeup_tasks" },
             { version: "213", name: "api_key_preferred_connections" },
             { version: "214", name: "call_logs_client_session_id" },
-            { version: "215", name: "daily_cached_input" },
+            { version: "215", name: "team_cost_centers" },
+            { version: "216", name: "team_cost_shapes" },
+            { version: "217", name: "daily_cached_input" },
           ]
         );
         assert.deepEqual(db.prepare("SELECT * FROM daily_usage_summary").all(), [
@@ -109,7 +98,7 @@ test(
           assert.equal(
             (
               db
-                .prepare("SELECT applied_at FROM _omniroute_migrations WHERE version='215'")
+                .prepare("SELECT applied_at FROM _omniroute_migrations WHERE version='217'")
                 .get() as {
                 applied_at: string;
               }
@@ -117,7 +106,7 @@ test(
             "fixture-applied"
           );
         }
-        for (const version of ["206", "213", "214"]) {
+        for (const version of ["206", "213", "214", "215", "216"]) {
           assert.ok(
             db
               .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?")
@@ -141,10 +130,10 @@ test(
     try {
       db.exec(sql);
       db.exec(`INSERT INTO _omniroute_migrations (version,name) VALUES
-      ('206','daily_cached_input'),('215','unrelated_migration');
+      ('206','daily_cached_input'),('217','unrelated_migration');
       UPDATE daily_usage_summary SET total_cache_read_tokens=60;`);
       const before = db.prepare("SELECT * FROM _omniroute_migrations ORDER BY version").all();
-      assert.throws(() => runMigrations(db, { isNewDb: true }), /target version 215 is occupied/);
+      assert.throws(() => runMigrations(db, { isNewDb: true }), /target version 217 is occupied/);
       assert.deepEqual(
         db.prepare("SELECT * FROM _omniroute_migrations ORDER BY version").all(),
         before

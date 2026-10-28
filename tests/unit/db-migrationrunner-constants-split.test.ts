@@ -70,14 +70,14 @@ describe("migrationRunner/constants — exact small-table snapshots", () => {
 // ── large tables — count + shape + spot-checks (corruption guard) ─────────────
 
 describe("migrationRunner/constants — large-table integrity", () => {
-  it("RENAMED_MIGRATION_COMPATIBILITY has 36 well-formed entries", () => {
-    assert.equal(RENAMED_MIGRATION_COMPATIBILITY.length, 36);
+  it("RENAMED_MIGRATION_COMPATIBILITY has 43 well-formed entries", () => {
+    assert.equal(RENAMED_MIGRATION_COMPATIBILITY.length, 43);
     assert.deepEqual(
       RENAMED_MIGRATION_COMPATIBILITY.filter((entry) => entry.fromName === "daily_cached_input"),
-      ["206", "213", "214"].map((fromVersion) => ({
+      ["206", "213", "214", "215"].map((fromVersion) => ({
         fromVersion,
         fromName: "daily_cached_input",
-        toVersion: "215",
+        toVersion: "217",
         toName: "daily_cached_input",
       }))
     );
@@ -183,6 +183,18 @@ describe("migrationRunner/constants — large-table integrity", () => {
       toVersion: "101",
       toName: "api_key_usage_limits",
     });
+  });
+
+  it("name-locks every published Team draft slot to canonical migration 215", () => {
+    assert.deepEqual(
+      RENAMED_MIGRATION_COMPATIBILITY.filter((entry) => entry.toName === "team_cost_centers"),
+      ["153", "154", "155", "161", "163", "164"].map((fromVersion) => ({
+        fromVersion,
+        fromName: "team_cost_centers",
+        toVersion: "215",
+        toName: "team_cost_centers",
+      }))
+    );
   });
 
   it("PHYSICAL_SCHEMA_SENTINELS has 15 well-formed entries incl. the newest 064", () => {
