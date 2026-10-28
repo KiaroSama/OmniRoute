@@ -125,7 +125,7 @@ for (const basePath of ["", "/omniroute"]) {
         );
         write(
           "app/api/settings/proxies/route.js",
-          'import * as d from"../../../../deletion.cjs"; export const DELETE=d.handleProxyDelete;'
+          'import * as d from"../../../../deletion.cjs"; export function DELETE(request){return d.handleProxyDelete(request);}'
         );
         write(
           "app/api/settings/proxies/batch-delete/route.js",
@@ -133,7 +133,7 @@ for (const basePath of ["", "/omniroute"]) {
         );
         write(
           "app/api/v1/management/proxies/route.js",
-          'import * as d from"../../../../../deletion.cjs"; export const DELETE=d.handleProxyDelete;'
+          'import * as d from"../../../../../deletion.cjs"; export function DELETE(request){return d.handleProxyDelete(request);}'
         );
         // Next's dev watchers outlive app.close(); isolate them in an owned child process.
         write(
