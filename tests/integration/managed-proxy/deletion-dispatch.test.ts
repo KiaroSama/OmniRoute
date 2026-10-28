@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
-import { createServer } from "node:http";
+import { fork, spawnSync, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { once } from "node:events";
+import { pathToFileURL } from "node:url";
 import test from "node:test";
 import { build } from "esbuild";
 import { assertManagedFixture } from "../../_setup/managedProxyFixture.mjs";
@@ -59,12 +60,8 @@ for (const basePath of ["", "/omniroute"]) {
     async () => {
       const root = fs.mkdtempSync(path.join(sandbox, "next-delete-"));
       const bundle = path.join(root, "deletion.cjs");
-      let app: ReturnType<typeof import("next").default> | undefined;
-      let server: ReturnType<typeof createServer> | undefined;
-      const previousMode = process.env.NODE_ENV;
-      const previousToken = process.env.OMNIROUTE_PEER_STAMP_TOKEN;
-      const previousTelemetry = process.env.NEXT_TELEMETRY_DISABLED;
-      process.env.NEXT_TELEMETRY_DISABLED = "1";
+      let child: ChildProcess | undefined;
+      let closed: Promise<unknown[]> | undefined;
       try {
         await build({
           stdin: {
@@ -120,44 +117,63 @@ for (const basePath of ["", "/omniroute"]) {
         write("app/layout.js", "export default function Layout({children}){return children;}");
         write(
           "proxy.js",
-          'import d from "./deletion.cjs"; export function proxy(r){return d.runAuthzPipeline(r,{enforce:true});} export const config={matcher:["/api/:path*"]};'
+          'import * as d from"./deletion.cjs"; export function proxy(r){return d.runAuthzPipeline(r,{enforce:true});} export const config={matcher:["/api/:path*"]};'
         );
         write(
           "app/api/services/managed-proxy/registry-delete/route.js",
-          'import d from "../../../../../deletion.cjs"; export const DELETE=d.DELETE; export const POST=d.POST;'
+          'import * as d from"../../../../../deletion.cjs"; export const DELETE=d.DELETE; export const POST=d.POST;'
         );
         write(
           "app/api/settings/proxies/route.js",
-          'import d from "../../../../deletion.cjs"; export const DELETE=d.handleProxyDelete;'
+          'import * as d from"../../../../deletion.cjs"; export const DELETE=d.handleProxyDelete;'
         );
         write(
           "app/api/settings/proxies/batch-delete/route.js",
-          'import d from "../../../../../deletion.cjs"; export const POST=d.batchDelete;'
+          'import * as d from"../../../../../deletion.cjs"; export const POST=d.batchDelete;'
         );
         write(
           "app/api/v1/management/proxies/route.js",
-          'import d from "../../../../../deletion.cjs"; export const DELETE=d.handleProxyDelete;'
+          'import * as d from"../../../../../deletion.cjs"; export const DELETE=d.handleProxyDelete;'
         );
-        Object.assign(process.env, { NODE_ENV: "development" });
-        process.env.OMNIROUTE_PEER_STAMP_TOKEN = "synthetic-http-peer";
-        const next = (await import("next")).default;
-        app = next({ dir: root, dev: true, webpack: true, hostname: "127.0.0.1" });
-        await app.prepare();
-        const handler = app.getRequestHandler();
-        const { wrapRequestListenerWithPeerStamp } =
-          await import("../../../scripts/dev/peer-stamp.mjs");
-        server = createServer(
-          wrapRequestListenerWithPeerStamp((req, res) => {
-            void handler(req, res).catch(() => {
-              res.statusCode = 500;
-              res.end("Fixture handler failed");
-            });
-          })
+        // Next's dev watchers outlive app.close(); isolate them in an owned child process.
+        write(
+          "server.mjs",
+          `import {createServer} from "node:http";
+          import next from ${JSON.stringify(pathToFileURL(path.join(project, "node_modules/next/dist/server/next.js")).href)};
+          import {wrapRequestListenerWithPeerStamp} from ${JSON.stringify(pathToFileURL(path.join(project, "scripts/dev/peer-stamp.mjs")).href)};
+          if(process.platform!=="win32")process.once("disconnect",()=>process.kill(-process.pid,"SIGKILL"));
+          const app=next({dir:${JSON.stringify(root)},dev:true,webpack:true,hostname:"127.0.0.1"});
+          await app.prepare();
+          const handler=app.getRequestHandler();
+          const server=createServer(wrapRequestListenerWithPeerStamp((req,res)=>{
+            void handler(req,res).catch(()=>{res.statusCode=500;res.end("Fixture handler failed");});
+          }));
+          server.listen(0,"127.0.0.1",()=>process.send({port:server.address().port}));`
         );
-        server.listen(0, "127.0.0.1");
-        await once(server, "listening");
-        const address = server.address();
-        assert.ok(address && typeof address !== "string");
+        child = fork(path.join(root, "server.mjs"), [], {
+          cwd: project,
+          execArgv: [],
+          env: {
+            ...process.env,
+            NODE_ENV: "development",
+            NEXT_TELEMETRY_DISABLED: "1",
+            OMNIROUTE_PEER_STAMP_TOKEN: "synthetic-http-peer",
+          },
+          stdio: ["ignore", "pipe", "pipe", "ipc"],
+          detached: process.platform !== "win32",
+          windowsHide: true,
+        });
+        closed = once(child, "close");
+        child.stdout!.pipe(process.stdout, { end: false });
+        child.stderr!.pipe(process.stderr, { end: false });
+        const ready = await Promise.race([
+          once(child, "message", { signal: AbortSignal.timeout(20000) }),
+          closed.then(() => {
+            throw new Error("Next fixture exited before listening");
+          }),
+        ]);
+        const address = ready[0] as { port?: number };
+        assert.ok(Number.isInteger(address?.port) && address.port! > 0);
         const origin = `http://127.0.0.1:${address.port}${basePath}`;
         const send = (pathname: string, init: RequestInit = {}) =>
           fetch(`${origin}${pathname}`, {
@@ -219,19 +235,36 @@ for (const basePath of ["", "/omniroute"]) {
         });
         assert.equal(remoteManaged.status, 500);
       } finally {
-        if (server) {
-          server.closeAllConnections();
-          await new Promise<void>((resolve, reject) =>
-            server!.close((error) => (error ? reject(error) : resolve()))
-          );
+        if (child?.pid) {
+          if (process.platform === "win32") {
+            if (child.exitCode === null && child.signalCode === null) {
+              const stopped = spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], {
+                windowsHide: true,
+                timeout: 5000,
+                stdio: "ignore",
+              });
+              assert.equal(stopped.status, 0, "Cannot terminate owned Next fixture tree");
+            }
+          } else {
+            try {
+              process.kill(-child.pid, "SIGKILL");
+            } catch (error) {
+              if ((error as NodeJS.ErrnoException).code !== "ESRCH") throw error;
+            }
+          }
+          let timer: ReturnType<typeof setTimeout> | undefined;
+          try {
+            await Promise.race([
+              closed,
+              new Promise<never>((_, reject) => {
+                timer = setTimeout(() => reject(new Error("Next fixture did not close")), 5000);
+              }),
+            ]);
+          } finally {
+            clearTimeout(timer);
+          }
+          assert.throws(() => process.kill(child!.pid!, 0), { code: "ESRCH" });
         }
-        await app?.close();
-        if (previousMode === undefined) Reflect.deleteProperty(process.env, "NODE_ENV");
-        else Object.assign(process.env, { NODE_ENV: previousMode });
-        if (previousToken === undefined) delete process.env.OMNIROUTE_PEER_STAMP_TOKEN;
-        else process.env.OMNIROUTE_PEER_STAMP_TOKEN = previousToken;
-        if (previousTelemetry === undefined) delete process.env.NEXT_TELEMETRY_DISABLED;
-        else process.env.NEXT_TELEMETRY_DISABLED = previousTelemetry;
         fs.rmSync(root, { recursive: true, force: true });
       }
     }
