@@ -55,8 +55,12 @@ direct; automatic fallback proxy sends use the actual fallback identity.
   without changing counters, freeing those slots for the upstream migrations. An unrelated migration
   already recorded at 217 stops reconciliation rather than overwriting history.
   Totals start when this version begins observing traffic; historical traffic is not inferred.
-  Each observed response chunk persists immediately. A database failure emits a credential-free
-  warning and marks runtime persistence coverage incomplete; requests continue unaffected.
+  Chunk counts accumulate in memory per route and are written in one upsert when a download
+  settles (complete, cancelled, errored or failed send), within about one second otherwise, before
+  every traffic read and at shutdown, so streaming never pays a SQLite write per chunk. A hard crash
+  can lose at most the unflushed second of in-flight counts. A database failure emits a
+  credential-free warning and marks runtime persistence coverage incomplete; requests continue
+  unaffected.
 
 The API returns only route IDs/digests, current registry display names and numeric counters. It stores
 no upstream payloads, target URLs or proxy credentials. Existing diagnostic logging remains unchanged.

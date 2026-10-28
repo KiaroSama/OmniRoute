@@ -87,19 +87,24 @@ function credentialTuple(proxy: unknown, value: Record<string, unknown>): unknow
   return null;
 }
 
-export function recordTrafficDelta(
-  route: TrafficRoute,
-  delta: PayloadDelta,
-  db: SqliteAdapter = getDbInstance()
-): void {
-  const keys = Object.keys(COLUMNS) as Array<keyof TrafficCounters>;
-  const values = keys.map((key) => {
+const COUNTER_KEYS = Object.keys(COLUMNS) as Array<keyof TrafficCounters>;
+
+function counterValues(delta: PayloadDelta): number[] {
+  return COUNTER_KEYS.map((key) => {
     const value = delta[key] ?? 0;
     if (!Number.isSafeInteger(value) || value < 0)
       throw new TypeError("Invalid payload traffic increment");
     return value;
   });
-  const columns = keys.map((key) => COLUMNS[key]);
+}
+
+export function recordTrafficDelta(
+  route: TrafficRoute,
+  delta: PayloadDelta,
+  db: SqliteAdapter = getDbInstance()
+): void {
+  const values = counterValues(delta);
+  const columns = COUNTER_KEYS.map((key) => COLUMNS[key]);
   const now = new Date().toISOString();
   db.prepare(
     `INSERT INTO proxy_payload_traffic
@@ -111,9 +116,10 @@ export function recordTrafficDelta(
 }
 
 const zeroCounters = (): TrafficCounters =>
-  Object.fromEntries(Object.keys(COLUMNS).map((key) => [key, 0])) as TrafficCounters;
+  Object.fromEntries(COUNTER_KEYS.map((key) => [key, 0])) as TrafficCounters;
 
 export function getProxyTraffic(db: SqliteAdapter = getDbInstance()) {
+  flushPayloadTraffic();
   const rows = db
     .prepare(
       `SELECT t.*, p.name FROM proxy_payload_traffic t
@@ -153,12 +159,80 @@ export function getProxyTraffic(db: SqliteAdapter = getDbInstance()) {
 }
 
 let warned = false;
+
+// Chunk deltas accumulate in memory per database + route and reach SQLite in one upsert when a
+// download settles, on a short timer, on a read, and at shutdown — never once per chunk.
+const FLUSH_INTERVAL_MS = 1000;
+type PendingRoute = { route: TrafficRoute; counters: TrafficCounters };
+const pending = new Map<SqliteAdapter, Map<string, PendingRoute>>();
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let exitHookInstalled = false;
+
+const SETTLING_KEYS = [
+  "completedDownloads",
+  "failedAttempts",
+  "cancelledDownloads",
+  "erroredDownloads",
+] as const satisfies ReadonlyArray<keyof TrafficCounters>;
+
+function accumulate(db: SqliteAdapter, route: TrafficRoute, delta: PayloadDelta): void {
+  const values = counterValues(delta);
+  let routes = pending.get(db);
+  if (!routes) pending.set(db, (routes = new Map()));
+  let entry = routes.get(route.key);
+  if (!entry) routes.set(route.key, (entry = { route, counters: zeroCounters() }));
+  COUNTER_KEYS.forEach((key, index) => (entry.counters[key] += values[index]));
+}
+
+function scheduleFlush(): void {
+  if (!exitHookInstalled) {
+    exitHookInstalled = true;
+    // Last resort for exits that skip graceful shutdown; SQLite writes are synchronous here.
+    process.once("exit", () => flushPayloadTraffic());
+  }
+  if (flushTimer) return;
+  flushTimer = setTimeout(() => {
+    flushTimer = null;
+    flushPayloadTraffic();
+  }, FLUSH_INTERVAL_MS);
+  flushTimer.unref?.();
+}
+
+function flushDatabase(db: SqliteAdapter, routes: Map<string, PendingRoute>): void {
+  const entries = [...routes.values()];
+  const write = () => {
+    for (const entry of entries) recordTrafficDelta(entry.route, entry.counters, db);
+  };
+  if (entries.length > 1 && typeof db.transaction === "function") db.transaction(write)();
+  else write();
+}
+
+/** Persist every buffered delta now. Failures drop that batch and mark coverage incomplete. */
+export function flushPayloadTraffic(): void {
+  if (flushTimer) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  const batches = [...pending.entries()];
+  pending.clear();
+  for (const [db, routes] of batches) {
+    try {
+      flushDatabase(db, routes);
+    } catch {
+      warn();
+    }
+  }
+}
+
 /** Snapshot once at raw-send entry, so later context changes cannot reassign stream chunks. */
-export function payloadTrafficRecorder(proxy: unknown): (delta: PayloadDelta) => void {
+export function payloadTrafficRecorder(
+  proxy: unknown,
+  dbOverride?: SqliteAdapter
+): (delta: PayloadDelta) => void {
   let route: TrafficRoute;
   let db: SqliteAdapter;
   try {
-    db = getDbInstance();
+    db = dbOverride ?? getDbInstance();
     route = trafficRoute(proxy, db);
   } catch {
     warn();
@@ -166,10 +240,13 @@ export function payloadTrafficRecorder(proxy: unknown): (delta: PayloadDelta) =>
   }
   return (delta) => {
     try {
-      recordTrafficDelta(route, delta, db);
+      accumulate(db, route, delta);
     } catch {
       warn();
+      return;
     }
+    if (SETTLING_KEYS.some((key) => (delta[key] ?? 0) > 0)) flushPayloadTraffic();
+    else scheduleFlush();
   };
 }
 
