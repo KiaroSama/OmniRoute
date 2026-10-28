@@ -148,10 +148,12 @@ for (const basePath of ["", "/omniroute"]) {
             server.listen(0,"127.0.0.1",resolve);
           });
           const port=server.address().port;
-          const app=next({dir:${JSON.stringify(root)},dev:true,webpack:true,hostname:"127.0.0.1",port,httpServer:server});
+          const app=next({dir:${JSON.stringify(root)},dev:true,webpack:true,hostname:"localhost",port,httpServer:server});
           await app.prepare();
           const handler=app.getRequestHandler();
+          let requestCount=0;
           server.on("request",wrapRequestListenerWithPeerStamp((req,res)=>{
+            res.setHeader("x-fixture-request-count",String(++requestCount));
             void handler(req,res).catch(()=>{res.statusCode=500;res.end("Fixture handler failed");});
           }));
           process.send({port});`
@@ -181,13 +183,22 @@ for (const basePath of ["", "/omniroute"]) {
         const address = ready[0] as { port?: number };
         assert.ok(Number.isInteger(address?.port) && address.port! > 0);
         const origin = `http://127.0.0.1:${address.port}${basePath}`;
-        const send = (pathname: string, init: RequestInit = {}) =>
-          fetch(`${origin}${pathname}`, {
+        let requestCount = 0;
+        const send = async (pathname: string, init: RequestInit = {}) => {
+          const expectedCount = ++requestCount;
+          const response = await fetch(`${origin}${pathname}`, {
             ...init,
             redirect: "manual",
             signal: AbortSignal.timeout(20000),
             headers: { authorization: "Bearer oma_fixture_write", ...init.headers },
           });
+          assert.equal(
+            response.headers.get("x-fixture-request-count"),
+            String(expectedCount),
+            "Deletion must stay on the original HTTP request, without a self-hop"
+          );
+          return response;
+        };
         for (const pathname of ["/api/settings/proxies", "/api/v1/management/proxies"]) {
           const response = await send(`${pathname}?id=managed-first&force=1`, {
             method: "DELETE",
