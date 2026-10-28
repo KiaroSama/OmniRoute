@@ -142,13 +142,19 @@ for (const basePath of ["", "/omniroute"]) {
           import next from ${JSON.stringify(pathToFileURL(path.join(project, "node_modules/next/dist/server/next.js")).href)};
           import {wrapRequestListenerWithPeerStamp} from ${JSON.stringify(pathToFileURL(path.join(project, "scripts/dev/peer-stamp.mjs")).href)};
           if(process.platform!=="win32")process.once("disconnect",()=>process.kill(-process.pid,"SIGKILL"));
-          const app=next({dir:${JSON.stringify(root)},dev:true,webpack:true,hostname:"127.0.0.1"});
+          const server=createServer();
+          await new Promise((resolve,reject)=>{
+            server.once("error",reject);
+            server.listen(0,"127.0.0.1",resolve);
+          });
+          const port=server.address().port;
+          const app=next({dir:${JSON.stringify(root)},dev:true,webpack:true,hostname:"127.0.0.1",port,httpServer:server});
           await app.prepare();
           const handler=app.getRequestHandler();
-          const server=createServer(wrapRequestListenerWithPeerStamp((req,res)=>{
+          server.on("request",wrapRequestListenerWithPeerStamp((req,res)=>{
             void handler(req,res).catch(()=>{res.statusCode=500;res.end("Fixture handler failed");});
           }));
-          server.listen(0,"127.0.0.1",()=>process.send({port:server.address().port}));`
+          process.send({port});`
         );
         child = fork(path.join(root, "server.mjs"), [], {
           cwd: project,
