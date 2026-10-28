@@ -2,7 +2,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { act, render, screen, cleanup } from "@testing-library/react";
 import UsageAnalytics from "@/shared/components/UsageAnalytics";
 
 vi.unmock("next-intl");
@@ -71,6 +71,7 @@ describe("provider cached input reporting", () => {
           )
       )
     );
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     try {
       render(
         <NextIntlClientProvider
@@ -84,12 +85,21 @@ describe("provider cached input reporting", () => {
           <UsageAnalytics />
         </NextIntlClientProvider>
       );
-      const cache = await screen.findByTestId("cached-input-tokens", {}, { timeout: 700 });
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      const cache = screen.getByTestId("cached-input-tokens");
       expect(cache.textContent).toContain("Cache Read Tokens: 60+ (Partial)");
       expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/api/usage/analytics?"));
+      expect(fetch).toHaveBeenCalledTimes(1);
     } finally {
       cleanup();
-      vi.unstubAllGlobals();
+      try {
+        await vi.runOnlyPendingTimersAsync();
+      } finally {
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+      }
     }
   }, 1_000);
   it("renders recorded cache reads separately from original input and output", () => {
