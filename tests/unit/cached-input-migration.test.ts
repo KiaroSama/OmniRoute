@@ -26,10 +26,10 @@ Object.assign(process.env, {
   OMNIROUTE_MIGRATIONS_DIR: fixture,
 });
 const sql = fs.readFileSync(
-  new URL("../../src/lib/db/migrations/218_daily_cached_input.sql", import.meta.url),
+  new URL("../../src/lib/db/migrations/224_daily_cached_input.sql", import.meta.url),
   "utf8"
 );
-fs.writeFileSync(path.join(fixture, "218_daily_cached_input.sql"), sql, "utf8");
+fs.writeFileSync(path.join(fixture, "224_daily_cached_input.sql"), sql, "utf8");
 for (const [version, name] of [
   ["206", "codex_wakeup_tasks"],
   ["213", "api_key_preferred_connections"],
@@ -66,7 +66,7 @@ test(
   "cached migration rehomes published ledgers and preserves unknown history",
   { timeout: 3000 },
   () => {
-    const publishedSlots = ["206", "213", "214", "215", "217", "218"];
+    const publishedSlots = ["206", "213", "214", "215", "217", "224"];
     for (let mask = 0; mask < 1 << publishedSlots.length; mask++) {
       const versions = publishedSlots.filter((_, index) => mask & (1 << index));
       const db = makeDb();
@@ -90,7 +90,7 @@ test(
             { version: "215", name: "team_cost_centers" },
             { version: "216", name: "team_cost_shapes" },
             { version: "217", name: "quota_recovery_tickets" },
-            { version: "218", name: "daily_cached_input" },
+            { version: "224", name: "daily_cached_input" },
           ]
         );
         assert.deepEqual(db.prepare("SELECT * FROM daily_usage_summary").all(), [
@@ -100,7 +100,7 @@ test(
           assert.equal(
             (
               db
-                .prepare("SELECT applied_at FROM _omniroute_migrations WHERE version='218'")
+                .prepare("SELECT applied_at FROM _omniroute_migrations WHERE version='224'")
                 .get() as {
                 applied_at: string;
               }
@@ -132,10 +132,10 @@ test(
     try {
       db.exec(sql);
       db.exec(`INSERT INTO _omniroute_migrations (version,name) VALUES
-      ('206','daily_cached_input'),('218','unrelated_migration');
+      ('206','daily_cached_input'),('224','unrelated_migration');
       UPDATE daily_usage_summary SET total_cache_read_tokens=60;`);
       const before = db.prepare("SELECT * FROM _omniroute_migrations ORDER BY version").all();
-      assert.throws(() => runMigrations(db, { isNewDb: true }), /target version 218 is occupied/);
+      assert.throws(() => runMigrations(db, { isNewDb: true }), /target version 224 is occupied/);
       assert.deepEqual(
         db.prepare("SELECT * FROM _omniroute_migrations ORDER BY version").all(),
         before

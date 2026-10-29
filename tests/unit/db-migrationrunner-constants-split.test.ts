@@ -77,7 +77,7 @@ describe("migrationRunner/constants — large-table integrity", () => {
       ["206", "213", "214", "215", "217"].map((fromVersion) => ({
         fromVersion,
         fromName: "daily_cached_input",
-        toVersion: "218",
+        toVersion: "224",
         toName: "daily_cached_input",
       }))
     );
