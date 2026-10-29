@@ -50,10 +50,10 @@ direct; automatic fallback proxy sends use the actual fallback identity.
 - Redirects and retries hidden inside a fetch implementation are not distinct invocations at this
   seam. Transports that bypass this fetch layer (for example independent WebSocket/browser transports)
   are not measured. The panel is not complete machine-wide traffic accounting.
-- Totals are additive in `proxy_payload_traffic`, created by migration 217, and survive process
-  restart. Previously applied traffic migrations 206, 207, 213, 214 and 215 are reconciled to 217
-  without changing counters, freeing those slots for the upstream migrations. An unrelated migration
-  already recorded at 217 stops reconciliation rather than overwriting history.
+- Totals are additive in `proxy_payload_traffic`, created by migration 218, and survive process
+  restart. Previously applied traffic migrations 206, 207, 213, 214, 215 and 217 are reconciled to
+  218 without changing counters, freeing those slots for the upstream migrations. An unrelated
+  migration already recorded at 218 stops reconciliation rather than overwriting history.
   Totals start when this version begins observing traffic; historical traffic is not inferred.
   Chunk counts accumulate in memory per route and are written in one upsert when a download
   settles (complete, cancelled, errored or failed send), within about one second otherwise, before
