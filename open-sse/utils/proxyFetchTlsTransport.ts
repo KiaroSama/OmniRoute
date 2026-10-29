@@ -5,7 +5,6 @@ import { sanitizeTransportError } from "./proxyTransportError.ts";
 import {
   activeTlsClient,
   isTlsFingerprintEnabled,
-  tlsProfileForProvider,
   isTlsRequestEligible,
   isWreqProxySupported,
   getEffectiveSignal,
@@ -59,7 +58,6 @@ export async function tryTlsSend(
           signal: getEffectiveSignal(input, options),
           proxy: proxyUrl,
           sessionScope: store?.sessionScope,
-          ...tlsProfileForProvider(store?.provider),
         }),
       deps.recordTraffic,
       async (raw) => {

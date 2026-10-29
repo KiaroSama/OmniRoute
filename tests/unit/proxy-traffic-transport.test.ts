@@ -224,12 +224,21 @@ test(
     );
     Object.defineProperty(source, "url", { value: "https://fixture.invalid/final" });
     Object.defineProperty(source, "redirected", { value: true });
-    setTlsClientForTest({ available: true, fetch: async () => source });
+    setTlsClientForTest({
+      available: true,
+      fetch: async (_url, options) => {
+        assert.equal(options?.proxy, null);
+        assert.equal(options?.sessionScope, "fixture-session");
+        assert.equal(Object.hasOwn(options ?? {}, "browserProfile"), false);
+        assert.equal(Object.hasOwn(options ?? {}, "os"), false);
+        return source;
+      },
+    });
     const response = await tryTlsSend(
       "https://fixture.invalid",
       { body: "é" },
       "https://fixture.invalid",
-      { used: false },
+      { used: false, provider: "maxai", sessionScope: "fixture-session" },
       null,
       null,
       { recordTraffic: (_route, delta) => deltas.push(delta) }
