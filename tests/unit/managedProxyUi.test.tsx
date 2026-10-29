@@ -5,11 +5,54 @@ import { afterEach, expect, test, vi } from "vitest";
 import { assertManagedFixture } from "../_setup/managedProxyFixture.mjs";
 assertManagedFixture();
 const { default: ProxyConfigModal } = await import("../../src/shared/components/ProxyConfigModal");
+const { default: ManagedProxyTab } =
+  await import("../../src/app/(dashboard)/dashboard/settings/components/proxy/ManagedProxyTab");
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
 });
 const source = "vless://11111111-1111-4111-8111-111111111111@example.invalid:443?security=tls";
+
+test("managed source form keeps native values and input on failed activation with kit controls", async () => {
+  const request = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) =>
+    init?.method === "POST"
+      ? Response.json({ error: { message: "Synthetic activation failure" } }, { status: 400 })
+      : Response.json({ cores: [] })
+  );
+  vi.stubGlobal("fetch", request);
+  render(<ManagedProxyTab />);
+  const core = screen.getByLabelText("Core") as HTMLSelectElement;
+  const name = screen.getByLabelText("Name") as HTMLInputElement;
+  const input = screen.getByLabelText("Source link or native outbound JSON") as HTMLTextAreaElement;
+  const save = screen.getByRole("button", { name: "Save and activate" }) as HTMLButtonElement;
+  expect(core.classList.contains("ci-select-native")).toBe(true);
+  expect(name.classList.contains("ci-input")).toBe(true);
+  expect(input.classList.contains("ci-textarea")).toBe(true);
+  expect(name.maxLength).toBe(120);
+  expect(input.rows).toBe(4);
+  expect(input.getAttribute("autocomplete")).toBe("off");
+  expect(input.getAttribute("spellcheck")).toBe("false");
+  expect(save.disabled).toBe(true);
+  fireEvent.change(core, { target: { value: "xray" } });
+  fireEvent.change(name, { target: { value: "Fixture proxy" } });
+  fireEvent.change(input, { target: { value: source } });
+  expect(save.disabled).toBe(false);
+  expect(request.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(0);
+  fireEvent.click(save);
+  const alert = await screen.findByRole("alert", {}, { timeout: 2000 });
+  expect(alert.textContent).toBe("Synthetic activation failure");
+  expect(alert.classList.contains("text-error")).toBe(true);
+  const submissions = request.mock.calls.filter(([, init]) => init?.method === "POST");
+  expect(submissions).toHaveLength(1);
+  expect(JSON.parse(String(submissions[0][1]?.body))).toEqual({
+    core: "xray",
+    name: "Fixture proxy",
+    sourceLink: source,
+  });
+  expect(core.value).toBe("xray");
+  expect(name.value).toBe("Fixture proxy");
+  expect(input.value).toBe(source);
+}, 5000);
 
 for (const successful of [true, false]) {
   test(`existing Custom host field only activates on explicit Save and ${successful ? "closes on success" : "retains input on failure"}`, async () => {

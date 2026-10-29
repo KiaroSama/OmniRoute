@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from "react";
 import Button from "@/shared/components/Button";
+import Input from "@/shared/components/Input";
+import Select from "@/shared/components/Select";
+import Textarea from "@/shared/components/Textarea";
 
 type Core = "singbox" | "xray";
 type CoreState = {
@@ -9,9 +12,6 @@ type CoreState = {
   state: string;
   entries: Array<{ id: string; name: string; port: number }>;
 };
-const inputClass =
-  "w-full px-3 py-2.5 rounded-lg bg-bg-subtle border border-border text-sm text-text-primary focus:outline-none focus:border-primary";
-
 async function loadCoreMetadata(): Promise<CoreState[]> {
   const response = await fetch("/api/services/managed-proxy");
   const payload = await response.json();
@@ -82,7 +82,7 @@ export default function ManagedProxyTab() {
         Sources require encryption. No preview installation, autostart or transparent-proxy changes.
       </p>
       {error && (
-        <p role="alert" className="text-sm text-red-400">
+        <p role="alert" className="text-sm text-error">
           {error}
         </p>
       )}
@@ -159,45 +159,34 @@ function ManagedSourceFields({
 }) {
   return (
     <>
-      <div>
-        <label htmlFor="managed-core-choice" className="text-xs text-text-muted block mb-1.5">
-          Core
-        </label>
-        <select
-          id="managed-core-choice"
-          value={core}
-          onChange={(e) => setCore(e.target.value as Core | "")}
-          className={inputClass}
-        >
-          <option value="">Select a core</option>
-          <option value="singbox">sing-box</option>
-          <option value="xray">Xray</option>
-        </select>
-      </div>
-      <div>
-        <label htmlFor="managed-proxy-name" className="text-xs text-text-muted block mb-1.5">
-          Name
-        </label>
-        <input
-          id="managed-proxy-name"
-          maxLength={120}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className={inputClass}
-        />
-      </div>
+      <Select
+        label="Core"
+        id="managed-core-choice"
+        value={core}
+        onChange={(e) => setCore(e.target.value as Core | "")}
+      >
+        <option value="">Select a core</option>
+        <option value="singbox">sing-box</option>
+        <option value="xray">Xray</option>
+      </Select>
+      <Input
+        label="Name"
+        id="managed-proxy-name"
+        maxLength={120}
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
       <div>
         <label htmlFor="managed-proxy-source" className="text-xs text-text-muted block mb-1.5">
           Source link or native outbound JSON
         </label>
-        <textarea
+        <Textarea
           id="managed-proxy-source"
           rows={4}
           autoComplete="off"
           spellCheck={false}
           value={sourceLink}
           onChange={(e) => setSourceLink(e.target.value)}
-          className={inputClass}
         />
       </div>
     </>
