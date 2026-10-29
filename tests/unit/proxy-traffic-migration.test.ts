@@ -25,10 +25,10 @@ process.env.OMNIROUTE_PLUGINS_DIR = path.join(fixtureDir, "plugins");
 process.env.OMNIROUTE_MIGRATIONS_DIR = fixtureDir;
 
 const sql = fs.readFileSync(
-  new URL("../../src/lib/db/migrations/218_proxy_payload_traffic.sql", import.meta.url),
+  new URL("../../src/lib/db/migrations/225_proxy_payload_traffic.sql", import.meta.url),
   "utf8"
 );
-fs.writeFileSync(path.join(fixtureDir, "218_proxy_payload_traffic.sql"), sql, "utf8");
+fs.writeFileSync(path.join(fixtureDir, "225_proxy_payload_traffic.sql"), sql, "utf8");
 fs.writeFileSync(
   path.join(fixtureDir, "206_codex_wakeup_tasks.sql"),
   "CREATE TABLE incoming_206 (id INTEGER PRIMARY KEY);",
@@ -108,7 +108,7 @@ test(
   "traffic migration upgrades fresh and published ledgers without losing counters",
   { timeout: 3000 },
   () => {
-    const publishedSlots = ["206", "207", "213", "214", "215", "217", "218"];
+    const publishedSlots = ["206", "207", "213", "214", "215", "217", "225"];
     for (let mask = 0; mask < 1 << publishedSlots.length; mask++) {
       const versions = publishedSlots.filter((_, index) => mask & (1 << index));
       const db = createNodeSqliteAdapterFromDatabase(new DatabaseSync(":memory:"), ":memory:");
@@ -139,7 +139,7 @@ test(
             { version: "215", name: "team_cost_centers" },
             { version: "216", name: "team_cost_shapes" },
             { version: "217", name: "quota_recovery_tickets" },
-            { version: "218", name: "proxy_payload_traffic" },
+            { version: "225", name: "proxy_payload_traffic" },
           ],
           `canonical ledger after ${versions.join(",") || "fresh"} startup`
         );
@@ -164,7 +164,7 @@ test(
           assert.equal(
             (
               db
-                .prepare("SELECT applied_at FROM _omniroute_migrations WHERE version = '218'")
+                .prepare("SELECT applied_at FROM _omniroute_migrations WHERE version = '225'")
                 .get() as {
                 applied_at: string;
               }
@@ -199,11 +199,11 @@ test(
       version TEXT PRIMARY KEY, name TEXT NOT NULL, applied_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     INSERT INTO _omniroute_migrations (version, name) VALUES
-      ('218', 'unrelated_migration'), ('207', 'proxy_payload_traffic');
+      ('225', 'unrelated_migration'), ('207', 'proxy_payload_traffic');
     INSERT INTO proxy_payload_traffic (route_key, route_kind, attempts, started_at, updated_at)
       VALUES ('direct', 'direct', 9, 'start', 'update');`);
       const before = db.prepare("SELECT * FROM _omniroute_migrations ORDER BY version").all();
-      assert.throws(() => runMigrations(db, { isNewDb: true }), /target version 218 is occupied/);
+      assert.throws(() => runMigrations(db, { isNewDb: true }), /target version 225 is occupied/);
       assert.deepEqual(
         db.prepare("SELECT * FROM _omniroute_migrations ORDER BY version").all(),
         before

@@ -77,7 +77,7 @@ describe("migrationRunner/constants — large-table integrity", () => {
       ["206", "207", "213", "214", "215", "217"].map((fromVersion) => ({
         fromVersion,
         fromName: "proxy_payload_traffic",
-        toVersion: "218",
+        toVersion: "225",
         toName: "proxy_payload_traffic",
       }))
     );
