@@ -54,6 +54,7 @@ const DEVICE_CODE_PROVIDERS = new Set([
   "kimi-coding",
   "kilocode",
   "codebuddy-cn",
+  "freebuff",
   "codebuddy-intl",
   "ghe-copilot",
   "grok-cli",
