@@ -1,0 +1,100 @@
+name: Fork API and security validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact source commit to validate
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-validation-${{ inputs.source_sha }}
+  cancel-in-progress: true
+
+env:
+  OMNIROUTE_SKIP_SYSTEM_TRUST: "1"
+
+jobs:
+  api-typecheck:
+    name: API Route Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.source_sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify source identity
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          python - <<'PY'
+          import logging, os, re, subprocess
+          logging.basicConfig(level=logging.INFO, format="%(asctime)sZ %(levelname)s %(message)s")
+          expected = os.environ["SOURCE_SHA"]
+          assert re.fullmatch(r"[0-9a-f]{40}", expected), "source_sha must be a full commit SHA"
+          actual = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          assert actual == expected, "checkout must match source_sha"
+          logging.info("Validating source commit %s", actual)
+          PY
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: ./.github/actions/npm-ci-retry
+        with:
+          cache: false
+      - name: Reject new API-route TypeScript diagnostics
+        run: node scripts/check/check-api-typecheck.mjs
+      - name: API typecheck gate unit tests
+        run: node --import tsx/esm --test tests/unit/build/check-api-typecheck.test.ts
+
+  semgrep:
+    name: Semgrep advisory scan
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ inputs.source_sha }}
+          persist-credentials: false
+      - name: Verify source identity
+        env:
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: |
+          python - <<'PY'
+          import logging, os, re, subprocess
+          logging.basicConfig(level=logging.INFO, format="%(asctime)sZ %(levelname)s %(message)s")
+          expected = os.environ["SOURCE_SHA"]
+          assert re.fullmatch(r"[0-9a-f]{40}", expected), "source_sha must be a full commit SHA"
+          actual = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+          assert actual == expected, "checkout must match source_sha"
+          logging.info("Scanning source commit %s", actual)
+          PY
+      - name: Run semgrep with the repository's advisory rules
+        continue-on-error: true
+        run: |
+          semgrep scan --config p/owasp-top-ten --config p/secrets \
+            --sarif --output semgrep.sarif --metrics off
+      - name: Record scan evidence
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, logging
+          logging.basicConfig(level=logging.INFO, format="%(asctime)sZ %(levelname)s %(message)s")
+          with open("semgrep.sarif", encoding="utf-8") as source:
+              report = json.load(source)
+          logging.info("semgrepFindings=%d", sum(len(run.get("results", [])) for run in report["runs"]))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: semgrep-sarif
+          path: semgrep.sarif
+          if-no-files-found: error
+          retention-days: 14
