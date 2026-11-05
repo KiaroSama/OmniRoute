@@ -1,0 +1,94 @@
+# Generated fork-only validation wrapper. Source and wrapper SHAs are intentionally distinct.
+name: Fork validation / Fork API and security validation
+'on':
+  push:
+    branches:
+    - validate/fal-pr18849-99699ff0
+permissions:
+  contents: read
+concurrency:
+  group: fork-validation-fork-validation-supplement.yml-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  OMNIROUTE_SKIP_SYSTEM_TRUST: '1'
+  VALIDATION_SOURCE_SHA: 99699ff06eb08df5c629de8889bf2575fbfcc25c
+  VALIDATION_BASE_SHA: b0d07eb78e706a32939cb1121b3760350b9a5259
+  VALIDATION_FORK: KiaroSama/OmniRoute
+  VALIDATION_BRANCH: validate/fal-pr18849-99699ff0
+jobs:
+  api-typecheck:
+    name: API Route Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        ref: 99699ff06eb08df5c629de8889bf2575fbfcc25c
+        persist-credentials: false
+        fetch-depth: 1
+        repository: KiaroSama/OmniRoute
+    - name: Verify pinned source and record wrapper identity
+      shell: bash
+      run: |
+        set -eu
+        actual=$(git rev-parse HEAD)
+        test "$actual" = "$VALIDATION_SOURCE_SHA" || { echo "Wrong source checkout" >&2; exit 1; }
+        printf 'Source commit: %s\nWrapper commit: %s\n' "$actual" "$GITHUB_SHA"
+        printf 'Validated source: `%s`\n\nWorkflow wrapper: `%s`\n' "$actual" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+      with:
+        node-version: '24'
+        package-manager-cache: false
+    - uses: ./.github/actions/npm-ci-retry
+      with:
+        cache: false
+    - name: Reject new API-route TypeScript diagnostics
+      run: node scripts/check/check-api-typecheck.mjs
+    - name: API typecheck gate unit tests
+      run: node --import tsx/esm --test tests/unit/build/check-api-typecheck.test.ts
+    if: ${{ github.repository == 'KiaroSama/OmniRoute' && (success()) }}
+  semgrep:
+    name: Semgrep advisory scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: semgrep/semgrep
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      with:
+        ref: 99699ff06eb08df5c629de8889bf2575fbfcc25c
+        persist-credentials: false
+        repository: KiaroSama/OmniRoute
+    - name: Trust isolated container checkout
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+    - name: Verify pinned source and record wrapper identity
+      shell: sh
+      run: |
+        set -eu
+        actual=$(git rev-parse HEAD)
+        test "$actual" = "$VALIDATION_SOURCE_SHA" || { echo "Wrong source checkout" >&2; exit 1; }
+        printf 'Source commit: %s\nWrapper commit: %s\n' "$actual" "$GITHUB_SHA"
+        printf 'Validated source: `%s`\n\nWorkflow wrapper: `%s`\n' "$actual" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
+    - name: Run semgrep with the repository's advisory rules
+      continue-on-error: true
+      run: |
+        semgrep scan --config p/owasp-top-ten --config p/secrets \
+          --sarif --output semgrep.sarif --metrics off
+    - name: Record scan evidence
+      if: always()
+      run: |
+        python - <<'PY'
+        import json, logging
+        logging.basicConfig(level=logging.INFO, format="%(asctime)sZ %(levelname)s %(message)s")
+        with open("semgrep.sarif", encoding="utf-8") as source:
+            report = json.load(source)
+        logging.info("semgrepFindings=%d", sum(len(run.get("results", [])) for run in report["runs"]))
+        PY
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+      if: always()
+      with:
+        name: semgrep-sarif
+        path: semgrep.sarif
+        if-no-files-found: error
+        retention-days: 14
+    if: ${{ github.repository == 'KiaroSama/OmniRoute' && (success()) }}
