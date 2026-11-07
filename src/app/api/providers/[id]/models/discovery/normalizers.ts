@@ -22,10 +22,11 @@ import {
 } from "@omniroute/open-sse/services/antigravityProjectBootstrap.ts";
 import { persistDiscoveredAntigravityProjectId } from "@omniroute/open-sse/services/antigravityProjectPersist.ts";
 import { asRecord, toNonEmptyString } from "./helpers";
+import type { DiscoveryFailure } from "@/shared/discovery/degradedCause";
 
 const antigravityDiscoveryInflight = new Map<
   string,
-  Promise<Array<{ id: string; name: string }>>
+  Promise<{ models: Array<{ id: string; name: string }>; failure?: DiscoveryFailure }>
 >();
 
 type AntigravityDiscoveryModel = {
@@ -157,9 +158,10 @@ export async function fetchAntigravityDiscoveryModelsCached(
   proxy: unknown,
   providerSpecificData?: unknown,
   provider: "antigravity" | "agy" = "antigravity"
-): Promise<
-  Array<{ id: string; name: string; inputTokenLimit?: number; outputTokenLimit?: number }>
-> {
+): Promise<{
+  models: Array<{ id: string; name: string; inputTokenLimit?: number; outputTokenLimit?: number }>;
+  failure?: DiscoveryFailure;
+}> {
   const profile = normalizeAntigravityClientProfile(asRecord(providerSpecificData).clientProfile);
   const cacheKey = `${provider}:${connectionId}:${accessToken.substring(0, 16)}:${profile}`;
   const inflight = antigravityDiscoveryInflight.get(cacheKey);
@@ -177,6 +179,9 @@ export async function fetchAntigravityDiscoveryModelsCached(
         asRecord(providerSpecificData)
       );
     }
+
+    // The first attempt that produced no model explains the fallback.
+    let failure: DiscoveryFailure | undefined;
 
     for (const discoveryUrl of [
       ...getAntigravityFetchAvailableModelsUrls(),
@@ -197,6 +202,7 @@ export async function fetchAntigravityDiscoveryModelsCached(
           console.warn(
             `[models] ${provider} discovery failed at ${discoveryUrl} (${response.status}): ${errorText}`
           );
+          failure = failure ?? { status: response.status };
           continue;
         }
 
@@ -205,15 +211,17 @@ export async function fetchAntigravityDiscoveryModelsCached(
           provider
         ).map((model) => mapAntigravityModelForClient(model, provider));
         if (models.length > 0) {
-          return models;
+          return { models };
         }
+        failure = failure ?? { code: "EMPTY_CATALOG" };
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.warn(`[models] ${provider} discovery threw for ${discoveryUrl}: ${message}`);
+        failure = failure ?? {};
       }
     }
 
-    return [];
+    return { models: [], ...(failure ? { failure } : {}) };
   })().finally(() => {
     antigravityDiscoveryInflight.delete(cacheKey);
   });
@@ -238,6 +246,38 @@ export function normalizeDataRobotCatalogResponse(
       return { id: model, name };
     })
     .filter((value): value is { id: string; name: string } => Boolean(value));
+}
+
+// Upstream fields that declare supported reasoning efforts (#15762). Only these are carried
+// through so the sync extractor sees them; spreading the whole record would alter other flows.
+const OPENAI_LIKE_EFFORT_DECLARATION_KEYS = [
+  "reasoning",
+  "supported_reasoning_levels",
+  "thinking",
+  "metadata",
+  "capabilities",
+  "supportedThinkingEfforts",
+  "reasoning_options",
+  "vendors",
+] as const;
+
+function pickEffortDeclarations(item: Record<string, unknown>): Record<string, unknown> {
+  const picked: Record<string, unknown> = {};
+  for (const key of OPENAI_LIKE_EFFORT_DECLARATION_KEYS) {
+    if (item[key] !== undefined && item[key] !== null) picked[key] = item[key];
+  }
+  return picked;
+}
+
+// SiliconFlow free-only imports rely on live pricing and explicit flags. Keep
+// that evidence through discovery so a paid row cannot become free by losing
+// its veto. Project only the fields consumed by payloadFreeEvidence.
+function pickSiliconFlowPricingEvidence(item: Record<string, unknown>): Record<string, unknown> {
+  const picked: Record<string, unknown> = {};
+  for (const key of ["pricing", "isFree", "is_free", "free", "tags"] as const) {
+    if (item[key] !== undefined && item[key] !== null) picked[key] = item[key];
+  }
+  return picked;
 }
 
 export function normalizeOpenAiLikeModelsResponse(
@@ -266,9 +306,106 @@ export function normalizeOpenAiLikeModelsResponse(
         id;
       const ownedBy =
         toNonEmptyString(item.owned_by) || toNonEmptyString(item.provider) || fallbackOwner;
-      return { id, name, owned_by: ownedBy };
+      return {
+        ...pickEffortDeclarations(item),
+        ...(fallbackOwner === "siliconflow" ? pickSiliconFlowPricingEvidence(item) : {}),
+        id,
+        name,
+        owned_by: ownedBy,
+      };
     })
     .filter((value): value is { id: string; name: string; owned_by: string } => Boolean(value));
+}
+
+/** Read the shared Tencent product-config envelope and discard media-only rows. */
+function getTencentConfigModels(data: unknown): Record<string, unknown>[] {
+  const root = asRecord(data);
+  const inner = asRecord(root.data);
+  const payload = inner.models ?? root.models;
+  const items: unknown[] = Array.isArray(payload)
+    ? payload
+    : payload && typeof payload === "object"
+      ? Object.entries(asRecord(payload)).map(([id, value]) => ({ id, ...asRecord(value) }))
+      : [];
+
+  return items.map(asRecord).filter((item) => !isTencentMediaOnlyModel(item));
+}
+
+/**
+ * Tencent product configs can list image/video generation entries beside chat
+ * models. Only media-only tags identify entries that cannot serve chat.
+ *
+ * WorkBuddy includes image and video entries in its shipped catalog. The latest
+ * CodeBuddy CN CLI catalog similarly tags Hunyuan image models.
+ */
+const TENCENT_MEDIA_GENERATION_TAGS = new Set([
+  "text-to-image",
+  "image-to-image",
+  "text-to-video",
+  "image-to-video",
+]);
+
+/**
+ * Keep untagged entries and mixed-capability entries; drop only rows whose tags
+ * all describe media generation.
+ */
+function isTencentMediaOnlyModel(item: Record<string, unknown>): boolean {
+  const tags = item.tags;
+  if (!Array.isArray(tags) || tags.length === 0) return false;
+  return tags.every((tag) => typeof tag === "string" && TENCENT_MEDIA_GENERATION_TAGS.has(tag));
+}
+
+/**
+ * WorkBuddy's authenticated `GET /v3/config` response provides its current
+ * account-specific catalog under `data.models`.
+ */
+export function normalizeWorkbuddyModelsResponse(
+  data: unknown
+): Array<{ id: string; name: string; owned_by: string }> {
+  return getTencentConfigModels(data).flatMap((item) => {
+    const id = toNonEmptyString(item.id) || toNonEmptyString(item.model);
+    if (!id) return [];
+    const name = toNonEmptyString(item.name) || toNonEmptyString(item.displayName) || id;
+    return [{ id, name, owned_by: "workbuddy" }];
+  });
+}
+
+/**
+ * CodeBuddy CN's authenticated `GET /v3/config` response includes the official
+ * CLI model metadata used to populate OmniRoute's synced catalog.
+ */
+export function normalizeCodeBuddyCnModelsResponse(data: unknown): Array<Record<string, unknown>> {
+  return getTencentConfigModels(data).flatMap((item) => {
+    const id = toNonEmptyString(item.id) || toNonEmptyString(item.model);
+    if (!id) return [];
+    const name = toNonEmptyString(item.name) || toNonEmptyString(item.displayName) || id;
+    const maxInputTokens =
+      typeof item.maxInputTokens === "number" ? item.maxInputTokens : undefined;
+    const maxOutputTokens =
+      typeof item.maxOutputTokens === "number" ? item.maxOutputTokens : undefined;
+
+    return [
+      {
+        id,
+        name,
+        owned_by: "codebuddy-cn",
+        modelType: "chat",
+        ...(maxInputTokens !== undefined
+          ? { contextWindow: maxInputTokens, inputTokenLimit: maxInputTokens }
+          : {}),
+        ...(maxOutputTokens !== undefined ? { outputTokenLimit: maxOutputTokens } : {}),
+        ...(typeof item.supportsToolCall === "boolean"
+          ? { supportsTools: item.supportsToolCall }
+          : {}),
+        ...(typeof item.supportsImages === "boolean"
+          ? { supportsVision: item.supportsImages }
+          : {}),
+        ...(typeof item.supportsReasoning === "boolean"
+          ? { supportsThinking: item.supportsReasoning }
+          : {}),
+      },
+    ];
+  });
 }
 
 export function normalizeSapModelsResponse(

@@ -1,11 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import Icon from "./Icon";
+import { isCallbackStateAcceptable } from "./oauthCallbackState";
 import { useTranslations } from "next-intl";
+import { Tabs, TabsList, TabsTrigger } from "@omniroute/ui-kit/tabs";
 
 import Modal from "./Modal";
 import Button from "./Button";
 import Input from "./Input";
+import Textarea from "./Textarea";
 import {
   OAuthDeviceCodePanel,
   OAuthLoopbackMismatchPanel,
@@ -21,6 +25,8 @@ import GheConfigStep from "@/shared/components/oauthModal/GheConfigStep";
 import GitlabDuoSetupStep from "@/shared/components/oauthModal/GitlabDuoSetupStep";
 import OAuthErrorStep from "@/shared/components/oauthModal/OAuthErrorStep";
 import OAuthWaitingStep from "@/shared/components/oauthModal/OAuthWaitingStep";
+import CopilotPolicyStep from "@/shared/components/oauthModal/CopilotPolicyStep";
+import { getPasteTokenCopyKeys } from "@/shared/components/oauthModal/pasteTokenCopy";
 import { parseGrokCliPasteToken } from "@/lib/oauth/utils/grokCliAuthJson";
 import { buildGoogleLoopbackHint } from "@/lib/oauth/utils/googleLoopbackHint";
 import { errorMessageFromBody } from "@/shared/utils/fetchError";
@@ -34,7 +40,7 @@ export { formatDeviceCodeRemaining } from "./OAuthModalPanels";
 const GOOGLE_OAUTH_PROVIDERS = new Set(["antigravity", "agy"]);
 
 /** Providers that use a local callback server on a random port (PKCE browser flow). */
-const PKCE_CALLBACK_SERVER_PROVIDERS = new Set(["codex", "xai-oauth", "grok-cli"]);
+const PKCE_CALLBACK_SERVER_PROVIDERS = new Set(["codex", "xai-oauth", "grok-cli", "devin-desktop"]);
 
 // grok-cli is wired into BOTH the device-code panel (its default, #7358) and
 // the browser PKCE + import-token paths above/below (#7013) — the user picks
@@ -48,13 +54,18 @@ const DEVICE_CODE_PROVIDERS = new Set([
   "kimi-coding",
   "kilocode",
   "codebuddy-cn",
+  "freebuff",
+  "codebuddy-intl",
   "ghe-copilot",
   "grok-cli",
   "muse-code",
+  "workbuddy",
 ]);
 
-const TOKEN_PASTE_PROVIDERS = new Set(["devin-desktop", "devin-cli", "grok-cli"]);
-const IMPORT_TOKEN_ONLY_PROVIDERS = new Set(["devin-desktop", "devin-cli"]);
+const TOKEN_PASTE_PROVIDERS = new Set(["devin-desktop", "devin-cli", "grok-cli", "claude"]);
+const IMPORT_TOKEN_ONLY_PROVIDERS = new Set(["devin-cli"]);
+// Devin Desktop opens on the key import (its long-standing default); browser sign-in is a tab.
+const PASTE_FIRST_PROVIDERS = new Set([...IMPORT_TOKEN_ONLY_PROVIDERS, "devin-desktop", "claude"]);
 
 // POST a bare Codex access token to the access-token-only import endpoint
 // (#1290); shared by the bare-JWT and session-JSON paste branches (#6636).
@@ -153,19 +164,23 @@ export default function OAuthModal({
   // effect below and re-anchored whenever a device flow (re)starts.
   const [now, setNow] = useState(() => Date.now());
   // API-key paste mode for direct-token providers.
-  const [showPasteToken, setShowPasteToken] = useState(IMPORT_TOKEN_ONLY_PROVIDERS.has(provider));
+  const [showPasteToken, setShowPasteToken] = useState(PASTE_FIRST_PROVIDERS.has(provider));
   const [pasteToken, setPasteToken] = useState("");
   const [savingToken, setSavingToken] = useState(false);
   // grok-cli only (#7013 rework): device_code is the default method (matches
   // DEVICE_CODE_PROVIDERS); flipping this to true routes startOAuthFlow through
   // the browser PKCE / PKCE_CALLBACK_SERVER_PROVIDERS branch instead.
   const [grokBrowserMode, setGrokBrowserMode] = useState(false);
+  // github only: gate the device-code flow behind the policy-ambiguous disclosure.
+  // Flipped to true when the user clicks "I understand — Connect" in CopilotPolicyStep.
+  const [copilotPolicyAcknowledged, setCopilotPolicyAcknowledged] = useState(false);
   // #8046 follow-up: structured diagnosis for the LAN-IP loopback mismatch, rendered
   // by its own step instead of as prose inside the generic red error step.
   const [loopbackHint, setLoopbackHint] = useState<PkceLoopbackMismatchHint | null>(null);
 
   const supportsTokenPaste = TOKEN_PASTE_PROVIDERS.has(provider);
   const importTokenOnly = IMPORT_TOKEN_ONLY_PROVIDERS.has(provider);
+  const pasteCopyKeys = getPasteTokenCopyKeys(provider);
   const popupRef = useRef(null);
   const deviceFlowRunRef = useRef(0);
   const deviceVerificationUrl =
@@ -256,7 +271,7 @@ export default function OAuthModal({
                 .filter(Boolean)
                 .join("; ")
             : "";
-          throw new Error(details ? `${errMsg} (${details})` : errMsg);
+          throw new Error(details ? `${errMsg} (${details})` : String(errMsg));
         }
 
         setStep("success");
@@ -396,6 +411,12 @@ export default function OAuthModal({
           setDeviceData(null);
           setStep("waiting");
 
+          // GitHub Copilot: show policy-ambiguous disclosure before requesting credentials.
+          if (provider === "github" && !copilotPolicyAcknowledged) {
+            setStep("copilot-policy");
+            return;
+          }
+
           // GHE Copilot needs the enterprise URL collected first (see ghe-config step)
           if (provider === "ghe-copilot" && !gheUrl.trim()) {
             setStep("ghe-config");
@@ -494,6 +515,9 @@ export default function OAuthModal({
                   getErrorMessage(serverData, serverRes.status, t("errorCallbackServerFailed"))
                 );
 
+              if (typeof serverData.authUrl !== "string" || !serverData.authUrl) {
+                throw new Error(errorMessageFromBody(serverData, t("errorBrowserUnavailable")));
+              }
               setAuthData({ ...serverData, redirectUri: serverData.redirectUri });
               setStep("waiting");
               popupRef.current = window.open(serverData.authUrl, "oauth_auth");
@@ -524,8 +548,10 @@ export default function OAuthModal({
 
                 if (pollData.error && !pollData.pending) {
                   throw new Error(
-                    pollData.errorDescription ||
-                      errorMessageFromBody(pollData, t("errorAuthorizationFailed"))
+                    String(
+                      pollData.errorDescription ||
+                        errorMessageFromBody(pollData, t("errorAuthorizationFailed"))
+                    )
                   );
                 }
               }
@@ -567,7 +593,10 @@ export default function OAuthModal({
           // Fixed native-app loopback callback, distinct ports so both can run concurrently (#7013).
           const grokBuildPort = provider === "xai-oauth" ? 56121 : 56122;
           redirectUri = `http://127.0.0.1:${grokBuildPort}/callback`;
-        } else if (provider === "devin-desktop" || provider === "devin-cli") {
+        } else if (provider === "devin-desktop") {
+          // Fixed loopback registered by the Devin CLI login (paste-URL fallback off-host).
+          redirectUri = "http://127.0.0.1:59653/callback";
+        } else if (provider === "devin-cli") {
           // Retained callback-path fallback for the retired browser flow.
           const port = window.location.port || "20128";
           redirectUri = `http://localhost:${port}/auth/callback`;
@@ -600,7 +629,7 @@ export default function OAuthModal({
           throw new Error(errMsg);
         }
 
-        if (!data.authUrl) {
+        if (typeof data.authUrl !== "string" || !data.authUrl) {
           throw new Error(errorMessageFromBody(data, t("errorBrowserUnavailable")));
         }
 
@@ -637,6 +666,7 @@ export default function OAuthModal({
       gheUrl,
       invalidateDeviceFlow,
       grokBrowserMode,
+      copilotPolicyAcknowledged,
       t,
     ]
   );
@@ -702,7 +732,8 @@ export default function OAuthModal({
   if (startKey !== prevStartKey) {
     setPrevStartKey(startKey);
     if (startKey) {
-      setShowPasteToken(IMPORT_TOKEN_ONLY_PROVIDERS.has(provider));
+      setShowPasteToken(PASTE_FIRST_PROVIDERS.has(provider));
+      setPasteToken("");
       setGrokBrowserMode(false);
       setAuthData(null);
       setCallbackUrl("");
@@ -710,16 +741,15 @@ export default function OAuthModal({
       setIsDeviceCode(false);
       setDeviceData(null);
       setPolling(false);
-      // #8688: show GitLab Duo OAuth app / env setup before authorize error.
-      if (provider === "gitlab-duo") {
-        setStep("gitlab-duo-setup");
-      }
+      // #8688: show GitLab Duo OAuth app / env setup before authorize error. Every other
+      // provider restarts at "waiting", or a paste-first reopen would show the last success.
+      setStep(provider === "gitlab-duo" ? "gitlab-duo-setup" : "waiting");
     }
   }
 
   useEffect(() => {
     if (!isOpen || !provider || flowStartedRef.current) return;
-    const startsInPasteMode = IMPORT_TOKEN_ONLY_PROVIDERS.has(provider);
+    const startsInPasteMode = PASTE_FIRST_PROVIDERS.has(provider);
     const startsInGitlabDuoSetup = provider === "gitlab-duo";
     if (startsInGitlabDuoSetup) {
       // Auto-start is skipped — setStep("gitlab-duo-setup") already happened
@@ -744,7 +774,7 @@ export default function OAuthModal({
 
       const { code, state, error: callbackError, errorDescription } = data;
 
-      if (authData?.state && state && state !== authData.state) {
+      if (!isCallbackStateAcceptable(authData?.state, state)) {
         callbackProcessedRef.current = true;
         setError(t("errorStateMismatch"));
         setStep("error");
@@ -1016,43 +1046,43 @@ export default function OAuthModal({
             (#7358, default) and the browser PKCE login (#7013) alongside the
             paste-token import. */}
         {supportsTokenPaste && !importTokenOnly && step !== "success" && (
-          <div className="flex gap-2 border-b border-border pb-3">
-            {provider === "grok-cli" && (
-              <button
-                className={`text-sm px-3 py-1 rounded-t ${!showPasteToken && !grokBrowserMode ? "font-semibold border-b-2 border-primary text-primary" : "text-text-muted"}`}
-                onClick={handleDeviceCodeMode}
-              >
-                {t("tabDeviceCode")}
-              </button>
-            )}
-            <button
-              className={`text-sm px-3 py-1 rounded-t ${!showPasteToken && (provider !== "grok-cli" || grokBrowserMode) ? "font-semibold border-b-2 border-primary text-primary" : "text-text-muted"}`}
-              onClick={handleBrowserMode}
-            >
-              {t("tabBrowserLogin")}
-            </button>
-            <button
-              className={`text-sm px-3 py-1 rounded-t ${showPasteToken ? "font-semibold border-b-2 border-primary text-primary" : "text-text-muted"}`}
-              onClick={handlePasteMode}
-            >
-              {provider === "grok-cli" ? t("tabImportAuthJson") : t("tabPasteApiKey")}
-            </button>
-          </div>
+          <Tabs
+            variant="underline"
+            value={
+              showPasteToken
+                ? "paste"
+                : provider === "grok-cli" && !grokBrowserMode
+                  ? "device"
+                  : "browser"
+            }
+          >
+            <TabsList aria-label={t("title", { providerName: providerInfo.name })}>
+              {provider === "grok-cli" && (
+                <TabsTrigger
+                  value="device"
+                  aria-controls={undefined}
+                  onClick={handleDeviceCodeMode}
+                >
+                  {t("tabDeviceCode")}
+                </TabsTrigger>
+              )}
+              <TabsTrigger value="browser" aria-controls={undefined} onClick={handleBrowserMode}>
+                {t("tabBrowserLogin")}
+              </TabsTrigger>
+              <TabsTrigger value="paste" aria-controls={undefined} onClick={handlePasteMode}>
+                {t(pasteCopyKeys.tab)}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         )}
 
-        {/* Paste-token form (Devin Desktop / Devin CLI) */}
+        {/* Paste-token form (Devin Desktop / Devin CLI / Grok auth.json / Claude setup-token) */}
         {supportsTokenPaste && showPasteToken && step !== "success" && (
           <div className="flex flex-col gap-3">
-            <p className="text-sm text-text-muted">
-              {provider === "devin-desktop"
-                ? t("devinDesktopPasteDescription")
-                : provider === "grok-cli"
-                  ? t("grokAuthJsonDescription")
-                  : t("devinPasteDescription")}
-            </p>
+            <p className="text-sm text-text-muted">{t(pasteCopyKeys.description)}</p>
             {provider === "grok-cli" ? (
-              <textarea
-                className="w-full h-32 p-3 text-sm font-mono bg-input border border-border rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+              <Textarea
+                className="h-32 resize-none font-mono text-sm"
                 value={pasteToken}
                 onChange={(e) => setPasteToken(e.target.value)}
                 placeholder={t("grokAuthJsonPlaceholder")}
@@ -1062,12 +1092,12 @@ export default function OAuthModal({
               <Input
                 value={pasteToken}
                 onChange={(e) => setPasteToken(e.target.value)}
-                placeholder={t("apiTokenPlaceholder")}
+                placeholder={t(pasteCopyKeys.placeholder)}
                 type="password"
                 label={t("apiKeyTokenLabel")}
               />
             )}
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && <p className="text-sm text-error">{error}</p>}
             <div className="flex gap-2">
               <Button
                 onClick={handleSaveToken}
@@ -1086,6 +1116,17 @@ export default function OAuthModal({
         {/* OAuth flow steps — hidden when paste-token mode is active */}
         {(!supportsTokenPaste || !showPasteToken) && (
           <>
+            {/* GitHub Copilot: policy-ambiguous disclosure before device-code flow */}
+            {provider === "github" && step === "copilot-policy" && (
+              <CopilotPolicyStep
+                startOAuthFlow={() => {
+                  setCopilotPolicyAcknowledged(true);
+                  void startOAuthFlow();
+                }}
+                onClose={handleClose}
+              />
+            )}
+
             {/* GHE Copilot: collect the GitHub Enterprise base URL before starting */}
             {provider === "ghe-copilot" && step === "ghe-config" && (
               <GheConfigStep
@@ -1147,10 +1188,8 @@ export default function OAuthModal({
         {/* Success Step — shown for both OAuth and paste-token flows */}
         {step === "success" && (
           <div className="text-center py-6">
-            <div className="size-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-              <span className="material-symbols-outlined text-3xl text-green-600">
-                check_circle
-              </span>
+            <div className="size-16 mx-auto mb-4 rounded-full bg-success/10 flex items-center justify-center">
+              <Icon name="check_circle" size={30} className="text-success" />
             </div>
             <h3 className="text-lg font-semibold mb-2">{t("success")}</h3>
             <p className="text-sm text-text-muted mb-4">

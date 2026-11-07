@@ -30,10 +30,10 @@ import {
   type ProviderMessageTranslator,
   type CompatByProtocolMap,
 } from "../providerPageHelpers";
-import { useNotificationStore } from "@/store/notificationStore";
+import type { NotificationStore } from "@/store/notificationStore";
 import { extractApiErrorMessage } from "@/shared/http/apiErrorMessage";
 
-type NotifyStore = ReturnType<typeof useNotificationStore>;
+type NotifyStore = NotificationStore;
 
 // ──── types ──────────────────────────────────────────────────────────────────
 
@@ -55,6 +55,8 @@ export interface UseModelVisibilityHandlersParams {
   fetchProviderModelMeta: () => Promise<void>;
   fetchAliases: () => Promise<void>;
   notify: NotifyStore;
+  /** Kit confirmation dialog (`useConfirmDialog().requestConfirm`); resolves true on confirm. */
+  requestConfirm: (message: string) => Promise<boolean>;
   t: ProviderMessageTranslator;
   formatProviderModelsErrorResponse?: typeof formatProviderModelsErrorResponse;
   /** The current selected connection (may be null). */
@@ -104,6 +106,7 @@ export function useModelVisibilityHandlers({
   fetchProviderModelMeta,
   fetchAliases,
   notify,
+  requestConfirm,
   t,
   selectedConnection,
   providerNode,
@@ -116,7 +119,9 @@ export function useModelVisibilityHandlers({
   const [clearingModels, setClearingModels] = useState(false);
   const [modelFilter, setModelFilter] = useState("");
   const [testingModelId, setTestingModelId] = useState<string | null>(null);
-  const [modelTestStatus, setModelTestStatus] = useState<Record<string, "ok" | "error" | "quota">>({});
+  const [modelTestStatus, setModelTestStatus] = useState<Record<string, "ok" | "error" | "quota">>(
+    {}
+  );
   const [testingAll, setTestingAll] = useState(false);
   const [testProgress, setTestProgress] = useState<{ done: number; total: number } | null>(null);
   const [autoHideFailed, setAutoHideFailed] = useState(false);
@@ -260,14 +265,20 @@ export function useModelVisibilityHandlers({
 
   const handleClearAllModels = async () => {
     if (clearingModels) return;
-    if (!confirm(t("clearAllModelsConfirm"))) return;
+    if (!(await requestConfirm(t("clearAllModelsConfirm")))) return;
     setClearingModels(true);
     try {
-      const res = await fetch(
-        `/api/provider-models?provider=${encodeURIComponent(providerStorageAlias)}&all=true`,
-        { method: "DELETE" }
+      const targetProviders = Array.from(
+        new Set([providerStorageAlias, providerId].filter(Boolean))
       );
-      if (res.ok) {
+      const responses = await Promise.all(
+        targetProviders.map((targetProvider) =>
+          fetch(`/api/provider-models?provider=${encodeURIComponent(targetProvider)}&all=true`, {
+            method: "DELETE",
+          })
+        )
+      );
+      if (responses.every((res) => res.ok)) {
         // Also delete all aliases that belong to this provider
         await Promise.all(
           providerAliasEntries.map(([alias]) =>
@@ -316,6 +327,11 @@ export function useModelVisibilityHandlers({
           )
         );
         setModelTestStatus((prev) => ({ ...prev, [modelId]: "ok" }));
+      } else if (data.skipped) {
+        // A skipped probe never ran — neither healthy nor broken, so no status icon.
+        notify.info(
+          extractApiErrorMessage(data, providerText(t, "modelTestFailed", "Model test failed"))
+        );
       } else {
         // extractApiErrorMessage coerces any object-shaped `error` (e.g. a Zod
         // format object) to a string so notify.error never hands the toast a

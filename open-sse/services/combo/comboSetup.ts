@@ -22,6 +22,7 @@ import { resolveResilienceSettings } from "../../../src/lib/resilience/settings"
 import { FETCH_TIMEOUT_MS } from "../../config/constants.ts";
 import { deriveComboSessionKey } from "./autoStrategy.ts";
 import type { ComboContext } from "./context.ts";
+import { getStrategyTraits } from "./strategyRegistry.ts";
 
 export interface ComboSetup {
   strategy: ReturnType<typeof normalizeRoutingStrategy>;
@@ -78,8 +79,9 @@ export function phaseComboSetup(ctx: ComboContext): ComboSetup {
   const { combo, settings, relayOptions } = ctx;
 
   const strategy = normalizeRoutingStrategy(combo.strategy || "priority");
-  const relayConfig =
-    strategy === "context-relay" ? resolveContextRelayConfig(relayOptions?.config || null) : null;
+  const relayConfig = getStrategyTraits(strategy).contextRelay
+    ? resolveContextRelayConfig(relayOptions?.config || null)
+    : null;
 
   const resilienceSettings = settings
     ? resolveResilienceSettings(settings)
@@ -103,6 +105,7 @@ export function phaseComboSetup(ctx: ComboContext): ComboSetup {
     "" // provider/model not yet known — resolved per-model in loop
   );
   ctx.body = agentBody;
+
   const clientRequestedStream = ctx.body?.stream === true;
 
   // Use config cascade before dispatch so all strategies, pinned context routes,

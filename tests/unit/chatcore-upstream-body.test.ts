@@ -689,6 +689,44 @@ test("preserves the full tool list when within the grok-cli limit", async () => 
   assert.equal(out.tools.length, 150);
 });
 
+// #13190: bypassDefaultToolLimit is the OpenCode *client* signal, not an operator override.
+// It lifts the generic default cap, but a provider's known hard limit (grok-cli 200, nvidia
+// 1536, or one learned from a real upstream 400) must still truncate — otherwise OpenCode
+// clients get a permanent upstream 400 for that provider.
+test("bypassDefaultToolLimit does not lift a known provider hard limit", async () => {
+  const tools = Array.from({ length: 250 }, (_, i) => ({
+    type: "function",
+    function: { name: `tool_${i}`, parameters: {} },
+  }));
+  const out = await prepareUpstreamBody({
+    translatedBody: { model: "grok-cli-model", messages: [], tools },
+    modelToCall: "grok-cli-model",
+    provider: "grok-cli",
+    targetFormat: "claude",
+    credentials: null,
+    bypassDefaultToolLimit: true,
+  });
+  assert.ok(Array.isArray(out.tools));
+  assert.equal(out.tools.length, 200);
+});
+
+test("bypassDefaultToolLimit still lifts the generic default cap for providers without a known limit", async () => {
+  const tools = Array.from({ length: 300 }, (_, i) => ({
+    type: "function",
+    function: { name: `tool_${i}`, parameters: {} },
+  }));
+  const out = await prepareUpstreamBody({
+    translatedBody: { model: "some-model", messages: [], tools },
+    modelToCall: "some-model",
+    provider: "openai",
+    targetFormat: "openai",
+    credentials: null,
+    bypassDefaultToolLimit: true,
+  });
+  assert.ok(Array.isArray(out.tools));
+  assert.equal(out.tools.length, 300);
+});
+
 // The web_search / web_fetch fallback replaces a hosted tool the client declared, and
 // the router executes its calls itself. Tools are sorted by name (#12234) before
 // namespaces are flattened, so behind a large MCP catalog (Codex with 200+ tools)
@@ -725,15 +763,20 @@ test("keeps the fallback tools in flat Responses and prefixed Claude shapes", as
     {
       targetFormat: "openai-responses",
       provider: "at428-flat",
+      limit: 128,
       tool: (name) => ({ type: "function", name, parameters: {} }),
     },
     {
       targetFormat: "claude",
       provider: "at428-claude",
+      // Claude-format targets have no default cap (#18120): exercise the learned-limit path.
+      limit: 100,
       tool: (name) => ({ name: `proxy_${name}`, input_schema: {} }),
     },
   ];
+  const { setDetectedToolLimit } = await import("../../open-sse/services/toolLimitDetector.ts");
   for (const shape of shapes) {
+    if (shape.limit < 128) setDetectedToolLimit(shape.provider, shape.limit);
     const tools = [
       ...Array.from({ length: 200 }, (_, i) =>
         shape.tool(`mcp__jira__tool_${String(i).padStart(3, "0")}`)
@@ -747,7 +790,7 @@ test("keeps the fallback tools in flat Responses and prefixed Claude shapes", as
       targetFormat: shape.targetFormat,
       credentials: null,
     });
-    assert.equal(out.tools.length, 128, shape.targetFormat);
+    assert.equal(out.tools.length, shape.limit, shape.targetFormat);
     assert.deepEqual(out.tools.at(-1), tools.at(-1), shape.targetFormat);
   }
 });
@@ -826,4 +869,85 @@ test("injects prompt_cache_key for Kimi Code's OpenAI protocol", async () => {
     credentials: { accessToken: "oauth-token" },
   });
   assert.match(String(out.prompt_cache_key), /^omni-[0-9a-f]{32}$/);
+});
+
+test("Codex Responses attempts reuse immutable input when no payload rules exist", async () => {
+  setPayloadRulesConfig({});
+  const input = [
+    {
+      type: "message",
+      role: "user",
+      content: [{ type: "input_text", text: "large context" }],
+    },
+  ];
+  const source = {
+    model: "original-model",
+    input,
+    tools: [{ type: "function", name: "lookup", parameters: { type: "object" } }],
+    reasoning: { effort: "low" },
+  };
+  try {
+    const options = {
+      translatedBody: source,
+      provider: "codex",
+      targetFormat: FORMATS.OPENAI_RESPONSES,
+      credentials: null,
+    };
+    const first = await prepareUpstreamBody({ ...options, modelToCall: "gpt-5.4-codex" });
+    assert.notStrictEqual(first, source);
+    assert.strictEqual(first.input, input);
+    assert.strictEqual(first.tools, source.tools);
+    assert.equal(first.model, "gpt-5.4-codex");
+    assert.equal(source.model, "original-model");
+
+    const fallback = await prepareUpstreamBody({ ...options, modelToCall: "gpt-5.3-codex" });
+    assert.equal(fallback.model, "gpt-5.3-codex");
+    assert.strictEqual(fallback.input, input);
+    assert.equal(source.model, "original-model");
+
+    const otherProvider = await prepareUpstreamBody({
+      ...options,
+      provider: "openai",
+      modelToCall: "gpt-5.4-codex",
+    });
+    assert.notStrictEqual(otherProvider.input, input);
+    assert.deepEqual(otherProvider.input, input);
+  } finally {
+    resetPayloadRulesConfigForTests();
+  }
+});
+
+test("Codex attempts preserve caller-owned nested history with configured rules", async () => {
+  setPayloadRulesConfig({
+    override: [
+      {
+        models: [{ name: "gpt-5.4-codex" }],
+        params: { "reasoning.effort": "medium" },
+      },
+    ],
+  });
+  const source = {
+    input: [
+      {
+        type: "message",
+        role: "user",
+        content: [{ type: "input_text", text: "preserve me" }],
+      },
+    ],
+    reasoning: { effort: "low" },
+  };
+  try {
+    const result = await prepareUpstreamBody({
+      translatedBody: source,
+      provider: "codex",
+      targetFormat: FORMATS.OPENAI_RESPONSES,
+      credentials: null,
+      modelToCall: "gpt-5.4-codex",
+    });
+    assert.notStrictEqual(result.input, source.input);
+    assert.equal((result.reasoning as { effort: string }).effort, "medium");
+    assert.equal(source.reasoning.effort, "low");
+  } finally {
+    resetPayloadRulesConfigForTests();
+  }
 });
