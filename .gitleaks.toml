@@ -39,12 +39,12 @@
 
   # Paths a ignorar completamente (node_modules, builds, etc.)
   paths = [
-    '''node_modules''',
-    '''\.next''',
-    '''dist''',
-    '''\.git''',
-    '''coverage''',
-    '''\.nyc_output''',
+    '''(^|/)node_modules(/|$)''',
+    '''(^|/)\.next(/|$)''',
+    '''(^|/)dist(/|$)''',
+    '''(^|/)\.git(/|$)''',
+    '''(^|/)coverage(/|$)''',
+    '''(^|/)\.nyc_output(/|$)''',
   ]
 
   # Commits específicos a ignorar (ex: commit que introduziu fixtures de teste)
