@@ -19,8 +19,10 @@ function render(el: React.ReactElement) {
   document.body.appendChild(c);
   const root = createRoot(c);
   act(() => root.render(el));
+  // The drawer is the kit Sheet (KEA-7886), portalled to document.body: queries run against the
+  // whole body (which also holds the render host), the host is still what gets removed.
   return {
-    c,
+    c: document.body,
     cleanup: () => {
       act(() => root.unmount());
       c.remove();
@@ -460,7 +462,7 @@ describe("OrchestrationDrawer repeat action (two-click confirm)", () => {
     ) as HTMLButtonElement;
   }
 
-  it("disables the repeat button with the repeatUnavailable tooltip when the input cannot be recovered", async () => {
+  it("blocks the repeat button with the repeatUnavailable reason when the input cannot be recovered", async () => {
     const unrecoverable = { ...A2A_TASK, input: { skill: "smart-routing", messages: [] } };
     vi.stubGlobal(
       "fetch",
@@ -477,8 +479,24 @@ describe("OrchestrationDrawer repeat action (two-click confirm)", () => {
       await Promise.resolve();
     });
     const btn = findRepeatButton(c);
-    expect(btn.disabled).toBe(true);
-    expect(btn.getAttribute("title")).toBe("repeatUnavailable");
+    // GuardedAction (decision 4, 2026-11-14): inactive but reachable, so the reason can show —
+    // a natively disabled button never shows its title under the kit's pointer-events: none.
+    expect(btn.getAttribute("aria-disabled")).toBe("true");
+    expect(btn.getAttribute("data-blocked")).toBe("true");
+    const describedBy = btn.getAttribute("aria-describedby") ?? "";
+    expect(describedBy).not.toBe("");
+    expect(
+      describedBy
+        .split(" ")
+        .map((id) => document.getElementById(id)?.textContent)
+        .join(" ")
+    ).toContain("repeatUnavailable");
+    expect(btn.getAttribute("title")).toBeNull();
+    // Clicking a blocked repeat never arms the confirm step nor posts.
+    await act(async () => {
+      btn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(findRepeatButton(c).textContent).toContain("actionRepeat");
     cleanup();
   });
 
@@ -621,6 +639,12 @@ describe("OrchestrationDrawer repeat action (two-click confirm)", () => {
     expect(vi.getTimerCount()).toBeGreaterThan(0);
 
     cleanup();
+    // The kit Sheet (Radix FocusScope) schedules its focus-restore with a 0 ms timeout on
+    // unmount; flush only those (1 ms is far below the 3 s confirm window) so the count below
+    // still proves the confirm timer itself was cleared.
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
     expect(vi.getTimerCount()).toBe(0);
   });
 

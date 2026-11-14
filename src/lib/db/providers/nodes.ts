@@ -8,24 +8,40 @@ import { selectProviderNodeForConnection } from "../providerNodeSelect";
 import { backupDbFile } from "../backup";
 import { invalidateDbCache } from "../readCache";
 import { toRecord, type JsonRecord } from "./columns";
+import { resetProviderNodePrefixCache } from "./nodePrefix";
 
 function normalizeDailyQuotaResetHour(value: unknown): number | null {
   return value === 0 || value ? Number(value) : null;
 }
 
+function parseStoredJson(storedJson: string | null): unknown {
+  if (!storedJson) return null;
+  try {
+    return JSON.parse(storedJson);
+  } catch {
+    return null;
+  }
+}
+
 function withParsedCustomHeaders(node: JsonRecord, storedJson: string | null): JsonRecord {
   const result: JsonRecord = { ...node };
-  if (storedJson) {
-    try {
-      result.customHeaders = JSON.parse(storedJson);
-    } catch {
-      result.customHeaders = null;
-    }
-  } else {
-    result.customHeaders = null;
-  }
+  result.customHeaders = parseStoredJson(storedJson);
   delete result.customHeadersJson;
+  // Custom JSON API node config (#4929 port): exposed parsed, like rowToCamel does.
+  result.customJsonConfig = parseStoredJson(
+    (result.customJsonConfigJson as string | null | undefined) ?? null
+  );
+  delete result.customJsonConfigJson;
   return result;
+}
+
+/** Stored JSON for a custom JSON API node config; undefined keeps the existing value. */
+function customJsonConfigColumn(data: JsonRecord, existing: JsonRecord | null): string | null {
+  if (data.customJsonConfig !== undefined) {
+    return data.customJsonConfig ? JSON.stringify(data.customJsonConfig) : null;
+  }
+  const stored = existing?.custom_json_config_json;
+  return typeof stored === "string" ? stored : null;
 }
 
 interface StatementLike<TRow = unknown> {
@@ -89,6 +105,33 @@ export async function resolveProviderNodeForConnection(idOrType: string) {
   return selectProviderNodeForConnection(idOrType, all);
 }
 
+export const PROVIDER_NODE_ID_CONFLICT = "PROVIDER_NODE_ID_CONFLICT";
+
+/** Thrown by createProviderNode when a node with the same id already exists. */
+export class ProviderNodeIdConflictError extends Error {
+  readonly code = PROVIDER_NODE_ID_CONFLICT;
+  readonly nodeId: string;
+
+  constructor(nodeId: string) {
+    super(`Provider node ID "${nodeId}" already exists`);
+    this.name = "ProviderNodeIdConflictError";
+    this.nodeId = nodeId;
+  }
+}
+
+// Matched by `code` (not only `instanceof`) so the guard survives duplicated module
+// instances across bundles/realms.
+export function isProviderNodeIdConflictError(
+  error: unknown
+): error is ProviderNodeIdConflictError {
+  return (
+    error instanceof ProviderNodeIdConflictError ||
+    (typeof error === "object" &&
+      error !== null &&
+      (error as { code?: unknown }).code === PROVIDER_NODE_ID_CONFLICT)
+  );
+}
+
 export async function createProviderNode(data: JsonRecord) {
   const db = getDbInstance() as unknown as DbLike;
   const now = new Date().toISOString();
@@ -107,21 +150,29 @@ export async function createProviderNode(data: JsonRecord) {
     // Optional operator-supplied remote icon URL (#2166) — plain TEXT, no JSON parsing needed.
     iconUrl: data.iconUrl || null,
     customHeadersJson,
+    customJsonConfigJson: customJsonConfigColumn(data, null),
     dailyQuotaResetTimezone: data.dailyQuotaResetTimezone || null,
     dailyQuotaResetHour: normalizeDailyQuotaResetHour(data.dailyQuotaResetHour),
     createdAt: now,
     updatedAt: now,
   };
 
-  db.prepare(
-    `
-    INSERT INTO provider_nodes (id, type, name, prefix, api_type, base_url, chat_path, models_path, icon_url, custom_headers_json, daily_quota_reset_timezone, daily_quota_reset_hour, created_at, updated_at)
-    VALUES (@id, @type, @name, @prefix, @apiType, @baseUrl, @chatPath, @modelsPath, @iconUrl, @customHeadersJson, @dailyQuotaResetTimezone, @dailyQuotaResetHour, @createdAt, @updatedAt)
+  const result = db
+    .prepare(
+      `
+    INSERT INTO provider_nodes (id, type, name, prefix, api_type, base_url, chat_path, models_path, icon_url, custom_headers_json, custom_json_config_json, daily_quota_reset_timezone, daily_quota_reset_hour, created_at, updated_at)
+    VALUES (@id, @type, @name, @prefix, @apiType, @baseUrl, @chatPath, @modelsPath, @iconUrl, @customHeadersJson, @customJsonConfigJson, @dailyQuotaResetTimezone, @dailyQuotaResetHour, @createdAt, @updatedAt)
+    ON CONFLICT(id) DO NOTHING
   `
-  ).run(node);
+    )
+    .run(node);
+  // Ids can be operator-chosen (custom suffix), so a collision is a caller error,
+  // never a silent overwrite nor an unhandled constraint failure.
+  if ((result?.changes ?? 0) === 0) throw new ProviderNodeIdConflictError(String(node.id));
 
   backupDbFile("pre-write");
   invalidateDbCache("nodes");
+  resetProviderNodePrefixCache();
 
   return withParsedCustomHeaders({ ...node }, customHeadersJson);
 }
@@ -148,6 +199,8 @@ export async function updateProviderNode(id: string, data: JsonRecord) {
     const existingJson = (existing as JsonRecord).custom_headers_json;
     merged["customHeadersJson"] = typeof existingJson === "string" ? existingJson : null;
   }
+  merged["customJsonConfigJson"] = customJsonConfigColumn(data, existing as JsonRecord);
+  delete merged["customJsonConfig"];
 
   db.prepare(
     `
@@ -155,6 +208,7 @@ export async function updateProviderNode(id: string, data: JsonRecord) {
     api_type = @apiType, base_url = @baseUrl, chat_path = @chatPath,
     models_path = @modelsPath, icon_url = @iconUrl,
     custom_headers_json = @customHeadersJson,
+    custom_json_config_json = @customJsonConfigJson,
     daily_quota_reset_timezone = @dailyQuotaResetTimezone,
     daily_quota_reset_hour = @dailyQuotaResetHour,
     updated_at = @updatedAt
@@ -173,6 +227,7 @@ export async function updateProviderNode(id: string, data: JsonRecord) {
     // stored custom icon when the caller submits an empty value.
     iconUrl: merged["iconUrl"] || null,
     customHeadersJson: merged["customHeadersJson"] || null,
+    customJsonConfigJson: merged["customJsonConfigJson"],
     dailyQuotaResetTimezone: merged["dailyQuotaResetTimezone"] || null,
     dailyQuotaResetHour: normalizeDailyQuotaResetHour(merged["dailyQuotaResetHour"]),
     updatedAt: merged["updatedAt"],
@@ -180,6 +235,7 @@ export async function updateProviderNode(id: string, data: JsonRecord) {
 
   backupDbFile("pre-write");
   invalidateDbCache("nodes");
+  resetProviderNodePrefixCache();
 
   return withParsedCustomHeaders(merged, (merged["customHeadersJson"] as string | null) ?? null);
 }
@@ -192,5 +248,6 @@ export async function deleteProviderNode(id: string) {
   db.prepare("DELETE FROM provider_nodes WHERE id = ?").run(id);
   backupDbFile("pre-write");
   invalidateDbCache("nodes");
+  resetProviderNodePrefixCache();
   return rowToCamel(existing);
 }

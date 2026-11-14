@@ -34,13 +34,15 @@ without inventing new modules.
 | Build         | Next.js standalone via `scripts/build/build-next-isolated.mjs`                                                           |
 | Lint/format   | ESLint flat config + Prettier (`lint-staged` via Husky pre-commit)                                                       |
 | Module system | ESM everywhere (`"type": "module"`)                                                                                      |
-| Workspaces    | npm workspace — `open-sse` is the only sub-workspace                                                                     |
+| Dashboard UI  | **Tailwind CSS 4** + the vendored **Keak CI UI Kit** (`packages/ui-kit`), Lucide icons — see `DESIGN_SYSTEM.md`          |
+| Workspaces    | npm workspaces — `open-sse`, `packages/browser-pool`, `packages/ui-kit`                                                  |
 
 Path aliases (`tsconfig.json`):
 
 - `@/*` → `src/*`
 - `@omniroute/open-sse` → `open-sse/index.ts`
 - `@omniroute/open-sse/*` → `open-sse/*`
+- `@omniroute/ui-kit` → `packages/ui-kit/src`, `@omniroute/ui-kit/*` → `packages/ui-kit/src/*`
 
 Default HTTP port: **`20128`** (API and dashboard share the same process). Data
 directory is `DATA_DIR` env var, defaulting to `~/.omniroute/`.
@@ -53,6 +55,7 @@ directory is `DATA_DIR` env var, defaulting to `~/.omniroute/`.
 OmniRoute/
 ├── src/                  Next.js application (App Router, libs, domain, server, shared)
 ├── open-sse/             Streaming engine workspace (@omniroute/open-sse)
+├── packages/             Workspaces: ui-kit (vendored Keak CI UI Kit), browser-pool
 ├── electron/             Desktop wrapper (Electron 41 main + preload)
 ├── bin/                  CLI entry points (omniroute, reset-password)
 ├── tests/                Unit, integration, e2e, protocols-e2e, translator, security, fixtures
@@ -371,16 +374,25 @@ Tables created across the migrations (123 total):
 
 ### 3.3 `src/domain/` — Domain layer
 
-Pure business logic, no I/O. Imported by routes and handlers.
+Domain services and evaluation contracts. Some modules are called by the live
+request path; others remain standalone contracts. Do not assume this entire directory
+is free of I/O or that changing every module affects production routing.
+
+The live policy surfaces are `src/shared/utils/apiKeyPolicy.ts` and
+`src/sse/handlers/chat/resolvedModelPolicy.ts`. Live combo handling and target
+resolution use `open-sse/services/combo.ts`. The tested `policyEngine.ts` and
+`comboResolver.ts` contracts, together with `src/lib/container.ts`, are not the
+wiring of the inspected chat request path. Keep them separate from those active
+surfaces when planning a routing change.
 
 | File                                       | Purpose                                           |
 | ------------------------------------------ | ------------------------------------------------- |
-| `policyEngine.ts`                          | Top-level policy resolver                         |
+| `policyEngine.ts`                          | Reserved policy-evaluation contract               |
 | `fallbackPolicy.ts`                        | Fallback decision tree                            |
 | `costRules.ts`                             | Cost calculation rules                            |
 | `lockoutPolicy.ts`                         | Model lockout decisions                           |
 | `tagRouter.ts`                             | Tag-based routing                                 |
-| `comboResolver.ts`                         | Combo resolution from request → target list       |
+| `comboResolver.ts`                         | Reserved combo-selection contract                 |
 | `connectionModelRules.ts`                  | Per-connection model filters                      |
 | `modelAvailability.ts`                     | Model availability check                          |
 | `degradation.ts`                           | Degraded-mode transitions                         |
@@ -433,6 +445,13 @@ Split into focused subdirectories:
   `providerModelAliases.ts`, `rateLimiter.ts`, `releaseNotes.ts`,
   `a11yAudit.ts`, plus dashboard hooks/components under `services/`, `network/`,
   `middleware/`, `schemas/`, `hooks/`, `components/`.
+- `components/` — the dashboard component API (`index.tsx` barrel: `Button`, `Input`,
+  `Select`, `Modal`, `Card`, `DataTable`, …). The primitives are adapters over the
+  vendored kit (`packages/ui-kit`, imported by component subpath such as
+  `@omniroute/ui-kit/button`), so screens keep their imports while the markup is the
+  kit's. The shell is `layouts/DashboardLayout.tsx` → `layouts/DashboardShell.tsx`
+  (kit `SidebarProvider`/`SidebarInset`) with `Sidebar.tsx` and `Header.tsx`; icons go
+  through `Icon.tsx` and `constants/iconMap.ts`. See `docs/architecture/DESIGN_SYSTEM.md`.
 
 ---
 
@@ -449,7 +468,7 @@ open-sse/
 ├── types.d.ts
 ├── config/                 Provider registries, header profiles, identity, …
 ├── handlers/               Request handlers (chat, embeddings, audio, image, …)
-├── executors/              108 provider-specific HTTP executors
+├── executors/              170 provider executor modules (executor classes + per-provider helpers)
 ├── translator/             Format conversion (OpenAI ↔ Claude ↔ Gemini ↔ Cursor ↔ Kiro)
 ├── transformer/            Responses API ↔ Chat Completions stream transformer
 ├── services/               80+ service modules (combos, fallback, quotas, identity, …)
@@ -479,7 +498,10 @@ open-sse/
 
 ### 4.2 `open-sse/executors/`
 
-108 provider executors, each extending `BaseExecutor` (`base.ts`):
+170 top-level executor modules (`*.ts` minus `base.ts`, `index.ts` and tests — the count
+`npm run check:docs-counts` measures). Every executor class extends `BaseExecutor` (`base.ts`),
+directly or through `DefaultExecutor` or another executor; the remaining modules are per-provider
+helpers (tool schemas, fetch/TTS adapters, quirk handlers). Executors include:
 
 `antigravity`, `azure-openai`, `blackbox-web`, `cliproxyapi`,
 `chatgpt-web-codex`, `cloudflare-ai`, `codex`, `commandCode`, `cursor`, `default`, `devin-cli`,
@@ -488,7 +510,7 @@ open-sse/
 (shared identity helper) and `index.ts` (registry).
 
 > Note: providers not listed here are served by `default.ts` using the generic
-> OpenAI-compatible executor. The full provider catalog (355 providers) lives in
+> OpenAI-compatible executor. The full provider catalog (394 providers) lives in
 > `src/shared/constants/providers.ts`.
 
 ### 4.3 `open-sse/translator/`
@@ -521,7 +543,7 @@ Highlights (full list under `open-sse/services/`):
 
 | Concern              | Files                                                                                                                                                                                                                                                    |
 | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Combo routing        | `combo.ts` (19 strategies), `comboConfig.ts`, `comboMetrics.ts`, `comboManifestMetrics.ts`, `comboAgentMiddleware.ts`                                                                                                                                    |
+| Combo routing        | `combo.ts` (22 strategies), `comboConfig.ts`, `comboMetrics.ts`, `comboManifestMetrics.ts`, `comboAgentMiddleware.ts`                                                                                                                                    |
 | Auto Combo engine    | `autoCombo/` — `engine.ts`, `scoring.ts`, `taskFitness.ts`, `virtualFactory.ts`, `modePacks.ts`, `autoPrefix.ts`, `persistence.ts`, `providerDiversity.ts`, `providerRegistryAccessor.ts`, `routerStrategy.ts`, `selfHealing.ts`, `index.ts`             |
 | Resilience           | `accountFallback.ts` (cooldown + lockout), `errorClassifier.ts`, `requestRejectedStreak.ts`, `emergencyFallback.ts`, `rateLimitManager.ts`, `rateLimitSemaphore.ts`, `accountSemaphore.ts`, `accountSelector.ts`                                         |
 | Quotas               | `quotaMonitor.ts`, `quotaPreflight.ts`, `bailianQuotaFetcher.ts`, `codexQuotaFetcher.ts`, `deepseekQuotaFetcher.ts`, `openrouterQuotaFetcher.ts`, `openrouterFreeWindow.ts`, `llmgatewayQuotaFetcher.ts`, `crofUsageFetcher.ts`, `antigravityCredits.ts` |
@@ -670,7 +692,11 @@ Organized into 6 subfolders by purpose.
   `v1-ws-bridge.mjs`, `smoke-electron-packaged.mjs`,
   `run-playwright-tests.mjs`, `run-ecosystem-tests.mjs`,
   `run-protocol-clients-tests.mjs`, `sync-env.mjs`, `healthcheck.mjs`,
-  `system-info.mjs`.
+  `system-info.mjs`, plus the read-only PR babysitting helpers
+  `ci-discriminate.sh` (sorts a PR's failing-check signatures into own / inherited /
+  unknown against a reference PR or the base-red issue) and `audit-worktree.sh`
+  (dirty files, protected surfaces, removed asserts, suppression counts, leftover
+  tmp tsconfigs, PR head vs local HEAD — before a worker's PR is accepted).
 - **`scripts/check/`** — `check-cycles.mjs`, `check-docs-sync.mjs`,
   `check-docs-counts-sync.mjs`, `check-env-doc-sync.mjs`,
   `check-deprecated-versions.mjs`, `check-route-validation.mjs`,
@@ -698,13 +724,14 @@ Client request
      CORS preflight check
      Zod validation (chatCompletionsSchema in shared/validation/schemas.ts)
      Auth (extractApiKey + isValidApiKey OR requireManagementAuth)
-     Policy engine (src/server/authz/pipeline.ts)
+     Route authorization (src/server/authz/pipeline.ts)
+     API-key policy (src/shared/utils/apiKeyPolicy.ts; enforced on the selected path)
      Guardrails (PII masker, prompt injection, vision bridge)
   → handleChatCore() (open-sse/handlers/chatCore.ts)
      Cache check (semantic + read cache)
      Rate limit (rateLimitManager, accountSemaphore)
      Combo routing (if model resolves to a combo)
-       comboResolver → loop per target → handleSingleModel()
+       resolveComboTargets (open-sse/services/combo.ts) → per-target dispatch
      translateRequest()  (open-sse/translator/request/*)
      getExecutor(providerId).execute()  (open-sse/executors/*)
        fetch upstream → retry/backoff via accountFallback

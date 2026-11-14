@@ -1,5 +1,7 @@
 "use client";
 
+import Icon from "@/shared/components/Icon";
+
 import { HmacRecipeBlock } from "./shared/HmacRecipeBlock";
 
 interface HowItWorksSidebarProps {
@@ -18,13 +20,13 @@ export function HowItWorksSidebar({ t, showCustomNote }: HowItWorksSidebarProps)
   return (
     <aside className="space-y-4 rounded-xl border border-border bg-surface p-5">
       <h3 className="flex items-center gap-2 text-sm font-semibold text-text-main">
-        <span className="material-symbols-outlined text-[18px] text-primary">info</span>
+        <Icon name="info" size={18} className="text-primary" />
         {t("howItWorks.title")}
       </h3>
       <ol className="space-y-3">
         {steps.map((step, i) => (
           <li key={i} className="flex gap-3 text-xs text-text-muted">
-            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+            <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
               {i + 1}
             </span>
             {step}
@@ -36,6 +38,8 @@ export function HowItWorksSidebar({ t, showCustomNote }: HowItWorksSidebarProps)
           <p className="text-xs text-text-muted">{t("howItWorks.customOnly")}</p>
           <HmacRecipeBlock
             title={t("howItWorks.hmacRecipeTitle")}
+            copyLabel={t("copy")}
+            copiedLabel={t("copied")}
             code={t("howItWorks.hmacRecipe")}
           />
         </div>
@@ -49,7 +53,7 @@ export function HowItWorksSidebar({ t, showCustomNote }: HowItWorksSidebarProps)
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
         >
-          <span className="material-symbols-outlined text-[14px]">menu_book</span>
+          <Icon name="menu_book" size={14} />
           {t("howItWorks.docsLink")}
         </a>
       </div>

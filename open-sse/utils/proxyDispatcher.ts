@@ -65,13 +65,25 @@ type ProxyConfigObject = {
   family?: string;
 };
 
-function getDispatcherOptions(hostname?: string) {
-  const timeouts = getUpstreamTimeoutConfig(process.env, (message) => {
+export function isUpstreamHttp2Enabled(
+  env: Record<string, string | undefined> = process.env
+): boolean {
+  const raw = (env.OMNIROUTE_UPSTREAM_HTTP2_ENABLED ?? "").trim().toLowerCase();
+  return !["false", "0", "no", "off"].includes(raw);
+}
+
+export function getDispatcherOptions(
+  hostname?: string,
+  env: Record<string, string | undefined> = process.env
+) {
+  const allowH2 = isUpstreamHttp2Enabled(env);
+  const timeouts = getUpstreamTimeoutConfig(env, (message) => {
     console.warn(`[ProxyDispatcher] ${message}`);
   });
   const localEgress = isLocalEgressHostname(hostname);
 
   return {
+    allowH2,
     headersTimeout: timeouts.fetchHeadersTimeoutMs,
     bodyTimeout: timeouts.fetchBodyTimeoutMs,
     connectTimeout: timeouts.fetchConnectTimeoutMs,
@@ -101,6 +113,7 @@ function getDispatcherOptions(hostname?: string) {
     // IPv6 route to host.docker.internal is dead inside the container (verified
     // 2026-09-21) and the default 1 s wait is pure latency on every healthy request.
     connect: {
+      allowH2,
       autoSelectFamily: true,
       autoSelectFamilyAttemptTimeout: localEgress
         ? LOCAL_AUTO_SELECT_FAMILY_ATTEMPT_TIMEOUT_MS
@@ -127,7 +140,7 @@ export function getProxyDispatcherConnectionLimit(
 }
 
 function getProxyDispatcherOptions(env: Record<string, string | undefined> = process.env) {
-  const options = getDispatcherOptions();
+  const options = getDispatcherOptions(undefined, env);
   // #9100: restore keep-alive on the proxy path. The previous hard-coded
   // keepAliveTimeout: 1 (1ms) destroyed the pooled socket right after every
   // response, forcing a fresh TCP+TLS+CONNECT handshake per request. Proxies
@@ -141,10 +154,12 @@ function getProxyDispatcherOptions(env: Record<string, string | undefined> = pro
   // by the retry-once-with-fresh-socket path in proxyFetch.ts (mirrors the
   // direct-path #4252 fix) instead of by killing all idle sockets after 1ms.
   //
-  // Pipelining 4 lets concurrent SSE streams multiplex over the pooled
-  // connection instead of each opening its own socket (#4163 regression).
+  // HTTP(S) proxies retain pipelining 4; SOCKS HTTP/1.1 is capped below.
   return {
     ...options,
+    // ProxyAgent ignores connect and builds both TLS hops separately (#15313).
+    requestTls: { allowH2: options.allowH2 },
+    proxyTls: { allowH2: options.allowH2 },
     connections: getProxyDispatcherConnectionLimit(env),
     keepAliveTimeout: Math.max(options.keepAliveTimeout, 30_000),
     keepAliveMaxTimeout: Math.max(options.keepAliveMaxTimeout, 60_000),
@@ -170,7 +185,7 @@ export function getDefaultDispatcherConnectionLimit(
 }
 
 function getDefaultDispatcherOptions(env: Record<string, string | undefined> = process.env) {
-  const options = getDispatcherOptions();
+  const options = getDispatcherOptions(undefined, env);
   // #4580 — On the direct egress path, undici's default pipelining (1) let a long
   // SSE stream monopolize the single pooled socket per origin. Keep the public
   // connection-limit option here, but getDefaultDispatcher() fans it out across
@@ -254,6 +269,36 @@ export function getRetryDispatcher(hostname?: string): Dispatcher {
       pipelining: 0,
     });
     setRetryCachedDispatcher(dispatcher);
+  }
+  return dispatcher;
+}
+
+/**
+ * Dedicated Codex image generation can take several minutes before returning headers.
+ * Its undici transport limits must exceed the image-specific response-start watchdog:
+ * generic model routes on this host deliberately use far shorter timeouts.
+ * Use a fresh-socket configuration; never replay an image generation POST.
+ * Keyed by timeout: the deadline comes from one env value, so this holds a single Agent.
+ */
+const dedicatedCodexImageDispatchers = new Map<number, Dispatcher>();
+export function getDedicatedCodexImageDispatcher(responseStartTimeoutMs: number): Dispatcher {
+  const timeoutMs = Math.max(60_000, responseStartTimeoutMs + 60_000);
+  let dispatcher = dedicatedCodexImageDispatchers.get(timeoutMs);
+  if (!dispatcher) {
+    const defaults = getDispatcherOptions();
+    dispatcher = new Agent({
+      ...defaults,
+      headersTimeout: Math.max(defaults.headersTimeout, timeoutMs),
+      bodyTimeout: Math.max(defaults.bodyTimeout, timeoutMs),
+      keepAliveTimeout: 1,
+      keepAliveMaxTimeout: 1,
+      pipelining: 0,
+      // HTTP/2 multiplexes POSTs even with pipelining disabled. undici's Pool lets
+      // connect.allowH2 override the top-level option, so both must be pinned.
+      allowH2: false,
+      connect: { ...defaults.connect, allowH2: false },
+    });
+    dedicatedCodexImageDispatchers.set(timeoutMs, dispatcher);
   }
   return dispatcher;
 }
@@ -519,7 +564,7 @@ function buildProxyAuthorizationToken(parsed: URL): string | null {
 
 /**
  * Build a ProxyAgent / socks dispatcher for a normalized proxy URL using the
- * given options. Shared by the pooled dispatcher (keep-alive, pipelining 4)
+ * given options. Shared by the pooled dispatcher (keep-alive)
  * and the retry dispatcher (fresh no-keep-alive socket, mirrors #4252).
  */
 function buildProxyDispatcher(
@@ -544,7 +589,10 @@ function buildProxyDispatcher(
     return createSocksDispatcherWithFamily(
       socksOptions as unknown as Parameters<typeof createSocksDispatcherWithFamily>[0],
       family,
-      options
+      // With SOCKS/HTTP1 pipelining, a quota timeout can close the socket
+      // carrying an unrelated active stream. Cap pipelining at 1 to prevent
+      // this, preserving 0 so retries continue to use fresh connections.
+      { ...options, pipelining: Math.min(options.pipelining, 1) }
     );
   }
 
@@ -566,7 +614,13 @@ function buildProxyDispatcher(
     ...options,
     ...(proxyAuthorization ? { token: proxyAuthorization } : {}),
     ...(family !== null
-      ? { proxyTls: { family, autoSelectFamily: false } as ProxyAgent.Options["proxyTls"] }
+      ? {
+          proxyTls: {
+            ...options.proxyTls,
+            family,
+            autoSelectFamily: false,
+          } as ProxyAgent.Options["proxyTls"],
+        }
       : {}),
   });
 }
@@ -621,6 +675,38 @@ export function getProxyRetryDispatcher(proxyUrl: string): Dispatcher {
     return winner;
   }
   setDispatcherCacheEntry(retryKey, dispatcher);
+  return dispatcher;
+}
+
+/** Isolated proxy transport for long-running, non-replayable Codex image operations. */
+export function getDedicatedCodexImageProxyDispatcher(
+  proxyUrl: string,
+  responseStartTimeoutMs: number
+): Dispatcher {
+  const normalizedUrl = normalizeProxyUrl(proxyUrl, "proxy dispatcher");
+  const timeoutMs = Math.max(60_000, responseStartTimeoutMs + 60_000);
+  const key = "codex-image:" + timeoutMs + ":" + normalizedUrl;
+  const dispatcherCache = getDispatcherCache();
+  const cached = dispatcherCache.get(key);
+  if (cached) return cached;
+  const defaults = getProxyDispatcherOptions();
+  const dispatcher = buildProxyDispatcher(normalizedUrl, {
+    ...defaults,
+    headersTimeout: Math.max(defaults.headersTimeout, timeoutMs),
+    bodyTimeout: Math.max(defaults.bodyTimeout, timeoutMs),
+    keepAliveTimeout: 1,
+    keepAliveMaxTimeout: 1,
+    pipelining: 0,
+    allowH2: false,
+    requestTls: { ...defaults.requestTls, allowH2: false },
+    proxyTls: { ...defaults.proxyTls, allowH2: false },
+  });
+  const winner = dispatcherCache.get(key);
+  if (winner) {
+    void dispatcher.close().catch(() => {});
+    return winner;
+  }
+  setDispatcherCacheEntry(key, dispatcher);
   return dispatcher;
 }
 

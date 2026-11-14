@@ -1,20 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { classifyHttpLog, parseUpstreamHttp } from "@/shared/utils/upstreamHttp";
+import { sortRelatedLogs } from "./requestLoggerGroups";
+
+import { useState, useEffect, useMemo, useRef, type ComponentProps } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { JsonView } from "@/shared/components/jsonView";
-import {
-  PROVIDER_COLORS,
-  getHttpStatusStyle as getStatusStyle,
-  getProtocolColor,
-} from "@/shared/constants/colors";
+import { Sheet, SheetContent, SheetTitle } from "@omniroute/ui-kit/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@omniroute/ui-kit/tabs";
+import JsonTree from "@/shared/components/JsonTree";
+import { PROVIDER_COLORS, getProtocolColor, neutralBadge } from "@/shared/constants/colors";
 import { formatDuration, formatApiKeyLabel, maskAccount } from "@/shared/utils/formatting";
 import { formatErrorForDisplay, formatReasoningStat } from "@/shared/utils/formatting";
-import { useTheme } from "@/shared/hooks/useTheme";
-import {
-  useTimestampTitles,
-  timestampMarkerCustomizeNode,
-} from "@/shared/hooks/useTimestampTitles";
+import { useTimestampTitles } from "@/shared/hooks/useTimestampTitles";
 import { JsonTreeExpandControls } from "@/shared/components/JsonTreeExpandControls";
 import { CallContentProvenanceBadges } from "@/shared/components/CallContentProvenanceBadges";
 import { useJsonTreeExpandLevel } from "@/store/jsonTreeExpandStore";
@@ -22,9 +19,24 @@ import {
   PayloadSection,
   ConversationContextSection,
   buildPipelinePayloadSections,
+  hasConversationTurns,
   isBodySizeLimitOmission,
 } from "@/shared/components/RequestLoggerDetail.sections";
 import { getResilienceBadges } from "@/shared/components/requestLoggerResilience";
+import { cn } from "@/shared/utils/cn";
+import Badge from "./Badge";
+import Button from "./Button";
+import Icon from "./Icon";
+import { computeBarRange, type TimelineLog } from "./RequestTimeline.utils";
+
+// HTTP status → kit Badge tone (2xx success, 4xx warning, 5xx error).
+function httpStatusTone(status: number) {
+  if (status >= 200 && status < 300) return "success" as const;
+  if (status >= 400 && status < 500) return "warning" as const;
+  if (status >= 500) return "error" as const;
+  if (status === 0) return "info" as const;
+  return "default" as const;
+}
 
 // ─── Copy-all composition ────────────────────────────────────────────────────
 // Compose every visible payload section + stream chunk into a single block so
@@ -170,9 +182,31 @@ export function parseStreamIntoSegments(joined: string): StreamSegment[] {
   return segments;
 }
 
+// A "copied" flag that resets itself after a short delay. The reset timer is cleared on unmount:
+// left running, it fired after the component (and, in tests, jsdom) was gone (#19329).
+function useTransientFlag(resetMs = 2000) {
+  const [active, setActive] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (timerRef.current !== null) clearTimeout(timerRef.current);
+    },
+    []
+  );
+  const trigger = () => {
+    setActive(true);
+    if (timerRef.current !== null) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      setActive(false);
+    }, resetMs);
+  };
+  return [active, trigger] as const;
+}
+
 function StreamSection({ title, sectionId, json, onCopy }) {
   const t = useTranslations("requestLogger.detail");
-  const [copied, setCopied] = useState(false);
+  const [copied, flashCopied] = useTransientFlag();
   const [open, setOpen] = useState(true);
   const [autoscroll, setAutoscroll] = useState(() => {
     try {
@@ -194,17 +228,13 @@ function StreamSection({ title, sectionId, json, onCopy }) {
     }
   });
   const ref = useRef(null);
-  const { isDark } = useTheme();
   const resolvedSectionId = sectionId || title;
   const expandLevel = useJsonTreeExpandLevel(resolvedSectionId);
   const segments = useMemo(() => parseStreamIntoSegments(json), [json]);
 
   const handleCopy = async () => {
     const success = await onCopy();
-    if (success !== false) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+    if (success !== false) flashCopied();
   };
 
   useEffect(() => {
@@ -241,47 +271,53 @@ function StreamSection({ title, sectionId, json, onCopy }) {
     <div>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
-          <h3 className="text-[11px] text-text-muted uppercase tracking-wider font-bold">
+          <h3 className="text-[11px] text-text-muted uppercase tracking-wider font-semibold">
             {title}
           </h3>
-          <button
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => setOpen((v) => !v)}
-            className="p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors"
+            className="size-6 min-h-6 text-text-muted"
+            aria-expanded={open}
             aria-label={open ? t("collapse", { title }) : t("expand", { title })}
           >
-            <span className="material-symbols-outlined text-[16px]">
-              {open ? "expand_less" : "expand_more"}
-            </span>
-          </button>
+            <Icon name={open ? "expand_less" : "expand_more"} size={16} />
+          </Button>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={toggleRaw}
             title={showRaw ? t("rawViewOn") : t("rawViewOff")}
             aria-label={showRaw ? t("rawViewOn") : t("rawViewOff")}
-            className={`p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors ${showRaw ? "text-primary" : ""}`}
+            className={cn("size-7 min-h-7", showRaw ? "text-primary" : "text-text-muted")}
             aria-pressed={showRaw}
           >
-            <span className="material-symbols-outlined text-[18px]">code</span>
-          </button>
-          <button
+            <Icon name="code" size={18} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={toggleAutoscroll}
             title={autoscroll ? t("autoscrollOn") : t("autoscrollOff")}
-            className={`p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors ${autoscroll ? "text-primary" : ""}`}
+            aria-label={autoscroll ? t("autoscrollOn") : t("autoscrollOff")}
+            className={cn("size-7 min-h-7", autoscroll ? "text-primary" : "text-text-muted")}
             aria-pressed={autoscroll}
           >
-            <span className="material-symbols-outlined text-[18px]">vertical_align_bottom</span>
-          </button>
-          <button
+            <Icon name="vertical_align_bottom" size={18} />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={handleCopy}
-            className="flex items-center gap-1 px-2 py-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+            className="h-7 min-h-7 px-2 text-xs text-text-muted"
             aria-label={t("copyTitle", { title })}
           >
-            <span className="material-symbols-outlined text-[14px]">
-              {copied ? "check" : "content_copy"}
-            </span>
+            <Icon name={copied ? "check" : "content_copy"} size={14} />
             {copied ? t("copied") : t("copy")}
-          </button>
+          </Button>
           {!showRaw && segments.some((s) => s.type === "json") && (
             <JsonTreeExpandControls sectionId={resolvedSectionId} />
           )}
@@ -290,7 +326,7 @@ function StreamSection({ title, sectionId, json, onCopy }) {
       {open && (
         <div
           ref={ref}
-          className="p-4 rounded-xl bg-black/5 dark:bg-black/30 border border-border overflow-x-auto text-xs font-mono text-text-main max-h-150 overflow-y-auto leading-relaxed"
+          className="max-h-150 overflow-x-auto overflow-y-auto rounded-xl border border-border bg-surface-2 p-4 font-mono text-xs leading-relaxed text-text-main"
         >
           {showRaw ? (
             <pre className="whitespace-pre-wrap break-words">{json}</pre>
@@ -298,12 +334,11 @@ function StreamSection({ title, sectionId, json, onCopy }) {
             segments.map((segment, i) =>
               segment.type === "json" ? (
                 <div key={i} className="my-1">
-                  <JsonView
-                    src={segment.value}
-                    dark={isDark}
-                    collapsed={expandLevel}
-                    customizeNode={timestampMarkerCustomizeNode}
-                    displaySize
+                  <JsonTree
+                    value={segment.value}
+                    expandDepth={expandLevel}
+                    showControls={false}
+                    aria-label={title}
                   />
                 </div>
               ) : (
@@ -319,7 +354,14 @@ function StreamSection({ title, sectionId, json, onCopy }) {
   );
 }
 
-// ─── Detail Modal ───────────────────────────────────────────────────────────
+// ─── Detail Sheet ───────────────────────────────────────────────────────────
+
+type DetailTab = "overview" | "conversation" | "events" | "payloads";
+
+// Each panel scrolls on its own, so the header and the tab strip stay in view and a tab always
+// opens at its top.
+const TAB_PANEL_CLASS =
+  "flex min-h-0 flex-1 flex-col gap-6 overflow-x-hidden overflow-y-auto p-4 sm:p-6";
 
 type StreamChunks = Record<string, string | string[]>;
 
@@ -347,7 +389,19 @@ function formatConnectionId(value) {
   return value.length > 8 ? `${value.slice(0, 8)}...` : value;
 }
 
-export default function RequestLoggerDetail({
+function getRequestTimeRange(log: TimelineLog & { detailState?: string }) {
+  return computeBarRange(
+    {
+      ...log,
+      timestamp: log.timestamp ?? "",
+      // Fetched detail state takes precedence over a preview flag retained by the modal merge.
+      completed: log.detailState ? log.detailState === "in-memory" : log.completed,
+    },
+    Date.now()
+  );
+}
+
+export function RequestLoggerDetailPanel({
   log,
   detail,
   loading,
@@ -359,50 +413,25 @@ export default function RequestLoggerDetail({
   onNext,
   relatedLogs = [],
   onSelectRelated,
+  initialTab = "overview" as DetailTab,
 }) {
   const t = useTranslations("requestLogger.detail");
   // #13130: the grid's TTFT column label doubles as the detail-tile label
   // (the key already ships in every locale under requestLogger.columns).
   const tColumns = useTranslations("requestLogger.columns");
   const locale = useLocale();
-  const modalScrollRef = useRef(null);
-  // Close on Escape key
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.key === "Escape") onClose();
-    };
-    globalThis.addEventListener("keydown", handler);
-    return () => globalThis.removeEventListener("keydown", handler);
-  }, [onClose]);
-
-  // The overlay is full-viewport, but the modal panel itself is centered and
-  // narrower than the viewport (max-w-225), leaving backdrop margin on every
-  // side. A wheel event there has no scrollable target under the cursor, so
-  // scrolling only worked once the pointer happened to be over the panel's
-  // own content. Forward wheel scrolling from anywhere in the overlay to the
-  // panel instead, so the backdrop margin scrolls it too.
-  const handleOverlayWheel = (e) => {
-    const panel = modalScrollRef.current;
-    // Let native scrolling handle wheel events that already land inside the
-    // panel -- only forward the ones from the backdrop margin around it.
-    if (!panel || panel.contains(e.target)) return;
-    panel.scrollTop += e.deltaY;
-    e.preventDefault();
-  };
-
-  const statusStyle = getStatusStyle(log.status);
+  const [selectedTab, setSelectedTab] = useState<DetailTab>(initialTab);
+  const timingLog = { ...log, ...detail };
+  const { startMs, endMs } = getRequestTimeRange(timingLog);
   const protocolKey = log.sourceFormat || log.provider;
   const protocol = getProtocolColor(protocolKey, log.provider);
-  const providerColor = PROVIDER_COLORS[log.provider] || {
-    bg: "#374151",
-    text: "#fff",
-    label: (log.provider || "-").toUpperCase(),
-  };
+  const providerColor =
+    PROVIDER_COLORS[log.provider] || neutralBadge((log.provider || "-").toUpperCase());
   const providerLabel = log.providerDisplay || providerColor.label;
 
   const [unblocking, setUnblocking] = useState(false);
   const [cleared, setCleared] = useState(false);
-  const [copiedAll, setCopiedAll] = useState(false);
+  const [copiedAll, flashCopiedAll] = useTransientFlag();
 
   // #7920 gave this component formatErrorForDisplay for structured error objects, but the
   // #8213 combo/cooldown checks below went straight to the raw field and call
@@ -448,7 +477,9 @@ export default function RequestLoggerDetail({
     }
   };
 
-  const providerStatus = detail?.pipelinePayloads?.providerResponse?.status;
+  const upstreamHttp = parseUpstreamHttp(detail?.upstreamHttp ?? log.upstreamHttp);
+  const providerStatus =
+    upstreamHttp?.send?.status ?? detail?.pipelinePayloads?.providerResponse?.status;
   const hasStatusDiscrepancy = providerStatus && providerStatus !== log.status;
 
   const formatDate = (iso) => {
@@ -522,10 +553,7 @@ export default function RequestLoggerDetail({
     });
     if (!text) return;
     const success = await onCopy(text);
-    if (success !== false) {
-      setCopiedAll(true);
-      setTimeout(() => setCopiedAll(false), 2000);
-    }
+    if (success !== false) flashCopiedAll();
   };
   const detailIssue =
     detail?.detailState === "missing"
@@ -549,8 +577,8 @@ export default function RequestLoggerDetail({
   const cacheSourceLabel = cacheSource === "semantic" ? t("semanticCache") : t("upstreamCache");
   const cacheSourceClassName =
     cacheSource === "semantic"
-      ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
-      : "bg-sky-500/20 text-sky-700 dark:text-sky-300 border-sky-500/30";
+      ? "bg-success/20 text-success border-success/30"
+      : "bg-info/20 text-info border-info/30";
   // resilience badges (flag alone decides, whatever the status).
   const resilienceBadges = getResilienceBadges(
     log.resilienceActions || detail?.resilienceActions || null,
@@ -558,683 +586,715 @@ export default function RequestLoggerDetail({
   );
   const accountLabel = maskAccount(detail?.account || log.account, emailsVisible);
   const codexAccountRotation = getCodexAccountRotation(detail);
+  // A tab shows only when its section has something to show. While the next request loads its
+  // sections are unknown, so the open tab stays put instead of jumping to the overview and back.
+  const hasConversation = useMemo(() => hasConversationTurns(detail), [detail]);
+  const hasEvents = Boolean(
+    streamChunks && (streamChunks.provider || streamChunks.client || streamChunks.openai)
+  );
+  const tabs: Array<{ value: DetailTab; label: string }> = [
+    { value: "overview", label: t("tabOverview") },
+    ...(hasConversation || (loading && selectedTab === "conversation")
+      ? [{ value: "conversation" as const, label: tColumns("conversation") }]
+      : []),
+    ...(hasEvents || (loading && selectedTab === "events")
+      ? [{ value: "events" as const, label: t("eventStream") }]
+      : []),
+    { value: "payloads", label: t("tabPayloads") },
+  ];
+  const activeTab = tabs.some((tab) => tab.value === selectedTab) ? selectedTab : "overview";
+  const loadingNotice = (
+    <div className="p-8 text-center text-text-muted animate-pulse">{t("loadingDetails")}</div>
+  );
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-start justify-center px-2 pt-[5vh] sm:px-4"
-      onClick={onClose}
-      onWheel={handleOverlayWheel}
-      role="dialog"
-      aria-modal="true"
-      aria-label={t("ariaLabel")}
+    <Tabs
+      value={activeTab}
+      onValueChange={(value) => setSelectedTab(value as DetailTab)}
+      variant="underline"
+      className="min-h-0 flex-1 gap-0"
     >
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-      <div
-        ref={modalScrollRef}
-        className="relative w-full max-w-225 max-h-[90vh] overflow-x-hidden overflow-y-auto rounded-xl border border-border bg-bg-primary shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Modal Header */}
-        <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 border-b border-border bg-bg-primary/95 backdrop-blur-sm rounded-t-xl sm:px-6 sm:py-4">
-          <div className="flex flex-wrap items-center gap-2 min-w-0 sm:gap-3">
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                {log.active ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                    <span className="inline-block h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                  </span>
-                ) : log.status === 0 ? (
-                  <span className="inline-block px-2.5 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
-                    {t("completed")}
-                  </span>
-                ) : (
-                  <span
-                    className="inline-block px-2.5 py-1 rounded text-xs font-bold"
-                    style={{ backgroundColor: statusStyle.bg, color: statusStyle.text }}
-                  >
-                    {log.status}
-                  </span>
-                )}
-                {hasStatusDiscrepancy && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-bg-subtle border border-border text-text-muted">
-                    {t("upstreamStatus", { status: providerStatus })}
-                  </span>
-                )}
-                {log.method && <span className="font-bold text-lg">{log.method}</span>}
-              </div>
-              {hasStatusDiscrepancy && (
-                <span className="text-[10px] text-amber-600 dark:text-amber-400 font-medium mt-0.5">
-                  {t("statusDiscrepancy", { status: log.status, provider: providerStatus })}
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-2 px-4 py-3 border-b border-border sm:px-6 sm:py-4">
+        <div className="flex flex-wrap items-center gap-2 min-w-0 sm:gap-3">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+              {timingLog.active ? (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold bg-warning/20 text-warning border border-warning/30">
+                  <span className="inline-block h-3 w-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
                 </span>
-              )}
-            </div>
-            <span className="text-text-muted font-mono text-sm self-center ml-2">{log.path}</span>
-            {log.id && (
-              <span className="text-[10px] text-text-muted/50 font-mono self-center ml-2 px-1.5 py-0.5 rounded bg-bg-subtle border border-border/40 select-all">
-                {log.id}
-              </span>
-            )}
-            {log.correlationId && (
-              <span
-                className="text-[10px] text-text-muted/50 font-mono self-center ml-2 px-1.5 py-0.5 rounded bg-bg-subtle border border-border/40 select-all"
-                title={t("correlationId")}
-              >
-                {t("correlationIdValue", { id: log.correlationId })}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <button
-              onClick={handleCopyAll}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors"
-              aria-label={t("copyAll")}
-              title={t("copyAll")}
-            >
-              <span className="material-symbols-outlined text-[16px]">
-                {copiedAll ? "check" : "content_copy"}
-              </span>
-              <span className="text-xs font-medium">
-                {copiedAll ? t("copiedAll") : t("copyAll")}
-              </span>
-            </button>
-            {/* Only rendered when a caller actually wires up navigation (RequestLoggerV2's
-                list view) — a caller with no ordered-list context to navigate through
-                (conversations page, RequestTimeline) passes neither, so there's nothing
-                to show instead of a permanently-disabled dead button. */}
-            {(onPrevious || onNext) && (
-              <>
-                <button
-                  onClick={onPrevious}
-                  disabled={!onPrevious}
-                  className="p-1.5 rounded-lg hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                  aria-label={t("previousRequest")}
-                >
-                  <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-                </button>
-                <button
-                  onClick={onNext}
-                  disabled={!onNext}
-                  className="p-1.5 rounded-lg hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors disabled:opacity-30 disabled:pointer-events-none"
-                  aria-label={t("nextRequest")}
-                >
-                  <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-                </button>
-              </>
-            )}
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors"
-              aria-label={t("close")}
-            >
-              <span className="material-symbols-outlined">close</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="p-4 flex flex-col gap-6 sm:p-6">
-          {/* Metadata Grid */}
-          {log.active ? (
-            <div className="flex flex-wrap gap-4 p-4 bg-bg-subtle rounded-xl border border-border">
-              <div className="min-w-[140px] flex-1">
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("startedAt")}
-                </div>
-                <div className="text-sm font-medium">{formatDate(log.timestamp)}</div>
-              </div>
-              <div className="min-w-[100px] flex-1">
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("duration")}
-                </div>
-                <div className="text-sm font-medium">{formatDuration(log.duration)}</div>
-              </div>
-              <div className="min-w-[100px] flex-1">
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("addedWait")}
-                </div>
-                <div className="text-sm font-medium">
-                  {typeof log.addedWaitMs === "number" && log.addedWaitMs > 0
-                    ? `${formatDuration(log.addedWaitMs)}${log.addedWaitCause ? ` (${log.addedWaitCause})` : ""}`
-                    : "—"}
-                </div>
-              </div>
-              <div className="min-w-[140px] flex-1">
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("model")}
-                </div>
-                <div className="text-sm font-medium text-primary font-mono">{log.model}</div>
-              </div>
-              <div className="min-w-[120px] flex-1">
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("provider")}
-                </div>
-                <span
-                  className="inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase"
-                  style={{ backgroundColor: providerColor.bg, color: providerColor.text }}
-                >
-                  {providerLabel}
-                </span>
-              </div>
-              <div className="min-w-[120px] flex-1">
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("account")}
-                </div>
-                <div className="text-sm font-medium">{accountLabel}</div>
-              </div>
-            </div>
-          ) : (
-            <div
-              className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-bg-subtle rounded-xl border border-border"
-              data-testid="request-log-metadata-grid"
-            >
-              <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("startedAt")}
-                </div>
-                <div className="text-sm font-medium">
-                  {(() => {
-                    try {
-                      const ts = new Date(log.timestamp).getTime();
-                      if (!Number.isFinite(ts)) return "\u2014";
-                      return formatDate(new Date(ts - (log.duration || 0)).toISOString());
-                    } catch {
-                      return "\u2014";
-                    }
-                  })()}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("endedAt")}
-                </div>
-                <div className="text-sm font-medium">{formatDate(log.timestamp)}</div>
-              </div>
-              <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("duration")}
-                </div>
-                <div className="text-sm font-medium">{formatDuration(log.duration)}</div>
-              </div>
-              {typeof log.ttft === "number" && log.ttft > 0 && (
-                <div>
-                  <div
-                    className="text-[10px] text-text-muted uppercase tracking-wider mb-1"
-                    title={`${tColumns("ttft")}: time to first forwarded stream token; generation ran for ${formatDuration(Math.max(0, (log.duration || 0) - log.ttft))} (#13130)`}
-                  >
-                    {tColumns("ttft")}
-                  </div>
-                  <div className="text-sm font-medium">{formatDuration(log.ttft)}</div>
-                </div>
-              )}
-              <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("input")}
-                </div>
-                <div
-                  className="flex flex-wrap items-center gap-1.5"
-                  data-testid="token-group-input"
-                >
-                  <span className="px-2 py-0.5 rounded bg-primary/20 text-primary text-xs font-bold">
-                    {t("totalIn", { value: formatTokenValue(tokenStats.totalIn) })}
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-700 dark:text-sky-400 text-xs font-bold">
-                    {t("cacheRead", { value: formatTokenValue(tokenStats.cacheRead) })}
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-400 text-xs font-bold">
-                    {t("cacheWrite", { value: formatTokenValue(tokenStats.cacheWrite) })}
-                  </span>
-                  {tokenStats.compressed != null &&
-                    tokenStats.compressed > 0 &&
-                    (() => {
-                      const fromTokens = tokenStats.compressed + Math.max(0, tokenStats.totalIn);
-                      const saved = Math.min(tokenStats.compressed, fromTokens);
-                      const pct =
-                        fromTokens > 0
-                          ? Math.max(0, Math.min(100, Math.round((saved / fromTokens) * 100)))
-                          : 100;
-                      return (
-                        <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-700 dark:text-purple-300 text-xs font-bold">
-                          {t("compressed", {
-                            from: fromTokens.toLocaleString(),
-                            to: Math.max(0, tokenStats.totalIn).toLocaleString(),
-                            percent: pct,
-                          })}
-                        </span>
-                      );
-                    })()}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("output")}
-                </div>
-                <div
-                  className="flex flex-wrap items-center gap-1.5"
-                  data-testid="token-group-output"
-                >
-                  <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold">
-                    {t("totalOut", { value: formatTokenValue(tokenStats.totalOut) })}
-                  </span>
-                  <span className="px-2 py-0.5 rounded bg-violet-500/20 text-violet-700 dark:text-violet-400 text-xs font-bold">
-                    {t("reasoning", { value: formatReasoningStat(tokenStats, t) })}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("model")}
-                </div>
-                <div className="text-sm font-medium text-primary font-mono">{log.model}</div>
-              </div>
-              <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("requestedModel")}
-                </div>
-                <div
-                  className={`text-sm font-medium font-mono ${
-                    (detail?.requestedModel || log.requestedModel) &&
-                    (detail?.requestedModel || log.requestedModel) !== log.model
-                      ? "text-amber-600 dark:text-amber-400"
-                      : "text-text-muted"
-                  }`}
-                >
-                  {detail?.requestedModel || log.requestedModel || "\u2014"}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("provider")}
-                </div>
-                <span
-                  className="inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase"
-                  style={{ backgroundColor: providerColor.bg, color: providerColor.text }}
-                >
-                  {providerLabel}
-                </span>
-              </div>
-              <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("requestProtocol")}
-                </div>
-                <span
-                  className="inline-block px-2.5 py-1 rounded text-[10px] font-bold uppercase"
-                  style={{ backgroundColor: protocol.bg, color: protocol.text }}
-                >
-                  {protocol.label}
-                </span>
-              </div>
-              <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("cacheSource")}
-                </div>
-                <span
-                  className={`inline-block px-2.5 py-1 rounded text-[10px] font-bold border ${cacheSourceClassName}`}
-                >
-                  {cacheSourceLabel}
-                </span>
-                {resilienceBadges.map((badge) => (
-                  <span key={badge.key} title={badge.title}>
-                    {badge.label}
-                  </span>
-                ))}
-              </div>
-              <CallContentProvenanceBadges
-                hasContent={detail?.hasContent ?? log.hasContent}
-                usageProvenance={detail?.usageProvenance ?? log.usageProvenance}
-              />
-              {(detail?.modelPinned || log.modelPinned) && (
-                <div>
-                  <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                    {t("modelPinning")}
-                  </div>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-bold bg-violet-500/15 text-violet-600 dark:text-violet-400 border border-violet-500/25">
-                    <svg className="w-3 h-3" viewBox="0 0 16 16" fill="currentColor">
-                      <path d="M4.5 2A1.5 1.5 0 003 3.5v1.9l-1.4 2.8A.5.5 0 002 9h4v4.5a.5.5 0 00.5.5h3a.5.5 0 00.5-.5V9h4a.5.5 0 00.44-.73L13 5.4V3.5A1.5 1.5 0 0011.5 2h-7z" />
-                    </svg>
-                    {t("activeModelPinning")}
-                  </span>
-                </div>
-              )}
-              <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("account")}
-                </div>
-                <div className="text-sm font-medium">{accountLabel}</div>
-                {codexAccountRotation && (
-                  <div
-                    className="mt-1 text-[10px] text-amber-600 dark:text-amber-400 font-mono"
-                    title={`${codexAccountRotation.initialConnectionId} -> ${codexAccountRotation.finalConnectionId}`}
-                  >
-                    {t("rotated", {
-                      initial: formatConnectionId(codexAccountRotation.initialConnectionId),
-                      final: formatConnectionId(codexAccountRotation.finalConnectionId),
-                    })}
-                  </div>
-                )}
-              </div>
-              <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("apiKey")}
-                </div>
-                <div
-                  className="text-sm font-medium"
-                  title={
-                    detail?.apiKeyName ||
-                    detail?.apiKeyId ||
-                    log.apiKeyName ||
-                    log.apiKeyId ||
-                    t("noApiKey")
-                  }
-                >
-                  {formatApiKeyLabel(
-                    detail?.apiKeyName || log.apiKeyName,
-                    detail?.apiKeyId || log.apiKeyId
+              ) : classifyHttpLog(log) === "transport_error" ||
+                classifyHttpLog(log) === "no_response" ? (
+                <Badge variant={classifyHttpLog(log) === "transport_error" ? "error" : "info"}>
+                  {t(
+                    classifyHttpLog(log) === "transport_error" ? "transportError" : "noHttpResponse"
                   )}
-                </div>
-              </div>
-              <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  {t("combo")}
-                </div>
-                {detail?.comboName || log.comboName ? (
-                  <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-bold bg-violet-500/20 text-violet-700 dark:text-violet-300 border border-violet-500/30">
-                    {detail?.comboName || log.comboName}
-                  </span>
-                ) : (
-                  <div className="text-sm text-text-muted">{"\u2014"}</div>
-                )}
-              </div>
-              <div>
-                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
-                  Conversation
-                </div>
-                {detail?.sessionTag || log.sessionTag ? (
-                  <div
-                    className="text-sm font-mono select-all"
-                    title={detail?.sessionTag || log.sessionTag}
-                  >
-                    {(detail?.sessionTag || log.sessionTag).slice(0, 20)}
-                    {"\u2026"}
-                  </div>
-                ) : (
-                  <div className="text-sm text-text-muted">{"\u2014"}</div>
-                )}
-              </div>
+                </Badge>
+              ) : log.status === 0 ? (
+                <span className="inline-block px-2.5 py-1 rounded text-xs font-semibold bg-success/20 text-success border border-success/30">
+                  {t("completed")}
+                </span>
+              ) : (
+                <Badge variant={httpStatusTone(log.status)} className="font-semibold">
+                  {log.status}
+                </Badge>
+              )}
+              {hasStatusDiscrepancy && (
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-bg-subtle border border-border text-text-muted">
+                  {t("upstreamStatus", { status: providerStatus })}
+                </span>
+              )}
+              {upstreamHttp?.role === "logical" && upstreamHttp.omitted > 0 && (
+                <Badge variant="info">
+                  {t("omittedHttpAttempts", { count: upstreamHttp.omitted })}
+                </Badge>
+              )}
+              {log.method && <span className="font-semibold text-lg">{log.method}</span>}
             </div>
+            {hasStatusDiscrepancy && (
+              <span className="text-[10px] text-warning font-medium mt-0.5">
+                {t("statusDiscrepancy", { status: log.status, provider: providerStatus })}
+              </span>
+            )}
+          </div>
+          <span className="min-w-0 break-all text-text-muted font-mono text-sm self-center ml-2">
+            {log.path}
+          </span>
+          {log.id && (
+            <span className="min-w-0 break-all text-[10px] text-text-muted/50 font-mono self-center ml-2 px-1.5 py-0.5 rounded bg-bg-subtle border border-border/40 select-all">
+              {log.id}
+            </span>
           )}
-
-          {/* Error Message */}
-          {(detail?.error || log.error) && (
-            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-[10px] text-red-600 dark:text-red-400 uppercase tracking-wider font-bold">
-                  {t("error")}
-                </div>
-                {isCombo503 && !cleared && (
-                  <button
-                    onClick={handleUnblockAll}
-                    disabled={unblockAllBusy}
-                    className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded-lg
-                      bg-amber-500/10 border border-amber-500/30 text-amber-600
-                      hover:bg-amber-500/15 hover:border-amber-500/50
-                      dark:text-amber-400 transition-all duration-200
-                      disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                    >
-                      <rect x="3" y="6" width="10" height="8" rx="1" />
-                      <path d="M5 6V4a3 3 0 0 1 3-3h0a3 3 0 0 1 3 3v1" />
-                      <circle cx="8" cy="10" r="1" fill="currentColor" stroke="none" />
-                    </svg>
-                    {unblockAllBusy ? "..." : t("unblockAll")}
-                  </button>
-                )}
-                {isCombo503 && cleared && (
-                  <span className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded-lg bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400">
-                    <svg
-                      width="10"
-                      height="10"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <polyline points="4 8 7 11 12 4" />
-                    </svg>
-                    {t("cleared")}
-                  </span>
-                )}
-                {isModelCooldown && !cleared && (
-                  <button
-                    onClick={handleUnblockModel}
-                    disabled={unblocking}
-                    className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded-lg
-                      bg-amber-500/10 border border-amber-500/30 text-amber-600
-                      hover:bg-amber-500/15 hover:border-amber-500/50
-                      dark:text-amber-400 transition-all duration-200
-                      disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <svg
-                      width="12"
-                      height="12"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                    >
-                      <rect x="3" y="6" width="10" height="8" rx="1" />
-                      <path d="M5 6V4a3 3 0 0 1 3-3h0a3 3 0 0 1 3 3v1" />
-                      <circle cx="8" cy="10" r="1" fill="currentColor" stroke="none" />
-                    </svg>
-                    {unblocking ? "..." : t("unblock")}
-                  </button>
-                )}
-                {isModelCooldown && cleared && (
-                  <span className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded-lg bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400">
-                    <svg
-                      width="10"
-                      height="10"
-                      viewBox="0 0 16 16"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <polyline points="4 8 7 11 12 4" />
-                    </svg>
-                    {t("cleared")}
-                  </span>
-                )}
-              </div>
-              <div className="text-sm text-red-600 dark:text-red-300 font-mono whitespace-pre-wrap break-words">
-                {formatErrorForDisplay(detail?.error || log.error)}
-              </div>
-            </div>
+          {log.correlationId && (
+            <span
+              className="min-w-0 break-all text-[10px] text-text-muted/50 font-mono self-center ml-2 px-1.5 py-0.5 rounded bg-bg-subtle border border-border/40 select-all"
+              title={t("correlationId")}
+            >
+              {t("correlationIdValue", { id: log.correlationId })}
+            </span>
           )}
-
-          {/* Related Requests (same correlation ID) */}
-          {relatedLogs.length > 1 && (
-            <div className="p-4 rounded-xl bg-bg-subtle border border-border">
-              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2 font-bold">
-                {t("relatedRequests", { count: relatedLogs.length })}
-              </div>
-              <div className="flex flex-col gap-1">
-                {[...relatedLogs]
-                  .sort((a, b) => {
-                    const aStart = new Date(a.timestamp).getTime() - (a.duration || 0);
-                    const bStart = new Date(b.timestamp).getTime() - (b.duration || 0);
-                    return aStart - bStart;
-                  })
-                  .map((r) => {
-                    const rStatusStyle = r.active ? null : getStatusStyle(r.status);
-                    const isCurrent = r.id === log.id;
-                    const startTime = new Date(new Date(r.timestamp).getTime() - (r.duration || 0));
-                    return (
-                      <button
-                        key={r.id}
-                        onClick={() => !isCurrent && onSelectRelated?.(r)}
-                        disabled={isCurrent}
-                        className={`flex items-center gap-2 px-2 py-1.5 rounded text-left text-xs transition-colors ${
-                          isCurrent
-                            ? "bg-primary/10 border border-primary/30 cursor-default"
-                            : "hover:bg-bg-hover cursor-pointer"
-                        }`}
-                      >
-                        <span
-                          className="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold min-w-[28px] text-center"
-                          style={
-                            rStatusStyle
-                              ? { backgroundColor: rStatusStyle.bg, color: rStatusStyle.text }
-                              : { backgroundColor: "#374151", color: "#fff" }
-                          }
-                        >
-                          {r.status || "..."}
-                        </span>
-                        <span className="font-mono text-text-muted">{r.id}</span>
-                        <span className="text-text-muted">{r.model}</span>
-                        <span className="text-text-muted text-[10px]">
-                          {startTime.toLocaleTimeString(locale, { hour12: false })}
-                        </span>
-                        <span className="text-text-muted ml-auto">
-                          {formatDuration(r.duration)}
-                        </span>
-                        {isCurrent && (
-                          <span className="text-[9px] text-primary font-bold ml-1">
-                            {t("current")}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-              </div>
-            </div>
-          )}
-
-          {detailIssue && (
-            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
-              <div className="text-[10px] text-amber-700 dark:text-amber-400 uppercase tracking-wider mb-1 font-bold">
-                {t("detailStatus")}
-              </div>
-              <div className="text-sm text-amber-700 dark:text-amber-200">{detailIssue}</div>
-            </div>
-          )}
-
-          {loading ? (
-            <div className="p-8 text-center text-text-muted animate-pulse">
-              {t("loadingDetails")}
-            </div>
-          ) : (
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCopyAll}
+            className="text-text-muted"
+            aria-label={t("copyAll")}
+            title={t("copyAll")}
+          >
+            <Icon name={copiedAll ? "check" : "content_copy"} size={16} />
+            <span className="text-xs font-medium">{copiedAll ? t("copiedAll") : t("copyAll")}</span>
+          </Button>
+          {/* Only rendered when a caller actually wires up navigation (RequestLoggerV2's
+              list view) — a caller with no ordered-list context to navigate through
+              (conversations page, RequestTimeline) passes neither, so there's nothing
+              to show instead of a permanently-disabled dead button. */}
+          {(onPrevious || onNext) && (
             <>
-              <ConversationContextSection key={log.id} log={log} detail={detail} />
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onPrevious}
+                disabled={!onPrevious}
+                className="text-text-muted"
+                aria-label={t("previousRequest")}
+              >
+                <Icon name="chevron_left" size={18} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onNext}
+                disabled={!onNext}
+                className="text-text-muted"
+                aria-label={t("nextRequest")}
+              >
+                <Icon name="chevron_right" size={18} />
+              </Button>
+            </>
+          )}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={onClose}
+            className="text-text-muted"
+            aria-label={t("close")}
+          >
+            <Icon name="close" />
+          </Button>
+        </div>
+      </div>
+      <TabsList
+        aria-label={t("ariaLabel")}
+        className="w-full shrink-0 overflow-x-auto px-2 pb-px sm:px-4"
+      >
+        {tabs.map((tab) => (
+          <TabsTrigger key={tab.value} value={tab.value}>
+            {tab.label}
+          </TabsTrigger>
+        ))}
+      </TabsList>
 
-              {streamChunks && streamChunks.provider && (
-                <StreamSection
-                  title={t("providerEventStream")}
-                  sectionId="providerEventStream"
-                  json={
+      <TabsContent value="overview" className={TAB_PANEL_CLASS}>
+        {/* Metadata Grid */}
+        {timingLog.active ? (
+          <div className="flex flex-wrap gap-4 p-4 bg-bg-subtle rounded-xl border border-border">
+            <div className="min-w-[140px] flex-1">
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("startedAt")}
+              </div>
+              <div className="text-sm font-medium">{formatDate(startMs)}</div>
+            </div>
+            <div className="min-w-[100px] flex-1">
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("duration")}
+              </div>
+              <div className="text-sm font-medium">{formatDuration(timingLog.duration)}</div>
+            </div>
+            <div className="min-w-[100px] flex-1">
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("addedWait")}
+              </div>
+              <div className="text-sm font-medium">
+                {typeof log.addedWaitMs === "number" && log.addedWaitMs > 0
+                  ? `${formatDuration(log.addedWaitMs)}${log.addedWaitCause ? ` (${log.addedWaitCause})` : ""}`
+                  : "—"}
+              </div>
+            </div>
+            <div className="min-w-[140px] flex-1">
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("model")}
+              </div>
+              <div className="text-sm font-medium text-primary font-mono">{log.model}</div>
+            </div>
+            <div className="min-w-[120px] flex-1">
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("provider")}
+              </div>
+              <span
+                className="inline-block px-2.5 py-1 rounded text-[10px] font-semibold uppercase"
+                style={{ backgroundColor: providerColor.bg, color: providerColor.text }}
+              >
+                {providerLabel}
+              </span>
+            </div>
+            <div className="min-w-[120px] flex-1">
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("account")}
+              </div>
+              <div className="text-sm font-medium">{accountLabel}</div>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-bg-subtle rounded-xl border border-border"
+            data-testid="request-log-metadata-grid"
+          >
+            <div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("startedAt")}
+              </div>
+              <div className="text-sm font-medium">{formatDate(startMs)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("endedAt")}
+              </div>
+              <div className="text-sm font-medium">{formatDate(endMs)}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("duration")}
+              </div>
+              <div className="text-sm font-medium">{formatDuration(timingLog.duration)}</div>
+            </div>
+            {typeof log.ttft === "number" && log.ttft > 0 && (
+              <div>
+                <div
+                  className="text-[10px] text-text-muted uppercase tracking-wider mb-1"
+                  title={`${tColumns("ttft")}: time to first forwarded stream token; generation ran for ${formatDuration(Math.max(0, (log.duration || 0) - log.ttft))} (#13130)`}
+                >
+                  {tColumns("ttft")}
+                </div>
+                <div className="text-sm font-medium">{formatDuration(log.ttft)}</div>
+              </div>
+            )}
+            <div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("input")}
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5" data-testid="token-group-input">
+                <span className="px-2 py-0.5 rounded bg-primary/20 text-primary text-xs font-semibold">
+                  {t("totalIn", { value: formatTokenValue(tokenStats.totalIn) })}
+                </span>
+                <span className="px-2 py-0.5 rounded bg-info/20 text-info text-xs font-semibold">
+                  {t("cacheRead", { value: formatTokenValue(tokenStats.cacheRead) })}
+                </span>
+                <span className="px-2 py-0.5 rounded bg-warning/20 text-warning text-xs font-semibold">
+                  {t("cacheWrite", { value: formatTokenValue(tokenStats.cacheWrite) })}
+                </span>
+                {tokenStats.compressed != null &&
+                  tokenStats.compressed > 0 &&
+                  (() => {
+                    const fromTokens = tokenStats.compressed + Math.max(0, tokenStats.totalIn);
+                    const saved = Math.min(tokenStats.compressed, fromTokens);
+                    const pct =
+                      fromTokens > 0
+                        ? Math.max(0, Math.min(100, Math.round((saved / fromTokens) * 100)))
+                        : 100;
+                    return (
+                      <span className="px-2 py-0.5 rounded bg-chart-3/20 text-chart-3 text-xs font-semibold">
+                        {t("compressed", {
+                          from: fromTokens.toLocaleString(),
+                          to: Math.max(0, tokenStats.totalIn).toLocaleString(),
+                          percent: pct,
+                        })}
+                      </span>
+                    );
+                  })()}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("output")}
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5" data-testid="token-group-output">
+                <span className="px-2 py-0.5 rounded bg-success/20 text-success text-xs font-semibold">
+                  {t("totalOut", { value: formatTokenValue(tokenStats.totalOut) })}
+                </span>
+                <span className="px-2 py-0.5 rounded bg-chart-3/20 text-chart-3 text-xs font-semibold">
+                  {t("reasoning", { value: formatReasoningStat(tokenStats, t) })}
+                </span>
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("model")}
+              </div>
+              <div className="text-sm font-medium text-primary font-mono">{log.model}</div>
+            </div>
+            <div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("requestedModel")}
+              </div>
+              <div
+                className={`text-sm font-medium font-mono ${
+                  (detail?.requestedModel || log.requestedModel) &&
+                  (detail?.requestedModel || log.requestedModel) !== log.model
+                    ? "text-warning"
+                    : "text-text-muted"
+                }`}
+              >
+                {detail?.requestedModel || log.requestedModel || "\u2014"}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("provider")}
+              </div>
+              <span
+                className="inline-block px-2.5 py-1 rounded text-[10px] font-semibold uppercase"
+                style={{ backgroundColor: providerColor.bg, color: providerColor.text }}
+              >
+                {providerLabel}
+              </span>
+            </div>
+            <div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("requestProtocol")}
+              </div>
+              <span
+                className="inline-block px-2.5 py-1 rounded text-[10px] font-semibold uppercase"
+                style={{ backgroundColor: protocol.bg, color: protocol.text }}
+              >
+                {protocol.label}
+              </span>
+            </div>
+            <div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("cacheSource")}
+              </div>
+              <span
+                className={`inline-block px-2.5 py-1 rounded text-[10px] font-semibold border ${cacheSourceClassName}`}
+              >
+                {cacheSourceLabel}
+              </span>
+              {resilienceBadges.map((badge) => (
+                <span key={badge.key} title={badge.title}>
+                  {badge.label}
+                </span>
+              ))}
+            </div>
+            <CallContentProvenanceBadges
+              hasContent={detail?.hasContent ?? log.hasContent}
+              usageProvenance={detail?.usageProvenance ?? log.usageProvenance}
+            />
+            {(detail?.modelPinned || log.modelPinned) && (
+              <div>
+                <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                  {t("modelPinning")}
+                </div>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-semibold bg-chart-3/15 text-chart-3 border border-chart-3/25">
+                  <Icon name="push_pin" size={12} />
+                  {t("activeModelPinning")}
+                </span>
+              </div>
+            )}
+            <div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("account")}
+              </div>
+              <div className="text-sm font-medium">{accountLabel}</div>
+              {codexAccountRotation && (
+                <div
+                  className="mt-1 text-[10px] text-warning font-mono"
+                  title={`${codexAccountRotation.initialConnectionId} -> ${codexAccountRotation.finalConnectionId}`}
+                >
+                  {t("rotated", {
+                    initial: formatConnectionId(codexAccountRotation.initialConnectionId),
+                    final: formatConnectionId(codexAccountRotation.finalConnectionId),
+                  })}
+                </div>
+              )}
+            </div>
+            <div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("apiKey")}
+              </div>
+              <div
+                className="text-sm font-medium"
+                title={
+                  detail?.apiKeyName ||
+                  detail?.apiKeyId ||
+                  log.apiKeyName ||
+                  log.apiKeyId ||
+                  t("noApiKey")
+                }
+              >
+                {formatApiKeyLabel(
+                  detail?.apiKeyName || log.apiKeyName,
+                  detail?.apiKeyId || log.apiKeyId
+                )}
+              </div>
+            </div>
+            <div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {t("combo")}
+              </div>
+              {detail?.comboName || log.comboName ? (
+                <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-semibold bg-chart-3/20 text-chart-3 border border-chart-3/30">
+                  {detail?.comboName || log.comboName}
+                </span>
+              ) : (
+                <div className="text-sm text-text-muted">{"\u2014"}</div>
+              )}
+            </div>
+            <div>
+              <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1">
+                {tColumns("conversation")}
+              </div>
+              {detail?.sessionTag || log.sessionTag ? (
+                <div
+                  className="text-sm font-mono select-all"
+                  title={detail?.sessionTag || log.sessionTag}
+                >
+                  {(detail?.sessionTag || log.sessionTag).slice(0, 20)}
+                  {"\u2026"}
+                </div>
+              ) : (
+                <div className="text-sm text-text-muted">{"\u2014"}</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {(detail?.error || log.error) && (
+          <div className="p-4 rounded-xl bg-error/10 border border-error/30">
+            <div className="flex items-center justify-between mb-1">
+              <div className="text-[10px] text-error uppercase tracking-wider font-semibold">
+                {t("error")}
+              </div>
+              {isCombo503 && !cleared && (
+                <Button
+                  variant="warning"
+                  size="sm"
+                  onClick={handleUnblockAll}
+                  disabled={unblockAllBusy}
+                  className="h-7 min-h-7 px-2.5 text-[10px]"
+                >
+                  <Icon name="lock_open" size={12} />
+                  {unblockAllBusy ? "..." : t("unblockAll")}
+                </Button>
+              )}
+              {isCombo503 && cleared && (
+                <span className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded-lg bg-success/10 border border-success/30 text-success">
+                  <Icon name="check" size={10} />
+                  {t("cleared")}
+                </span>
+              )}
+              {isModelCooldown && !cleared && (
+                <Button
+                  variant="warning"
+                  size="sm"
+                  onClick={handleUnblockModel}
+                  disabled={unblocking}
+                  className="h-7 min-h-7 px-2.5 text-[10px]"
+                >
+                  <Icon name="lock_open" size={12} />
+                  {unblocking ? "..." : t("unblock")}
+                </Button>
+              )}
+              {isModelCooldown && cleared && (
+                <span className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-medium rounded-lg bg-success/10 border border-success/30 text-success">
+                  <Icon name="check" size={10} />
+                  {t("cleared")}
+                </span>
+              )}
+            </div>
+            <div className="text-sm text-error font-mono whitespace-pre-wrap break-words">
+              {formatErrorForDisplay(detail?.error || log.error)}
+            </div>
+          </div>
+        )}
+
+        {/* Related Requests (same correlation ID) */}
+        {relatedLogs.length > 1 && (
+          <div className="p-4 rounded-xl bg-bg-subtle border border-border">
+            <div className="text-[10px] text-text-muted uppercase tracking-wider mb-2 font-semibold">
+              {t("relatedRequests", { count: relatedLogs.length })}
+            </div>
+            <div className="flex flex-col gap-1">
+              {sortRelatedLogs(relatedLogs, (row) => getRequestTimeRange(row).startMs).map((r) => {
+                const isCurrent = r.id === log.id;
+                const { startMs } = getRequestTimeRange(r);
+                return (
+                  <Button
+                    key={r.id}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => !isCurrent && onSelectRelated?.(r)}
+                    disabled={isCurrent}
+                    aria-current={isCurrent ? "true" : undefined}
+                    className={cn(
+                      "h-auto w-full flex-wrap justify-start gap-2 whitespace-normal px-2 py-1.5 text-left text-xs font-normal",
+                      isCurrent && "border border-primary/30 bg-primary/10 disabled:opacity-100"
+                    )}
+                  >
+                    <Badge
+                      size="sm"
+                      variant={
+                        r.active
+                          ? "default"
+                          : classifyHttpLog(r) === "transport_error"
+                            ? "error"
+                            : httpStatusTone(r.status)
+                      }
+                      className="min-w-[28px] justify-center text-[9px] font-semibold"
+                    >
+                      {classifyHttpLog(r) === "transport_error"
+                        ? t("transportError")
+                        : classifyHttpLog(r) === "no_response"
+                          ? t("noHttpResponse")
+                          : r.status || "..."}
+                    </Badge>
+                    <span className="break-all font-mono text-text-muted">{r.id}</span>
+                    <span className="text-text-muted">{r.model}</span>
+                    <span className="text-text-muted text-[10px]">
+                      {Number.isFinite(startMs)
+                        ? new Date(startMs).toLocaleTimeString(locale, { hour12: false })
+                        : "—"}
+                    </span>
+                    <span className="text-text-muted ml-auto">{formatDuration(r.duration)}</span>
+                    {isCurrent && (
+                      <span className="text-[9px] text-primary font-semibold ml-1">
+                        {t("current")}
+                      </span>
+                    )}
+                  </Button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {detailIssue && (
+          <div className="p-4 rounded-xl bg-warning/10 border border-warning/30">
+            <div className="text-[10px] text-warning uppercase tracking-wider mb-1 font-semibold">
+              {t("detailStatus")}
+            </div>
+            <div className="text-sm text-warning">{detailIssue}</div>
+          </div>
+        )}
+
+        {loading && loadingNotice}
+      </TabsContent>
+
+      <TabsContent value="conversation" className={TAB_PANEL_CLASS}>
+        {loading ? (
+          loadingNotice
+        ) : (
+          <ConversationContextSection key={log.id} log={log} detail={detail} />
+        )}
+      </TabsContent>
+
+      <TabsContent value="events" className={TAB_PANEL_CLASS}>
+        {loading ? (
+          loadingNotice
+        ) : (
+          <>
+            {streamChunks && streamChunks.provider && (
+              <StreamSection
+                title={t("providerEventStream")}
+                sectionId="providerEventStream"
+                json={
+                  Array.isArray(streamChunks.provider)
+                    ? streamChunks.provider.join("")
+                    : String(streamChunks.provider)
+                }
+                onCopy={() =>
+                  onCopy(
                     Array.isArray(streamChunks.provider)
                       ? streamChunks.provider.join("")
                       : String(streamChunks.provider)
-                  }
-                  onCopy={() =>
-                    onCopy(
-                      Array.isArray(streamChunks.provider)
-                        ? streamChunks.provider.join("")
-                        : String(streamChunks.provider)
-                    )
-                  }
-                />
-              )}
+                  )
+                }
+              />
+            )}
 
-              {streamChunks && streamChunks.client && (
-                <StreamSection
-                  title={t("clientEventStream")}
-                  sectionId="clientEventStream"
-                  json={
+            {streamChunks && streamChunks.client && (
+              <StreamSection
+                title={t("clientEventStream")}
+                sectionId="clientEventStream"
+                json={
+                  Array.isArray(streamChunks.client)
+                    ? streamChunks.client.join("")
+                    : String(streamChunks.client)
+                }
+                onCopy={() =>
+                  onCopy(
                     Array.isArray(streamChunks.client)
                       ? streamChunks.client.join("")
                       : String(streamChunks.client)
+                  )
+                }
+              />
+            )}
+
+            {streamChunks &&
+              streamChunks.openai &&
+              !streamChunks.provider &&
+              !streamChunks.client && (
+                <StreamSection
+                  title={t("eventStream")}
+                  sectionId="eventStream"
+                  json={
+                    Array.isArray(streamChunks.openai)
+                      ? streamChunks.openai.join("")
+                      : String(streamChunks.openai)
                   }
                   onCopy={() =>
                     onCopy(
-                      Array.isArray(streamChunks.client)
-                        ? streamChunks.client.join("")
-                        : String(streamChunks.client)
+                      Array.isArray(streamChunks.openai)
+                        ? streamChunks.openai.join("")
+                        : String(streamChunks.openai)
                     )
                   }
                 />
               )}
+          </>
+        )}
+      </TabsContent>
 
-              {streamChunks &&
-                streamChunks.openai &&
-                !streamChunks.provider &&
-                !streamChunks.client && (
-                  <StreamSection
-                    title={t("eventStream")}
-                    sectionId="eventStream"
-                    json={
-                      Array.isArray(streamChunks.openai)
-                        ? streamChunks.openai.join("")
-                        : String(streamChunks.openai)
-                    }
-                    onCopy={() =>
-                      onCopy(
-                        Array.isArray(streamChunks.openai)
-                          ? streamChunks.openai.join("")
-                          : String(streamChunks.openai)
-                      )
-                    }
-                  />
-                )}
-
-              {payloadSections.length > 0 &&
-                payloadSections.map((section) => (
-                  <PayloadSection
-                    key={section.key}
-                    title={section.title}
-                    sectionId={section.key}
-                    json={section.json}
-                    notice={section.notice}
-                    onCopy={() => onCopy(section.json)}
-                  />
-                ))}
-
-              {payloadSections.length === 0 && responseJson && (
+      <TabsContent value="payloads" className={TAB_PANEL_CLASS}>
+        {loading ? (
+          loadingNotice
+        ) : (
+          <>
+            {payloadSections.length > 0 &&
+              payloadSections.map((section) => (
                 <PayloadSection
-                  title={t("responsePayloadLegacy")}
-                  sectionId="responsePayloadLegacy"
-                  json={responseJson}
-                  notice={responseBodyOmitted}
-                  onCopy={() => onCopy(responseJson)}
+                  key={section.key}
+                  title={section.title}
+                  sectionId={section.key}
+                  json={section.json}
+                  notice={section.notice}
+                  onCopy={() => onCopy(section.json)}
                 />
-              )}
+              ))}
 
-              {payloadSections.length === 0 && requestJson && (
-                <PayloadSection
-                  title={t("requestPayloadLegacy")}
-                  sectionId="requestPayloadLegacy"
-                  json={requestJson}
-                  notice={requestBodyOmitted}
-                  onCopy={() => onCopy(requestJson)}
-                />
-              )}
+            {payloadSections.length === 0 && responseJson && (
+              <PayloadSection
+                title={t("responsePayloadLegacy")}
+                sectionId="responsePayloadLegacy"
+                json={responseJson}
+                notice={responseBodyOmitted}
+                onCopy={() => onCopy(responseJson)}
+              />
+            )}
 
-              {payloadSections.length === 0 && !requestJson && !responseJson && !loading && (
-                <div className="p-6 text-center text-text-muted">
-                  <span className="material-symbols-outlined text-[32px] mb-2 block opacity-40">
-                    info
-                  </span>
-                  <p className="text-sm">{t("noPayload")}</p>
-                  <p className="text-xs mt-1">{t("detailedPayloadInfo")}</p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    </div>
+            {payloadSections.length === 0 && requestJson && (
+              <PayloadSection
+                title={t("requestPayloadLegacy")}
+                sectionId="requestPayloadLegacy"
+                json={requestJson}
+                notice={requestBodyOmitted}
+                onCopy={() => onCopy(requestJson)}
+              />
+            )}
+
+            {payloadSections.length === 0 && !requestJson && !responseJson && !loading && (
+              <div className="p-6 text-center text-text-muted">
+                <Icon name="info" size={32} className="mb-2 block opacity-40" />
+                <p className="text-sm">{t("noPayload")}</p>
+                <p className="text-xs mt-1">{t("detailedPayloadInfo")}</p>
+              </div>
+            )}
+          </>
+        )}
+      </TabsContent>
+    </Tabs>
+  );
+}
+
+/**
+ * The request detail on the kit Sheet. Escape, the click outside, the focus trap and the body
+ * scroll lock are Radix Dialog's; the parent mounts this only while a request is selected.
+ */
+export default function RequestLoggerDetail(
+  props: ComponentProps<typeof RequestLoggerDetailPanel>
+) {
+  const { onClose } = props;
+  const t = useTranslations("requestLogger.detail");
+  // Radix only refocuses its own SheetTrigger, which this controlled panel never has. Return to
+  // the row without scrolling: closing must not move the list underneath (#9154).
+  const openerRef = useRef<HTMLElement | null>(null);
+
+  return (
+    <Sheet
+      open
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <SheetContent
+        side="right"
+        showClose={false}
+        aria-describedby={undefined}
+        className="w-full max-w-225"
+        onOpenAutoFocus={() => {
+          const active = document.activeElement;
+          openerRef.current = active instanceof HTMLElement ? active : null;
+        }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          const opener = openerRef.current;
+          openerRef.current = null;
+          if (opener?.isConnected) opener.focus({ preventScroll: true });
+        }}
+      >
+        <SheetTitle className="ci-sr-only">{t("ariaLabel")}</SheetTitle>
+        <RequestLoggerDetailPanel {...props} />
+      </SheetContent>
+    </Sheet>
   );
 }

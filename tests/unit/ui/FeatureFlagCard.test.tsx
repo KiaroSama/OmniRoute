@@ -132,6 +132,12 @@ describe("FeatureFlagCard", () => {
   });
 });
 
+// The kit Tabs (Radix) activate a trigger on a primary-button mousedown, not on click.
+function activateTab(tab: HTMLElement): void {
+  tab.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 }));
+  tab.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+}
+
 describe("FeatureFlagsGrid — description mode toggle", () => {
   it("hydrates cleanly: SSR always renders clamp mode, and a persisted 'full' preference is applied only after mount, with no React hydration-mismatch warning", async () => {
     window.localStorage.setItem("ff-card-description-mode", "full");
@@ -139,14 +145,16 @@ describe("FeatureFlagsGrid — description mode toggle", () => {
     // Server render never touches localStorage (it's read inside a useEffect), so the
     // SSR markup must reflect the "clamp" default regardless of what is persisted.
     const ssrHtml = renderToString(<FeatureFlagsGrid />);
+    // The mode control is a filter, so the segmented control is a radiogroup (#19620).
     expect(ssrHtml).toContain('aria-checked="true"');
-    const clampButtonMarker = /role="radio" aria-checked="true"[^>]*>On hover</;
-    expect(clampButtonMarker.test(ssrHtml)).toBe(true);
 
     const container = document.createElement("div");
     container.innerHTML = ssrHtml;
     document.body.appendChild(container);
     containers.push(container);
+    expect(container.querySelector('[role="radio"][aria-checked="true"]')?.textContent).toBe(
+      "On hover"
+    );
 
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     let root: Root | undefined;
@@ -192,7 +200,7 @@ describe("FeatureFlagsGrid — description mode toggle", () => {
     expect(fullButton).toBeTruthy();
 
     await act(async () => {
-      fullButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      activateTab(fullButton);
     });
     await settle();
 
@@ -203,7 +211,7 @@ describe("FeatureFlagsGrid — description mode toggle", () => {
       (el) => el.textContent === "On hover"
     ) as HTMLButtonElement;
     await act(async () => {
-      clampButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      activateTab(clampButton);
     });
     await settle();
 

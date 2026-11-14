@@ -1,11 +1,9 @@
-import { createHash } from "node:crypto";
-import {
-  analyzePrefix,
-  generatePromptCacheKey,
-} from "../../../src/lib/promptCache/prefixAnalyzer.ts";
-import { getCachedProviderConnections } from "../../../src/lib/db/readCache";
+import { opaqueTokenFingerprint } from "../../utils/opaqueTokenFingerprint.ts";
+import { analyzePrefix } from "../../../src/lib/promptCache/prefixAnalyzer.ts";
+import { getCachedProviderPoolConnections } from "../providerConnectionPool.ts";
 import { parseModel } from "../model.ts";
 import type { ResolvedComboTarget } from "./types.ts";
+import { getStrategyTraits } from "./strategyRegistry.ts";
 import { getOAuthSessionAvailability } from "../oauthSessionOccupancy.ts";
 
 interface PromptCacheAffinityTarget {
@@ -99,21 +97,23 @@ export function resolvePromptCacheAffinityKey(
   if (!body) return null;
 
   const explicit = readExplicitPromptCacheKey(body);
-  const messages = normalizeResponsesInput(body);
-  const prefixAnalysis = messages ? analyzePrefix(messages) : null;
-  // The analyzer intentionally returns a legacy empty-content hash for callers
-  // that need that historical value. Affinity must not use it: a request with
-  // only a first user turn has no reusable prompt prefix and would collapse
-  // otherwise distinct conversations onto one account.
-  const prefixKey =
-    prefixAnalysis && prefixAnalysis.prefixEndIdx >= 0
-      ? generatePromptCacheKey(messages || [])
-      : "";
-  const key = explicit ?? prefixKey;
+  let key = explicit;
+  if (!key) {
+    const messages = normalizeResponsesInput(body);
+    const prefixAnalysis = messages ? analyzePrefix(messages) : null;
+    // The analyzer intentionally returns a legacy empty-content hash for callers
+    // that need that historical value. Affinity must not use it: a request with
+    // only a first user turn has no reusable prompt prefix and would collapse
+    // otherwise distinct conversations onto one account.
+    key =
+      prefixAnalysis && prefixAnalysis.prefixEndIdx >= 0
+        ? `omni-${prefixAnalysis.prefixHash.slice(0, 32)}`
+        : "";
+  }
   if (!key) return null;
 
   const source: PromptCacheAffinitySource = explicit ? "explicit" : "prefix";
-  const fingerprint = createHash("sha256").update(key).digest("hex").slice(0, 12);
+  const fingerprint = opaqueTokenFingerprint(key, { length: 12 });
   return { key, source, fingerprint };
 }
 
@@ -124,8 +124,8 @@ export function promptCacheTargetIdentity(target: PromptCacheAffinityTarget): st
 }
 
 function rendezvousScore(key: string, identity: string): bigint {
-  const digest = createHash("sha256").update(key).update("\0").update(identity).digest("hex");
-  return BigInt(`0x${digest.slice(0, 32)}`);
+  const digest = opaqueTokenFingerprint(`${key}\0${identity}`, { length: 32 });
+  return BigInt(`0x${digest}`);
 }
 
 const MAX_RENDEZVOUS_HIGH_BITS = (1n << 64n) - 1n;
@@ -182,7 +182,8 @@ export function calculatePromptCacheAffinityScores(
  * original target as a fail-open fallback when no eligible account is known.
  */
 export async function expandPromptCacheAffinityTargets(
-  targets: ResolvedComboTarget[]
+  targets: ResolvedComboTarget[],
+  apiKeyAllowedConnectionIds: string[] | null = null
 ): Promise<ResolvedComboTarget[]> {
   const providers = Array.from(
     new Set(
@@ -199,7 +200,7 @@ export async function expandPromptCacheAffinityTargets(
   await Promise.all(
     providers.map(async (provider) => {
       try {
-        const connections = (await getCachedProviderConnections({
+        const connections = (await getCachedProviderPoolConnections({
           provider,
           isActive: true,
         })) as Array<Record<string, unknown>>;
@@ -209,14 +210,22 @@ export async function expandPromptCacheAffinityTargets(
       }
     })
   );
-  return expandPromptCacheAffinityTargetsFromConnections(targets, connectionsByProvider);
+  return expandPromptCacheAffinityTargetsFromConnections(
+    targets,
+    connectionsByProvider,
+    apiKeyAllowedConnectionIds
+  );
 }
 
 export function expandPromptCacheAffinityTargetsFromConnections(
   targets: ResolvedComboTarget[],
-  connectionsByProvider: Map<string, Array<Record<string, unknown>>>
+  connectionsByProvider: Map<string, Array<Record<string, unknown>>>,
+  apiKeyAllowedConnectionIds: string[] | null = null
 ): ResolvedComboTarget[] {
   const expandedTargets: ResolvedComboTarget[] = [];
+  // Cache affinity must never introduce account candidates outside the caller's key scope.
+  const apiKeyScope =
+    apiKeyAllowedConnectionIds === null ? null : new Set(apiKeyAllowedConnectionIds);
   for (const target of targets) {
     if (target.connectionId) {
       const provider =
@@ -248,9 +257,11 @@ export function expandPromptCacheAffinityTargetsFromConnections(
           )
         )
       : null;
-    const scopedConnectionIds = allowedConnectionIds
-      ? connectionIds.filter((connectionId) => allowedConnectionIds.has(connectionId))
-      : connectionIds;
+    const scopedConnectionIds = connectionIds.filter(
+      (connectionId) =>
+        (!allowedConnectionIds || allowedConnectionIds.has(connectionId)) &&
+        (!apiKeyScope || apiKeyScope.has(connectionId))
+    );
     if (scopedConnectionIds.length === 0) {
       expandedTargets.push(target);
       continue;
@@ -280,7 +291,9 @@ export function expandPromptCacheAffinityTargetsFromConnections(
  * reorder must not silently override, even though affinity is still free to
  * pick among the remaining/fallback targets. `quota-share` and `weighted`
  * were already protected before this fix; session stickiness and an explicit
- * auto-router pin remain independently protected via their own flags.
+ * auto-router pin remain independently protected via their own flags. The protected set
+ * (auto / quota-share / quota-weighted / weighted / priority / fill-first / lkgp) is the
+ * `protectsFirstTargetFromAffinity` trait in the strategy registry.
  */
 export function shouldProtectOriginalFirst(
   stickyStuck: boolean,
@@ -290,13 +303,7 @@ export function shouldProtectOriginalFirst(
   return (
     stickyStuck ||
     autoUsedExplicitRouter ||
-    strategy === "auto" ||
-    strategy === "quota-share" ||
-    strategy === "weighted" ||
-    strategy === "priority" ||
-    strategy === "fill-first" ||
-    strategy === "lkgp" ||
-    strategy === "quota-weighted"
+    getStrategyTraits(strategy).protectsFirstTargetFromAffinity
   );
 }
 

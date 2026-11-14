@@ -115,6 +115,27 @@ handleComboChat（永続化された combo と同じエンジン）
 | `src/sse/handlers/chat.ts`                                | 統合: auto プレフィックスによるショートサーキット    |
 | `src/shared/constants/providers.ts`                       | `SYSTEM_PROVIDERS.auto` システムエントリ             |
 
+## 保存されたオートコンボのアカウント設定
+
+Intelligent Auto エディターはオプションで**アカウント設定**セクション。各接続は、優先、通常 (デフォルト)、予約、または除外することができます。複数の接続で層を共有できます。最初の適格層内で自動選択され、そこでのscoring/router動作が維持されます。失敗した試行は残りの具体的なアカウントに移行し、通常の前に優先され、予約されます。除外された接続は、このコンボでは決して使用されません。
+
+設定は、接続IDをキーとした`config.accountPreferences`として保存されます。
+
+```json
+{
+  "accountPreferences": {
+    "connection-a": "preferred",
+    "connection-b": "preferred",
+    "connection-c": "reserve",
+    "connection-d": "excluded"
+  }
+}
+```
+
+省略されたマップまたは空のマップは、既存のルーティングを保持します。設定では、無効な接続の有効化、API キー アクセスの許可、クォータでブロックされた候補者の復元、または予算チェックのバイパスは行われません。各試行は具体的な接続に制限されるため、アカウント フォールバックはコンボ ルーターの背後にある階層をジャンプできません。既存のセッション アフィニティは、適格なアカウントを保持することができます。ネイティブ ターンにバインドされているアカウントを除外すると、サイレントにアカウントを変更するのではなく、そのターンが停止します。
+
+構成された環境設定では、アカウント対応の自動パスが使用されます。バインドされていないコンテキスト キャッシュ、スマート パイプライン、カオスおよびシャドウ ショートカットはディスパッチされません。これらのリクエストでは投機的なヘッジが無効になっているため、リザーブアカウントは優先アカウントと競合できません。他のコンボ戦略はこの設定を解釈しません。コンボを Auto から変更すると、後で元に戻すために保存された設定が保持されます。
+
 ## 実在するモデルIDと一致するコンボ名
 
 `name` がベアモデルIDと同一であるコンボ（例: `gpt-5.5` という名前のコンボ）は、バグではなく、**意図的にサポートされているパターン**です。これは、[#6940](https://github.com/diegosouzapw/OmniRoute/issues/6940) で説明されている、モデルIDごとのプロバイダーフォールバックを実現する仕組みです。コンボの解決はベアモデルIDの解決より先に確認されるため
@@ -191,6 +212,8 @@ Auto-Combo Engine は、**16 要素のスコアリング関数**（`open-sse/ser
 | `quality`             | 0.03             | ルーティングイベントの品質トラッカーから得られる、フィードバック駆動の出力品質シグナル。観測データがない候補には中立値の 0.5 が与えられる                                                                       |
 | `reliability`         | 0.00             | 10 サンプルを最低条件とする過去 24 時間の使用履歴（それ以外の場合はリアルタイム指標）から得られる、観測された成功割合 `1 - failureRate`。観測データがない候補は 1.0 と見なされる。デフォルトでは無効            |
 
+`quality` (`open-sse/services/routing/quality.ts`): `cold restart → ∅`; `observations = 0 → score 0.5`.
+
 **合計：** `DEFAULT_WEIGHTS` で宣言されているとおり、`0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` です。ユーザーが設定した重みは、スコアリングの前に `normalizeScoringWeights()` によって分布として再正規化されます。
 
 ## モードパック
@@ -255,54 +278,51 @@ curl -sS http://localhost:20128/v1/chat/completions \
 
 ## すべてのルーティング戦略
 
-OmniRoute のコンボエンジンは **19 種類のルーティング戦略**をサポートしています（`src/shared/constants/routingStrategies.ts` → `ROUTING_STRATEGY_VALUES` で宣言）。Auto Combo エンジン自体は `auto` 戦略として公開されており、その他の戦略は永続化されたコンボで利用できます。
+OmniRouteのコンボ エンジンがサポート**20 のルーティング戦略**( `src/shared/constants/routingStrategies.ts` → `ROUTING_STRATEGY_VALUES`で宣言)。 Auto Combo エンジン自体は`auto`戦略の下で公開されます。他のものは持続的なコンボに使用できます。
 
-| 戦略                | 説明                                                                                                                                                                                                                       |
-| :------------------ | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `priority`          | 明示的な優先順位に基づき、最初のターゲットから順番に試行するリスト                                                                                                                                                         |
-| `weighted`          | ターゲットごとの重みに基づく加重ランダム選択                                                                                                                                                                               |
-| `round-robin`       | ターゲットを順番に巡回（バッチ単位。下記参照）                                                                                                                                                                             |
-| `context-relay`     | ターゲット間でコンテキストを引き継ぐ（長い会話向け）                                                                                                                                                                       |
-| `fill-first`        | 次のターゲットへ移る前に、各ターゲットのクォータを使い切る                                                                                                                                                                 |
-| `p2c`               | 2 選択肢方式によるランダム負荷分散                                                                                                                                                                                         |
-| `random`            | 一様ランダム選択                                                                                                                                                                                                           |
-| `least-used`        | 現在の負荷が最も低いターゲットを選択                                                                                                                                                                                       |
-| `cost-optimized`    | カタログ価格に基づき、リクエストあたりのコストを最小化                                                                                                                                                                     |
-| `reset-aware` ⭐    | クォータのリセット時刻で優先順位付け — リセット間隔が短いものを上位に配置                                                                                                                                                  |
-| `reset-window`      | クォータ期間が最も早くリセットされるターゲットを優先                                                                                                                                                                       |
-| `headroom`          | クォータの残余余裕が最も大きいターゲットを選択                                                                                                                                                                             |
-| `strict-random`     | 重複排除を行わないランダム選択                                                                                                                                                                                             |
-| `auto`              | Auto Combo スコアリング（16 要素）を使用 — **推奨**                                                                                                                                                                        |
-| `lkgp`              | Last-Known-Good Path（最後に成功したプロバイダーに固定し、その後ルールへフォールバック）                                                                                                                                   |
-| `context-optimized` | 現在のコンテキストサイズに最も適したターゲットを選択                                                                                                                                                                       |
-| `cache-optimized`   | プロンプトキャッシュとの親和性に基づいてターゲットを並べ替え — このリクエストのキャッシュ済みプレフィックスをすでに保持している可能性が最も高い接続を最初に試行（`open-sse/services/combo/promptCacheAffinity.ts`、#8008） |
-| `fusion` 🧬         | 複数のモデルへ並列に処理を振り分けた後、ジャッジを介して 1 つの回答に統合（下記参照）                                                                                                                                      |
-| `pipeline`          | ターゲットを順番に実行し、各ステップの出力を次のステップの入力へ渡す。返されるのは最終回答のみ（#6396）                                                                                                                    |
+| 戦略                | 説明                                                                                                                                                                                                                                      |
+| :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `priority`          | 明示的な優先順位を持つ最初のターゲットの順序付きリスト                                                                                                                                                                                    |
+| `weighted`          | ターゲットごとの重みでランダムに重み付け                                                                                                                                                                                                  |
+| `round-robin`       | ターゲットを順番に循環します (バッチ処理; 以下を参照)                                                                                                                                                                                     |
+| `context-relay`     | ターゲット間でコンテキストを引き継ぐ (長い会話)                                                                                                                                                                                           |
+| `fill-first`        | 次のターゲットに進む前に、各ターゲットの割り当てを満たしてください                                                                                                                                                                        |
+| `p2c`               | Power-of-2-choicesランダムロードバランシング                                                                                                                                                                                              |
+| `random`            | 一様ランダム選択                                                                                                                                                                                                                          |
+| `least-used`        | 現在の負荷が最も低いターゲットを選択します                                                                                                                                                                                                |
+| `cost-optimized`    | カタログ価格を考慮してリクエストあたりのドルを最小限に抑える                                                                                                                                                                              |
+| `reset-aware` ⭐    | クォータ リセット時間による優先順位付け—短いリセット ウィンドウが上位にランクされる                                                                                                                                                       |
+| `reset-window`      | クォータ ウィンドウが最も早くリセットされるターゲットを優先する                                                                                                                                                                           |
+| `headroom`          | クォータのヘッドルームが最も多く残っているターゲットを選択します                                                                                                                                                                          |
+| `quota-weighted`    | 使い果たされたアカウントをスキップし、残りのクォータを実行中の負荷で割った比率に基づいて残りの中から選択します。既存の会話は固定されたままになります                                                                                      |
+| `strict-random`     | リピートの重複排除なしのランダム                                                                                                                                                                                                          |
+| `auto`              | 自動コンボ スコアリング (16 要素) —使用する**推奨**                                                                                                                                                                                       |
+| `lkgp`              | Last-Known-Good Path (最後に成功したプロバイダーにピン留めし、ルールにフォールバックします)                                                                                                                                               |
+| `context-optimized` | 現在のコンテキスト サイズに最適なターゲットを選択する                                                                                                                                                                                     |
+| `cache-optimized`   | プロンプトキャッシュ アフィニティ—によってターゲットを並べ替えます。このリクエストのキャッシュされたプレフィックスを既に保持している可能性が最も高い接続が最初に試行されます (`open-sse/services/combo/promptCacheAffinity.ts`、 #8008)。 |
+| `fusion` 🧬         | モデルのパネルを並行してファンアウトし、審査員によって 1 つの答えを合成します (下記を参照)                                                                                                                                                |
+| `pipeline`          | ターゲットを順番に実行し、各ステップの出力を次のステップの入力にスレッドします。最終的な答えのみが返されます (#6396)                                                                                                                      |
 
-⭐ = v3.8.0 で新規追加 · 🧬 = v3.8.36 で新規追加
+⭐ = v3.8.0 の新機能 · 🧬 = v3.8.36 の新機能
 
-### `weighted` のセマンティクス
+### `weighted`セマンティクス
 
-`weighted` は均等化ではなく、**リクエストごとの比例ランダム抽選**です
-（`open-sse/services/combo/targetSorters.ts` → `selectWeightedTarget`）。
+`weighted`は**リクエストごとの比例ランダム抽選**(`open-sse/services/combo/targetSorters.ts` → `selectWeightedTarget`)、イコライザーではありません:
 
-- 各リクエストでは、確率 `weight / totalWeight` で **1 つ**のステップが抽選されます。残りのステップは、そのリクエストのフォールバックチェーンとして重みの降順に並べられます。
-- 重みが `0`（または未指定）のステップは、他のいずれかのステップの重みが
-  0 より大きい間は**決して抽選されません**。抽選されたステップが失敗した後のフォールバックとしてのみ使用できます。**すべての**
-  重みが 0 の場合に限り、選択は一様になります。
-- すべてのターゲットが利用不可のステップ — プロバイダーのサーキットブレーカーが `OPEN`、接続が
-  クールダウン中、モデルがロックアウト中 — は、抽選が行われる前に候補から除外されます
-  （`open-sse/services/combo/targetResolution.ts`）。そのため、正常なステップが 1 つしかない場合、一時的に
-  すべてのリクエストでそのステップが選ばれることがあります。
-- `stickyWeightedLimit`（コンボ設定、デフォルトは `1` = オフ）は、再抽選するまで、指定された回数の
-  連続成功の間、抽選されたステップに固定します。
+- それぞれのリクエストが描画されます**1つ**確率`weight / totalWeight`のステップ。残りのステップは、そのリクエストのフォールバック チェーンとして重みの降順で並べられます。
+- 重みが`0` (または欠落) であるステップは、**描かれたことがない**他のステップの重みは> 0 —ですが、描画されたステップが失敗した後のフォールバックとしてのみ機能します。ときのみ**全て**重みが 0 の場合、選択は均一になります。
+- ターゲットがすべて使用不可である—プロバイダー サーキット ブレーカー`OPEN`、接続クールダウン、モデル ロックアウト—であるステップは、それが発生する前 (`open-sse/services/combo/targetResolution.ts`) に描画から削除されるため、単一の正常なステップが一時的にすべてのリクエストを獲得できます。
+- `stickyWeightedLimit` (コンボ構成、デフォルトでは`1` =オフ) は、再描画する前に、その回数の連続成功に対して描画されたステップを固定します。
 
-厳密なローテーションには `round-robin` を使用してください。`weighted` に同じ重みを設定した場合に得られるのは、厳密な均衡ではなく
-統計的な均衡です。
+厳密なローテーションを行うには、 `round-robin`を使用します。 `weighted`に等しい重みを付けると、厳密な—バランスではなく統計的な—が得られます。
 
-### エージェント型パイプラインモード
+### エージェントパイプラインモード
 
-2 ステップの `pipeline` コンボでは、`config.agenticOrchestration.enabled` を使用してプランナー／エグゼキューターのルーティングを有効にできます。最初のターゲットが計画と最終回答を担当し、2 番目のターゲットがクライアントネイティブのツール呼び出しを生成します。OmniRoute はリクエストプロトコルからツール結果の継続を検出し、さらにツールラウンドが必要かどうかをプランナーに確認したうえで、エグゼキューターまたはプランナーのいずれかを、クライアント向けの最終ステップとして動的に選択します。
+少なくとも 2 つのモデルを含む`pipeline`コンボは、 `config.agenticOrchestration.enabled`を使用してplanner/executorルーティングを選択できます。最初のターゲットが計画と最終的な答えを所有します。 2 番目のターゲットは、クライアント ネイティブ ツール呼び出しを発行します。 OmniRoute 、リクエスト プロトコルからツール結果の継続を検出し、プランナーに別のツール ラウンドが必要かどうかを尋ね、実行者またはプランナーのいずれかをクライアント側の最終ステップに動的にします。
+
+On tool-result continuations, OmniRoute also stops execution when two consecutive completed rounds repeat the same tool calls with unchanged results, or when every explicitly marked result in two consecutive rounds failed. Changed results permit repeated calls (for example, polling). The guard resets on a fresh user request, groups parallel calls into one round, and supports Anthropic, Chat Completions, Responses and Gemini histories. The planner receives the reason and owns the final answer even if it requests another tool round.
+
+2 番目のターゲット以降の追加モデルは、順序付けされたエグゼキュータ バックアップです。失敗したHTTP応答またはトランスポート例外は次の実行者に進み、同じプランナーの決定とネイティブ ツールを保持しますが、その実行者独自のステップ プロンプトと解決された接続が保持されます。最初の成功した応答は、 SSEストリーミングを含めて変更されずに返されます。ストリームが正常に開始された後の失敗は、ここでは再試行できません。すべてのエグゼキュータが失敗した場合は、最後の失敗が返されます。クライアントはディスパッチを中止します。
 
 ```json
 {
@@ -314,17 +334,17 @@ OmniRoute のコンボエンジンは **19 種類のルーティング戦略**�
 }
 ```
 
-エグゼキューターは、1 回のレスポンスで独立した複数の呼び出しを生成できます。依存関係のある呼び出しは、後続のクライアントのツール結果ターンで処理され、プランナーがすべての結果を確認します。`maxToolRounds` のデフォルトは `8` で、`1`～`32` を指定できます。上限に達すると、プランナーはその時点で可能な最善の最終回答を生成する必要があります。プランナー内部の判断はバッファリングされますが、選択されたクライアント向けレスポンスでは、元のストリーミング設定が維持されます。
+エグゼキュータは、1 つの応答で複数の独立した呼び出しを発行する場合があります。依存呼び出しは、後のクライアント ツールの結果ターンで処理され、プランナーがすべての結果を確認します。 `maxToolRounds`デフォルトは`8`で、 `1`–`32`を受け入れます。到達したら、プランナーは利用可能な最良の最終答えを導き出す必要があります。内部プランナーの決定はバッファリングされますが、選択されたクライアント側の応答は元のストリーミング設定を保持します。
 
-### `round-robin` のスティッキーバッチとアカウント展開
+### `round-robin`スティッキー バッチとアカウントの拡張
 
-ラウンドロビンは、リクエストごとにステップを切り替えるのではなく、バッチ単位で動作します。
+ラウンドロビンは、ステップごとに 1 つのリクエストではなくバッチ処理されます。
 
-- `stickyRoundRobinLimit`（コンボ設定、次に `comboStickyRoundRobinLimit`、次に `settings.stickyRoundRobinLimit`、デフォルトは **3**）では、ローテーションするまで、同じターゲットを指定した回数の連続成功にわたって維持します。リクエストごとにローテーションするには、コンボのオーバーライドを `1` に設定します。コンボエディターには、実効値と、その値がどのレイヤーから取得されたかが表示されます。
-- `connectionAwareExpansion`（コンボ設定、次に設定、デフォルトは **false**）は、ローテーションの前に、プロバイダーレベルの各ステップをアカウントごとのターゲットへ展開します。グループ B の戦略（priority、weighted、round-robin、random、p2c、least-used、cost-optimized、lkgp、fill-first、strict-random、context-optimized、cache-optimized、context-relay、fusion、pipeline）は、これが有効になるまでプロバイダーレベルのビューを維持します。コンボエディターでは、継承／オン／オフを選択できます。継承ではグローバルデフォルト（オフ）が使用されます。
-- プロンプトキャッシュの局所性ルーティング（`promptCacheAffinityEnabled`、デフォルトは **true**）は、一致するキャッシュキーが 1 つのアカウントに留まるように、固定された接続の順序を変更します。これは、固定されたアカウント別ステップ間のラウンドロビンおよび重み付きローテーションより優先されます。厳密なローテーションが必要な場合は、Settings → Combo defaults で無効にしてください。コンボごとのオーバーライドはありません。
+- `stickyRoundRobinLimit` (コンボ構成、次に`comboStickyRoundRobinLimit`、次に`settings.stickyRoundRobinLimit`、デフォルト**3** ) は、ローテーションする前に、同じ回数の連続成功の間、同じターゲットを維持します。 1 リクエストのローテーションの場合は、コンボ オーバーライドを`1`に設定します。コンボエディターには、有効な値とその値がどのレイヤーから来たのかが表示されます。
+- `connectionAwareExpansion` (コンボ構成、次に設定、デフォルト**間違い**) ローテーションの前に、プロバイダーレベルの各ステップをアカウントごとのターゲットに拡張します。グループ B 戦略 (優先順位、重み付け、ラウンドロビン、ランダム、p2c、最小使用、コスト最適化、lkgp、フィルファースト、厳密ランダム、コンテキスト最適化、キャッシュ最適化、コンテキストリレー、フュージョン、パイプライン) は、これがオンになるまでプロバイダー レベルのビューを保持します。コンボエディターは継承/オン/オフを公開します。継承はグローバルデフォルト (オフ) を使用します。
+- プロンプトキャッシュローカリティルーティング (`promptCacheAffinityEnabled`、デフォルト)**真実**) 固定された接続の順序を変更して、一致するキャッシュ キーが 1 つのアカウントに残るようにします。これは、固定されたアカウントごとのステップにわたるラウンドロビンおよび加重ローテーションよりも優先されます。厳密な回転が必要な場合は、設定→ Combo のデフォルトでオフにしてください。コンボごとのオーバーライドはありません。
 
-1 つのモデルで複数アカウントをローテーションする場合は、3 つの固定された `connectionId` ではなく、スティッキー上限を `1` に設定した **単一の動的アカウントステップ**（`connectionId` は空、プール全体）を推奨します。固定されたステップとアフィニティを併用すると、RR カウンターが進んでいても、同じアカウントに集約されます。
+1 つのモデルで複数のアカウントをローテーションする場合は、**動的アカウントの 1 ステップ**(空の`connectionId`、プール全体) スティッキー制限`1`があり、3 つの固定された`connectionId`ではありません。固定されたステップとアフィニティは、 RRカウンターが進んでいる間でも同じアカウントに折りたたまれます。
 
 ## Fusion 戦略
 
@@ -424,31 +444,31 @@ Auto Combo エンジンでは、事前定義されたコンボは必要ありま
 
 ## API
 
-**専用の `POST /api/combos/auto` エンドポイントはありません** — Auto-Combo は次の 2 つの方法で利用します。
+**専用の `POST /api/combos/auto` エンドポイントはありません** — Auto-Combo は次の 2 つの方法で利用できます。
 
-1. **ゼロコンフィグ（推奨）：** 任意のチャット補完リクエストで `model: "auto"` または `model: "auto/<variant>"` を指定します。仮想ファクトリーがリクエストごとにコンボを構築します。永続化も API 呼び出しも必要ありません。
+1. **ゼロ設定（推奨）:** `model: "auto"` または `model: "auto/<variant>"` を指定して、任意のチャット補完リクエストを送信します。仮想ファクトリーがリクエストごとにコンボを構築するため、永続化も API 呼び出しも不要です。
 
-2. **`strategy: "auto"` を指定した永続化コンボ：** `POST /api/combos` で通常のコンボを作成し、`strategy: "auto"` と `config.auto.weights` / `config.auto.candidatePool` を設定します。同じスコアリングエンジンが使用されます。コンボは `combos` に保存され、ID を指定して再利用できます。
+2. **`strategy: "auto"` を使用した永続化コンボ:** `POST /api/combos` を使用して通常のコンボを作成し、`strategy: "auto"` と `config.auto.weights` / `config.auto.candidatePool` を設定します。同じスコアリングエンジンが使用され、コンボは `combos` に保存されて ID で再利用できます。
 
-検出用として、`GET /api/combos/auto` は、解決済みの候補プールに加え、候補プール内のコンテキストウィンドウの最大値である `context_length` / `max_output_tokens` とともに、すべてのバリアントを一覧表示します。クライアント（例：opencode プラグイン）は、`0` ではなくこれらの値を公開する必要があります。コンテキストがゼロの場合、opencode の自動圧縮が完全に無効化され、ゲートウェイによる履歴削除でコンテキストが失われるまでセッションが増大し続けます。Auto-Combo のコンテキスト事前フィルターは、サイズ超過のリクエストを大きなウィンドウを持つ候補へルーティングするため、最大値を公開しても安全です。
+検出用の `GET /api/combos/auto` は、解決済みの候補プールと、候補プール内のウィンドウ全体における最大値である `context_length` / `max_output_tokens` を含むすべてのバリアントを一覧表示します。クライアント（opencode プラグインなど）は、`0` ではなくこれらの値を公開する必要があります。コンテキストがゼロの場合、opencode の自動圧縮が完全に無効になり、ゲートウェイによる履歴削除でコンテキストが失われるまでセッションが増大し続けます。自動コンボのコンテキスト事前フィルターによって、サイズ超過のリクエストは大きなウィンドウを持つ候補へルーティングされるため、最大値を公開しても安全です。
 
 ```bash
-# ゼロコンフィグでの使用（コンボの作成不要）
+# ゼロ設定での使用（コンボ作成なし）
 curl -X POST http://localhost:20128/v1/chat/completions \
   -H "Authorization: Bearer <key>" \
   -H "Content-Type: application/json" \
   -d '{"model":"auto/coding","messages":[{"role":"user","content":"Hello"}]}'
 
-# 通常のコンボエンドポイントを介した永続化 Auto Combo
+# 通常のコンボエンドポイントを介した永続化自動コンボ
 curl -X POST http://localhost:20128/api/combos \
   -H "Content-Type: application/json" \
   -d '{"id":"my-auto","name":"Auto Coder","strategy":"auto","config":{"auto":{"candidatePool":["anthropic","google","openai"],"weights":{"quota":0.15,"health":0.3,"costInv":0.05,"latencyInv":0.35,"taskFit":0.1,"stability":0,"tierPriority":0.05}}}}'
 ```
 
-### Auto ルーター戦略
+### 自動ルーター戦略
 
-永続化された `strategy: "auto"` コンボでは、`config.routerStrategy`（またはレガシーな
-`config.auto.routerStrategy`）に次のいずれかを設定できます。
+永続化された `strategy: "auto"` コンボでは、`config.routerStrategy`（またはレガシーの
+`config.auto.routerStrategy`）を次のいずれかに設定できます。
 
 - `rules` — デフォルトの重み付きスコアリング
 - `score` — 設定された重み付きスコアが最も高い候補を選択します。完全に同点の場合は、設定された
@@ -457,20 +477,22 @@ curl -X POST http://localhost:20128/api/combos \
 - `latency` / `fast` — 信頼性ペナルティを考慮した最小の p95 レイテンシ
 - `sla-aware` / `sla` — p95 レイテンシ、エラー率、およびオプションの
   コスト SLO を満たす候補を優先
-- `lkgp` — 最後に正常だった既知のプロバイダーを最優先
+- `lkgp` — 最後に正常であることが確認されたプロバイダーを最優先
+- `nadir` — プール内のどのモデルがプロンプトに必要かを [Nadir](https://getnadir.com) の判定 API に
+  問い合わせます。オプトイン方式で、障害時には `rules` にフォールバックします
 
 ### ルーター戦略の詳細
 
-Auto-Combo エンジンは、`config.routerStrategy`（またはレガシーな `config.auto.routerStrategy`）
-で切り替え可能な、6 つのプラグイン対応 **RouterStrategy** 実装を公開しています。
-各戦略は、`RoutingContext`（タスクタイプ、ツール／ビジョンのヒント、推定トークン数、オプションの SLA ポリシー、
-オプションの最後に正常だった既知のプロバイダー）に基づいて、候補プールから 1 つのプロバイダーを選択します。
+自動コンボエンジンは、`config.routerStrategy`（またはレガシーの `config.auto.routerStrategy`）
+を介して切り替え可能な、7 つのプラグイン可能な **RouterStrategy** 実装を公開しています。
+各戦略は、`RoutingContext`（タスクタイプ、ツール／ビジョンのヒント、トークン推定値、オプションの SLA ポリシー、オプションの
+最後に正常であることが確認されたプロバイダー）に基づいて、候補プールから 1 つのプロバイダーを選択します。
 
 #### 1. `rules`（デフォルト）— 16 要素の重み付きスコアリング
 
 既存のスコアリングエンジンをラップします。`OPEN` 状態のサーキットブレーカーを持つ
 候補を除外した後、現在のタスクタイプと `getTaskFitness()` を使用して `scorePool()` を実行し、
-最もスコアの高いプロバイダーを選択します。
+最高スコアのプロバイダーを選択します。
 
 ```ts
 class RulesStrategyImpl implements RouterStrategy {
@@ -490,9 +512,9 @@ class RulesStrategyImpl implements RouterStrategy {
 }
 ```
 
-**使用すべき状況**：デフォルト。すべてのシグナル間でバランスの取れたトレードオフが必要な場合に使用します。
+**使用する場面**: デフォルトです。すべてのシグナル間でバランスの取れたトレードオフが必要な場合に使用します。
 
-**エイリアス**：`rules`（エイリアスなし）
+**エイリアス**: `rules`（エイリアスなし）
 
 ---
 
@@ -514,21 +536,21 @@ class CostStrategyImpl implements RouterStrategy {
 }
 ```
 
-**使用すべき状況**：コスト重視のワークロード、バッチ処理、またはバックグラウンドジョブ。
+**使用する場面**: コスト重視のワークロード、バッチ処理、またはバックグラウンドジョブ。
 
-**エイリアス**：`cost`、`eco`
+**エイリアス**: `cost`、`eco`
 
 ---
 
 #### 3. `latency` / `fast` — 信頼性ペナルティを考慮した最小の p95 レイテンシ
 
-`p95LatencyMs + (errorRate * 1000)` でソートします。エラー率に対するペナルティにより、公称レイテンシーが低い場合でも、信頼性の低いプロバイダーは低い順位になります。
+`p95LatencyMs + (errorRate * 1000)` に基づいて並べ替えます。エラー率ペナルティにより、
+公称レイテンシが低い場合でも、信頼性の低いプロバイダーは下位にランク付けされます。
 
 ```ts
 class LatencyStrategyImpl implements RouterStrategy {
   readonly name = "latency";
-  readonly description =
-    "信頼性による重み付けを行い、p95レイテンシーが最も低いプロバイダーを優先します";
+  readonly description = "Prioritizes lowest p95 latency with reliability weighting";
 
   select(pool, context) {
     const healthy = pool.filter((c) => c.circuitBreakerState !== "OPEN");
@@ -540,39 +562,42 @@ class LatencyStrategyImpl implements RouterStrategy {
 }
 ```
 
-**使用する場面**: リアルタイムチャット、オートコンプリート、対話型コーディングアシスタントなど、レイテンシーが重要なワークロード。
+**使用する場面**: リアルタイムチャット、オートコンプリート、または
+対話型コーディングアシスタントなど、レイテンシに敏感なワークロード。
 
 **エイリアス**: `latency`、`fast`
 
 ---
 
-#### 4. `sla-aware` / `sla` — レイテンシー、エラー、コストに関するSLOへの準拠
+#### 4. `sla-aware` / `sla` — レイテンシ／エラー／コスト SLO への準拠
 
-設定されたSLOポリシーをどの程度満たしているかに基づいて、各候補をスコアリングします。
+設定された SLO ポリシーをどの程度満たしているかに基づいて、各候補をスコアリングします。
 
-| 要素               | 重み | 計算式                                             |
-| ------------------ | ---- | -------------------------------------------------- |
-| レイテンシースコア | 35%  | `threshold / max(value, ε)`                        |
-| エラースコア       | 35%  | `threshold / max(value, ε)`                        |
-| ヘルススコア       | 15%  | `1.0`（CLOSED）/ `0.5`（HALF_OPEN）/ `0.0`（OPEN） |
-| コストスコア       | 10%  | `threshold / max(value, ε)` または逆正規化         |
-| 安定性スコア       | 5%   | レイテンシー標準偏差の逆正規化                     |
+| 要素             | 重み | 計算式                                            |
+| ---------------- | ---- | ------------------------------------------------- |
+| レイテンシスコア | 35%  | `threshold / max(value, ε)`                       |
+| エラースコア     | 35%  | `threshold / max(value, ε)`                       |
+| ヘルススコア     | 15%  | `1.0` (CLOSED) / `0.5` (HALF_OPEN) / `0.0` (OPEN) |
+| コストスコア     | 10%  | `threshold / max(value, ε)` または逆正規化        |
+| 安定性スコア     | 5%   | レイテンシ標準偏差の逆正規化                      |
 
-`hardConstraints: true` の場合、候補はまず**違反スコア**（SLOをどの程度超過しているか）を基準にソートされ、次に複合スコアを基準にソートされます。それ以外の場合は、複合スコアのみが使用されます。
+`hardConstraints: true` の場合、候補は主に**違反スコア**
+（いずれかの SLO をどの程度超過しているか）で並べ替えられ、その後に複合スコアで並べ替えられます。それ以外の場合は、
+複合スコアのみが使用されます。
 
 ```ts
 class SLAStrategyImpl implements RouterStrategy {
   readonly name = "sla-aware";
   readonly description =
-    "レイテンシー、エラー率、コストに関するSLOを満たす可能性が最も高いプロバイダーを選択します";
+    "Selects the provider most likely to satisfy latency, error-rate, and cost SLOs";
 
   select(pool, context) {
-    // ポリシー（{ targetP95Ms, maxErrorRate, maxCostPer1MTokens, hardConstraints }）に照らして各候補をスコアリングします
+    // ... 各候補をポリシーと照合してスコアリングします: { targetP95Ms, maxErrorRate, maxCostPer1MTokens, hardConstraints }
   }
 }
 ```
 
-**SLAフィールド**（コンボ設定で指定）:
+**SLA フィールド**（コンボ設定に指定）:
 
 ```json
 {
@@ -587,7 +612,7 @@ class SLAStrategyImpl implements RouterStrategy {
 }
 ```
 
-**使用する場面**: レイテンシー、エラー率、コストについて厳格な予算が設定されている本番ワークロード。
+**使用する場面**: レイテンシ、エラー率、またはコストの予算が厳格な本番ワークロード。
 
 **エイリアス**: `sla-aware`、`sla`
 
@@ -595,13 +620,14 @@ class SLAStrategyImpl implements RouterStrategy {
 
 #### 5. `lkgp` — 最後に正常だったプロバイダーを優先
 
-**最後に正常だったプロバイダー**（設定されている場合）を最初に試し、その後 `rules` 戦略にフォールバックします。同じプロバイダーが会話内の後続リクエストを処理する、セッションのスティッキネスに役立ちます。
+**最後に正常だったプロバイダー**（設定されている場合）を最初に試し、その後
+`rules` ストラテジーにフォールバックします。セッションのスティッキネス、つまり会話内の
+後続リクエストを同じプロバイダーで処理する場合に便利です。
 
 ```ts
 class LKGPStrategyImpl implements RouterStrategy {
   readonly name = "lkgp";
-  readonly description =
-    "最後に正常だったプロバイダーを最初に試し、その後rulesにフォールバックします";
+  readonly description = "Tries last known good provider first, then falls back to rules";
 
   select(pool, context) {
     if (context.lkgpEnabled === false) {
@@ -617,21 +643,70 @@ class LKGPStrategyImpl implements RouterStrategy {
       }
     }
 
-    // rules戦略にフォールバック
+    // rules ストラテジーにフォールバック
     return getStrategy("rules").select(pool, context);
   }
 }
 ```
 
-**使用する場面**: 同じプロバイダーに後続リクエストを処理させたい複数ターンの会話（キャッシュ、コンテキストの継続性、料金の一貫性など）。
+**使用する場面**: 同じプロバイダーで後続リクエストを処理したい
+マルチターン会話（例: キャッシュ、コンテキストの連続性、料金の一貫性を確保する場合）。
 
 **エイリアス**: `lkgp`（エイリアスなし）
 
 ---
 
-### カスタムルーター戦略
+#### 6. `nadir` — Nadir によるプロンプト認識型のモデル選択
 
-公開APIを介して、独自の `RouterStrategy` 実装を登録できます。
+上記の各ストラテジーは、それぞれ独自のテレメトリに基づいて候補をランク付けしますが、リクエストの内容は
+読み取りません。`nadir` は、最後のユーザーターンとプール内のモデル ID を
+[Nadir](https://getnadir.com) の決定 API（`POST /v1/bucket`）に送信し、その候補から Nadir が選択したモデル
+（`simple` → 要件を満たす最も安価なモデル、`complex` → フロンティアモデル）にルーティングします。
+そのモデルを提供する接続は引き続き `rules` によって選択されるため、クォータ、
+ヘルス、およびコストに基づいて、使用するアカウントが決定されます。
+
+```json
+{
+  "strategy": "auto",
+  "config": {
+    "routerStrategy": "nadir",
+    "nadir": {
+      "apiKey": "ndr_...",
+      "baseUrl": "https://api.getnadir.com",
+      "timeoutMs": 2000
+    }
+  }
+}
+```
+
+`OMNIROUTE_NADIR_API_KEY` と `OMNIROUTE_NADIR_BASE_URL` は、この 2 つの
+文字列に対する環境変数のフォールバックです。`baseUrl` が必要なのは、セルフホスト型の Nadir を使用する場合のみです（末尾の `/v1` は許容されます）。
+キーなしの呼び出しは Nadir の匿名ティアに送られ、IP ごとにレート制限されます。キーを使用すると
+（[こちらで作成](https://app.getnadir.com/dashboard/api-keys)）、各決定が
+Nadir ダッシュボードに記録されます。完全なセットアップおよび検証手順:
+[getnadir.com/docs/gateway-omniroute](https://getnadir.com/docs/gateway-omniroute/)。
+
+外部に送信される内容: 最後のユーザーメッセージのテキスト（先頭 16,000 文字）、候補の
+モデル ID、および `source: "omniroute"` チャネルタグ。システムプロンプト、履歴、ツール、または
+ヘッダーは送信されません。
+
+障害時の動作はフェイルオープンです。タイムアウト（デフォルトは 2000 ms）、非 2xx 応答、到達不能な
+ホスト、不正な形式の応答、またはプール外の選択が発生した場合は `rules` の
+決定にフォールバックし、理由には `NadirStrategy: fallback (…)` というプレフィックスが付きます。呼び出しに失敗すると、
+ストラテジーは 30 秒間ネットワークアクセスをスキップするため、障害発生時のタイムアウトはリクエストごとではなく
+30 秒ごとに 1 回だけ発生します。ルーティングイベントで `strategy: "nadir"` が報告されるのは、Nadir が実際に
+選択を行った場合のみです。
+
+**使用する場面**: モデルのティアが複数（小規模、中規模、
+フロンティアモデル）にまたがるプールで難易度が混在するトラフィックを処理し、常にフロンティアモデルを使用するコストを削減したい場合。
+
+**エイリアス**: `nadir`（エイリアスなし）
+
+---
+
+### カスタムルーターストラテジー
+
+公開 API を介して、独自の `RouterStrategy` 実装を登録できます。
 
 ```ts
 import {
@@ -641,7 +716,7 @@ import {
 
 class MyCustomStrategy implements RouterStrategy {
   readonly name = "my-custom";
-  readonly description = "独自のカスタムルーティング戦略";
+  readonly description = "My custom routing strategy";
 
   select(pool, context) {
     // ここにルーティングロジックを記述します
@@ -672,15 +747,16 @@ registerStrategy("my-custom", new MyCustomStrategy());
 
 ---
 
-### ルーター戦略の選択ガイド
+### ルーターストラテジー選択ガイド
 
-| ユースケース               | 戦略        | 理由                                          |
-| -------------------------- | ----------- | --------------------------------------------- |
-| バランス重視のワークロード | `rules`     | デフォルト — すべての要素を考慮               |
-| コストの最小化             | `cost`      | 常に最も安価なものを選択                      |
-| レイテンシーの最小化       | `latency`   | 最も高速で信頼性の高いプロバイダーを選択      |
-| 厳格なSLO                  | `sla-aware` | p95、エラー、コストのしきい値でフィルタリング |
-| 複数ターンのチャット       | `lkgp`      | セッションのスティッキネス                    |
+| ユースケース                 | 戦略        | 理由                                            |
+| ---------------------------- | ----------- | ----------------------------------------------- |
+| バランスの取れたワークロード | `rules`     | デフォルト — すべての要因を考慮                 |
+| コストの最小化               | `cost`      | 常に最も安価なものを選択                        |
+| レイテンシーの最小化         | `latency`   | 最も高速で信頼性の高いプロバイダーを選択        |
+| 厳格なSLO                    | `sla-aware` | p95、エラー率、コストのしきい値でフィルタリング |
+| マルチターンチャット         | `lkgp`      | セッションの固定性                              |
+| 難易度が混在する場合         | `nadir`     | プロンプトごとにモデル階層を選択                |
 
 SLA対応フィールド:
 
@@ -762,5 +838,5 @@ Tier 1（サブスクリプション）を強く優先するには、`tierPriori
 | `open-sse/services/autoCombo/autoPrefix.ts`               | `auto/`プレフィックスパーサー + 6つのバリアント                                                                |
 | `open-sse/services/autoCombo/virtualFactory.ts`           | 稼働中の接続からインメモリの`AutoComboConfig`を構築                                                            |
 | `open-sse/services/autoCombo/providerRegistryAccessor.ts` | プロバイダーレジストリをモックするためのテストフック                                                           |
-| `src/shared/constants/routingStrategies.ts`               | `ROUTING_STRATEGY_VALUES`（19種類の戦略）                                                                      |
+| `src/shared/constants/routingStrategies.ts`               | `ROUTING_STRATEGY_VALUES`（20種類の戦略）                                                                      |
 | `src/sse/handlers/chat.ts`                                | 統合：auto-prefixのショートサーキット                                                                          |

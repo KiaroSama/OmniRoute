@@ -61,6 +61,8 @@ interface NormalizeComboStepOptions {
   comboName?: string | null;
   index?: number;
   allCombos?: ComboCollectionLike;
+  /** Precomputed names from allCombos, so a caller normalizing many steps scans them only once. */
+  comboNames?: ReadonlySet<string>;
 }
 
 interface NormalizeComboRecordOptions {
@@ -143,10 +145,12 @@ function toFullModelString(model: string, providerId?: string | null): string {
 }
 
 function slugify(value: string): string {
+  // The first replace leaves at most one "-" at each edge, so the strip needs no quantifier
+  // (CodeQL #1165, js/polynomial-redos).
   const slug = value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .replace(/^-|-$/g, "");
   return slug.length > 0 ? slug : "step";
 }
 
@@ -168,7 +172,7 @@ function shouldTreatAsComboRef(
   options: NormalizeComboStepOptions
 ): boolean {
   if (providerId) return false;
-  const comboNames = collectComboNames(options.allCombos);
+  const comboNames = options.comboNames ?? collectComboNames(options.allCombos);
   return comboNames.has(target) || target === toTrimmedString(options.comboName);
 }
 

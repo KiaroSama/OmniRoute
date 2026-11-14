@@ -1,4 +1,8 @@
-import { fetchRemoteMedia } from "@/shared/network/remoteImageFetch";
+import { fetchRemoteMedia } from "./remoteMediaFetch.ts";
+
+// Re-exported for other engine media downloaders (DashScope TTS) so the engine keeps a
+// single import of this app module (open-sse → src boundary ratchet).
+export { fetchRemoteMedia };
 
 import {
   MAX_CURSOR_IMAGE_DECODE_EDGE,

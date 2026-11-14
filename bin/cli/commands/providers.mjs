@@ -185,6 +185,7 @@ async function runProviderTest(db, connection, { serverUp = false } = {}) {
         connection: publicConnection(connection),
         ...result,
         skipped: true,
+        error: "No local probe for this provider; start OmniRoute to run its server-owned test",
       };
     }
     updateProviderTestResult(db, connection.id, result);
@@ -281,15 +282,17 @@ export async function runTestCommand(selector, opts = {}) {
       return 1;
     }
 
-    const result = await runProviderTest(db, connection);
+    const result = await runProviderTest(db, connection, { serverUp: await isServerUp() });
     if (opts.json) {
       console.log(JSON.stringify(result, null, 2));
+    } else if (result.skipped) {
+      console.log(`\x1b[33mSKIP\x1b[0m ${connection.name}: ${result.error}`);
     } else if (result.valid) {
       console.log(`\x1b[32mOK\x1b[0m ${connection.name}: provider test passed`);
     } else {
       console.log(`\x1b[31mFAIL\x1b[0m ${connection.name}: ${result.error}`);
     }
-    return result.valid ? 0 : 1;
+    return result.skipped ? 3 : result.valid ? 0 : 1;
   } finally {
     db.close();
   }
@@ -356,6 +359,50 @@ export async function runValidateCommand(opts = {}) {
     return results.some((result) => !result.valid) ? 1 : 0;
   } finally {
     db.close();
+  }
+}
+
+// The quota cache hydrates from `quota_snapshots` on a cold start, so a rotated
+// key would inherit the old key's exhausted pause. Retire the latest row of every
+// window the same way src/domain/quotaSnapshotPersistence.ts does: append a
+// retirement record, keep the history. A CLI-only database has no such table.
+const RETIRED_QUOTA_WINDOW_RAW_DATA = JSON.stringify({ retired: true });
+
+function retireQuotaSnapshots(db, connectionId) {
+  try {
+    db.prepare(
+      `INSERT INTO quota_snapshots
+         (provider, connection_id, window_key, remaining_percentage, is_exhausted,
+          next_reset_at, window_duration_ms, raw_data, created_at)
+       SELECT provider, connection_id, window_key, NULL, 0, NULL, NULL, @raw, @now
+         FROM quota_snapshots
+        WHERE connection_id = @id
+          AND id IN (SELECT MAX(id) FROM quota_snapshots WHERE connection_id = @id GROUP BY window_key)
+          AND COALESCE(raw_data, '') != @raw`
+    ).run({
+      id: connectionId,
+      raw: RETIRED_QUOTA_WINDOW_RAW_DATA,
+      now: new Date().toISOString(),
+    });
+  } catch (error) {
+    if (!/no such table/i.test(String(error?.message))) throw error;
+  }
+}
+
+// The key is already written when this runs, so a failure here (locked or read-only database)
+// is a warning: it must not turn a finished rotation into a failed command.
+async function retireQuotaSnapshotsAfterRotate(connectionId) {
+  try {
+    const { db } = await openOmniRouteDb();
+    try {
+      retireQuotaSnapshots(db, connectionId);
+    } finally {
+      db.close();
+    }
+  } catch (error) {
+    console.warn(
+      `Warning: the key was rotated, but the old quota snapshots were not cleared (${error?.message ?? error}).`
+    );
   }
 }
 
@@ -477,6 +524,8 @@ export async function runProvidersRotateCommand(selector, opts = {}) {
     }
   }
 
+  await retireQuotaSnapshotsAfterRotate(connection.id);
+
   console.log(
     t("providers.rotate.success", { name: connection.name, id: connection.id.slice(0, 8) })
   );
@@ -509,14 +558,38 @@ export async function runProvidersStatusCommand(opts = {}) {
     return 3;
   }
 
-  const res = await apiFetch("/api/providers/expiration", { acceptNotOk: true, retry: false });
+  const res = await apiFetch("/api/providers", { acceptNotOk: true, retry: false });
   if (!res.ok) {
     console.error(t("common.error", { message: `HTTP ${res.status}` }));
     return 1;
   }
 
   const data = await res.json();
-  const list = data.list || [];
+  const expirationRes = await apiFetch("/api/providers/expiration", {
+    acceptNotOk: true,
+    retry: false,
+  }).catch(() => null);
+  const expirationData = expirationRes?.ok ? await expirationRes.json().catch(() => ({})) : {};
+  const expirations = new Map(
+    (expirationData.list || []).map((entry) => [entry.connectionId, entry])
+  );
+  // Expiration is optional metadata, not the inventory of configured connections.
+  // Project public fields explicitly: the management API may reveal API keys by policy.
+  const list = (data.connections || []).map((connection) => {
+    const expiration = expirations.get(connection.id);
+    return {
+      ...publicConnection(connection),
+      connectionId: connection.id,
+      connectionName: connection.name ?? expiration?.connectionName ?? "",
+      expiryType: expiration?.expiryType ?? null,
+      alertDays: expiration?.alertDays ?? null,
+      lastChecked: expiration?.lastChecked ?? null,
+      note: expiration?.note ?? null,
+      expiresAt: expiration?.expiresAt ?? connection.expiresAt ?? null,
+      status: expiration?.status ?? "unknown",
+      rateLimitedUntil: connection.rateLimitedUntil ?? null,
+    };
+  });
 
   // Optional provider filter
   const filter = opts.provider ? String(opts.provider).toLowerCase() : null;

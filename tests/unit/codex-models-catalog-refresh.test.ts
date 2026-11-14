@@ -30,6 +30,8 @@ const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-codex-mod
 process.env.DATA_DIR = TEST_DATA_DIR;
 process.env.API_KEY_SECRET = process.env.API_KEY_SECRET || "catalog-test-secret";
 
+await import("../_helpers/offlineCatalogDiscovery.ts");
+
 const core = await import("../../src/lib/db/core.ts");
 const apiKeysDb = await import("../../src/lib/db/apiKeys.ts");
 const modelsDb = await import("../../src/lib/db/models.ts");
@@ -37,7 +39,7 @@ const providersDb = await import("../../src/lib/db/providers.ts");
 const v1ModelsCatalog = await import("../../src/app/api/v1/models/catalog.ts");
 
 type CatalogResponse = {
-  data?: Array<{ id: string }>;
+  data?: Array<{ id: string; visibility?: string }>;
 };
 
 async function resetStorage() {
@@ -126,6 +128,8 @@ test("v1 models catalog exposes remote-only Codex IDs from the discovery cache",
       id: "codex-auto-review",
       name: "Codex Auto Review Remote",
       source: "imported",
+      visibility: "hide",
+      supportedInApi: true,
       supportedEndpoints: ["responses"],
     },
     {
@@ -150,6 +154,10 @@ test("v1 models catalog exposes remote-only Codex IDs from the discovery cache",
 
   assert.equal(response.status, 200);
   assert.equal(ids.has("cx/codex-auto-review"), true);
+  assert.equal(
+    (body.data || []).find((item) => item.id === "cx/codex-auto-review")?.visibility,
+    "hide"
+  );
   assert.equal(ids.has("cx/future-codex-model"), true);
   assert.equal(ids.has("codex/future-codex-model"), true);
   assert.equal(ids.has("cx/gpt-5.4-mini"), false);

@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import Card from "@/shared/components/Card";
+import ChatGptLocalUsage from "@/shared/components/ChatGptLocalUsage";
+import { hasChatGptUsageLimit } from "@/shared/utils/chatgptPlanUi";
 import {
   isProviderBillingProvider,
   type ProviderBillingStatus,
@@ -20,12 +22,14 @@ import {
 } from "./utils";
 import QuotaCardHeader from "./parts/QuotaCardHeader";
 import QuotaCardExpanded from "./parts/QuotaCardExpanded";
+import { useQuotaClock } from "./useQuotaClock";
 import ProviderUsdCostModal from "./ProviderUsdCostModal";
+import type { CodexPaidCredits } from "@/lib/providers/codexPaidCredits";
 
 const STATUS_BORDER: Record<CardStatus, string> = {
-  critical: "#ef4444",
-  alert: "#eab308",
-  ok: "#22c55e",
+  critical: "var(--color-error)",
+  alert: "var(--color-warning)",
+  ok: "var(--color-success)",
   empty: "transparent",
 };
 
@@ -39,7 +43,14 @@ interface QuotaCardProps {
         plan?: string | null;
         message?: string | null;
         billing?: ProviderBillingStatus | null;
-        raw?: { billing?: ProviderBillingStatus | null };
+        raw?: {
+          billing?: ProviderBillingStatus | null;
+          bankedResetCredits?: number;
+          quotaGroups?: Array<Record<string, unknown>>;
+          paidCredits?: CodexPaidCredits;
+          speed?: unknown;
+          modelUsage?: unknown;
+        };
         stale?: { since?: string; reason?: string } | null;
       }
     | undefined;
@@ -81,15 +92,21 @@ export default function QuotaCard({
   onShowQuota,
 }: QuotaCardProps) {
   const isActive = connection.isActive ?? true;
+  const clockNow = useQuotaClock();
   const [costModalOpen, setCostModalOpen] = useState(false);
   const rawQuotas = quota?.quotas ?? EMPTY_QUOTAS;
+  // Per-account visibility (9router#4767); provider entry is a legacy fallback.
+  const visibilityScope = useMemo(
+    () => ({ connectionId: connection.id, provider: connection.provider }),
+    [connection.id, connection.provider]
+  );
   const quotas = useMemo(
-    () => filterQuotasByVisibility(connection.provider, rawQuotas, quotaVisibility),
-    [connection.provider, rawQuotas, quotaVisibility]
+    () => filterQuotasByVisibility(visibilityScope, rawQuotas, quotaVisibility),
+    [visibilityScope, rawQuotas, quotaVisibility]
   );
   const hiddenQuotaRows = useMemo(
-    () => getHiddenQuotaRows(connection.provider, rawQuotas, quotaVisibility),
-    [connection.provider, rawQuotas, quotaVisibility]
+    () => getHiddenQuotaRows(visibilityScope, rawQuotas, quotaVisibility),
+    [visibilityScope, rawQuotas, quotaVisibility]
   );
   const cardStatus = useMemo<CardStatus>(() => worstStatus(quotas), [quotas]);
   const tierMeta = useMemo(
@@ -99,7 +116,8 @@ export default function QuotaCard({
           quota?.plan ?? null,
           connection.providerSpecificData ?? null,
           connection.provider
-        )
+        ),
+        connection.provider
       ),
     [quota?.plan, connection.providerSpecificData, connection.provider]
   );
@@ -128,7 +146,10 @@ export default function QuotaCard({
   const hasStaleData = !!quota?.stale;
   const displayRefreshedAt = quota?.stale?.since || refreshedAt;
   const canEditCutoff = computeCanEditCutoff(quotas);
-  const canRedeemResetCredit = computeCanRedeemResetCredit(connection.provider, quotas);
+  const canRedeemResetCredit = computeCanRedeemResetCredit(connection.provider, quotas, {
+    raw: quota?.raw,
+    authType: connection.authType,
+  });
 
   return (
     <Card
@@ -146,33 +167,48 @@ export default function QuotaCard({
         hasStaleData={hasStaleData}
         onToggleActive={onToggleActive}
         togglingActive={togglingActive}
+        onTestSent={onRefresh}
+        now={clockNow}
       />
-      <QuotaCardExpanded
-        quotas={quotas}
-        providerId={connection.provider}
-        loading={loading}
-        error={error}
-        message={quota?.message ?? null}
-        billing={
-          isProviderBillingProvider(connection.provider)
-            ? (quota?.billing ?? quota?.raw?.billing)
-            : null
-        }
-        refreshedAt={displayRefreshedAt}
-        hasStaleData={hasStaleData}
-        onRefresh={onRefresh}
-        onOpenCutoff={onOpenCutoff}
-        onOpenCost={() => setCostModalOpen(true)}
-        onOpenResetCredits={onOpenResetCredits}
-        hiddenQuotaRows={hiddenQuotaRows}
-        onHideQuota={onHideQuota}
-        onShowQuota={onShowQuota}
-        canEditCutoff={canEditCutoff}
-        hasCutoffOverrides={hasOverrides}
-        canRedeemResetCredit={canRedeemResetCredit}
-        redeemingResetCredit={redeemingResetCredit}
-        loadingResetCredits={loadingResetCredits}
-      />
+      {connection.provider === "chatgpt" && (
+        <ChatGptLocalUsage
+          connectionId={connection.id}
+          limitReached={hasChatGptUsageLimit(connection)}
+        />
+      )}
+      {connection.provider !== "chatgpt" && (
+        <QuotaCardExpanded
+          quotas={quotas}
+          quotaGroups={quota?.raw?.quotaGroups}
+          paidCredits={connection.provider === "codex" ? quota?.raw?.paidCredits : undefined}
+          speed={quota?.raw?.speed}
+          now={clockNow}
+          cursorModelUsage={connection.provider === "cursor" ? quota?.raw?.modelUsage : undefined}
+          providerId={connection.provider}
+          loading={loading}
+          error={error}
+          message={quota?.message ?? null}
+          billing={
+            isProviderBillingProvider(connection.provider)
+              ? (quota?.billing ?? quota?.raw?.billing)
+              : null
+          }
+          refreshedAt={displayRefreshedAt}
+          hasStaleData={hasStaleData}
+          onRefresh={onRefresh}
+          onOpenCutoff={onOpenCutoff}
+          onOpenCost={() => setCostModalOpen(true)}
+          onOpenResetCredits={onOpenResetCredits}
+          hiddenQuotaRows={hiddenQuotaRows}
+          onHideQuota={onHideQuota}
+          onShowQuota={onShowQuota}
+          canEditCutoff={canEditCutoff}
+          hasCutoffOverrides={hasOverrides}
+          canRedeemResetCredit={canRedeemResetCredit}
+          redeemingResetCredit={redeemingResetCredit}
+          loadingResetCredits={loadingResetCredits}
+        />
+      )}
       <ProviderUsdCostModal
         isOpen={costModalOpen}
         onClose={() => setCostModalOpen(false)}

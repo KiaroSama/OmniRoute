@@ -89,6 +89,16 @@
       "disposition": "separately-invoked"
     },
     {
+      "name": "check:boundary",
+      "command": "node scripts/quality/measure-boundary.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "check:boundary:ratchet",
+      "command": "node scripts/quality/measure-boundary.mjs --ratchet",
+      "disposition": "separately-invoked"
+    },
+    {
       "name": "check:cycles",
       "command": "node scripts/check/check-cycles.mjs",
       "disposition": "separately-invoked"
@@ -101,6 +111,11 @@
     {
       "name": "check:dashboard-typecheck",
       "command": "node scripts/check/check-dashboard-typecheck.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "check:build-typecheck",
+      "command": "node scripts/check/check-build-typecheck.mjs",
       "disposition": "separately-invoked"
     },
     {
@@ -379,6 +394,11 @@
       "disposition": "separately-invoked"
     },
     {
+      "name": "check:test-tla-order",
+      "command": "node scripts/check/check-test-tla-order.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
       "name": "check:test-masking",
       "command": "node scripts/check/check-test-masking.mjs",
       "disposition": "separately-invoked"
@@ -401,6 +421,16 @@
     {
       "name": "check:type-coverage",
       "command": "node scripts/check/check-type-coverage.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "check:type-scale-ratchet",
+      "command": "node scripts/check/check-type-scale-ratchet.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "check:ui-icu",
+      "command": "node scripts/i18n/check-ui-icu.mjs",
       "disposition": "separately-invoked"
     },
     {
@@ -436,6 +466,11 @@
     {
       "name": "lint:prose",
       "command": "vale docs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "quality:boundary",
+      "command": "node scripts/quality/measure-boundary.mjs",
       "disposition": "separately-invoked"
     },
     {
@@ -480,7 +515,7 @@
     },
     {
       "name": "test",
-      "command": "cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 \"tests/unit/dashboard/**/*.test.ts\" && npm run test:unit:serial",
+      "command": "cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,chatcore,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 \"tests/unit/dashboard/**/*.test.ts\" && npm run test:unit:serial",
       "disposition": "separately-invoked"
     },
     {
@@ -535,12 +570,12 @@
     },
     {
       "name": "test:coverage:runner",
-      "command": "node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=8 tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true NODE_OPTIONS=--max-old-space-size=8192 c8 --merge-async --output-dir coverage --exclude=tests/** --exclude=**/*.test.* --reporter=text-summary --reporter=html --reporter=json-summary --reporter=lcov --check-coverage --statements 60 --lines 60 --functions 60 --branches 60 node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=8 \"tests/unit/dashboard/**/*.test.ts\" && npm run test:unit:serial",
+      "command": "node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=8 tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,chatcore,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true NODE_OPTIONS=--max-old-space-size=8192 c8 --merge-async --output-dir coverage --exclude=tests/** --exclude=**/*.test.* --reporter=text-summary --reporter=html --reporter=json-summary --reporter=lcov --check-coverage --statements 60 --lines 60 --functions 60 --branches 60 node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=8 \"tests/unit/dashboard/**/*.test.ts\" && npm run test:unit:serial",
       "disposition": "separately-invoked"
     },
     {
       "name": "test:e2e",
-      "command": "node scripts/dev/run-playwright-tests.mjs test tests/e2e/*.spec.ts",
+      "command": "node scripts/dev/run-playwright-tests.mjs",
       "disposition": "separately-invoked"
     },
     {
@@ -571,6 +606,11 @@
     {
       "name": "test:mutation",
       "command": "stryker run",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "test:opencode:smoke",
+      "command": "node scripts/test/opencode-chatgpt-web-smoke.mjs",
       "disposition": "separately-invoked"
     },
     {
@@ -609,28 +649,33 @@
       "disposition": "separately-invoked"
     },
     {
+      "name": "test:services:int",
+      "command": "cross-env RUN_SERVICES_INT=1 DISABLE_SQLITE_AUTO_BACKUP=true node --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=1 \"tests/integration/services/*.test.ts\"",
+      "disposition": "separately-invoked"
+    },
+    {
       "name": "test:system",
       "command": "cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=1 tests/e2e/system-failover.test.ts",
       "disposition": "separately-invoked"
     },
     {
       "name": "test:unit",
-      "command": "cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 \"tests/unit/dashboard/**/*.test.ts\" && npm run test:unit:serial",
+      "command": "cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,chatcore,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 \"tests/unit/dashboard/**/*.test.ts\" && npm run test:unit:serial",
       "disposition": "separately-invoked"
     },
     {
       "name": "test:unit:ci",
-      "command": "cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 \"tests/unit/dashboard/**/*.test.ts\" && npm run test:unit:serial",
+      "command": "cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,chatcore,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 \"tests/unit/dashboard/**/*.test.ts\" && npm run test:unit:serial",
       "disposition": "separately-invoked"
     },
     {
       "name": "test:unit:ci:shard",
-      "command": "cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 --test-shard=$TEST_SHARD tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 --test-shard=$TEST_SHARD \"tests/unit/dashboard/**/*.test.ts\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=1 --test-shard=$TEST_SHARD \"tests/unit/serial/**/*.test.ts\"",
+      "command": "cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 --test-shard=$TEST_SHARD tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,chatcore,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=4 --test-shard=$TEST_SHARD \"tests/unit/dashboard/**/*.test.ts\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=1 --test-shard=$TEST_SHARD \"tests/unit/serial/**/*.test.ts\"",
       "disposition": "separately-invoked"
     },
     {
       "name": "test:unit:fast",
-      "command": "cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-isolation=none tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-isolation=none \"tests/unit/dashboard/**/*.test.ts\" && npm run test:unit:serial",
+      "command": "cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-isolation=none tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,chatcore,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-isolation=none \"tests/unit/dashboard/**/*.test.ts\" && npm run test:unit:serial",
       "disposition": "separately-invoked"
     },
     {
@@ -645,12 +690,12 @@
     },
     {
       "name": "test:unit:shard:1",
-      "command": "cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=10 --test-shard=1/2 tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=10 --test-shard=1/2 \"tests/unit/dashboard/**/*.test.ts\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=1 --test-shard=1/2 \"tests/unit/serial/**/*.test.ts\"",
+      "command": "cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=10 --test-shard=1/2 tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,chatcore,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=10 --test-shard=1/2 \"tests/unit/dashboard/**/*.test.ts\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=1 --test-shard=1/2 \"tests/unit/serial/**/*.test.ts\"",
       "disposition": "separately-invoked"
     },
     {
       "name": "test:unit:shard:2",
-      "command": "cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=10 --test-shard=2/2 tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=10 --test-shard=2/2 \"tests/unit/dashboard/**/*.test.ts\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=1 --test-shard=2/2 \"tests/unit/serial/**/*.test.ts\"",
+      "command": "cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=10 --test-shard=2/2 tests/unit/*.test.ts \"tests/unit/{api,auth,authz,build,chatcore,cli,cli-helper,combo,compression,correctness,cors,db,db-adapters,docs,gamification,guardrails,lib,mcp,memory,runtime,security,services,settings,shared,translator,ui,usage}/**/*.test.ts\" \"tests/unit/**/*.test.mjs\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=10 --test-shard=2/2 \"tests/unit/dashboard/**/*.test.ts\" && cross-env DISABLE_SQLITE_AUTO_BACKUP=true node --max-old-space-size=8192 --import tsx/esm --import ./open-sse/utils/setupPolyfill.ts --import ./tests/_setup/isolateDataDir.ts --test --test-force-exit --test-concurrency=1 --test-shard=2/2 \"tests/unit/serial/**/*.test.ts\"",
       "disposition": "separately-invoked"
     },
     {
@@ -669,8 +714,93 @@
       "disposition": "separately-invoked"
     },
     {
+      "name": "typecheck:build",
+      "command": "tsc --pretty false -p tsconfig.build.json",
+      "disposition": "separately-invoked"
+    },
+    {
       "name": "typecheck:noimplicit:core",
       "command": "tsc --pretty false -p tsconfig.typecheck-noimplicit-core.json",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "check:free-catalog-evidence",
+      "command": "node scripts/check/check-free-catalog-evidence.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "check:ui-kit-snapshot",
+      "command": "node scripts/check/check-ui-kit-snapshot.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "check:ui-kit-upstream",
+      "command": "node scripts/check/check-ui-kit-upstream.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "i18n:check",
+      "command": "node scripts/i18n/check-translation-drift.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "i18n:check-ui-coverage",
+      "command": "node scripts/i18n/check-ui-keys-coverage.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "i18n:check-value-drift",
+      "command": "node scripts/i18n/check-ui-value-drift.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "i18n:check-value-drift:warn",
+      "command": "node scripts/i18n/check-ui-value-drift.mjs --warn",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "i18n:check-glossary",
+      "command": "node scripts/i18n/check-glossary-consistency.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "i18n:check-glossary:ko",
+      "command": "node scripts/i18n/check-glossary-consistency.mjs --locale=ko",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "i18n:check-ratio",
+      "command": "node scripts/i18n/check-translation-ratio.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "i18n:check-ratio:update",
+      "command": "node scripts/i18n/check-translation-ratio.mjs --update",
+      "disposition": "maintenance"
+    },
+    {
+      "name": "audit:deps",
+      "command": "node scripts/quality/audit-dependencies.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "audit:electron",
+      "command": "npm --prefix electron audit --audit-level=critical && (npm --prefix electron audit --audit-level=high || echo '::warning::electron high-severity advisories present (non-blocking)')",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "i18n:check-new-keys",
+      "command": "node scripts/i18n/check-new-key-coverage.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "i18n:check-keys",
+      "command": "node scripts/i18n/check-key-completeness.mjs",
+      "disposition": "separately-invoked"
+    },
+    {
+      "name": "i18n:check-keys:cli",
+      "command": "node scripts/i18n/check-key-completeness.mjs --catalog=cli",
       "disposition": "separately-invoked"
     }
   ],
@@ -698,9 +828,11 @@
         "check:known-symbols",
         "check:route-guard-membership",
         "check:test-discovery",
+        "check:test-tla-order",
         "check:test-masking",
         "check:duplication",
-        "check:cycles"
+        "check:cycles:ratchet",
+        "check:boundary:ratchet"
       ]
     },
     "quality-scan-fast": {
@@ -726,6 +858,7 @@
         "check:known-symbols",
         "check:route-guard-membership",
         "check:test-discovery",
+        "check:test-tla-order",
         "check:test-masking"
       ]
     }

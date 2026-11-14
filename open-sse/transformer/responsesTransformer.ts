@@ -1,4 +1,8 @@
+import { transformStreamWithCancel } from "../utils/cancelableTransformStream.ts";
+import { RESPONSES_DEFERRED_COMPLETION_GRACE_MS } from "../config/constants.ts";
 import { appendToolCallArgumentDelta } from "../utils/toolCallArguments.ts";
+import { mergeCacheCreationFields } from "../utils/cacheWriteUsage.ts";
+import { ToolCallLifecycle } from "../translator/response/openai-responses/toolCallLifecycle.ts";
 import { shouldParseTextualReasoningTags } from "../handlers/responseSanitizer.ts";
 import { getReadableReasoningValue } from "../utils/reasoningFields.ts";
 import {
@@ -7,9 +11,9 @@ import {
 } from "../utils/reasoningPlaceholder.ts";
 import * as fs from "fs";
 import * as path from "path";
-import { resolveRequestToolIdentity } from "../translator/response/openai-responses/requestToolIdentity.ts";
 import { plaintextCollaborationFields } from "../translator/response/openai-responses/collaborationPlaintextMarker.ts";
 import { finalizeResponsesTerminalStatus } from "../translator/helpers/responsesTerminalStatus.ts";
+import { normalizeResponsesContextUsage } from "../utils/normalizeResponsesContextUsage.ts";
 
 // #10223: threshold for detecting corrupted request_id fields. Normal
 // request IDs are <100 chars. DeepSeek's SSE encoder bug produces 200+
@@ -123,6 +127,9 @@ function normalizeResponsesUsage(previous: unknown, raw: unknown): UsageRecord |
     usageNumber(inputDetails.cache_write_tokens) ??
     usageNumber(beforeInputDetails.cache_creation_tokens) ??
     usageNumber(beforeInputDetails.cache_write_tokens);
+  const cacheCreationInPrompt = [inputDetails, beforeInputDetails]
+    .map((details) => details.cache_creation_in_prompt)
+    .find((flag): flag is boolean => typeof flag === "boolean");
   const outputTokens =
     usageNumber(source.output_tokens) ??
     usageNumber(source.completion_tokens) ??
@@ -142,12 +149,18 @@ function normalizeResponsesUsage(previous: unknown, raw: unknown): UsageRecord |
     usageNumber(source.total_tokens) ??
     usageNumber(source.totalTokens) ??
     inputTokens + outputTokens;
+  const cacheFields = mergeCacheCreationFields(previous, raw);
 
   return {
+    ...cacheFields,
     input_tokens: inputTokens,
     input_tokens_details: {
+      ...cacheFields,
       cached_tokens: cachedTokens,
       ...(cacheCreationTokens !== undefined ? { cache_creation_tokens: cacheCreationTokens } : {}),
+      ...(cacheCreationTokens !== undefined && cacheCreationInPrompt !== undefined
+        ? { cache_creation_in_prompt: cacheCreationInPrompt }
+        : {}),
     },
     output_tokens: outputTokens,
     output_tokens_details: { reasoning_tokens: reasoningTokens },
@@ -207,16 +220,11 @@ export function createResponsesApiTransformStream(
   keepaliveIntervalMs = 3000,
   options: {
     customToolNames?: Iterable<string>;
+    toolSchemas?: ReadonlyMap<string, unknown> | null;
     requestToolIdentityMap?: ReadonlyMap<string, unknown> | null;
   } = {}
 ) {
-  const customToolNames = new Set(options.customToolNames || []);
-  // #14154 — #7936-style {namespace, name} identity restoration was missing
-  // entirely on this emitter (unlike the streaming translator / non-streaming
-  // client translator). Carried through so function_call/custom_tool_call
-  // items round-trip their namespace, and so the collaboration plaintext
-  // marker below can be gated on the restored namespace.
-  const requestToolIdentityMap = options.requestToolIdentityMap ?? null;
+  const lifecycle = new ToolCallLifecycle(options);
   const state = {
     seq: 0,
     responseId: `resp_${Date.now()}`,
@@ -237,7 +245,6 @@ export function createResponsesApiTransformStream(
     funcNames: {},
     funcCallIds: {},
     funcItemAdded: {},
-    funcItemTypes: {},
     funcArgsDone: {},
     funcItemDone: {},
     // Cached at first computation (see toolCallOutputIndexBase) so every
@@ -260,6 +267,7 @@ export function createResponsesApiTransformStream(
     // response.completed — a trailing usage-only chunk (choices: [], usage: {...}) may
     // still arrive for stream_options.include_usage=true upstreams.
     awaitingTrailingUsage: false,
+    completionTimer: null as ReturnType<typeof setTimeout> | null,
   };
 
   const encoder = new TextEncoder();
@@ -465,30 +473,32 @@ export function createResponsesApiTransformStream(
     return state.funcOutputIndex[tcIdx];
   };
 
-  const emitToolCallAdded = (controller, idx) => {
-    if (state.funcItemAdded[idx] || !state.funcCallIds[idx]) return false;
-
-    const customTool = customToolNames.has(state.funcNames[idx] || "");
-    const itemType = customTool ? "custom_tool_call" : "function_call";
-    state.funcItemTypes[idx] = itemType;
+  const emitToolCallAdded = (controller, idx, terminal = false) => {
+    if (state.funcItemAdded[idx] || !state.funcCallIds[idx]) return;
+    const selection = lifecycle.select(idx, state.funcNames[idx] || "", terminal);
+    if (!selection) return;
     state.funcItemAdded[idx] = true;
-    const name = state.funcNames[idx] || "";
-    const identity = resolveRequestToolIdentity(requestToolIdentityMap, name);
-
     emit(controller, "response.output_item.added", {
       type: "response.output_item.added",
       output_index: state.funcOutputIndex[idx],
       item: {
         id: `fc_${state.funcCallIds[idx]}`,
-        type: itemType,
-        ...(customTool ? { input: "" } : { arguments: "" }),
+        type: selection.custom ? "custom_tool_call" : "function_call",
+        ...(selection.custom ? { input: "" } : { arguments: "" }),
         call_id: state.funcCallIds[idx],
-        name: identity?.name ?? name,
-        ...(identity ? { namespace: identity.namespace } : {}),
+        name: selection.name,
+        ...(selection.namespace ? { namespace: selection.namespace } : {}),
         status: "in_progress",
       },
     });
-    return true;
+    if (state.funcArgsBuf[idx] && !selection.custom) {
+      emit(controller, "response.function_call_arguments.delta", {
+        type: "response.function_call_arguments.delta",
+        item_id: `fc_${state.funcCallIds[idx]}`,
+        output_index: state.funcOutputIndex[idx],
+        delta: state.funcArgsBuf[idx],
+      });
+    }
   };
 
   const closeToolCall = (controller, idx, recordAsCompleted = true) => {
@@ -496,9 +506,9 @@ export function createResponsesApiTransformStream(
     if (callId && !state.funcItemDone[idx]) {
       const normalizedIndex = state.funcOutputIndex[idx];
       let args = state.funcArgsBuf[idx] || "{}";
-      const toolName = state.funcNames[idx] || "";
-      emitToolCallAdded(controller, idx);
-      const isCustomTool = state.funcItemTypes[idx] === "custom_tool_call";
+      emitToolCallAdded(controller, idx, true);
+      const selection = lifecycle.get(idx)!;
+      const isCustomTool = selection.custom;
 
       // Fix #1674 & #1852: Final cleanup of empty string and empty array placeholders.
       // Custom-tool input is intentionally allowed to be an empty string.
@@ -550,7 +560,8 @@ export function createResponsesApiTransformStream(
           type: "custom_tool_call",
           input: rawInput,
           call_id: callId,
-          name: toolName,
+          name: selection.name,
+          ...(selection.namespace ? { namespace: selection.namespace } : {}),
           status: "completed",
         };
       } else {
@@ -565,20 +576,13 @@ export function createResponsesApiTransformStream(
           type: "function_call",
           arguments: args,
           call_id: callId,
-          name: toolName,
+          name: selection.name,
+          ...(selection.namespace ? { namespace: selection.namespace } : {}),
           status: "completed",
         };
       }
 
-      // #14154 — restore the request-declared {namespace, name} identity (matching
-      // the streaming translator / non-streaming client translator, #7936) and, when
-      // the restored identity is a Codex collaboration call, stamp the
-      // encrypted_function_args:[] plaintext-delivery marker Codex requires.
-      const identity = resolveRequestToolIdentity(requestToolIdentityMap, toolName);
-      if (identity) {
-        funcItem.namespace = identity.namespace;
-        funcItem.name = identity.name;
-      }
+      // Preserve the published identity when adding the collaboration plaintext marker.
       Object.assign(funcItem, plaintextCollaborationFields(funcItem.namespace, funcItem.name));
 
       emit(controller, "response.output_item.done", {
@@ -598,7 +602,15 @@ export function createResponsesApiTransformStream(
     }
   };
 
+  const clearCompletionTimer = () => {
+    if (state.completionTimer) {
+      clearTimeout(state.completionTimer);
+      state.completionTimer = null;
+    }
+  };
+
   const sendCompleted = (controller) => {
+    clearCompletionTimer();
     if (!state.completedSent) {
       state.completedSent = true;
 
@@ -617,7 +629,8 @@ export function createResponsesApiTransformStream(
       };
 
       if (state.usage) {
-        response.usage = state.usage;
+        // Keep aggregation in upstream units; only emitted Responses usage includes cache writes.
+        response.usage = normalizeResponsesContextUsage(state.usage);
       }
 
       const eventType = finalizeResponsesTerminalStatus(response, state.finishReason);
@@ -628,7 +641,12 @@ export function createResponsesApiTransformStream(
     }
   };
 
-  return new TransformStream(
+  // Fed to transform() from flush() so a message left in the buffer without its
+  // blank-line terminator (upstream closed right after the last `data:` line) still
+  // goes through the normal per-message path instead of being silently dropped.
+  const SSE_MESSAGE_TERMINATOR = encoder.encode("\n\n");
+
+  return transformStreamWithCancel<Uint8Array, Uint8Array>(
     {
       start(controller) {
         // Periodic keepalive heartbeat to prevent client timeouts (Codex CLI #2544)
@@ -652,7 +670,7 @@ export function createResponsesApiTransformStream(
       },
       transform(chunk, controller) {
         const text = decoder.decode(chunk, { stream: true });
-        logger?.logInput(text.trim());
+        if (text.trim()) logger?.logInput(text.trim());
         state.buffer += text;
 
         const messages = state.buffer.split("\n\n");
@@ -799,9 +817,9 @@ export function createResponsesApiTransformStream(
 
                 if (state.inThinking && content) {
                   emitReasoningDelta(controller, content);
-                  // Pre-existing behaviour (unrelated to #8081): a still-open
-                  // textual <think> block ends this message's handling early.
-                  continue;
+                  // Keep processing this chunk: reasoning text can arrive in
+                  // the same delta as a tool call and/or finish_reason.
+                  content = "";
                 }
               }
 
@@ -893,7 +911,7 @@ export function createResponsesApiTransformStream(
                 delete state.funcNames[tcIdx];
                 delete state.funcArgsBuf[tcIdx];
                 delete state.funcItemAdded[tcIdx];
-                delete state.funcItemTypes[tcIdx];
+                lifecycle.reset(tcIdx);
                 delete state.funcArgsDone[tcIdx];
                 delete state.funcItemDone[tcIdx];
                 // Deliberately keep funcOutputIndex[tcIdx]: the replacement call
@@ -902,30 +920,15 @@ export function createResponsesApiTransformStream(
                 // msgItemAdded state shifted mid-turn).
               }
 
-              if (funcName) state.funcNames[tcIdx] = funcName;
-
-              if (!state.funcCallIds[tcIdx] && newCallId) {
-                state.funcCallIds[tcIdx] = newCallId;
+              if (funcName) {
+                state.funcNames[tcIdx] = lifecycle.appendName(
+                  tcIdx,
+                  state.funcNames[tcIdx],
+                  funcName
+                );
               }
-
-              // The provider may send the call id before the function name. Defer the
-              // lifecycle item until the name is available so custom calls are not first
-              // announced as function calls.
-              if (state.funcCallIds[tcIdx] && state.funcNames[tcIdx]) {
-                const itemAdded = emitToolCallAdded(controller, tcIdx);
-                if (
-                  itemAdded &&
-                  state.funcItemTypes[tcIdx] !== "custom_tool_call" &&
-                  state.funcArgsBuf[tcIdx]
-                ) {
-                  emit(controller, "response.function_call_arguments.delta", {
-                    type: "response.function_call_arguments.delta",
-                    item_id: `fc_${state.funcCallIds[tcIdx]}`,
-                    output_index: outputIndex,
-                    delta: state.funcArgsBuf[tcIdx],
-                  });
-                }
-              }
+              if (!state.funcCallIds[tcIdx] && newCallId) state.funcCallIds[tcIdx] = newCallId;
+              emitToolCallAdded(controller, tcIdx);
 
               if (!state.funcArgsBuf[tcIdx]) state.funcArgsBuf[tcIdx] = "";
 
@@ -955,7 +958,7 @@ export function createResponsesApiTransformStream(
                   refCallId &&
                   emittedDelta &&
                   state.funcItemAdded[tcIdx] &&
-                  state.funcItemTypes[tcIdx] !== "custom_tool_call"
+                  lifecycle.get(tcIdx)?.custom !== true
                 ) {
                   emit(controller, "response.function_call_arguments.delta", {
                     type: "response.function_call_arguments.delta",
@@ -984,8 +987,21 @@ export function createResponsesApiTransformStream(
               // #6906: defer response.completed — a trailing usage-only chunk may
               // still arrive (stream_options.include_usage=true). The empty-choices
               // branch above (or flush() at stream end, as a fallback) actually
-              // calls sendCompleted().
+              // calls sendCompleted(). An upstream that sends neither usage nor
+              // [DONE] and keeps the connection open must not hold the client until
+              // the stall watchdog fires, so a short timer completes the response.
               state.awaitingTrailingUsage = true;
+              state.completionTimer = setTimeout(() => {
+                state.completionTimer = null;
+                try {
+                  sendCompleted(controller);
+                } catch (error) {
+                  // flush() and cancel() clear this timer, so a failure here happened on a live
+                  // stream: report it to the client. error() is a no-op on a closed stream.
+                  controller.error(error);
+                }
+              }, RESPONSES_DEFERRED_COMPLETION_GRACE_MS);
+              (state.completionTimer as { unref?: () => void })?.unref?.();
             }
           }
         }
@@ -997,11 +1013,19 @@ export function createResponsesApiTransformStream(
         // emitted within transform(), so normally there is nothing left; this
         // only releases a terminating truncated byte and frees the decoder.
         state.buffer += decoder.decode();
+        // Drain a final message that arrived without its "\n\n" terminator — typically
+        // the last text delta, the finish_reason chunk or the usage chunk. Must run
+        // BEFORE the close/complete calls below; sendCompleted() is idempotent
+        // (completedSent guard), so a drained finish_reason+usage chunk that already
+        // completes the response does not produce a second response.completed.
+        // Web Streams invokes transformer methods with `this` = the transformer object.
+        if (state.buffer.trim()) this.transform(SSE_MESSAGE_TERMINATOR, controller);
         // Clear keepalive timer
         if (state.keepaliveTimer) {
           clearInterval(state.keepaliveTimer);
           state.keepaliveTimer = null;
         }
+        clearCompletionTimer();
         for (const i in state.msgItemAdded) closeMessage(controller, i);
         closeReasoning(controller);
         for (const i in state.funcCallIds) closeToolCall(controller, i);
@@ -1020,6 +1044,7 @@ export function createResponsesApiTransformStream(
           clearInterval(state.keepaliveTimer);
           state.keepaliveTimer = null;
         }
+        clearCompletionTimer();
       },
     },
     { highWaterMark: 16384 },

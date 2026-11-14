@@ -2,17 +2,16 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { JsonView } from "@/shared/components/jsonView";
+import JsonTree from "@/shared/components/JsonTree";
 import { ChatBubble } from "@/app/(dashboard)/dashboard/tools/traffic-inspector/components/chat/ChatBubble";
 import { buildRequestTurns, buildResponseTurns } from "@/mitm/inspector/conversationNormalizer";
 import type { InterceptedRequest, NormalizedTurn } from "@/mitm/inspector/types";
-import { useTheme } from "@/shared/hooks/useTheme";
-import {
-  useTimestampTitles,
-  timestampMarkerCustomizeNode,
-} from "@/shared/hooks/useTimestampTitles";
+import { useTimestampTitles } from "@/shared/hooks/useTimestampTitles";
 import { JsonTreeExpandControls } from "@/shared/components/JsonTreeExpandControls";
 import { useJsonTreeExpandLevel } from "@/store/jsonTreeExpandStore";
+import { cn } from "@/shared/utils/cn";
+import Button from "./Button";
+import Icon from "./Icon";
 import {
   isPipelineSizeLimitMarker,
   isSizeLimitOmissionMarker,
@@ -56,7 +55,7 @@ export function isBodySizeLimitOmission(value) {
 }
 
 // ─── Payload Code Block ─────────────────────────────────────────────────────
-// Renders parsed payloads as a collapsible JSON tree (react18-json-view) so
+// Renders parsed payloads as a collapsible JSON tree (the kit JsonTree) so
 // deeply nested request/response bodies (tool args, message arrays) can be
 // collapsed instead of scrolled through as one raw text dump. Falls back to
 // the plain <pre> dump for anything that isn't valid JSON (e.g. a captured
@@ -76,7 +75,6 @@ export function PayloadSection({
   defaultOpen = true,
 }) {
   const t = useTranslations("requestLogger.detail");
-  const { isDark } = useTheme();
   const resolvedSectionId = sectionId || title;
   const expandLevel = useJsonTreeExpandLevel(resolvedSectionId);
   const [copied, setCopied] = useState(false);
@@ -107,59 +105,59 @@ export function PayloadSection({
     <div>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-3">
-          <h3 className="text-[11px] text-text-muted uppercase tracking-wider font-bold">
+          <h3 className="text-[11px] text-text-muted uppercase tracking-wider font-semibold">
             {title}
           </h3>
           {collapsible && (
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setOpen((v) => !v)}
-              className="p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors"
+              className="size-6 min-h-6 text-text-muted"
+              aria-expanded={open}
               aria-label={open ? t("collapse", { title }) : t("expand", { title })}
             >
-              <span className="material-symbols-outlined text-[16px]">
-                {open ? "expand_less" : "expand_more"}
-              </span>
-            </button>
+              <Icon name={open ? "expand_less" : "expand_more"} size={16} />
+            </Button>
           )}
         </div>
         <div className="flex items-center gap-2">
           {!notice && (
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={handleCopy}
-              className="flex items-center gap-1 px-2 py-1 text-xs text-text-muted hover:text-text-primary transition-colors"
+              className="h-7 min-h-7 px-2 text-xs text-text-muted"
               aria-label={t("copyTitle", { title })}
             >
-              <span className="material-symbols-outlined text-[14px]">
-                {copied ? "check" : "content_copy"}
-              </span>
+              <Icon name={copied ? "check" : "content_copy"} size={14} />
               {copied ? t("copied") : t("copy")}
-            </button>
+            </Button>
           )}
           {parsedJson !== null && <JsonTreeExpandControls sectionId={resolvedSectionId} />}
         </div>
       </div>
       {open && notice && (
-        <div className="p-4 rounded-xl border border-amber-500/40 bg-amber-500/10 text-xs text-amber-700 dark:text-amber-300 flex items-start gap-2">
-          <span className="material-symbols-outlined text-[16px] shrink-0">warning</span>
+        <div className="flex items-start gap-2 rounded-xl border border-warning/40 bg-warning/10 p-4 text-xs text-warning">
+          <Icon name="warning" size={16} />
           <span>{t("payloadSizeLimitOmitted")}</span>
         </div>
       )}
       {open && !notice && parsedJson !== null && (
         <div
           ref={treeContainerRef}
-          className="rounded-xl bg-black/5 dark:bg-black/30 border border-border max-h-150 overflow-auto p-4 text-xs font-mono"
+          className="max-h-150 overflow-auto rounded-xl border border-border bg-surface-2 p-4 font-mono text-xs"
         >
-          <JsonView
-            src={parsedJson}
-            dark={isDark}
-            collapsed={expandLevel}
-            customizeNode={timestampMarkerCustomizeNode}
-            displaySize
+          <JsonTree
+            value={parsedJson}
+            expandDepth={expandLevel}
+            showControls={false}
+            aria-label={title}
           />
         </div>
       )}
       {open && !notice && parsedJson === null && (
-        <pre className="p-4 rounded-xl bg-black/5 dark:bg-black/30 border border-border overflow-x-auto text-xs font-mono text-text-main max-h-150 overflow-y-auto leading-relaxed whitespace-pre-wrap break-words">
+        <pre className="max-h-150 overflow-x-auto overflow-y-auto whitespace-pre-wrap break-words rounded-xl border border-border bg-surface-2 p-4 font-mono text-xs leading-relaxed text-text-main">
           {json}
         </pre>
       )}
@@ -195,7 +193,28 @@ function asInterceptedResponseBody(responseBody: unknown): InterceptedRequest {
   };
 }
 
+// The request's own turns, plus its response or the partial text captured so far.
+function getConversationTurns(detail): NormalizedTurn[] {
+  const requestBody = detail?.requestBody ?? detail?.pipelinePayloads?.clientRequest ?? null;
+  const requestTurns = buildRequestTurns(requestBody) ?? [];
+  const responseBody = detail?.responseBody ?? null;
+  const responseTurns: NormalizedTurn[] =
+    responseBody != null
+      ? buildResponseTurns(asInterceptedResponseBody(responseBody))
+      : detail?.partialAssistantText
+        ? [{ role: "assistant", blocks: [{ type: "text", text: detail.partialAssistantText }] }]
+        : [];
+  return [...requestTurns, ...responseTurns];
+}
+
+/** Whether the Conversation tab has anything to show. An active request counts even with no turn
+ * yet: the section polls while it is mounted, and that poll is what brings the first text in. */
+export function hasConversationTurns(detail) {
+  return Boolean(detail?.active) || getConversationTurns(detail).length > 0;
+}
+
 export function ConversationContextSection({ log, detail }) {
+  const t = useTranslations("requestLogger.detail");
   const [open, setOpen] = useState(true);
   const [liveDetail, setLiveDetail] = useState(detail);
   const [liveRefresh, setLiveRefresh] = useState(() => {
@@ -268,24 +287,7 @@ export function ConversationContextSection({ log, detail }) {
     });
   };
 
-  const requestBody =
-    liveDetail?.requestBody ?? liveDetail?.pipelinePayloads?.clientRequest ?? null;
-  const requestTurns = buildRequestTurns(requestBody) ?? [];
-
-  const responseBody = liveDetail?.responseBody ?? null;
-  const responseTurns: NormalizedTurn[] =
-    responseBody != null
-      ? buildResponseTurns(asInterceptedResponseBody(responseBody))
-      : liveDetail?.partialAssistantText
-        ? [
-            {
-              role: "assistant",
-              blocks: [{ type: "text", text: liveDetail.partialAssistantText }],
-            },
-          ]
-        : [];
-
-  const allTurns: NormalizedTurn[] = [...requestTurns, ...responseTurns];
+  const allTurns = getConversationTurns(liveDetail);
 
   // Follow new content as it streams in — same idea as StreamSection's
   // autoscroll effect, tied to the same liveRefresh toggle.
@@ -294,24 +296,33 @@ export function ConversationContextSection({ log, detail }) {
     scrollToBottom();
   }, [allTurns.length, liveDetail?.partialAssistantText, liveRefresh, open]);
 
-  if (allTurns.length === 0) return null;
+  if (allTurns.length === 0) {
+    return liveDetail?.active ? (
+      <p className="p-8 text-center text-sm text-text-muted">{t("loadingDetails")}</p>
+    ) : null;
+  }
 
   return (
     <div>
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="flex items-center gap-3">
-          <h3 className="text-[11px] text-text-muted uppercase tracking-wider font-bold">
-            Conversation Context
+          <h3 className="text-[11px] text-text-muted uppercase tracking-wider font-semibold">
+            {t("conversationContext")}
           </h3>
-          <button
+          <Button
+            variant="ghost"
+            size="icon-sm"
             onClick={() => setOpen((v) => !v)}
-            className="p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors"
-            aria-label={open ? "Collapse Conversation Context" : "Expand Conversation Context"}
+            className="size-6 min-h-6 text-text-muted"
+            aria-expanded={open}
+            aria-label={
+              open
+                ? t("collapse", { title: t("conversationContext") })
+                : t("expand", { title: t("conversationContext") })
+            }
           >
-            <span className="material-symbols-outlined text-[16px]">
-              {open ? "expand_less" : "expand_more"}
-            </span>
-          </button>
+            <Icon name={open ? "expand_less" : "expand_more"} size={16} />
+          </Button>
           {liveDetail?.parentLogId && (
             // Full navigation, not client-side routing: the logs page only reads
             // ?id from a fresh mount (useState(() => searchParams.get("id")) in
@@ -320,10 +331,10 @@ export function ConversationContextSection({ log, detail }) {
             <a
               href={`/dashboard/logs?id=${encodeURIComponent(liveDetail.parentLogId)}`}
               className="flex items-center gap-1 text-[11px] text-text-muted hover:text-primary transition-colors"
-              title={`Continues from ${liveDetail.parentLogId}`}
+              title={t("continuesFrom", { id: liveDetail.parentLogId })}
             >
-              <span className="material-symbols-outlined text-[14px]">reply</span>
-              continues from parent
+              <Icon name="reply" size={14} />
+              {t("continuesFromParent")}
             </a>
           )}
           {liveDetail?.sessionTag && (
@@ -335,42 +346,47 @@ export function ConversationContextSection({ log, detail }) {
             <a
               href={`/dashboard/conversations?tree=${encodeURIComponent(liveDetail.sessionTag)}`}
               className="flex items-center gap-1 text-[11px] text-text-muted hover:text-primary transition-colors"
-              title={`Open conversation ${liveDetail.sessionTag}`}
+              title={t("openConversation", { id: liveDetail.sessionTag })}
             >
-              <span className="material-symbols-outlined text-[14px]">forum</span>
-              view conversation
+              <Icon name="forum" size={14} />
+              {t("viewConversation")}
             </a>
           )}
         </div>
         {open && (
           <div className="flex items-center gap-1">
             {liveDetail?.active && (
-              <button
+              <Button
+                variant="ghost"
+                size="icon-sm"
                 onClick={toggleLiveRefresh}
-                title={liveRefresh ? "Live refresh: on" : "Live refresh: off"}
-                className={`p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors ${liveRefresh ? "text-primary" : ""}`}
+                title={liveRefresh ? t("liveRefreshOn") : t("liveRefreshOff")}
+                // Static name + aria-pressed carries the on/off state ("Live refresh, pressed");
+                // the stateful wording stays in the tooltip.
+                aria-label={t("liveRefresh")}
+                className={cn("size-7 min-h-7", liveRefresh ? "text-primary" : "text-text-muted")}
                 aria-pressed={liveRefresh}
               >
-                <span className="material-symbols-outlined text-[18px]">
-                  {liveRefresh ? "sync" : "sync_disabled"}
-                </span>
-              </button>
+                <Icon name={liveRefresh ? "sync" : "sync_disabled"} size={18} />
+              </Button>
             )}
-            <button
+            <Button
+              variant="ghost"
+              size="icon-sm"
               onClick={scrollToBottom}
-              title="Go to bottom"
-              className="p-1 rounded hover:bg-bg-subtle text-text-muted hover:text-text-primary transition-colors"
-              aria-label="Go to bottom"
+              title={t("goToBottom")}
+              className="size-7 min-h-7 text-text-muted"
+              aria-label={t("goToBottom")}
             >
-              <span className="material-symbols-outlined text-[18px]">vertical_align_bottom</span>
-            </button>
+              <Icon name="vertical_align_bottom" size={18} />
+            </Button>
           </div>
         )}
       </div>
       {open && (
         <div
           ref={turnsBoxRef}
-          className="rounded-xl bg-black/5 dark:bg-black/30 border border-border max-h-150 overflow-y-auto p-3 space-y-2"
+          className="max-h-150 space-y-2 overflow-y-auto rounded-xl border border-border bg-surface-2 p-3"
         >
           {allTurns.map((turn, i) => (
             <ChatBubble key={i} turn={turn} />

@@ -8,6 +8,8 @@
  * executor may still emit multiple independent tool calls in parallel.
  */
 import { errorResponse } from "../utils/error.ts";
+import { compactAgenticBody, type AgenticCompactionConfig } from "./agenticCompaction.ts";
+import { stalledToolLoopReason } from "./agenticLoopGuard.ts";
 import type { ComboLogger, HandleSingleModel, ResolvedComboTarget } from "./combo/types.ts";
 import { extractPanelText, isToolBearingRequest } from "./fusion.ts";
 import { prependSystemInstruction, type PipelineStep } from "./pipeline.ts";
@@ -17,6 +19,7 @@ type Body = Record<string, unknown>;
 export type AgenticOrchestrationConfig = {
   enabled?: boolean;
   maxToolRounds?: number;
+  contextCompaction?: AgenticCompactionConfig;
 };
 
 export type HandleAgenticPipelineOptions = {
@@ -242,6 +245,91 @@ function finalPrompt(draft: string): string {
     .join("\n\n");
 }
 
+async function readPlannerDecision(
+  response: Response,
+  model: string,
+  continuation: boolean,
+  log: ComboLogger
+): Promise<RouteDecision | Response> {
+  let decisionText = "";
+  try {
+    // The internal planner decision is never returned to the client. Reading
+    // the original response avoids teeing its stream and leaving an unread
+    // clone branch retained until the response is collected.
+    decisionText = extractPanelText(await response.json());
+  } catch {
+    return errorResponse(502, `Agentic planner (${model}) returned an unparseable response`);
+  }
+  if (!decisionText.trim()) {
+    return errorResponse(502, `Agentic planner (${model}) returned an empty decision`);
+  }
+
+  const decision = parseDecision(decisionText, continuation);
+  if (!decision.explicit) {
+    log.warn(
+      "AGENTIC_PIPELINE",
+      `Planner ${model} omitted OMNIROUTE_ROUTE; using safe ${decision.route.toUpperCase()} fallback`
+    );
+  }
+
+  return decision;
+}
+
+async function dispatchExecutors(
+  body: Body,
+  executors: PipelineStep[],
+  plan: string,
+  handleSingleModel: HandleSingleModel,
+  log: ComboLogger
+): Promise<Response> {
+  let lastFailure = errorResponse(502, "All configured agentic tool executors failed");
+  for (const executor of executors) {
+    const model = stepModel(executor);
+    const request = prependSystemInstruction(
+      structuredClone(body),
+      [executor.prompt, executorPrompt(plan)].filter(Boolean).join("\n\n")
+    );
+    log.info("AGENTIC_PIPELINE", `Routing client-facing tool turn to ${model}`);
+    try {
+      const response = await handleSingleModel(request, model, stepTarget(executor));
+      if (response.ok) return response;
+      lastFailure = response;
+      log.warn("AGENTIC_PIPELINE", `Tool executor ${model} failed with ${response.status}`);
+      // Only discard a failed body when another executor remains. Never retry SSE
+      // after a successful response starts; preserve the final failure intact.
+      if (executor !== executors.at(-1)) await response.body?.cancel().catch(() => undefined);
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") throw error;
+      log.warn("AGENTIC_PIPELINE", `Tool executor ${model} failed before responding`);
+      lastFailure = errorResponse(502, "All configured agentic tool executors failed");
+    }
+  }
+  return lastFailure;
+}
+
+/** Wrap a model dispatcher so every planner/executor body is compacted to its model budget first. */
+function createCompactingDispatch(
+  handleSingleModel: HandleSingleModel,
+  log: ComboLogger,
+  config: AgenticOrchestrationConfig | null | undefined
+): HandleSingleModel {
+  const compaction = config?.contextCompaction;
+  return async (request, model, target) => {
+    const compacted = compactAgenticBody(request, model, compaction);
+    if (compacted.overLimit)
+      return errorResponse(
+        413,
+        `Agentic context for ${model} exceeds its configured character budget after compaction; reduce pinned instructions, tools, or the latest request`
+      );
+    if (compacted.compacted)
+      log.info(
+        "AGENTIC_PIPELINE",
+        `Context compaction for ${model}: ${compacted.before} -> ${compacted.after} chars`
+      );
+    return handleSingleModel(compacted.body, model, target);
+  };
+}
+
 export async function handleAgenticPipelineChat({
   body,
   steps,
@@ -250,29 +338,31 @@ export async function handleAgenticPipelineChat({
   comboName,
   config,
 }: HandleAgenticPipelineOptions): Promise<Response> {
+  const dispatch = createCompactingDispatch(handleSingleModel, log, config);
   const chain = steps.filter((step) => Boolean(step && stepModel(step)));
-  if (chain.length !== 2) {
-    return errorResponse(400, "Agentic pipeline requires exactly two models: planner, executor");
+  if (chain.length < 2) {
+    return errorResponse(400, "Agentic pipeline requires a planner and at least one tool executor");
   }
 
   const planner = chain[0];
-  const executor = chain[1];
+  const executors = chain.slice(1);
   const plannerModel = stepModel(planner);
-  const executorModel = stepModel(executor);
+  const executorModels = executors.map(stepModel);
   const continuation = hasTrailingToolResult(body);
   const maxToolRounds = Math.min(Math.max(config?.maxToolRounds ?? DEFAULT_MAX_TOOL_ROUNDS, 1), 32);
   const toolRounds = countToolResultTurns(body);
   const maxRoundsReached = toolRounds >= maxToolRounds;
+  const stalledReason = continuation ? stalledToolLoopReason(body) : null;
 
   log.info(
     "AGENTIC_PIPELINE",
-    `Combo "${comboName ?? ""}" | planner=${plannerModel} executor=${executorModel} continuation=${continuation} toolRounds=${toolRounds}/${maxToolRounds}`
+    `Combo "${comboName ?? ""}" | planner=${plannerModel} executors=${executorModels.join(",")} continuation=${continuation} toolRounds=${toolRounds}/${maxToolRounds}`
   );
 
   // Without client tools there is nothing for the executor to do. The planner owns
   // the response directly and preserves the client's stream preference.
   if (!isToolBearingRequest(body)) {
-    return handleSingleModel(
+    return dispatch(
       prependSystemInstruction(body, planner.prompt),
       plannerModel,
       stepTarget(planner)
@@ -283,48 +373,39 @@ export async function handleAgenticPipelineChat({
     withoutTools(body, false),
     [
       planner.prompt,
-      plannerDecisionPrompt(continuation, maxRoundsReached),
+      plannerDecisionPrompt(continuation, maxRoundsReached || Boolean(stalledReason)),
+      stalledReason
+        ? `Tool-loop protection stopped further execution because ${stalledReason}. Explain the blocker using the returned evidence.`
+        : "",
       availableToolsPrompt(body),
     ]
       .filter(Boolean)
       .join("\n\n")
   );
-  const decisionResponse = await handleSingleModel(decisionBody, plannerModel, stepTarget(planner));
+  const decisionResponse = await dispatch(decisionBody, plannerModel, stepTarget(planner));
   if (!decisionResponse.ok) return decisionResponse;
 
-  let decisionText = "";
-  try {
-    decisionText = extractPanelText(await decisionResponse.clone().json());
-  } catch {
-    return errorResponse(502, `Agentic planner (${plannerModel}) returned an unparseable response`);
-  }
-  if (!decisionText.trim()) {
-    return errorResponse(502, `Agentic planner (${plannerModel}) returned an empty decision`);
-  }
+  const decision = await readPlannerDecision(decisionResponse, plannerModel, continuation, log);
+  if (decision instanceof Response) return decision;
 
-  const decision = parseDecision(decisionText, continuation);
-  if (!decision.explicit) {
-    log.warn(
-      "AGENTIC_PIPELINE",
-      `Planner ${plannerModel} omitted OMNIROUTE_ROUTE; using safe ${decision.route.toUpperCase()} fallback`
-    );
-  }
-
-  if (decision.route === "tools" && !maxRoundsReached) {
-    const executorBody = prependSystemInstruction(
-      body,
-      [executor.prompt, executorPrompt(decision.content)].filter(Boolean).join("\n\n")
-    );
-    log.info("AGENTIC_PIPELINE", `Routing client-facing tool turn to ${executorModel}`);
-    return handleSingleModel(executorBody, executorModel, stepTarget(executor));
+  if (decision.route === "tools" && !maxRoundsReached && !stalledReason) {
+    return dispatchExecutors(body, executors, decision.content, dispatch, log);
   }
 
   // The planner owns final responses. A second planner call preserves provider-native
   // streaming and response translation while keeping the internal decision buffered.
   const finalBody = prependSystemInstruction(
     withoutTools(body, true),
-    [planner.prompt, finalPrompt(decision.content)].filter(Boolean).join("\n\n")
+    [
+      planner.prompt,
+      finalPrompt(decision.content),
+      stalledReason
+        ? `Further tool execution was stopped because ${stalledReason}. Explain the blocker; do not claim unfinished work succeeded.`
+        : "",
+    ]
+      .filter(Boolean)
+      .join("\n\n")
   );
   log.info("AGENTIC_PIPELINE", `Routing client-facing final turn to ${plannerModel}`);
-  return handleSingleModel(finalBody, plannerModel, stepTarget(planner));
+  return dispatch(finalBody, plannerModel, stepTarget(planner));
 }

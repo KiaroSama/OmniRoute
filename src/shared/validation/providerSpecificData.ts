@@ -3,6 +3,7 @@ import {
   OPENROUTER_PRESET_MAX_LENGTH,
   isOpenRouterPresetValue,
 } from "@/shared/constants/openRouterPreset";
+import { isValidGitHubCreditLimit } from "@omniroute/open-sse/services/githubCreditLimit.ts";
 
 function isHttpUrl(value: string): boolean {
   try {
@@ -14,12 +15,32 @@ function isHttpUrl(value: string): boolean {
 }
 
 const CODEX_REASONING_EFFORT_VALUES = new Set(["none", "low", "medium", "high", "xhigh", "max"]);
-const REQUEST_DEFAULT_SERVICE_TIER_VALUES = new Set(["default", "priority", "fast", "flex"]);
+const REQUEST_DEFAULT_SERVICE_TIER_VALUES = new Set([
+  "default",
+  "priority",
+  "fast",
+  "flex",
+  "ultrafast",
+]);
 const CODEX_FINGERPRINT_MODE_VALUES = new Set(["off", "device", "session", "full"]);
+const CODEX_PROMPT_CACHE_KEY_SCOPE_VALUES = new Set(["client", "thread"]);
 const CACHE_PASSTHROUGH_VALUES = new Set(["strip", "openai-format", "claude-format"]);
+const REASONING_CONTROL_VALUES = new Set(["chat-template", "openai"]);
 const PEAK_HOUR_PROTECTION_MODES = new Set(["block", "avoid"]);
 const PEAK_HOUR_PROTECTION_DAYS = new Set(["mon", "tue", "wed", "thu", "fri", "sat", "sun"]);
 export const MAX_PROVIDER_SPECIFIC_TIMEOUT_MS = 86_400_000; // 24h — operator cap, anti-DoS
+
+/** Shared guard for optional positive-number providerSpecificData knobs. */
+function validatePositiveNumberField(value: unknown, key: string, ctx: z.RefinementCtx): void {
+  if (value === undefined || value === null) return;
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `providerSpecificData.${key} must be a positive number`,
+      path: [key],
+    });
+  }
+}
 
 // #6880 — per-connection prompt-cache capability override, extracted so
 // validateProviderSpecificData() stays under the complexity gate.
@@ -128,6 +149,59 @@ function validateCacheBlock(data: Record<string, unknown>, ctx: z.RefinementCtx)
 }
 
 /**
+ * Path appended to a compatible node's base URL for the "Quota check" preset. It must stay
+ * on the node's own host: a leading single `/`, no scheme, no `//` authority, no backslash
+ * (some URL parsers read it as `/`) and no whitespace.
+ */
+export const compatibleQuotaPathSchema = z
+  .string()
+  .trim()
+  .max(200)
+  .regex(/^\/(?![/\\])[^\s\\]*$/, "Quota path must be a path starting with a single /");
+
+const quotaMappingPathSchema = z.string().max(500).optional();
+
+/** `providerSpecificData.quotaEndpoint` — see open-sse/services/usage/openaiCompatible.ts. */
+const quotaEndpointSchema = z.object({
+  url: z.string().max(2000).refine(isHttpUrl, "quotaEndpoint.url must be an http(s) URL"),
+  method: z
+    .string()
+    .regex(/^(GET|POST)$/i)
+    .optional(),
+  auth: z.enum(["bearer", "x-api-key", "none"]).optional(),
+  headers: z.record(z.string(), z.string().max(4000)).optional(),
+  plan: quotaMappingPathSchema,
+  quotas: z
+    .record(
+      z.string().max(100),
+      z.object({
+        used: quotaMappingPathSchema,
+        total: quotaMappingPathSchema,
+        remaining: quotaMappingPathSchema,
+        resetAt: quotaMappingPathSchema,
+        currency: z.string().max(20).optional(),
+        displayName: z.string().max(100).optional(),
+      })
+    )
+    .optional(),
+  preset: z.string().max(64).optional(),
+  quotaPath: compatibleQuotaPathSchema.optional(),
+});
+
+function validateQuotaEndpointField(value: unknown, ctx: z.RefinementCtx): void {
+  if (value === undefined || value === null) return;
+  const result = quotaEndpointSchema.safeParse(value);
+  if (result.success) return;
+  for (const issue of result.error.issues) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `providerSpecificData.quotaEndpoint: ${issue.message}`,
+      path: ["quotaEndpoint", ...issue.path.map((segment) => String(segment))],
+    });
+  }
+}
+
+/**
  * gheUrl must parse and use HTTPS. Shared by the Zod refinement above and by the
  * OAuth route's raw entry points (searchParams / device-flow extraData), so a
  * malformed or non-HTTPS enterprise URL is rejected before any upstream fetch.
@@ -145,6 +219,8 @@ export function validateProviderSpecificData(
   ctx: z.RefinementCtx
 ): void {
   if (!data) return;
+
+  validateQuotaEndpointField(data.quotaEndpoint, ctx);
 
   const gheUrl = data.gheUrl;
   if (gheUrl !== undefined) {
@@ -183,6 +259,21 @@ export function validateProviderSpecificData(
     });
   }
 
+  const toolNameMaxLength = data.toolNameMaxLength;
+  if (
+    toolNameMaxLength !== undefined &&
+    toolNameMaxLength !== null &&
+    (!Number.isInteger(toolNameMaxLength) ||
+      (toolNameMaxLength as number) < 1 ||
+      (toolNameMaxLength as number) > 1024)
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "providerSpecificData.toolNameMaxLength must be an integer from 1 to 1024",
+      path: ["toolNameMaxLength"],
+    });
+  }
+
   const customUserAgent = data.customUserAgent;
   if (
     customUserAgent !== undefined &&
@@ -193,6 +284,15 @@ export function validateProviderSpecificData(
       code: z.ZodIssueCode.custom,
       message: "providerSpecificData.customUserAgent must be a string up to 500 chars",
       path: ["customUserAgent"],
+    });
+  }
+
+  const githubCreditLimit = data.githubCreditLimit;
+  if (githubCreditLimit !== undefined && !isValidGitHubCreditLimit(githubCreditLimit)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "providerSpecificData.githubCreditLimit must be a non-negative number or null",
+      path: ["githubCreditLimit"],
     });
   }
 
@@ -241,6 +341,21 @@ export function validateProviderSpecificData(
     }
   }
 
+  const codexPromptCacheKeyScope = data.codexPromptCacheKeyScope;
+  if (codexPromptCacheKeyScope !== undefined && codexPromptCacheKeyScope !== null) {
+    const normalized =
+      typeof codexPromptCacheKeyScope === "string"
+        ? codexPromptCacheKeyScope.trim().toLowerCase()
+        : "";
+    if (!CODEX_PROMPT_CACHE_KEY_SCOPE_VALUES.has(normalized)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "providerSpecificData.codexPromptCacheKeyScope must be one of client, thread",
+        path: ["codexPromptCacheKeyScope"],
+      });
+    }
+  }
+
   const preserveEncryptedReasoning = data.preserveEncryptedReasoning;
   if (preserveEncryptedReasoning !== undefined && typeof preserveEncryptedReasoning !== "boolean") {
     ctx.addIssue({
@@ -250,7 +365,35 @@ export function validateProviderSpecificData(
     });
   }
 
+  const reasoningControl = data.reasoningControl;
+  if (
+    reasoningControl !== undefined &&
+    reasoningControl !== null &&
+    (typeof reasoningControl !== "string" || !REASONING_CONTROL_VALUES.has(reasoningControl))
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "providerSpecificData.reasoningControl must be chat-template, openai, or null",
+      path: ["reasoningControl"],
+    });
+  }
+
+  if (data.zdrEnabled !== undefined && typeof data.zdrEnabled !== "boolean") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "providerSpecificData.zdrEnabled must be a boolean",
+      path: ["zdrEnabled"],
+    });
+  }
+
   const blockExtraUsage = data.blockExtraUsage;
+  if (data.allowPaidCredits !== undefined && typeof data.allowPaidCredits !== "boolean") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "providerSpecificData.allowPaidCredits must be a boolean",
+      path: ["allowPaidCredits"],
+    });
+  }
   if (blockExtraUsage !== undefined && typeof blockExtraUsage !== "boolean") {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -270,6 +413,24 @@ export function validateProviderSpecificData(
       code: z.ZodIssueCode.custom,
       message: "providerSpecificData.autoFetchModels must be a boolean",
       path: ["autoFetchModels"],
+    });
+  }
+
+  const requireUserLastMessage = data.requireUserLastMessage;
+  if (requireUserLastMessage !== undefined && typeof requireUserLastMessage !== "boolean") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "providerSpecificData.requireUserLastMessage must be a boolean",
+      path: ["requireUserLastMessage"],
+    });
+  }
+
+  const keepMidConversationSystem = data.keepMidConversationSystem;
+  if (keepMidConversationSystem !== undefined && typeof keepMidConversationSystem !== "boolean") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "providerSpecificData.keepMidConversationSystem must be a boolean",
+      path: ["keepMidConversationSystem"],
     });
   }
 
@@ -326,7 +487,7 @@ export function validateProviderSpecificData(
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message:
-            "providerSpecificData.requestDefaults.serviceTier must be one of default, priority, fast, flex when provided",
+            "providerSpecificData.requestDefaults.serviceTier must be one of default, priority, fast, flex, ultrafast when provided",
           path: ["requestDefaults", "serviceTier"],
         });
       }
@@ -358,6 +519,30 @@ export function validateProviderSpecificData(
       code: z.ZodIssueCode.custom,
       message: "providerSpecificData.consoleApiKey must be at most 10000 characters",
       path: ["consoleApiKey"],
+    });
+  }
+
+  // Zed Hosted: the optional Orb billing portal link (or bare portal token).
+  // A bare token is accepted, so no URL shape is enforced here; the usage
+  // fetcher validates it before any request and treats the whole value as a
+  // credential.
+  const billingPortalUrl = data.billingPortalUrl;
+  if (
+    billingPortalUrl !== undefined &&
+    billingPortalUrl !== null &&
+    typeof billingPortalUrl !== "string"
+  ) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "providerSpecificData.billingPortalUrl must be a string",
+      path: ["billingPortalUrl"],
+    });
+  }
+  if (typeof billingPortalUrl === "string" && billingPortalUrl.length > 4096) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "providerSpecificData.billingPortalUrl must be at most 4096 characters",
+      path: ["billingPortalUrl"],
     });
   }
 
@@ -408,6 +593,7 @@ export function validateProviderSpecificData(
     "qwenCloudCookie",
     "qwenCloudSecToken",
     "volcConsoleCookie",
+    "xiaomiMimoConsoleCookie",
   ] as const) {
     const value = data[key];
     if (value !== undefined && value !== null && typeof value !== "string") {
@@ -574,6 +760,9 @@ export function validateProviderSpecificData(
       });
     }
   }
+
+  // #15753 — self-tracked Xiaomi MiMo monthly budget override (tokens per month).
+  validatePositiveNumberField(data.monthlyTokenLimit, "monthlyTokenLimit", ctx);
 
   // Per-connection operator timeout tier: a slow model must not monopolize an
   // executor slot indefinitely. Bounded to 24h (anti-DoS); below 1ms is

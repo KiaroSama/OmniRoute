@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { resolveDataDir } from "../data-dir.mjs";
@@ -21,7 +22,7 @@ export function writePidFile(service, pid) {
   }
 }
 
-export function readPidFile(service) {
+function readRawPid(service) {
   try {
     const file = getServicePidPath(service);
     if (!existsSync(file)) return null;
@@ -32,6 +33,77 @@ export function readPidFile(service) {
   }
 }
 
+// A pid file can outlive its process (crash, reboot) and the pid can then be
+// reused by an unrelated process of the same user. A live pid is "ours" only
+// when its command line names OmniRoute: the CLI path, the server process
+// title, or an install directory called omniroute. An unreadable command line
+// is "unknown" and is NOT signalled. `deps` lets tests stub /proc, ps and
+// PowerShell. shortcut: no start-time check or cache, the pid file stores only
+// the pid; add both if the pid file ever records a start time.
+export function classifyPidIdentity(pid, deps = {}) {
+  const platform = deps.platform || process.platform;
+  const run = deps.execFileSync || execFileSync;
+  try {
+    let commandLine;
+    if (platform === "win32") {
+      // Pid goes in by env, never into the script (Hard Rule #13). One retry:
+      // a cold PowerShell start can time out once.
+      const powershell = join(
+        process.env.SystemRoot || "C:\\Windows",
+        "System32",
+        "WindowsPowerShell",
+        "v1.0",
+        "powershell.exe"
+      );
+      const script =
+        '(Get-CimInstance Win32_Process -Filter "ProcessId = $env:OMNIROUTE_PROBE_PID").CommandLine';
+      const options = {
+        encoding: "utf8",
+        timeout: 10_000,
+        windowsHide: true,
+        env: { ...process.env, OMNIROUTE_PROBE_PID: String(pid) },
+      };
+      const args = ["-NoProfile", "-NonInteractive", "-Command", script];
+      try {
+        commandLine = run(powershell, args, options);
+      } catch {
+        commandLine = run(powershell, args, options);
+      }
+    } else if (platform === "darwin") {
+      // macOS has no /proc/<pid>/cmdline.
+      commandLine = run("/bin/ps", ["-p", String(pid), "-o", "command="], {
+        encoding: "utf8",
+        timeout: 5000,
+      });
+    } else {
+      const read = deps.readFileSync || ((file) => readFileSync(file, "utf8"));
+      commandLine = String(read(`/proc/${pid}/cmdline`));
+    }
+    // process.title rewrites cmdline in place and pads it with NUL bytes.
+    return OMNIROUTE_COMMAND.test(String(commandLine).replaceAll("\0", " ")) ? "ours" : "foreign";
+  } catch (err) {
+    // No /proc/<pid> entry while procfs is mounted: the process is gone, so
+    // there is nothing to signal. Without procfs, "gone" cannot be told from
+    // "cannot look", so it stays unknown.
+    const procMounted = (deps.existsSync || existsSync)("/proc/self");
+    return platform === "linux" && err?.code === "ENOENT" && procMounted ? "gone" : "unknown";
+  }
+}
+
+// Install dirs like "omniroute-main" or "my-omniroute" are legitimate, so match the substring.
+const OMNIROUTE_COMMAND = /omniroute/i;
+
+// The pid in a pid file, or null when none can be signalled safely. A dead pid
+// is still returned so callers keep their stale-file handling; a live pid that
+// is foreign or unproven is hidden, so stop never signals a stranger.
+export function readPidFile(service, deps = {}) {
+  const pid = readRawPid(service);
+  if (!pid) return null;
+  if (!isPidRunning(pid)) return pid;
+  const identity = classifyPidIdentity(pid, deps);
+  return identity === "ours" || identity === "gone" ? pid : null;
+}
+
 export function cleanupPidFile(service) {
   try {
     unlinkSync(getServicePidPath(service));
@@ -40,11 +112,13 @@ export function cleanupPidFile(service) {
 
 export function killAllSubprocesses() {
   for (const service of SERVICES) {
-    const pid = readPidFile(service);
+    const pid = readRawPid(service);
     if (!pid) continue;
-    try {
-      process.kill(pid, "SIGTERM");
-    } catch {}
+    if (readPidFile(service) === pid) {
+      try {
+        process.kill(pid, "SIGTERM");
+      } catch {}
+    }
     cleanupPidFile(service);
   }
 }
@@ -54,6 +128,42 @@ export function isPidRunning(pid) {
   try {
     process.kill(pid, 0);
     return true;
+  } catch {
+    return false;
+  }
+}
+
+// #16030: shutdown intent marker. The dashboard shutdown route runs inside the
+// server CHILD, which cannot prove the supervisor's identity on every platform
+// (macOS has no /proc/<pid>/cmdline). Instead of signaling an unverified pid,
+// the child writes this marker with its own pid before exiting on purpose; the
+// supervisor consumes it in handleExit() and exits instead of restarting.
+// Spontaneous exits (crash, OOM) carry no marker and still restart.
+const SHUTDOWN_INTENT_FILE = ".shutdown-intent";
+
+function getShutdownIntentPath() {
+  return join(resolveDataDir(), "supervisor", SHUTDOWN_INTENT_FILE);
+}
+
+export function clearShutdownIntent() {
+  try {
+    unlinkSync(getShutdownIntentPath());
+  } catch {}
+}
+
+export function consumeShutdownIntent(expectedPid) {
+  try {
+    // A marker is only honored when we know exactly which child exited. With an
+    // unknown child pid (e.g. spawn failed), any marker must be ignored.
+    if (!Number.isInteger(expectedPid) || expectedPid <= 0) return false;
+    const file = getShutdownIntentPath();
+    if (!existsSync(file)) return false;
+    const raw = readFileSync(file, "utf8").trim();
+    const pid = parseInt(raw, 10);
+    const honored = Number.isInteger(pid) && pid > 0 && pid === expectedPid;
+    // Single-shot either way: a consumed or stale/foreign marker never survives.
+    unlinkSync(file);
+    return honored;
   } catch {
     return false;
   }
@@ -86,20 +196,12 @@ export async function findListeningPids(port, deps = {}) {
       const { stdout } = await exec("netstat", ["-ano"]);
       return parseNetstatListeningPids(stdout, port);
     }
-    const { stdout } = await exec("lsof", ["-nP", "-t", `-iTCP:${port}`, "-sTCP:LISTEN"]);
-    return stdout
-      .trim()
-      .split("\n")
-      .map((entry) => parseInt(entry, 10))
-      .filter((entry) => Number.isFinite(entry) && entry > 0);
+    const { stdout } = await exec("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN"]);
+    return parseLsofListeningPids(stdout, port, deps.host);
   } catch (err) {
     // POSIX lsof exits 1 with empty output when there are simply no matches.
     // That is the normal "port is free" result, not a discovery failure.
-    if (
-      platform !== "win32" &&
-      err?.code === 1 &&
-      !String(err?.stdout ?? "").trim()
-    ) {
+    if (platform !== "win32" && err?.code === 1 && !String(err?.stdout ?? "").trim()) {
       return [];
     }
     // Tool missing (ENOENT) or genuinely unusable: "no listener" cannot be
@@ -132,10 +234,60 @@ export async function probePortFree(port, deps = {}) {
   // port, so a server on 0.0.0.0 (the default), 127.0.0.1 or ::1 (localhost) is
   // only visible to a probe on that same address. A host without one of these
   // addresses gets EADDRNOTAVAIL, which reads as free.
-  for (const host of [undefined, "0.0.0.0", "127.0.0.1", "::1"]) {
+  const bindHost = deps.host;
+  const hosts =
+    bindHost && bindHost !== "0.0.0.0" && bindHost !== "::" && bindHost !== "*"
+      ? [bindHost]
+      : [undefined, "0.0.0.0", "127.0.0.1", "::1"];
+  for (const host of hosts) {
     if (!(await bindable(host))) return false;
   }
   return true;
+}
+
+function parseLsofListeningPids(stdout, port, host) {
+  const pids = [];
+  for (const line of String(stdout || "").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("COMMAND")) continue;
+    const numeric = parseInt(trimmed, 10);
+    if (String(numeric) === trimmed && numeric > 0) {
+      pids.push(numeric);
+      continue;
+    }
+    const cols = trimmed.split(/\s+/);
+    const pid = parseInt(cols[1], 10);
+    if (!Number.isFinite(pid) || pid <= 0) continue;
+    const name =
+      cols.find((col) => {
+        const at = col.lastIndexOf(":");
+        return at > 0 && col.slice(at + 1) === String(port);
+      }) || "";
+    if (!name) continue;
+    const at = name.lastIndexOf(":");
+    const listenHost = name.slice(0, at);
+    if (!listenerBlocksBind(listenHost, host)) continue;
+    pids.push(pid);
+  }
+  return pids;
+}
+
+function listenerBlocksBind(listenHost, bindHost) {
+  if (!bindHost || bindHost === "0.0.0.0" || bindHost === "::" || bindHost === "*") return true;
+  const listen = normalizeListenHost(listenHost);
+  const bind = normalizeListenHost(bindHost);
+  if (!listen) return true;
+  if (listen === "*" || listen === "0.0.0.0" || listen === "::") return true;
+  if (bind === "127.0.0.1" || bind === "::1" || bind === "localhost") {
+    return listen === "127.0.0.1" || listen === "::1" || listen === "localhost";
+  }
+  return listen === bind;
+}
+
+function normalizeListenHost(host) {
+  const value = String(host || "").trim();
+  if (value.startsWith("[") && value.endsWith("]")) return value.slice(1, -1);
+  return value;
 }
 
 function parseNetstatListeningPids(stdout, port) {

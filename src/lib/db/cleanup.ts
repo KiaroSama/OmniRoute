@@ -4,11 +4,16 @@
  * @module lib/db/cleanup
  */
 
+import path from "path";
+
+import { isBackgroundServicesDisabled } from "@/lib/env/backgroundServices";
 import { rollupUsageHistoryBeforeDate } from "@/lib/usage/aggregateHistory";
 import { purgeCallLogArtifactDirectory } from "@/lib/usage/callLogArtifacts";
 
-import { getDbInstance } from "./core";
+import { DATA_DIR, DB_BACKUPS_DIR, getDbInstance } from "./core";
+import { removeStaleSnapshotTemps } from "./backupRetention";
 import { getUserDatabaseSettings } from "./databaseSettings";
+import { maintainSqlitePlannerStats } from "./sqlitePlannerStats";
 import {
   describeReclaim,
   reclaimFreedPages,
@@ -22,11 +27,17 @@ import {
   deleteCallLogArtifacts,
   deleteFromTableBefore,
   deleteFromTableBeforeInBatches,
+  deleteWholeDaysBefore,
   tableExists,
   type DeleteByPeriodTarget,
 } from "./cleanup/usagePurge";
 import { ensureCompressionRunTelemetryTable } from "./compressionRunTelemetry";
+import { WINDOW_MS } from "@/lib/quota/dimensions";
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
+import {
+  pruneDbBackupsOutsideMigrationWindow,
+  resolveReusedPreMigrationSha,
+} from "./cleanup/backupPrune";
 
 interface CleanupResult {
   deleted: number;
@@ -42,7 +53,6 @@ function getRetentionSettings() {
  * Clean up old quota_snapshots based on retention settings.
  */
 export async function cleanupQuotaSnapshots(): Promise<CleanupResult> {
-  const db = getDbInstance();
   const retention = getRetentionSettings();
 
   const retentionDays = retention.quotaSnapshots;
@@ -53,9 +63,11 @@ export async function cleanupQuotaSnapshots(): Promise<CleanupResult> {
   const result: CleanupResult = { deleted: 0, errors: 0 };
 
   try {
-    const stmt = db.prepare("DELETE FROM quota_snapshots WHERE created_at < ?");
-    const runResult = stmt.run(cutoffISO);
-    result.deleted = runResult.changes;
+    await deleteFromTableBeforeInBatches(
+      { table: "quota_snapshots", column: "created_at", cutoff: "iso" },
+      cutoffISO,
+      { progress: result }
+    );
 
     console.log(
       `[Cleanup] Deleted ${result.deleted} quota_snapshots older than ${retentionDays} days`
@@ -72,7 +84,6 @@ export async function cleanupQuotaSnapshots(): Promise<CleanupResult> {
  * Clean up old call_logs based on retention settings.
  */
 export async function cleanupCallLogs(): Promise<CleanupResult> {
-  const db = getDbInstance();
   const retention = getRetentionSettings();
 
   const retentionDays = retention.callLogs;
@@ -83,13 +94,25 @@ export async function cleanupCallLogs(): Promise<CleanupResult> {
   const result: CleanupResult = { deleted: 0, errors: 0 };
 
   try {
-    const stmt = db.prepare("DELETE FROM call_logs WHERE timestamp < ?");
-    const runResult = stmt.run(cutoffISO);
-    result.deleted = runResult.changes;
+    // Batched (10k rows per statement, yielding between batches): a single
+    // DELETE over a retention backlog holds the event loop for seconds.
+    // `result` doubles as the running total, so a failed batch still reports
+    // the rows the earlier batches removed.
+    await deleteFromTableBeforeInBatches(
+      { table: "call_logs", column: "timestamp", cutoff: "iso" },
+      cutoffISO,
+      { progress: result }
+    );
+    // A failed legacy offload keeps old bodies in call_logs_v1_legacy. Age them out too; a row that
+    // has not expired stays for the next boot's retry. The helper skips a missing table.
+    await deleteFromTableBeforeInBatches(
+      { table: "call_logs_v1_legacy", column: "timestamp", cutoff: "iso" },
+      cutoffISO
+    );
 
     console.log(`[Cleanup] Deleted ${result.deleted} call_logs older than ${retentionDays} days`);
   } catch (err: unknown) {
-    console.error("[Cleanup] Error cleaning call_logs:", err);
+    console.error(`[Cleanup] Error cleaning call_logs (${result.deleted} rows deleted):`, err);
     result.errors++;
   }
 
@@ -100,7 +123,6 @@ export async function cleanupCallLogs(): Promise<CleanupResult> {
  * Clean up old usage_history based on retention settings.
  */
 export async function cleanupUsageHistory(): Promise<CleanupResult> {
-  const db = getDbInstance();
   const retention = getRetentionSettings();
 
   const retentionDays = retention.usageHistory;
@@ -130,15 +152,16 @@ export async function cleanupUsageHistory(): Promise<CleanupResult> {
   }
 
   try {
-    const stmt = db.prepare("DELETE FROM usage_history WHERE timestamp < ?");
-    const runResult = stmt.run(cutoffDateStr);
-    result.deleted = runResult.changes;
+    // Same day boundary as the rollup above. One whole day per statement,
+    // not fixed-size batches: the rollup overwrites a day's summary from the
+    // raw rows left, so an interrupted run must never leave part of a day.
+    await deleteWholeDaysBefore("usage_history", "timestamp", cutoffDateStr, result);
 
     console.log(
       `[Cleanup] Deleted ${result.deleted} usage_history older than ${retentionDays} days`
     );
   } catch (err: unknown) {
-    console.error("[Cleanup] Error cleaning usage_history:", err);
+    console.error(`[Cleanup] Error cleaning usage_history (${result.deleted} rows deleted):`, err);
     result.errors++;
   }
 
@@ -149,7 +172,6 @@ export async function cleanupUsageHistory(): Promise<CleanupResult> {
  * Clean up old compression_analytics based on retention settings.
  */
 export async function cleanupCompressionAnalytics(): Promise<CleanupResult> {
-  const db = getDbInstance();
   const retention = getRetentionSettings();
 
   const retentionDays = retention.compressionAnalytics;
@@ -160,9 +182,11 @@ export async function cleanupCompressionAnalytics(): Promise<CleanupResult> {
   const result: CleanupResult = { deleted: 0, errors: 0 };
 
   try {
-    const stmt = db.prepare("DELETE FROM compression_analytics WHERE timestamp < ?");
-    const runResult = stmt.run(cutoffISO);
-    result.deleted = runResult.changes;
+    await deleteFromTableBeforeInBatches(
+      { table: "compression_analytics", column: "timestamp", cutoff: "iso" },
+      cutoffISO,
+      { progress: result }
+    );
 
     console.log(
       `[Cleanup] Deleted ${result.deleted} compression_analytics older than ${retentionDays} days`
@@ -180,7 +204,6 @@ export async function cleanupCompressionAnalytics(): Promise<CleanupResult> {
  * Uses retention.compressionAnalytics (same retention window as compression_analytics).
  */
 export async function cleanupCompressionEngineBreakdown(): Promise<CleanupResult> {
-  const db = getDbInstance();
   const retention = getRetentionSettings();
 
   const retentionDays = retention.compressionAnalytics;
@@ -193,9 +216,11 @@ export async function cleanupCompressionEngineBreakdown(): Promise<CleanupResult
   try {
     if (!tableExists("compression_engine_breakdown")) return result;
 
-    const stmt = db.prepare("DELETE FROM compression_engine_breakdown WHERE timestamp < ?");
-    const runResult = stmt.run(cutoffISO);
-    result.deleted = runResult.changes;
+    await deleteFromTableBeforeInBatches(
+      { table: "compression_engine_breakdown", column: "timestamp", cutoff: "iso" },
+      cutoffISO,
+      { progress: result }
+    );
 
     console.log(
       `[Cleanup] Deleted ${result.deleted} compression_engine_breakdown older than ${retentionDays} days`
@@ -342,7 +367,6 @@ export async function cleanupMemoryEntries(): Promise<CleanupResult> {
  * is Date.now()), so the cutoff must be in milliseconds to match. (#9625)
  */
 export async function cleanupDomainCostHistory(): Promise<CleanupResult> {
-  const db = getDbInstance();
   const retention = getRetentionSettings();
 
   const retentionDays = retention.domainCostHistory;
@@ -351,9 +375,11 @@ export async function cleanupDomainCostHistory(): Promise<CleanupResult> {
   const result: CleanupResult = { deleted: 0, errors: 0 };
 
   try {
-    const stmt = db.prepare("DELETE FROM domain_cost_history WHERE timestamp < ?");
-    const runResult = stmt.run(cutoffEpoch);
-    result.deleted = runResult.changes;
+    await deleteFromTableBeforeInBatches(
+      { table: "domain_cost_history", column: "timestamp", cutoff: "epochMs" },
+      new Date(cutoffEpoch).toISOString(),
+      { progress: result }
+    );
 
     console.log(
       `[Cleanup] Deleted ${result.deleted} domain_cost_history older than ${retentionDays} days`
@@ -478,6 +504,32 @@ export async function cleanupCcrBlocks(): Promise<CleanupResult> {
     console.log(`[Cleanup] Deleted ${result.deleted} expired ccr_blocks`);
   } catch (err: unknown) {
     console.error("[Cleanup] Error cleaning ccr_blocks:", err);
+    result.errors++;
+  }
+
+  return result;
+}
+
+/**
+ * Delete closed quota-share buckets. The sliding window reads only the current and the
+ * previous bucket, so a row not updated for two of the longest windows (monthly) is dead
+ * for every window. No retention setting: the cutoff follows the window table.
+ */
+export async function cleanupQuotaConsumption(): Promise<CleanupResult> {
+  const result: CleanupResult = { deleted: 0, errors: 0 };
+
+  try {
+    await deleteFromTableBeforeInBatches(
+      { table: "quota_consumption", column: "updated_at", cutoff: "epochMs" },
+      new Date(Date.now() - 2 * WINDOW_MS.monthly).toISOString(),
+      { progress: result }
+    );
+    console.log(`[Cleanup] Deleted ${result.deleted} closed quota_consumption buckets`);
+  } catch (err: unknown) {
+    console.error(
+      `[Cleanup] Error cleaning quota_consumption (${result.deleted} rows deleted):`,
+      err
+    );
     result.errors++;
   }
 
@@ -698,6 +750,7 @@ export async function runAutoCleanup(): Promise<{
     compressionRunTelemetry: await cleanupCompressionRunTelemetry(),
     proxyLogs: await cleanupProxyLogs(),
     ccrBlocks: await cleanupCcrBlocks(),
+    quotaConsumption: await cleanupQuotaConsumption(),
     conversationTurnNodes: await cleanupConversationTurnNodes(),
     agenticConversations: await cleanupAgenticConversations(),
     oldBatches: await cleanupOldBatches(),
@@ -816,6 +869,7 @@ const RESET_USAGE_HISTORY_PERIOD_MS: Record<TimedResetUsageHistoryPeriod, number
 export interface ResetUsageHistoryResult extends CleanupResult {
   deletedUsageHistory: number;
   deletedDailySummary: number;
+  deletedDailyTeamSummary: number;
   deletedHourlySummary: number;
   deletedCallLogs: number;
   deletedCallLogArtifacts: number;
@@ -827,6 +881,11 @@ export interface ResetUsageHistoryResult extends CleanupResult {
   deletedCompressionRunTelemetry: number;
   deletedRoutingDecisions: number;
   deletedQuotaConsumption: number;
+  /**
+   * Always 0. `token_ledger` is the transfer record behind token balances and
+   * idempotency keys, not usage analytics, so a usage reset never deletes it.
+   * The field stays so the response shape of the purge API does not change.
+   */
   deletedTokenLedger: number;
   deletedConversationTurnNodes: number;
   deletedAgenticConversations: number;
@@ -859,6 +918,12 @@ const RESET_TARGETS: Array<
     column: "date",
     cutoff: "date",
     resultKey: "deletedDailySummary",
+  },
+  {
+    table: "daily_team_usage_summary",
+    column: "date",
+    cutoff: "date",
+    resultKey: "deletedDailyTeamSummary",
   },
   {
     table: "hourly_usage_summary",
@@ -910,7 +975,6 @@ const RESET_TARGETS: Array<
     cutoff: "epochMs",
     resultKey: "deletedQuotaConsumption",
   },
-  { table: "token_ledger", column: "created_at", cutoff: "iso", resultKey: "deletedTokenLedger" },
   {
     table: "conversation_turn_nodes",
     column: "last_seen_at",
@@ -938,6 +1002,7 @@ export async function resetUsageHistory(period: string): Promise<ResetUsageHisto
     deleted: 0,
     deletedUsageHistory: 0,
     deletedDailySummary: 0,
+    deletedDailyTeamSummary: 0,
     deletedHourlySummary: 0,
     deletedCallLogs: 0,
     deletedCallLogArtifacts: 0,
@@ -1006,7 +1071,6 @@ export async function resetUsageHistory(period: string): Promise<ResetUsageHisto
  * Uses the same retention period as call_logs (30 days default).
  */
 export async function cleanupProxyLogs(): Promise<CleanupResult> {
-  const db = getDbInstance();
   const retention = getRetentionSettings();
 
   const retentionDays = retention.callLogs;
@@ -1017,9 +1081,11 @@ export async function cleanupProxyLogs(): Promise<CleanupResult> {
   const result: CleanupResult = { deleted: 0, errors: 0 };
 
   try {
-    const stmt = db.prepare("DELETE FROM proxy_logs WHERE timestamp < ?");
-    const runResult = stmt.run(cutoffISO);
-    result.deleted = runResult.changes;
+    await deleteFromTableBeforeInBatches(
+      { table: "proxy_logs", column: "timestamp", cutoff: "iso" },
+      cutoffISO,
+      { progress: result }
+    );
 
     console.log(`[Cleanup] Deleted ${result.deleted} proxy_logs older than ${retentionDays} days`);
   } catch (err: unknown) {
@@ -1038,6 +1104,9 @@ export {
   type ReclaimFreedPagesResult,
   type ReclaimStopReason,
 };
+// Backup-directory pruning for the scheduled pass lives in ./cleanup/backupPrune
+// (same file-size reason) — re-exported so tests drive the pass's own symbols.
+export { pruneDbBackupsOutsideMigrationWindow, resolveReusedPreMigrationSha };
 
 // ──────────────── Background Cleanup Scheduler ────────────────
 
@@ -1056,6 +1125,10 @@ export async function runScheduledCleanupPass(phase: "startup" | "periodic"): Pr
     console.log(`[Cleanup] ${label} cleanup freed ${result.totalDeleted} rows.`);
   }
 
+  // The prune pauses while a snapshot temp directory exists; drop the ones a killed upgrade left.
+  removeStaleSnapshotTemps(DB_BACKUPS_DIR ?? path.join(DATA_DIR, "db_backups"));
+  pruneDbBackupsOutsideMigrationWindow();
+
   // Always run: it also drains pages left over from a previous capped pass or
   // from deletes made outside this scheduler. Costs a few PRAGMA reads when idle.
   try {
@@ -1073,6 +1146,9 @@ export async function runScheduledCleanupPass(phase: "startup" | "periodic"): Pr
   } catch (reclaimErr) {
     console.error(`[Cleanup] Space reclamation after ${phase} cleanup failed:`, reclaimErr);
   }
+
+  // Independent of retention settings; runs after migrations, never on a request path.
+  maintainSqlitePlannerStats();
 }
 /**
  * Start the background cleanup scheduler. Runs cleanup on startup and then
@@ -1085,6 +1161,13 @@ export async function runScheduledCleanupPass(phase: "startup" | "periodic"): Pr
  */
 export function startCleanupScheduler(): void {
   if (_cleanupSchedulerTimer) return;
+
+  if (isBackgroundServicesDisabled()) {
+    console.log(
+      "[Cleanup] Background cleanup scheduler disabled (OMNIROUTE_DISABLE_BACKGROUND_SERVICES)."
+    );
+    return;
+  }
 
   // Run cleanup 30s after startup (let the server initialize first).
   setTimeout(async () => {

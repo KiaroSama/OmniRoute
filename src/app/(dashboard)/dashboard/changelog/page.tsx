@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Card, SegmentedControl } from "@/shared/components";
+import { PageHeader } from "@omniroute/ui-kit/page-header";
+import { SegmentedControl, SegmentedPanel, SegmentedTabs } from "@/shared/components";
 import ChangelogViewer from "./components/ChangelogViewer";
 import NewsViewer from "./components/NewsViewer";
 
@@ -11,23 +12,34 @@ export default function ChangelogPage() {
   const [activeTab, setActiveTab] = useState<"news" | "changelog">("news");
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex justify-end">
-        <div className="w-full sm:w-[240px]">
+    <SegmentedTabs
+      value={activeTab}
+      onChange={(val) => setActiveTab(val as "news" | "changelog")}
+      className="gap-6"
+    >
+      <PageHeader
+        compact
+        title={t("title")}
+        description={t("description")}
+        actions={
           <SegmentedControl
+            semantics="tabs"
+            aria-label={t("viewLabel")}
             options={[
               { label: t("newsTab"), value: "news" },
               { label: t("changelogTab"), value: "changelog" },
             ]}
-            value={activeTab}
-            onChange={(val) => setActiveTab(val as "news" | "changelog")}
           />
-        </div>
-      </div>
+        }
+      />
 
-      <Card className="min-h-[500px] overflow-hidden" padding="none">
-        {activeTab === "news" ? <NewsViewer /> : <ChangelogViewer />}
-      </Card>
-    </div>
+      {/* Each viewer renders its own kit Cards (one per announcement / release). */}
+      <SegmentedPanel value="news" className="min-h-[500px]">
+        <NewsViewer />
+      </SegmentedPanel>
+      <SegmentedPanel value="changelog" className="min-h-[500px]">
+        <ChangelogViewer />
+      </SegmentedPanel>
+    </SegmentedTabs>
   );
 }

@@ -1,8 +1,10 @@
+import { isCodexCompactionWebReplay } from "../executors/codex/compactionReplay.ts";
 import { isValidResponsesItemId } from "./responsesItemId.ts";
 
 type JsonRecord = Record<string, unknown>;
 type SanitizeResponsesInputOptions = {
   dropInternalAssistantMessages?: boolean;
+  preserveWebSearchCalls?: boolean;
   // Codex's multi_agent_v2 uses a proprietary `agent_message` input-item type to pass
   // tasks/replies between a parent thread and a sub-agent. The real Codex/ChatGPT backend
   // understands this type; every other Responses-API upstream (e.g. Muse Spark 1.3 /
@@ -16,7 +18,7 @@ const SERVER_ITEM_ID_PREFIX_BY_TYPE: Record<string, string> = {
   message: "msg_",
   reasoning: "rs_",
 };
-const SERVER_ITEM_ID_PATTERN = /^(fc|msg|rs|resp)_/;
+const SERVER_ITEM_ID_PATTERN = /^(fc|msg|rs|resp|ws)_/;
 // Validated per input item of type function_call / function_call_output (the agentic
 // Responses path), so kept as a module constant instead of an inline literal.
 const FUNCTION_NAME_VALID_RE = /^[a-zA-Z0-9_-]{1,128}$/;
@@ -51,6 +53,8 @@ function sanitizeFunctionName(name: string): string {
   return name.replace(FUNCTION_NAME_SANITIZE_RE, "_").slice(0, 128);
 }
 
+const ITEM_ID_SANITIZE_RE = /[^a-zA-Z0-9_-]/gu;
+
 function sanitizeInputItemId(record: JsonRecord): JsonRecord {
   if (record.id === undefined) return record;
   if (!isValidResponsesItemId(record.id)) {
@@ -59,17 +63,19 @@ function sanitizeInputItemId(record: JsonRecord): JsonRecord {
     return next;
   }
 
+  const id = record.id.replace(ITEM_ID_SANITIZE_RE, "_").slice(0, 64);
+  const next = id === record.id ? record : { ...record, id };
   const type = typeof record.type === "string" ? record.type : "";
   const expectedPrefix = SERVER_ITEM_ID_PREFIX_BY_TYPE[type];
   const hasExpectedPrefix = expectedPrefix
-    ? record.id.startsWith(expectedPrefix)
-    : SERVER_ITEM_ID_PATTERN.test(record.id);
+    ? id.startsWith(expectedPrefix)
+    : SERVER_ITEM_ID_PATTERN.test(id);
 
-  if (hasExpectedPrefix) return record;
+  if (hasExpectedPrefix) return next;
 
-  const next = { ...record };
-  delete next.id;
-  return next;
+  const withoutId = { ...next };
+  delete withoutId.id;
+  return withoutId;
 }
 
 function imageUrlToText(value: unknown): string {
@@ -207,6 +213,7 @@ function sanitizeInputItem(item: unknown, options: SanitizeResponsesInputOptions
     next = convertAgentMessageItem(next);
   }
 
+  if (options.preserveWebSearchCalls && next.type === "web_search_call") return next;
   next = sanitizeInputItemId(next);
   if (isResponsesMessageItem(next)) {
     next = sanitizeMessageContent(next);
@@ -264,6 +271,20 @@ function isGrokBuildReasoningItem(item: unknown): boolean {
   );
 }
 
+const CODEX_WEB_SEARCH_ACTIONS = new Set(["search", "open_page", "find_in_page"]);
+
+function sanitizeCodexWebSearchAction(item: unknown): unknown {
+  const record = toRecord(item);
+  if (record?.type !== "web_search_call" || record.action === undefined) return item;
+  const action = toRecord(record.action);
+  if (typeof action?.type === "string" && CODEX_WEB_SEARCH_ACTIONS.has(action.type)) return item;
+  // WebSearchCall.action is optional. Omit an unrecognized replay action rather
+  // than inventing a search or discarding the item's encrypted history.
+  const next = { ...record };
+  delete next.action;
+  return next;
+}
+
 // Codex-specific call site (#13698): the native Codex/ChatGPT passthrough path is the only
 // caller that needs both flags derived from one boolean, kept here (not in the frozen
 // open-sse/executors/codex.ts) so a per-property change never grows that file's line count.
@@ -274,9 +295,12 @@ export function sanitizeCodexResponsesInput(
   nativeCodexPassthrough: boolean
 ): void {
   if (!Array.isArray(body.input)) return;
-  const input = body.input.filter((item) => !isGrokBuildReasoningItem(item));
+  const input = body.input
+    .filter((item) => !isGrokBuildReasoningItem(item))
+    .map(sanitizeCodexWebSearchAction);
   body.input = sanitizeResponsesInputItems(input, false, {
     dropInternalAssistantMessages: !nativeCodexPassthrough,
     preserveAgentMessages: nativeCodexPassthrough,
+    preserveWebSearchCalls: isCodexCompactionWebReplay(body),
   });
 }

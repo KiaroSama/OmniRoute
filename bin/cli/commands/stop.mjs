@@ -1,6 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
+  classifyPidIdentity,
   readPidFile,
   isPidRunning,
   cleanupPidFile,
@@ -16,6 +17,7 @@ export function registerStop(program) {
   program
     .command("stop")
     .description(t("stop.description"))
+    .option("--port <port>", "Port to stop when no PID file is found (default: 20128)")
     .action(async (opts) => {
       const exitCode = await runStopCommand(opts);
       if (exitCode !== 0) process.exit(exitCode);
@@ -68,32 +70,37 @@ export async function runStopCommand(opts = {}, deps = {}) {
     }
   }
 
-  const port = opts.port ? parseInt(String(opts.port), 10) : 20128;
-  if (pid === null) {
-    console.log(t("stop.portFallback"));
-    // #9455: a stale supervisor PID file would let the port-fallback stop also
-    // leave the supervisor running and respawning. Stop it first.
-    if (supervisorPid && isPidRunning(supervisorPid)) {
-      try {
-        process.kill(supervisorPid, "SIGTERM");
-      } catch {}
-    }
-    const portFreed = await killByPort(port, deps);
-    killAllSubprocesses();
-    cleanupPidFile("server");
-    cleanupPidFile("supervisor");
-    // #9455: only report success when the port is actually free — previously stop
-    // printed "Server stopped." even when killByPort was a no-op (win32).
-    if (portFreed) {
-      console.log(t("stop.stopped"));
-    } else {
-      console.log(t("stop.notRunning"));
-    }
-    return 0;
+  const port = resolveStopPort(opts);
+  // A stale PID file (pid set but process gone) must still fall back to the port, otherwise a
+  // server whose PID file went stale survives `stop` (#15177).
+  console.log(t("stop.portFallback"));
+  // #9455: a stale supervisor PID file would let the port-fallback stop also
+  // leave the supervisor running and respawning. Stop it first.
+  if (supervisorPid && isPidRunning(supervisorPid)) {
+    try {
+      process.kill(supervisorPid, "SIGTERM");
+    } catch {}
   }
-
-  console.log(t("stop.notRunning"));
+  const portFreed = await killByPort(port, deps);
+  killAllSubprocesses();
+  cleanupPidFile("server");
+  cleanupPidFile("supervisor");
+  // #9455: only report success when the port is actually free — previously stop
+  // printed "Server stopped." even when killByPort was a no-op (win32).
+  if (portFreed) {
+    console.log(t("stop.stopped"));
+  } else {
+    console.log(t("stop.notRunning"));
+  }
   return 0;
+}
+
+function resolveStopPort(opts) {
+  for (const raw of [opts.port, process.env.DASHBOARD_PORT, process.env.PORT]) {
+    const n = parseInt(String(raw ?? ""), 10);
+    if (Number.isFinite(n) && n > 0 && n < 65536) return n;
+  }
+  return 20128;
 }
 
 /**
@@ -110,15 +117,16 @@ export async function killByPort(port, deps = {}) {
   const kill = deps.processKill || ((p, sig) => process.kill(p, sig));
   const running = deps.isPidRunning || isPidRunning;
   const wait = deps.sleep || sleep;
+  const identify = deps.classifyPidIdentity || classifyPidIdentity;
   const platform = deps.platform || process.platform;
 
   if (platform === "win32") {
-    return killByPortWin32(port, { exec, kill, running, wait });
+    return killByPortWin32(port, { exec, kill, running, wait, identify });
   }
-  return killByPortPosix(port, { exec, kill, running, wait });
+  return killByPortPosix(port, { exec, kill, running, wait, identify });
 }
 
-async function killByPortPosix(port, { exec, kill, running, wait }) {
+async function killByPortPosix(port, { exec, kill, running, wait, identify }) {
   let pids = [];
   try {
     // Listeners only, matching the win32 LISTENING filter. A bare `lsof -ti :PORT` also
@@ -130,13 +138,18 @@ async function killByPortPosix(port, { exec, kill, running, wait }) {
       .split("\n")
       .map((p) => parseInt(p, 10))
       .filter((p) => Number.isFinite(p) && p > 0);
-  } catch {
-    // lsof not available or no process on port
+  } catch (err) {
+    // exit 1 = no listener (fine). ENOENT = lsof missing: we could not look, so do not let the
+    // caller report "Server stopped." (#15177).
+    if (err && err.code === "ENOENT") {
+      console.error("Could not look for the server: `lsof` is not installed or not on PATH.");
+      return false;
+    }
   }
-  return terminatePids(pids, { kill, running, wait });
+  return terminatePids(pids, { kill, running, wait, identify });
 }
 
-async function killByPortWin32(port, { exec, kill, running, wait }) {
+async function killByPortWin32(port, { exec, kill, running, wait, identify }) {
   let pids = [];
   try {
     const { stdout } = await exec("netstat", ["-ano"]);
@@ -144,7 +157,7 @@ async function killByPortWin32(port, { exec, kill, running, wait }) {
   } catch {
     // netstat not available or empty
   }
-  return terminatePids(pids, { kill, running, wait });
+  return terminatePids(pids, { kill, running, wait, identify });
 }
 
 function parseNetstatPids(stdout, port) {
@@ -164,8 +177,18 @@ function parseNetstatPids(stdout, port) {
   return pids;
 }
 
-async function terminatePids(pids, { kill, running, wait }) {
-  if (pids.length === 0) return true;
+async function terminatePids(allPids, { kill, running, wait, identify }) {
+  // A listener on the port is only stopped when its command line names OmniRoute (same proof
+  // as the pid-file path). A foreign or unreadable one is someone else's server: leave it alone
+  // and do not report the port free.
+  const pids = [];
+  for (const p of allPids) {
+    const identity = identify(p);
+    if (identity === "ours" || identity === "gone") pids.push(p);
+    else console.error(`Skipped PID ${p} on the port: it does not look like an OmniRoute process.`);
+  }
+  const skipped = allPids.length - pids.length;
+  if (pids.length === 0) return skipped === 0;
   for (const p of pids) {
     try {
       kill(p, "SIGTERM");
@@ -178,5 +201,5 @@ async function terminatePids(pids, { kill, running, wait }) {
     } catch {}
   }
   // Confirm the port is free: any PID still alive means we failed.
-  return pids.every((p) => !running(p));
+  return skipped === 0 && pids.every((p) => !running(p));
 }

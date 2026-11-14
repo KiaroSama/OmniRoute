@@ -16,6 +16,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { settleConnectionFollowUpsAfterEachTest } from "../helpers/connectionFollowUps.ts";
+
+settleConnectionFollowUpsAfterEachTest();
 
 const routeSrc = readFileSync(
   join(import.meta.dirname, "../../src/app/api/providers/route.ts"),
@@ -35,6 +38,10 @@ const codexProfileSyncSrc = readFileSync(
 );
 const claudeProfileSyncSrc = readFileSync(
   join(import.meta.dirname, "../../src/lib/cli-helper/claudeProfileAutoSync.ts"),
+  "utf8"
+);
+const profileCatalogSrc = readFileSync(
+  join(import.meta.dirname, "../../src/lib/cli-helper/profileCatalog.ts"),
   "utf8"
 );
 
@@ -72,8 +79,12 @@ test("POST /api/sync/initialize never forwards the client Origin to model sync",
 });
 
 test("credential-forwarding CLI profile self-fetches reject redirects", () => {
+  // The credential-forwarding catalog fetch lives in one shared helper...
+  assert.match(profileCatalogSrc, /redirect:\s*["']error["']/);
+  // ...and both profile auto-syncs must go through it instead of fetching directly.
   for (const source of [codexProfileSyncSrc, claudeProfileSyncSrc]) {
-    assert.match(source, /redirect:\s*["']error["']/);
+    assert.match(source, /loadProfileCatalog\(/);
+    assert.doesNotMatch(source, /\bfetch\w*\(/);
   }
 });
 
