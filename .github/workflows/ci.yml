@@ -201,14 +201,8 @@ jobs:
       - run: npm run check:tracked-artifacts
       - name: AI attribution in commit / PR metadata (Hard Rule #16)
         if: github.event_name == 'pull_request'
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_BODY: ${{ github.event.pull_request.body }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          printf '%s' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
-          npm run check:ai-attribution -- --range "$PR_BASE_SHA..$PR_HEAD_SHA" --pr-title "$PR_TITLE" --pr-body-file "$RUNNER_TEMP/pr-body.md"
+        # Resolve the verified merge candidate's base, not a potentially stale event base.
+        run: npm run check:ai-attribution
       # A test parked in vitest.config.ts's exclude list does not run, and looks like
       # coverage to whoever reads the tree. 62 files accumulated behind a comment pointing
       # at #8618 — closed in August while the list grew to 62; 51 of them passed when
