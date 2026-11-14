@@ -9,6 +9,7 @@ import Input from "./Input";
 import Modal from "./Modal";
 import SegmentedControl from "./SegmentedControl";
 import Select from "./Select";
+import SearchableSelectField from "@/shared/components/SearchableSelectField";
 import { cn } from "@/shared/utils/cn";
 import DistributeProxiesButton from "./DistributeProxiesButton";
 import NoAuthProviderToggle from "./NoAuthProviderToggle";
@@ -787,10 +788,10 @@ export default function NoAuthAccountCard({
                     <Icon name="shield" size={16} fill={configured} />
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="destructive-ghost"
                     size="icon-sm"
                     onClick={() => handleRemoveAccount(id)}
-                    className="size-6 shrink-0 text-text-muted opacity-0 hover:bg-error/10 hover:text-error group-hover:opacity-100 focus-visible:opacity-100"
+                    className="size-6 shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                     aria-label={t("removeAccount")}
                   >
                     <Icon name="delete" size={16} />
@@ -827,6 +828,7 @@ export default function NoAuthAccountCard({
             {/* #5217 (Gap 1): pick a pre-saved Proxy Pool entry by reference,
                 or fall back to a one-off custom proxy. */}
             <SegmentedControl
+              semantics="radio"
               aria-label={t("configureProxy")}
               size="sm"
               className="w-full"
@@ -839,21 +841,26 @@ export default function NoAuthAccountCard({
             />
 
             {proxyMode === "saved" ? (
-              <Select
+              <SearchableSelectField
                 value={selectedProxyId}
-                onChange={(e) => setSelectedProxyId(e.target.value)}
-                aria-label={t("saved")}
-                selectClassName="text-xs"
-              >
-                <option value="">
-                  {savedProxies.length === 0 ? t("noSavedProxies") : t("inheritConnectionOption")}
-                </option>
-                {savedProxies.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {(p.name || p.host) ?? p.id} ({p.type || "socks5"}://{p.host}:{p.port})
-                  </option>
-                ))}
-              </Select>
+                onValueChange={setSelectedProxyId}
+                label={t("saved")}
+                resetKey={proxyAccountId}
+                options={[
+                  {
+                    value: "",
+                    label:
+                      savedProxies.length === 0
+                        ? t("noSavedProxies")
+                        : t("inheritConnectionOption"),
+                    alwaysVisible: true,
+                  },
+                  ...savedProxies.map((p) => ({
+                    value: p.id,
+                    label: `${(p.name || p.host) ?? p.id} (${p.type || "socks5"}://${p.host}:${p.port})`,
+                  })),
+                ]}
+              />
             ) : (
               <>
                 <div className="flex gap-2">

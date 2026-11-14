@@ -8,7 +8,7 @@ import Modal from "./Modal";
 import Button from "./Button";
 import Input from "./Input";
 import SegmentedControl from "./SegmentedControl";
-import Select from "./Select";
+import SearchableSelectField from "@/shared/components/SearchableSelectField";
 import {
   type ProxyAssignmentItem,
   normalizeScopeId,
@@ -587,6 +587,7 @@ export default function ProxyConfigModal({
           {/* Proxy Type Selector */}
           <Field label={t("source")}>
             <SegmentedControl
+              semantics="radio"
               aria-label={t("source")}
               value={mode}
               onChange={(next) => setMode(next as typeof mode)}
@@ -598,24 +599,25 @@ export default function ProxyConfigModal({
           </Field>
 
           {mode === "saved" && (
-            <Select
+            <SearchableSelectField
               label={t("savedProxy")}
               value={selectedProxyId}
-              onChange={(e) => setSelectedProxyId(e.target.value)}
-            >
-              <option value="">{t("selectSavedProxyPlaceholder")}</option>
-              {sortedSavedProxies.map((item: any) => (
-                <option key={item.id} value={item.id}>
-                  {item.name} ({item.type}://{item.host}:{item.port})
-                </option>
-              ))}
-            </Select>
+              onValueChange={setSelectedProxyId}
+              options={[
+                { value: "", label: t("selectSavedProxyPlaceholder"), alwaysVisible: true },
+                ...sortedSavedProxies.map((item) => ({
+                  value: item.id,
+                  label: `${item.name} (${item.type}://${item.host}:${item.port})`,
+                })),
+              ]}
+            />
           )}
 
           {mode === "custom" && (
             <>
               <Field label={t("proxyType")}>
                 <SegmentedControl
+                  semantics="radio"
                   aria-label={t("proxyType")}
                   className="w-full"
                   value={proxyType}
@@ -737,11 +739,10 @@ export default function ProxyConfigModal({
               {hasOwnProxy && (
                 <Button
                   size="sm"
-                  variant="ghost"
+                  variant="destructive-ghost"
                   icon="delete"
                   onClick={handleClear}
                   disabled={saving}
-                  className="!text-error hover:!bg-error/10"
                 >
                   {t("clear")}
                 </Button>
