@@ -133,6 +133,38 @@ test("AI event scan still rejects contributor metadata and PR title/body violati
   assert.match(metadata.stderr, /PR body/);
 });
 
+for (const boundary of ["PR head", "PR ancestor"]) {
+  test(`a shallow ${boundary} cannot hide earlier prohibited contributor metadata`, (t) => {
+    const f = fixture(t);
+    f.git("checkout", "-q", "feature");
+    f.git(
+      "-c",
+      "core.hooksPath=/dev/null",
+      "commit",
+      "--allow-empty",
+      "-qm",
+      "earlier contributor change\n\nGenerated with Claude Code"
+    );
+    f.git("-c", "core.hooksPath=/dev/null", "commit", "--allow-empty", "-qm", "clean boundary");
+    const ancestor = f.git("rev-parse", "HEAD");
+    f.git("-c", "core.hooksPath=/dev/null", "commit", "--allow-empty", "-qm", "clean tip");
+    const head = f.git("rev-parse", "HEAD");
+    f.event.pull_request.head.sha = head;
+    f.git("checkout", "-q", "base");
+    f.git("-c", "core.hooksPath=/dev/null", "merge", "--no-ff", "-qm", "candidate", head);
+    f.eventEnv.GITHUB_SHA = f.git("rev-parse", "HEAD");
+    const complete = f.runAttribution();
+    assert.equal(complete.status, 1, complete.stdout + complete.stderr);
+    assert.match(complete.stderr, /earlier contributor change/);
+    writeFileSync(join(f.cwd, ".git/shallow"), `${boundary === "PR head" ? head : ancestor}\n`);
+    assert.throws(f.resolve, /Shallow PR history/);
+    const incomplete = f.runAttribution();
+    assert.equal(incomplete.status, 2, incomplete.stdout + incomplete.stderr);
+    assert.match(incomplete.stderr, /INCOMPLETE.*Shallow PR history/);
+    assert.doesNotMatch(incomplete.stdout, /OK/);
+  });
+}
+
 test("a direct PR-head checkout retains merge-base semantics even if the head is a merge", (t) => {
   const f = fixture(t);
   f.event.pull_request.head.sha = f.candidate;

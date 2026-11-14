@@ -16,6 +16,11 @@ export function resolvePullRequestComparison({ pr, cwd = process.cwd(), env = pr
   if (![eventBase, headSha, env.GITHUB_SHA].every((sha) => SHA.test(sha ?? ""))) {
     throw new Error("Missing immutable PR comparison identity");
   }
+  // A complete candidate/base does not prove that base..head can traverse all
+  // contributor commits. A shallow boundary anywhere can truncate that scan.
+  if (git("rev-parse", "--is-shallow-repository") !== "false") {
+    throw new Error("Shallow PR history cannot establish a complete comparison");
+  }
   const candidateSha = git("rev-parse", "--verify", "HEAD^{commit}");
   if (env.GITHUB_SHA !== candidateSha) throw new Error("PR candidate does not match checkout");
   git("rev-parse", "--verify", "--end-of-options", `${eventBase}^{commit}`);
