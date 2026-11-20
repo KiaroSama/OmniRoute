@@ -34,13 +34,13 @@
  * Usage:
  *   node scripts/quality/mutation-radiography.mjs <mutation-c.json> [<mutation-d.json> ...]
  * The universe of test files (so 🔴 empty files are detectable) defaults to
- * `stryker.conf.json:tap.testFiles`; pass --no-conf-universe to use only the union
+ * the resolved `stryker.conf.mjs` `tap.testFiles`; pass --no-conf-universe to use only the union
  * of the reports' own `testFiles` sections instead.
  */
 
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, "..", "..");
@@ -166,10 +166,11 @@ export function redundancyCandidates(reports, allTestFiles) {
 
 // ── CLI ──────────────────────────────────────────────────────────────────────
 
-function tapTestFilesUniverse() {
+async function tapTestFilesUniverse() {
+  // stryker.conf.mjs computes tap.testFiles at load time — import it the way Stryker does.
   try {
-    const conf = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "stryker.conf.json"), "utf8"));
-    return conf?.tap?.testFiles || null;
+    const mod = await import(pathToFileURL(path.join(REPO_ROOT, "stryker.conf.mjs")).href);
+    return mod.default?.tap?.testFiles || null;
   } catch {
     return null;
   }
@@ -264,7 +265,7 @@ function renderCandidates({ empty, redundant, candidates }) {
   return lines.join("\n");
 }
 
-function main(argv) {
+async function main(argv) {
   const wantCandidates = argv.includes("--candidates");
   const useConfUniverse = !argv.includes("--no-conf-universe");
   const paths = argv.slice(2).filter((a) => !FLAGS.has(a));
@@ -276,7 +277,7 @@ function main(argv) {
     process.exit(2);
   }
   const reports = paths.map(loadMutationReport);
-  const universe = useConfUniverse ? tapTestFilesUniverse() : null;
+  const universe = useConfUniverse ? await tapTestFilesUniverse() : null;
   if (wantCandidates) {
     process.stdout.write(
       renderCandidates(redundancyCandidates(reports, universe || undefined)) + "\n"
@@ -287,6 +288,6 @@ function main(argv) {
   process.stdout.write(renderMarkdown(classification) + "\n");
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main(process.argv);
+if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
+  await main(process.argv);
 }

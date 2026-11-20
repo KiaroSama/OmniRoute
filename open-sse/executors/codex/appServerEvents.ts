@@ -1,4 +1,5 @@
 import type { AdapterEvent, CodexUsage } from "../../vendor/codex-chatgpt-web/types.ts";
+import { sanitizeErrorMessage } from "../../utils/error.ts";
 
 /**
  * Map Codex app-server JSON-RPC notifications onto the AdapterEvent stream that
@@ -58,9 +59,7 @@ export interface DynamicToolCallLike {
  */
 export function dynamicToolWireName(namespace: unknown, tool: unknown): string {
   const name = typeof tool === "string" ? tool : "";
-  return typeof namespace === "string" && namespace.length > 0
-    ? `${namespace}__${name}`
-    : name;
+  return typeof namespace === "string" && namespace.length > 0 ? `${namespace}__${name}` : name;
 }
 
 /**
@@ -159,10 +158,49 @@ function errorMessage(params: Record<string, unknown>): string {
   return "Codex app-server reported an error";
 }
 
+function translateFailure(
+  method: string,
+  params: Record<string, unknown>,
+  push: (event: AdapterEvent) => void
+): boolean {
+  // Codex retries transient errors itself; output and turn/completed follow.
+  if (method === CODEX_APPSERVER_METHODS.error && params.willRetry === true) return false;
+
+  const errObj =
+    params.error && typeof params.error === "object"
+      ? (params.error as Record<string, unknown>)
+      : undefined;
+  const isUsageLimit =
+    errObj?.codexErrorInfo === "usageLimitExceeded" ||
+    params.codexErrorInfo === "usageLimitExceeded";
+
+  if (isUsageLimit) {
+    push({
+      type: "error",
+      message: sanitizeErrorMessage(errorMessage(params)),
+      status: 429,
+      errorType: "rate_limit_error",
+      code: "codex_app_server_usage_limit",
+    });
+    return true;
+  }
+
+  push({
+    type: "error",
+    message: sanitizeErrorMessage(
+      method === "__transport_closed__" ? params.reason : errorMessage(params)
+    ),
+    status: 502,
+    errorType: "provider_error",
+    code: "codex_app_server_turn_failed",
+  });
+  return true;
+}
+
 /**
  * Translate one notification into AdapterEvent(s) and push them into the queue.
  *
- * Returns `true` when the notification is terminal (turn/completed or error), so
+ * Returns `true` on completion, non-retryable error, or transport closure, so
  * the caller can close the event queue after draining.
  */
 export function translateNotification(
@@ -192,16 +230,9 @@ export function translateNotification(
       push({ type: "done", usage: extractTurnUsage(p), endTurn: true });
       return true;
     }
-    case CODEX_APPSERVER_METHODS.error: {
-      push({
-        type: "error",
-        message: errorMessage(p),
-        status: 502,
-        errorType: "provider_error",
-        code: "codex_app_server_turn_failed",
-      });
-      return true;
-    }
+    case "__transport_closed__":
+    case CODEX_APPSERVER_METHODS.error:
+      return translateFailure(method, p, push);
     default:
       return false;
   }

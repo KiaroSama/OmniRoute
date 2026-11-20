@@ -18,17 +18,12 @@
  * #8649 disconnect-aware wrapper's "Provider returned empty content" outcome.
  */
 import { buildErrorBody } from "./error.ts";
-import { buildStreamSummaryFromEvents } from "./streamPayloadCollector.ts";
-
-type StructuredSSEEventLike = {
-  index: number;
-  timestamp?: string;
-  event?: string;
-  data: unknown;
-};
+import type { StreamFailureSnapshot } from "./streamErrorFormat.ts";
+import { buildStreamFailureSnapshot } from "./streamFailureSnapshot.ts";
 
 type StructuredSSECollectorLike = {
-  getEvents: () => StructuredSSEEventLike[];
+  getEventCount: () => number;
+  getSummary: () => unknown;
   build: (summary?: unknown, opts?: { includeEvents?: boolean }) => unknown;
 };
 
@@ -50,6 +45,7 @@ type EmptyChoicesRejectContext = {
         message: string;
         code?: string;
         type?: string;
+        streamSnapshot?: StreamFailureSnapshot;
       }) => boolean | void | Promise<void>)
     | null;
   onComplete?:
@@ -91,7 +87,12 @@ export function rejectEmptyChoicesStream(ctx: EmptyChoicesRejectContext): boolea
 
   if (ctx.onFailure) {
     try {
-      ctx.onFailure({ status: 502, message: error.message, code: "empty_content" });
+      ctx.onFailure({
+        status: 502,
+        message: error.message,
+        code: "empty_content",
+        streamSnapshot: buildStreamFailureSnapshot(ctx.providerPayloadCollector),
+      });
     } catch {
       // best-effort — must never break the stream error path
     }
@@ -107,11 +108,7 @@ export function rejectEmptyChoicesStream(ctx: EmptyChoicesRejectContext): boolea
         error: error.message,
         errorCode: "empty_content",
         providerPayload: ctx.providerPayloadCollector.build(
-          buildStreamSummaryFromEvents(
-            ctx.providerPayloadCollector.getEvents(),
-            ctx.targetFormat,
-            ctx.model
-          ),
+          ctx.providerPayloadCollector.getSummary(),
           { includeEvents: false }
         ),
         clientPayload: ctx.clientPayloadCollector.build(errorBody, { includeEvents: false }),

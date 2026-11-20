@@ -18,58 +18,64 @@ Stealth funkcionalnosti postoje kako bi OmniRoute mogao djelovati kao sloj kompa
 
 ---
 
-## TLS Fingerprinting sloj
+## Sloj TLS otiska
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-Persistentne `wreq-js` sesije kreiraju se lijeno (lazily) po opsegu računa i razriješenom proxy-ju. `TlsClient` na nivou procesa grupiše najviše 128 sesija koje imitiraju **Chrome 124 na macOS-u** za upstream-ove iza Cloudflare-a. `TlsClient.fetch()` završava neuspjehom (fails closed) kada nativni runtime nije dostupan; pozivač može eksplicitno odabrati fallback izvan ovog omotača.
+Trajne `wreq-js` sesije kreiraju se lijeno za svaki opseg računa i razriješeni proxy. Procesni
+`TlsClient` skup sadrži najviše 128 sesija koje oponašaju **Chrome 124 na macOS-u** za
+uzvodne servise iza Cloudflarea. `TlsClient.fetch()` sigurno obustavlja rad kada izvorno izvršno
+okruženje nije dostupno; pozivalac može izričito odabrati rezervnu opciju izvan ovog omotača.
 
 - Profil sesije: `browser: "chrome_124", os: "macos"`
-- Razrješavanje proxy-ja (prioritet): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (također i mala slova)
-- Timeout: `TLS_CLIENT_TIMEOUT_MS` (nasljeđuje iz `FETCH_TIMEOUT_MS`, default 600000)
-- `wreq-js` Response je kompatibilan sa fetch-om (`headers`, `text()`, `json()`, `clone()`, `body`).
-- First-byte watchdog (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): `TlsClient.fetch()`
-  se razrješava čim stignu upstream zaglavlja, tako da `TLS_CLIENT_TIMEOUT_MS` sam po sebi ne može ograničiti
-  tijelo koje nikada ne isporuči prvi bajt. `guardTlsFirstByte()` utrkuje prvo `read()` tijela
-  protiv `TLS_FIRST_BYTE_WATCHDOG_MS` (default `10000`, `0` ga onemogućava); zdravo tijelo
-  ostaje nedodirnuto, dok tijelo koje je zastalo otkazuje wreq reader i dopušta postojećoj
-  TLS-fallback logici `proxyFetch`-a da pređe na direktni/proxy dispatcher (zahtjev koji nije
-  siguran za ponovni pokušaj, npr. POST sa tijelom, i dalje baca grešku umjesto da bude tiho ponovljen).
+- Razrješavanje proxyja (po prioritetu): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (također mala slova)
+- Vremensko ograničenje: `TLS_CLIENT_TIMEOUT_MS` (nasljeđuje od `FETCH_TIMEOUT_MS`, zadano 600000)
+- Odgovor iz `wreq-js` kompatibilan je s fetchom (`headers`, `text()`, `json()`, `clone()`, `body`).
+- Nadzornik prvog bajta (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): `TlsClient.fetch()`
+  završava čim stignu zaglavlja uzvodnog servisa, pa sam `TLS_CLIENT_TIMEOUT_MS` ne može ograničiti
+  tijelo koje nikada ne proizvede prvi bajt. `guardTlsFirstByte()` pokreće utrku između prvog `read()`
+  tijela i `TLS_FIRST_BYTE_WATCHDOG_MS` (zadano `10000`, `0` ga onemogućava); ispravno tijelo ostaje
+  nepromijenjeno, dok zastalo tijelo otkazuje wreq čitač i omogućava da postojeća logika TLS rezervne
+  opcije u `proxyFetch` nastavi na direktni/proxy dispečer (zahtjev koji nije siguran za ponovno
+  slanje, npr. POST s tijelom, i dalje izaziva grešku umjesto da se neprimjetno ponovo pokuša).
 
-### Web-cookie provider transport — wreq-js 3.2.0
+### Transport pružalaca web-kolačića — wreq-js 3.2.0
 
-`open-sse/services/tlsClientBase.ts` je zajednički adapter za pet specijalizovanih
-web-cookie transporta navedenih u nastavku. Svaki tanki omotač provajdera bira browser/OS profil. Adapter
-koristi jedinstveni wreq runtime loader i transport pool u `open-sse/utils/tlsClient.ts`, indeksiran po
-profilu + OS + razriješenom proxy-ju, dok svaki zahtjev koristi `cookieMode: "ephemeral"`. Računi i
-zahtjevi stoga dijele konekcije na nivou transporta, ali nikada wreq sesiju ili cookie jar.
+`open-sse/services/tlsClientBase.ts` je zajednički adapter za pet specijaliziranih
+transporta web-kolačića navedenih u nastavku. Svaki tanki omotač pružaoca odabire profil preglednika/OS-a. Adapter
+koristi jedan učitavač wreq izvršnog okruženja i skup transporta iz `open-sse/utils/tlsClient.ts`, indeksiran
+prema profilu + OS-u + razriješenom proxyju, dok svaki zahtjev koristi `cookieMode: "ephemeral"`. Računi i
+zahtjevi stoga dijele veze na nivou transporta, ali nikada wreq sesiju ili spremnik kolačića.
 
-| Provajder  | Profil        | Emulirani OS | Politika Stream EOF                  |
-| ---------- | ------------- | ------------ | ------------------------------------ |
-| Claude     | `chrome_146`  | Linux        | uključi `[DONE]`                     |
-| Perplexity | `firefox_148` | macOS        | uključi `event: end_of_stream`       |
-| Grok       | `chrome_146`  | Linux        | isključi `[DONE]`                    |
-| Notion     | `chrome_146`  | Windows      | uključi `[DONE]`                     |
-| LMArena    | `chrome_146`  | Windows      | nema sentinel; zatvori na native EOF |
+| Pružalac   | Profil        | Emulirani OS | Pravilo za EOF toka                                   |
+| ---------- | ------------- | ------------ | ----------------------------------------------------- |
+| Claude     | `chrome_146`  | Linux        | uključi `[DONE]`                                      |
+| Perplexity | `firefox_151` | macOS        | uključi `event: end_of_stream`                        |
+| Grok       | `chrome_146`  | Linux        | isključi `[DONE]`                                     |
+| Notion     | `chrome_146`  | Windows      | uključi `[DONE]`                                      |
+| LMArena    | `chrome_146`  | Windows      | bez sentinelne vrijednosti; zatvori na izvornom EOF-u |
 
-- Streaming direktno troši nativni response `ReadableStream`; ne kreiraju se privremene datoteke niti sidecar-i.
-- Do 256 početnih bajtova se pregleda prije izlaganja stream-a. SSE provajderi baferuju non-SSE
-  greške; Grok/LMArena mapiraju Cloudflare izazove na `403` i HTML intersticijale na `502`.
-- Nativni timeout zahtjeva ostaje omotan apsolutnim JS hard deadline-om. Zastoj (hang) poništava
-  i zatvara samo pogođeni transport profila/OS-a/proxy-ja prije nego što ga sljedeći zahtjev ponovo kreira.
-- Prioritet razrješavanja proxy-ja je po pozivu `proxyUrl` → kontekst računa/dashboard-a u opsegu zahtjeva →
-  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (uključujući varijante malim slovima). Greške u razrješavanju
-  završavaju neuspjehom (fail closed) umjesto curenja direktne konekcije. LMArena namjerno razrješava protiv `arena.ai`.
-- `byteResponse` vraća content-typed `data:` URL bez UTF-8 korupcije.
-- Greške su `TlsClientUnavailableError` (paket/addon nedostupan), `TlsClientHangError`
-  (deadline prekoračen) i `WreqTransportCapacityError` (zajednički kod greške kapaciteta sesije)
-  kada su svih 128 ograničenih slotova profila/OS-a/proxy-ja aktivni ili u procesu zatvaranja.
+- Tok direktno koristi izvorni `ReadableStream` odgovora; ne kreira se privremena datoteka ni
+  pomoćni proces.
+- Prije izlaganja toka pregledava se do 256 početnih bajtova. SSE pružaoci spremaju greške koje nisu SSE
+  u međuspremnik; Grok/LMArena mapiraju Cloudflare izazove na `403`, a HTML međustranice na `502`.
+- Vremensko ograničenje izvornog zahtjeva ostaje obuhvaćeno apsolutnim krajnjim JS rokom. Zastoj poništava
+  i zatvara samo pogođeni transport profila/OS-a/proxyja prije nego što ga sljedeći zahtjev ponovo kreira.
+- Prioritet razrješavanja proxyja je `proxyUrl` po pozivu → kontekst računa/kontrolne ploče ograničen na zahtjev →
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (uključujući varijante malim slovima). Greške razrješavanja sigurno
+  obustavljaju rad umjesto da propuste direktnu vezu. LMArena namjerno obavlja razrješavanje prema `arena.ai`.
+- `byteResponse` vraća `data:` URL s tipom sadržaja bez oštećenja UTF-8 podataka.
+- Greške su `TlsClientUnavailableError` (paket/dodatak nije dostupan), `TlsClientHangError`
+  (krajnji rok je prekoračen) i `WreqTransportCapacityError` (zajednički kôd greške kapaciteta sesije)
+  kada je svih 128 ograničenih mjesta profila/OS-a/proxyja aktivno ili se zatvara.
 
-Generička `TlsClient` sesija iznad ostaje specijalizovana za persistentno stanje kolačića zasnovano na browseru. Oba puta ponovo koriste jedan keširani wreq module loader i hook za životni ciklus procesa; njihovi pool-ovi ostaju odvojeni jer su im životni vijekovi kolačića namjerno različiti.
+Generička sesija `TlsClient` iznad ostaje specijalizirana za trajno stanje kolačića kojim upravlja
+preglednik. Oba puta ponovo koriste jedan keširani učitavač wreq modula i priključak životnog ciklusa procesa; njihovi skupovi ostaju
+odvojeni jer su njihovi životni vijekovi kolačića namjerno različiti.
 
-Profili su podržani od strane fiksiranog paketa, ali stvarno WAF prihvatanje se može promijeniti nezavisno
-od lokalnih contract testova. Validirajte promjene fingerprinta protiv eksplicitno ovlaštenog aktivnog računa
-prije nego što potvrdite paritet sa upstream browserom.
+Profili su podržani prikvačenim paketom, ali stvarno WAF prihvatanje može se mijenjati nezavisno
+od lokalnih ugovornih testova. Provjerite promjene otiska na izričito autoriziranom aktivnom računu
+prije nego što ustvrdite paritet s uzvodnim preglednikom.
 
 ---
 
@@ -118,7 +124,7 @@ Primjenjuje se na: `system` blokove, sve `messages[].content`, te `tools[].descr
 
 Za third-party Anthropic releje koji prihvataju samo "pravi Claude Code" saobraćaj:
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"` po defaultu
@@ -137,38 +143,60 @@ Srodni moduli u istom bundle-u:
 
 ## Antigravity Stealth
 
-Antigravity zahtjevi čuvaju tekst pozivaoca bajt-po-bajt. OmniRoute ne umetne zero-width karaktere u promptove niti preimenuje/ubacuje alate kako bi imitirao IDE klijenta.
+Antigravity zahtijeva da sačuva tekst pozivaoca bajt po bajt. OmniRoute ne umeće znakove nulte širine u upite ili rename/inject alate da bi imitirao IDE klijenta.
 
 ### `antigravityHeaderScrub.ts`
 
-Uklanja Stainless SDK markere (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) prije prosleđivanja.
+Skida nerđajuće SDK markere (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) prije prosljeđivanja.
 
-### ⚠️ Rizik: `ANTIGRAVITY_CREDITS=always` (kritična tačka za banovanje naloga)
+### ⚠️ Rizik: `ANTIGRAVITY_CREDITS=always` (vruća tačka za zabranu naloga)
 
-`ANTIGRAVITY_CREDITS=always` (koristi `open-sse/executors/antigravity.ts`) rutira **svaki** zahtjev kroz Antigravity AI Credit Overages (plaćeni Google krediti) umjesto da dopusti Google-ovom free-tier kvoti da ograničava pristup. Ovo je dokumentovano kao funkcionalnost, ali je **najčešći prijavljeni prekršaj ToS-a koji viđamo** — više Google Ultra naloga je banovano sa `403 / "service disabled for ToS violation" / insufficient_quota` nakon nekoliko sati rada sa `=always`.
+`ANTIGRAVITY_CREDITS=always` (koje koristi `open-sse/executors/antigravity.ts`) rute** svaki** zatražite preko Antigravity AI prekoračenja kredita (plaćeni Google krediti) umjesto da dozvolite Google-ovom slobodnom nivou kvote stvari. Ovo je dokumentovano kao karakteristika, ali jeste** jedini najčešći izvještaj o kršenju ToS-a koji vidimo** — više Google Ultra naloga je zabranjeno sa `403 / "service disabled for ToS violation" / insufficient_quota` nakon nekoliko sati rada sa `=always`.
 
-Upstream primjena je na **Google-ovoj strani**, ne postoji ništa što OmniRoute može spriječiti. Naziv env varijable i postojeća dokumentacija čine da zvuči kao siguran prekidač; nije.
+Upstream provedba je uključena**Google-ina strana** , ništa OmniRoute ne može spriječiti. Ime env var i postojeći dokumenti čine da zvuči kao sigurno dugme za okretanje; nije.
 
-**Zašto ovo agresivnije aktivira detekciju zloupotrebe nego samo free-tier upotreba:**
+**Zašto ovo privlači detekciju zloupotrebe agresivnije nego korištenje samo na besplatnom nivou:**
 
-- Kontinuirani automatizovani trošak na jednom Google nalogu signalizira drugačije nego kada free-tier dostigne kvotu i stane.
-- Credit overages nemaju limit brzine (rate ceiling), tako da pogrešno konfigurisan klijent može potrošiti nekoliko stotina USD u minutima i izgledati kao preprodaja API ključeva ili bot saobraćaj.
-- Više OmniRoute korisnika koji paralelno koriste overage kredite sa iste eksterne IP adrese pojačava ovaj signal.
+- Održana automatska potrošnja na jednom Google računu označava drugačije od besplatnih pogodaka kvota i zaustavljanja.
+- Prekoračenje kredita nema gornju stopu, tako da pogrešno konfigurisani klijent može proći nekoliko stotina USD za nekoliko minuta i izgledati kao preprodaja API ključeva ili promet botova.
+- Više OmniRoute korisnika koji paralelno pogađaju prekoračene kredite iz istog eksternog IP povećava signal.
 
-**Preporučeni pristup:**
+**Preporučeno držanje:**
 
-1. Zadržite default `ANTIGRAVITY_CREDITS=off` osim ako operator eksplicitno ne prihvata rizik plaćenih kredita i sankcionisanja naloga. `retry` prvo šalje normalan zahtjev i ubacuje kredite najviše jednom nakon kvalifikovanog quota 429; `always` ubacuje kredite već pri prvom zahtjevu.
-2. **Rasporedite opterećenje kroz provajdere putem Auto-Combo** (`model: "auto"` ili `kr/glm/etc`-combo) umjesto zasićenja jednog Antigravity naloga.
-3. **Postavite RPM limite po konekciji** na stranici za uređivanje Antigravity provajdera (Dashboard → Providers → Antigravity → connection → rate limit). 30–60 RPM je odbranjiva gornja granica za kontinuiranu upotrebu.
-4. **Koristite stabilno, operatorom kontrolisano upstream mrežanje** i izbjegavajte dijeljenje jednog naloga između nepovezanih korisnika ili radnih opterećenja.
-5. **Ako ste banovani**: podnesite žalbu putem `support.google.com` → "Restore Workspace/Account access" sa tačnim `quota_exceeded` / `service disabled` response tijelom koje je Google poslao. Vraćanje pristupa nije zagarantovano.
+1. Zadržite zadani `ANTIGRAVITY_CREDITS=off` osim ako operater eksplicitno ne prihvati rizik plaćenog kredita i izvršenja računa. `retry` prvo šalje normalan zahtjev i ubrizgava kredite najviše jednom nakon prihvatljive kvote 429; `always` ubacuje kredite na prvi zahtjev.
+2. **Rasporedite opterećenje na dobavljače putem Auto-Combo-a** (`model: "auto"` ili `kr/glm/etc` -combo) umjesto zasićenja jednog Antigravity naloga.
+3. **Postavite RPM ograničenja po vezi** na stranici za uređivanje Antigravity provajdera (Dashboard → Providers → Antigravity → ograničenje brzine veze → ). 30–60 RPM je odbranjiva gornja granica za kontinuiranu upotrebu.
+4. **Koristite stabilno, uzvodno umrežavanje koje kontrolira operater** i izbjegavajte dijeljenje jednog naloga među nepovezanim korisnicima ili radnim opterećenjima.
+5. **Ako je zabranjeno** : žalba putem `support.google.com` → "Vrati Workspace/Account pristup" s tačnim `quota_exceeded` / `service disabled` tijelom odgovora Google poslano. Restauracija nije zagarantovana.
 
-Referenca za okruženje dokumentuje implikacije na nalog i troškove za svaki mod kredita.
+Referenca okruženja dokumentuje implikacije računa i potrošnje svakog kreditnog načina.
 
-Kontaktne tačke:
+#### Ne samo `=always`: Antigravity OAuth rutiranje općenito
+
+Obustave nisu ograničene na prekoračenje kredita. Izveštaji iz novembra 2026. (#19223, #19266) opisuju nekoliko Google naloga suspendovanih tokom rutiranja kroz `antigravity` i `agy` (Antigravity CLI) provajdere, sa:
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+Oba provajdera se autentifikuju sa Antigravity proizvodom OAuth sesijom, što je slučaj u obaveštenju o riziku na kontrolnoj tabli ("Ovaj provajder koristi vaš službeni proizvod session/OAuth, koji nije ovlašćen za proxy/router upotrebu") upozorava pre dodavanja veze. Nijedna od gore navedenih preporuka ne dozvoljava tu upotrebu; oni samo smanjuju promet koji nosi jedan račun.
+
+**Ovlašteni API interfejsi za Gemini modele.** Google nudi programski pristup Gemini u preko svog APIs, koji OmniRoute podržava kao obične dobavljače API ključeva:
+
+| Provajder id | Naziv kontrolne table     | Credential                                                                       |
+| ------------ | ------------------------- | -------------------------------------------------------------------------------- |
+| `gemini`     | Gemini (Google AI Studio) | Gemini API ključ iz Google AI Studio (dostupan besplatni nivo)                   |
+| `vertex`     | Vertex AI                 | Servisni račun JSON, OAuth pristupni token ili Vertex Express API ključ (Gemini) |
+
+Ovi provajderi koriste akreditive Google probleme za API pristup, za razliku od sesije Antigravity proizvoda. Oni ne čine svaku upotrebu usklađenom ili otklanjaju rizik od provođenja: svaki je vođen vlastitim uvjetima, koje operater mora provjeriti za njihovu primjenu. Na primjer, [dodatni uslovi korištenja usluge Gemini API](https://ai.google.dev/gemini-api/terms) dozvoljavaju samo plaćene usluge kada su API klijenti dostupni korisnicima u Evropskom ekonomskom prostoru, Švicarskoj ili Ujedinjenom Kraljevstvu, a sadržaj koji se šalje neplaćenim uslugama može se koristiti za poboljšanje proizvoda Google-a. Vertex AI umjesto toga potpada pod Google Cloud uslove ( [Uslovi specifičnih za uslugu](https://cloud.google.com/terms/service-terms) ). Cijene i kvote slijede te API uslove, a ne Antigravity pretplatu.
+
+Operateri koji žele izbjeći gore opisane suspenzije Antigravity trebali bi usmjeriti Gemini saobraćaj preko jednog od ovih provajdera umjesto `antigravity` / `agy`, nakon što provjere da li njihova upotreba odgovara uslovima provajdera.
+
+Tačke dodira:
 
 - `open-sse/executors/antigravity.ts` — čita `process.env.ANTIGRAVITY_CREDITS`
-- `src/lib/oauth/providers/antigravity.ts` — plumbing za kredencijale
+- `src/lib/oauth/providers/antigravity.ts` — akreditiv vodovod
 - Originalni izvještaj o incidentu: Diskusija [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
@@ -238,19 +266,18 @@ Svi MITM endpointi zahtijevaju administratorsku autentifikaciju (`requireCliTool
 
 ---
 
-## Zamjene User-Agent vrijednosti — varijable okruženja (`.env.example` odjeljak 12)
+## Korisnički agent poništava — env vars (`.env.example` odjeljak 12)
 
-| Varijabla                | Zadana vrijednost                                               |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| Varijabilna         | Default                                       |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-Koristi ih `open-sse/executors/base.ts::buildHeaders()` putem dinamičkog pronalaženja. **Ažurirajte ih kada pružaoci objave nove verzije CLI-ja** — zastarjeli UA nizovi počinju se odbijati kao zastarjeli klijenti.
+Konzumira `open-sse/executors/base.ts::buildHeaders()` putem dinamičkog pretraživanja.** Povećajte ih kada provajderi izdaju nove CLI verzije** — zastarjeli UA stringovi počinju da se odbijaju kao zastarjeli klijenti.
 
 ## CLI Compatibility Mode Prekidači (`.env.example` sekcija 13)
 

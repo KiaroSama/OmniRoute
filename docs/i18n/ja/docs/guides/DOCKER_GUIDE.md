@@ -4,7 +4,7 @@
 
 ---
 
-> Docker デプロイメントの完全なリファレンスです。クイックスタートについては、[README の Docker セクション](../README.md#-docker)を参照してください。
+> Docker デプロイの完全なリファレンスです。すぐに始める場合は、[README の Docker セクション](../README.md#-docker)を参照してください。
 
 ## 目次
 
@@ -17,21 +17,19 @@
 - [本番環境向け Compose](#production-compose)
 - [Dockerfile のステージ](#dockerfile-stages)
 - [重要な環境変数](#critical-environment-variables)
-- [Caddy（HTTPS）を使用した Docker Compose](#docker-compose-with-caddy-https-auto-tls)
+- [Caddy（HTTPS）を使用する Docker Compose](#docker-compose-with-caddy-https-auto-tls)
 - [Cloudflare Quick Tunnel](#cloudflare-quick-tunnel)
 - [イメージタグ](#image-tags)
+- [Docker でのダッシュボード更新](#dashboard-updates-in-docker)
 - [可用性：デフォルトの SQLite は単一レプリカ](#availability-default-sqlite-is-single-replica)
+- [Docker 内での Gemini のリージョンエラー](#gemini-regional-errors-inside-docker)
 - [重要な注意事項](#important-notes)
 
 ---
 
-## クイック実行
+## クイックラン
 
-> **1つのコマンドでセルフホストしますか？**
-> [セルフホストガイド](../getting-started/SELF_HOST_GUIDE.md)を参照してください —
-> `docker compose -f docker-compose.selfhost.yml up -d`（公開済みイメージ +
-> Redis、ループバック限定、プロファイル選択なし）。以下のクイック実行は、
-> すでに別の場所でRedisを実行しているユーザー向けのシングルコンテナ構成です。
+> **1 つのコマンドでセルフホストしますか?**[セルフホスト ガイド](../getting-started/SELF_HOST_GUIDE.md)— `docker compose -f docker-compose.selfhost.yml up -d` (公開イメージ+ Redis、ループバックのみ、プロファイルの選択なし) を参照してください。以下のクイック実行は、すでに他の場所でRedis実行しているユーザーのための単一コンテナーのパスです。
 
 ```bash
 docker run -d \
@@ -40,13 +38,13 @@ docker run -d \
   --stop-timeout 40 \
   -p 20128:20128 \
   -v omniroute-data:/app/data \
-  diegosouzapw/omniroute:latest
+  cheaperinference/omniroute:latest
 ```
 
-## 環境ファイルを使用する場合
+## 環境ファイルあり
 
 ```bash
-# まず .env をコピーして編集
+# Copy and edit .env first
 cp .env.example .env
 
 docker run -d \
@@ -56,7 +54,7 @@ docker run -d \
   --env-file .env \
   -p 20128:20128 \
   -v omniroute-data:/app/data \
-  diegosouzapw/omniroute:latest
+  cheaperinference/omniroute:latest
 ```
 
 ## Docker Compose
@@ -68,41 +66,41 @@ docker compose --profile base up -d
 # CLI プロファイル（Claude Code、Codex、OpenClaw を内蔵）
 docker compose --profile cli up -d
 
-# ホストプロファイル（Linux 優先、ホストの CLI バイナリを読み取り専用でマウント）
+# ホストプロファイル（主に Linux 向け。ホストの CLI バイナリを読み取り専用でマウント）
 docker compose --profile host up -d
 
 # Web プロファイル（Web セッションプロバイダー向けの Chromium/Playwright）
 docker compose --profile web up -d
 
-# CLI と CLIProxyAPI サイドカーを組み合わせる
+# CLI + CLIProxyAPI サイドカーを組み合わせる
 docker compose --profile cli --profile cliproxyapi up -d
 ```
 
 ## 利用可能なプロファイル
 
-OmniRoute には、主要なデプロイ構成向けの Compose プロファイルが用意されています。環境に合ったものを選択してください。
+OmniRoute には、主要なデプロイ構成向けの Compose プロファイルが用意されています。環境に合うものを選択してください。
 
-| プロファイル         | サービス         | 使用する場面                                                                                                                                           | コマンド                                     |
-| -------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
-| `base`（デフォルト） | `omniroute-base` | ヘッドレスサーバー／最小ランタイム向け。プロバイダー CLI は含まれません                                                                                | `docker compose --profile base up -d`        |
-| `cli`                | `omniroute-cli`  | `omniroute providers/setup/doctor` および同梱 CLI（Codex、Claude Code、Droid、OpenClaw）を呼び出すエージェント型ワークフロー向け                       | `docker compose --profile cli up -d`         |
-| `host`               | `omniroute-host` | `~/.local/bin`、`~/.codex`、`~/.claude` などを読み取り専用でマウントし、ホストの CLI へ `network_mode` のようにアクセスする必要がある Linux ホスト向け | `docker compose --profile host up -d`        |
-| `cliproxyapi`        | `cliproxyapi`    | アップストリーム CLI のプロキシ用として、ポート `8317` で [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) サイドカーを実行する場合         | `docker compose --profile cliproxyapi up -d` |
-| `web`                | `omniroute-web`  | ブラウザーを必要とする Web セッションプロバイダー向け：`gemini-web`、`claude-web`、`claude-turnstile`（`runner-web` をビルドし、Chromium を含む）      | `docker compose --profile web up -d`         |
+| プロファイル         | サービス         | 使用する場合                                                                                                                                   | コマンド                                     |
+| -------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| `base`（デフォルト） | `omniroute-base` | ヘッドレスサーバー／最小限のランタイム。プロバイダー CLI はバンドルされません                                                                  | `docker compose --profile base up -d`        |
+| `cli`                | `omniroute-cli`  | `omniroute providers/setup/doctor` およびバンドル済み CLI（Codex、Claude Code、Droid、OpenClaw）を呼び出すエージェント型ワークフロー           | `docker compose --profile cli up -d`         |
+| `host`               | `omniroute-host` | `~/.local/bin`、`~/.codex`、`~/.claude` などを読み取り専用でマウントし、ホスト CLI への `network_mode` に似たアクセスを必要とする Linux ホスト | `docker compose --profile host up -d`        |
+| `cliproxyapi`        | `cliproxyapi`    | アップストリーム CLI プロキシ用に、ポート `8317` で [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) サイドカーを実行する           | `docker compose --profile cliproxyapi up -d` |
+| `web`                | `omniroute-web`  | ブラウザーを必要とする Web セッションプロバイダー：`gemini-web`、`claude-web`、`claude-turnstile`（`runner-web` をビルド、Chromium を含む）    | `docker compose --profile web up -d`         |
 
-> 複数のプロファイルを組み合わせることもできます：`docker compose --profile cli --profile cliproxyapi up -d`。
+> 複数のプロファイルを組み合わせることができます：`docker compose --profile cli --profile cliproxyapi up -d`。
 
-## OmniRoute を Docker で実行する際のホスト CLI ツールの設定
+## OmniRoute を Docker で実行する場合のホスト CLI ツールの設定
 
 `omniroute setup-codex`、`setup-claude`、`config set <tool>`、およびダッシュボードの
-**設定を保存**ボタンは、いずれも `~/.codex/*.config.toml` のようなファイルを書き込みます。これらのパスが
+**Save config** ボタンは、いずれも `~/.codex/*.config.toml` のようなファイルを書き込みます。これらのパスが
 意味を持つのは、CLI が実際に動作しているマシン上だけです。コンテナ内で実行すると、
-書き込み先はコンテナ自身のホーム（`/home/node` —
-イメージは `USER node` で実行されます）になります。ホスト側の CLI がそこを読み取ることはなく、
-コンテナが再作成された時点で破棄されます。
+書き込み先はコンテナ自身のホーム (`/home/node` —
+イメージは `USER node` で実行されます) になります。ホストの CLI がそこを読み取ることはなく、
+コンテナが再作成された時点で内容は破棄されます。
 
-OmniRoute はこの状況を検出し、使用できない成功結果を報告する代わりに、
-手順を示して書き込みを拒否します。CLI は終了コード `2` で終了し、API は
+OmniRoute はこれを検出し、利用できない成功結果を報告する代わりに、
+手順を示して書き込みを拒否します。CLI は `2` で終了し、API は
 `containerEphemeralTarget: true` を含む `422` を返します。
 
 ### 推奨: CLI はホストで、OmniRoute は Docker で実行する
@@ -113,18 +111,18 @@ OmniRoute はこの状況を検出し、使用できない成功結果を報告�
 docker compose --profile base up -d
 
 npm install -g omniroute
-omniroute connect http://localhost:20128   # CLI の接続先をコンテナに設定
+omniroute connect http://localhost:20128   # CLI の接続先をコンテナにする
 omniroute setup-codex                      # ホスト上の実際の ~/.codex に書き込む
 ```
 
 Codex、Claude Code、Cursor、または同様のツールをノート PC 上で実行する場合は、
 これが適切な選択です。通常はこの構成になります。
 
-### 代替手段: ホストの設定ディレクトリをバインドマウントする（`host` プロファイル）
+### 代替方法: ホストの設定ディレクトリを bind mount する (`host` プロファイル)
 
-コンテナ自体からホストの設定へ書き込みたい場合は、対象の
-ディレクトリをマウントし、`CLI_CONFIG_HOME` がマウントのルートを指すようにします。`host` プロファイルでは
-すでにこの設定が行われています。
+コンテナ自体からホストの設定に書き込みたい場合は、それらの
+ディレクトリをマウントし、`CLI_CONFIG_HOME` でマウントのルートを指定します。`host` プロファイルでは、
+あらかじめ次のように設定されています。
 
 ```yaml
 environment:
@@ -135,47 +133,49 @@ volumes:
   - ~/.claude:/host-home/.claude:rw
 ```
 
-バインドマウントによって、パスが信頼できるものになります。OmniRoute は
-`/proc/self/mountinfo` を読み取り、マウント済みのパス（および子ディレクトリがマウントされている
-ディレクトリ。これはまさに上記の `/host-home` の構造です）への書き込みを許可する一方で、
-マウントされていないパスへの書き込みは引き続き拒否します。
+bind mount によって、そのパスを信頼できるようになります。OmniRoute は
+`/proc/self/mountinfo` を読み取り、マウントされたパスへの書き込みを許可します。また、
+子ディレクトリがマウントされているディレクトリへの書き込みも許可します。上記の `/host-home` はまさにその構成です。
+一方で、マウントされていないパスへの書き込みは引き続き拒否します。
 
-### 回避手段: コンテナ自身の CLI を設定する（必要な場合のみ使用）
+### エスケープハッチ: コンテナ自身の CLI を設定する (使用は最小限に)
 
-CLI が実際にコンテナ内に存在する場合（`cli` プロファイル）は、書き込みは
-意図されたものです。任意の `setup-*` コマンドに `--allow-container-write` を渡すか、
-サーバーに対して `OMNIROUTE_ALLOW_CONTAINER_CONFIG_WRITE=true` を設定します。書き込みは、
-コンテナの再作成後には保持されないという警告付きで続行されます。
+CLI が実際にコンテナ内に存在する場合 (`cli` プロファイル) は、書き込みは意図されたものです。
+任意の `setup-*` コマンドに `--allow-container-write` を渡すか、サーバーで
+`OMNIROUTE_ALLOW_CONTAINER_CONFIG_WRITE=true` を設定してください。コンテナが破棄されると
+内容が失われるという警告とともに、書き込みが実行されます。
 
-> **セキュリティ警告 — `cli` プロファイルと `docker.sock` のマウント。**
-> `cli` プロファイルは `/var/run/docker.sock` をバインドマウントするため、コンテナ内の
-> 自動アップデーターはホストのデーモンを使用してスタックを再作成できます
-> （`src/lib/system/autoUpdate.ts` はそのソケットの存在を確認し、
-> 存在しない場合は Docker 経由の処理をスキップします）。このソケットは**ホストの root 権限に関わる
-> 信頼境界**です。このソケットへアクセスできるものはすべて、root としてホストの Docker デーモンを
-> 操作できます。つまり、ホスト上の任意のコンテナを作成、検査、停止、削除できます。
-> その影響は次のとおりです。
+> **セキュリティ警告 — `cli` プロファイル + `docker.sock` マウント。**
+> `cli` プロファイルは `/var/run/docker.sock` を bind mount するため、コンテナ内の
+> 自動アップデーターはホストのデーモン経由でスタックを再作成できます
+> (`src/lib/system/autoUpdate.ts` はそのソケットの存在を確認し、
+> 存在しない場合は Docker の処理経路をスキップします)。このソケットは **ホストの root 権限に関わる
+> 信頼境界** です。このソケットにアクセスできるものは、すべてホストの Docker デーモンを
+> root として操作できます。つまり、ホスト上のあらゆるコンテナを作成、調査、停止、削除できます。
+> これに伴う注意事項は次のとおりです。
 >
 > 1. **`cli` プロファイルのポートをネットワークに公開しないでください。**
->    `127.0.0.1` 上で公開してください（`ports: "127.0.0.1:${DASHBOARD_PORT:-20128}:..."`）。
->    LAN から到達可能な `cli` プロファイルでは、ダッシュボードレベルの RCE が発生すると、
->    ホスト全体が侵害されます。
-> 2. **追加のホストディレクトリを `cli` プロファイルにバインドしないでください。**
->    Docker ソケットと追加のマウントを組み合わせると、コンテナからファイルシステムとホスト設定へ
->    完全な読み書きが可能になります。ツールからプロジェクトを参照する必要がある場合は、
->    CLI バイナリを使用してローカルで実行してください。`cli` コンテナへはマウントしないでください。
+>    `127.0.0.1` 上で公開してください (`ports: "127.0.0.1:${DASHBOARD_PORT:-20128}:..."`)。
+>    LAN から到達可能な `cli` プロファイルでは、ダッシュボードレベルの任意コード実行が
+>    ホスト全体の侵害につながります。
+> 2. **`cli` プロファイルに追加のホストディレクトリを bind mount しないでください。**
+>    Docker ソケットと追加のマウントを併用すると、コンテナからファイルシステムとホスト設定を
+>    完全に読み書きできるようになります。ツールからプロジェクトを参照する必要がある場合は、
+>    CLI バイナリを使用してローカルで実行してください。`cli` コンテナには
+>    マウントしないでください。
 >
 > コンテナ内での自動更新が不要な場合は、`cli` プロファイルを無効のままにしてください
-> （`COMPOSE_PROFILES=core,redis`、またはより短い指定）。その他のプロファイルでは
-> Docker ソケットはマウントされません。
+> (`COMPOSE_PROFILES=core,redis` または、より短い指定)。他のプロファイルは
+> Docker ソケットをマウントしません。
 >
-> MITM に関連する脅威モデルについては `docs/security/MITM-TPROXY-DECRYPT.md`
-> （git 上にあり、`/docs` には組み込まれません）を、`codex`/`claude-code`/`droid`/`openclaw`
-> バイナリの出所チェーンについては `docs/security/SUPPLY_CHAIN.md` を参照してください。
+> MITM に関連する脅威モデルについては、`docs/security/MITM-TPROXY-DECRYPT.md` (git 上に存在し、`/docs` にはコンパイルされません) を
+> 参照してください。また、
+> `codex`/`claude-code`/`droid`/`openclaw` バイナリの来歴チェーンについては、
+> `docs/security/SUPPLY_CHAIN.md` を参照してください。
 
 ## Redis サイドカー
 
-OmniRoute は、分散レートリミッターと共有キャッシュのバックエンドとして Redis を使用します。`redis` サービスは `docker-compose.yml` で**常に定義されており**（プロファイルによる制限はありません）、他のどのプロファイルとも同時に起動します。
+OmniRoute は、分散レートリミッターと共有キャッシュのバックエンドとして Redis を利用します。`redis` サービスは `docker-compose.yml` で**常に定義されており**（プロファイルによる制限はありません）、他のどのプロファイルとも一緒に起動します。
 
 | 詳細                     | 値                                            |
 | ------------------------ | --------------------------------------------- |
@@ -185,29 +185,29 @@ OmniRoute は、分散レートリミッターと共有キャッシュのバッ�
 | ホストポート（上書き）   | `REDIS_PORT`（デフォルトは `6379`）           |
 | ホストバインド（上書き） | `REDIS_BIND_HOST`（デフォルトは `127.0.0.1`） |
 | ボリューム               | `omniroute-redis-data` → `/data`              |
-| ヘルスチェック           | `redis-cli ping`（10秒間隔）                  |
+| ヘルスチェック           | `redis-cli ping`（間隔 10 秒）                |
 
 関連する環境変数：
 
 - `REDIS_URL` — アプリに注入される接続文字列（デフォルトは `redis://redis:6379`）。
 - `REDIS_PORT` — Redis コンテナのホスト側ポートマッピング。
-- `REDIS_BIND_HOST` — ポートを公開するホストインターフェース。デフォルトは `127.0.0.1`。
+- `REDIS_BIND_HOST` — ポートを公開するホストインターフェイス。デフォルトは `127.0.0.1`。
 
-> **デフォルトでループバックを使用する理由：** サイドカーは `requirepass` なしで実行され、アプリ
-> コンテナは Compose ネットワーク（`redis:6379`）経由で接続します。公開ポートは
-> ホスト側のツール（`redis-cli`、ローカルの `npm run dev`）で使用するためだけにあります。
+> **デフォルトでループバックを使用する理由：** サイドカーは `requirepass` なしで実行され、
+> アプリコンテナは Compose ネットワーク経由（`redis:6379`）で接続します。公開ポートは、
+> ホスト側のツール（`redis-cli`、ローカルの `npm run dev`）から利用するためだけに存在します。
 > `0.0.0.0` で公開すると、認証されていない Redis が LAN 上のすべてのホストに公開されます。
 > `REDIS_BIND_HOST=0.0.0.0` を設定する場合は、サービスの `command:` に `--requirepass` も追加してください。
 
-**Redis の無効化**は推奨されません（レートリミッターがインメモリのフォールバックに縮退します）。無効化する必要がある場合は、`docker-compose.yml` 内の `redis:` サービスブロックを削除またはコメントアウトするか、ゼロにスケールしてください：
+**Redis の無効化**は推奨されません（レートリミッターがインメモリのフォールバックに縮退します）。どうしても必要な場合は、`docker-compose.yml` の `redis:` サービスブロックを削除またはコメントアウトするか、ゼロにスケールしてください：
 
 ```bash
 docker compose up -d --scale redis=0
 ```
 
-## 本番環境用 Compose
+## 本番環境向け Compose
 
-開発環境と並行して実行する分離された本番環境スナップショットには、`docker-compose.prod.yml` を使用します。
+開発環境と並行して隔離された本番環境スナップショットを実行するには、`docker-compose.prod.yml` を使用します。
 
 | 詳細                             | 値                                                                                    |
 | -------------------------------- | ------------------------------------------------------------------------------------- |
@@ -216,7 +216,7 @@ docker compose up -d --scale redis=0
 | デフォルトの API ポート          | `PROD_API_PORT=20131`                                                                 |
 | イメージ                         | `omniroute:prod`（`runner-cli` ターゲットからビルド）                                 |
 | Redis コンテナ                   | `omniroute-redis-prod`（`redis:8.6.2`、専用の `redis-prod-data` ボリューム）          |
-| データボリューム                 | `omniroute-prod-data`（名前付きで、再ビルド後も永続化）                               |
+| データボリューム                 | `omniroute-prod-data`（名前付き、再ビルド後も保持）                                   |
 | ヘルスチェック                   | `node healthcheck.mjs` + `redis-cli ping`。`depends_on` は Redis の正常性を条件とする |
 
 使用方法：
@@ -225,27 +225,27 @@ docker compose up -d --scale redis=0
 # 本番環境スタックをビルドして起動
 docker compose -f docker-compose.prod.yml up -d --build
 
-# ログをストリーミング
+# ログをストリーミング表示
 docker compose -f docker-compose.prod.yml logs -f
 
 # 停止して削除（ボリュームは保持）
 docker compose -f docker-compose.prod.yml down
 ```
 
-本番環境スタックは開発環境用 Compose と並行して実行されます（コンテナ名、ポート、ボリュームが異なります）。そのため、本番環境を稼働させたままローカルで反復開発を続けられます。
+本番環境スタックは開発環境の Compose と並行して実行されます（コンテナ名、ポート、ボリュームが異なります）。そのため、本番環境を稼働させたまま、ローカルで開発を継続できます。
 
 ## Dockerfile のステージ
 
-このリポジトリには、マルチステージ Dockerfile（`Dockerfile`）が含まれています。4 つのステージが公開されているため、用途に適した `target` を選択してください。
+リポジトリには、複数ステージの Dockerfile (`Dockerfile`) が同梱されています。 4 つのステージが公開されます。ユースケースに適した`target`を選択してください。
 
-| ステージ      | ベースイメージ        | 用途                                                                                                                                                                                                                                                                                                                            |
-| ------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `builder`     | `node:26-trixie-slim` | 依存関係をインストール（`npm ci --legacy-peer-deps`）し、`npm run build` を実行します（デフォルトでは Turbopack — 以下の「ビルド時のリソース」を参照）                                                                                                                                                                          |
-| `runner-base` | `node:26-trixie-slim` | Next.js の standalone 出力を使用する本番ランタイムです。**プロバイダーの CLI は含まれていません。**                                                                                                                                                                                                                             |
-| `runner-cli`  | `runner-base`         | `git`、`docker.io`、`docker-compose` と、グローバル CLI の `@openai/codex`、`@anthropic-ai/claude-code`、`droid`、`openclaw` を追加します。**エージェント型ワークフローにはこれを選択してください。**                                                                                                                           |
-| `runner-web`  | `runner-base`         | Web セッションプロバイダー `gemini-web`、`claude-web`、`claude-turnstile` 用に、Playwright と Chromium ブラウザー（`--with-deps`）を追加します。**これらのプロバイダーを使用する場合はこれを選択してください** — 通常のイメージでは、これがないとリクエスト時に失敗します（「リリースチャネル」の `-web` に関する注記を参照）。 |
+| ステージ      | ベースイメージ        | 目的                                                                                                                                                                                                                                                                                                      |
+| ------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `builder`     | `node:26-trixie-slim` | Installs deps (`npm ci --legacy-peer-deps`) and runs `npm run build` (Turbopack by default — see Build-time resources below)                                                                                                                                                                              |
+| `runner-base` | `node:26-trixie-slim` | Next.jsスタンドアロン出力を使用した運用ランタイム。**プロバイダーCLIsはバンドルされていません。**                                                                                                                                                                                                         |
+| `runner-cli`  | `runner-base`         | `git`、 `docker.io`、 `docker-compose`およびグローバルCLIs: `@openai/codex`、 `@anthropic-ai/claude-code`、 `droid`、 `openclaw`を追加します。**エージェント ワークフローの場合はこれを選択します。**                                                                                                     |
+| `runner-web`  | `runner-base`         | Web セッションプロバイダー`gemini-web`、 `claude-web`、 `claude-turnstile`) 用の Chromium ブラウザー (`--with-deps`) にPlaywright +追加します。**これらのプロバイダーを使用する場合はこれを選択してください**—プレーン イメージがないと、リクエスト時に失敗します (リリース チャネルの`-web`メモを参照)。 |
 
-特定のターゲットを手動でビルドするには、以下を実行します。
+特定のターゲットを手動でビルドします。
 
 ```bash
 docker build --target runner-base -t omniroute:base .
@@ -255,18 +255,17 @@ docker build --target runner-web  -t omniroute:web  .
 
 ### ビルド時のリソース
 
-3 つのビルド引数によって、`builder` ステージで消費されるリソースが決まります。これらはビルド時にのみ使用されます —
-`OMNIROUTE_MEMORY_MB`（以下を参照）は別のランタイム設定です。
+3 つのビルド引数は、 `builder`ステージのコストを制御します。これらはビルド時のみです— `OMNIROUTE_MEMORY_MB` (下記) は別個の実行時ノブです。
 
-| ビルド引数                  | デフォルト | 効果                                                                                                                 |
+| 引数を構築する              | デフォルト | 効果                                                                                                                 |
 | --------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------- |
-| `OMNIROUTE_USE_TURBOPACK`   | `0`        | `0` では webpack でビルドします。ピークメモリは少なくなりますが、速度は低下します。`1` では Turbopack を使用します。 |
-| `OMNIROUTE_BUILD_MEMORY_MB` | `6144`     | 起動された `next build` に対する V8 ヒープ上限（`--max-old-space-size`）です。                                       |
-| `OMNIROUTE_BUILD_WORKERS`   | `2`        | `CIRCLE_NODE_TOTAL` に渡されます。Next はページデータ収集用に `workers = N - 1` を算出します。                       |
+| `OMNIROUTE_USE_TURBOPACK`   | `0`        | `0` webpack を使用してビルドします。ピーク時のメモリが少なく、速度が遅くなります。 `1` Turbopackにオプトインします。 |
+| `OMNIROUTE_BUILD_MEMORY_MB` | `6144`     | 生成された`next build`の V8 ヒープ上限 (`--max-old-space-size`)。                                                    |
+| `OMNIROUTE_BUILD_WORKERS`   | `2`        | フィード`CIRCLE_NODE_TOTAL`;次に、ページデータ収集用の`workers = N - 1`を導出します。                                |
 
-`OMNIROUTE_BUILD_WORKERS` は、大規模なビルダーでは増やすべき設定であり、リソースが制限されたビルドが **`✓ Compiled successfully` の後に** 異常終了した場合に疑うべき設定でもあります。各ページデータワーカーはそれぞれ独立したプロセスであり、親の `next build` 自体も独立したプロセスです。実際の VPS での再現（issue #7518）では、`NODE_OPTIONS` のヒープフラグとは無関係に、各プロセスのピーク RSS が約 4.5 GB と測定されました（Turbopack は V8 ヒープ外のネイティブ/Rust メモリでコンパイルします）。デフォルト値の `2`（→ ワーカー 1 個、合計 2 プロセス）は、公開パイプラインで使用される 16 GB / 4 vCPU の GitHub-hosted runner に合わせて設定されています。`8`（→ ワーカー 7 個）では、この runner はメモリ不足になり、buildkit は `ResourceExhausted: ... cannot allocate memory` でステップに失敗しました。プロセスごとの RSS を推測ではなく直接測定したところ、`3`（→ ワーカー 2 個）でも収まりませんでした。`tests/unit/docker-build-memory-budget.test.ts` は、測定値に基づいて計算を行い、いずれかの設定が runner の容量を超える場合は失敗します。
+`OMNIROUTE_BUILD_WORKERS` 、大きなビルダーに対して発生させるべきものであり、制約されたビルドが停止したときに疑うべきものです**後**`✓ Compiled successfully`。各ページ データ ワーカーは独自のプロセスであり、親`next build`自体も同様です。ライブVPS再現 ( #7518の問題) では、 `NODE_OPTIONS`ヒープ フラグとは関係なく、 ~ 4.5 GBで各プロセスのピークRSSが測定されました (Turbopack V8 ヒープの外のnative/Rustメモリでコンパイルされます)。 `2`のデフォルト (→ 1 ワーカー、合計 2 プロセス) は、パブリッシュ パイプラインが使用する 16 GB / 4 vCPU GitHub ホスト ランナーに合わせてサイズ設定されています。 `8` (→ 7 ワーカー) では、ランナーがメモリを使い果たし、ビルドキットは`ResourceExhausted: ... cannot allocate memory`のステップに失敗しました。プロセスごとのRSSが推測ではなく直接測定されると、 `3` (→ 2 ワーカー) は依然として適合しませんでした。 `tests/unit/docker-build-memory-budget.test.ts`測定された数値に対して演算を実行し、いずれかのノブがランナーを超えると失敗します。
 
-Turbopack は V8 ヒープの **外部** に存在するネイティブ Rust メモリでコンパイルするため、`OMNIROUTE_BUILD_MEMORY_MB` ではその使用量を制限できません。そのため、メモリ上限のあるホストでは、ビルドはエラーテキストを一切出さずに OOM killer によって SIGKILL されます。単に `Creating an optimized production build` の途中で停止するため、メモリ不足ではなくハングしているように見えます。このため、Turbopack がコード上のデフォルトである `npm run dev` / `npm run build` とは異なり、`Dockerfile` はデフォルトで webpack（`OMNIROUTE_USE_TURBOPACK=0`）を使用します。Railway やその他のワンクリックホストが実行するような、ビルド引数なしの単純な `docker build .` が、メモリ制限付きのビルダー上で何の表示もなく異常終了してはならないためです。公開イメージでは、すでに `docker-publish.yml` で `OMNIROUTE_USE_TURBOPACK=0` を明示的に渡しています。RAM に十分な余裕があるビルダーでは、より高速にビルドするために Turbopack を有効にしてください。
+Turbopackネイティブの Rust メモリ内でコンパイルされます。**外**V8 ヒープなので、 `OMNIROUTE_BUILD_MEMORY_MB`それをバインドしません。メモリ上限のあるホストでは、ビルドはOOMキラーによってSIGKILLedれ、エラー テキストはまったく表示されません—は単に`Creating an optimized production build`の途中で停止します。これは、メモリ不足ではなくハングしているように見えます。 Turbopackコードのデフォルトである`npm run dev` / `npm run build`とは異なり、 `Dockerfile`デフォルトが webpack (`OMNIROUTE_USE_TURBOPACK=0`) になるのはこのためです。ビルド引数のない裸の`docker build .` (Railway やその他のワンクリック ホストが実行するもの) は、メモリ制限のあるビルダー上でサイレントに終了してはなりません。パブリッシュされたイメージは、 `docker-publish.yml`で明示的に`OMNIROUTE_USE_TURBOPACK=0`すでに渡しています。 RAMが豊富にあるビルダーでは、ビルドを高速化するためにTurbopackを選択します。
 
 ```bash
 docker build --target runner-base \
@@ -274,76 +273,76 @@ docker build --target runner-base \
   -t omniroute:base .
 ```
 
-`webpackBuildWorker` は有効になっているため、`next build` は親プロセス **と** ワーカープロセスを実行し、それぞれが個別に `OMNIROUTE_BUILD_MEMORY_MB` を適用します。コンテナの上限は、その値の 1 倍ではなく、およそ 2 倍を上回るように設定してください。
+`webpackBuildWorker`が有効になっているため、 `next build`親を実行します**そして**ワーカー プロセスとそれぞれが個別に`OMNIROUTE_BUILD_MEMORY_MB`尊重します。コンテナの天井のサイズは、その値の 1 倍ではなく、およそ 2 倍以上に設定します。
 
-このツリーでの測定結果（`--target runner-base`、`OMNIROUTE_BUILD_MEMORY_MB=6144`）：
+このツリー (`--target runner-base`、 `OMNIROUTE_BUILD_MEMORY_MB=6144`) で測定されます:
 
-| バンドラー | コンテナ上限   | 結果                            |
-| ---------- | -------------- | ------------------------------- |
-| Turbopack  | 8 GiB / 16 GiB | どちらでも通知なく OOM kill     |
-| webpack    | 8 GiB          | ビルドワーカーが SIGKILL された |
-| webpack    | 12 GiB         | 成功、ピークは 11.1 GiB         |
+| バンドラー   | コンテナ天井   | 結果                            |
+| ------------ | -------------- | ------------------------------- |
+| Turbopack    | 8 GiB / 16 GiB | 両方とも黙って OOM で殺害された |
+| ウェブパック | 8 GiB          | ビルドワーカーSIGKILLed         |
+| ウェブパック | 12 GiB         | 成功、ピークはGiB               |
 
-### ランタイムのデフォルト
+### 実行時のデフォルト
 
-`runner-base` によってエクスポートされるデフォルト値：`PORT=20128`、`HOSTNAME=0.0.0.0`、`OMNIROUTE_MEMORY_MB=1024`、`NODE_OPTIONS=--max-old-space-size=1024`、`DATA_DIR=/app/data`、`OMNIROUTE_MIGRATIONS_DIR=/app/migrations`。
+`runner-base`によってエクスポートされるデフォルト: `PORT=20128`、 `HOSTNAME=0.0.0.0`、 `OMNIROUTE_MEMORY_MB=1024`、 `NODE_OPTIONS=--max-old-space-size=1024`、 `DATA_DIR=/app/data`、 `OMNIROUTE_MIGRATIONS_DIR=/app/migrations`。
 
-Docker でのメモリ動作：
+Dockerでのメモリの動作:
 
-- イメージでは `OMNIROUTE_MEMORY_MB=1024` を設定し、そこから `NODE_OPTIONS=--max-old-space-size=1024` を生成します。
-- 実際のサーバープロセスはスタンドアロンランチャーによって起動されます。このランチャーは `OMNIROUTE_MEMORY_MB` を読み取り、`--max-old-space-size=<OMNIROUTE_MEMORY_MB>` を追加します。
-- Node は繰り返し指定された最後の `--max-old-space-size` の値を使用するため、`OMNIROUTE_MEMORY_MB` を設定することで、Docker の実効ヒープ上限を制御できます。
-- イメージでは常にこの値が設定されるため、Docker 環境ではランチャー独自の RAM 容量に応じたフォールバックは適用されません。ワークロードに合わせて明示的に引き上げてください（下表を参照）。コーディングエージェントの `/v1/responses` には `2048` でも小さすぎます。
+- 画像は`OMNIROUTE_MEMORY_MB=1024`を設定し、そこから`NODE_OPTIONS=--max-old-space-size=1024`を導出します。
+- 実際のサーバー プロセスは、 `OMNIROUTE_MEMORY_MB`読み取り、 `--max-old-space-size=<OMNIROUTE_MEMORY_MB>`を追加するスタンドアロン ランチャーによって開始されます。
+- ノードは最後に繰り返された`--max-old-space-size`値を使用するため、 `OMNIROUTE_MEMORY_MB`を設定すると、有効なDockerヒープ制限が制御されます。
+- イメージによって常に設定されるため、ランチャー自身の RAM 調整されたフォールバックはDockerでは決して適用されません。ワークロードに対して明示的に値を上げます (以下の表)。 `2048`はコーディング エージェント`/v1/responses`にはまだ小さすぎます。
 
-### コーディングエージェント向けの実行時 RAM
+### コーディングエージェント用のランタイムRAM
 
-Docker のデフォルトである 1 GiB は、ダッシュボードや軽量チャット向けの最低ラインであり、本番環境向けのサイズではありません。長大な `POST /v1/responses` ボディ（数百件のメッセージ、数十個のツール）は、圧縮中に複数のインメモリグラフを保持します。約 3 MiB / 約 750k トークンのリクエストが 2 件重複した場合、**12 GiB** の old-space でも V8 が異常終了し（`FATAL ERROR: Reached heap limit`）、16 GiB の cgroup OOM にも達しました。[#7849](https://github.com/diegosouzapw/OmniRoute/issues/7849) を参照してください。
+1 GiB Dockerデフォルトは、実稼働サイズではなく、 dashboard/light-chatフロアです。長い`POST /v1/responses`本体 (数百のメッセージ、数十のツール) は、圧縮中に複数のメモリ内グラフを保持します。 2 つの重複する~ 3 MiB / ~ 750k トークン要求により、V8 が一度に中止されました。** GiB** old-space (`FATAL ERROR: Reached heap limit`) と 16 GiB cgroup OOMもヒットしました。 [#7849](https://github.com/diegosouzapw/OmniRoute/issues/7849)参照してください。
 
-**cgroup の `--memory` はヒープより大きく設定してください**。ネイティブバッファ、SQLite、圧縮処理の中間データは V8 の外部に配置されます。
+サイズ**ヒープ上の cgroup `--memory`** —ネイティブ バッファー、 SQLite、および圧縮中間バッファーは V8 の外部にあります。
 
-| ワークロード                                       | `OMNIROUTE_MEMORY_MB`          | コンテナ / cgroup   | 備考                                                                                                                    |
-| -------------------------------------------------- | ------------------------------ | ------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| ダッシュボード、軽量チャット 1 件                  | `1024`（イメージのデフォルト） | ≥2 GiB              |                                                                                                                         |
-| コーディングエージェント 1 件（Claude/Codex/Grok） | `8192`                         | ≥10 GiB             | 一般的な単一セッションの `/v1/responses`                                                                                |
-| 同時実行される長大な `/v1/responses` 2 件          | `10240`–`12288`                | ≥12–16 GiB          | 約 12 GiB のヒープで V8 の異常終了を確認                                                                                |
-| 長大なコンテキストを 3 件以上同時実行              | 単一プロセスでは実行しない     | 直列化 / RAM を増量 | デフォルトでは負荷の高いリクエストの実行中上限は 1 件です。RAM を増やさずにこの上限を引き上げると、異常終了が再発します |
+| ワークロード                                        | `OMNIROUTE_MEMORY_MB`                | コンテナ/cgroup        | 注意事項                                                                                      |
+| --------------------------------------------------- | ------------------------------------ | ---------------------- | --------------------------------------------------------------------------------------------- |
+| ダッシュボード、軽いチャット 1 つ                   | `1024` (画像のデフォルト)            | ≥2 GiB                 |                                                                                               |
+| 1 つのコーディング エージェント (Claude/Codex/Grok) | `8192`                               | ≥10 GiB                | 一般的な単一セッションの`/v1/responses`                                                       |
+| 2 つの同時ロング`/v1/responses`                     | `10240`–`12288`                      | ≥12–16 GiB             | ~ 12 GiBヒープでの V8 アボートの測定                                                          |
+| 3 つの+同時の長いコンテキスト                       | 1 つのプロセスでは行わないでください | シリアル化 / もっとRAM | デフォルトの重量級入場は機内で 1 回です。 RAM使用せずにそれを起動すると、中断が再導入されます |
 
-ベアメタル上の `omniroute serve` は、`OMNIROUTE_MEMORY_MB` が**未設定**の場合、RAM の約 35%（`[512, 4096]` の範囲に制限）に調整します。Docker では常に `1024` が設定されるため、公式イメージではこの調整処理は実行されません。
+ベアメタル上の`omniroute serve` ~ `[512, 4096]` RAM `OMNIROUTE_MEMORY_MB`**設定を解除する**。 Docker常に`1024`を設定するため、公式イメージではキャリブレーションが実行されません。
 
 ```bash
 docker run -d --name omniroute --restart unless-stopped --stop-timeout 40 \
   -e OMNIROUTE_MEMORY_MB=8192 --memory=10g \
-  -p 127.0.0.1:20128:20128 -v omniroute-data:/app/data diegosouzapw/omniroute:latest
+  -p 127.0.0.1:20128:20128 -v omniroute-data:/app/data cheaperinference/omniroute:latest
 ```
 
 ## 重要な環境変数
 
-[ENVIRONMENT.md](../reference/ENVIRONMENT.md) に記載されているデフォルト設定に加えて、Docker 環境で実行する際には、以下の変数が特に重要です。
+[ENVIRONMENT.md](../reference/ENVIRONMENT.md) に記載されているデフォルト設定に加えて、Docker 環境で実行する際は、以下の変数が特に重要です。
 
-| 変数                          | 目的                                                                                                                                                                                                                                                                                                   | デフォルト                  |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
-| `OMNIROUTE_WS_BRIDGE_SECRET`  | WebSocket ブリッジ用の共有シークレット。**本番環境では必須** — 強力なランダム文字列を設定してください。                                                                                                                                                                                                | 未設定（指定必須）          |
-| `REDIS_URL`                   | レートリミッター／キャッシュバックエンドへの接続文字列                                                                                                                                                                                                                                                 | `redis://redis:6379`        |
-| `REDIS_PORT`                  | 同梱されている Redis コンテナのホスト側ポート                                                                                                                                                                                                                                                          | `6379`                      |
-| `REDIS_BIND_HOST`             | 同梱されている Redis のポートを公開するホストインターフェース（AUTH を追加しない限りループバック）                                                                                                                                                                                                     | `127.0.0.1`                 |
-| `AUTO_UPDATE_HOST_REPO_DIR`   | 自動更新ワークフローのために、`cli` プロファイル内の `/workspace/omniroute` にマウントされるホストパス                                                                                                                                                                                                 | `.`（カレントディレクトリ） |
-| `OMNIROUTE_MEMORY_MB`         | Docker スタンドアロンサーバーの実行時 Node ヒープ上限。上記のイメージデフォルトを上書きします。コーディングエージェントの場合：`8192` 以上（[実行時 RAM](#runtime-ram-for-coding-agents) を参照）。                                                                                                    | `1024`                      |
-| `DASHBOARD_PORT` / `API_PORT` | ダッシュボード（20128）および API（20129）の公開ポートを上書き                                                                                                                                                                                                                                         | `20128` / `20129`           |
-| `APP_BIND_HOST`               | docker-compose がダッシュボード／API／ライブ WS のポートを公開するホストインターフェース。`REQUIRE_API_KEY=false`（デフォルト）の場合、`0.0.0.0` は匿名の `/v1` プロキシを LAN に公開します。`REQUIRE_API_KEY=true` に設定するか、前段にリバースプロキシを配置する場合にのみ公開範囲を広げてください。 | `127.0.0.1`                 |
-| `CLIPROXY_BIND_HOST`          | docker-compose が `cliproxyapi` サイドカーを公開するホストインターフェース。このデータボリュームにはプロバイダーの認証情報が保存されます。                                                                                                                                                             | `127.0.0.1`                 |
-| `OMNIROUTE_PLUGINS_DIR`       | ランタイムのプラグインスキャナーが読み取りおよびインストールに使用するディレクトリ。プラグインをバインドマウントする場合は設定してください。デフォルト値は `HOME` に従いますが、イメージによってはこれがエクスポートされていない場合があります。                                                       | `~/.omniroute/plugins`      |
-| `OMNIROUTE_BASE_PATH`         | アプリをリバースプロキシ経由で公開する場合の URL サブパス（例：`/omniroute`）                                                                                                                                                                                                                          | _（空 = ルート）_           |
-| `NEXT_PUBLIC_BASE_URL`        | サブパスを含む公開ブラウザーオリジン（例：`https://host/omniroute`）                                                                                                                                                                                                                                   | 未設定                      |
-| `PROD_DASHBOARD_PORT`         | `docker-compose.prod.yml` 用のホスト側ダッシュボードポート                                                                                                                                                                                                                                             | `20130`                     |
-| `CLIPROXYAPI_PORT`            | `cliproxyapi` サイドカー用のホスト側ポート                                                                                                                                                                                                                                                             | `8317`                      |
+| 変数                          | 用途                                                                                                                                                                                                                                                                                                           | デフォルト                |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| `OMNIROUTE_WS_BRIDGE_SECRET`  | WebSocket ブリッジの共有シークレット。**本番環境では必須** — 強力なランダム文字列を設定してください。                                                                                                                                                                                                          | 未設定（指定必須）        |
+| `REDIS_URL`                   | レートリミッター／キャッシュバックエンドへの接続文字列                                                                                                                                                                                                                                                         | `redis://redis:6379`      |
+| `REDIS_PORT`                  | 同梱 Redis コンテナのホスト側ポート                                                                                                                                                                                                                                                                            | `6379`                    |
+| `REDIS_BIND_HOST`             | 同梱 Redis ポートの公開先となるホストインターフェース（AUTH を追加しない限りループバック）                                                                                                                                                                                                                     | `127.0.0.1`               |
+| `AUTO_UPDATE_HOST_REPO_DIR`   | 自己更新ワークフロー用に、`cli` プロファイル内の `/workspace/omniroute` へマウントされるホストパス                                                                                                                                                                                                             | `.`（現在のディレクトリ） |
+| `OMNIROUTE_MEMORY_MB`         | Docker スタンドアロンサーバーの実行時 Node ヒープ上限。上記のイメージデフォルトを上書きします。コーディングエージェントの場合は `8192` 以上（[実行時 RAM](#runtime-ram-for-coding-agents) を参照）。                                                                                                           | `1024`                    |
+| `DASHBOARD_PORT` / `API_PORT` | ダッシュボード（20128）および API（20129）の公開ポートを上書きします                                                                                                                                                                                                                                           | `20128` / `20129`         |
+| `APP_BIND_HOST`               | docker-compose がダッシュボード／API／ライブ WS ポートを公開するホストインターフェース。`REQUIRE_API_KEY=false`（デフォルト）の場合、`0.0.0.0` は匿名の `/v1` プロキシを LAN に公開します。公開範囲を広げるのは、`REQUIRE_API_KEY=true` を設定するか、前段にリバースプロキシを配置する場合のみにしてください。 | `127.0.0.1`               |
+| `CLIPROXY_BIND_HOST`          | docker-compose が `cliproxyapi` サイドカーを公開するホストインターフェース。そのデータボリュームにはプロバイダーの認証情報が保存されます。                                                                                                                                                                     | `127.0.0.1`               |
+| `OMNIROUTE_PLUGINS_DIR`       | ランタイムプラグインスキャナーが読み取りとインストールに使用するディレクトリ。プラグインがバインドマウントされている場合は設定してください。デフォルトは `HOME` に従いますが、イメージによってはエクスポートされていないことがあります。                                                                       | `~/.omniroute/plugins`    |
+| `OMNIROUTE_BASE_PATH`         | アプリがリバースプロキシの背後で公開される場合の URL サブパス（例：`/omniroute`）                                                                                                                                                                                                                              | _（空 = ルート）_         |
+| `NEXT_PUBLIC_BASE_URL`        | サブパスを含む公開ブラウザーオリジン（例：`https://host/omniroute`）                                                                                                                                                                                                                                           | 未設定                    |
+| `PROD_DASHBOARD_PORT`         | `docker-compose.prod.yml` 用のホスト側ダッシュボードポート                                                                                                                                                                                                                                                     | `20130`                   |
+| `CLIPROXYAPI_PORT`            | `cliproxyapi` サイドカーのホスト側ポート                                                                                                                                                                                                                                                                       | `8317`                    |
 
-## サブパス上のリバースプロキシ（Traefik / nginx）
+## サブパス上のリバース プロキシ (Traefik / nginx)
 
-Next.js の `basePath` はスタンドアロンバンドルにコンパイルされます。OmniRoute はビルド時の値をアプリルートのセンチネルファイルに記録し（`npm run build` の実行中に書き込まれ、`scripts/docker/ensure-docker-base-path.mjs` によって読み取られます）、コンテナの起動時に `OMNIROUTE_BASE_PATH` と比較します。値が異なり、イメージがドメインルート用にビルドされている場合、エントリーポイントは `node dev/run-standalone.mjs` が実行される前に、スタンドアロンマニフェスト、埋め込まれた `basePath`/`assetPrefix` リテラル（Next 16 は SSR アセット URL を `assetPrefix` のみから生成するため、パッチャーはサブパスをそこにも反映します）、ビルド時に埋め込まれた `/_next/static` アセット URL（クライアント参照マニフェスト、メディアインポート、事前レンダリングされたエラーページ）、およびクライアント側の `process.env` shim を書き換えます。
+Next.js `basePath`はスタンドアロン バンドルにコンパイルされます。 OmniRouteアプリのルートにあるセンチネル ファイルにベイクされた値を記録し ( `npm run build`中に書き込まれ、 `scripts/docker/ensure-docker-base-path.mjs`によって読み取られます)、コンテナーの起動時にそれを`OMNIROUTE_BASE_PATH`と比較します。これらが異なり、イメージがドメイン ルート用に構築された場合、エントリポイントはスタンドアロン マニフェスト、埋め込み`basePath`/`assetPrefix`リテラル (次の 16 は`assetPrefix`のみからSSRアセットURLsレンダリングします—パッチャーはサブパスをミラーリングします)、ベイクされた`/_next/static`アセットURLs (クライアント参照マニフェスト、メディア インポート、事前レンダリングされたエラー ページ)、およびクライアント`process.env`書き換えます。 `node dev/run-standalone.mjs`を実行する前に shim を実行します。
 
-### Compose ビルド（推奨）
+### Compose ビルド (推奨)
 
-`.env` に両方の変数を設定し、イメージとランタイムの設定が一致するように再ビルドします。
+`.env`で両方の変数を設定し、イメージとランタイムが一致するように再構築します。
 
 ```bash
 # .env
@@ -355,53 +354,52 @@ NEXT_PUBLIC_BASE_URL=https://myhostname.example.com/omniroute
 docker compose --profile base up -d --build
 ```
 
-`docker-compose.yml` は、`OMNIROUTE_BASE_PATH` を Docker のビルド引数およびランタイム環境変数として渡します。
+`docker-compose.yml` `OMNIROUTE_BASE_PATH` Dockerビルド引数およびランタイム環境変数として転送します。
 
-### ビルド済みルートイメージ + ランタイムサブパス
+### 事前に構築されたルート イメージ+ランタイム サブパス
 
-公開されている `diegosouzapw/omniroute:*` イメージは、ドメインルート用にビルドされています。それでも、ランタイムに `OMNIROUTE_BASE_PATH` を設定できます。コンテナは起動時にバンドルへ一度だけパッチを適用します。対応する公開オリジンも合わせて設定してください。
+公開された`cheaperinference/omniroute:*`イメージは、ドメイン ルート用に構築されます。実行時に`OMNIROUTE_BASE_PATH`を設定することもできます。コンテナーは起動時にバンドルにパッチを 1 回適用します。一致するパブリックオリジンとペアリングします。
 
 ```yaml
 services:
   omniroute:
-    image: diegosouzapw/omniroute:latest
+    image: cheaperinference/omniroute:latest
     environment:
       OMNIROUTE_BASE_PATH: /omniroute
       NEXT_PUBLIC_BASE_URL: https://myhostname.example.com/omniroute
 ```
 
-リバースプロキシは、外部パスを省略せずに**完全な形で**転送するように設定してください（プレフィックスを削除しないでください）。Traefik では、`StripPrefix` を使用せずに `PathPrefix(`/omniroute`)` をコンテナへルーティングし、Next.js が `/omniroute/...` を受信して `/omniroute/_next/...` からアセットを配信できるようにします。
+リバースプロキシを転送するように設定します。**満杯**外部パス (プレフィックスを削除しないでください)。 Traefik は、 `StripPrefix`を使用せずに`PathPrefix(`/omniroute `)`コンテナにルーティングする必要があるため、 Next.js `/omniroute/...`受け取り、 `/omniroute/_next/...`からアセットを提供します。
 
-Docker のヘルスチェックは、アクティブな `OMNIROUTE_BASE_PATH` がプレフィックスとして付加された、軽量な `/healthz` ライフサイクルエンドポイントをプローブします。`/api/monitoring/health` は、ユーザーやダッシュボードによる診断のために引き続き利用できます。コンテナの HEALTHCHECK をこのエンドポイントに戻すには（たとえば、詳細なヘルスチェックを適用する場合）、`OMNIROUTE_HEALTHCHECK_PATH=/api/monitoring/health` を設定します。このパスは**詳細な**チェック（DB + モニタリングの概要）です。オプトインする場合、実行頻度の低い Docker の `HEALTHCHECK` には適していますが、Kubernetes の `livenessProbe` の実行間隔には**適していません**。
+Docker healthcheck は、アクティブな`OMNIROUTE_BASE_PATH`がプレフィックスとして付けられた軽量`/healthz`ライフサイクル エンドポイントを調査します。 `/api/monitoring/health`は引き続きhuman/dashboard診断に使用できます。コンテナーHEALTHCHECKそのコンテナーに戻すようにするには (たとえば、ディープ・ヘルスの強制のため)、 `OMNIROUTE_HEALTHCHECK_PATH=/api/monitoring/health`を設定します。その道は、**深い**チェック (DB +監視概要) — Dockerの頻度の低い`HEALTHCHECK`に適しています (オプトインした場合)。**ない**Kubernetes `livenessProbe`間隔の場合。
 
-オーケストレーター（Kubernetes、Nomad など）の場合：
+オーケストレーターの場合 (Kubernetes、Nomad など):
 
-| プローブ                | 推奨                                                                          | 非推奨                                                       |
-| ----------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Liveness                | HTTP `GET /livez`、またはメインポート（`PORT`、デフォルトは `20128`）への TCP | Liveness としての `/api/monitoring/health`                   |
-| Readiness               | HTTP `GET /healthz`                                                           | イベントループがビジーな状態を停止と見なす厳しいタイムアウト |
-| 詳細 / ブラックボックス | `/api/monitoring/health`                                                      | —                                                            |
+| プローブ                  | 好む                                                                     | 避ける                                                   |
+| ------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------- |
+| 活気                      | メインポート上のHTTP `GET /livez`、またはTCP (`PORT`、デフォルト`20128`) | ライブネスとしての`/api/monitoring/health`               |
+| 準備完了                  | HTTP `GET /healthz`                                                      | イベントループビジーをデッドとして扱う厳しいタイムアウト |
+| ディープ/ブラックボックス | `/api/monitoring/health`                                                 | —                                                        |
 
-`/healthz` はプロセスのライフサイクル（`ok` / `starting` / `stopping`）を報告します。`/livez` はプロセスが生存しているかのみを示します（ハンドラーを実行できる限り 200 を返し、Readiness を待機しません）。どちらもリクエスト処理と同じ Node イベントループ上で実行されるため、CPU バウンドなカタログ処理や圧縮処理によって遅延する可能性があります。ビジー ≠ 停止です。HTTP プローブがタイムアウトする場合は、TCP の Liveness を推奨します。プローブに関する詳細なガイダンス：
-[モニタリングガイド — Kubernetes プローブの推奨事項](../ops/MONITORING_GUIDE.md#kubernetes-probe-recommendations)。
+`/healthz`プロセスのライフサイクル (`ok` / `starting` / `stopping`) をレポートします。 `/livez`はプロセスアライブのみです (ハンドラーが実行できるときは常に 200、準備完了を待機しません)。どちらもリクエスト処理として同じ Node イベント ループで実行されるため、CPU に依存するカタログや圧縮作業≠ —が発生する可能性があります。 HTTPプローブがタイムアウトした場合は、 TCP liveness を優先します。完全なプローブ ガイダンス:[モニタリング ガイド— Kubernetes プローブの推奨事項](../ops/MONITORING_GUIDE.md#kubernetes-probe-recommendations)。
 
-## Caddy を使用した Docker Compose（HTTPS Auto-TLS）
+## Docker Compose with Caddy (HTTPS Auto-TLS)
 
-Caddy の自動 SSL プロビジョニングを使用して、OmniRoute を安全に公開できます。ドメインの DNS A レコードがサーバーの IP を指していることを確認してください。
+Caddy の自動SSLプロビジョニングを使用して、OmniRoute安全に公開できます。ドメインのDNS A レコードがサーバーのIPを指していることを確認してください。
 
 ```yaml
 services:
   omniroute:
-    image: diegosouzapw/omniroute:latest
+    image: cheaperinference/omniroute:latest
     container_name: omniroute
     restart: unless-stopped
     volumes:
       - omniroute-data:/app/data
     environment:
       - PORT=20128
-      # OAuth コールバック、ダッシュボードのリンク、生成される公開 URL のためのブラウザー向けオリジン。
+      # Browser-facing origin for OAuth callbacks, dashboard links, and generated public URLs.
       - NEXT_PUBLIC_BASE_URL=https://your-domain.com
-      # スケジュールされたジョブ／自己フェッチのための内部サーバー間 URL。
+      # Internal server-to-server URL for scheduled jobs / self-fetches.
       - BASE_URL=http://omniroute:20128
       - AUTH_COOKIE_SECURE=true
 
@@ -418,70 +416,68 @@ volumes:
   omniroute-data:
 ```
 
-Caddy は、アップストリームコンテナ向けに標準の転送ヘッダーを設定します。OmniRoute は
-`NEXT_PUBLIC_BASE_URL` を、OAuth コールバックおよび生成される公開リンクの正規の公開オリジンとして使用します。
-認証済みのダッシュボード書き込みでは、同一オリジンリクエストに加えて、セッションに紐付けられた CSRF
-保護が使用されます。明示的な設定ではなく、信頼済みの転送ヘッダーから OmniRoute に公開オリジンを
-意図的に導出させたい高度なデプロイの場合にのみ、`OMNIROUTE_TRUST_PROXY` を有効にしてください。
+Caddy は、上流コンテナの標準転送ヘッダーを設定します。 OmniRoute OAuthコールバックおよび生成されたパブリック リンクの正規のパブリック オリジンとして`NEXT_PUBLIC_BASE_URL`使用します。認証されたダッシュボードの書き込みでは、同一オリジンのリクエストとセッション バインドのCSRF保護が使用されます。 OmniRoute明示的な構成ではなく、信頼できる転送ヘッダーからパブリック オリジンを意図的に取得するようにする高度な展開の場合にのみ、 `OMNIROUTE_TRUST_PROXY`有効にします。
 
 ## Cloudflare Quick Tunnel
 
-Docker デプロイ向けのダッシュボードでは、`Dashboard → Endpoints` からワンクリックで **Cloudflare Quick Tunnel** を利用できます。初回の有効化時には、必要な場合にのみ `cloudflared` がダウンロードされ、現在の `/v1` エンドポイントへの一時的なトンネルが開始され、生成された `https://*.trycloudflare.com/v1` URL が通常の公開 URL のすぐ下に表示されます。
+Docker デプロイメント向けのダッシュボードでは、`Dashboard → Endpoints` からワンクリックで **Cloudflare Quick Tunnel** を利用できます。初回の有効化時にのみ、必要に応じて `cloudflared` がダウンロードされ、現在の `/v1` エンドポイントへの一時トンネルが開始されます。生成された `https://*.trycloudflare.com/v1` URL は、通常の公開 URL のすぐ下に表示されます。
 
 エンドポイントのトンネルパネル（Cloudflare、Tailscale、ngrok）は、アクティブなトンネルの状態を変更することなく、`Settings → Appearance` から表示または非表示にできます。
 
 ### トンネルに関する注意事項
 
-- Quick Tunnel の URL は一時的なものであり、再起動するたびに変更されます。
-- OmniRoute またはコンテナの再起動後に、Quick Tunnel が自動的に復元されることはありません。必要に応じて、ダッシュボードから再度有効にしてください。
+- Quick Tunnel の URL は一時的なもので、再起動するたびに変更されます。
+- OmniRoute またはコンテナの再起動後、Quick Tunnel は自動復元されません。必要に応じて、ダッシュボードから再度有効にしてください。
 - マネージドインストールは現在、`x64` / `arm64` 上の Linux、macOS、Windows をサポートしています。
-- マネージド Quick Tunnel では、制約のあるコンテナ環境で大量に出力される QUIC UDP バッファー警告を回避するため、デフォルトで HTTP/2 トランスポートが使用されます。別のトランスポートを使用する場合は、`CLOUDFLARED_PROTOCOL=quic` または `auto` を設定してください。
-- Docker イメージにはシステム CA ルートが同梱され、マネージド `cloudflared` に渡されます。これにより、コンテナ内でトンネルがブートストラップされる際の TLS 信頼エラーを回避できます。
-- OmniRoute がバイナリをダウンロードする代わりに既存のバイナリを使用するようにするには、`CLOUDFLARED_BIN=/absolute/path/to/cloudflared` を設定してください。
+- マネージド Quick Tunnel は、制約のあるコンテナ環境で大量の QUIC UDP バッファー警告が発生するのを避けるため、デフォルトで HTTP/2 トランスポートを使用します。別のトランスポートを使用する場合は、`CLOUDFLARED_PROTOCOL=quic` または `auto` を設定してください。
+- Docker イメージにはシステム CA ルートが同梱されており、それらがマネージド `cloudflared` に渡されます。これにより、コンテナ内でトンネルをブートストラップするときの TLS 信頼エラーを回避できます。
+- OmniRoute にダウンロードしたバイナリではなく既存のバイナリを使用させる場合は、`CLOUDFLARED_BIN=/absolute/path/to/cloudflared` を設定してください。
 
-## イメージタグ
+## 画像タグ
 
-| イメージ                 | タグ     | サイズ | 説明                                                                             |
-| ------------------------ | -------- | ------ | -------------------------------------------------------------------------------- |
-| `diegosouzapw/omniroute` | `latest` | ~250MB | **公開済み**の安定版 SemVer のうち最高バージョン（git の `main` ではありません） |
-| `diegosouzapw/omniroute` | `3.8.0`  | ~250MB | GitOps ではこの種類のタグに固定してください                                      |
+| 画像                         | タグ     | サイズ  | 説明                                                       |
+| ---------------------------- | -------- | ------- | ---------------------------------------------------------- |
+| `cheaperinference/omniroute` | `latest` | ~ 250MB | 最高**出版された**安定版SemVer ( git `main`ではありません) |
+| `cheaperinference/omniroute` | `3.8.54` | ~ 250MB | このクラスのタグをGitOpsに固定します                       |
 
-マルチプラットフォームマニフェスト：`linux/amd64` + `linux/arm64` ネイティブ（Apple Silicon、AWS Graviton、Raspberry Pi）。Docker は適合するアーキテクチャを自動的に選択します。ARM ホスト上で AMD64 エミュレーションを強制する必要がある場合は、`--platform linux/amd64` を指定してください。
+The same images are published to three repositories, with the same per-architecture digests: `cheaperinference/omniroute` (Docker Hub, the Cheaper Inference organization, from 3.8.53 on), `ghcr.io/cheaper-inference/omniroute` and the legacy `diegosouzapw/omniroute`, which keeps its pull history and still receives every release. Existing `diegosouzapw/omniroute` deployments keep updating; switching the image name is optional. The `:next` / `:next-web` pre-release channel below is published to `diegosouzapw/omniroute` and GHCR only.
+
+マルチプラットフォーム マニフェスト: `linux/amd64` + `linux/arm64`ネイティブ (Apple Silicon、 AWS Graviton、Raspberry Pi)。 Docker一致するアーキテクチャを自動的に選択します。 ARMホスト上でAMD64エミュレーションを強制する必要がある場合は、 `--platform linux/amd64`を渡します。
 
 ### リリースチャンネル
 
-OmniRoute は、安定版リリース、アクティブなリリースブランチのテスト、開発ビルド向けに、それぞれ個別の Docker チャンネルを公開しています。
+OmniRoute 、安定リリース、アクティブなリリース ブランチ テスト、および開発ビルド用に個別のDockerチャネルを公開します。
 
-| チャンネル                      | ソース                                           | 可変性                       | 推奨用途                                                                                                               |
-| ------------------------------- | ------------------------------------------------ | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `:<version>` / `:<version>-web` | 署名済み／バージョン付きリリース                 | 不変                         | 正確なリリースに固定する本番デプロイ                                                                                   |
-| `:latest` / `:latest-web`       | **公開済み**の安定版 SemVer のうち最高バージョン | 可変の安定版ポインター       | SemVer の公開ジョブ**後**に安定版リリースへ追従します。`main` や未リリースの `release/v*` コミットには追従**しません** |
-| `:next` / `:next-web`           | 現在のデフォルト `release/v*` ブランチ           | 可変のプレリリースポインター | アクティブなリリースブランチに取り込まれたものの、まだ安定版リリースには含まれていない修正のテスト                     |
-| `:main` / `:main-web`           | `main` ブランチ                                  | 可変の開発版ポインター       | 開発および統合テスト専用                                                                                               |
+| チャネル                        | ソース                                 | 可変性                          | 推奨用途                                                                                                                     |
+| ------------------------------- | -------------------------------------- | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `:<version>` / `:<version>-web` | Signed/versionedリリース               | 不変                            | 正確なリリースを固定する運用環境の展開                                                                                       |
+| `:latest` / `:latest-web`       | 最高**出版された**安定したSemVer       | 可変の安定したポインタ          | 安定版リリースに従う**後**SemVerパブリッシュ ジョブ—が実行する**ない**`main`または未リリースの`release/v*`コミットを追跡する |
+| `:next` / `:next-web`           | 現在のデフォルトの`release/v*`ブランチ | 変更可能なプレリリース ポインタ | アクティブなリリース ブランチには到達したが、まだ安定リリースにはなっていない修正のテスト                                    |
+| `:main` / `:main-web`           | `main`支店                             | 可変開発ポインター              | 開発および統合テストのみ                                                                                                     |
 
-#### Web セッションプロバイダー：`-web` イメージ
+#### Web セッションプロバイダー: `-web`イメージ
 
-上記の各チャンネルには、`runner-web` ステージからビルドされた `-web` タグ（`:latest-web`、`:<version>-web`、`:next-web`、`:main-web`）も用意されています。これは同じイメージに Playwright と Chromium ブラウザーを追加したものです。通常のイメージには Chromium が**含まれていません**。`gemini-web`、`claude-web`、`claude-turnstile` では Chromium が必要です。
+上記のすべてのチャネルは、 `-web`タグ (`:latest-web`、 `:<version>-web`、 `:next-web`、 `:main-web`) としても機能し、 `runner-web`ステージ—から同じイメージにPlaywrightと Chromium ブラウザを加えて構築されます。プレーンな画像が出荷されます**それなし**クロム; `gemini-web`、 `claude-web` 、 `claude-turnstile`にはそれが必要です。
 
-障害は起動時ではなく、後になって発生します。これらのプロバイダーはモデルを一覧表示し、ダッシュボード上では接続済みと表示されますが、最初のリクエストでのみ次のエラーが発生します。
+失敗は起動時ではなく延期されます。これらのプロバイダーはモデルをリストし、ダッシュボードに接続済みとして表示され、最初のリクエストのみが失敗します。
 
 ```
-[500]: 外部モジュール playwright の読み込みに失敗しました: Error: モジュールが見つかりません
+[500]: Failed to load external module playwright: Error: Cannot find module
 '/app/node_modules/playwright/node_modules/playwright-core/browsers.json'
 ```
 
-これらのプロバイダーを使用する場合は、現在利用しているチャンネルの `-web` タグを pull してください。それ以外の変更は不要です。npm/CLI インストール（Docker イメージを使用しない場合）で不足する同等の要素はブラウザーバイナリです。ホスト上で `npx playwright install chromium` を実行してください。
+これらのプロバイダーを使用する場合は、既に—に接続しているチャネルの`-web`タグをプルします。他には何も変更されません。 npm/CLIインストール ( Dockerイメージなし) では、同等の欠落部分はブラウザー バイナリです。ホスト上で`npx playwright install chromium`実行します。
 
 #### プレリリースチャンネルの使用
 
-`next` チャンネルは、現在のデフォルト `release/v*` ブランチへの push ごとに再ビルドされ、AMD64 と ARM64 の両方で公開されます。古いメンテナンスブランチがこれを上書きすることはできません。このチャンネルでは、次の安定版タグが作成される前にアクティブなリリースブランチへマージされた修正を含む、pull 可能なイメージが提供されます。
+`next`チャネルは、現在のデフォルトの`release/v*`ブランチにプッシュされるたびに再構築され、 AMD64とARM64両方に対して公開されます。古いメンテナンス ブランチはこれを上書きできません。このチャネルは、次の安定したタグがカットされる前に、アクティブなリリース ブランチにマージされた修正のプル可能なイメージを提供します。
 
 ```bash
 docker pull diegosouzapw/omniroute:next
 docker pull diegosouzapw/omniroute:next-web
 ```
 
-Docker Compose では、選択したプロファイルで使用するイメージタグを上書きしてから、サービスを pull して再作成します。
+Docker Compose の場合、選択したプロファイルで使用されるイメージ タグをオーバーライドし、サービスをプルして再作成します。
 
 ```yaml
 services:
@@ -496,52 +492,113 @@ docker compose up -d
 
 #### 安全性とロールバック
 
-`next` は可変のプレリリースチャンネルです。アクティブなリリースブランチへの push のたびに変更される可能性があり、**本番環境での使用はサポートされていません**。特定のビルドを評価する間は、イメージダイジェストに固定してください。
+`next`は、フローティングのプレリリース チャネルです。アクティブなリリース ブランチにプッシュすると変更される可能性があり、**運用環境での使用はサポートされていません**。特定のビルドを評価するときにイメージ ダイジェストをピン留めします。
 
 ```bash
 docker pull diegosouzapw/omniroute:next
 docker image inspect diegosouzapw/omniroute:next --format '{{index .RepoDigests 0}}'
 ```
 
-テスト前に、OmniRoute のデータボリュームまたはバインドマウントされたデータディレクトリをバックアップしてください。ロールバックするには、以前使用していた安定版バージョンまたはダイジェストを復元し、コンテナーを再作成します。
+テストする前に、 OmniRouteデータ ボリュームまたはバインド マウントされたデータ ディレクトリをバックアップします。ロールバックするには、以前に使用した安定バージョンまたはダイジェストを復元し、コンテナーを再作成します。
 
 ```bash
-docker pull diegosouzapw/omniroute:<stable-version>
+docker pull cheaperinference/omniroute:<stable-version>
 docker compose up -d
 ```
 
-リリースブランチのビルドによって `latest` が更新されることはありません。安定版ポインターを更新できるのは、対象となる安定版セマンティックバージョンのみです。`next` イメージにも、リリースイメージの検査と CRITICAL 脆弱性をブロックするゲートが適用されます。
+リリース ブランチ ビルドでは`latest`移動することはできません。適格な安定したセマンティック バージョンのみが安定したポインタを昇格できます。 `next`イメージには、リリース イメージ検査とクリティカル脆弱性ゲートのブロックが保持されます。
 
-**`latest` は git の最新状態を保証するものではありません。** `main` またはアクティブな `release/v*` ブランチにマージされた修正は、安定版 SemVer イメージが公開され、公開ジョブによって `:latest` が更新されるまで（その SemVer と同じダイジェスト）、`:latest` には含まれ**ません**。GitHub にはすでに修正が表示されているのに `latest` が更新されていないように見える場合は、`:next` を pull してリリースブランチをテストするか、SemVer タグが作成されるまで待ってください。
+**`latest`は git の通貨保証ではありません。** `main`またはアクティブな`release/v*`ブランチ上でマージされた修正は次のとおりです。**ない**安定したSemVerイメージが公開され、公開ジョブが`:latest` (そのSemVerと同じダイジェスト) をプロモートするまで、 `:latest`内で実行されます。 GitHubすでに修正を示しているのに`latest`フリーズしているように見える場合は、 `:next`をプルしてリリース ブランチをテストするか、 SemVerタグを待ちます。
 
-| 目的                                                     | 使用するもの                                 |
-| -------------------------------------------------------- | -------------------------------------------- |
-| ドリフトが許容されない GitOps／本番環境                  | `:X.Y.Z`（またはイメージダイジェスト）に固定 |
-| 公開済みの安定版に追従し、リリースごとの再作成を許容する | `:latest`                                    |
-| 未リリースの `release/v*` コミットをテストする           | `:next`（本番環境では使用不可）              |
-| `main` をテストする                                      | `:main`（本番環境では使用不可）              |
+| あなたが欲しいのは                                         | 使用                                  |
+| ---------------------------------------------------------- | ------------------------------------- |
+| GitOps / 流れてはいけない制作                              | ピン`:X.Y.Z` (または画像ダイジェスト) |
+| 公開された安定版に従い、リリースごとに再作成を受け入れます | `:latest`                             |
+| 未リリースの`release/v*`コミットをテストする               | `:next` (実稼働ではない)              |
+| `main`をテストする                                         | `:main` (実稼働ではない)              |
 
-## 可用性: デフォルトの SQLite は単一レプリカ
+## Docker でのダッシュボード更新
 
-標準の Docker / Kubernetes OmniRoute は、**1 つの Node プロセス + 1 つの SQLite ライター**で構成されます。このトポロジでは高可用性は**サポートされていません**。
+公開イメージのコンテナは、自分自身を置き換えることができません。OmniRoute がコンテナ内で実行されていること（`.git` チェックアウトではなく、npm インストールでもないこと）を検出すると、ホームダッシュボードの更新バナーには、npm/git の手順の代わりにホストで実行するコマンドとコピーボタンが表示されます。
 
-| 制約                                     | 影響                                                                                                                                                                                                                                                                                                                                                        |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 単一ライター                             | 同じ SQLite ファイルに対して複数のレプリカを実行しないでください。DB が破損します。                                                                                                                                                                                                                                                                         |
-| 再作成 / 再起動 / HEALTHCHECK の強制終了 | 処理中の SSE、ダッシュボードセッション、インメモリ状態が**すべて停止**します。接続中のすべてのクライアントが切断されます。エンドポイントが存在しない期間中の新規リクエストには、OmniRoute JSON ではなく、リバースプロキシから **`502 Bad Gateway: Unknown error`** が返されます。そのため、クライアントはこれをプロバイダー障害と区別できません（#11015）。 |
-| `/healthz` と同じイベントループ          | カタログ処理や圧縮処理が集中するとプローブが遅延する可能性があり、タイムアウトが短い場合は**唯一の**レプリカが再起動されます。                                                                                                                                                                                                                              |
+```bash
+docker compose pull omniroute && docker compose up -d --force-recreate omniroute
+```
 
-**プローブマトリクス**（[Kubernetes のプローブ推奨事項](../ops/MONITORING_GUIDE.md#kubernetes-probe-recommendations)も参照）:
+サービス名は `AUTO_UPDATE_SERVICE` から取得されます（デフォルトは `omniroute` で、`docker-compose.selfhost.yml` 内のサービスです）。`pull` で更新されるのは可変タグ（`latest`、`next`）のみです。固定された `:X.Y.Z` タグを使用している場合は、先にタグを編集してください。
 
-| プローブ          | 対象                                                                 | 使用しないもの                                             |
-| ----------------- | -------------------------------------------------------------------- | ---------------------------------------------------------- |
-| Liveness          | `PORT`（デフォルトは `20128`）への TCP、またはソフト HTTP `/healthz` | `/api/monitoring/health`                                   |
-| Readiness         | HTTP `GET /healthz`                                                  | イベントループの高負荷を停止状態として扱う短いタイムアウト |
-| 詳細確認 / 人間用 | `/api/monitoring/health`                                             | 自動化された kubelet liveness                              |
+### ホストのトリガーファイルによるワンクリック更新
 
-**アップグレード:** すべてのセッションが切断されることを前提としてください。可能であればクライアントをドレインしてください。デフォルトの SQLite ではローリングアップデートは利用できません。Compose の `restart: unless-stopped` と Docker の `HEALTHCHECK` を併用した場合も、コンテナが Unhealthy になると唯一のプロセスが置き換えられ、同じ範囲に影響が及びます。
+`/var/run/docker.sock` をマウントせずに **Update Now** を機能させ続けるには（これをマウントすると、コンテナにホスト上の root 権限が付与されます。上記の `cli` プロファイルに関する警告を参照してください）、OmniRoute サービスに `DOCKER_UPDATE_TRIGGER_FILE` を設定し、ホスト上でウォッチャーを実行します。
 
-**単一レプリカ**用の Kubernetes スニペット（Recreate が必須です。1 つの SQLite ファイルに対して `replicas` を増やさないでください）:
+```yaml
+services:
+  omniroute:
+    environment:
+      DOCKER_UPDATE_TRIGGER_FILE: /app/data/update/docker-update.request
+    volumes:
+      - ./data:/app/data
+```
+
+パスは `DATA_DIR` 内にある必要があります（相対値はこれを基準に解決されます）。それ以外のパスは拒否されます。その後、**Update Now** は `{ "requestedAt": "...", "targetVersion": "X.Y.Z" }` をそのファイルに書き込み、`202` を返します。ダッシュボードは新しいバージョンが稼働するまで `/api/system/version` をポーリングし、その後リロードします。このモードでは、OmniRoute がシェルや Docker コマンドを実行することはありません。すべての更新アクションと同様に、リクエストはループバック/LAN クライアントからのみ受け付けられます。
+
+バインドマウントされたデータディレクトリにより、ホスト側で監視するための安定したパスが提供されます。`systemd` ユニットの例（`/srv/omniroute` は、compose ファイルと `data/` が置かれているディレクトリに合わせて調整してください）：
+
+```ini
+# /etc/systemd/system/omniroute-update.path
+[Unit]
+Description=Watch for OmniRoute dashboard update requests
+
+[Path]
+PathExists=/srv/omniroute/data/update/docker-update.request
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```ini
+# /etc/systemd/system/omniroute-update.service
+[Unit]
+Description=Pull and recreate the OmniRoute container
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/omniroute
+ExecStartPre=/usr/bin/rm -f /srv/omniroute/data/update/docker-update.request
+ExecStart=/bin/sh -c 'docker compose pull omniroute || (sleep 15 && docker compose pull omniroute)'
+ExecStart=/usr/bin/docker compose up -d --force-recreate omniroute
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now omniroute-update.path
+```
+
+このサービスは、失敗した実行が繰り返されないように、pull の前にリクエストを削除します。`DOCKER_UPDATE_TRIGGER_FILE` が設定されていない場合、ダッシュボードは手動コマンドのフローを維持します。
+
+## 可用性: デフォルトのSQLiteは単一レプリカです
+
+ストックDocker / Kubernetes OmniRouteは**1 つのノード プロセス+ 1 つのSQLiteライター**。高可用性は**サポートされていません**そのトポロジ上で。
+
+| 制約                            | 結果                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| シングルライター                | する**ない**同じSQLiteファイルに対して複数のレプリカを実行します。これによりDBが破損します。                                                                                                                                                                                                                                                 |
+| 再作成/再起動/ HEALTHCHECK kill | **完全停止**実行中のSSE、ダッシュボード セッション、およびメモリ内の状態。接続されているすべてのクライアントがドロップします。空のエンドポイント ウィンドウ中の新しいリクエストはリバース プロキシを取得します**`502 Bad Gateway: Unknown error`** OmniRoute JSONではなく、クライアントはこれをプロバイダーの障害と区別できません (#11015)。 |
+| `/healthz`と同じイベントループ  | ビジーなカタログまたは圧縮ティックにより、プローブが遅れる可能性があります。短いタイムアウト後に再起動します**のみ**レプリカ。                                                                                                                                                                                                               |
+
+**プローブマトリックス**( [Kubernetes プローブの推奨事項](../ops/MONITORING_GUIDE.md#kubernetes-probe-recommendations)も参照してください):
+
+| プローブ  | ターゲット                                                       | 使用しないでください                                     |
+| --------- | ---------------------------------------------------------------- | -------------------------------------------------------- |
+| 活気      | TCP上の`PORT` (デフォルトは`20128`)、またはソフトHTTP `/healthz` | `/api/monitoring/health`                                 |
+| 準備完了  | HTTP `GET /healthz`                                              | イベントループビジーをデッドとして扱う厳しいタイムアウト |
+| 深層/人間 | `/api/monitoring/health`                                         | 自動化された kubelet 活性化                              |
+
+**アップグレード:**すべてのセッションがドロップされることが予想されます。可能であればクライアントを排出します。デフォルトのSQLiteにはローリング アップデートはありません。 Compose `restart: unless-stopped` plus Docker `HEALTHCHECK`は、コンテナーが異常である場合、同じ爆発半径の場合にのみプロセスを置き換えます。
+
+既製のマニフェストと Helm チャートは`deploy/kubernetes/`および`deploy/helm/omniroute/`に存在します。Kubernetes[デプロイメント ガイドを](../ops/KUBERNETES_DEPLOYMENT_GUIDE.md)参照してください。
+
+の Kubernetes スニペット**単一のレプリカ**(再作成が必要です。1 つのSQLiteファイルに対して`replicas`生成しないでください):
 
 ```yaml
 spec:
@@ -568,31 +625,39 @@ spec:
             periodSeconds: 20
 ```
 
-`preStop` の sleep により、SIGTERM の前に kube が Service エンドポイントを削除できるため、停止中のプロセスに**新しい**トラフィックが到達しなくなります。処理中の `/v1/responses` SSE は、重量級アドミッションリースを介して、最大 `SHUTDOWN_TIMEOUT_MS`（デフォルトは 30 秒）までドレインされます（#11015）。それでもプロセスに到達した新規リクエストには、`503` と `Retry-After: 5` が返されます。置き換え後のプロセスが Ready になるまでの Recreate によるエンドポイント不在期間は、引き続き完全な停止となります。これは SQLite トポロジに起因するものであり、プローブの設定ミスではありません。
+`preStop` sleep により、kube はSIGTERMの前にサービス エンドポイントをドロップできるようになります。**新しい**死にかけているプロセスにトラフィックが到達しなくなります。実行中の`/v1/responses` SSEは、ヘビーウェイト アドミッション リース (#11015) を介して`SHUTDOWN_TIMEOUT_MS` (デフォルト 30 秒) まで排出されます。まだプロセスに到達する新しいリクエストは、 `503` + `Retry-After: 5`を取得します。交換の準備ができるまでの空のエンドポイントのギャップの再作成は、ハード停止のままです。これは、プローブの設定ミスではなく、 SQLiteトポロジです。
 
-外部 Postgres / マルチライター HA は、文書化された標準構成では**ありません**。HA が必要な場合は、単一レプリカを維持するか、プロジェクトが別途テストして文書化したトポロジを使用してください。Postgres/MySQL 対応の作業は [#8075](https://github.com/diegosouzapw/OmniRoute/issues/8075) で進められています。それがリリースされるまでは、**大規模な** `/v1/responses` の処理能力を増やすためにサポートされている唯一の方法は、N 個の独立したプロセス（次のセクション）を使用することであり、1 つのボリュームに対して `replicas > 1` を設定することではありません。
+外部Postgres /マルチライターHAは**ない**文書化されたストックパス。 HAが必要な場合は、単一のレプリカを保持するか、プロジェクトが個別にテストして文書化したトポロジを実行します。 Postgres/MySQL作品は[#8075](https://github.com/diegosouzapw/OmniRoute/issues/8075)にあります。それが出荷されるまで、サポートされている唯一の乗算方法**大きい**`/v1/responses`容量は、1 つのボリューム上の`replicas > 1`ではなく、N 個の独立したプロセス (次のセクション) です。
 
-## スケールアウト: N 個の独立プロセス
+## スケールアウト: N 個の独立したプロセス
 
-1 つの Node プロセスは **1 つの V8 ヒープ**です。約 3 MiB / 約 75 万トークンのコーディングエージェントによる `POST /v1/responses`（RTK + Caveman）が 2 件重なると、約 12 Gi でそのヒープが異常終了し（`FATAL ERROR: Reached heap limit`）、16 Gi の cgroup で OOM が発生する可能性があります。[#7849](https://github.com/diegosouzapw/OmniRoute/issues/7849) を参照してください。この測定結果は **メモリ予算**に関する警告であり、同時実行される長時間の `/v1/responses` を 2 件に制限する製品上のハード上限ではありません。重量級チャットの受け入れは、同じ V8/cgroup 上限から自動算出される取り込みバイト予算（`OMNIROUTE_CHAT_MAX_INFLIGHT_BYTES`、`src/shared/middleware/admissionBudget.ts`）によって制御されます。すでに適切にサイジングされたプロセスでこれを上方にオーバーライドする（または従来のリクエスト数上限 `OMNIROUTE_CHAT_MAX_HEAVY_IN_FLIGHT` を設定する）と、再び異常終了が発生します。小規模なチャット、`/healthz`、`/v1/models`、および MCP は、この上限の**対象外**です。
+### Codexトークンのローテーションの所有権
 
-### 1 プロセス: 2 件を超える長時間の `/v1/responses`
+1 つのCodexアカウントのコピーは、その 1 回限りのリフレッシュ トークンを個別に消費してはなりません。同期された認証情報のみを使用するインスタンスでは、 `OMNIROUTE_TOKEN_REFRESH_PASSIVE_PROVIDERS=codex` (エイリアス`cx`) を設定します。単一回転の所有者では未設定のままにしておきます。各プロセスには依然として独自の`DATA_DIR`が必要です。このオプションは、 SQLiteを共有せず、トークン同期や分散ロックも提供しません。
 
-**正常な**プロセス（ヒープが `OMNIROUTE_CHAT_ADMISSION_HEAP_SHED_RATIO`、デフォルト `0.75` を下回る）は、プロセス全体の処理中バイト予算（`OMNIROUTE_CHAT_MAX_INFLIGHT_BYTES` / #10110）にまだ余裕があれば、長時間の `POST /v1/responses` を 2 件を超えて同時実行**できます**。`OMNIROUTE_CHAT_LARGE_BODY_BYTES`（デフォルト 256 KiB）以上のボディは、構造的に重いリクエストと同じ重量級リースを取得し、同じ [#10437](https://github.com/diegosouzapw/OmniRoute/pull/10437) の `tryAcquireHealthyHeadroom` エスケープ（`OMNIROUTE_CHAT_ADMISSION_HEALTHY_HEADROOM`）を使用します。数十件の長時間 SSE クライアントの同時実行（運用者は多くの場合 40～50 件を必要とします）は、製品上の「最大 2 件」というハード上限ではなく、**メモリ予算**の問題です。ヒープ、プライマリ/ヘッドルームスロット、および `OMNIROUTE_CHAT_MAX_INFLIGHT_BYTES` を適切にサイジングしてください。ヒープに負荷がかかっている場合は、#7849 の再発を防ぐため、引き続き再試行可能な `503` で負荷を排除します。
+パッシブ インスタンスは、更新が必要なときに接続を再読み込みし、期限切れになっていない別のアクセス トークンのみを採用します。それ以外の場合、接続の有効期限が切れたり非アクティブ化されたり、リフレッシュ ブレーカーの失敗がカウントされたりすることなく、リフレッシュは無効になります。実際のアップストリーム認証の失敗では、引き続き通常の失敗アカウンティング、指数関数的クールダウン、および通常のクライアント エラーが使用されます。アカウントの無効化は永久的なままです。アクセス トークンの有効期限が切れる前に、所有者のローテーションされたトークンを同期するか (デフォルトのプロアクティブな更新リードタイムは 5 分です)、 Codex認証ファイルを再インポートします。パッシブ インポートでは、提供されたトークンがトークン エンドポイントで検証されずに保存されます。手動dashboard/APIリフレッシュは`409 refresh_disabled`を返します。新しいOAuthログインは変更されません。[環境リファレンス を](../reference/ENVIRONMENT.md#passive-codex-token-refresh)参照してください。
 
-**ヒープを増やす**（独立した V8 old-space を使用する）ために、**現時点では**次のようにします。
+One Node process is **one V8 heap**. Two overlapping ~3 MiB / ~750k-token coding-agent `POST /v1/responses` (RTK + Caveman) abort that heap at ~12 Gi (`FATAL ERROR: Reached heap limit`) and can OOM a 16 Gi cgroup. See [#7849](https://github.com/diegosouzapw/OmniRoute/issues/7849). That measurement is a **memory-budget** warning, not a product hard-max of two concurrent long `/v1/responses`. Heavyweight chat admission is gated by an auto-derived ingest byte budget (`OMNIROUTE_CHAT_MAX_INFLIGHT_BYTES`, `src/shared/middleware/admissionBudget.ts`) sized from that same V8/cgroup ceiling — overriding it upward (or setting the legacy `OMNIROUTE_CHAT_MAX_HEAVY_IN_FLIGHT` request-count cap) on an already-sized process reintroduces the abort. Small chats, `/healthz`, `/v1/models`, and MCP are **not** in that cap.
 
-| すべきこと                                                                                                                                                                  | すべきでないこと                                                               |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| それぞれ**固有**の `DATA_DIR` / ボリュームを持つ **N 個のコンテナ/Pod** を実行する                                                                                          | 1 つの SQLite ファイルに対して `replicas > 1` を設定する                       |
-| ヒープ / 処理中バイト予算に基づいて、重量級の処理中リクエスト数と正常時ヘッドルームをサイジングする。1～2 件は保守的な #7849 のデフォルトであり、製品上のハード上限ではない | 1 つのプロセスに 8 倍の RAM と無制限の件数上限を与える                         |
-| オプション: **共有クォータカウンター**には `QUOTA_STORE_DRIVER=redis` + `QUOTA_STORE_REDIS_URL` を使用する                                                                  | Redis を共有 SQLite として扱う — Redis は共有 SQLite ではない                  |
-| プロバイダーのシークレットを各インスタンスに複製する（またはダッシュボードの分割を許容する）                                                                                | インスタンス間で 1 つのダッシュボード / 1 つのコールログが共有されると想定する |
-| 任意のロードバランサーを前段に配置する。API キーまたはセッション単位のスティッキー設定で十分                                                                                | ベンダー固有のサイズ認識ミドルウェアを必須とする                               |
+### 1 プロセス: 2 つ以上の長い`/v1/responses`
 
-ハードウェア: インスタンスごとの長時間 `/v1/responses` の同時実行数は、**メモリ予算**の問題です（ヒープ + 処理中バイト / #10110）。独立した `DATA_DIR` を持つ `N` 個のインスタンスでもヒープは増加します。ホスト RAM は「N=8 の 16 Gi Pod 1 個」ではなく、`N × cgroup` を収容できる必要があります。1 つの SQLite ファイルに対して `replicas > 1` を設定してはなりません。
+あ**健康**プロセス ( `OMNIROUTE_CHAT_ADMISSION_HEAP_SHED_RATIO`の下のヒープ、デフォルト`0.75`)** 5月**プロセス全体のインフライトバイト バジェット (`OMNIROUTE_CHAT_MAX_INFLIGHT_BYTES` / #10110) にまだ余裕がある場合は、2 つを超えるロング`POST /v1/responses`を同時に実行します。 `OMNIROUTE_CHAT_LARGE_BODY_BYTES`以上のボディ (デフォルトは 256 KiB) は、構造が重いリクエストと同じヘビーウェイト リースを取得し、同じ[#10437](https://github.com/diegosouzapw/OmniRoute/pull/10437) `tryAcquireHealthyHeadroom`エスケープ (`OMNIROUTE_CHAT_ADMISSION_HEALTHY_HEADROOM`) を使用します。数十の長いSSEクライアントを同時に実行する (オペレーターは通常 40 ～ 50 を必要とする)**メモリバジェット**質問—サイズ ヒープ+ primary/headroomスロット+ `OMNIROUTE_CHAT_MAX_INFLIGHT_BYTES` —製品の厳密な「最大 2」制限ではありません。圧力をかけられたヒープは依然として再試行可能な`503`でシェッドされるため、#7849 は返されません。
 
-Compose の概略例（2 つのヒープ、2 つのボリューム — `deploy.replicas: 2` ではありません）:
+に**ヒープを乗算する**(独立した V8 オールドスペース)**今日**:
+
+| する                                                                                                                                                       | しないでください                                                             |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 走る**containers/pods** 、それぞれにその**自分の**`DATA_DIR` / ボリューム                                                                                  | 1 つのSQLiteファイルに対して`replicas > 1`設定する                           |
+| ヒープ/インフライトバイトバジェットからの重いインフライト+健全なヘッドルームのサイズ。 1–2 は保守的な #7849 のデフォルトであり、製品の最大値ではありません | 1 つのプロセスに 8 × RAMと無制限のカウント上限を与える                       |
+| オプション: `QUOTA_STORE_DRIVER=redis` + `QUOTA_STORE_REDIS_URL`**共有クォータカウンター**                                                                 | Redis共有SQLite —として扱いますが、そうではありません                        |
+| プロバイダーのシークレットを各インスタンスに複製します (またはパーティション化されたダッシュボードを受け入れます)。                                        | 複数のインスタンスにわたって 1 つのダッシュボード / 1 つの通話ログが必要です |
+| 前面にはロードバランサーが装備されています。 APIキーまたはセッションによるスティッキーで十分です                                                           | ベンダー固有のサイズ認識ミドルウェアが必要                                   |
+
+セッションとアカウントのアフィニティは、 Redisを通じて共有することもできます。同じ`REDIS_KEY_PREFIX`と正の`sessionAffinityTtlMs`設定を使用して、各プロセスで`OMNIROUTE_SESSION_AFFINITY_STORE=redis`と`REDIS_URL`設定します。 Pin は、ハッシュされた使用状況アカウント ID を各プロセスの適格なローカル接続に解決するため、一致する ID メタデータを持つOAuthアカウントには一致する接続IDsが必要ありません。既知のアカウント ID は、PIN 解決および保護されたエビクションにおいて、矛盾するローカルIDsよりも優先されます。 ID のないレコード (または ID のない削除呼び出し元) は、従来のIDガードを保持します。安定した使用 ID を持たないアカウントでも、 IDs照合が必要です。 Redisエラーまたは 100 ミリ秒を超える呼び出しは、ローカルSQLiteにフォールバックします。各Redisアフィニティ ストアは、未処理の操作を 8 に制限し、満杯の場合は直ちにRedisバイパスし、呼び出し元の期限ではなく、基礎となる作業が落ち着いたときにのみスロットを解放します。 Redis停止中、共有される真実はありません。各インスタンスは独自のローカル アフィニティにフォールバックし、セッションはインスタンスごとに 1 回再固定される可能性があり、インスタンスが分岐する可能性があります。スティッキーは、回復するとRedisを通じて再収束します。タイムアウトは送信されたEVALではなく待機を制限し、フォールバック後に到達する可能性があります。ルーティング書き込みでは、新たな変更時間の読み取りではなく、ルーティング決定によって観察された正確な値が比較されます。観測されたミスまたはSQLiteフォールバック観測は、存在しないRedisキーとして比較されます。廃止されたピンは 1 つのCASで置き換えられるため、後のコマンドでは新しい別のピンを置き換えたり削除したりすることはできません。 Redisアトミックに値を読み取り、残りのサーバーTTLを返します。書き込み側のJSONタイムスタンプや読み取り側のクロックではなく、正のPTTL (または有効期限なし) によって生存性が決まります。ローカル スナップショットは、残りのTTLをローカルの期限にマッピングします。既存のJSONキーは読み取り可能なままであり、その生のバイトはCAS用に保持されます。 Redis 、応答する際の唯一の真実の情報源です。共有の更新/挿入、タッチ、および削除によってローカル エントリが削除されることを確認し、インストールまたは更新を行わないでください。 Redisパス上のSQLite 、以前と同様に TTL 制限付きで、 Redisエラー、タイムアウト、またはアドミッション飽和からのこのインスタンス自身のフォールバック決定のみを保持します。その後の停止時にローカル PIN が失われると、間違ったアカウントや削除されたアカウントではなく、新しい選択が 1 回 (プロンプト キャッシュ ミスが 1 回) 発生します。拒否された upsert は、共有された勝者とその残りのTTLアトミックに返します。通常の選択では、マップされたローカル期限を再チェックし、まだ有効な勝者を使用し、別の共有書き込みを行わずにそのアカウントの使用状況とログに影響を与えます。使用できない場合は、ローカル候補が選択され、共有ピンは変更されないままとなり、1 つのデバッグ メッセージが生成されます。拒否されたCAS SQLiteを書き込みません。 Redisエラー、タイムアウト、またはアドミッションの飽和の場合は、代わりに既存のローカル操作が適用されます。送信されたミューテーションの応答がタイムアウト (受け入れ、拒否、またはエラー) 後に到着した場合、同期の正確なシリアル値の比較と削除により、バイトが同一のタイムアウト フォールバック行のみが削除されます。その比較と削除の間に待機はありません。新しい停止書き込みは保存されます。ガード付きエビクションでは、 Redisダウンしている場合でも、失敗したアカウント自体のローカル PIN が削除され、共有エビクションが確認された後に再度クリーンアップされます。共有成功ではSQLiteが書き込まれないため、保留中の以前の共有応答では、排除されたローカル ピンを復元できません。その後の停止フォールバックにより、アカウントが再固定される可能性があります。後で受け入れられる共有書き込みはRedisにのみ存在します。 Redisミスはローカル フォールバック状態を参照しません。ドライバーがオフの場合、新しく選択されたピンは従来の 4 フィールドSQLite JSON形状を保持します。 Redisルーティングのみがハッシュ化されたアカウント ID を追加します。プリフェッチされたピンは、有効期限の境界で再チェックされます。 Redis非リース選択ではストアが再読み取りされますが、同期リース プランニングでは、プリフェッチとプランニングの間で削除されたピンを引き続き使用できます (ベスト エフォート ウィンドウとして認められています)。リースコミットは、永続的要求の後にアカウントを切り替えることはできません。拒否された upsert では、その要求に対してのみ要求された候補を保持し、共有された勝者には影響を与えないため、インスタンス間の合意はそのパスに制限されます。表の残りの部分は引き続き適用されます。これは、コンボ セッションのスティッキー性、ネイティブCodexターン ピン、アカウント セマフォ、ロックアウト、支出制限、構成、または通話ログを共有しません。
+
+ハードウェア: インスタンスごとの同時実行ロング`/v1/responses`は、**メモリバジェット**質問 (ヒープ+飛行中のバイト / #10110)。 `N`に依存しない`DATA_DIR`は依然としてヒープを増大させます。ホストRAM 、「N = 8 を備えた 1 つの 16 Gi ポッド」ではなく、 `N × cgroup`をカバーする必要があります。 1 つのSQLiteファイルに対して`replicas > 1`実行しないでください。
+
+スケッチを作成します (2 つのヒープ、2 つのボリューム—ではなく`deploy.replicas: 2`):
 
 ```yaml
 services:
@@ -619,17 +684,97 @@ volumes:
   omniroute-b-data:
 ```
 
-プロセス内密度（HTTP isolate からの圧縮処理の分離）については [#11023](https://github.com/diegosouzapw/OmniRoute/issues/11023) を参照してください。共有された永続状態上の単一論理クラスターについては [#8075](https://github.com/diegosouzapw/OmniRoute/issues/8075) を参照してください。
+インプロセス密度 ( HTTP分離株からの圧縮) は[#11023](https://github.com/diegosouzapw/OmniRoute/issues/11023)です。共有永続状態の 1 つの論理クラスターは[#8075](https://github.com/diegosouzapw/OmniRoute/issues/8075)です。
 
-## 重要事項
+## Docker 内での Gemini の地域エラー
 
-- **SQLite WALモード:** OmniRouteが最新の変更を`storage.sqlite`へチェックポイントできるように、`docker stop`が完了するまで待機してください。同梱のComposeファイルでは、停止猶予期間がすでに40秒に設定されています。イメージを直接実行する場合は、`--stop-timeout 40`を指定してください。
-- **`DISABLE_SQLITE_AUTO_BACKUP`:** 定期バックアップや書き込み前バックアップを外部で管理している場合は、`true`に設定してください。既存データベースのマイグレーションでは、引き続き独自の永続的な安全スナップショットと一括マイグレーション保護が必要です。
-- **データの永続化:** コンテナの再起動後もデータベース、キー、設定を保持するには、必ず`/app/data`にボリュームをマウントしてください。
-- **ポート設定:** デフォルトの`20128`ポートを変更するには、`PORT`環境変数を上書きしてください。
+Google AI Studio / Gemini API は、FAILED_PRECONDITION と
+`User location is not supported for the API use.` を伴う HTTP 400 を返すことがあります。ホスト上でリクエストが成功しても、
+コンテナが同じ外向きルートを使用しているとは限りません。DNS の順序、
+IPv4/IPv6 の接続性、VPN ルーティング、設定済みプロキシが異なる場合があります。
+[Google のサポート対象地域](https://ai.google.dev/gemini-api/docs/available-regions)
+と実際の接続ルートの両方を確認してください。このエラーだけでは、API キーが無効であるとは判断できません。
+
+### 接続固有のプロキシを優先する
+
+影響を受けている Gemini 接続には、OmniRoute の[接続単位のプロキシ設定](../ops/PROXY_GUIDE.md#4-level-proxy-system)
+を使用し、その後、同じモデルで **Test Connection** と小規模なリクエストを
+再実行してください。これにより、ルーティングの変更をその接続のみに限定できます。プロキシに
+コンテナから到達できること、および接続で実際にそのプロキシが選択されていることを確認してください。
+ルートを変更しても、アップストリーム側の地域要件を満たすことが保証されるわけではありません。
+
+### ホストとコンテナのネットワークを比較する
+
+認証済みの結果を比較する際は、キー、モデル、リクエストを同一に保ってください。認証情報、
+プロキシパスワード、完全な認証ヘッダーを Issue に貼り付けないでください。
+まず、OS のリゾルバーがどのアドレスファミリーを提示するかを、ホストと
+コンテナ内で同じコマンドを使用して確認します。
+
+```bash
+node -e 'require("node:dns").lookup("generativelanguage.googleapis.com", {all: true}, (error, addresses) => { if (error) { console.error(error.code); process.exitCode = 1; return; } console.log(addresses.map(({family}) => family)); })'
+docker compose exec omniroute node -e 'require("node:dns").lookup("generativelanguage.googleapis.com", {all: true}, (error, addresses) => { if (error) { console.error(error.code); process.exitCode = 1; return; } console.log(addresses.map(({family}) => family)); })'
+```
+
+`omniroute` は、実行しているサービス（例: `omniroute-web`）に置き換えてください。これらの
+コマンドは、認証情報や IP アドレスを表示せずにアドレスファミリーを出力します。`6` が返されても、
+IPv6 の DNS 結果が存在することを示すだけであり、使用可能な IPv6 ルートや API アクセスを
+証明するものでは**ありません**。`curl` がインストールされている場合は、両方の環境で
+`curl -4 -I https://generativelanguage.googleapis.com` と
+`curl -6 -I https://generativelanguage.googleapis.com` を比較してください。
+未認証エラーであっても、HTTP レスポンスがあれば、そのプローブにおける接続性は証明されます。
+Gemini の利用可否を確認できるのは、認証済みのモデルリクエストだけです。
+
+### ホストレベルの代替手段: 動作する IPv6 とリゾルバーポリシー
+
+[#12762](https://github.com/diegosouzapw/OmniRoute/issues/12762) の報告者は、コンテナの IPv6 を有効にし、
+glibc のアドレス選択を変更することで、その環境でのアクセスを復旧しました。
+これは環境固有の代替手段として扱ってください。リゾルバーの優先設定を調整する前に、
+ホストの IPv6 が動作していること、コンテナの外向き通信とルーティング、およびファイアウォールルールを確認してください。
+プライベート ULA アドレスがあるだけでは、パブリック IPv6 接続が確立されているとはいえません。
+
+すでに Compose のデフォルトネットワークに接続されているサービスでは、次のフラグメントによって
+そのネットワークで IPv6 が有効になります。サービス、ポート、ボリューム、その他の設定は維持してください。
+
+```yaml
+networks:
+  default:
+    enable_ipv6: true
+```
+
+名前付きネットワークの場合は、サービスが実際に接続するネットワークで有効にしてください。Docker は
+ULA サブネットを割り当てられます。明示的な重複しないサブネットは、ネットワークで必要な場合にのみ選択してください。
+[Docker IPv6 ネットワーク](https://docs.docker.com/engine/daemon/ipv6/)
+および [Compose のネットワークオプション](https://docs.docker.com/reference/compose-file/networks/#enable_ipv6)を参照してください。
+
+**glibc ベースのイメージ**では、`/etc/gai.conf` でアドレス選択を変更できます。現在の
+リポジトリの Dockerfile は Debian を使用しています。カスタムの musl ベースイメージでは、この仕組みは共有されません。
+報告された調整では、ULA のラベルを `label fc00::/7 6` から
+`label fc00::/7 1` に変更しています。イメージの完全なポリシーテーブルを基にして、その他の
+エントリを維持してください。`label` または `precedence` のエントリを追加すると、そのデフォルトテーブルが置き換えられるため、
+変更した行だけを含むファイルでは不十分です。
+[glibc の設定リファレンス](https://github.com/bminor/glibc/blob/master/posix/gai.conf)
+に、これらのセマンティクスが記載されています。確認済みのファイルを `/etc/gai.conf` に読み取り専用で
+バインドマウントし、サービスを再作成して適用してください。
+
+これにより、そのコンテナ内の**すべての外向きトラフィック**に対する OS のアドレス選択が変更されます。
+すべてのアプリケーションに IPv6 の選択を強制するものではありません。Node の DNS 順序と接続の
+選択も影響します。特に、`--dns-result-order=ipv4first` は IPv4 を優先するため、
+IPv4 のみで発生する障害への対処にはなりません。[Node の DNS 順序](https://nodejs.org/api/dns.html#dnssetdefaultresultorderorder)を参照してください。
+
+ホストレベルの変更後は、Gemini とその他のプロバイダーを再テストしてください。ロールバックするには、
+カスタムの `gai.conf` マウントを削除し、以前のネットワーク設定を復元して、
+メンテナンス時間中に影響を受けるサービスまたはネットワークを再作成してください。ネットワークを再作成すると、
+それに接続されている他のコンテナが中断される可能性があります。永続データボリュームは削除しないでください。
+
+## 重要な注意事項
+
+- **SQLite WAL モード:** OmniRoute が最新の変更を `storage.sqlite` にチェックポイントできるように、`docker stop` が完了するまで待つ必要があります。同梱の Compose ファイルでは、停止猶予期間がすでに 40 秒に設定されています。イメージを直接実行する場合は、`--stop-timeout 40` を指定してください。
+- **`DISABLE_SQLITE_AUTO_BACKUP`:** 定期バックアップや書き込み前バックアップを外部で管理している場合は、`true` に設定してください。既存データベースのマイグレーションには、引き続き永続的で安全なスナップショットと、大規模マイグレーション用の保護機構が必要です。
+- **データの永続化:** コンテナの再起動後もデータベース、キー、設定を保持するため、必ず `/app/data` にボリュームをマウントしてください。
+- **ポート設定:** デフォルトの `20128` ポートを変更するには、`PORT` 環境変数を上書きしてください。
 
 ## 関連項目
 
-- [VMデプロイガイド](../ops/VM_DEPLOYMENT_GUIDE.md) — VM + nginx + Cloudflareのセットアップ
-- [Fly.ioデプロイガイド](../ops/FLY_IO_DEPLOYMENT_GUIDE.md) — Fly.ioへのデプロイ
-- [環境設定](../reference/ENVIRONMENT.md) — 完全な`.env`リファレンス
+- [VM デプロイガイド](../ops/VM_DEPLOYMENT_GUIDE.md) — VM + nginx + Cloudflare のセットアップ
+- [Fly.io デプロイガイド](../ops/FLY_IO_DEPLOYMENT_GUIDE.md) — Fly.io へのデプロイ
+- [環境設定](../reference/ENVIRONMENT.md) — `.env` の完全なリファレンス

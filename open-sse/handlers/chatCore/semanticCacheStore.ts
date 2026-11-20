@@ -14,6 +14,8 @@ import {
   setCachedResponse as defaultSetCachedResponse,
   isCacheableForWrite as defaultIsCacheableForWrite,
   isTruncatedCompletion as defaultIsTruncatedCompletion,
+  isRefusalOrUnavailableCompletion as defaultIsRefusalOrUnavailableCompletion,
+  responseCarriesToolCalls,
 } from "@/lib/semanticCache";
 import { isSmallEnoughForSemanticCache as defaultIsSmallEnough } from "../../utils/estimateSize.ts";
 import { getSemanticCacheManager } from "../../services/cache/semanticCacheManager.ts";
@@ -33,6 +35,7 @@ export interface SemanticCacheStoreDeps {
   isCacheableForWrite: typeof defaultIsCacheableForWrite;
   /** Optional so pre-existing callers/tests with partial deps keep working. */
   isTruncatedCompletion?: typeof defaultIsTruncatedCompletion;
+  isRefusalOrUnavailableCompletion?: typeof defaultIsRefusalOrUnavailableCompletion;
   isSmallEnoughForSemanticCache: typeof defaultIsSmallEnough;
   generateSignature: typeof defaultGenerateSignature;
   setCachedResponse: typeof defaultSetCachedResponse;
@@ -41,6 +44,7 @@ export interface SemanticCacheStoreDeps {
 const DEFAULT_DEPS: SemanticCacheStoreDeps = {
   isCacheableForWrite: defaultIsCacheableForWrite,
   isTruncatedCompletion: defaultIsTruncatedCompletion,
+  isRefusalOrUnavailableCompletion: defaultIsRefusalOrUnavailableCompletion,
   isSmallEnoughForSemanticCache: defaultIsSmallEnough,
   generateSignature: defaultGenerateSignature,
   setCachedResponse: defaultSetCachedResponse,
@@ -58,14 +62,22 @@ export function storeSemanticCacheResponse(
     usage?: UsageLike;
     log?: LoggerLike;
     videoTranscriptSensitive?: boolean;
+    /** Reversible PII vault minted tokens: a cached copy would replay unresolvable tokens. */
+    piiTokensMinted?: boolean;
   },
   deps: SemanticCacheStoreDeps = DEFAULT_DEPS
 ): void {
   if (
+    args.provider === "muse-code" ||
     args.videoTranscriptSensitive ||
+    args.piiTokensMinted ||
     !args.enabled ||
     !deps.isCacheableForWrite(args.body, args.headers) ||
     (deps.isTruncatedCompletion ?? defaultIsTruncatedCompletion)(args.translatedResponse) ||
+    (deps.isRefusalOrUnavailableCompletion ?? defaultIsRefusalOrUnavailableCompletion)(
+      args.translatedResponse
+    ) ||
+    responseCarriesToolCalls(args.translatedResponse) ||
     !deps.isSmallEnoughForSemanticCache(args.translatedResponse)
   ) {
     return;

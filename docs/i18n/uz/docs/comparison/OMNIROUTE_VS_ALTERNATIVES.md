@@ -4,46 +4,45 @@
 
 ---
 
-Mashhur ochiq kodli AI routerlari bilan funksiyalarning xolis taqqoslanishi.
+Mashhur ochiq manbali AI routerlar bilan ob'ektiv xususiyatlarni taqqoslash.
 
-> **Metodologiya**: Ochiq repozitoriylar 2026-yil 2-choragida tekshirildi. Versiyalar ko‘rsatilganidek.
-> Tuzatishlarni PR orqali yuboring — ma’lumotlar aniq bo‘lishini istaymiz.
+> **Metodologiya** : Davlat reposlari 2026-2-chorak auditidan o'tkazildi. Ro'yxatdagi kabi versiyalar. Tuzatishlarni PR — orqali yuboring, biz bu aniq bo'lishini xohlaymiz.
 
-| Funksiya                                                |                 OmniRoute 3.8                  |    LiteLLM 1.x     | OpenRouter (SaaS) |   Portkey   |
-| ------------------------------------------------------- | :--------------------------------------------: | :----------------: | :---------------: | :---------: |
-| **Provayderlar**                                        |                    **329**                     |        ~100        |        ~50        |     ~30     |
-| **Bepul/autentifikatsiyasiz katalog yozuvlari**         |                    **155**                     |        n/a         |     vositachi     |     n/a     |
-| **Mustaqil joylashtirish mumkin**                       |                       ✅                       |         ✅         |        ❌         |  ⚠ pullik   |
-| **OAuth katalog yozuvlari**                             |                     **23**                     |       qisman       |        ❌         |     ❌      |
-| **Avtomatik zaxiraga o‘tish kombinatsiyalari**          |               **19 strategiya**                | ustuvorlik asosida |  daraja asosida   | vaznlangan  |
-| **Fusion (parallel panel + hakam sintezi)**             |                       ✅                       |         ❌         |        ❌         |     ❌      |
-| **1/2/3-darajali zaxira (obuna→arzon→bepul)**           |                    ✅ + UI                     |       qo‘lda       |        n/a        |   qo‘lda    |
-| **Tokenlarni siqish**                                   | 12 dvigatelli stek (RTK + Caveman + LLMLingua) |        yo‘q        |       yo‘q        |    yo‘q     |
-| **Multimodal generatsiya (nutq/musiqa/video)**          |                       ✅                       |         ❌         |     vositachi     |     ❌      |
-| **Ichki MCP serveri**                                   |            ✅ 110 vosita, 33 qamrov            |         ❌         |        ❌         |     ❌      |
-| **A2A protokoli**                                       |                 ✅ 6 ko‘nikma                  |         ❌         |        ❌         |     ❌      |
-| **Xotira (FTS5 + vektor)**                              |                       ✅                       |         ❌         |        ❌         |     ❌      |
-| **Himoya cheklovlari (PII, inyeksiya, tasvir)**         |                       ✅                       |       qisman       |        ❌         |  ✅ pullik  |
-| **Bulutli agent integratsiyalari**                      |          Codex, Cursor, Devin, Jules           |         ❌         |        ❌         |     ❌      |
-| **Har bir provayder uchun circuit breaker**             |     ✅ 3 holatli, kechiktirilgan tiklanish     |       asosiy       |        ❌         |     ✅      |
-| **TLS fingerprint yashirinligi (JA3/JA4)**              |                   ✅ wreq-js                   |         ❌         |        ❌         |     ❌      |
-| **Baholash freymvorki**                                 |                    ✅ ichki                    |         ❌         |        ❌         |  ⚠ pullik   |
-| **MITM proksi (Cursor/Antigravity’ni tutib oladi)**     |               ✅ kross-platforma               |         ❌         |        ❌         |     ❌      |
-| **Tizim treyiga ega CLI (Electron’siz)**                |                       ✅                       |         ❌         |        n/a        |     n/a     |
-| **CLI mashina ID’si orqali avtomatik autentifikatsiya** |                       ✅                       |         ❌         |        n/a        |     n/a     |
-| **Boshqaruv paneli**                                    |                   Next.js 16                   |       asosiy       |    yopiq kodli    | yopiq kodli |
-| **i18n**                                                |                  **42 lokal**                  |         ❌         |        ❌         |      ⚠      |
-| **Ochiq agent ko‘nikmalari (SKILL.md)**                 |                     ✅ 45                      |         ❌         |        ❌         |     ❌      |
-| **Tunnel qo‘llovi (Cloudflared, Tailscale, Ngrok)**     |                       ✅                       |         ❌         |        n/a        |     n/a     |
-| **Litsenziya**                                          |                      MIT                       |        MIT         |    yopiq kodli    | yopiq kodli |
+| Xususiyat                                                       |                  OmniRoute 3.8                  |       LiteLLM 1.x       |  OpenRouter (SaaS)   |   Portkey    |
+| --------------------------------------------------------------- | :---------------------------------------------: | :---------------------: | :------------------: | :----------: |
+| **Provayderlar**                                                |                     **329**                     |          ~100           |         ~50          |     ~30      |
+| **Free/no-auth katalogidagi yozuvlar**                          |                     **155**                     |           n/a           |        o'tish        |     n/a      |
+| **O'z-o'zidan mezbon**                                          |                       ✅                        |           ✅            |          ❌          | ⚠ to'langan  |
+| **OAuth katalogidagi yozuvlar**                                 |                     **23**                      |         qisman          |          ❌          |      ❌      |
+| **Avtomatik qayta tiklash kombinatsiyalari**                    |              **22 ta strategiya**               | ustuvorlikka asoslangan | bosqichga asoslangan |    vaznli    |
+| **Fusion (parallel panel + sudyasi sintezi)**                   |                       ✅                        |           ❌            |          ❌          |      ❌      |
+| **Tier 1/2/3 zaxirasi (→ arzon → obunasi bepul)**               |                     ✅ + UI                     |        qo'llanma        |         n/a          |  qo'llanma   |
+| **Tokenni siqish**                                              | 12 dvigatelli stack (RTK + Caveman + LLMLingua) |          yo'q           |         yo'q         |     yo'q     |
+| **Multimodal avlod (speech/music/video)**                       |                       ✅                        |           ❌            |        o'tish        |      ❌      |
+| **O'rnatilgan MCP serveri**                                     |         ✅ 110 vositalari, 33 ta maydon         |           ❌            |          ❌          |      ❌      |
+| **A2A protokoli**                                               |                ✅ 6 ko'nikmalar                 |           ❌            |          ❌          |      ❌      |
+| **Xotira (FTS5 + vektori)**                                     |                       ✅                        |           ❌            |          ❌          |      ❌      |
+| **Guardrails (PII, in'ektsiya, ko'rish)**                       |                       ✅                        |         qisman          |          ❌          | ✅ to'langan |
+| **Bulutli agent integratsiyasi**                                |           Codex, Cursor, Devin, Jules           |           ❌            |          ❌          |      ❌      |
+| **Har bir provayder uchun o'chirgich**                          |          ✅ 3-holat, dangasa tiklanish          |         asosiy          |          ❌          |      ✅      |
+| **TLS barmoq izi yashirin (JA3/JA4)**                           |                   ✅ wreq-js                    |           ❌            |          ❌          |      ❌      |
+| **Baholash ramkasi**                                            |                 ✅ o'rnatilgan                  |           ❌            |          ❌          | ⚠ to'langan  |
+| **MITM proksi ( Cursor/Antigravity ni ushlab turadi)**          |              ✅ kross-platformasi               |           ❌            |          ❌          |      ❌      |
+| **tizim tepsisi bilan CLI ( Electron yo'q)**                    |                       ✅                        |           ❌            |         n/a          |     n/a      |
+| **CLI machine-ID avtomatik autentifikatsiya**                   |                       ✅                        |           ❌            |         n/a          |     n/a      |
+| **Boshqaruv paneli**                                            |                   Next.js 16                    |         asosiy          |        mulkiy        |    mulkiy    |
+| **i18n**                                                        |                 **67 ta hudud**                 |           ❌            |          ❌          |      ⚠       |
+| **Davlat agenti malakasi (SKILL.md)**                           |                      ✅ 45                      |           ❌            |          ❌          |      ❌      |
+| **Tunnelni qo'llab-quvvatlash (Cloudflared, Tailscale, Ngrok)** |                       ✅                        |           ❌            |         n/a          |     n/a      |
+| **Litsenziya**                                                  |                       MIT                       |           MIT           |        mulkiy        |    mulkiy    |
 
-## OmniRoute’ni qachon tanlash kerak
+## Qachon OmniRoute tanlash kerak
 
-- Siz mustaqil joylashtirasiz va **provayderlarning maksimal qamrovini** xohlaysiz (329 ta provayder, 155 ta bepul/autentifikatsiyasiz katalog yozuvi)
-- Sizga **ichki MCP serveri** kerak (LLM vositalari, xotira va ko‘nikmalar vosita sifatida taqdim etiladi)
-- Agentlararo ish jarayonlari uchun sizga **A2A protokoli** kerak
-- Yuqori oqimdagi CAPTCHA’lar tomonidan aniqlanmaslik uchun **fingerprint yashirinligini** (JA3/JA4) xohlaysiz
-- Sizga SaaS hisobisiz **korporativ funksiyalar** (himoya cheklovlari, baholashlar, audit jurnali) kerak
+- Siz o'zingiz mezbonlik qilasiz va xohlaysiz** maksimal provayder qamrovi** (394 ta provayder, 155 free/no-auth katalog yozuvlari)
+- Sizga kerak a** o'rnatilgan MCP serveri** (LLM vositalari, xotira, asboblar sifatida ko'rsatilgan ko'nikmalar)
+- Sizga kerak**A2A protokoli** agentdan agentga ish oqimlari uchun
+- Siz xohlaysiz** barmoq izlari yashirin** (JA3/JA4) yuqori oqim CAPTCHAs tomonidan aniqlanmaslik uchun
+- Sizga kerak** korxona xususiyatlari** (qo'riqchilar, evals, audit trail) SaaS hisobisiz
 
 ## LiteLLM’ni qachon tanlash kerak
 

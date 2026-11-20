@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { CALL_LOG_SETTLE_TIMEOUT_MS } from "../helpers/callLogSettle.ts";
 
 const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-estimated-usage-"));
 process.env.DATA_DIR = TEST_DATA_DIR;
@@ -82,9 +83,9 @@ async function runChat(apiKeyId: string, stream: boolean, response: () => Respon
 }
 
 async function persistedLog(apiKeyId: string) {
-  const deadline = Date.now() + 15_000;
+  const deadline = Date.now() + CALL_LOG_SETTLE_TIMEOUT_MS;
   for (;;) {
-    await callLogs.waitForCallLogSaves(5_000);
+    await callLogs.waitForCallLogSaves(CALL_LOG_SETTLE_TIMEOUT_MS);
     const rows = (await callLogs.getCallLogs({})) as Array<{ id: string; apiKeyId: string }>;
     const row = rows.find((r) => r.apiKeyId === apiKeyId);
     if (row) return callLogs.getCallLogById(row.id);
@@ -109,21 +110,35 @@ function usageEstimatedMeta(entry: unknown): unknown {
   return responseBody?._omniroute?.usageEstimated;
 }
 
-test("extraction keeps an internal estimated marker that never serializes or spreads", () => {
-  const estimatedChunk = { choices: [], usage: { ...USAGE, estimated: true } };
-  const reportedChunk = { choices: [], usage: { ...USAGE } };
-  const estimated = extractUsage(estimatedChunk);
-  const reported = extractUsage(reportedChunk);
+test("extraction preserves serializable field evidence and estimates through copies", () => {
+  const estimated = extractUsage({ choices: [], usage: { ...USAGE, estimated: true } });
+  const reported = extractUsage({ choices: [], usage: { ...USAGE } });
+  const tokenFields = { prompt_tokens: 1200, completion_tokens: 800 };
+  const evidence = {
+    input: { source: "estimated", method: "legacy_estimate" },
+    output: { source: "estimated", method: "legacy_estimate" },
+    cacheRead: { source: "unknown" },
+    cacheCreation: { source: "unknown" },
+  };
+  assert.deepStrictEqual(estimated, { ...tokenFields, usage_evidence: evidence, estimated: true });
+  assert.deepStrictEqual(reported, {
+    ...tokenFields,
+    usage_evidence: {
+      input: { source: "reported" },
+      output: { source: "reported" },
+      cacheRead: { source: "unknown" },
+      cacheCreation: { source: "unknown" },
+    },
+  });
   assert.equal(isEstimatedUsage(estimated), true);
   assert.equal(isEstimatedUsage(reported), false);
-  assert.deepStrictEqual(estimated, reported, "token fields are untouched");
-  assert.equal(JSON.stringify(estimated), JSON.stringify(reported));
-  assert.equal(isEstimatedUsage({ ...estimated }), false, "spread copies never carry it");
-  assert.equal(isEstimatedUsage(filterUsageForFormat(estimated, "openai")), false);
-
+  assert.equal(isEstimatedUsage({ ...estimated }), true);
+  assert.equal(isEstimatedUsage(JSON.parse(JSON.stringify(estimated))), true);
+  assert.equal(isEstimatedUsage(filterUsageForFormat(estimated, "openai")), true);
   const fromResponse = extractUsageFromResponse({ usage: { ...USAGE, estimated: true } }, "x");
   assert.equal(isEstimatedUsage(fromResponse), true);
-  assert.equal(JSON.stringify(fromResponse).includes("estimated"), false);
+  assert.deepEqual(fromResponse.usage_evidence, evidence);
+  assert.equal(JSON.parse(JSON.stringify(fromResponse)).estimated, true);
   assert.equal(isEstimatedUsage(extractUsageFromResponse({ usage: { ...USAGE } }, "x")), false);
 });
 

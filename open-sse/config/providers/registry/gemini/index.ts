@@ -25,6 +25,18 @@ export const geminiProvider: RegistryEntry = {
       supportsVision: true,
     },
     {
+      id: "gemini-4-argon",
+      name: "Gemini 4 Argon",
+      toolCalling: true,
+      supportsVision: true,
+    },
+    {
+      id: "gemini-4-hydrogen",
+      name: "Gemini 4 Hydrogen",
+      toolCalling: true,
+      supportsVision: true,
+    },
+    {
       id: "gemini-3.7-flash",
       name: "Gemini 3.7 Flash",
       toolCalling: true,

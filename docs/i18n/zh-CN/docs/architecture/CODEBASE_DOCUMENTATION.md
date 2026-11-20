@@ -4,30 +4,42 @@
 
 ---
 
-> OmniRoute 代码库工程参考文档，面向贡献者和集成开发者。
+> **版本：** v3.8.51
+> **最后更新：** 2026-06-28
+> **适用对象：** 为 OmniRoute 做贡献或基于其构建集成的工程师。
+>
+> 如需了解高层架构图以及各子系统背后的设计依据，请阅读
+> [ARCHITECTURE.md](./ARCHITECTURE.md)。如需深入了解各个子系统
+> （Auto Combo、MCP server、A2A server、Skills、Memory、Cloud Agents、Resilience、
+> Compression 等），请参阅 `docs/` 目录中的专属文件。
+
+本文介绍**当前代码仓库中已有的内容**，帮助新工程师浏览目录树、
+了解运行时分层结构，并知道应在哪里添加代码，而无需自行创建新的模块。
 
 ---
 
 ## 1. 技术栈
 
-| 关注领域 | 技术选型                                                                                                        |
-| -------- | --------------------------------------------------------------------------------------------------------------- |
-| Web 框架 | **Next.js 16**（App Router，独立输出，无全局中间件）                                                            |
-| 语言     | **TypeScript 6.0+** — 目标 `ES2022`，`module: esnext`，`moduleResolution: bundler`，`strict: false`             |
-| 运行时   | **Node.js** `>=22.22.2 <23` 或 `>=24.0.0 <27`（通过 `engines` + `SUPPORTED_NODE_RANGE` 强制）                   |
-| 数据库   | **SQLite**，基于 `better-sqlite3`（单例，WAL 日志模式）                                                         |
-| 桌面端   | **Electron 41** + `electron-builder` 26.10（独立工作空间 `electron/`）                                          |
-| 测试     | **Node 原生测试运行器**（单元/集成）、**Vitest**（MCP、autoCombo、缓存）、**Playwright**（端到端 + 协议端到端） |
-| 构建     | Next.js 独立模式，通过 `scripts/build/build-next-isolated.mjs`                                                  |
-| 代码检查 | ESLint flat 配置 + Prettier（Husky pre-commit 触发 `lint-staged`）                                              |
-| 模块系统 | 全局 ESM（`"type": "module"`）                                                                                  |
-| 工作空间 | npm workspace — `open-sse` 是唯一的子工作空间                                                                   |
+| 关注点      | 选择                                                                                                            |
+| ----------- | --------------------------------------------------------------------------------------------------------------- |
+| Web 框架    | **Next.js 16**（App Router、独立输出、无全局中间件）                                                            |
+| 语言        | **TypeScript 6.0+** — 目标为 `ES2022`，`module: esnext`，`moduleResolution: bundler`，`strict: false`           |
+| 运行时      | **Node.js** `>=22.22.2 <23` 或 `>=24.0.0 <27`（通过 `engines` + `SUPPORTED_NODE_RANGE` 强制执行）               |
+| 数据库      | 通过 `better-sqlite3` 使用 **SQLite**（单例、WAL 日志模式）                                                     |
+| 桌面端      | **Electron 41** + `electron-builder` 26.10（位于 `electron/` 的独立工作区）                                     |
+| 测试        | **Node 原生测试运行器**（单元/集成）、**Vitest**（MCP、autoCombo、缓存）、**Playwright**（e2e + protocols-e2e） |
+| 构建        | 通过 `scripts/build/build-next-isolated.mjs` 生成 Next.js 独立构建                                              |
+| 检查/格式化 | ESLint 扁平配置 + Prettier（通过 Husky pre-commit 运行 `lint-staged`）                                          |
+| 模块系统    | 全面采用 ESM（`"type": "module"`）                                                                              |
+| 仪表盘 UI   | **Tailwind CSS 4** + 内置的 **Keak CI UI Kit**（`packages/ui-kit`）、Lucide 图标 — 参见 `DESIGN_SYSTEM.md`      |
+| 工作区      | npm workspaces — `open-sse`、`packages/browser-pool`、`packages/ui-kit`                                         |
 
 路径别名（`tsconfig.json`）：
 
 - `@/*` → `src/*`
 - `@omniroute/open-sse` → `open-sse/index.ts`
 - `@omniroute/open-sse/*` → `open-sse/*`
+- `@omniroute/ui-kit` → `packages/ui-kit/src`，`@omniroute/ui-kit/*` → `packages/ui-kit/src/*`
 
 默认 HTTP 端口：**`20128`**（API 和仪表盘共享同一进程）。数据目录由 `DATA_DIR` 环境变量指定，默认为 `~/.omniroute/`。
 
@@ -37,79 +49,80 @@
 
 ```
 OmniRoute/
-├── src/                  Next.js 应用（App Router、库、领域层、服务端、共享模块）
-├── open-sse/             流式传输引擎工作空间（@omniroute/open-sse）
-├── electron/             桌面端封装（Electron 41 主进程 + preload）
+├── src/                  Next.js 应用程序（App Router、库、领域层、服务端、共享代码）
+├── open-sse/             流式引擎工作区（@omniroute/open-sse）
+├── packages/             工作区：ui-kit（内置的 Keak CI UI Kit）、browser-pool
+├── electron/             桌面封装程序（Electron 41 主进程 + 预加载脚本）
 ├── bin/                  CLI 入口点（omniroute、reset-password）
-├── tests/                单元、集成、端到端、协议端到端、翻译器、安全、测试夹具
+├── tests/                单元测试、集成测试、端到端测试、协议端到端测试、转换器测试、安全测试、测试夹具
 ├── scripts/              构建、同步、检查、迁移及运行时辅助脚本
-├── docs/                 公开文档（本目录）
-├── public/               静态资源、PWA manifest、Service Worker
+├── docs/                 公共文档（本目录）
+├── public/               静态资源、PWA 清单、Service Worker
 ├── config/               运行时配置示例
-├── images/               市场/截图资源
-├── _ideia/, _references/, _mono_repo/, _tasks/   内部草稿/规划（不发布）
-├── CLAUDE.md             面向 Claude Code 的仓库规则
-├── AGENTS.md             面向 Agent 的深层架构参考
-├── package.json          v3.8.0，工作空间根目录
-└── tsconfig.json         路径别名 + 核心编译选项
+├── images/               营销/截图资源
+├── _ideia/, _references/, _mono_repo/, _tasks/   内部草稿/规划（不随产品发布）
+├── CLAUDE.md             Claude Code 的仓库规则
+├── AGENTS.md             面向智能体的深入架构参考
+├── package.json          v3.8.51，工作区根目录
+└── tsconfig.json         路径别名 + 核心编译器选项
 ```
 
 ---
 
-## 3. `src/` — Next.js 应用程序
+## 3. `src/` — Next.js 应用
 
 ```
 src/
 ├── app/                  App Router 页面 + API 路由
-├── lib/                  核心库（数据库、身份验证、OAuth、技能、记忆等）
+├── lib/                  核心库（DB、身份验证、OAuth、技能、记忆等）
 ├── domain/               纯领域层（策略、回退、成本、锁定等）
-├── server/               仅服务端模块（授权、CORS、身份验证）
-├── shared/               类型、常量、验证、契约、工具（可安全跨边界使用）
+├── server/               仅限服务器端的模块（授权、CORS、身份验证）
+├── shared/               类型、常量、验证、契约、工具（跨边界安全）
 ├── mitm/                 用于 CLI 集成的中间人代理辅助工具
-├── models/               本地模型元数据/别名
-├── sse/                  仍位于 src/ 下的旧版 SSE 处理程序（不在 open-sse/ 中）
+├── models/               本地模型元数据 / 别名
+├── sse/                  仍位于 src/ 下的旧版 SSE 处理程序（不在 open-sse/ 下）
 ├── store/                客户端状态存储
-├── middleware/           路由级中间件工具（并非 Next.js 全局中间件）
-├── scripts/              可由应用程序代码导入的树内脚本
+├── middleware/           路由级中间件工具（不是 Next.js 全局中间件）
+├── scripts/              可由应用代码导入的树内脚本
 ├── types/                环境类型和共享 TS 类型
-├── i18n/                 本地化资源包
-├── instrumentation.ts    Next.js 检测钩子
+├── i18n/                 本地化语言包
+├── instrumentation.ts    Next.js instrumentation 钩子
 ├── instrumentation-node.ts
 └── proxy.ts              顶层代理引导辅助工具
 ```
 
 ### 3.1 `src/app/` — App Router
 
-App Router 同时提供仪表板 UI 和公共/管理 HTTP API。
-这里**没有全局中间件**——拦截按路由执行。
+App Router 同时提供仪表板 UI 和公共/管理 HTTP API。  
+**不存在全局中间件**——拦截按路由执行。
 
-`src/app/` 下的顶层分段：
+`src/app/` 下的顶层片段：
 
 | 路径                                                                          | 用途                                 |
 | ----------------------------------------------------------------------------- | ------------------------------------ |
-| `api/`                                                                        | 所有 HTTP API 路由（详见下方明细）   |
+| `api/`                                                                        | 所有 HTTP API 路由（详见下方分类）   |
 | `a2a/`                                                                        | A2A JSON-RPC 2.0 端点（`POST /a2a`） |
 | `.well-known/agent.json/`                                                     | A2A Agent Card 发现文档              |
 | `(dashboard)/`                                                                | 仪表板 UI（路由组，无 URL 前缀）     |
-| `auth/`, `login/`, `forgot-password/`, `callback/`                            | 身份验证流程                         |
+| `auth/`、`login/`、`forgot-password/`、`callback/`                            | 身份验证流程                         |
 | `landing/`                                                                    | 营销/落地页                          |
 | `docs/`                                                                       | 嵌入式 API 文档查看器                |
-| `status/`, `maintenance/`, `offline/`                                         | 运维页面                             |
-| `privacy/`, `terms/`                                                          | 法律页面                             |
-| `400/`, `401/`, `403/`, `408/`, `429/`, `500/`, `502/`, `503/`                | 静态错误页面                         |
-| `error.tsx`, `global-error.tsx`, `not-found.tsx`, `forbidden/`, `loading.tsx` | 框架错误/加载边界                    |
-| `layout.tsx`, `page.tsx`, `globals.css`, `manifest.ts`                        | 根级外壳                             |
+| `status/`、`maintenance/`、`offline/`                                         | 运行状态页面                         |
+| `privacy/`、`terms/`                                                          | 法律页面                             |
+| `400/`、`401/`、`403/`、`408/`、`429/`、`500/`、`502/`、`503/`                | 静态错误页面                         |
+| `error.tsx`、`global-error.tsx`、`not-found.tsx`、`forbidden/`、`loading.tsx` | 框架错误/加载边界                    |
+| `layout.tsx`、`page.tsx`、`globals.css`、`manifest.ts`                        | 根外壳                               |
 
 #### 3.1.1 `src/app/(dashboard)/dashboard/` — UI 页面
 
-`agents`、`analytics`、`api-manager`、`audit`、`auto-combo`、`batch`、`cache`、
-`changelog`、`cli-tools`、`cloud-agents`、`combos`、`compression`、`context`、
-`costs`、`endpoint`、`health`、`limits`、`logs`、`memory`、`onboarding`、
-`playground`、`providers`、`search-tools`、`settings`、`skills`、`system`、
-`translator`、`usage`、`webhooks`，以及根级 `page.tsx`、`HomePageClient.tsx`、
+`agents`、`analytics`、`api-manager`、`audit`、`auto-combo`、`batch`、`cache`、  
+`changelog`、`cli-tools`、`cloud-agents`、`combos`、`compression`、`context`、  
+`costs`、`endpoint`、`health`、`limits`、`logs`、`memory`、`onboarding`、  
+`playground`、`providers`、`search-tools`、`settings`、`skills`、`system`、  
+`translator`、`usage`、`webhooks`，以及根目录下的 `page.tsx`、`HomePageClient.tsx`、  
 `BootstrapBanner.tsx`。
 
-#### 3.1.2 `src/app/api/` — 顶层 API 组
+#### 3.1.2 `src/app/api/` — 顶层 API 分组
 
 ```
 src/app/api/
@@ -165,17 +178,15 @@ src/app/api/
 ├── services/   嵌入式服务管理（9router、cliproxy）— LOCAL_ONLY
 ├── upstream-proxy/
 ├── usage/
-├── v1/         与 OpenAI 兼容的公共 API
-├── v1beta/     Gemini 风格的兼容接口
+├── v1/         兼容 OpenAI 的公共 API
+├── v1beta/     Gemini 风格兼容 API
 ├── version-manager/
 └── webhooks/
 ```
 
 #### 3.1.2a `src/app/api/services/` — 嵌入式服务管理
 
-用于安装、启动、停止和监控 9Router 与 CLIProxyAPI 的路由。
-所有路径均被分类为 **LOCAL_ONLY**（仅允许环回地址，硬性规则 #17），因为它们
-可以调用 `npm install` 并生成子进程。
+用于安装、启动、停止和监控 9Router 与 CLIProxyAPI 的路由。所有路径均分类为 **LOCAL_ONLY**（仅限环回访问；硬性规则 #17），因为它们可以调用 `npm install` 并生成子进程。
 
 ```
 src/app/api/services/
@@ -185,9 +196,9 @@ src/app/api/services/
 │   ├── start/route.ts      POST — supervisor.start()
 │   ├── stop/route.ts       POST — supervisor.stop()
 │   ├── restart/route.ts    POST — supervisor.restart()
-│   ├── update/route.ts     POST — npm install 较新版本
+│   ├── update/route.ts     POST — npm install 新版本
 │   ├── rotate-key/route.ts POST — 生成新的 API 密钥并重启
-│   ├── status/route.ts     GET  — 实时状态、数据库状态和版本元数据
+│   ├── status/route.ts     GET  — 实时状态 + 数据库状态 + 版本元数据
 │   └── auto-start/route.ts POST — 切换 auto_start 标志
 ├── cliproxy/
 │   ├── _lib.ts             getOrInitSupervisor() 辅助函数
@@ -195,46 +206,46 @@ src/app/api/services/
 │   ├── start/route.ts      POST — supervisor.start()
 │   ├── stop/route.ts       POST — supervisor.stop()
 │   ├── restart/route.ts    POST — supervisor.restart()
-│   ├── update/route.ts     POST — npm install 较新版本
-│   ├── status/route.ts     GET  — 实时状态、数据库状态和版本元数据
+│   ├── update/route.ts     POST — npm install 新版本
+│   ├── status/route.ts     GET  — 实时状态 + 数据库状态 + 版本元数据
 │   └── auto-start/route.ts POST — 切换 auto_start 标志
 └── [name]/
-    └── logs/route.ts       GET  — SSE 日志尾部流（由所有服务共享）
+    └── logs/route.ts       GET  — SSE 日志尾部输出（所有服务共用）
 ```
 
-对应的仪表板 UI：
+对应的仪表盘 UI：
 `src/app/(dashboard)/dashboard/providers/services/` — 双标签页（CLIProxyAPI + 9Router）。
-用于 9Router 嵌入式 UI 的反向代理：
+9Router 嵌入式 UI 的反向代理：
 `src/app/(dashboard)/dashboard/providers/services/[name]/embed/[[...path]]/route.ts`
 
-深入解析：`docs/frameworks/EMBEDDED-SERVICES.md`
+深度解析：`docs/frameworks/EMBEDDED-SERVICES.md`
 
-#### 3.1.3 `src/app/api/v1/` — OpenAI 兼容的公共 API
+#### 3.1.3 `src/app/api/v1/` — 兼容 OpenAI 的公共 API
 
 ```
 v1/
 ├── accounts/[id]/                       账户查询
-├── agents/tasks/[id]/, agents/tasks/    A2A 风格的任务端点
-├── api/                                 在 v1/api 下公开的内部 API 辅助工具
+├── agents/tasks/[id]/, agents/tasks/    采用 A2A 风格的任务端点
+├── api/                                 在 v1/api 下公开的内部 API 辅助函数
 ├── audio/{speech, transcriptions}/      TTS + STT
 ├── batches/[id]/{cancel}, batches/      OpenAI Batches API
-├── chat/completions/                    Chat Completions（主要端点）
+├── chat/completions/                    Chat Completions（主端点）
 ├── completions/                         旧版文本补全
-├── embeddings/                          嵌入
+├── embeddings/                          Embeddings
 ├── files/[id]/, files/                  Files API
-├── _helpers/                            共享路由辅助工具（无公共 URL）
-├── images/{edits, generations}/         图像生成与编辑
+├── _helpers/                            共享路由辅助函数（无公共 URL）
+├── images/{edits, generations}/         图像生成 + 编辑
 ├── issues/                              分类处理辅助端点
-├── management/{proxies}/                v1 内管理范围的路由
+├── management/{proxies}/                v1 内部的管理作用域路由
 ├── messages/{count_tokens}/             Anthropic 风格的消息兼容接口
 ├── models/                              模型列表（`route.ts`、`catalog.ts`）
 ├── moderations/                         内容审核
 ├── music/                               音乐生成
-├── providers/[provider]/                针对各提供者的操作
+├── providers/[provider]/                按提供者执行的操作
 ├── quotas/{check}                       配额探测
 ├── registered-keys/                     已注册密钥管理
-├── rerank/                              重新排序
-├── responses/[...path]/                 OpenAI Responses API（全捕获路由）
+├── rerank/                              重排序
+├── responses/[...path]/                 OpenAI Responses API（捕获所有路径）
 ├── search/                              Web 搜索
 ├── videos/                              视频生成
 ├── ws/                                  WebSocket 桥接
@@ -244,62 +255,62 @@ v1/
 每个路由文件都遵循相同的模式：
 
 ```
-路由 → CORS 预检 → Zod 请求体校验 → 可选身份验证
-     → API 密钥策略执行 → 处理程序委托（open-sse）
+路由 → CORS 预检 → Zod 请求体验证 → 可选身份验证
+      → API 密钥策略执行 → 处理程序委托（open-sse）
 ```
 
-`v1beta/` 是 Gemini 风格的兼容接口层（一个将请求转换并传入同一
-`open-sse/handlers/` 管道的轻量封装）。
+`v1beta/` 是 Gemini 风格的兼容接口（一个将请求转换到同一
+`open-sse/handlers/` 处理流水线的轻量封装）。
 
 ### 3.2 `src/lib/` — 核心库
 
-始终通过这些模块导入数据、同步、OAuth、技能、记忆等功能。下表
-对实际目录和重要的顶层文件进行了分组。
+始终通过这些模块导入数据、同步、OAuth、技能、记忆等功能。该表按实际目录和
+顶层重要文件进行分组。
 
 | 模块              | 用途                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `a2a/`            | A2A 协议服务器：`taskManager.ts`、`streaming.ts`、`taskExecution.ts`、`routingLogger.ts`、`skills/`（6 项技能：成本分析、健康报告、提供者发现、配额管理、智能路由、列出功能）                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `a2a/`            | A2A 协议服务器：`taskManager.ts`、`streaming.ts`、`taskExecution.ts`、`routingLogger.ts`、`skills/`（6 项技能：成本分析、运行状况报告、提供者发现、配额管理、智能路由、列出功能）                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `acp/`            | Agent-Control-Protocol：`index.ts`、`manager.ts`、`registry.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `api/`            | 内部 API 辅助工具：`requireManagementAuth.ts`、`requireCliToolsAuth.ts`、`errorResponse.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `auth/`           | `managementPassword.ts`（密码重置/哈希处理）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `auth/`           | `managementPassword.ts`（密码重置 / 哈希处理）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `batches/`        | OpenAI Batches API 服务（`service.ts`）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | `catalog/`        | OpenRouter 目录同步（`openrouterCatalog.ts`）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `cloudAgent/`     | 云端代理注册表：`api.ts`、`baseAgent.ts`、`db.ts`、`index.ts`、`registry.ts`、`types.ts`、`agents/{codex, devin, jules}.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `cloudAgent/`     | 云代理注册表：`api.ts`、`baseAgent.ts`、`db.ts`、`index.ts`、`registry.ts`、`types.ts`、`agents/{codex, devin, jules}.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `combos/`         | 组合解析辅助工具                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `compliance/`     | 审计 + 提供者审计：`index.ts`、`providerAudit.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `config/`         | 运行时配置衔接层                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `config/`         | 运行时配置衔接                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `db/`             | SQLite 领域模块（参见 §3.2.1）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `display/`        | API 响应使用的 UI/显示辅助工具                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `embeddings/`     | 嵌入服务注册表                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `env/`            | 环境变量加载 + 内省                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `evals/`          | 评测运行时                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `guardrails/`     | `piiMasker.ts`、`promptInjection.ts`、`visionBridge.ts`、`visionBridgeHelpers.ts`、`registry.ts`、`base.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `jobs/`           | 后台任务（`autoUpdate.ts`，……）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `memory/`         | 持久化记忆：`store.ts`、`cache.ts`、`retrieval.ts`、`summarization.ts`、`extraction.ts`、`injection.ts`、`qdrant.ts`、`settings.ts`、`verify.ts`、`schemas.ts`、`types.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `env/`            | 环境变量加载 + 自省                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `evals/`          | Eval 运行时                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `guardrails/`     | `piiMasker.ts`, `promptInjection.ts`, `visionBridge.ts`, `visionBridgeHelpers.ts`, `registry.ts`, `base.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `jobs/`           | 后台作业（`autoUpdate.ts`、…）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `memory/`         | 持久化内存：`store.ts`、`cache.ts`、`retrieval.ts`、`summarization.ts`、`extraction.ts`、`injection.ts`、`qdrant.ts`、`settings.ts`、`verify.ts`、`schemas.ts`、`types.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `monitoring/`     | `observability.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `oauth/`          | OAuth/提供者导入模块（22 个）：`agy`、`antigravity`、`claude`、`cline`、`codebuddy-cn`、`codex`、`cursor`、`devin-desktop`、`ghe-copilot`、`github`、`gitlab-duo`、`grok-cli-oauth`、`grok-cli`、`kilocode`、`kimi-coding`、`kiro`、`openference`、`qoder`、`trae`、`xai-oauth`、`zed-hosted`、`zed`，以及 `services/`、`utils/` 和 `constants/oauth.ts`                                                                                                                                                                                                                                                                                             |
+| `oauth/`          | OAuth/导入提供者模块（22 个）：`agy`、`antigravity`、`claude`、`cline`、`codebuddy-cn`、`codex`、`cursor`、`devin-desktop`、`ghe-copilot`、`github`、`gitlab-duo`、`grok-cli-oauth`、`grok-cli`、`kilocode`、`kimi-coding`、`kiro`、`openference`、`qoder`、`trae`、`xai-oauth`、`zed-hosted`、`zed`，以及 `services/`、`utils/` 和 `constants/oauth.ts`                                                                                                                                                                                                                                                                                             |
 | `plugins/`        | 插件加载器（`index.ts`）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | `promptCache/`    | `prefixAnalyzer.ts`、`index.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `providerModels/` | 托管模型生命周期：`modelDiscovery.ts`、`managedModelImport.ts`、`managedAvailableModels.ts`、`cursorAgent.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `providers/`      | 提供者辅助工具：`catalog.ts`、`validation.ts`、`imageValidation.ts`、`claudeExtraUsage.ts`、`codexConnectionDefaults.ts`、`codexFastTier.ts`、`webCookieAuth.ts`、`managedAvailableModels.ts`、`requestDefaults.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `resilience/`     | `settings.ts` — 断路器、冷却和锁定设置                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `resilience/`     | `settings.ts` — 熔断器、冷却和锁定设置                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `runtime/`        | 运行时功能检测                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `search/`         | `executeWebSearch.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `services/`       | 嵌入式服务框架：`ServiceSupervisor.ts`（具有操作锁、环形缓冲区和健康检查器的通用子进程监管器）、`bootstrap.ts`（进程级注册和自动启动）、`registry.ts`（工具 → 监管器映射）、`apiKey.ts`（AES-256-GCM 密钥存储）、`modelSync.ts`（定期模型同步）、`ringBuffer.ts`（5 MB 环形日志缓冲区）、`healthCheck.ts`（HTTP 健康探测）、`types.ts`、`embedWsProxy.ts`（WebSocket 代理）、`installers/{ninerouter,cliproxy}.ts`。参见 `docs/frameworks/EMBEDDED-SERVICES.md`                                                                                                                                                                                      |
+| `services/`       | 嵌入式服务框架：`ServiceSupervisor.ts`（带操作锁、环形缓冲区和健康检查器的通用子进程监管器）、`bootstrap.ts`（进程级注册和自动启动）、`registry.ts`（工具 → 监管器映射）、`apiKey.ts`（AES-256-GCM 密钥存储）、`modelSync.ts`（定期模型同步）、`ringBuffer.ts`（5 MB 循环日志缓冲区）、`healthCheck.ts`（HTTP 健康探测）、`types.ts`、`embedWsProxy.ts`（WebSocket 代理）、`installers/{ninerouter,cliproxy}.ts`。参见 `docs/frameworks/EMBEDDED-SERVICES.md`                                                                                                                                                                                        |
 | `agentSkills/`    | Agent Skills 目录 + 生成器：`catalog.ts`（getCatalog/getSkillById/filterCatalog/computeCoverage）、`generator.ts`（generateAgentSkills → 写入 `skills/{id}/SKILL.md`）、`openapiParser.ts`（从 OpenAPI 规范中提取 REST 端点）、`cliRegistryParser.ts`（从 bin/cli-registry 中提取 CLI 子命令）、`schemas.ts`（Zod：AgentSkillSchema、SkillCoverageSchema、ListQuerySchema、GenerateBodySchema）、`types.ts`（AgentSkill、SkillCoverage、SkillMarkdown、GeneratorReport）。由 REST 路由（`/api/agent-skills/*`）、MCP 工具（`omniroute_agent_skills_*`）和 A2A 技能 `list-capabilities` 使用。参见 [AGENT-SKILLS.md](../frameworks/AGENT-SKILLS.md)。 |
 | `skills/`         | 技能框架：`registry.ts`、`executor.ts`、`interception.ts`、`injection.ts`、`sandbox.ts`、`custom.ts`、`hybrid.ts`、`builtins.ts`、`a2a.ts`、`providerSettings.ts`、`schemas.ts`、`skillssh.ts`、`types.ts`，以及 `builtin/browser.ts`                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `spend/`          | `batchWriter.ts`（写回缓冲区）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `spend/`          | `batchWriter.ts`（写后缓冲区）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `sync/`           | `bundle.ts`、`tokens.ts`（云同步）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `system/`         | 系统级辅助工具                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `translator/`     | 顶层翻译器衔接层（委托给 `open-sse/translator/`）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `usage/`          | 用量核算：`costCalculator.ts`、`tokenAccounting.ts`、`usageHistory.ts`、`aggregateHistory.ts`、`usageStats.ts`、`callLogs.ts`、`callLogArtifacts.ts`、`fetcher.ts`、`providerLimits.ts`、`migrations.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `translator/`     | 顶层翻译器连接层（委托至 `open-sse/translator/`）                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `usage/`          | 使用量统计：`costCalculator.ts`、`tokenAccounting.ts`、`usageHistory.ts`、`aggregateHistory.ts`、`usageStats.ts`、`callLogs.ts`、`callLogArtifacts.ts`、`fetcher.ts`、`providerLimits.ts`、`migrations.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `versionManager/` | 自动更新 + 版本清单                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `ws/`             | WebSocket 桥接                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `zed-oauth/`      | Zed 编辑器 OAuth 流程                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 
 `src/lib/` 中的顶层文件：
 
-- 旧的 `localDb.ts` 桶文件已被移除——使用方直接导入特定的 `src/lib/db/*` 模块。
+- 旧的 `localDb.ts` barrel 已移除 — 使用者直接导入特定的 `src/lib/db/*` 模块。
 - `proxyHealth.ts`、`proxyLogger.ts`、`tokenHealthCheck.ts`、`localHealthCheck.ts`
 - `apiBridgeServer.ts`、`cacheLayer.ts`、`semanticCache.ts`、`settingsCache.ts`
 - `cloudSync.ts`、`initCloudSync.ts`
@@ -313,14 +324,14 @@ v1/
 
 #### 3.2.1 `src/lib/db/`
 
-单例 SQLite 数据库（`core.ts` 中的 `getDbInstance()`，使用 WAL 日志模式）。
-**切勿在路由或处理程序中编写原始 SQL**——请通过这些模块进行操作。
+单例 SQLite 数据库（`core.ts` 中的 `getDbInstance()`，使用 WAL 日志记录）。
+**切勿在路由或处理程序中直接编写原始 SQL** — 应通过这些模块操作。
 
 ![数据库架构概览（选定的核心表）](../diagrams/exported/db-schema-overview.svg)
 
 > 来源：[diagrams/db-schema-overview.mmd](../diagrams/db-schema-overview.mmd)
 
-领域模块（每个模块拥有一个或多个表）：`apiKeys.ts`、`backup.ts`、
+领域模块（每个模块负责一个或多个表）：`apiKeys.ts`、`backup.ts`、
 `batches.ts`、`cleanup.ts`、`cliToolState.ts`、`combos.ts`、
 `commandCodeAuth.ts`、`compression.ts`、`compressionAnalytics.ts`、
 `compressionCacheStats.ts`、`compressionCombos.ts`、`compressionScheduler.ts`、
@@ -334,9 +345,10 @@ v1/
 `syncTokens.ts`、`tierConfig.ts`、`upstreamProxy.ts`、`versionManager.ts`、
 `webhooks.ts`。
 
-`migrations/` 包含 168 个带版本号的 `.sql` 文件（幂等且支持事务），并在启动时由 `migrationRunner.ts` 执行。
+`migrations/` 包含 168 个带版本的 `.sql` 文件（幂等且支持事务），并在启动时
+由 `migrationRunner.ts` 执行。
 
-所有迁移创建的表（共 123 个）：
+各迁移中创建的表（共 123 个）：
 
 `a`、`account_key_limits`、`api_keys`、`batches`、`call_logs`、
 `combo_adaptation_state`、`combos`、`command_code_auth_sessions`、
@@ -352,43 +364,48 @@ v1/
 `routing_decisions`、`semantic_cache`、`session_account_affinity`、
 `skill_executions`、`skills`、`sync_tokens`、`tier_assignments`、
 `tier_config`、`upstream_proxy_config`、`usage_history`、`version_manager`、
-`webhooks`（以及用于记忆搜索的 FTS5 虚拟表）。
+`webhooks`（另包含用于记忆搜索的 FTS5 虚拟表）。
 
 ### 3.3 `src/domain/` — 领域层
 
-纯业务逻辑，不执行 I/O。由路由和处理程序导入。
+领域服务和评估契约。其中一些模块由实时请求路径调用；其他模块仍作为独立契约存在。不要假设整个目录都不包含 I/O，也不要假设修改每个模块都会影响生产路由。
 
-| 文件                                       | 用途                           |
-| ------------------------------------------ | ------------------------------ |
-| `policyEngine.ts`                          | 顶层策略解析器                 |
-| `fallbackPolicy.ts`                        | 回退决策树                     |
-| `costRules.ts`                             | 成本计算规则                   |
-| `lockoutPolicy.ts`                         | 模型锁定决策                   |
-| `tagRouter.ts`                             | 基于标签的路由                 |
-| `comboResolver.ts`                         | 将请求解析为组合目标列表       |
-| `connectionModelRules.ts`                  | 各连接的模型过滤器             |
-| `modelAvailability.ts`                     | 模型可用性检查                 |
-| `degradation.ts`                           | 降级模式转换                   |
-| `providerExpiration.ts`                    | 过期账户/密钥检测              |
-| `quotaCache.ts`                            | 缓存的配额决策                 |
-| `responses.ts`、`omnirouteResponseMeta.ts` | 响应结构辅助函数               |
-| `configAudit.ts`                           | 配置变更审计                   |
-| `assessment/`                              | 模型评估（依据 RFC，部分实现） |
-| `types.ts`                                 | 共享领域类型                   |
+实时策略入口是 `src/shared/utils/apiKeyPolicy.ts` 和
+`src/sse/handlers/chat/resolvedModelPolicy.ts`。实时组合处理和目标解析使用
+`open-sse/services/combo.ts`。经过测试的 `policyEngine.ts` 和
+`comboResolver.ts` 契约，以及 `src/lib/container.ts`，并不是所检查的聊天请求路径的接线实现。在规划路由变更时，应将它们与这些活动入口分开考虑。
 
-### 3.4 `src/server/` — 仅限服务端
+| 文件                                       | 用途                             |
+| ------------------------------------------ | -------------------------------- |
+| `policyEngine.ts`                          | 预留的策略评估契约               |
+| `fallbackPolicy.ts`                        | 回退决策树                       |
+| `costRules.ts`                             | 成本计算规则                     |
+| `lockoutPolicy.ts`                         | 模型锁定决策                     |
+| `tagRouter.ts`                             | 基于标签的路由                   |
+| `comboResolver.ts`                         | 预留的组合选择契约               |
+| `connectionModelRules.ts`                  | 按连接划分的模型过滤器           |
+| `modelAvailability.ts`                     | 模型可用性检查                   |
+| `degradation.ts`                           | 降级模式转换                     |
+| `providerExpiration.ts`                    | 过期账户/密钥检测                |
+| `quotaCache.ts`                            | 缓存的配额决策                   |
+| `responses.ts`、`omnirouteResponseMeta.ts` | 响应结构辅助工具                 |
+| `configAudit.ts`                           | 配置变更审计                     |
+| `assessment/`                              | 模型评估（根据 RFC，部分已实现） |
+| `types.ts`                                 | 共享领域类型                     |
 
-不能从客户端组件中导入。
+### 3.4 `src/server/` — 仅限服务器端
+
+无法从客户端组件导入。
 
 ```
 server/
 ├── auth/loginGuard.ts
 ├── authz/
-│   ├── classify.ts        将路由分类为公共路由或管理路由
-│   ├── assertAuth.ts      断言辅助函数
+│   ├── classify.ts        将路由分类为公共路由与管理路由
+│   ├── assertAuth.ts      断言辅助工具
 │   ├── context.ts         每个请求的授权上下文
 │   ├── headers.ts
-│   ├── pipeline.ts        授权管线
+│   ├── pipeline.ts        授权管道
 │   ├── policies/          具体策略
 │   └── types.ts
 └── cors/origins.ts        CORS 来源允许列表
@@ -396,34 +413,39 @@ server/
 
 ### 3.5 `src/shared/` — 可安全共享
 
-拆分为职责明确的子目录：
+拆分为以下专注的子目录：
 
-- `constants/` — `providers.ts`（经 Zod 验证的提供者目录）、`models.ts`、
+- `constants/` — `providers.ts`（经过 Zod 验证的提供者目录）、`models.ts`、
   `modelSpecs.ts`、`modelCompat.ts`、`pricing.ts`、`cliTools.ts`、
   `cliCompatProviders.ts`、`routingStrategies.ts`、`comboConfigMode.ts`、
   `headers.ts`、`upstreamHeaders.ts`（拒绝列表）、`mcpScopes.ts`、
   `errorCodes.ts`、`publicApiRoutes.ts`、`batch.ts`、`batchEndpoints.ts`、
   `bodySize.ts`、`colors.ts`、`appConfig.ts`、`config.ts`、
   `sidebarVisibility.ts`、`visionBridgeDefaults.ts`。
-- `validation/` — `schemas.ts`（约 80 个 Zod 模式）、`compressionConfigSchemas.ts`、
+- `validation/` — `schemas.ts`（约 80 个 Zod schema）、`compressionConfigSchemas.ts`、
   `providerSchema.ts`、`settingsSchemas.ts`、`helpers.ts`。
 - `contracts/` — 发布到 npm 的公共 API 契约。
 - `types/` — 共享的 TS 类型。
 - `utils/` — `circuitBreaker.ts`、`apiAuth.ts`、`apiKey.ts`、`apiKeyPolicy.ts`、
   `api.ts`、`classify429.ts`、`cliCompat.ts`、`clipboard.ts`、`cloud.ts`、`cn.ts`、
-  `cors.ts`、`featureFlags.ts`、
-  `fetchTimeout.ts`、`formatting.ts`、`inputSanitizer.ts`、`logger.ts`、
-  `machine.ts`、`machineId.ts`、`maskEmail.ts`、`modelCatalogSearch.ts`、
+  `cors.ts`、`featureFlags.ts`、`fetchTimeout.ts`、`formatting.ts`、`inputSanitizer.ts`、
+  `logger.ts`、`machine.ts`、`machineId.ts`、`maskEmail.ts`、`modelCatalogSearch.ts`、
   `nodeRuntimeSupport.ts`、`parseApiKeys.ts`、`providerHints.ts`、
-  `providerModelAliases.ts`、`rateLimiter.ts`、`releaseNotes.ts`、
-  `a11yAudit.ts`，以及位于 `services/`、`network/`、`middleware/`、
-  `schemas/`、`hooks/`、`components/` 下的仪表板钩子和组件。
+  `providerModelAliases.ts`、`rateLimiter.ts`、`releaseNotes.ts`、`a11yAudit.ts`，
+  以及位于 `services/`、`network/`、`middleware/`、`schemas/`、`hooks/`、
+  `components/` 下的仪表板 hooks/组件。
+- `components/` — 仪表板组件 API（`index.tsx` barrel：`Button`、`Input`、
+  `Select`、`Modal`、`Card`、`DataTable`，等等）。这些原语是对供应商提供的
+  kit（`packages/ui-kit`）的适配器，通过组件子路径导入，例如
+  `@omniroute/ui-kit/button`，因此各屏幕可以保留其导入方式，而标记使用的是
+  kit 的标记。外壳结构为 `layouts/DashboardLayout.tsx` → `layouts/DashboardShell.tsx`
+  （kit 的 `SidebarProvider`/`SidebarInset`），并配合 `Sidebar.tsx` 和
+  `Header.tsx`；图标通过 `Icon.tsx` 和 `constants/iconMap.ts` 使用。请参阅
+  `docs/architecture/DESIGN_SYSTEM.md`。
 
----
+## 4. `open-sse/` — 流式处理引擎工作区
 
-## 4. `open-sse/` — 流式引擎工作区
-
-作为独立的 npm 工作区发布，包名为 `@omniroute/open-sse`。负责请求处理、执行器、转换器、服务、变换器和 MCP 服务器。
+作为独立的 npm 工作区发布，包名为 `@omniroute/open-sse`。负责请求处理、执行器、转换器、服务、转换流以及 MCP 服务器。
 
 ```
 open-sse/
@@ -433,9 +455,9 @@ open-sse/
 ├── types.d.ts
 ├── config/                 提供者注册表、请求头配置、身份信息等
 ├── handlers/               请求处理器（聊天、嵌入、音频、图像等）
-├── executors/              108 个提供者专用的 HTTP 执行器
+├── executors/              170 个提供者执行器模块（执行器类及每个提供者的辅助工具）
 ├── translator/             格式转换（OpenAI ↔ Claude ↔ Gemini ↔ Cursor ↔ Kiro）
-├── transformer/            Responses API ↔ Chat Completions 流变换器
+├── transformer/            Responses API ↔ Chat Completions 流转换器
 ├── services/               80 多个服务模块（组合、回退、配额、身份信息等）
 ├── utils/                  流式处理辅助工具、TLS 客户端、AWS SigV4、代理 fetch 等
 └── mcp-server/             MCP 服务器（3 种传输方式、33 个作用域、110 个工具）
@@ -443,9 +465,9 @@ open-sse/
 
 ### 4.1 `open-sse/handlers/`
 
-| 处理器                  | 用途                                               |
+| Handler                 | Purpose                                            |
 | ----------------------- | -------------------------------------------------- |
-| `chatCore.ts`           | 主聊天管线（缓存、速率限制、组合路由、执行器分派） |
+| `chatCore.ts`           | 主聊天管线（缓存、速率限制、组合路由、执行器分发） |
 | `responsesHandler.ts`   | OpenAI Responses API 入口点                        |
 | `embeddings.ts`         | 嵌入                                               |
 | `imageGeneration.ts`    | 图像生成                                           |
@@ -455,29 +477,30 @@ open-sse/
 | `musicGeneration.ts`    | 音乐生成                                           |
 | `rerank.ts`             | 重排序                                             |
 | `moderations.ts`        | 内容审核                                           |
-| `search.ts`             | Web 搜索                                           |
+| `search.ts`             | 网络搜索                                           |
 | `sseParser.ts`          | SSE 事件解析器                                     |
-| `usageExtractor.ts`     | 从上游流中提取 token 数量                          |
-| `responseSanitizer.ts`  | 移除提供者特有的无关内容                           |
-| `responseTranslator.ts` | 连接提供者响应与转换器层的粘合层                   |
+| `usageExtractor.ts`     | 从上游流中提取令牌计数                             |
+| `responseSanitizer.ts`  | 移除提供者特有的噪声                               |
+| `responseTranslator.ts` | 连接提供者响应与转换器层                           |
 
 ### 4.2 `open-sse/executors/`
 
-108 个提供者执行器，每个都扩展自 `BaseExecutor`（`base.ts`）：
+共有 170 个顶层执行器模块（`*.ts`，不包括 `base.ts`、`index.ts` 和测试——计数由
+`npm run check:docs-counts` 测量）。每个执行器类都直接或通过 `DefaultExecutor` 或其他执行器继承自 `BaseExecutor`（`base.ts`）；其余模块是每个提供者的辅助工具（工具架构、fetch/TTS 适配器、特殊行为处理器）。执行器包括：
 
 `antigravity`、`azure-openai`、`blackbox-web`、`cliproxyapi`、
 `chatgpt-web-codex`、`cloudflare-ai`、`codex`、`commandCode`、`cursor`、`default`、`devin-cli`、
 `muse-spark-web`、`nlpcloud`、`opencode`、`perplexity-web`、`petals`、
-`pollinations`、`qoder`、`vertex`、`devin-desktop`，以及 `claudeIdentity.ts`
-（共享身份辅助工具）和 `index.ts`（注册表）。
+`pollinations`、`qoder`、`vertex`、`devin-desktop`，以及
+`claudeIdentity.ts`（共享身份辅助工具）和 `index.ts`（注册表）。
 
 > 注意：此处未列出的提供者由 `default.ts` 使用通用的
-> OpenAI 兼容执行器提供服务。完整的提供者目录（355 个提供者）位于
+> OpenAI 兼容执行器提供服务。完整的提供者目录（394 个提供者）位于
 > `src/shared/constants/providers.ts`。
 
 ### 4.3 `open-sse/translator/`
 
-中心辐射式转换（OpenAI 为中心）。
+中心辐射式转换架构（OpenAI 为中心）。
 
 - **9 个请求转换器**（`translator/request/`）：
   `antigravity-to-openai`、`claude-to-gemini`、`claude-to-openai`、
@@ -485,8 +508,7 @@ open-sse/
   `openai-to-cursor`、`openai-to-gemini`、`openai-to-kiro`。
 - **9 个响应转换器**（`translator/response/`）：
   `claude-to-openai`、`cursor-to-openai`、`gemini-to-claude`、`gemini-to-openai`、
-  `kiro-to-openai`、`openai-responses`、`openai-to-antigravity`、
-  `openai-to-claude`。
+  `kiro-to-openai`、`openai-responses`、`openai-to-antigravity`、`openai-to-claude`。
 - **9 个辅助工具**（`translator/helpers/`）：
   `claudeHelper`、`geminiHelper`、`geminiToolsSanitizer`、`maxTokensHelper`、
   `openaiHelper`、`responsesApiHelper`、`schemaCoercion`、`toolCallHelper`，以及
@@ -497,23 +519,23 @@ open-sse/
 ### 4.4 `open-sse/transformer/`
 
 - `responsesTransformer.ts` — 基于 `TransformStream` 的 Responses API ↔ Chat
-  Completions 转换器（由 `responses/` 路由的全匹配处理逻辑使用）。
+  Completions 转换器（由 `responses/` 路由的 catch-all 使用）。
 
 ### 4.5 `open-sse/services/`
 
-重点模块（完整列表位于 `open-sse/services/` 下）：
+重点模块（完整列表位于 `open-sse/services/`）：
 
 | 关注点          | 文件                                                                                                                                                                                                                                                     |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Combo 路由      | `combo.ts`（19 种策略）、`comboConfig.ts`、`comboMetrics.ts`、`comboManifestMetrics.ts`、`comboAgentMiddleware.ts`                                                                                                                                       |
-| Auto Combo 引擎 | `autoCombo/` — `engine.ts`、`scoring.ts`、`taskFitness.ts`、`virtualFactory.ts`、`modePacks.ts`、`autoPrefix.ts`、`persistence.ts`、`providerDiversity.ts`、`providerRegistryAccessor.ts`、`routerStrategy.ts`、`selfHealing.ts`、`index.ts`             |
+| Combo 路由      | `combo.ts`（22 种策略）、`comboConfig.ts`、`comboMetrics.ts`、`comboManifestMetrics.ts`、`comboAgentMiddleware.ts`                                                                                                                                       |
+| 自动 Combo 引擎 | `autoCombo/` — `engine.ts`、`scoring.ts`、`taskFitness.ts`、`virtualFactory.ts`、`modePacks.ts`、`autoPrefix.ts`、`persistence.ts`、`providerDiversity.ts`、`providerRegistryAccessor.ts`、`routerStrategy.ts`、`selfHealing.ts`、`index.ts`             |
 | 弹性机制        | `accountFallback.ts`（冷却 + 锁定）、`errorClassifier.ts`、`requestRejectedStreak.ts`、`emergencyFallback.ts`、`rateLimitManager.ts`、`rateLimitSemaphore.ts`、`accountSemaphore.ts`、`accountSelector.ts`                                               |
 | 配额            | `quotaMonitor.ts`、`quotaPreflight.ts`、`bailianQuotaFetcher.ts`、`codexQuotaFetcher.ts`、`deepseekQuotaFetcher.ts`、`openrouterQuotaFetcher.ts`、`openrouterFreeWindow.ts`、`llmgatewayQuotaFetcher.ts`、`crofUsageFetcher.ts`、`antigravityCredits.ts` |
 | 缓存            | `reasoningCache.ts`、`searchCache.ts`、`signatureCache.ts`、`requestDedup.ts`                                                                                                                                                                            |
 | 路由智能        | `intentClassifier.ts`、`taskAwareRouter.ts`、`backgroundTaskDetector.ts`、`volumeDetector.ts`、`wildcardRouter.ts`、`workflowFSM.ts`、`specificityDetector.ts`、`specificityRules.ts`、`specificityTypes.ts`                                             |
 | 模型处理        | `modelCapabilities.ts`、`modelDeprecation.ts`、`modelFamilyFallback.ts`、`modelStrip.ts`、`model.ts`、`provider.ts`、`providerRequestDefaults.ts`、`providerCostData.ts`、`payloadRules.ts`                                                              |
-| 压缩            | `compression/` — 完整的压缩引擎接线                                                                                                                                                                                                                      |
-| 令牌 + 会话     | `tokenRefresh.ts`、`sessionManager.ts`、`apiKeyRotator.ts`、`contextManager.ts`、`contextHandoff.ts`、`systemPrompt.ts`、`roleNormalizer.ts`、`responsesInputSanitizer.ts`、`toolSchemaSanitizer.ts`、`toolLimitDetector.ts`、`thinkingBudget.ts`        |
+| 压缩            | `compression/` — 完整的压缩引擎连接                                                                                                                                                                                                                      |
+| Token + 会话    | `tokenRefresh.ts`、`sessionManager.ts`、`apiKeyRotator.ts`、`contextManager.ts`、`contextHandoff.ts`、`systemPrompt.ts`、`roleNormalizer.ts`、`responsesInputSanitizer.ts`、`toolSchemaSanitizer.ts`、`toolLimitDetector.ts`、`thinkingBudget.ts`        |
 | 层级 / 清单     | `tierResolver.ts`、`tierConfig.ts`、`tierDefaults.json`、`tierTypes.ts`、`manifestAdapter.ts`                                                                                                                                                            |
 | IP / 网络       | `ipFilter.ts`、`webSearchFallback.ts`                                                                                                                                                                                                                    |
 | 批处理          | `batchProcessor.ts`                                                                                                                                                                                                                                      |
@@ -521,42 +543,27 @@ open-sse/
 
 ### 4.6 `open-sse/mcp-server/`
 
-- **110 个唯一工具**在 `server.ts` 中完成接线（`schemas/tools.ts` 中有 45 个规范工具，外加
-  内存、技能、GitHub 技能、池、游戏化、插件、Notion、Obsidian、
-  本地语料库和压缩模块——由 `countUniqueMcpTools` 对并集进行计数）。
+- `server.ts` 中接入了 **110 个唯一工具**（`schemas/tools.ts` 中的 45 个规范工具，加上 memory、skills、GitHub-skills、pool、gamification、plugin、Notion、Obsidian、local-corpus 和 compression 模块 — 通过 `countUniqueMcpTools` 合并去重后统计）。
 - **3 种传输方式**：stdio、HTTP Streamable、SSE。
-- 运行时强制执行 **33 个作用域**——基础列表位于 `src/shared/constants/mcpScopes.ts`，完整集合是各工具模块所声明作用域的并集。
+- 运行时强制执行 **33 个作用域** — 基础列表位于 `src/shared/constants/mcpScopes.ts`，完整集合是每个工具模块声明的作用域的并集。
 - 审计表：`mcp_tool_audit`（由 `audit.ts` 填充）。
-- 文件：`server.ts`、`index.ts`、`httpTransport.ts`、`audit.ts`、`scopeEnforcement.ts`、
-  `runtimeHeartbeat.ts`、`descriptionCompressor.ts`、`schemas/{tools, a2a, audit, index}.ts`、
-  `tools/{advancedTools, compressionTools, memoryTools, skillTools}.ts`，
-  以及 `__tests__/` 下的测试。
-- 完整工具目录请参阅 [MCP-SERVER.md](../frameworks/MCP-SERVER.md)。
+- 文件：`server.ts`、`index.ts`、`httpTransport.ts`、`audit.ts`、`scopeEnforcement.ts`、`runtimeHeartbeat.ts`、`descriptionCompressor.ts`、`schemas/{tools, a2a, audit, index}.ts`、`tools/{advancedTools, compressionTools, memoryTools, skillTools}.ts`，以及 `__tests__/` 下的测试。
+- 请参阅 [MCP-SERVER.md](../frameworks/MCP-SERVER.md) 了解完整的工具目录。
 
 ### 4.7 `open-sse/config/`
 
-提供者注册表（`providerRegistry.ts`、`providerModels.ts`、
-`providerHeaderProfiles.ts`）、按格式划分的模型注册表（`audioRegistry.ts`、
-`embeddingRegistry.ts`、`imageRegistry.ts`、`moderationRegistry.ts`、
-`musicRegistry.ts`、`rerankRegistry.ts`、`searchRegistry.ts`、`videoRegistry.ts`）、
-身份辅助工具（`codexIdentity.ts`、`codexInstructions.ts`、
-`anthropicHeaders.ts`、`antigravityUpstream.ts`、`antigravityModelAliases.ts`、
-`cliFingerprints.ts`、`toolCloaking.ts`、`defaultThinkingSignature.ts`）、
-凭证辅助工具（`credentialLoader.ts`、`codexClient.ts`）以及云
-适配器（`azureAi.ts`、`bedrock.ts`、`datarobot.ts`、`glmProvider.ts`、
-`maritalk.ts`、`oci.ts`、`petals.ts`、`runway.ts`、`sap.ts`、`watsonx.ts`、
-`ollamaModels.ts`、`errorConfig.ts`、`constants.ts`、`registryUtils.ts`）。
+提供者注册表（`providerRegistry.ts`、`providerModels.ts`、`providerHeaderProfiles.ts`）、按格式划分的模型注册表（`audioRegistry.ts`、`embeddingRegistry.ts`、`imageRegistry.ts`、`moderationRegistry.ts`、`musicRegistry.ts`、`rerankRegistry.ts`、`searchRegistry.ts`、`videoRegistry.ts`）、身份辅助工具（`codexIdentity.ts`、`codexInstructions.ts`、`anthropicHeaders.ts`、`antigravityUpstream.ts`、`antigravityModelAliases.ts`、`cliFingerprints.ts`、`toolCloaking.ts`、`defaultThinkingSignature.ts`）、凭据辅助工具（`credentialLoader.ts`、`codexClient.ts`）以及云适配器（`azureAi.ts`、`bedrock.ts`、`datarobot.ts`、`glmProvider.ts`、`maritalk.ts`、`oci.ts`、`petals.ts`、`runway.ts`、`sap.ts`、`watsonx.ts`、`ollamaModels.ts`、`errorConfig.ts`、`constants.ts`、`registryUtils.ts`）。
 
 ### 4.8 `open-sse/utils/`
 
-流式处理原语和提供者辅助工具：`stream.ts`、`streamHandler.ts`、
-`streamHelpers.ts`、`streamPayloadCollector.ts`、`streamReadiness.ts`、
-`sseHeartbeat.ts`、`proxyFetch.ts`、`proxyDispatcher.ts`、`tlsClient.ts`、
-`networkProxy.ts`、`awsSigV4.ts`、`cacheControlPolicy.ts`、
-`cursorChecksum.ts`、`cursorAgentProtobuf.ts`、`cursorVersionDetector.ts`、
-`comfyuiClient.ts`、`kieTask.ts`、`bypassHandler.ts`、`aiSdkCompat.ts`、
-`thinkTagParser.ts`、`urlSanitize.ts`、`usageTracking.ts`、`requestLogger.ts`、
-`progressTracker.ts`、`cors.ts`、`error.ts`、`logger.ts`、`sleep.ts`、
+流式处理原语和提供者辅助工具：`stream.ts`、`streamHandler.ts`、  
+`streamHelpers.ts`、`streamPayloadCollector.ts`、`streamReadiness.ts`、  
+`sseHeartbeat.ts`、`proxyFetch.ts`、`proxyDispatcher.ts`、`tlsClient.ts`、  
+`networkProxy.ts`、`awsSigV4.ts`、`cacheControlPolicy.ts`、  
+`cursorAgentProtobuf.ts`、`cursorVersionDetector.ts`、\
+`comfyuiClient.ts`、`kieTask.ts`、`bypassHandler.ts`、`aiSdkCompat.ts`、  
+`thinkTagParser.ts`、`urlSanitize.ts`、`usageTracking.ts`、`requestLogger.ts`、  
+`progressTracker.ts`、`cors.ts`、`error.ts`、`logger.ts`、`sleep.ts`、  
 `ollamaTransform.ts`。
 
 ---
@@ -615,28 +622,28 @@ bin/
 
 ## 7. `tests/`
 
-| 目录                                                 | 类型                                                                              |
-| ---------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `tests/unit/`                                        | Node 原生测试运行器的单元测试（1821 个文件，含 `api/`、`auth/`、`authz/` 子目录） |
-| `tests/integration/`                                 | 跨模块 + DB 状态测试                                                              |
-| `tests/e2e/`                                         | Playwright UI 测试                                                                |
-| `tests/protocols-e2e/`                               | MCP/A2A 协议端到端                                                                |
-| `tests/translator/`                                  | 翻译器专用测试                                                                    |
-| `tests/security/`                                    | 安全回归测试                                                                      |
-| `tests/load/`                                        | 负载 / 压力测试                                                                   |
-| `tests/golden-set/`                                  | 翻译器回归参考输出                                                                |
-| `tests/helpers/`、`tests/fixtures/`、`tests/manual/` | 支撑                                                                              |
+| 目录                                                 | 类型                                                                                         |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `tests/unit/`                                        | 通过 Node 原生测试运行器执行的单元测试（1821 个文件，另含 `api/`、`auth/`、`authz/` 子目录） |
+| `tests/integration/`                                 | 跨模块 + 数据库状态测试                                                                      |
+| `tests/e2e/`                                         | Playwright UI 测试                                                                           |
+| `tests/e2e/protocol-clients.test.ts`                 | MCP/A2A 协议端到端测试                                                                       |
+| `tests/translator/`                                  | 翻译器专用测试                                                                               |
+| `tests/security/`                                    | 安全回归测试                                                                                 |
+| `tests/load/`                                        | 负载 / 压力测试                                                                              |
+| `tests/golden-set/`                                  | 翻译器回归测试的参考输出                                                                     |
+| `tests/helpers/`、`tests/fixtures/`、`tests/manual/` | 支持                                                                                         |
 
 常用命令：
 
-| 命令                                                     | 运行内容                                                |
-| -------------------------------------------------------- | ------------------------------------------------------- |
-| `npm run test:unit`                                      | `tests/unit/*.test.ts` 全部（Node 测试运行器，并发 10） |
-| `npm run test:vitest`                                    | Vitest 套件（MCP、autoCombo、缓存）                     |
-| `npm run test:e2e`                                       | Playwright UI 套件                                      |
-| `npm run test:protocols:e2e`                             | MCP + A2A 协议端到端                                    |
-| `npm run test:coverage`                                  | 覆盖率门槛（行/语句/函数/分支 ≥ 60%）                   |
-| `node --import tsx/esm --test tests/unit/<file>.test.ts` | 单文件运行                                              |
+| 命令                                                     | 执行内容                                                           |
+| -------------------------------------------------------- | ------------------------------------------------------------------ |
+| `npm run test:unit`                                      | 通过 Node 测试运行器执行所有 `tests/unit/*.test.ts`（并发数为 10） |
+| `npm run test:vitest`                                    | Vitest 测试套件（MCP、autoCombo、缓存）                            |
+| `npm run test:e2e`                                       | Playwright UI 测试套件                                             |
+| `npm run test:protocols:e2e`                             | MCP + A2A 协议端到端测试                                           |
+| `npm run test:coverage`                                  | 覆盖率门槛（行/语句/函数/分支覆盖率均 ≥60%）                       |
+| `node --import tsx/esm --test tests/unit/<file>.test.ts` | 运行单个文件                                                       |
 
 ---
 
@@ -654,7 +661,9 @@ bin/
   `v1-ws-bridge.mjs`、`smoke-electron-packaged.mjs`、
   `run-playwright-tests.mjs`、`run-ecosystem-tests.mjs`、
   `run-protocol-clients-tests.mjs`、`sync-env.mjs`、`healthcheck.mjs`、
-  `system-info.mjs`。
+  `system-info.mjs`，以及只读的 PR 看护辅助脚本：
+  `ci-discriminate.sh`（对照参考 PR 或 base-red 问题，将某个 PR 的失败检查特征分类为自身引入、继承而来或未知）和 `audit-worktree.sh`
+  （在接受工作者的 PR 之前，检查脏文件、受保护区域、被移除的断言、抑制项数量、残留的临时 tsconfig，以及 PR head 与本地 HEAD 的差异）。
 - **`scripts/check/`** — `check-cycles.mjs`、`check-docs-sync.mjs`、
   `check-docs-counts-sync.mjs`、`check-env-doc-sync.mjs`、
   `check-deprecated-versions.mjs`、`check-route-validation.mjs`、
@@ -663,10 +672,10 @@ bin/
 - **`scripts/docs/`** — `generate-docs-index.mjs`、`gen-provider-reference.ts`。
 - **`scripts/i18n/`** — `generate-multilang.mjs`、`run-visual-qa.mjs`、
   `generate-qa-checklist.mjs`、`apply-priority-overrides.mjs`、
-  `validate_translation.py`、`check_translations.py`、`i18n_autotranslate.py`、
+  `validate_translation.py`、`check_translations.py`、
   `untranslatable-keys.json`。
 - **`scripts/ad-hoc/`** — `cursor-tap.cjs`、`sync-cursor-models.mjs`、
-  `migrate-env.mjs`、`dbsetup.js`。
+  `dbsetup.js`。
 
 ---
 
@@ -679,109 +688,141 @@ bin/
 ```
 客户端请求
   → /v1/chat/completions (route.ts)
-     CORS 预检
-     Zod 校验（shared/validation/schemas.ts 中的 chatCompletionsSchema）
-     认证（extractApiKey + isValidApiKey 或 requireManagementAuth）
-     策略引擎（src/server/authz/pipeline.ts）
-     安全护栏（PII 脱敏、提示注入、视觉桥接）
-  → handleChatCore()（open-sse/handlers/chatCore.ts）
+     CORS 预检检查
+     Zod 验证（shared/validation/schemas.ts 中的 chatCompletionsSchema）
+     身份验证（extractApiKey + isValidApiKey 或 requireManagementAuth）
+     路由授权（src/server/authz/pipeline.ts）
+     API 密钥策略（src/shared/utils/apiKeyPolicy.ts；在选定路径上强制执行）
+     防护措施（PII 脱敏器、提示注入、视觉桥接）
+  → handleChatCore() (open-sse/handlers/chatCore.ts)
      缓存检查（语义缓存 + 读取缓存）
      速率限制（rateLimitManager、accountSemaphore）
-     Combo 路由（若模型解析为 Combo）
-       comboResolver → 逐目标循环 → handleSingleModel()
-     translateRequest()（open-sse/translator/request/*）
-     getExecutor(providerId).execute()（open-sse/executors/*）
+     组合路由（如果模型解析为组合）
+       resolveComboTargets (open-sse/services/combo.ts) → 按目标分发
+     translateRequest()  (open-sse/translator/request/*)
+     getExecutor(providerId).execute()  (open-sse/executors/*)
        获取上游 → 通过 accountFallback 重试/退避
-     translateResponse()（open-sse/translator/response/*）
-     SSE 流 或 JSON 响应
-     若为 Responses API：通过 open-sse/transformer/responsesTransformer.ts 的 TransformStream
+     translateResponse() (open-sse/translator/response/*)
+     SSE 流或 JSON 响应
+     如果是 Responses API：通过 open-sse/transformer/responsesTransformer.ts 使用 TransformStream
   → 合规审计（src/lib/compliance/）
-  → 响应到客户端
+  → 响应客户端
 ```
 
-### 容灾运行时状态（三种机制）
+### 弹性运行时状态（三种机制）
 
 | 机制         | 范围                 | 位置                                                                                                       |
 | ------------ | -------------------- | ---------------------------------------------------------------------------------------------------------- |
-| 服务商熔断器 | 整个服务商           | `src/shared/utils/circuitBreaker.ts`，持久化于 `domain_circuit_breakers`                                   |
-| 连接冷却     | 单个账户/Key         | `src/sse/services/auth.ts` 中的 `markAccountUnavailable()`；由 `accountFallback.checkFallbackError()` 消费 |
-| 模型锁定     | 服务商 + 连接 + 模型 | `open-sse/services/accountFallback.ts`，持久化于 `domain_lockout_state`                                    |
+| 提供者熔断器 | 整个提供者           | `src/shared/utils/circuitBreaker.ts`，持久化于 `domain_circuit_breakers`                                   |
+| 连接冷却     | 单个账户/密钥        | `src/sse/services/auth.ts` 中的 `markAccountUnavailable()`；由 `accountFallback.checkFallbackError()` 使用 |
+| 模型锁定     | 提供者 + 连接 + 模型 | `open-sse/services/accountFallback.ts`，持久化于 `domain_lockout_state`                                    |
 
-参见 [RESILIENCE_GUIDE.md](./RESILIENCE_GUIDE.md) 和 [CLAUDE.md](../../CLAUDE.md) 中的专门章节。
+请参阅 [RESILIENCE_GUIDE.md](./RESILIENCE_GUIDE.md) 和
+[CLAUDE.md](../../CLAUDE.md) 中的专门章节。
 
 ---
 
-## 10. 贡献指南
+## 10. 如何贡献
 
-### 添加新服务商
+### 添加新的提供者
 
-1. 在 `src/shared/constants/providers.ts` 中注册（加载时 Zod 校验）。
-2. 若需自定义逻辑，在 `open-sse/executors/` 中添加执行器（扩展 `BaseExecutor`）。
-3. 若不使用 OpenAI 格式，在 `open-sse/translator/` 中添加翻译器。
-4. 若基于 OAuth，在 `src/lib/oauth/providers/` 和 `src/lib/oauth/services/` 下添加配置。
-5. 在 `open-sse/config/providerRegistry.ts`（或 `open-sse/config/` 下按格式的注册表）中注册模型。
+1. 在 `src/shared/constants/providers.ts` 中注册（加载时通过 Zod 验证）。
+2. 如果需要自定义逻辑，请在 `open-sse/executors/` 中添加执行器
+   （扩展 `BaseExecutor`）。
+3. 如果不支持 OpenAI 格式，请在 `open-sse/translator/` 中添加转换器。
+4. 如果基于 OAuth，请在 `src/lib/oauth/providers/` 和
+   `src/lib/oauth/services/` 下添加配置。
+5. 在 `open-sse/config/providerRegistry.ts` 中注册模型（或在
+   `open-sse/config/` 下针对特定格式的注册表中注册）。
 6. 在 `tests/unit/` 下编写测试。
 
-### 添加新 API 路由
+### 添加新的 API 路由
 
 1. 创建 `src/app/api/your-route/route.ts`。
-2. 遵循模式：CORS → Zod 请求体验证 → 认证 → 处理器委托。
-3. 若是新请求格式：在 `src/shared/validation/schemas.ts` 中添加 Zod Schema。
-4. 仅管理端点：将路径添加到 `src/shared/constants/publicApiRoutes.ts`（公开 API 层拒绝名单）。
+2. 遵循以下模式：CORS → Zod 请求体验证 → 身份验证 → 委托给处理程序。
+3. 如果请求结构发生变化：在 `src/shared/validation/schemas.ts` 中添加 Zod
+   模式。
+4. 如果仅限管理使用：将路径添加到 `src/shared/constants/publicApiRoutes.ts`
+   （公共 API 表面的拒绝列表）。
 5. 在 `tests/unit/` 下添加测试。
 6. 更新 `docs/reference/API_REFERENCE.md` 和 `docs/openapi.yaml`。
 
-### 添加新 DB 模块
+### 添加新的 DB 模块
 
-1. 创建 `src/lib/db/yourModule.ts`，从 `./core.ts` 导入 `getDbInstance()`。
-2. 导出你领域的 CRUD 函数。
-3. 若需新表：在 `src/lib/db/migrations/` 下添加迁移文件，按序编号，幂等、事务性。
-4. 从 `src/lib/localDb.ts` 重新导出（仅限重新导出 — **无逻辑**）。
+1. 创建 `src/lib/db/yourModule.ts`，并从 `./core.ts` 导入 `getDbInstance()`。
+2. 导出适用于相应领域的 CRUD 函数。
+3. 如果需要新表：使用 `npm run db:new-migration -- <description>` 添加迁移（写入
+   `src/lib/db/migrations/YYYYMMDDHHMMSS_<description>.sql`，使用 UTC；请参阅
+   `docs/ops/DATABASE_GUIDE.md`），并确保其幂等且支持事务。
+4. 导入器直接从 `@/lib/db/yourModule` 导入（不使用 barrel — 旧的
+   `localDb.ts` 重新导出层已移除）。
 5. 在 `tests/unit/` 下添加测试。
 
-### 添加新 MCP 工具
+### 添加新的 MCP 工具
 
-1. 在 `open-sse/mcp-server/tools/` 下添加工具定义（或扩展 `open-sse/mcp-server/schemas/tools.ts`）。
-2. 在 `src/shared/constants/mcpScopes.ts` 中分配适当的权限域。
-3. 在 `open-sse/mcp-server/server.ts` 中注册该工具。
+1. 在 `open-sse/mcp-server/tools/` 下添加工具定义（或扩展
+   `open-sse/mcp-server/schemas/tools.ts`）。
+2. 在 `src/shared/constants/mcpScopes.ts` 中分配适当的作用域。
+3. 在 `open-sse/mcp-server/server.ts` 中注册工具。
 4. 在 `open-sse/mcp-server/__tests__/` 下添加测试。
 5. 更新 [MCP-SERVER.md](../frameworks/MCP-SERVER.md)。
 
-### 添加新 A2A 技能
+### 添加新的 A2A 技能
 
-参见 [A2A-SERVER.md § 添加新技能](../frameworks/A2A-SERVER.md)。技能位于 `src/lib/a2a/skills/`，通过 A2A 任务管理器注册。
+请参阅 [A2A-SERVER.md § 添加新技能](../frameworks/A2A-SERVER.md)。技能位于
+`src/lib/a2a/skills/` 中，并通过 A2A 任务管理器注册。
 
 ---
 
 ## 11. 约定
 
-- **代码风格**：2 空格缩进，双引号，100 字符宽度，强制分号，
-  `es5` 尾逗号 — 由 Prettier 通过 `lint-staged` 强制执行。
+- **代码风格**：使用 2 个空格缩进、双引号、100 个字符宽度、分号，
+  使用 `es5` 尾随逗号 — 由 `lint-staged` 通过 Prettier 强制执行。
 - **导入**：外部 → 内部（`@/`、`@omniroute/open-sse`）→ 相对路径。
-- **命名**：文件 `camelCase` 或 `kebab-case`，组件 `PascalCase`，
-  常量 `UPPER_SNAKE`。
-- **ESLint**：`no-eval`、`no-implied-eval`、`no-new-func` = 全局 `error`；
-  `no-explicit-any` = `open-sse/` 和 `tests/` 中 `warn`，其他位置 `error`。
-- **TypeScript**：`strict: false`（历史遗留）。跨模块边界优先显式类型而非类型推断。
-- **数据库**：切勿在路由或处理器中直接写 SQL — 始终通过 `src/lib/db/` 模块。切勿向 `src/lib/localDb.ts` 添加逻辑。
-- **错误处理**：try/catch 使用具体错误类型，以 pino 上下文记录日志。切勿在 SSE 流中静默吞噬错误；使用 abort signal 进行清理。
-- **安全**：切勿使用 `eval()` / `new Function()` / 隐式 eval。所有输入以 Zod 校验。凭据使用 AES-256-GCM 静态加密。保持 `src/shared/constants/upstreamHeaders.ts` 拒绝名单与清洗/校验层对齐。
-- **提交**：Conventional Commits — `feat(scope): subject`。允许的 scope：`db`、`sse`、`oauth`、`dashboard`、`api`、`cli`、`docker`、`ci`、`mcp`、`a2a`、`memory`、`skills`。
-- **分支**：前缀 `feat/`、`fix/`、`refactor/`、`docs/`、`test/`、
-  `chore/`。切勿直接提交到 `main`。
-- **Husky**：pre-commit 运行 `lint-staged` + `check:docs-sync` + `check:any-budget:t11`；pre-push 运行 `check:any-budget:t11` + `check:tracked-artifacts`（快速门禁；不含 `test:unit`）。
+- **命名**：文件使用 `camelCase` 或 `kebab-case`，组件使用 `PascalCase`，
+  常量使用 `UPPER_SNAKE`。
+- **ESLint**：`no-eval`、`no-implied-eval`、`no-new-func` 在所有位置均为
+  `error`；`no-explicit-any` 在 `open-sse/` 和 `tests/` 中为 `warn`，其他位置为 `error`。
+- **TypeScript**：`strict: false`（遗留配置）。跨模块边界优先使用显式类型，而不是
+  类型推断。
+- **数据库**：绝不要在路由或处理程序中直接编写原始 SQL — 始终通过
+  `src/lib/db/` 模块执行。绝不要使用 barrel 导入 — 直接使用具体的
+  `src/lib/db/*` 模块。
+- **DB 实体类型（#3512）**：读写数据库表行结构的函数，应使用一个与该表列
+  逐一对应的命名 TS 接口作为参数和返回值，而不是在调用点使用 `any` 或内联匿名类型。
+  将该接口放在函数旁边（例如，在 `src/lib/usage/usageHistory.ts` 中
+  `saveRequestUsage` 上方定义 `export interface UsageEntry`），当不同写入方会逐步填充
+  行数据时，应保持各个字段可选/可为空；对于其结构因调用方而异的字段，优先使用
+  `unknown` 而不是 `any`（在字段上添加说明，例如 `UsageEntry.tokens` 同时接受原始提供者
+  形态的用量和规范化形态）。文件通过这种方式将 `any` 数量降为零后，将其添加到
+  `check:any-budget:t11` 白名单（`scripts/check/check-t11-any-budget.mjs`、
+  `maxAny: 0`），以防止回归。这是第一阶段的约定 — 更广泛的“禁止匿名 `any`”清理将在
+  其余代码库中迭代进行。
+- **错误**：使用带有特定错误类型的 try/catch，并通过 pino 上下文记录日志。绝不要在
+  SSE 流中静默吞掉错误；使用中止信号进行清理。
+- **安全性**：绝不要使用 `eval()` / `new Function()` / 隐式 eval。使用 Zod 验证所有输入。
+  对静态存储的凭据进行加密（AES-256-GCM）。确保
+  `src/shared/constants/upstreamHeaders.ts` 中的拒绝列表与清理/验证层保持一致。
+- **提交**：使用 Conventional Commits — `feat(scope): subject`。允许的作用域：
+  `db`、`sse`、`oauth`、`dashboard`、`api`、`cli`、`docker`、`ci`、`mcp`、
+  `a2a`、`memory`、`skills`。
+- **分支**：前缀为 `feat/`、`fix/`、`refactor/`、`docs/`、`test/`、
+  `chore/`。绝不要直接提交到 `main`。
+- **Husky**：pre-commit 运行 `lint-staged` + `check:docs-sync` +
+  `check:any-budget:t11`；pre-push 运行 `check:any-budget:t11` +
+  `check:tracked-artifacts`（快速门禁；不包括 `test:unit`）。
 
 ---
 
-## 12. 硬规则（来自 CLAUDE.md）
+## 12. 硬性规则（来自 CLAUDE.md）
 
-1. 切勿提交机密或凭据。
-2. 切勿向 `src/lib/localDb.ts` 添加逻辑。
+1. 切勿提交机密信息或凭据。
+2. 切勿使用 barrel import — 直接使用特定的 `src/lib/db/*` 模块。
 3. 切勿使用 `eval()` / `new Function()` / 隐式 eval。
 4. 切勿直接提交到 `main`。
-5. 切勿在路由中直接写 SQL — 始终通过 `src/lib/db/` 模块。
-6. 切勿在 SSE 流中静默吞噬错误。
-7. 始终以 Zod Schema 校验输入。
+5. 切勿在路由中编写原始 SQL — 始终通过 `src/lib/db/` 模块。
+6. 切勿在 SSE 流中静默吞掉错误。
+7. 始终使用 Zod schema 验证输入。
 8. 修改生产代码时始终包含测试。
 9. 覆盖率必须保持 ≥ 60%（语句、行、函数、分支）。
 

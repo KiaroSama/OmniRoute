@@ -57,29 +57,19 @@ As conexões do OpenRouter podem armazenar um `preset` por conexão nas Configur
 
 ---
 
-## 🎨 Combos
+## Combos 🎨
 
-Crie combos de roteamento de modelos com 19 estratégias públicas: priority, weighted, round-robin, context-relay, fill-first, p2c (escolhas de potência de dois), random, least-used, cost-optimized, reset-aware, reset-window, headroom, strict-random, auto, lkgp (último provedor conhecido como funcional), context-optimized, cache-optimized, **fusion** (distribui a solicitação para um painel de modelos em paralelo e, em seguida, sintetiza uma única resposta por meio de um juiz) e **pipeline**. Cada combo encadeia vários modelos com fallback automático e inclui modelos rápidos e verificações de prontidão.
+Crie combos de roteamento de modelo com 22 estratégias públicas: prioridade, ponderado, round-robin, retransmissão de contexto, preenchimento primeiro, p2c (potência de duas opções), aleatório, menos usado, com custo otimizado, com reconhecimento de redefinição, janela de redefinição, expiração primeiro, headroom, ponderado por cota, aleatório estrito, automático, lkgp (último provedor válido), otimizado para contexto, otimizado para cache,** fusão** (distribua-se em um painel de modelos em paralelo e, em seguida, sintetize uma resposta por meio de um juiz),** gasoduto** , e** jev** (uma admissão TypeSafe Jev opcional em sua lista de classificação). Cada combinação encadeia vários modelos com fallback automático e inclui modelos rápidos e verificações de prontidão.
 
-Melhorias recentes nos combos:
+Melhorias recentes no combo:
 
-- **Criador de combos estruturado** — crie cada etapa selecionando o provedor, o modelo e a conta/conexão exata
-- **Suporte a provedores repetidos** — reutilize o mesmo provedor várias vezes em um combo, desde que a tupla `(provider, model, connection)` seja exclusiva
-- **Integridade dos destinos do combo** — as superfícies de análise e integridade agora distinguem destinos/etapas individuais do combo, em vez de agrupar tudo em strings de modelo
-- **Ordenação de camadas compostas** — `defaultTier -> fallbackTier` agora influencia a ordem de execução/fallback em tempo de execução das etapas de nível superior do combo
-- **Modelos de prompt do sistema** — o `system_message` do combo oferece suporte, no lado do servidor, aos
-  placeholders `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` e `{{FINGERPRINT}}`,
-  expandidos com base no destino efetivamente roteado imediatamente antes do envio.
-  Eles são incluídos em uma lista de permissões e não são recursivos; placeholders desconhecidos permanecem literais; valores vazios
-  são expandidos como vazios; prompts de sistema do cliente nunca são reescritos. `{{FINGERPRINT}}`
-  é resolvido somente para provedores gratuitos baseados em fingerprint com uma fingerprint fixada ou
-  alternada automaticamente — em outros casos, ele é expandido como vazio (por exemplo,
-  conexões de fingerprint única, provedores não fp). A expansão abrange o
-  loop de envio padrão, round-robin e sessões fixadas de cache de contexto;
-  as estratégias fusion, chaos, pipeline e nested-execute ainda não expandem
-  placeholders.
+- **Construtor de combo estruturado** — cria cada etapa selecionando provedor, modelo e account/connection exato
+- **Suporte repetido do provedor** — reutiliza o mesmo provedor muitas vezes em um combo, desde que a tupla `(provider, model, connection)` seja única
+- **Saúde alvo combinada** — Analytics e Health Surfaces agora distinguem combinações individuais targets/steps em vez de agrupar tudo em strings de modelo
+- **Ordenação de camadas compostas** — `defaultTier -> fallbackTier` agora influencia a ordem execution/fallback do tempo de execução para etapas combinadas de nível superior
+- **Modelos de prompt do sistema** — combo `system_message` suporta espaços reservados `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` e `{{FINGERPRINT}}` do lado do servidor, expandidos a partir do destino realmente roteado logo antes do envio. Lista de permissões e não recursiva; espaços reservados desconhecidos permanecem literais; valores vazios expandem para vazios; os prompts do sistema cliente nunca são reescritos. `{{FINGERPRINT}}` resolve apenas para provedores gratuitos baseados em impressão digital com uma impressão digital fixada ou girada automaticamente. — ele se expande para vazio em outro lugar (por exemplo, conexões de impressão digital única, provedores não-FP). A expansão cobre o loop de despacho padrão, round-robin e sessões de cache de contexto fixadas; As estratégias de fusão, caos, pipeline e execução aninhada ainda não expandem os espaços reservados.
 
-![Painel de Combos](../screenshots/02-combos.png)
+![Combos Dashboard](../screenshots/02-combos.png)
 
 ---
 
@@ -200,23 +190,23 @@ Por padrão, os e-mails das contas OAuth são mascarados (por exemplo, `di*****@
 
 ---
 
-## 👁️ Controle de Visibilidade de Modelos _(v3.5.6+)_
+## Alternar visibilidade do modelo 👁️ _(v3.5.6 +)_
 
-A lista de modelos da página do provedor agora inclui:
+A lista de modelos de páginas do provedor agora inclui:
 
-- **Barra de pesquisa/filtro em tempo real** — Encontre rapidamente modelos específicos
-- **Controle de visibilidade por modelo** (ícone 👁) — Os modelos ocultos ficam esmaecidos e são excluídos do catálogo `/v1/models`
-- **Indicador de contagem de ativos** (`N/M ativos`) — Mostra rapidamente quantos modelos estão habilitados em relação ao total
+- **Barra search/filter em tempo real** — Encontre rapidamente modelos específicos
+- **Alternância de visibilidade por modelo** (ícone 👁 ) — Os modelos ocultos ficam acinzentados e excluídos do catálogo `/v1/models`
+- **Selo de contagem ativa** (`N/M active`) — Mostra rapidamente quantos modelos estão habilitados versus o total
 
 ---
 
-## 🔧 Reparo de variáveis de ambiente do OAuth _(v3.6.1+)_
+## 🔧 OAuth Reparo de ambiente _(v3.6.1 +)_
 
-Ação "Reparar variáveis de ambiente" com um clique para provedores OAuth, que restaura variáveis de ambiente ausentes e corrige o estado de autenticação corrompido. Acessível em `Painel → Provedores → [Provedor OAuth] → Reparar variáveis de ambiente`. Detecta e repara automaticamente:
+Ação "Reparar env" com um clique para provedores OAuth que restaura variáveis de ambiente ausentes e corrige estado de autenticação quebrado. Acessível em `Dashboard → Providers → [OAuth Provider] → Repair env`. Detecta e repara automaticamente:
 
-- Credenciais de cliente OAuth ausentes
-- Entradas corrompidas no arquivo de variáveis de ambiente
-- Sanitização do caminho de backup
+- Credenciais do cliente OAuth ausentes
+- Entradas de arquivo env corrompidas
+- Limpeza de caminho de backup
 
 ---
 
@@ -298,13 +288,13 @@ Principais comportamentos:
 
 ## 🔑 Tokens de sincronização e pacote de configuração _(v3.6.6+)_
 
-O acesso por vários dispositivos e operadores externos agora é possível por meio de **tokens de sincronização com escopo**:
+O acesso por vários dispositivos e operadores externos agora é possível por meio de **tokens de sincronização com escopo definido**:
 
-- **`POST /api/sync/tokens`** — Emite um novo token de sincronização (com escopo e expiração opcional)
+- **`POST /api/sync/tokens`** — Emite um novo token de sincronização (com escopo definido e expiração opcional)
 - **`DELETE /api/sync/tokens/:id`** — Revoga um token
-- **`GET /api/sync/bundle`** — Baixa um snapshot JSON versionado, identificado por ETag, de todas as configurações não confidenciais (senhas ocultadas)
+- **`GET /api/sync/bundle`** — Baixa um snapshot JSON versionado da configuração, identificado por ETag (autenticado somente com um token de sincronização). As configurações de autenticação, como a senha do painel, são removidas, mas as credenciais dos provedores e as chaves de API são incluídas; portanto, trate o arquivo como um segredo
 
-O pacote de configuração é gerado por `src/lib/sync/bundle.ts`. Os consumidores comparam o cabeçalho de resposta `ETag` para detectar alterações sem baixar novamente toda a carga útil.
+O pacote de configuração é criado por `src/lib/sync/bundle.ts`. Os consumidores comparam o cabeçalho de resposta `ETag` para detectar alterações sem baixar novamente todo o conteúdo. Pela CLI, `omniroute sync bundle <outPath> --token <syncToken>` (ou `OMNIROUTE_SYNC_TOKEN`) salva o pacote em um arquivo acessível somente pelo proprietário.
 
 ---
 
@@ -316,14 +306,14 @@ A **contagem híbrida de tokens** também chega na v3.6.6: quando um provedor co
 
 ---
 
-## 🛡️ Busca externa segura e proteção contra SSRF _(v3.6.6+)_
+## 🛡️ Busca de saída segura e proteção contra SSRF _(v3.6.6+)_
 
-Todas as chamadas de validação de provedores e descoberta de modelos agora passam por uma proteção externa de duas camadas:
+Todas as chamadas de validação de provedores e descoberta de modelos agora passam por uma proteção de saída em duas camadas:
 
-1. **Proteção de URL** (`src/shared/network/outboundUrlGuard.ts`) — Bloqueia intervalos de IP privados, de loopback e link-local antes que o socket seja aberto.
-2. **Wrapper de busca segura** (`src/shared/network/safeOutboundFetch.ts`) — Aplica a proteção de URL, normaliza os tempos limite e repete erros transitórios com backoff exponencial.
+1. **Proteção de URL** (`src/shared/network/outboundUrlGuard.ts`) — Primeiro, verifica o nome do host ou o endereço IP literal do destino exatamente como foi informado; no modo somente público, o wrapper de busca segura também resolve o nome e recusa endereços privados. Por padrão, ele bloqueia endpoints de metadados de nuvem — toda a faixa 169.254.0.0/16, além dos nomes de host de metadados conhecidos; `OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS=false` também bloqueia hosts privados e de loopback; `OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS=true` (ou a variável legada `OUTBOUND_SSRF_GUARD_ENABLED=false`) desativa as verificações. Um valor salvo pelo controle de alternância de uma flag no painel tem precedência sobre sua variável, e os provedores locais integrados ignoram a proteção durante a validação da chave. Consulte `docs/reference/ENVIRONMENT.md`.
+2. **Wrapper de busca segura** (`src/shared/network/safeOutboundFetch.ts`) — Aplica a proteção de URL, normaliza os tempos limite e repete erros transitórios com recuo exponencial.
 
-As violações da proteção são apresentadas como HTTP 422 (`URL_GUARD_BLOCKED`) e registradas no log de auditoria de conformidade por meio de `providerAudit.ts`.
+As violações da proteção são apresentadas como `URL_GUARD_BLOCKED` — HTTP 503 por meio de `getSafeOutboundFetchErrorStatus` (400 na rota de descoberta de modelos) — e bloqueios genuínos de SSRF durante a validação são registrados no log de auditoria como eventos `provider.validation.ssrf_blocked`.
 
 ---
 

@@ -16,64 +16,64 @@ Prikrite funkcije obstajajo zato, da lahko OmniRoute deluje kot združljivostna 
 
 ---
 
-## Plast prstnih odtisov TLS
+## Plast prstnega odtisa TLS
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-Trajne seje `wreq-js` se ustvarijo leno za vsak obseg računa in razrešeni posredniški strežnik. Procesni
-skladi `TlsClient` vsebujejo največ 128 sej, ki se nadrejenim sistemom za Cloudflare predstavljajo kot
-**Chrome 124 v sistemu macOS**. `TlsClient.fetch()` se varno prekine, kadar izvorno izvajalno okolje
-ni na voljo; klicatelj lahko zunaj tega ovoja izrecno izbere rezervni način.
+Trajne seje `wreq-js` se ustvarijo leno glede na obseg računa in razrešeni posredniški strežnik.
+Procesni `TlsClient` združuje največ 128 sej, ki se izdajajo za **Chrome 124 v sistemu macOS**, za
+zaledne sisteme za omrežjem Cloudflare. `TlsClient.fetch()` varno zavrne zahtevo, kadar izvorno izvajalno
+okolje ni na voljo; klicatelj lahko zunaj tega ovoja izrecno izbere nadomestno možnost.
 
 - Profil seje: `browser: "chrome_124", os: "macos"`
 - Razreševanje posredniškega strežnika (po prednosti): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (tudi z malimi črkami)
 - Časovna omejitev: `TLS_CLIENT_TIMEOUT_MS` (podedovana iz `FETCH_TIMEOUT_MS`, privzeto 600000)
 - Odgovor `wreq-js` je združljiv z vmesnikom fetch (`headers`, `text()`, `json()`, `clone()`, `body`).
 - Nadzornik prvega bajta (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): `TlsClient.fetch()`
-  se razreši takoj, ko prispejo glave nadrejenega sistema, zato `TLS_CLIENT_TIMEOUT_MS` sama ne more omejiti
-  telesa, ki nikoli ne vrne prvega bajta. `guardTlsFirstByte()` tekmuje med prvim `read()` telesa
-  in `TLS_FIRST_BYTE_WATCHDOG_MS` (privzeto `10000`, vrednost `0` ga onemogoči); na zdravo telo
-  ne vpliva, pri zastalem telesu pa prekliče bralnik wreq in omogoči, da obstoječa logika
-  rezervnega načina TLS funkcije `proxyFetch` preide na neposredni/posredniški razpošiljevalnik (zahteva, ki je ni
-  mogoče varno ponovno predvajati, npr. POST s telesom, še vedno sproži napako, namesto da bi bila neopazno ponovljena).
+  se razreši takoj, ko prispejo glave zalednega sistema, zato samo `TLS_CLIENT_TIMEOUT_MS` ne more omejiti
+  telesa, ki nikoli ne vrne prvega bajta. `guardTlsFirstByte()` izvede tekmo med prvim `read()` telesa
+  in `TLS_FIRST_BYTE_WATCHDOG_MS` (privzeto `10000`, vrednost `0` ga onemogoči); zdravo telo ostane
+  nespremenjeno, pri zastalem telesu pa prekliče bralnik wreq in omogoči obstoječi
+  nadomestni logiki TLS v `proxyFetch`, da nadaljuje do neposrednega/posredniškega razpošiljevalnika (zahteva,
+  ki je ni varno ponovno predvajati, npr. POST s telesom, še vedno sproži izjemo namesto tihega ponovnega poskusa).
 
-### Prenos ponudnikov s spletnimi piškotki — wreq-js 3.2.0
+### Prenos ponudnikov spletnih piškotkov — wreq-js 3.2.0
 
 `open-sse/services/tlsClientBase.ts` je skupni prilagojevalnik za spodnjih pet specializiranih
-prenosov s spletnimi piškotki. Vsak tanek ovoj ponudnika izbere profil brskalnika/operacijskega sistema. Prilagojevalnik
-uporablja enotni nalagalnik izvajalnega okolja wreq in sklad prenosov v `open-sse/utils/tlsClient.ts`, ki je določen s
-profilom + operacijskim sistemom + razrešenim posredniškim strežnikom, medtem ko vsaka zahteva uporablja `cookieMode: "ephemeral"`. Računi in
-zahteve si zato delijo povezave na ravni prenosa, vendar nikoli seje wreq ali shrambe piškotkov.
+prenosov spletnih piškotkov. Vsak tanek ovoj ponudnika izbere profil brskalnika/operacijskega sistema. Prilagojevalnik
+uporablja enotni nalagalnik izvajalnega okolja wreq in zalogo prenosov v `open-sse/utils/tlsClient.ts`, indeksirano
+po profilu + operacijskem sistemu + razrešenem posredniškem strežniku, medtem ko vsaka zahteva uporablja `cookieMode: "ephemeral"`. Računi in
+zahteve si zato delijo povezave na ravni prenosa, nikoli pa seje wreq ali shrambe piškotkov.
 
-| Ponudnik   | Profil        | Emulirani OS | Pravilnik za EOF toka                   |
-| ---------- | ------------- | ------------ | --------------------------------------- |
-| Claude     | `chrome_146`  | Linux        | vključi `[DONE]`                        |
-| Perplexity | `firefox_148` | macOS        | vključi `event: end_of_stream`          |
-| Grok       | `chrome_146`  | Linux        | izključi `[DONE]`                       |
-| Notion     | `chrome_146`  | Windows      | vključi `[DONE]`                        |
-| LMArena    | `chrome_146`  | Windows      | brez označevalca; zapri ob izvornem EOF |
+| Ponudnik   | Profil        | Emulirani OS | Pravilnik EOF toka                    |
+| ---------- | ------------- | ------------ | ------------------------------------- |
+| Claude     | `chrome_146`  | Linux        | vključi `[DONE]`                      |
+| Perplexity | `firefox_151` | macOS        | vključi `event: end_of_stream`        |
+| Grok       | `chrome_146`  | Linux        | izključi `[DONE]`                     |
+| Notion     | `chrome_146`  | Windows      | vključi `[DONE]`                      |
+| LMArena    | `chrome_146`  | Windows      | brez stražarja; zapri ob izvornem EOF |
 
-- Pretočno prenašanje neposredno uporablja `ReadableStream` izvornega odgovora; ne ustvari se nobena začasna datoteka ali
-  stranski proces.
-- Pred razkritjem toka se pregleda do 256 začetnih bajtov. Ponudniki SSE medpomnijo napake, ki niso SSE;
+- Pretočni prenos neposredno uporablja `ReadableStream` izvornega odgovora; začasna datoteka ali pomožni
+  proces se ne ustvari.
+- Pred izpostavitvijo toka se pregleda do 256 začetnih bajtov. Ponudniki SSE medpomnijo napake, ki niso SSE;
   Grok/LMArena preslikata izzive Cloudflare v `403`, vmesne strani HTML pa v `502`.
-- Časovna omejitev izvorne zahteve ostane obdana z absolutnim skrajnim rokom JS. Zastoj razveljavi
+- Časovna omejitev izvorne zahteve ostane ovita z absolutnim skrajnim rokom JS. Obvisel proces razveljavi
   in zapre samo prizadeti prenos profila/operacijskega sistema/posredniškega strežnika, preden ga naslednja zahteva znova ustvari.
 - Prednost razreševanja posredniškega strežnika je `proxyUrl` posameznega klica → kontekst računa/nadzorne plošče z obsegom zahteve →
-  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (vključno z različicami z malimi črkami). Napake pri razreševanju povzročijo
-  varno prekinitev, namesto da bi razkrile neposredno povezavo. LMArena namenoma razrešuje glede na `arena.ai`.
-- `byteResponse` vrne URL `data:`, opredeljen z vrsto vsebine, brez okvare UTF-8.
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (vključno z različicami z malimi črkami). Napake razreševanja varno
+  zavrnejo zahtevo, namesto da bi dopustile uhajanje neposredne povezave. LMArena namerno razrešuje glede na `arena.ai`.
+- `byteResponse` vrne URL `data:` z določeno vrsto vsebine brez poškodovanja kodiranja UTF-8.
 - Napake so `TlsClientUnavailableError` (paket/dodatek ni na voljo), `TlsClientHangError`
-  (skrajni rok je presežen) in `WreqTransportCapacityError` (skupna koda napake zaradi zmogljivosti seje),
-  kadar je vseh 128 omejenih mest profila/operacijskega sistema/posredniškega strežnika dejavnih ali v postopku zapiranja.
+  (skrajni rok je presežen) in `WreqTransportCapacityError` (skupna koda napake zmogljivosti sej),
+  kadar je vseh 128 omejenih mest profila/operacijskega sistema/posredniškega strežnika aktivnih ali se zapirajo.
 
 Zgornja splošna seja `TlsClient` ostaja specializirana za trajno stanje piškotkov, podprto z brskalnikom.
-Obe poti znova uporabita en predpomnjeni nalagalnik modula wreq in kavelj življenjskega cikla procesa; njuna sklada ostajata
-ločena, ker se njune življenjske dobe piškotkov namenoma razlikujejo.
+Obe poti ponovno uporabita en predpomnjeni nalagalnik modula wreq in kavelj življenjskega cikla procesa; njuni zalogi ostajata
+ločeni, ker sta življenjski dobi njunih piškotkov namenoma različni.
 
-Pripeti paket podpira profile, vendar se dejansko sprejemanje požarnega zidu WAF lahko spremeni neodvisno
-od lokalnih pogodbenih testov. Spremembe prstnih odtisov preverite z izrecno pooblaščenim živim računom,
-preden trdite, da je dosežena enakovrednost z nadrejenim brskalnikom.
+Pripeti paket podpira profile, vendar se lahko dejansko sprejemanje s strani WAF spreminja neodvisno
+od lokalnih pogodbenih preizkusov. Spremembe prstnega odtisa preverite z izrecno pooblaščenim računom v živo,
+preden razglasite enakovrednost z brskalnikom zalednega sistema.
 
 ---
 
@@ -122,7 +122,7 @@ Uporabi se za: bloke `system`, vso vsebino `messages[].content` in opise `tools[
 
 Za posrednike Anthropic tretjih oseb, ki sprejemajo samo promet »pravega Claude Code«:
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"` privzeto
@@ -139,41 +139,63 @@ Sorodni moduli v istem paketu:
 
 ---
 
-## Prikriti način Antigravity
+## Antigravity Stealth
 
-Zahteve Antigravity ohranijo besedilo klicatelja nespremenjeno do zadnjega bajta. OmniRoute v pozive ne vstavi znakov ničelne širine in ne preimenuje ali vstavlja orodij, da bi posnemal odjemalca IDE.
+Antigravity zahteva ohranitev besedila klicatelja bajt za bajtom. OmniRoute ne vstavi znakov ničelne širine v pozive ali orodja rename/inject za posnemanje odjemalca IDE.
 
 ### `antigravityHeaderScrub.ts`
 
-Pred posredovanjem odstrani označevalce SDK-ja Stainless (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`).
+Pred posredovanjem odstrani oznake SDK iz nerjavečega jekla (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`).
 
-### ⚠️ Tveganje: `ANTIGRAVITY_CREDITS=always` (žarišče za blokiranje računov)
+### Tveganje ⚠️ : `ANTIGRAVITY_CREDITS=always` (vroča točka prepovedi računa)
 
-`ANTIGRAVITY_CREDITS=always` (uporablja ga `open-sse/executors/antigravity.ts`) usmeri **vsako** zahtevo prek prekoračitev dobroimetja Antigravity AI Credit Overages (plačljivo Googlovo dobroimetje), namesto da bi prepustil Googlovi kvoti brezplačne ravni omejevanje uporabe. To je dokumentirano kot funkcija, vendar gre za **daleč najpogostejšo prijavljeno kršitev pogojev uporabe, ki jo opažamo** — več računov Google Ultra je bilo po nekaj urah delovanja z `=always` blokiranih z napako `403 / "service disabled for ToS violation" / insufficient_quota`.
+`ANTIGRAVITY_CREDITS=always` (uporablja `open-sse/executors/antigravity.ts`) poti** vsak** zahtevajte prek Antigravity AI Credit Overages (plačani krediti Google ), namesto da bi dovolili, da kvota brezplačne stopnje Google izloči stvari. To je dokumentirano kot funkcija, vendar je** eno najpogostejše poročilo o kršitvi pogojev storitve, ki ga vidimo** — več računov Google Ultra je bilo prepovedanih z `403 / "service disabled for ToS violation" / insufficient_quota` po nekajurnem delovanju z `=always`.
 
-Uveljavljanje omejitev poteka na **Googlovi strani** in ga OmniRoute ne more preprečiti. Zaradi imena okoljske spremenljivke in obstoječe dokumentacije se zdi, da je ta možnost varno vklopiti, vendar ni.
+Izvrševanje navzgor je vklopljeno** stran Google** , ničesar OmniRoute ne more preprečiti. Zaradi imena env var in obstoječih dokumentov zveni kot varen gumb za obračanje; ni.
 
-**Zakaj to sproži zaznavanje zlorabe bolj agresivno kot uporaba izključno brezplačne ravni:**
+**Zakaj je to bolj agresivno zaznavanje zlorab kot uporaba samo brezplačne ravni:**
 
-- Trajna avtomatizirana poraba v enem Googlovem računu je označena drugače kot brezplačna uporaba, ki doseže kvoto in se ustavi.
-- Prekoračitve dobroimetja nimajo zgornje omejitve hitrosti, zato lahko napačno konfiguriran odjemalec v nekaj minutah porabi več sto USD in je videti kot preprodaja ključev API ali promet botov.
-- Če več uporabnikov OmniRoute vzporedno uporablja dobroimetje za prekoračitve z istega zunanjega naslova IP, se signal še okrepi.
+- Trajna avtomatizirana poraba na enem samem računu Google je označena drugače kot brezplačna stopnja hits-quota-and-stops.
+- Presežek kredita nima zgornje meje obrestne mere, zato lahko napačno konfiguriran odjemalec v nekaj minutah prežge več sto USD in izgleda kot preprodaja ključa API ali promet robotov.
+- Več uporabnikov OmniRoute, ki vzporedno dosegajo presežne kredite iz istega zunanjega IP združuje signal.
 
-**Priporočena usmeritev:**
+**Priporočena drža:**
 
-1. Ohranite privzeto nastavitev `ANTIGRAVITY_CREDITS=off`, razen če upravljavec izrecno sprejme tveganje plačljivega dobroimetja in ukrepov zoper račun. `retry` najprej pošlje običajno zahtevo in vključi dobroimetje največ enkrat po upravičeni napaki kvote 429; `always` vključi dobroimetje že pri prvi zahtevi.
-2. **Porazdelite obremenitev med ponudnike prek Auto-Combo** (`model: "auto"` ali kombinacija `kr/glm/etc`), namesto da preobremenite en sam račun Antigravity.
-3. **Nastavite omejitve RPM za posamezno povezavo** na strani za urejanje ponudnika Antigravity (Nadzorna plošča → Ponudniki → Antigravity → povezava → omejitev hitrosti). 30–60 RPM je razumna zgornja meja za trajno uporabo.
-4. **Uporabljajte stabilno omrežje do nadrejene storitve, ki ga nadzoruje upravljavec,** in se izogibajte souporabi enega računa med nepovezanimi uporabniki ali delovnimi obremenitvami.
-5. **Če je račun blokiran**: vložite pritožbo prek `support.google.com` → »Obnovitev dostopa do Workspace/računa« ter priložite natančno vsebino odgovora `quota_exceeded` / `service disabled`, ki jo je poslal Google. Obnovitev ni zagotovljena.
+1. Ohranite privzeto `ANTIGRAVITY_CREDITS=off` razen če operater izrecno sprejme tveganje plačila kredita in izvršbe na računu. `retry` najprej pošlje običajno zahtevo in vbrizga kredite največ enkrat po upravičeni kvoti 429; `always` vbrizga kredite na prvo zahtevo.
+2. **Razporedite obremenitev med ponudniki prek Auto-Combo** (`model: "auto"` ali `kr/glm/etc` -combo) namesto nasičenja enega samega računa Antigravity.
+3. **Nastavite omejitve RPM na povezavo** na strani za urejanje ponudnika Antigravity (nadzorna plošča → ponudniki → Antigravity → povezava → rate limit). 30–60 RPM je upravičljiva zgornja meja za trajno uporabo.
+4. **Uporabite stabilno omrežje navzgor, ki ga nadzoruje operater** in se izogibajte skupni rabi enega računa med nepovezanimi uporabniki ali delovnimi obremenitvami.
+5. **Če je prepovedano** : pritožba prek `support.google.com` → "Obnovi dostop Workspace/Account " z natančnim poslanim telesom odgovora `quota_exceeded` / `service disabled` Google. Obnova ni zagotovljena.
 
-Referenca okolja dokumentira posledice posameznega načina dobroimetja za račun in porabo.
+Referenca okolja dokumentira posledice računa in porabe vsakega načina kreditov.
 
-Točke stika:
+#### Ne samo `=always`: Antigravity OAuth usmerjanje na splošno
 
-- `open-sse/executors/antigravity.ts` — bere `process.env.ANTIGRAVITY_CREDITS`
-- `src/lib/oauth/providers/antigravity.ts` — upravljanje poverilnic
-- Izvirno poročilo o incidentu: razprava [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
+Prekinitve niso omejene na presežke kredita. Poročila iz novembra 2026 (#19223, #19266) opisujejo več računov Google ki so bili začasno ustavljeni med usmerjanjem prek ponudnikov `antigravity` in `agy` (Antigravity CLI), z:
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+Oba ponudnika preverjata pristnost s sejo OAuth izdelka Antigravity, kar je primer, ko obvestilo o tveganju na nadzorni plošči ("Ta ponudnik uporablja vaš uradni izdelek session/OAuth, ki ni pooblaščen za uporabo proxy/router ") opozori, preden se doda povezava. Nobeno od zgornjih priporočil ne dovoljuje te uporabe; samo zmanjšajo količino prometa, ki ga nosi en račun.
+
+**Pooblaščeni vmesniki API za modele Gemini.** Google ponuja programski dostop do Gemini prek svojega APIs, ki ga OmniRoute podpira kot običajne ponudnike ključev API:
+
+| ID ponudnika | Ime nadzorne plošče       | Poverilnica                                                                      |
+| ------------ | ------------------------- | -------------------------------------------------------------------------------- |
+| `gemini`     | Gemini (Google AI studio) | ključ Gemini API iz studia Google AI (na voljo brezplačna stopnja)               |
+| `vertex`     | Vertex AI                 | Račun storitve JSON, žeton za dostop OAuth ali ključ API Vertex Express (Gemini) |
+
+Ti ponudniki uporabljajo poverilnice Google za dostop do API, za razliko od seje izdelka Antigravity. Ne naredijo vsake uporabe skladne z zahtevami ali odpravijo tveganje uveljavljanja: vsakega urejajo lastni pogoji, ki jih mora operater preveriti za njihovo uvedbo. Na primer, [dodatni pogoji storitve Gemini API](https://ai.google.dev/gemini-api/terms) dovoljujejo samo plačljive storitve, ko so odjemalci API na voljo uporabnikom v Evropskem gospodarskem prostoru, Švici ali Združenem kraljestvu, vsebina, poslana neplačanim storitvam, pa se lahko uporabi za izboljšanje izdelkov Google. Vertex AI namesto tega spada pod pogoje Google Cloud ( [Pogoji za posamezne storitve](https://cloud.google.com/terms/service-terms) ). Cene in kvote sledijo pogojem API in ne naročnini na Antigravity.
+
+Operaterji, ki se želijo izogniti zgoraj opisanim prekinitvam Antigravity morajo promet Gemini usmeriti prek enega od teh ponudnikov namesto `antigravity` / `agy`, potem ko preverijo, ali njihova uporaba ustreza pogojem ponudnika.
+
+Stične točke:
+
+- `open-sse/executors/antigravity.ts` — se bere `process.env.ANTIGRAVITY_CREDITS`
+- `src/lib/oauth/providers/antigravity.ts` — poverilnica vodovod
+- Prvotno poročilo o incidentu: Razprava [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
 
@@ -240,19 +262,18 @@ Poleg tega `updateNssDatabases()` namesti potrdilo v uporabniške zbirke podatko
 
 Vse končne točke MITM zahtevajo preverjanje pristnosti za upravljanje (`requireCliToolsAuth`). Geslo sudo je predpomnjeno v obsegu modula (nikoli v `globalThis`) in se izbriše ob `stopMitm()`.
 
-## Preglasitve User-Agent — spremenljivke okolja (12. razdelek datoteke `.env.example`)
+## User-Agent preglasi — env vars (`.env.example` razdelek 12)
 
-| Spremenljivka            | Privzeta vrednost                                               |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| Spremenljivka       | Privzeto                                      |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-Uporablja jih `open-sse/executors/base.ts::buildHeaders()` prek dinamičnega iskanja. **Posodobite jih, ko ponudniki izdajo nove različice CLI-ja** — zastareli nizi UA so zavrnjeni, ker predstavljajo zastarele odjemalce.
+Porabi `open-sse/executors/base.ts::buildHeaders()` prek dinamičnega iskanja.** Obrnite se na te, ko ponudniki izdajo nove različice CLI** — stale UA nizi se začnejo zavračati kot zastareli odjemalci.
 
 ## Preklopniki načina združljivosti CLI-ja (`.env.example`, razdelek 13)
 

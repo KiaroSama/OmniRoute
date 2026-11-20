@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createProviderNode, getProviderNodes } from "@/models";
-import { getProviderNodesCount } from "@/lib/db/providers/nodes";
+import { getProviderNodesCount, isProviderNodeIdConflictError } from "@/lib/db/providers/nodes";
+import { createErrorResponse } from "@/lib/api/errorResponse";
 import {
   OPENAI_COMPATIBLE_PREFIX,
   ANTHROPIC_COMPATIBLE_PREFIX,
@@ -11,6 +12,7 @@ import { isCcCompatibleProviderEnabled } from "@/shared/utils/featureFlags";
 import { createProviderNodeSchema, paginationSchema } from "@/shared/validation/schemas";
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { validateProviderNodeBaseUrl } from "./urlGuard";
+import { resolveCustomJsonNodeConfig } from "./customJsonNode";
 
 const OPENAI_COMPATIBLE_DEFAULTS = {
   baseUrl: "https://api.openai.com/v1",
@@ -54,9 +56,8 @@ async function registerMoonshotFetchersForCreatedNode(node: {
   baseUrl?: unknown;
 }): Promise<void> {
   try {
-    const { registerMoonshotFetchersForNodes } = await import(
-      "@omniroute/open-sse/services/moonshotQuotaFetcher.ts"
-    );
+    const { registerMoonshotFetchersForNodes } =
+      await import("@omniroute/open-sse/services/moonshotQuotaFetcher.ts");
     registerMoonshotFetchersForNodes([
       {
         id: typeof node.id === "string" ? node.id : null,
@@ -146,10 +147,15 @@ export async function POST(request) {
       chatPath,
       modelsPath,
       customHeaders,
+      customJson,
       iconUrl,
       dailyQuotaResetTimezone,
       dailyQuotaResetHour,
+      providerIdSuffix,
     } = validation.data;
+    // Optional operator-chosen id suffix (schema-validated charset); blank keeps the UUID.
+    // Presets always get a UUID.
+    const idSuffix = providerIdSuffix?.trim() || generateId();
 
     if (preset === "vibeproxy-openai") {
       // Schema guarantees baseUrl is non-empty for this preset.
@@ -182,12 +188,17 @@ export async function POST(request) {
     if (nodeType === "openai-compatible") {
       const resolvedName = (name || "").trim();
       const resolvedPrefix = (prefix || "").trim();
-      const resolvedBaseUrl = (baseUrl || OPENAI_COMPATIBLE_DEFAULTS.baseUrl).trim();
+      // Custom JSON API nodes take a complete endpoint URL — never the OpenAI default.
+      const resolvedBaseUrl = (
+        baseUrl || (apiType === "custom-json" ? "" : OPENAI_COMPATIBLE_DEFAULTS.baseUrl)
+      ).trim();
       const baseUrlError = validateProviderNodeBaseUrl(resolvedBaseUrl);
       if (baseUrlError) return baseUrlError;
+      const customJsonNode = resolveCustomJsonNodeConfig(apiType, customJson, resolvedBaseUrl);
+      if (customJsonNode.error) return customJsonNode.error;
 
       const node = await createProviderNode({
-        id: `${OPENAI_COMPATIBLE_PREFIX}${apiType}-${generateId()}`,
+        id: `${OPENAI_COMPATIBLE_PREFIX}${apiType}-${idSuffix}`,
         type: "openai-compatible",
         prefix: resolvedPrefix,
         apiType,
@@ -197,6 +208,7 @@ export async function POST(request) {
         modelsPath: modelsPath || null,
         iconUrl: iconUrl?.trim() || null,
         customHeaders: customHeaders || null,
+        customJsonConfig: customJsonNode.config,
         dailyQuotaResetTimezone: dailyQuotaResetTimezone?.trim() || null,
         dailyQuotaResetHour:
           dailyQuotaResetHour === 0 || dailyQuotaResetHour != null ? dailyQuotaResetHour : null,
@@ -221,8 +233,8 @@ export async function POST(request) {
       const node = await createProviderNode({
         id:
           compatMode === "cc"
-            ? `${CLAUDE_CODE_COMPATIBLE_PREFIX}${generateId()}`
-            : `${ANTHROPIC_COMPATIBLE_PREFIX}${generateId()}`,
+            ? `${CLAUDE_CODE_COMPATIBLE_PREFIX}${idSuffix}`
+            : `${ANTHROPIC_COMPATIBLE_PREFIX}${idSuffix}`,
         type: "anthropic-compatible",
         prefix: (prefix || "").trim(),
         baseUrl: sanitizedBaseUrl,
@@ -241,6 +253,9 @@ export async function POST(request) {
 
     return NextResponse.json({ error: "Invalid provider node type" }, { status: 400 });
   } catch (error) {
+    if (isProviderNodeIdConflictError(error)) {
+      return createErrorResponse({ status: 409, message: error.message, type: "conflict" });
+    }
     console.log("Error creating provider node:", error);
     return NextResponse.json({ error: "Failed to create provider node" }, { status: 500 });
   }

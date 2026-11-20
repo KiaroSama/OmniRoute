@@ -4,6 +4,11 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 process.env.NEXT_PUBLIC_OMNIROUTE_E2E_MODE = "1";
+// Render budget, not an import budget. Measured in review: the kit Sidebar mounts about 1.3–2×
+// slower than the legacy one (SidebarMenuButton asChild wrapping, a Radix tooltip per rail item);
+// under 5 s at host load 10–16, 9–16 s for the slowest cases at load 25–48. 30 s is headroom for
+// that load, not a mask for an eager-render bug.
+vi.setConfig({ testTimeout: 30_000 });
 
 vi.mock("next-intl", () => ({
   useTranslations: () => {
@@ -21,8 +26,9 @@ vi.mock("next-intl", () => ({
   },
 }));
 
+const navigation = vi.hoisted(() => ({ pathname: "/dashboard/analytics" }));
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/dashboard/analytics",
+  usePathname: () => navigation.pathname,
 }));
 
 const cleanupCallbacks: Array<() => void> = [];
@@ -32,6 +38,23 @@ function makeContainer(): HTMLElement {
   document.body.appendChild(container);
   cleanupCallbacks.push(() => container.remove());
   return container;
+}
+
+// The Sidebar renders inside the kit SidebarProvider + kit <Sidebar> (as DashboardShell does); the
+// collapsed state comes from the provider. The kit is imported after vi.resetModules() together
+// with the Sidebar so both share one SidebarContext instance.
+async function loadHarness() {
+  const { SidebarProvider, Sidebar: KitSidebar } = await import("@omniroute/ui-kit/sidebar");
+  const { default: Sidebar } = await import("@/shared/components/Sidebar");
+  return function Harness({ collapsed = false }: { collapsed?: boolean }) {
+    return (
+      <SidebarProvider defaultOpen={!collapsed}>
+        <KitSidebar collapsible="icon">
+          <Sidebar />
+        </KitSidebar>
+      </SidebarProvider>
+    );
+  };
 }
 
 function jsonResponse(body: unknown) {
@@ -46,6 +69,7 @@ describe("Sidebar pinned items shortcut (#pinned-items)", () => {
       globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
     ).IS_REACT_ACT_ENVIRONMENT = true;
     localStorage.clear();
+    navigation.pathname = "/dashboard/analytics";
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string) => {
@@ -68,11 +92,11 @@ describe("Sidebar pinned items shortcut (#pinned-items)", () => {
   });
 
   it("does not render PINNED section when no items are pinned", async () => {
-    const { default: Sidebar } = await import("@/shared/components/Sidebar");
+    const Harness = await loadHarness();
     const container = makeContainer();
     root = createRoot(container);
     await act(async () => {
-      root!.render(<Sidebar />);
+      root!.render(<Harness />);
     });
 
     const headers = Array.from(container.querySelectorAll("span")).map((s) => s.textContent);
@@ -82,11 +106,11 @@ describe("Sidebar pinned items shortcut (#pinned-items)", () => {
   it("hydrates and renders PINNED section when items are stored in localStorage", async () => {
     localStorage.setItem("sidebar-pinned-items", JSON.stringify(["analytics", "logs"]));
 
-    const { default: Sidebar } = await import("@/shared/components/Sidebar");
+    const Harness = await loadHarness();
     const container = makeContainer();
     root = createRoot(container);
     await act(async () => {
-      root!.render(<Sidebar />);
+      root!.render(<Harness />);
     });
 
     // Pinned section should now appear
@@ -100,15 +124,15 @@ describe("Sidebar pinned items shortcut (#pinned-items)", () => {
   });
 
   it("allows pinning and unpinning an item, persisting to localStorage", async () => {
-    const { default: Sidebar } = await import("@/shared/components/Sidebar");
+    const Harness = await loadHarness();
     const container = makeContainer();
     root = createRoot(container);
     await act(async () => {
-      root!.render(<Sidebar />);
+      root!.render(<Harness />);
     });
 
     // Expand ANALYTICS if not expanded
-    const analyticsHeader = Array.from(container.querySelectorAll('div[role="button"]')).find(
+    const analyticsHeader = Array.from(container.querySelectorAll("button[aria-expanded]")).find(
       (el) => el.textContent?.includes("analyticsSection")
     );
     if (analyticsHeader) {
@@ -155,11 +179,11 @@ describe("Sidebar pinned items shortcut (#pinned-items)", () => {
   it("renders pinned shortcuts in collapsed mode", async () => {
     localStorage.setItem("sidebar-pinned-items", JSON.stringify(["analytics"]));
 
-    const { default: Sidebar } = await import("@/shared/components/Sidebar");
+    const Harness = await loadHarness();
     const container = makeContainer();
     root = createRoot(container);
     await act(async () => {
-      root!.render(<Sidebar collapsed />);
+      root!.render(<Harness collapsed />);
     });
 
     // In collapsed mode, the link should still exist
@@ -170,16 +194,16 @@ describe("Sidebar pinned items shortcut (#pinned-items)", () => {
   it("allows collapsing and expanding the PINNED section", async () => {
     localStorage.setItem("sidebar-pinned-items", JSON.stringify(["analytics"]));
 
-    const { default: Sidebar } = await import("@/shared/components/Sidebar");
+    const Harness = await loadHarness();
     const container = makeContainer();
     root = createRoot(container);
     await act(async () => {
-      root!.render(<Sidebar />);
+      root!.render(<Harness />);
     });
 
     // Find the Pinned section header button
-    const pinnedHeader = Array.from(container.querySelectorAll('div[role="button"]')).find((el) =>
-      el.textContent?.includes("Pinned")
+    const pinnedHeader = Array.from(container.querySelectorAll("button[aria-expanded]")).find(
+      (el) => el.textContent?.includes("Pinned")
     );
     expect(pinnedHeader).toBeDefined();
 
@@ -205,29 +229,133 @@ describe("Sidebar pinned items shortcut (#pinned-items)", () => {
   it("renders proportional pin icon sizing on nav items and clean text header for PINNED", async () => {
     localStorage.setItem("sidebar-pinned-items", JSON.stringify(["analytics"]));
 
-    const { default: Sidebar } = await import("@/shared/components/Sidebar");
+    const Harness = await loadHarness();
     const container = makeContainer();
     root = createRoot(container);
     await act(async () => {
-      root!.render(<Sidebar />);
+      root!.render(<Harness />);
     });
 
-    // Nav item pin icon should have 13px fontSize (proportional to 14px item label)
+    // Nav item pin icon is 13px (proportional to the 14px item label) — a Lucide <Icon> now
     const navPinBtn = container.querySelector(
       'button[title*="Unpin item"], button[aria-label*="Unpin item"]'
     );
-    expect(navPinBtn).toBeDefined();
-    const navPinIcon = navPinBtn?.querySelector(".material-symbols-outlined");
-    expect((navPinIcon as HTMLElement)?.style.fontSize).toBe("13px");
+    expect(navPinBtn).not.toBeNull();
+    const navPinIcon = navPinBtn?.querySelector("svg.oi-icon");
+    expect(navPinIcon?.getAttribute("width")).toBe("13");
+    expect(navPinIcon?.getAttribute("height")).toBe("13");
 
     // Section header PINNED should be clean text without redundant leading icon, consistent with other category headers
-    const pinnedHeader = Array.from(container.querySelectorAll('div[role="button"]')).find((el) =>
-      el.textContent?.includes("Pinned")
+    const pinnedHeader = Array.from(container.querySelectorAll("button[aria-expanded]")).find(
+      (el) => el.textContent?.includes("Pinned")
     );
     expect(pinnedHeader).toBeDefined();
-    const headerPinIcon = pinnedHeader?.querySelector(
-      ".material-symbols-outlined:not(:last-child)"
-    );
+    // Only the trailing chevron: no leading icon before the title.
+    const headerPinIcon = pinnedHeader?.querySelector("svg:not(:last-child)");
     expect(headerPinIcon).toBeNull();
+    expect(pinnedHeader?.querySelectorAll("svg")).toHaveLength(1);
+  });
+
+  it.each([false, true])(
+    "keeps pinned Feature Flags reachable when hidden by a preset (collapsed: %s)",
+    async (collapsed) => {
+      navigation.pathname = "/dashboard/settings/feature-flags";
+      localStorage.setItem("sidebar-pinned-items", JSON.stringify(["settings-feature-flags"]));
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async () =>
+          jsonResponse({
+            hiddenSidebarItems: ["settings-feature-flags"],
+          })
+        )
+      );
+      const Harness = await loadHarness();
+      const container = makeContainer();
+      root = createRoot(container);
+      await act(async () => {
+        root!.render(<Harness collapsed={collapsed} />);
+      });
+
+      const links = container.querySelectorAll('a[href="/dashboard/settings/feature-flags"]');
+      expect(links).toHaveLength(1);
+      expect(links[0].getAttribute("aria-current")).toBe("page");
+      if (collapsed) return;
+      expect(links[0].closest("[data-slot=sidebar-group]")?.textContent).toContain("Pinned");
+
+      // Removing the shortcut must not re-enable the entry hidden by the preset.
+      const unpin = links[0].parentElement!.querySelector<HTMLButtonElement>(
+        'button[title="Unpin item"]'
+      );
+      expect(unpin).not.toBeNull();
+      await act(async () => {
+        unpin!.click();
+      });
+      expect(
+        container.querySelectorAll('a[href="/dashboard/settings/feature-flags"]')
+      ).toHaveLength(0);
+      expect(JSON.parse(localStorage.getItem("sidebar-pinned-items") || "[]")).toEqual([]);
+    }
+  );
+
+  it("pins Feature Flags without navigating and keeps the shortcut after settings change", async () => {
+    const Harness = await loadHarness();
+    const container = makeContainer();
+    root = createRoot(container);
+    await act(async () => {
+      root!.render(<Harness />);
+    });
+    const settingsHeader = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("button[aria-expanded]")
+    ).find((el) => el.textContent?.includes("Configuration"));
+    expect(settingsHeader).toBeDefined();
+    await act(async () => {
+      settingsHeader!.click();
+    });
+    const link = container.querySelector('a[href="/dashboard/settings/feature-flags"]');
+    expect(link).not.toBeNull();
+    const pin = link!.parentElement!.querySelector<HTMLButtonElement>('button[title="Pin item"]');
+    expect(pin).not.toBeNull();
+    const click = new MouseEvent("click", { bubbles: true, cancelable: true });
+    await act(async () => {
+      pin!.dispatchEvent(click);
+    });
+    expect(click.defaultPrevented).toBe(true);
+    expect(JSON.parse(localStorage.getItem("sidebar-pinned-items") || "[]")).toEqual([
+      "settings-feature-flags",
+    ]);
+
+    await act(async () => {
+      window.dispatchEvent(
+        new CustomEvent("omniroute:settings-updated", {
+          detail: {
+            hiddenSidebarItems: ["settings-feature-flags"],
+          },
+        })
+      );
+    });
+    expect(container.querySelectorAll('a[href="/dashboard/settings/feature-flags"]')).toHaveLength(
+      1
+    );
+  });
+
+  it("does not restore gated or unavailable runtime links from stored pins", async () => {
+    localStorage.setItem(
+      "sidebar-pinned-items",
+      JSON.stringify(["radar", "radar-admin", "removed-item"])
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => jsonResponse({ radarEnabled: false }))
+    );
+    const Harness = await loadHarness();
+    const container = makeContainer();
+    root = createRoot(container);
+    await act(async () => {
+      root!.render(<Harness />);
+    });
+    expect(container.querySelector('a[href="/dashboard/radar"]')).toBeNull();
+    expect(
+      Array.from(container.querySelectorAll("span")).map((el) => el.textContent)
+    ).not.toContain("Pinned");
   });
 });

@@ -105,6 +105,17 @@ export async function getCachedSettings(): Promise<Record<string, unknown>> {
 }
 
 /**
+ * getCachedSettings() plus `savedMaxBodySizeMb`, for the request body limit checks. It shares the
+ * settings cache, so a saved limit applies as soon as updateSettings() invalidates it.
+ */
+export async function getCachedBodySizeSettings(): Promise<Record<string, unknown>> {
+  return settingsCache.load("bodySizeSettings", async () => {
+    const { getSettings, getSavedRequestBodyLimitMb } = await import("@/lib/db/settings");
+    return { ...(await getSettings()), savedMaxBodySizeMb: getSavedRequestBodyLimitMb() };
+  });
+}
+
+/**
  * Cached wrapper for getPricing.
  * Longer TTL since pricing rarely changes mid-session.
  */
@@ -249,6 +260,38 @@ export function getCombosCacheVersion(): number {
   return combosCacheVersion;
 }
 
+// ──────────────── Combo Name / Mapping Read Cache ────────────────
+//
+// apiKeyPolicy.resolveRequestedComboName and model.ts.getCombo issue up to 3
+// getComboByName queries per request, and resolveComboForModel runs for every
+// non-combo model. Entries are keyed by combosCacheVersion, so combo or
+// mapping writes (invalidateDbCache("combos")) bust them immediately — same
+// contract as the handler-level caches above. 10s TTL mirrors
+// getCombosCachedForChat.
+const COMBO_LOOKUP_TTL_MS = 10_000;
+const comboByNameCache = new TTLCache<Record<string, unknown> | null>(COMBO_LOOKUP_TTL_MS, 500);
+const comboForModelCache = new TTLCache<Record<string, unknown> | null>(COMBO_LOOKUP_TTL_MS, 500);
+
+/** Cached getComboByName — version-keyed, so combo writes take effect at once. */
+export async function getCachedComboByName(name: string): Promise<Record<string, unknown> | null> {
+  const key = `${getCombosCacheVersion()}:${name}`;
+  return comboByNameCache.load(key, async () => {
+    const { getComboByName } = await import("@/lib/db/combos");
+    return getComboByName(name);
+  });
+}
+
+/** Cached resolveComboForModel — same version-keyed contract as above. */
+export async function getCachedComboForModel(
+  model: string
+): Promise<Record<string, unknown> | null> {
+  const key = `${getCombosCacheVersion()}:${model}`;
+  return comboForModelCache.load(key, async () => {
+    const { resolveComboForModel } = await import("@/lib/db/modelComboMappings");
+    return resolveComboForModel(model);
+  });
+}
+
 // ──────────────── Model Catalog Cache Invalidation Signal ────────────────
 //
 // #6408 added a request-shape-keyed (prefix/isCodex/apiKey/configuredOnly) TTL
@@ -309,6 +352,8 @@ export function isConnectionRuntimeStateUpdate(data: Record<string, unknown>): b
   return keys.length > 0 && keys.every((key) => CONNECTION_RUNTIME_STATE_FIELDS.has(key));
 }
 
+export type UpdateOpts = { skipModelCatalog?: boolean };
+
 /**
  * Cache invalidation for `updateProviderConnection()`: runtime-state-only
  * updates (cooldowns, error fields) keep the connection read caches fresh
@@ -316,8 +361,14 @@ export function isConnectionRuntimeStateUpdate(data: Record<string, unknown>): b
  * these fields. Anything else falls back to the full invalidation so config
  * edits stay immediately visible in the catalog.
  */
-export function invalidateConnectionUpdate(id: string, data: Record<string, unknown>): void {
-  if (isConnectionRuntimeStateUpdate(data)) {
+export function invalidateConnectionUpdate(
+  id: string,
+  data: Record<string, unknown>,
+  opts?: UpdateOpts
+): void {
+  // #13389: a caller that vouches its write is catalog-irrelevant (OAuth token
+  // rotation — credentials only, see updateProviderCredentials) opts in explicitly.
+  if (opts?.skipModelCatalog || isConnectionRuntimeStateUpdate(data)) {
     invalidateDbCache("connections", id, { skipModelCatalog: true });
   } else {
     invalidateDbCache("connections");

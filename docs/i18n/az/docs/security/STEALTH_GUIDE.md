@@ -16,47 +16,41 @@ Gizlilik funksiyaları OmniRoute-un istifadəçiyə məxsus rəsmi hesablar (Cla
 
 ---
 
-## TLS Rəqəmsal İz Qatı
+## TLS Barmaq İzi Qatı
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-Davamlı `wreq-js` sessiyaları hər hesab əhatə dairəsi və müəyyənləşdirilmiş proksi üçün tənbəl şəkildə yaradılır. Proses miqyaslı `TlsClient`, Cloudflare arxasındakı yuxarı axın xidmətləri üçün **macOS üzərində Chrome 124** kimi davranan ən çoxu 128 sessiyanı hovuzda saxlayır. Yerli icra mühiti əlçatan olmadıqda `TlsClient.fetch()` qapalı şəkildə xəta verir; çağıran tərəf bu örtükdən kənarda açıq şəkildə ehtiyat variant seçə bilər.
+Davamlı `wreq-js` sessiyaları hər hesab əhatə dairəsi və müəyyən edilmiş proksi üçün tənbəl şəkildə yaradılır. Proses miqyaslı `TlsClient`, Cloudflare arxasındakı yuxarı axın xidmətləri üçün **macOS-da Chrome 124** kimi görünən ən çox 128 sessiyanı hovuzda saxlayır. Yerli icra mühiti əlçatan olmadıqda `TlsClient.fetch()` təhlükəsiz şəkildə uğursuz olur; çağıran tərəf bu örtükdən kənarda ehtiyat variantı açıq şəkildə seçə bilər.
 
 - Sessiya profili: `browser: "chrome_124", os: "macos"`
-- Proksinin müəyyənləşdirilməsi (prioritet): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (kiçik hərfli variantlar da daxil olmaqla)
-- Taymaut: `TLS_CLIENT_TIMEOUT_MS` (`FETCH_TIMEOUT_MS` dəyərindən miras alınır, standart olaraq 600000)
+- Proksinin müəyyən edilməsi (prioritet): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (həmçinin kiçik hərfli variantlar)
+- Taymaut: `TLS_CLIENT_TIMEOUT_MS` (`FETCH_TIMEOUT_MS` parametrindən miras alınır, standart olaraq 600000)
 - `wreq-js` Response fetch ilə uyğundur (`headers`, `text()`, `json()`, `clone()`, `body`).
 - İlk bayt nəzarətçisi (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): `TlsClient.fetch()`
-  yuxarı axın başlıqları çatan kimi tamamlanır, buna görə də yalnız `TLS_CLIENT_TIMEOUT_MS` heç vaxt
-  ilk baytı verməyən gövdəni məhdudlaşdıra bilməz. `guardTlsFirstByte()` gövdənin ilk `read()`
-  əməliyyatını `TLS_FIRST_BYTE_WATCHDOG_MS` (standart `10000`, `0` onu deaktiv edir) ilə yarışdırır;
-  sağlam gövdəyə təsir edilmir, ilişib qalmış gövdə isə wreq oxuyucusunu ləğv edir və `proxyFetch`-in
-  mövcud TLS ehtiyat məntiqinin birbaşa/proksi dispetçerinə keçməsinə imkan verir (təhlükəsiz şəkildə
-  təkrar göndərilə bilməyən sorğu, məsələn, gövdəsi olan POST, səssizcə yenidən cəhd edilmək əvəzinə
-  yenə də xəta verir).
+  yuxarı axın başlıqları daxil olan kimi tamamlanır, buna görə yalnız `TLS_CLIENT_TIMEOUT_MS` ilk baytı heç vaxt təqdim etməyən gövdəni məhdudlaşdıra bilməz. `guardTlsFirstByte()` gövdənin ilk `read()` əməliyyatı ilə `TLS_FIRST_BYTE_WATCHDOG_MS` müddətini (standart `10000`, `0` onu deaktiv edir) yarışdırır; sağlam gövdəyə təsir edilmir, ilişib qalmış gövdə isə wreq oxuyucusunu ləğv edir və `proxyFetch` funksiyasının mövcud TLS ehtiyat məntiqinin birbaşa/proksi dispetçerinə keçməsinə imkan verir (təkrar icrası təhlükəsiz olmayan sorğu, məsələn, gövdəli POST sorğusu, səssizcə yenidən cəhd edilmək əvəzinə yenə də xəta yaradır).
 
-### Veb kuki provayderi nəqliyyatı — wreq-js 3.2.0
+### Veb-kuki provayderi nəqli — wreq-js 3.2.0
 
-`open-sse/services/tlsClientBase.ts` aşağıdakı beş ixtisaslaşdırılmış veb kuki nəqliyyatı üçün ortaq adapterdir. Hər yığcam provayder örtüyü brauzer/ƏS profilini seçir. Adapter profil + ƏS + müəyyənləşdirilmiş proksi açarı ilə `open-sse/utils/tlsClient.ts` daxilindəki vahid wreq icra mühiti yükləyicisindən və nəqliyyat hovuzundan istifadə edir, hər sorğu isə `cookieMode: "ephemeral"` istifadə edir. Buna görə hesablar və sorğular nəqliyyat səviyyəli bağlantıları paylaşır, lakin heç vaxt wreq sessiyasını və ya kuki anbarını paylaşmır.
+`open-sse/services/tlsClientBase.ts` aşağıdakı beş ixtisaslaşdırılmış veb-kuki nəqli üçün ortaq adapterdir. Hər bir yüngül provayder örtüyü brauzer/ƏS profilini seçir. Adapter `open-sse/utils/tlsClient.ts` faylındakı, profil + ƏS + müəyyən edilmiş proksiyə görə açarlandırılan vahid wreq icra mühiti yükləyicisindən və nəqliyyat hovuzundan istifadə edir, hər sorğu isə `cookieMode: "ephemeral"` parametrindən istifadə edir. Buna görə hesablar və sorğular nəqliyyat səviyyəli bağlantıları paylaşır, lakin heç vaxt wreq sessiyasını və ya kuki anbarını paylaşmır.
 
-| Provayder  | Profil        | Emulyasiya edilən ƏS | Axın EOF siyasəti                       |
-| ---------- | ------------- | -------------------- | --------------------------------------- |
-| Claude     | `chrome_146`  | Linux                | `[DONE]` daxil edilsin                  |
-| Perplexity | `firefox_148` | macOS                | `event: end_of_stream` daxil edilsin    |
-| Grok       | `chrome_146`  | Linux                | `[DONE]` istisna edilsin                |
-| Notion     | `chrome_146`  | Windows              | `[DONE]` daxil edilsin                  |
-| LMArena    | `chrome_146`  | Windows              | sentinel yoxdur; yerli EOF-da bağlansın |
+| Provayder  | Profil        | Emulyasiya edilən ƏS | Axın EOF siyasəti                          |
+| ---------- | ------------- | -------------------- | ------------------------------------------ |
+| Claude     | `chrome_146`  | Linux                | `[DONE]` daxil edilir                      |
+| Perplexity | `firefox_151` | macOS                | `event: end_of_stream` daxil edilir        |
+| Grok       | `chrome_146`  | Linux                | `[DONE]` xaric edilir                      |
+| Notion     | `chrome_146`  | Windows              | `[DONE]` daxil edilir                      |
+| LMArena    | `chrome_146`  | Windows              | sentinel yoxdur; yerli EOF zamanı bağlanır |
 
-- Axın ötürülməsi yerli cavabın `ReadableStream` obyektini birbaşa istehlak edir; müvəqqəti fayl və ya köməkçi proses yaradılmır.
-- Axın təqdim edilməzdən əvvəl ilkin 256 bayta qədər məlumat yoxlanılır. SSE provayderləri qeyri-SSE xətalarını buferləşdirir; Grok/LMArena Cloudflare çağırışlarını `403`, HTML aralıq səhifələrini isə `502` ilə əlaqələndirir.
-- Yerli sorğu taymautu mütləq JS sərt son müddəti ilə əhatələnməyə davam edir. İlişmə yalnız təsirə məruz qalan profil/ƏS/proksi nəqliyyatını etibarsız edir və bağlayır; növbəti sorğudan əvvəl o, yenidən yaradılır.
-- Proksinin müəyyənləşdirilməsi prioriteti hər çağırış üçün `proxyUrl` → sorğu əhatəli hesab/idarəetmə paneli konteksti → `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (kiçik hərfli variantlar daxil olmaqla) şəklindədir. Müəyyənləşdirmə xətaları birbaşa bağlantının sızmasının qarşısını almaq üçün qapalı şəkildə xəta verir. LMArena bilərəkdən `arena.ai` əsasında müəyyənləşdirmə aparır.
-- `byteResponse` UTF-8 təhrifinə yol vermədən məzmun tipi göstərilmiş `data:` URL-si qaytarır.
-- Xətalar bunlardır: `TlsClientUnavailableError` (paket/əlavə əlçatan deyil), `TlsClientHangError` (son müddət aşılıb) və bütün 128 məhdud profil/ƏS/proksi yuvası aktiv və ya bağlanma mərhələsində olduqda `WreqTransportCapacityError` (ortaq sessiya tutumu xətasının kodu).
+- Axın emalı yerli cavabın `ReadableStream` obyektini birbaşa istehlak edir; müvəqqəti fayl və ya köməkçi proses yaradılmır.
+- Axın təqdim edilməzdən əvvəl ilkin 256 bayta qədər məlumat yoxlanılır. SSE provayderləri SSE olmayan xətaları buferləşdirir; Grok/LMArena Cloudflare yoxlamalarını `403`, HTML aralıq səhifələrini isə `502` ilə uyğunlaşdırır.
+- Yerli sorğu taymautu mütləq JS sərt son müddəti ilə əhatələnməyə davam edir. İlişmə yalnız təsirlənmiş profil/ƏS/proksi nəqliyyatını etibarsız edir və bağlayır; növbəti sorğudan əvvəl həmin nəqliyyat yenidən yaradılır.
+- Proksinin müəyyən edilməsi prioriteti hər çağırış üzrə `proxyUrl` → sorğu əhatəli hesab/idarəetmə paneli konteksti → `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (kiçik hərfli variantlar daxil olmaqla) şəklindədir. Müəyyənetmə xətaları birbaşa bağlantının sızmasına yol vermək əvəzinə təhlükəsiz şəkildə uğursuz olur. LMArena qəsdən `arena.ai` ünvanına əsasən müəyyənetmə aparır.
+- `byteResponse` UTF-8 korlanması olmadan məzmun tipi göstərilmiş `data:` URL qaytarır.
+- Xətalar bütün 128 məhdud profil/ƏS/proksi yuvası aktiv və ya bağlanmaqda olduqda `TlsClientUnavailableError` (paket/əlavə əlçatan deyil), `TlsClientHangError` (son müddət keçilib) və `WreqTransportCapacityError` (ortaq sessiya tutumu xəta kodu) olur.
 
-Yuxarıdakı ümumi `TlsClient` sessiyası davamlı, brauzer tərəfindən dəstəklənən kuki vəziyyəti üçün ixtisaslaşmış olaraq qalır. Hər iki yol bir keşlənmiş wreq modul yükləyicisindən və prosesin həyat dövrü qarmağından təkrar istifadə edir; kukilərinin ömür müddətləri bilərəkdən fərqli olduğuna görə onların hovuzları ayrı qalır.
+Yuxarıdakı ümumi `TlsClient` sessiyası brauzer tərəfindən dəstəklənən davamlı kuki vəziyyəti üçün ixtisaslaşdırılmış olaraq qalır. Hər iki yol bir keşlənmiş wreq modul yükləyicisindən və prosesin həyat dövrü qarmağından təkrar istifadə edir; kukilərinin istifadə müddətləri qəsdən fərqli olduğuna görə hovuzları ayrı qalır.
 
-Profillər sabitlənmiş paket tərəfindən dəstəklənir, lakin real WAF qəbulu yerli müqavilə testlərindən asılı olmayaraq dəyişə bilər. Yuxarı axın brauzeri ilə paritet olduğunu iddia etməzdən əvvəl rəqəmsal iz dəyişikliklərini açıq şəkildə icazə verilmiş canlı hesab üzərində yoxlayın.
+Profillər sabitlənmiş paket tərəfindən dəstəklənir, lakin real WAF qəbulu yerli müqavilə testlərindən asılı olmayaraq dəyişə bilər. Yuxarı axın brauzeri ilə uyğunluq iddia etməzdən əvvəl barmaq izi dəyişikliklərini açıq şəkildə icazə verilmiş canlı hesabla yoxlayın.
 
 ---
 
@@ -105,7 +99,7 @@ Bunlara tətbiq olunur: `system` blokları, bütün `messages[].content` məzmun
 
 Yalnız "real Claude Code" trafikini qəbul edən üçüncü tərəf Anthropic releləri üçün:
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - Standart olaraq `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"`
@@ -122,41 +116,63 @@ Eyni paketdəki əlaqəli modullar:
 
 ---
 
-## Antigravity Gizliliyi
+## Antigravity Gizli
 
-Antigravity sorğuları çağıran tərəfin mətnini bayt-bayt olduğu kimi saxlayır. OmniRoute IDE müştərisini təqlid etmək üçün sorğulara sıfır enli simvollar əlavə etmir və ya alətlərin adını dəyişdirmir/onları daxil etmir.
+Antigravity sorğuları zəng edənin mətnini bayt-bayt saxlayır. OmniRoute IDE müştərisini təqlid etmək üçün göstərişlərə və ya rename/inject alətlərinə sıfır enli simvollar daxil etmir.
 
 ### `antigravityHeaderScrub.ts`
 
-Yönləndirmədən əvvəl Stainless SDK markerlərini (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) silir.
+Zolaqlar Yönləndirmədən əvvəl Paslanmayan SDK markerləri (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`).
 
-### ⚠️ Risk: `ANTIGRAVITY_CREDITS=always` (hesab bloklanması üçün riskli nöqtə)
+### ⚠️ Risk: `ANTIGRAVITY_CREDITS=always` (hesab qadağası qaynar nöqtə)
 
-`ANTIGRAVITY_CREDITS=always` (`open-sse/executors/antigravity.ts` tərəfindən istifadə olunur) Google-un pulsuz səviyyə kvotasının sorğuları məhdudlaşdırmasına imkan vermək əvəzinə **hər** sorğunu Antigravity AI Credit Overages (ödənişli Google kreditləri) vasitəsilə yönləndirir. Bu, funksiya kimi sənədləşdirilib, lakin **gördüyümüz Xidmət Şərtləri pozuntusu hesabatlarının ən geniş yayılmış səbəbidir** — bir neçə Google Ultra hesabı `=always` ilə bir neçə saat işlədikdən sonra `403 / "service disabled for ToS violation" / insufficient_quota` xətası ilə bloklanıb.
+`ANTIGRAVITY_CREDITS=always` ( `open-sse/executors/antigravity.ts` tərəfindən istehlak olunur) marşrutları** hər** Google-nin pulsuz səviyyəli kvota qapısına icazə vermək əvəzinə, Antigravity AI Kredit Ödənişləri (ödənilmiş Google kreditləri) vasitəsilə tələb edin. Bu xüsusiyyət kimi sənədləşdirilmişdir, lakin belədir** gördüyümüz yeganə ən ümumi ToS pozuntusu hesabatı** — çoxsaylı Google Ultra hesabları `=always` ilə bir neçə saat işlədikdən sonra `403 / "service disabled for ToS violation" / insufficient_quota` ilə qadağan edildi.
 
-Yuxarı axın məhdudiyyətlərinin tətbiqi **Google tərəfindədir** və OmniRoute-un qarşısını ala biləcəyi bir şey deyil. Mühit dəyişəninin adı və mövcud sənədlər bunun təhlükəsiz şəkildə aktivləşdirilə bilən parametr olduğu təəssüratını yaradır; əslində isə belə deyil.
+Upstream icrası aktivdir**Google tərəfi** , OmniRoute heç bir şeyin qarşısını ala bilməz. Env var adı və mövcud sənədlər onu çevirmək üçün təhlükəsiz düymə kimi səsləyir; bu deyil.
 
-**Bunun sui-istifadə aşkarlamasını yalnız pulsuz səviyyədən istifadəyə nisbətən daha aqressiv şəkildə işə salmasının səbəbləri:**
+**Niyə bu, sui-istifadənin aşkarlanmasını yalnız pulsuz səviyyəli istifadədən daha aqressiv şəkildə çəkir:**
 
-- Tək Google hesabında davamlı avtomatlaşdırılmış xərcləmə, pulsuz səviyyənin kvotaya çatıb dayanmasından fərqli şəkildə işarələnir.
-- Kredit artıqlarında sürət həddi yoxdur, buna görə yanlış konfiqurasiya edilmiş müştəri bir neçə dəqiqə ərzində yüzlərlə USD xərcləyə və API açarının yenidən satılması və ya bot trafiki kimi görünə bilər.
-- Eyni xarici IP-dən paralel olaraq əlavə kreditlərdən istifadə edən bir neçə OmniRoute istifadəçisi bu siqnalı gücləndirir.
+- Tək bir Google hesabına davamlı avtomatlaşdırılmış xərcləmə pulsuz səviyyəli hit-kvota-və-stoplardan fərqli olaraq qeyd olunur.
+- Kredit ödənişlərinin faiz həddi yoxdur, ona görə də səhv konfiqurasiya edilmiş müştəri dəqiqələr ərzində bir neçə yüz USD -dan keçə bilər və API açarının yenidən satışı və ya bot trafiki kimi görünə bilər.
+- Eyni xarici IP dən paralel olaraq həddindən artıq kreditləri vuran çoxsaylı OmniRoute istifadəçiləri siqnalı birləşdirir.
 
-**Tövsiyə olunan yanaşma:**
+**Tövsiyə olunan duruş:**
 
-1. Operator ödənişli kredit və hesab üzrə məhdudiyyət riskini açıq şəkildə qəbul etmədiyi halda standart `ANTIGRAVITY_CREDITS=off` dəyərini saxlayın. `retry` əvvəlcə normal sorğunu göndərir və yalnız uyğun kvota 429 xətasından sonra maksimum bir dəfə kreditləri daxil edir; `always` isə kreditləri ilk sorğuda daxil edir.
-2. Tək Antigravity hesabını həddindən artıq yükləmək əvəzinə **yükü Auto-Combo vasitəsilə provayderlər arasında paylayın** (`model: "auto"` və ya `kr/glm/etc`-combo).
-3. Antigravity provayderinin redaktə səhifəsində **hər bağlantı üzrə RPM limitləri təyin edin** (İdarəetmə paneli → Provayderlər → Antigravity → bağlantı → sürət limiti). Davamlı istifadə üçün 30–60 RPM əsaslandırıla bilən yuxarı həddir.
-4. **Sabit, operator tərəfindən idarə olunan yuxarı axın şəbəkəsindən istifadə edin** və bir hesabı əlaqəsiz istifadəçilər və ya iş yükləri arasında paylaşmaqdan çəkinin.
-5. **Bloklanma halında**: Google-un göndərdiyi dəqiq `quota_exceeded` / `service disabled` cavab gövdəsini təqdim etməklə `support.google.com` → "Restore Workspace/Account access" vasitəsilə apellyasiya göndərin. Bərpa edilməyə zəmanət verilmir.
+1. Operator ödənişli kredit və hesabın icrası riskini açıq şəkildə qəbul etmədikdə, standart `ANTIGRAVITY_CREDITS=off` saxlayın. `retry` əvvəlcə normal sorğunu göndərir və uyğun kvotadan sonra ən çox bir dəfə kreditlər daxil edir 429; `always` ilk sorğuya kreditlər daxil edir.
+2. **Auto-Combo vasitəsilə yükü provayderlər arasında paylayın** (`model: "auto"` və ya `kr/glm/etc` -combo) tək Antigravity hesabını doyurmaq əvəzinə.
+3. **Hər bağlantı üçün RPM limitləri təyin edin** Antigravity provayderinin redaktə səhifəsində (Dashboard → Provayderlər → Antigravity → əlaqə → tarif həddi). 30-60 RPM davamlı istifadə üçün müdafiə edilə bilən yuxarı hədddir.
+4. **Stabil, operator tərəfindən idarə olunan yuxarı şəbəkədən istifadə edin** və əlaqəsi olmayan istifadəçilər və ya iş yükləri arasında bir hesabı paylaşmaqdan çəkinin.
+5. **Qadağan olunarsa** : `support.google.com` → vasitəsilə müraciət " Workspace/Account girişini bərpa et" ilə dəqiq `quota_exceeded` / `service disabled` cavab orqanı Google göndərildi. Bərpaya zəmanət verilmir.
 
-Mühit arayışında hər bir kredit rejiminin hesab və xərc nəticələri sənədləşdirilir.
+Ətraf mühit arayışı hər bir kredit rejiminin hesabını və xərcləmə nəticələrini sənədləşdirir.
 
-Əlaqəli nöqtələr:
+#### Yalnız `=always` deyil: ümumiyyətlə Antigravity OAuth marşrutlaşdırma
 
-- `open-sse/executors/antigravity.ts` — `process.env.ANTIGRAVITY_CREDITS` dəyərini oxuyur
-- `src/lib/oauth/providers/antigravity.ts` — etimadnamə bağlantıları
-- İlkin insident hesabatı: Müzakirə [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
+Dayandırılmalar kreditin həddindən artıq olması ilə məhdudlaşmır. 2026-cı ilin noyabr ayında (#19223, #19266) hesabatlar `antigravity` və `agy` (Antigravity CLI) provayderləri vasitəsilə marşrutlaşdırarkən dayandırılmış bir neçə Google hesabını təsvir edir:
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+Hər iki provayder Antigravity məhsulunun OAuth seansı ilə autentifikasiya edir, bu halda idarə panelinin risk bildirişi ("Bu provayder proxy/router istifadəsi üçün icazə verilməyən rəsmi məhsulunuz session/OAuth istifadə edir") əlaqə əlavə edilməzdən əvvəl xəbərdarlıq edir. Yuxarıdakı tövsiyələrin heç biri bu istifadəyə icazə vermir; onlar yalnız bir hesabın nə qədər trafik daşıdığını azaldır.
+
+**Gemini modelləri üçün səlahiyyətli API interfeysləri.** Google öz APIs vasitəsilə Gemini -a proqramlı giriş təklif edir, OmniRoute adi API açarı təminatçıları kimi dəstəkləyir:
+
+| Provayder id | İdarə paneli adı          | Etibarnamə                                                                     |
+| ------------ | ------------------------- | ------------------------------------------------------------------------------ |
+| `gemini`     | Gemini (Google AI Studio) | Google AI Studio-dan Gemini API açarı (pulsuz səviyyə mövcuddur)               |
+| `vertex`     | Vertex AI                 | Xidmət Hesabı JSON, OAuth giriş nişanı və ya Vertex Express API açarı (Gemini) |
+
+Bu provayderlər Antigravity məhsul sessiyasından fərqli olaraq API girişi üçün etimadnamələrdən Google məsələlərindən istifadə edir. Onlar hər istifadəni tələblərə uyğunlaşdırmır və ya icra riskini aradan qaldırmır: hər biri operatorun onların yerləşdirilməsini yoxlamalı olduğu öz şərtləri ilə idarə olunur. Məsələn, [Gemini API Əlavə Xidmət Şərtləri](https://ai.google.dev/gemini-api/terms) API müştəriləri Avropa İqtisadi Bölgəsində, İsveçrədə və ya Birləşmiş Krallıqda istifadəçilər üçün əlçatan olduqda və Ödənişsiz Xidmətlərə göndərilən məzmun Google məhsullarını təkmilləşdirmək üçün istifadə olunarsa, yalnız Ödənişli Xidmətlərə icazə verir. Vertex AI əvəzinə Google Bulud şərtlərinə düşür ( [Xidmətə Xüsusi Şərtlər](https://cloud.google.com/terms/service-terms) ). Qiymətlər və kvotalar Antigravity abunəliyinə deyil, həmin API şərtlərinə uyğundur.
+
+Yuxarıda təsvir edilən Antigravity dayandırılmalarından qaçmaq istəyən operatorlar onların istifadəsinin provayderin şərtlərinə uyğun olduğunu yoxladıqdan sonra Gemini trafikini `antigravity` / `agy` əvəzinə bu provayderlərdən biri vasitəsilə yönləndirməlidirlər.
+
+Toxunma nöqtələri:
+
+- `open-sse/executors/antigravity.ts` — `process.env.ANTIGRAVITY_CREDITS` oxuyur
+- `src/lib/oauth/providers/antigravity.ts` — etimadnaməsi santexnika
+- Orijinal insident hesabatı: Discussion [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
 
@@ -225,19 +241,18 @@ Bütün MITM son nöqtələri idarəetmə autentifikasiyası (`requireCliToolsAu
 
 ---
 
-## User-Agent əvəzləmələri — mühit dəyişənləri (`.env.example` bölmə 12)
+## İstifadəçi-Agent — env variantlarını ləğv edir (`.env.example` bölmə 12)
 
-| Dəyişən                  | Standart dəyər                                                  |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| Dəyişən             | Defolt                                        |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-Dinamik axtarış vasitəsilə `open-sse/executors/base.ts::buildHeaders()` tərəfindən istifadə olunur. **Provayderlər yeni CLI versiyalarını buraxdıqda bunları yeniləyin** — köhnəlmiş UA sətirləri vaxtı keçmiş müştərilər kimi rədd edilməyə başlayır.
+Dinamik axtarış vasitəsilə `open-sse/executors/base.ts::buildHeaders()` tərəfindən istehlak edilir.** Provayderlər yeni CLI versiyalarını buraxdıqda bunları döyün** — köhnəlmiş UA sətirləri köhnəlmiş müştərilər kimi rədd edilməyə başlayır.
 
 ## CLI Uyğunluq Rejimi Keçidləri (`.env.example` bölmə 13)
 

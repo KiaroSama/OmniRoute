@@ -68,7 +68,7 @@ docker run -d --name omniroute \
   -p 20128:20128 \
   -v omniroute-data:/app/data \
   -e ENABLE_CC_COMPATIBLE_PROVIDER=true \
-  diegosouzapw/omniroute:latest
+  cheaperinference/omniroute:latest
 ```
 
 மறுதொடக்கம் செய்த பிறகு, ஏற்கனவே உள்ள OpenAI-இணக்கமான மற்றும் Anthropic-இணக்கமான
@@ -130,7 +130,7 @@ curl -X POST http://localhost:20128/v1/chat/completions \
 | தலைப்பு                                                  | மதிப்பு                                                                                                                |
 | -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `Authorization`                                          | `Bearer <api-key>`                                                                                                     |
-| `User-Agent`                                             | `claude-cli/2.1.258 (external, sdk-cli)`                                                                               |
+| `User-Agent`                                             | `claude-cli/2.1.280 (external, sdk-cli)`                                                                               |
 | `anthropic-version`                                      | `2023-06-01`                                                                                                           |
 | `anthropic-beta`                                         | `claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24`                                               |
 | ஒவ்வொரு இணைப்பிற்குமான redact-thinking பீட்டா நிலைமாற்றி | மறைக்கப்பட்ட சிந்தனை ஸ்ட்ரீம்களைத் திட்டவட்டமாகக் கோரும் upstream-களுக்கு `redact-thinking-2026-02-12`-ஐச் சேர்க்கிறது |

@@ -5,259 +5,240 @@
 ---
 
 > **Viimati uuendatud:** 2026-08-28 — v3.8.51
-> Sujuvam väljalaskeprotsess, mis kasutab automatiseerimiseks Claude Code'i oskusi.
+> Sujuvam väljalaskeprotsess, mis kasutab automatiseerimiseks Claude Code’i oskusi.
 >
-> **Hoidke järjekord/haru väljalasete vahel korras:** vt [RELEASE_GREEN.md](./RELEASE_GREEN.md)
-> (`/green-prs` perekond + `npm run check:release-green` + `/babysit` + igaöine käitus). Selle
-> perioodiline käitamine — ja eriti **enne** selle kontrollnimekirja kasutamist — tagab, et väljalaske PR algab korras olekus.
+> **Hoidke järjekord/haru väljalasete vahel korras:** vaadake [RELEASE_GREEN.md](./RELEASE_GREEN.md)
+> (`/green-prs` perekond + `npm run check:release-green` + `/babysit` + öine käitus). Selle
+> perioodiline käitamine — ja eriti **enne** selle kontrollnimekirja läbimist — tagab, et väljalaske PR algab korras olekus.
 
-## TL;DR
+## Lühidalt
 
 ```bash
-# 1. Suurenda versiooni + genereeri CHANGELOG (skill)
+# 1. Suurendage versiooni ja genereerige CHANGELOG (oskus)
 /version-bump-cc patch    # või minor/major
 
-# 2. Käivita kvaliteedivärav lokaalselt
-npm run check              # lint + testid
-npm run test:coverage      # täielik katvuse värav (60/60/60/60)
+# 2. Käitage kvaliteedikontrolli lokaalselt
+npm run check              # lintimine + testid
+npm run test:coverage      # täielik katvuskontroll (60/60/60/60)
 
-# 3. Ehita ja tee suitsutest
+# 3. Koostage ja tehke suitsutest
 npm run build
-npm run test:e2e           # valikuline, aga soovituslik
+npm run test:e2e           # valikuline, kuid soovitatav
 
-# 4. Genereeri väljalase (skill)
+# 4. Genereerige väljalase (oskus)
 /generate-release-cc
 
-# 5. Juuruta (skill)
+# 5. Juurutage (oskus)
 /deploy-vps-both-cc        # või akamai-cc / local-cc
 
-# 6. Jäädvusta väljalaske tõendid (skill)
+# 6. Jäädvustage väljalaske tõendid (oskus)
 /capture-release-evidences-cc
 ```
 
-## npm usaldusväärne avaldamine (vaikimisi alates v3.8.51) — soovi korral etapiviisiline, otseavaldamine varulahendusena
+## npm Trusted Publishing (vaikimisi alates versioonist 3.8.51) — lavastatud nõudmisel, otse tagavarana
 
-`npm-publish.yml` avaldab vaikimisi **npm Trusted Publishing (OIDC)** kaudu: `stage-npm`
-töö (github-hostitud) vahetab GitHubi id-token'i selle käivituse jaoks lühiealise npm
-mandaadi vastu — repositooriumi saladustes ei ole pikaajalist npm tokenit, 2FA nõudmist ei tule ette, provenance on lisatud.
-See on möödaviik npm sanktsioonidest, kuna 2FA-t vahele jätvad tokenid on kasutusest kõrvaldamisel;
-see taastab täisautomaatse voo, mis projektil oli kuni v3.8.48-ni, hoides samal ajal
-WS1.3 tagatist (lekkinud token üksinda ei saa avaldada — tokenit ei ole olemas).
+`npm-publish.yml` avaldab läbi** npm Trusted Publishing (OIDC)** vaikimisi: `stage-npm` töö (github-hostitud) vahetab GitHub ID-märgi selle käigu lühiajalise npm-mandaadi vastu. — hoidlas ei ole pikaealist npm-luba, 2FA viipa puudub, päritolu on lisatud. See on ümbersõit npm-sanktsioonidest nüüd, kui 2FA-d vahele jätvad märgid eemaldatakse; see taastab täisautomaatse voo, mis projektil oli kuni v3.8.48-ni, säilitades samal ajal WS1.3 garantii (lekkinud tunnus ei saa üksi avaldada — pole luba).
 
-**Ühekordne seadistus (omanik):** npmjs.com → paketi `omniroute` → Settings → _Trusted
-Publisher_ → GitHub: omanik `diegosouzapw`, repo `OmniRoute`, workflow `npm-publish.yml`
-(keskkond: puudub). Kuni seda pole seadistatud, ebaõnnestub automaatne etapp veaga `ENEEDAUTH`:
-saada uuesti käivitatuna parameetriga `publish_mode=staged` (vaata allpool) või `direct`.
+**Ühekordne seadistamine (omanik):** npmjs.com → pakett `omniroute` → Seaded → _Usaldusväärne väljaandja_ → GitHub: omanik `diegosouzapw`, repo `OmniRoute`, töövoog `npm-publish.yml` (keskkond: puudub). Kuni see pole olemas, nurjub automaatne samm `ENEEDAUTH`: uuesti saatmine `publish_mode=staged` (allpool) või `direct` abil.
 
-### Etapiviisiline avaldamine (soovi korral — `publish_mode=staged`)
+### Järkjärguline avaldamine (soovi korral — `publish_mode=staged`)
 
-npm-publish töövoog ei avalda enam otse: see käivitab pakitud tarball'i
-(`check:pack-boot`) ja jooksutab siis `npm stage publish` — täpsed baidid pargitakse
-registrisse, **ei ole paigaldatavad**, kuni omanik neid heaks kiidab. Inimlik 2FA värav
-liikus tõestuse JÄRELE, mitte enne selle.
+Töövoog npm-publish ei avalda enam otse: see käivitab pakitud tarballi (`check:pack-boot`) ja seejärel käivitab `npm stage publish` — täpselt registrisse pargitud baidid,** pole paigaldatav** kuni omanik selle heaks kiidab. Inimese 2FA värav liikus tõendi AFTER le, mitte enne seda.
 
-**Omaniku vooskeem pärast töövoo rohelist tulemust:**
+**Omaniku voog pärast töövoo roheliseks muutumist:**
 
-1. `npm stage list omniroute` — leia stage id (kuvatakse ka töövoo kokkuvõttes).
-2. Kontrolli pargitud baite (soovituslik): `npm stage download <id>`, seejärel paigalda
-   allalaaditud tarball ajutisse prefiksisse ja käivita see (`npm run check:pack-boot` automatiseerib
-   sama pack→install→boot verdikti CI-s).
-3. `npm stage approve <id>` — 2FA nõudmine ONGI avaldamine. `npm stage reject <id>` tühistab selle.
-4. Avaldamisjärgne kontroll: avaldamisjärgne kinnitaja (v3.8.49 plaani WS1.4) paigaldab
-   avaldatud versiooni avalikust registrist puhtas konteineris ja käivitab selle.
+1. `npm stage list omniroute` — leida etapi ID (trükis ka töövoo kokkuvõttes).
+2. Kontrollige etapiviisilisi baite (soovitatav): `npm stage download <id>`, seejärel installige allalaaditud tarball ajutisse prefiksi ja käivitage see (`npm run check:pack-boot` automatiseerib sama paketi → installib → alglaadimisotsuse CI).
+3. `npm stage approve <id>` — 2FA viip IS avaldamine. `npm stage reject <id>` viskab ära.
+4. Avaldamisjärgne võrk: avaldamisjärgne kontrollija (v3.8.49 plaani WS1.4) installib avalikust registrist avaldatud versiooni puhtasse konteinerisse ja käivitab selle.
 
-**Hädaolukorra varulahendus:** `workflow_dispatch` parameetriga `publish_mode=direct` taastab
-vana kohese `npm publish` toimingu (kasuta ainult siis, kui etapiviisiline protsess ise ei toimi korrektselt; dokumenteeri põhjus).
+**Hädaolukorra tagavara:** `workflow_dispatch` koos `publish_mode=direct` taastab pärand vahetu `npm publish` (kasutage ainult siis, kui lavastus ise käitub valesti; kirjutage üles, miks).
 
-**Ühekordne karastamine (omanik, npmjs.com):** seadista `omniroute` jaoks Trusted Publisher
-ainult-etapiviisilisse režiimi, et lekkinud pikaajaline token ei saaks teha `npm publish`
-otse kusagilt — CI saab ainult etapistada; ainult omaniku 2FA vabastab avaldamise.
+**Ühekordne kõvenemine (omanik, npmjs.com):** konfigureerige usaldusväärne väljaandja `omniroute` jaoks ainult etapirežiimis, nii et lekkinud pikaealine luba ei saaks `npm publish` otse kõikjalt, kus — CI saab ainult lavastada; ainult omaniku 2FA väljalasked.
 
-**Katkise artefakti tegevuskava (muutumatu):** `npm deprecate omniroute@<bad> "<põhjus> — kasuta <fixed>"`
-on vaikimisi reaktsioon (minutid, tühistatav); `npm unpublish` kasutatakse ainult 72h/mitte-sõltuvuste
-akna sees ja mitte kunagi esimese sammuna. Docker: ära kirjuta versioonimärgendit üle — tagasipöördumine
-tähendab `latest` viitamist ümber viimasele töötavale digestile.
+**Katkise artefakti mänguraamat (muutmata):** `npm deprecate omniroute@<bad> "<reason> — use <fixed>"` vaikerefleksina (minutid, pööratav); `npm unpublish` ainult 72h/no-dependents akna sees ja mitte kunagi esimese liigutusena. Docker: ärge kunagi kirjutage versioonisilti ümber. — tagasipööramine suunab `latest` ümber viimasele heale kokkuvõttele.
 
-**Docker Hub `latest` (kohustuslik igal stabiilsel SemVer avaldamisel):** `docker-publish`
-töövoog peab märgistama **nii** `X.Y.Z` kui ka, kui `should-promote-latest.sh`
-kinnitab, et see on kõrgeim stabiilne SemVer, ka `:latest`
-**samasuguse digestiga**. Pärast tööd: Hub `latest` digest võrdub uue
-SemVer digestiga ja `last_updated` on liikunud. Ei tohi jätta `:latest` vanemale
-ehitusele, kui väljalaskemärkmed räägivad parandustest, mis eksisteerivad ainult git'is. Compose
-kiirjuhendid kasutavad `:latest`; GitOps peaks jätkuvalt fikseerima `X.Y.Z`. Vaata
-[Docker'i väljalaske kanalid](../guides/DOCKER_GUIDE.md#release-channels) ja #10317.
+**Docker Hub `latest` (nõutav iga stabiilse SemVer avaldamise korral):** `docker-publish` töövoog peab märgistama** mõlemad** `X.Y.Z` ja kui `should-promote-latest.sh` nõustub, on see kõrgeim stabiilne SemVer, `:latest` koos** sama kokkuvõte** . Pärast tööd: jaoturi `latest` kokkuvõte võrdub uue SemVer kokkuvõttega ja `last_updated` teisaldamine. Ärge jätke `:latest` vanemale järgule, kui väljalaskemärkmed räägivad parandustest, mis eksisteerivad ainult gitis. Koostamise kiirkäivituste kasutamine `:latest`; GitOps peaks jätkama `X.Y.Z` kinnitamist. Vaadake [Docker vabastuskanaleid](../guides/DOCKER_GUIDE.md#release-channels) ja #10317.
 
-## Hädalapi kiirtee (märgis `hotfix`)
+**Docker Hubi organisatsiooni hoidla (`cheaperinference/omniroute`):** Docker Hub ei saa hoidlat nimeruumide vahel teisaldada, seega säilitab `diegosouzapw/omniroute` oma tõmbamisajaloo ja iga väljalaske ning `mirror-org-dockerhub` töö `docker-publish` kopeerib iga välja antud versiooni (ja `:latest` kui seda edendatakse) `ghcr.io/cheaper-inference/omniroute` -st organisatsiooni hoidlasse. See vajab `DOCKERHUB_ORG_USERNAME` / `DOCKERHUB_ORG_TOKEN` saladusi; ilma nendeta jääb töö roheliseks koos hoiatusega "Docker Hub org peegel jäi vahele" ja teised registrid avaldavad tavapäraselt. Välja antud versiooni seal hiljem avaldamiseks käivitage** Toimingud → Peegelda Docker pilt Docker Hubi org-i → Käivitage töövoog** `version=X.Y.Z` (ja `promote_latest` kõrgeima stabiilse versiooni jaoks): see kopeerib olemasolevad pildid, ilma ümberehituseta.
 
-PR, mis on märgistatud `hotfix`, jätab vahele raske CI maatriksi (9-fragmendiline E2E, katvuse pingutusmehhanism (ratchet), kvaliteediväravad, laiendatud kvaliteedivärav) ning säilitab kiired, kõrge signaaliga kontrollid: build, ühiktestide fragmendid, integratsioon, vitest, lint/typecheck, docs-sync, `check:pack-artifact` ja tarball boot-smoke test (`check:pack-boot`). Eesmärk: roheline ≤15 min jooksul, mitte ~33 min.
+## Kiirparanduse kiirrada (silt `hotfix`)
 
-**Sisenemispoliitika — kõik neli on kohustuslikud (eeskujuks Chromium/VS Code/Node hädaolukorra kiirteed):**
+Sildiga `hotfix` PR jätab vahele mahuka CI-maatriksi (9-killuline E2E, katvuse
+rangemaks muutmise kontroll, kvaliteedivärav, laiendatud kvaliteedikontroll) ning säilitab kiired ja suure signaaliväärtusega kontrollid: kompileerimine,
+ühiktestide killud, integratsioonitestid, vitest, lintimine/tüübikontroll, dokumentatsiooni sünkroonimine, `check:pack-artifact`
+ja tarball-paketi käivitumise suitsutest (`check:pack-boot`). Eesmärk: roheline tulemus ≤15 minutiga, mitte ~33 minutiga.
 
-1. **Tõsidus**: toodang on katki — avaldatud artefakt jookseb kokku käivitamisel / turvaparandus / kõik väljalaske kasutajad on mõjutatud. "Oluline" ei tähenda "katki".
-2. **Autoriteet**: ainult repositooriumi omanik lisab `hotfix` märgise. Märgis ON heakskiit — mitte kunagi ise-teenindatud kampaania-PR-il.
-3. **Tõendid**: PR kirjelduses on link eelmisele täielikult rohelisele raskele käivitusele (see suite, mille vahelejäetud tööd taaskontrolliksid), pluss parandusega seotud test, mis esmalt ebaõnnestub ja seejärel läbib.
-4. **Ulatus**: ainult cherry-pick — minimaalne parandus, mitte ümberkorraldusi, mitte kaasajooksvaid muudatusi.
+**Sisenemisreeglid — kõik neli on kohustuslikud (kujundatud Chromiumi/VS Code'i/Node'i hädaolukorra radade eeskujul):**
 
-Vahele jäetud katvuse/ratchet-pindala kontrollitakse uuesti järgmise täieliku käiguga väljalaske harul (pidev väljalaske-roheline) — see kiirtee jätab vahele OOTAMISE, mitte kunagi valideerimist.
-Ainult testide diffid (kõik failid kausta `tests/` all, mitte ühtegi kausta `tests/e2e/` all) jätavad E2E maatriksi automaatselt vahele, ilma ühegi märgiseta.
+1. **Tõsidusaste**: produktsioon ei tööta — avaldatud artefakt jookseb käivitamisel kokku /
+   turvaparandus / mõjutatud on kõik väljalaske kasutajad. „Oluline” ei tähenda „katki”.
+2. **Volitus**: silti `hotfix` rakendab ainult repositooriumi omanik. Silt ON
+   heakskiit — kampaania-PR-is ei tohi seda kunagi ise rakendada.
+3. **Tõendid**: PR-i kirjeldus viitab eelmisele täielikult rohelisele mahukale käitusele (testikomplektile, mida
+   vahele jäetud tööd uuesti valideeriksid) ning paranduse enda esmalt ebaõnnestunud ja seejärel õnnestunud testile.
+4. **Ulatus**: ainult cherry-pick — minimaalne parandus, ilma refaktoreerimise ja kaasapandud kõrvalmuudatusteta.
 
-## Detailne kontrollnimekiri
+Vahele jäetud katvuse/rangemaks muutmise kontrollpind valideeritakse uuesti järgmise täieliku käitusega
+väljalaskeharus (pidev väljalaske rohelisus) — rada jätab vahele OOTAMISE, mitte valideerimise.
+Ainult teste sisaldavad muudatused (kõik failid kataloogis `tests/`, mitte ükski kataloogis `tests/e2e/`) jätavad E2E-
+maatriksi automaatselt vahele ilma ühegi sildita.
 
-### Väljalaske-eelne etapp
+## Üksikasjalik kontrollnimekiri
 
-- [ ] Kõik selle väljalaskega seotud PR-id on liidetud harusse `release/vX.Y.0`
-- [ ] Kõik avatud Linear/probleemi kirjed selle versiooni kohta on suletud või lükatud edasi järgmisesse verstaposti
-- [ ] CI on roheline harul `release/vX.Y.0`
-- [ ] Koodis ei ole `TODO(release)` märgistusi: `grep -r "TODO(release)" src/ open-sse/`
-- [ ] Docker'i baaspilt on ajakohane (praegu `node:24.15.0-trixie-slim`)
+### Eelväljalase
+
+- [ ] Kõik sellele versioonile suunatud PRs on liidetud `release/vX.Y.0`-ga
+- [ ] Kõik selle versiooni avatud Linear/issue üksused suletakse või lükatakse järgmise verstapostini
+- [ ] CI roheline `release/vX.Y.0` oksal
+- [ ] Koodis pole `TODO(release)` markereid: `grep -r "TODO(release)" src/ open-sse/`
+- [ ] Docker põhipilt ajakohane (praegu `node:24.15.0-trixie-slim`)
 
 ### Versioon ja muudatuste logi
 
-- [ ] Käivita `/version-bump-cc <patch|minor|major>` (Claude Code oskus)
-  - Suurendab `package.json`, `electron/package.json` versiooninumbreid
-  - Genereerib `CHANGELOG.md` uuesti git-committide põhjal alates viimasest märgisest
-  - Uuendab README.md märke (badges)
-- [ ] Vaata CHANGELOG.md käsitsi läbi ja korrasta vajadusel committi sõnumeid
-- [ ] Kontrolli, et `CHANGELOG.md` viimane semver-sektsioon on võrdne `package.json` versiooniga
-- [ ] Hoia `## [Unreleased]` esimesena muudatuste logi sektsioonina tulevaste tööde jaoks
-- [ ] Uuenda `docs/openapi.yaml` → `info.version` peab olema võrdne `package.json` versiooniga
+- [ ] Käivita `/version-bump-cc <patch|minor|major>` (Claude koodioskus)
+  - Muhke `package.json`, `electron/package.json`
+  - Taastab `CHANGELOG.md` alates viimasest märgendist tehtud git-test
+  - Värskendab README.md märke
+- [ ] Vaadake CHANGELOG.md käsitsi üle ja vajadusel puhastage sissekandesõnumid
+- [ ] Veenduge, et `CHANGELOG.md` uusim semveri jaotis oleks võrdne `package.json` versiooniga
+- [ ] Hoidke `## [Unreleased]` eelseisva töö jaoks esimese muudatuste logi jaotisena
+- [ ] Värskenda `docs/openapi.yaml` → `info.version` peab võrduma `package.json` versiooniga
 
-### Koodikvaliteet
+### Koodi kvaliteet
 
-- [ ] `npm run lint` — 0 viga (hoiatused on juba varem eksisteerinud)
+- [ ] `npm run lint` — 0 viga (hoiatused on juba olemas)
 - [ ] `npm run typecheck:core` — puhas
 - [ ] `npm run typecheck:noimplicit:core` — puhas (range)
-- [ ] `npm run check:cycles` — ei ole ringsõltuvusi
+- [ ] `npm run check:cycles:ratchet` — külmunud `metrics.cycles` lae sees (paljas `check:cycles` väljub 1 iga tsükli korral, #15281)
 - [ ] `npm run check:any-budget:t11` — eelarve piires
 - [ ] `npm run check:route-validation:t06` — puhas
-- [ ] `npm run check:node-runtime` — toetatud runtime alammäär on täidetud (`>=22.22.2 <23`, `>=24.0.0 <27`, vastavalt `SUPPORTED_NODE_RANGE`-le failis `src/shared/utils/nodeRuntimeSupport.ts`; ühtlustatud `package.json` `engines`-väljaga)
+- [ ] `npm run check:node-runtime` — toetatud käitusaja põrand (`>=22.22.2 <23`, `>=24.0.0 <27`, `SUPPORTED_NODE_RANGE` kohta `src/shared/utils/nodeRuntimeSupport.ts`; joondatud `package.json` `engines`)
 
 ### Testimine
 
-- [ ] `npm run test:unit` — läbib
-- [ ] `npm run test:vitest` — läbib (MCP server, autoCombo, vahemälu)
-- [ ] `npm run test:coverage` — värav 60/60/60/60 on täidetud (laused/read/funktsioonid/harud)
-- [ ] `npm run test:integration` — läbib (kui muudatused mõjutavad andmebaasi/haldureid)
-- [ ] `npm run test:combo:matrix` — läbib (kombinatsioonistrateegiate maatriks: tõestab deterministlikult kõigi 19 avaliku ruutimisstrateegia valikuotsuseid; käivita, kui muudatused mõjutavad kombo-ruutimist, strateegia lahendamist või tagavarapesa loogikat)
-- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **vabatahtlik/käsitsi** (piiratud pärisandmete allikaga live-suits (smoke test); ammutab kirjutuskaitstud andmebaasi hetktõmmise VPS-ilt `root@192.168.0.15`; puutub tegelikke teenusepakkujaid, kulutab krediiti; ei jooksta kunagi CI-s; jäetakse ilma väravaseadeta puhtalt vahele)
-- [ ] `npm run test:combo:live:vps` — **vabatahtlik/käsitsi** (Faasi-3 VPS live-suits: 7 HTTP stsenaariumi live `.15`-serveri vastu tavalise Node ESM-i kaudu; vajab `ssh root@192.168.0.15`; loob/kustutab ainult `__live_test__*` kombosid; puutub tegelikke teenusepakkujaid; ei jooksta kunagi CI-s)
-- [ ] `npm run test:e2e` — läbib (UI muudatused)
-- [ ] `npm run test:protocols:e2e` — läbib (MCP/A2A muudatused)
-- [ ] `npm run test:ecosystem` — läbib
+- [ ] `npm run test:unit` — pass
+- [ ] `npm run test:vitest` — pääse (MCP server, autoCombo, vahemälu)
+- [ ] `npm run test:coverage` — värav 60/60/60/60 rahul (statements/lines/functions/branches)
+- [ ] `npm run test:integration` — pass (muutuste korral puudutage DB / käitlejaid)
+- [ ] `npm run test:combo:matrix` — pass (kombineeritud strateegiamaatriks: tõestab deterministlikult kõigi 22 avaliku marsruutimisstrateegia valikuotsuseid; käivitatakse kombineeritud marsruutimise, strateegia lahenduse või varuloogika puudutamisel)
+- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` —**optional/manual** (väravaga reaalne-ülesvoolu suitsu; hankib kirjutuskaitstud DB -hetktõmmise VPS `root@192.168.0.15` st; tabab tõelisi pakkujaid, maksab krediiti; ei tööta kunagi CI; jätab ilma väravata vahele puhtalt)
+- [ ] `npm run test:combo:live:vps` —**optional/manual** (Phase-3 VPS live smoke: 7 HTTP stsenaariumit reaalajas `.15` serveri vastu tavalise sõlme ESM kaudu; nõuab `ssh root@192.168.0.15`; creates/deletes ainult `__live_test__*` kombinatsioonid; tabab tõelisi pakkujaid; ei tööta kunagi CI is)
+- [ ] `npm run test:e2e` — pass (UI muutub)
+- [ ] `npm run test:protocols:e2e` — pass (MCP/A2A muutub)
+- [ ] `npm run test:ecosystem` — pass
 
-### Hookid (Husky valideeritud)
+### Konksud (Husky kinnitatud)
 
-Husky hookid asuvad kaustas `.husky/` ja käivituvad automaatselt git-operatsioonide käigus.
+Husky konksud elavad `.husky/` ja töötavad automaatselt git-operatsioonidel.
 
-- **pre-commit:** `npx lint-staged + node scripts/check/check-docs-sync.mjs + npm run check:any-budget:t11`
-- **pre-push:** kiired deterministlikud väravad — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (aktiveeritud 2026-06-13). Jätab tahtlikult välja `test:unit` (aeglane; kaetud CI `test-unit` tööga).
-  - Käivita `npm run test:unit` käsitsi enne väljalaske harude pushimist.
+- **eelkohustus:** `npx lint-staged + node scripts/check/check-docs-sync.mjs + npm run check:any-budget:t11`
+- **eeltõuge:** kiired deterministlikud väravad — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (aktiveeritud 2026-06-13). Välistab tahtlikult `test:unit` (aeglane; kaetud CI `test-unit` tööga).
+  - Enne vabastusharude lükkamist käivitage `npm run test:unit` käsitsi.
 
-Kui hook ebaõnnestub: paranda alusprobleem, ei möödasõiduta `--no-verify` lipuga.
+Kui konks ebaõnnestub: parandage selle aluseks olev probleem, ärge minge mööda klahviga `--no-verify`.
 
-### Kokkuleppelised committid (Conventional Commits)
+### Tavalised kohustused
 
-Kõik väljalaskega seotud committid peavad järgima vormingut `type(scope): subject`.
+Kõik väljalaskega seotud kohustused peavad järgima `type(scope): subject` vormingut.
 
 **Kehtivad tüübid:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `style`, `ci`
 
-**Kehtivad ulatused:** `db`, `sse`, `oauth`, `dashboard`, `api`, `cli`, `docker`, `ci`, `mcp`, `a2a`, `memory`, `skills`, `cloud-agent`, `guardrails`, `compression`, `auto-combo`, `resilience`, `providers`, `executors`, `translator`, `domain`, `authz`
+**Kehtivad ulatused:** `db`, `sse`, `oauth`, `dashboard`, `api`, `cli`, `docker` `authz` `ci`, `mcp`, `a2a`, `memory`, `cloud-agent`, `guardrails`, `compression`, `auto-combo`, `resilience`, `providers` `executors`, `translator` `skills` `domain`
 
-Katkestavad muudatused (breaking changes): lisa jaluses `BREAKING CHANGE:` või `!` pärast ulatust (nt `feat(api)!: drop /v0`).
+Katketavad muudatused: lisage ulatuse järele `BREAKING CHANGE:` jalus või `!` (nt `feat(api)!: drop /v0`).
 
 ### Dokumentatsioon
 
-- [ ] `npm run check:docs-sync` läbib (käivitatakse automaatselt pre-commit poolt)
-- [ ] `npm run check:docs-all` läbib (koondkontroll: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links)
-- [ ] `npm run check:env-doc-sync` väljub kood 0-ga — koodi ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` keskkonnamuutujate leping on terve
-- [ ] `npm run check:doc-links` väljub kood 0-ga — pärast ümberkorraldust ei ole katkiseid sisemisi markdown-viiteid
-- [ ] `docs/architecture/ARCHITECTURE.md` on läbi vaadatud salvestuse/käitusaja lahknevuste suhtes
-- [ ] `docs/guides/TROUBLESHOOTING.md` on läbi vaadatud keskkonnamuutujate ja operatiivsete lahknevuste suhtes
-- [ ] Kui `.env.example` muutus: `docs/reference/ENVIRONMENT.md` on uuendatud
-- [ ] Kui uuel funktsioonil on kasutajaliides: `docs/guides/USER_GUIDE.md` mainib seda
-- [ ] Kui uuel funktsioonil on API: `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` on uuendatud
-- [ ] Kui uus funktsioon on moodul: on olemas eraldi `docs/<MODULE>.md`
-- [ ] Kui muudatus on katkestav: `docs/guides/TROUBLESHOOTING.md` sisaldab migratsioonimärkust
+- [ ] `npm run check:docs-sync` pääseb (automaatne käivitamine eelkinnitusega)
+- [ ] `npm run check:docs-all` läbib (vihmavari: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links)
+- [ ] `npm run check:env-doc-sync` väljub 0 — kood ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` env leping on puutumata
+- [ ] `npm run check:doc-links` väljub 0-st — pärast ümberkorraldamist puuduvad katkised sisemised allahindlusviited
+- [ ] `docs/architecture/ARCHITECTURE.md` on hinnatud storage/runtime drift jaoks
+- [ ] `docs/guides/TROUBLESHOOTING.md` on üle vaadatud env vari ja tööhäirete suhtes
+- [ ] Kui `.env.example` on muutunud: `docs/reference/ENVIRONMENT.md` on värskendatud
+- [ ] Kui uuel funktsioonil on UI: `docs/guides/USER_GUIDE.md` mainib seda
+- [ ] Kui uuel funktsioonil on API: `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` on värskendatud
+- [ ] Kui uus funktsioon on moodul: spetsiaalne `docs/<MODULE>.md` on olemas
+- [ ] Kui muudatus rikub: `docs/guides/TROUBLESHOOTING.md` on migratsioonimärge
 
 ### i18n
 
-- [ ] `npm run i18n:check` väljub kood 0-ga — tõlke olek (`.i18n-state.json`) on kooskõlas lähtedokumentidega (range režiimis ei ole lahknenud lähteid; hoiatusrežiimi nõuandev osa on aktsepteeritav viimase hetke dokumendiparandusteks, kuid peaks olema 0 enne märgistamist)
-- [ ] `npm run i18n:check-ui-coverage` väljub kood 0-ga — kõik UI keeled on 80% katvuse alammäärast kõrgemal
-- [ ] `npm run i18n:sync-ui:dry` teatab 0 puuduvat võtit kõigis 42 keeles
-- [ ] Kui lähte-ingliskeelsed dokumendid muutusid, käivita `npm run i18n:run` (vajab `.env` failis `OMNIROUTE_TRANSLATION_API_KEY`-d) enne märgistamist
-- [ ] Tõlkepanuseid võib lükata edasi järgmisse väljalaskesse, kui need on väikesed (jälgi CHANGELOG-is)
+- [ ] `npm run i18n:check` väljub 0 — tõlkeolekust (`.i18n-state.json`) sünkroonis lähtedokumentidega (ranges režiimis triivivaid allikaid pole; hoiatusrežiimi nõuanne on vastuvõetav dokumentide viimase hetke paranduste puhul, kuid enne märgistamist peaks see olema 0)
+- [ ] `npm run i18n:check-ui-coverage` väljub 0 — igast UI lokaadist 80% leviala taseme juures või sellest kõrgemal
+- [ ] `npm run i18n:sync-ui:dry` teatab 0 puuduvast võtmest kõigis 66 sihtlokaadis (igas lokaadis, välja arvatud `en` allikas)
+- [ ] Kui ingliskeelsete dokumentide lähteteksti on muudetud, käivitage enne märgistamist `npm run i18n:run` (nõuab `OMNIROUTE_TRANSLATION_API_KEY` -d `.env`)
+- [ ] Tõlkepanuste saab edasi lükata järgmisele väljalasele, kui see on alaealine (lugu CHANGELOG keeles)
 
 ### Andmebaasi migratsioonid
 
-- [ ] Kui kaustas `src/lib/db/migrations/` on uusi faile:
+- [ ] Kui `src/lib/db/migrations/` on uusi faile:
   - [ ] Iga migratsioon on idempotentne (`CREATE TABLE IF NOT EXISTS` jne)
-  - [ ] Migratsioonid on pakitud transaktsioonidesse
-  - [ ] Numeratsioon on õige (järjekorras ei ole tühikuid)
-- [ ] Testi värskel paigaldusel: kustuta `~/.omniroute/omniroute.db` ja käivita `npm run dev`
-- [ ] Testi olemasoleval paigaldusel: varunda andmebaas, käivita migratsioon, kontrolli skeemi
-- [ ] WAL-failid (`-wal`, `-shm`) käsitletakse õigesti, kui migratsioon kirjutab tabeleid ümber
+  - [ ] Tehingutesse mähitud migratsioonid
+  - [ ] Nummerdatud õigesti (järjekorras pole lünki)
+- [ ] Testige värske installiga: kustutage `~/.omniroute/omniroute.db` ja käivitage `npm run dev`
+- [ ] Testige olemasolevat installi: varundage DB, käivitage migratsioon, kontrollige skeemi
+- [ ] WAL faile (`-wal`, `-shm`) käsitletakse õigesti , kui migratsioon kirjutab tabelid ümber
 
-### Teenusepakkujate katalog (Zod-valideeritud)
+### Pakkujate kataloog (Zod-valideeritud)
 
-- [ ] `src/shared/constants/providers.ts` Zod-skeem on laadimisel kehtiv
-  - [ ] Kõigil teenusepakkujatel on kohustuslikud väljad (`id`, `label`, `kind` jne)
-  - [ ] Uutel tasuta teenusepakkujatel on olemas `freeNote`
-  - [ ] OAuth teenusepakkujatel on registreeritud `oauthConfig` failis `src/lib/oauth/constants/oauth.ts`
-- [ ] Kui lisati uus teenusepakkuja: vastav täitur (executor) kaustas `open-sse/executors/`
-- [ ] Kui vorming ei ole OpenAI-vorming: tõlkur (translator) kaustas `open-sse/translator/`
-- [ ] Mudelid on registreeritud failis `open-sse/config/providerRegistry.ts`
-- [ ] Ühiktestid kaustas `tests/unit/` katavad teenusepakkuja klassifitseerimist ja ruutimist
+- [ ] `src/shared/constants/providers.ts` Zod skeem kehtib laadimise ajal
+  - [ ] Kõigil pakkujatel on kohustuslikud väljad (`id`, `label`, `kind` jne)
+  - [ ] `freeNote` on ette nähtud uutele tasuta pakkujatele
+  - [ ] OAuth pakkujatel on `oauthConfig` registreeritud `src/lib/oauth/constants/oauth.ts`
+- [ ] Kui on lisatud uus pakkuja: vastav täitja `open-sse/executors/`
+- [ ] Kui mitte-OpenAI-vorming: tõlkija `open-sse/translator/` keeles
+- [ ] `open-sse/config/providerRegistry.ts` registreeritud mudelid
+- [ ] `tests/unit/` ühikutestid hõlmavad pakkujate klassifikatsiooni ja marsruutimist
 
-### Desktop (Electron)
+### Lauaarvuti (Electron)
 
 Kui `electron/` muutus:
 
-- [ ] `npm run electron:smoke:packaged` läbib
-- [ ] Buildid on testitud vähemalt üht sihtplatvormi kasutades: `:win`, `:mac`, `:linux`
-- [ ] Koodi allkirjastamise sertifikaadid ei ole aegunud (kui allkirjastatakse)
-- [ ] `electron/package.json` versioon vastab juurkataloogi `package.json` versioonile
-- [ ] Automaatuuenduse kanaliviide on uuendatud, kui väljalase on suunatud `stable`-kanalile
+- [ ] `npm run electron:smoke:packaged` läheb mööda
+- [ ] Järjendeid on testitud vähemalt ühe `:win`, `:mac`, `:linux` jaoks
+- [ ] Koodi allkirjastamise sertifikaadid ei ole aegunud (kui allkirjastate)
+- [ ] `electron/package.json` versioon vastab juur- `package.json`
+- [ ] Kanali automaatse värskendamise kursorit värskendatakse `stable`-le vabastamisel
 
-### Buildi paigutus
+### Ehitamise paigutus
 
-Repositoorium kasutab kolme eraldi väljundkataloogi — ei tohi neid segamini ajada:
+Hoidla kasutab kolme erinevat väljundkataloogi — kunagi segage neid:
 
-| Kataloog  | Eesmärk                                                  | Jälgitud?         |
-| --------- | -------------------------------------------------------- | ----------------- |
-| `src/`    | Rakenduse lähtekood (TypeScript / TSX)                   | Jah               |
-| `.build/` | Buildi vahetulemused — `next build` väljund (`distDir`)  | Ei (gitignoritud) |
-| `dist/`   | Tarnitav npm-pakett — koostatud `assembleStandalone`-iga | Ei (gitignoritud) |
+| Kataloog  | Eesmärk                                                            | Jälgitud?          |
+| --------- | ------------------------------------------------------------------ | ------------------ |
+| `src/`    | Rakenduse allikas (TypeScript / TSX)                               | Jah                |
+| `.build/` | Ehitage vaheühendite — `next build` väljund (`distDir`)            | Ei (ignoreerimata) |
+| `dist/`   | Tarnitav npm komplekt — mille on kokku pannud `assembleStandalone` | Ei (ignoreerimata) |
 
-> **Operaatori märkus:** kaugem VPS-i pildikataloog on jätkuvalt `/usr/lib/node_modules/omniroute/app/`.
-> Liikunud on ainult **repositooriumisisene** buildi väljund (`app/` → `dist/`). Juurutamisoskused rsync'ivad
-> `dist/` sisu kaugesse `app/` kataloogi — VPS-i teekondade muutmine ei ole vajalik.
+> **Operaator märkus:** VPS kaugpildikataloog jääb `/usr/lib/node_modules/omniroute/app/`. Ainult** repos** ehitusväljund teisaldatud (`app/` → `dist/`). Oskuste juurutamine rsync `dist/` sisu kaug- `app/` dir — ei nõua VPS tee muudatusi.
 
-**Ühe-buildi voog:**
+**Ühe konstruktsiooniga voog:**
 
 ```
 npm run build:release
-  └─ rm -rf .build dist          (puhastamine)
-  └─ next build → .build/next/   (vahetulemused)
-  └─ assembleStandalone          (kopeerib standalone + static + public + natives → dist/)
-  └─ writes dist/BUILD_SHA       (HEAD-i turvamärgend)
+  └─ rm -rf .build dist          (clean)
+  └─ next build → .build/next/   (intermediates)
+  └─ assembleStandalone          (copies standalone + static + public + natives → dist/)
+  └─ writes dist/BUILD_SHA       (HEAD sentinel)
 ```
 
-MITTE käivita `npm run build`, millele järgneb eraldi `npm run build:cli` juurutamiseks — kasuta
-`npm run build:release`, mis teeb puhta ülesehituse + turvamärgendi ühe käsuga.
+Kas NOT käivitada `npm run build` millele järgneb eraldi `npm run build:cli` — juurutamiseks, kasutada `npm run build:release`, mis teeb ühe käsuga puhta + sentineli ümberehitamise.
 
-### Artefaktide valideerimine
+### Artefaktide kinnitamine
 
-- [ ] `npm run build:release` läbib edukalt ja `dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] `npm run check:pack-artifact` on puhas — pole `app.__qa_backup`, `scripts/scratch`, `package-lock.json` või muid kohalikke jääke
-- [ ] `dist/server.js` eksisteerib pärast buildi
+- [ ] `npm run build:release` õnnestub ja `dist/BUILD_SHA` == `git rev-parse --short HEAD`
+- [ ] `npm run check:pack-artifact` puhas — ei sisalda `app.__qa_backup`, `scripts/scratch`, `package-lock.json` ega muid kohalikke jääke
+- [ ] `dist/server.js` on pärast ehitamist olemas
+- [ ] Valikuline kohalik pakitud käitusaegne suitsu: `npm run dev:candidate -- validate` pärast seda, kui `npm run dev:candidate -- build` käivitab pakitud tarballi isoleeritud `DATA_DIR` ja kontrollib `/api/health` + `/v1/models` (vt [kaastööd Golden Path](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop) )
 
-### Märgistamine ja väljalase
+### Sildistamine ja vabastamine
 
-- [ ] Käivita `/generate-release-cc` (Claude Code oskus):
-  - Loob märgise `vX.Y.Z`
-  - Pushib märgise ja haru
-  - Avab GitHub Release'i koos muudatuste logi sisuga
-  - Lisab Electron installerid (kui koostatud)
+- [ ] Käivitage `/generate-release-cc` (Claude koodioskus):
+  - Loob sildi `vX.Y.Z`
+  - Lükkab silti ja oksa
+  - Avab GitHub Release koos muudatuste logi kehaga
+  - Kinnitab Electron paigaldajad (kui on ehitatud)
 - [ ] Või käsitsi:
   ```bash
   git tag -a vX.Y.Z -m "Release vX.Y.Z"
@@ -265,140 +246,248 @@ MITTE käivita `npm run build`, millele järgneb eraldi `npm run build:cli` juur
   gh release create vX.Y.Z --notes-from-tag
   ```
 
-### Juurutamine
+### Kasutusele võtta
 
-Juurutamisoskused kasutavad kerget rsync-voogu — ilma `npm pack`, ilma `npm i -g`:
+Oskuste juurutamiseks kasutage kerget rsync-voogu — no `npm pack`, no `npm i -g`:
 
-- [ ] Kasuta sihtkohale vastavat juurutamisoskust:
+- [ ] Kasutage sihtmärgile vastavat juurutamisoskust:
   - `/deploy-vps-local-cc` — kohalik VPS (192.168.0.15)
   - `/deploy-vps-akamai-cc` — Akamai VPS (69.164.221.35)
   - `/deploy-vps-both-cc` — mõlemad
-- [ ] Enne juurutamist kinnita, et `dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] Build peab jooksma seal, kus `node_modules` on tegelik (peamine checkout või `npm ci`-tud töökataloog — MITTE sümlingitud töökataloog)
-- [ ] Testi juurutatud eksemplari:
-  - Ava `/dashboard/health` → kontrolli, kas versiooniinfo vastab väljalaskele
-  - Käivita `/v1/chat/completions` päring tuntud teenusepakkuja vastu
-  - Kontrolli, et `/api/monitoring/health` tagastab olekud `CLOSED` (lülitid on suletud)
-  - Kinnita, et MCP transpordid vastavad (`/mcp` HTTP, `/mcp-sse` SSE)
+- [ ] Enne juurutamist kinnitage `dist/BUILD_SHA` == `git rev-parse --short HEAD`
+- [ ] Järk peab töötama seal, kus `node_modules` on tõeline (peamine kassa või `npm ci`'d tööpuu — NOT sümlingitud tööpuu)
+- [ ] Suitsutesti juurutatud eksemplar:
+  - Avage `/dashboard/health` → kontrollige versiooni string, mis vastab väljalaskele
+  - Käivitage `/v1/chat/completions` päring tuntud pakkuja vastu
+  - Veenduge, `/api/monitoring/health` tagastab `CLOSED` kaitselülitid
+  - Kinnitage MCP transportide reageerimine (`/mcp` HTTP, `/mcp-sse` SSE)
 
-### Väljalaske-järgne etapp
+### Väljalaskejärgne
 
-- [ ] Käivita `/capture-release-evidences-cc` (Claude Code oskus)
-  - Jäädvustab uute funktsioonide WebP-vormingus ekraanipilte/salvestisi
-  - Lisab need väljalaske teatele / blogipostitusele
-- [ ] Uuenda GitHub Discussions / Discordi väljalaske teatega
+- [ ] Käivita `/capture-release-evidences-cc` (Claude koodioskus)
+  - Jäädvustab WebP screenshots/recordings uusi funktsioone
+  - Lisab väljalaskemärkmetele / ajaveebi postitusele
+- [ ] Värskendage GitHub arutelusid / Discord koos väljalaskeatega
 - [ ] Ava verstapost järgmise versiooni jaoks
-- [ ] Kui kriitiline: kinnita arutelu või postita `news.json`-i rakendusesisese bänneri jaoks
+- [ ] Kui kriitiline: rakendusesisese bänneri jaoks kinnitage arutelu või postitus `news.json`
 
-### Radari avaliku käivituse värav
+### Radari avalik värav
 
-Radari teadaanne on tahtlikult liidetud olekuga `active: false`. Aktiveerimine on eraldi
-muudatus pärast seda, kui igaüks allolevatest punktidest on tõenditega kinnitatud:
+Radari teade on `active: false` tahtlikult toime pandud. Aktiveerimine on eraldi muudatus pärast iga alloleva üksuse tõendamist:
 
-- [ ] Kõik virnastatud Radari PR-id on liidetud ja väljalaske-tipu CI on roheline
-- [ ] OSS Radari teed on juurutatud ja testitud suitsu-testiga, `RADAR_ENABLED` on vaikimisi endiselt väljas
-- [ ] Testi `GET /planos`, `/termos`, `/privacidade` ja `/reembolso` nimetatud Radari hostil
-- [ ] Registreeri operaatori isik/kontakt/aadress ja omaniku heakskiidetud juriidiline läbivaatus privaatses teenuses
-- [ ] Käivita Stripe Checkout ja allkirjastatud veebihaak (webhook) ainult testrežiimis
-- [ ] Käivita üks krüpteeritud tehingu-e-kirja saatmine heakskiidetud saatja/domeeni kaudu
-- [ ] Tõesta varunduse taastamine ja üks juhitud, eelarvega piiratud uurimiskäik
-- [ ] Kinnita BRL/PIX läbivaatuspoliitika enne annetustõendite vastuvõtmist
-- [ ] Luba avalik Checkout ainult pärast eelnevate väravate läbimist, seejärel aktiveeri uus `news.json` ID
-- [ ] Kontrolli, et avaleht kasutab lokaliseeritud sisu ja uus ID ilmub taas pärast vanema ID sulgemist
+- [ ] Kõik virnastatud Radar PRs on ühendatud ja vabastusotsik CI on roheline
+- [ ] Rakendage ja suitsetage OSS Radari marsruute, kui `RADAR_ENABLED` on vaikimisi välja lülitatud
+- [ ] Suitsetage `GET /planos`, `/termos`, `/privacidade` ja `/reembolso` nimega radarihostis
+- [ ] Plaadioperaator identity/contact/address ja omaniku poolt heaks kiidetud juriidiline ülevaade erateenuses
+- [ ] Harjutus Stripe Checkout ja allkirjastatud veebihaak ainult testrežiimis
+- [ ] Kasutage üht krüpteeritud tehingu-meiliedastust heakskiidetud sender/domain ga
+- [ ] Tõestage varukoopia taastamine ja üks järelevalvega piiratud eelarvega uurimistöö
+- [ ] Enne annetustõendite vastuvõtmist kinnitage BRL/PIX ülevaatuseeskirjad
+- [ ] Lubage avalik kassa ainult pärast eelnevaid väravaid, seejärel aktiveerige uus `news.json` ID
+- [ ] Veenduge, et kodubänner kasutaks lokaliseeritud koopiat ja uus ID ilmub uuesti pärast vanema ID loobumist
 
-## Manustatud teenuste (Embedded Services) suitsutest (v3.8.4+)
+## Manustatud teenuste suitsutest (v3.8.4+)
 
-Enne mistahes väljalaske saatmist, mis sisaldab manustatud teenuste muudatusi, kontrolli:
+Enne manustatud teenuste muudatusi sisaldava versiooni väljalaskmist kontrollige järgmist:
 
-### Värske andmebaasi käivitus (tabab rände (migration) kollisioonid — lisatud pärast v3.8.4 kiirparandust)
+### Käivitamine värske andmebaasiga (tuvastab migratsioonide konfliktid — lisatud pärast v3.8.4 kiirparandust)
 
-- [ ] `DATA_DIR=$(mktemp -d) npm start &` — oota käivitumist 10 s
-- [ ] `curl -s http://127.0.0.1:20128/api/services/9router/status | jq '.tool'` tagastab `"9router"` (MITTE 404, MITTE 500). Kinnitab, et rakendus `071_services.sql` on rakendatud ja rida on lisatud (seeded).
+- [ ] `DATA_DIR=$(mktemp -d) npm start &` — oodake käivitumist 10 s
+- [ ] `curl -s http://127.0.0.1:20128/api/services/9router/status | jq '.tool'` tagastab `"9router"` (MITTE 404 ega 500). Kinnitab, et migratsioon `071_services.sql` rakendati ja rida lisati.
 - [ ] `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(version_manager);" | grep -E "provider_expose|logs_buffer_path|last_sync_at"` tagastab 3 rida.
-- [ ] `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(webhooks);" | grep -E "kind|metadata_encrypted"` tagastab 2 rida (kinnitab, et `070_webhooks_kind_metadata.sql` on rakendatud).
-- [ ] `node --import tsx/esm --test tests/unit/db/no-migration-collisions.test.ts` läbib — kaitseb edaspidiste kollisioonide vastu.
+- [ ] `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(webhooks);" | grep -E "kind|metadata_encrypted"` tagastab 2 rida (kinnitab, et `070_webhooks_kind_metadata.sql` rakendati).
+- [ ] `node --import tsx/esm --test tests/unit/db/no-migration-collisions.test.ts` läbib testi — kaitseb tulevaste konfliktide eest.
 
 ### 9Router
 
-- [ ] `POST /api/services/9router/install` tagastab 200 koos `installedVersion`-iga alla 2 minuti
-- [ ] `POST /api/services/9router/start` tagastab 200 ja `state: "running"` alla 30 sekundi
+- [ ] `POST /api/services/9router/install` tagastab vähem kui 2 minutiga vastuse 200 koos väljaga `installedVersion`
+- [ ] `POST /api/services/9router/start` tagastab vähem kui 30 sekundiga vastuse 200 ja `state: "running"`
 - [ ] `GET /api/services/9router/status` teatab `health: "healthy"`
-- [ ] `POST /v1/chat/completions` väärtusega `"model": "9router/auto/..."` tagastab 200 (otsast-lõpuni ruutimine (routing) läbi 9Router)
-- [ ] `GET /dashboard/providers/services/9router/embed/dashboard` renderdab 9Router native kasutajaliidese puhverserveri (proxy) sees (ilma otsese `127.0.0.1:port` iframe'ita)
-- [ ] `POST /api/services/9router/rotate-key` tagastab `{ keyRotated: true }` ja teenus taaskäivitub puhtalt
-- [ ] `POST /api/services/9router/stop` tagastab 200 ja `state: "stopped"`
-- [ ] `GET /api/services/9router/logs?tail=50` tagastab SSE voo koos `snapshot` sündmusega, mis sisaldab viimaseid ridu
-- [ ] Paigaldamine keskkonnas, kus `npm` puudub PATH-is, tagastab 500 koos sõbraliku (ei ole stack trace) veateatega
+- [ ] `POST /v1/chat/completions` koos väärtusega `"model": "9router/auto/..."` tagastab vastuse 200 (täielik marsruutimine läbi 9Routeri)
+- [ ] `GET /dashboard/providers/services/9router/embed/dashboard` renderdab puhverserveris 9Routeri oma kasutajaliidese (ilma otsese `127.0.0.1:port` iframe'ita)
+- [ ] `POST /api/services/9router/rotate-key` tagastab `{ keyRotated: true }` ja teenus taaskäivitub probleemideta
+- [ ] `POST /api/services/9router/stop` tagastab vastuse 200 ja `state: "stopped"`
+- [ ] `GET /api/services/9router/logs?tail=50` tagastab SSE-voo, mille `snapshot`-sündmus sisaldab hiljutisi ridu
+- [ ] Installimine keskkonnas, kus `npm` puudub PATH-ist, tagastab vastuse 500 koos kasutajasõbraliku veateatega (ilma pinujälituseta)
 
 ### CLIProxyAPI
 
-- [ ] `POST /api/services/cliproxy/install` tagastab 200 alla 2 minuti
-- [ ] `POST /api/services/cliproxy/start` tagastab 200 ja `state: "running"` alla 30 sekundi
+- [ ] `POST /api/services/cliproxy/install` tagastab vähem kui 2 minutiga vastuse 200
+- [ ] `POST /api/services/cliproxy/start` tagastab vähem kui 30 sekundiga vastuse 200 ja `state: "running"`
 - [ ] `GET /api/services/cliproxy/status` teatab `health: "healthy"`
-- [ ] `POST /api/services/cliproxy/stop` tagastab 200 ja `state: "stopped"`
-- [ ] `GET /api/services/cliproxy/logs?tail=50` tagastab SSE voo
+- [ ] `POST /api/services/cliproxy/stop` tagastab vastuse 200 ja `state: "stopped"`
+- [ ] `GET /api/services/cliproxy/logs?tail=50` tagastab SSE-voo
 
-### Turvalisuse regressioon
+### Turberegressioon
 
 - [ ] `curl -H "X-Forwarded-For: 1.2.3.4" http://localhost:20128/api/services/9router/start` tagastab `403 LOCAL_ONLY`
 - [ ] `curl -H "X-Forwarded-For: 1.2.3.4" http://localhost:20128/api/services/cliproxy/start` tagastab `403 LOCAL_ONLY`
-- [ ] `/api/services/*` veavastused ei sisalda `err.stack` ega absoluutseid failiteid
+- [ ] `/api/services/*` veavastused ei sisalda `err.stack`-i ega absoluutseid failiteid
 
 ## v3.8.0+ kontrollid
 
-Enne mistahes v3.8.x väljalaske saatmist kontrolli neid täiendavaid punkte:
+Enne mis tahes v3.8.x versiooni väljalaskmist kontrollige ka järgmisi punkte:
 
-- [ ] `omniroute --tray` käivitub macOS-il (systray2 paigaldatud `~/.omniroute/runtime/`-i)
-- [ ] `omniroute --tray` käivitub Linuxil (vajab DISPLAY muutujat; sujuv veateade, kui see ei ole seatud)
-- [ ] `omniroute --tray` käivitub Windowsil (PowerShell NotifyIcon, lisabinaarfailideta)
-- [ ] `omniroute config tray enable` loob autostardi kirje; disable eemaldab selle
-- [ ] `npm install -g omniroute@<see-versioon>` käivitab postinstall'i ilma fataalse väljumiseta
-- [ ] Uuendustee säilitab valikulised sõltuvused (optional deps): `omniroute update --apply` ja automaatuuendaja
+- [ ] `omniroute --tray` käivitub macOS-is (systray2 on installitud asukohta `~/.omniroute/runtime/`)
+- [ ] `omniroute --tray` käivitub Linuxis (nõuab DISPLAY-d; selle puudumisel kuvatakse korrektne veateade)
+- [ ] `omniroute --tray` käivitub Windowsis (PowerShell NotifyIcon, lisabinaarideta)
+- [ ] `omniroute config tray enable` loob automaatkäivituse kirje; keelamine eemaldab selle
+- [ ] `npm install -g omniroute@<this-version>` käivitab postinstalli ilma fataalse väljumiseta
+- [ ] Uuendustee säilitab valikulised sõltuvused: `omniroute update --apply` ja automaatvärskendaja
       käivitavad `npm install -g … --include=optional`, et `optionalDependencies` (better-sqlite3,
-      keytar, tls-client, ja llmlingua SLM pakett: `@atjsh/llmlingua-2@2.0.5`,
-      `js-tiktoken`) säiliksid uuenduse ajal. Ultra `modelPath` SLM tase vajab lisaks
-      tinybert mudelit, mis laaditakse automaatselt alla `${DATA_DIR}/models/llmlingua` esimesel kasutamisel. Postinstall
-      (`scripts/build/colocateOptionals.mjs`) seejärel koondab SLM valikulise sulundi (closure) kausta
-      `dist/node_modules`, et töölõim (worker) laheneks ÜHE `@huggingface/transformers` ^4.2.0
-      instantsi kaudu — iseseisev jälituspakett (standalone trace bundle) sisaldab vaid transformers-it, mitte dünaamiliselt imporditud
-      valikulisi sõltuvusi, mistõttu selle puudumisel laadiks töölõim llmlingua-2 juuruse transformers-i vastu
-      ja SLM tase ebaõnnestuks vaikimisi (fail-open) märkamatult.
-- [ ] `omniroute status` töötab ilma `.env`-ita (CLI tokeni tee, ainult loopback)
-- [ ] `curl http://localhost:20128/api/shutdown` tagastab 401 (alati kaitstud marsruut)
-- [ ] `curl -H "host: evil.com" http://localhost:20128/api/mcp/sse` tagastab 401 (loopback kaitse)
-- [ ] SQLite käitusaeg (runtime) lahendub esimesel käivitusel väärtuseks `bundled` (kaasapandud binaarfail on platvormile sobiv)
-- [ ] SQLite käitusaeg taandub väärtuseks `runtime`, kui `node_modules/better-sqlite3` kustutatakse
-- [ ] Nutikas MCP filter tihendab tegelikku `playwright-mcp browser_snapshot` väljundit (≥50% vähenemine)
-- [ ] Kõik 10 `skills/omniroute*/SKILL.md` faili on avalikult kättesaadavad raw GitHub URL-i kaudu
-- [ ] Sisseelamise juhendaja (onboarding wizard) näitab "How It Works" tasemetuuri sammu värske seadistuse korral
-- [ ] Avapaneeli (home dashboard) tasemekattuvuse vidin näitab konfigureeritud/aktiivseid loendeid
+      keytar, tls-client ja llmlingua SLM-i pinu: `@atjsh/llmlingua-2@2.0.5`,
+      `js-tiktoken`) säiliksid pärast uuendamist. Ultra `modelPath` SLM-i tase vajab ka
+      tinyberti mudelit, mis laaditakse esmakordsel kasutamisel automaatselt asukohta `${DATA_DIR}/models/llmlingua`. Postinstall
+      (`scripts/build/colocateOptionals.mjs`) paigutab seejärel SLM-i valikuliste sõltuvuste ahela
+      asukohta `dist/node_modules`, et tööprotsess kasutaks ÜHTE `@huggingface/transformers` ^4.2.0
+      eksemplari — eraldiseisev jälituspakett sisaldab ainult transformersit, mitte dünaamiliselt imporditud
+      valikulisi sõltuvusi, mistõttu laadiks tööprotsess ilma selleta llmlingua-2 koos juurkataloogi transformersiga
+      ning SLM-i tase lülituks tõrke korral märkamatult välja.
+- [ ] `omniroute status` töötab ilma `.env`-failita (CLI-loa tee, ainult tagasisideahel)
+- [ ] `curl http://localhost:20128/api/shutdown` tagastab vastuse 401 (alati kaitstud marsruut)
+- [ ] `curl -H "host: evil.com" http://localhost:20128/api/mcp/sse` tagastab vastuse 401 (tagasisideahela kaitse)
+- [ ] SQLite'i käitusaegseks lahenduseks on esmakäivitamisel `bundled` (kaasatud binaar sobib platvormile)
+- [ ] Kui `node_modules/better-sqlite3` kustutatakse, kasutab SQLite'i käitusaegne lahendus varuvariandina väärtust `runtime`
+- [ ] Nutikas MCP-filter tihendab tegelikku `playwright-mcp browser_snapshot` väljundit (vähemalt 50% vähenemine)
+- [ ] Kõik 10 faili `skills/omniroute*/SKILL.md` on toore GitHubi URL-i kaudu avalikult kättesaadavad
+- [ ] Esmaseadistuse viisard kuvab värskel seadistamisel tasemete tutvustuse etapi „Kuidas see töötab“
+- [ ] Avalehe töölaua tasemete katvuse vidin kuvab seadistatud/aktiivsete arvu
 
 ---
 
-## Rollback
+## 3.9.0 LTS-i haru loomine (läbi harjutatud versioonis 3.8.58)
 
-Kui väljalaskel on kriitiline probleem:
+Pärast versiooni v3.8.59 on järgmine versioon 3.9.0 ja selle tipust saavad kaks pikaealist haru:
+`stable/v3` (v3 LTS-i versiooniliin, npm `latest`) ja `develop` (v4, versioon tõstetud 4.0.0-ni, npm
+`nightly`). Harude/kanalite mudelit, edasipordimist ja silte kirjeldab
+[RELEASE_STRATEGY.md](./RELEASE_STRATEGY.md); plaan asub dokumendis [ROADMAP](../../ROADMAP.md) (3. etapp). Haru loomine toimub üks kord;
+versioonis 3.8.58 harjutatakse seda algusest lõpuni fork-repositooriumis ning 3.8.59 lõpetatakse
+[GO/NO-GO kontrollnimekirjaga](./LTS_GO_NO_GO.md).
 
-1. `gh release edit vX.Y.Z --prerelease` (märgib mitte kõige uuemana)
-2. `git tag -d vX.Y.Z && git push --delete origin vX.Y.Z` (ainult siis, kui kasutajad pole seda veel kasutusele võtnud)
-3. Või: hotfix `release/vX.Y.0` harul → plaaster väljalase `vX.Y.(Z+1)`
-4. Teavita kohe GitHub Discussions ja Discord kanalites
+### Proovikäivitus (kirjutuskaitstud, alati ohutu)
 
-## Karmid Reeglid
+```bash
+npm run release:dry-run-lts-cut                       # tegelik haru loomine: 3.9.0 lähtekohast HEAD, eelmine silt v3.8.59
+npm run release:dry-run-lts-cut -- --from <3.9.0-tip> # fikseeri lähtekommit
+```
 
-- Mitte kunagi ei tohi otse `main` harule kinnitada (commit)
-- Mitte kunagi ei tohi kasutada `git push --force` `main` või `release/*` harudele
-- Mitte kunagi ei tohi vahele jätta Husky konkse (`--no-verify`)
-- Mitte kunagi ei tohi kinnitada saladusi, mandaate ega `.env` faile
-- Katvus peab jääma ≥60/60/60/60 (laused/read/funktsioonid/harud)
-- Alati lisa või uuenda teste, kui muudad tootmiskoodi `src/`, `open-sse/`, `electron/` või `bin/` kaustades
+`scripts/release/dry-run-lts-cut.mjs` ei käivita midagi: see loeb git-i ja `gh` andmeid ning prindib
+kogu jada — eeltingimused (lähtekoht lahendub, lähterepositoorium sisaldab täielikku ajalugu —
+pinnapealne kloon ei saa haru `stable/v3` üles laadida, sest vastuvõttev pool lükkab paketi esimese
+poogitud eellase juures tagasi, seega looge haru täielikust kloonist või käivitage esmalt
+`git fetch --unshallow origin` — eelmine silt on olemas, `package.json` sisaldab sihtversiooni,
+`release-freeze` probleem on avatud, olemasoleval väljalaskeharul pole avatud probleemi
+`Release branch not green`
+— olematu haru olekuks kuvatakse `?` ehk teadmata, mitte kunagi roheline — Mergify `release`-i
+järjekord on seadistatud (G11: `queue_rules`, `checks_timeout`, silt `queue`), `release/*`
+reeglistik blokeerib endiselt kustutamise ja sunnitud üleslaadimise ning harusid
+`stable/v3` ja `develop` pole veel olemas), kaks haru loomise sammu, millised uinuvad töövood
+käivituvad ja millised `if:`-tingimused muutuvad tõeseks (ning millised jäävad repositooriumi
+muutuja taha või on fikseeritud kanoonilisele repositooriumile), eeldatavad dist-sildid
+(`latest` → 3.9.0, `next` ja `nightly` on tühjad) ning tagasipööramine. Väljumiskood `0` =
+`RESULT: READY`, `1` = blokeeriv eeltingimus ebaõnnestus (`✗`), `2` = kasutusviga.
+`--advisory <id,...>` muudab kontrolli hoiatuseks (`!`) ilma seda peitmata.
 
-## Automatiseeritud Sünkroonimise Kontroll
+Käivitage tegeliku haru loomise proovikäivitus ajal, mil 3.9.0 väljalaske külmutus on veel aktiivne —
+harud luuakse pärast silti ja enne seda, kui etapp 12c külmutuse lõpetab.
 
-Käivita dokumentatsiooni sünkroonimise kaitse enne PR-i avamist:
+### 3.8.58 harjutus (ainult fork-repositooriumis)
+
+```bash
+# 1. Proovikäivitus praeguse tipu põhjal koos harjutuse parameetritega
+npm run release:dry-run-lts-cut -- --target-version 3.8.58 --previous-tag v3.8.57 \
+  --advisory freeze,base-green
+
+# 2. Käivitage FORK-kaugserveri vastu (origin või mis tahes kaugserver, mille URL on kanoonilise
+#    repositooriumi oma, lükatakse tagasi; iga samm küsib terminalis kinnitust)
+git remote add rehearsal https://github.com/<you>/OmniRoute.git
+node scripts/release/dry-run-lts-cut.mjs --execute --remote rehearsal \
+  --target-version 3.8.58 --previous-tag v3.8.57 --advisory freeze,base-green
+
+# 3. Käivitage fork-repositooriumis uinuvad töövood (workflow_dispatch seal, kus proovikäivitus
+#    teatab fikseeritusest kanoonilisele repositooriumile), seejärel pöörake muudatused tagasi
+node scripts/release/dry-run-lts-cut.mjs --execute --rollback --remote rehearsal \
+  --target-version 3.8.58 --previous-tag v3.8.57 --advisory freeze,base-green
+```
+
+Harus `develop` versiooni tõstev kommit luuakse git-i madala taseme vahenditega (tööpuud ei muudeta) ja see tõstab
+sama viie faili versiooni nagu tsükli avamise kommit: `package.json`, `open-sse/package.json`,
+`electron/package.json`, `package-lock.json` ja `docs/openapi.yaml`. Jaotis `[4.0.0]`
+failis CHANGELOG ja selle i18n-peeglid avatakse seejärel harus `develop` enne selle esimest
+PR-i. Skript ei muuda kunagi npm-i dist-silte — harjutage neid ajutise paketiga.
+
+### PR-i eelvaate artefakt (koosta üks kord, eduta samad baidid)
+
+`.github/workflows/preview-artifact.yml` koostab PR-i tipust ühe tootmiskeskkonna tarball-faili ja
+valideerib täpselt selle järgu (#8084 osa (a)). Ainult sama repositooriumi PR-id; midagi ei avaldata.
+
+```bash
+gh workflow run preview-artifact.yml -f pr_number=<N>   # või lisa silt `preview-artifact`
+gh run download <run-id> --name preview-artifact-pr<N>-<sha7> --dir preview
+cd preview && sha256sum -c SHA256SUMS
+gh attestation verify omniroute-*.tgz --repo diegosouzapw/OmniRoute
+npm install -g ./omniroute-*.tgz                          # eelvaate installimine
+```
+
+Käivitus täidab käsud `npm ci`, `npm run build:release` ja `npm run check:pack-artifact`, pakib
+tarball-faili, käivitab `npm run check:pack-boot` (võltsitud saladused, ajutine andmekataloog), pakib selle
+uuesti ning ebaõnnestub, kui räsi pole identne; seejärel salvestab `artifact-identity.json` (tipu SHA, baasi
+SHA, lukufaili räsi, platvorm, arhitektuur, node ABI, komplekteerija, järgu poliitika —
+`scripts/release/artifact-identity.mjs`) ja atesteerib tarball-faili eraldi töös. Eelvaate edutamine
+tähendab selle tarball-faili installimist: ärge kunagi koostage lähtekoodist uuesti.
+
+### Haru loomine (3.9.0, pärast GO-otsust)
+
+1. GO-otsus on salvestatud dokumendis [LTS_GO_NO_GO.md](./LTS_GO_NO_GO.md).
+2. `npm run release:dry-run-lts-cut -- --from v3.9.0` prindib `RESULT: READY`.
+3. Looge harud `origin`-is käsitsi proovikäivituse prinditud käskudega — skript keeldub
+   `origin`-isse üles laadimast. Ülevaadatud develop-kommiti taaskasutamiseks käivitage
+   esmalt `--execute`-harjutus 3.9.0 tipus oma fork-repositooriumi vastu; see prindib mõlemad SHA-d ja
+   samad kommitid saab üles laadida:
+
+   ```bash
+   git push origin <stable-sha>:refs/heads/stable/v3 <develop-sha>:refs/heads/develop
+   ```
+
+4. Kaitske harusid `stable/v3` ja `develop` (reeglistikud + liitmisjärjekord) enne esimese PR-i saabumist.
+5. Ootel töövood aktiveeruvad haru olemasolul: `forward-port.yml` (tõuge harusse
+   `stable/v3`), `validate-stable-pr.yml` (harusse `stable/v3` suunatud PR-id) ja `nightly-v4-build.yml`
+   (koostab haru `develop`). Enne kasutuselevõttu määrake hoidla saladus `secrets.FORWARD_PORT_TOKEN` (et CI käivituks
+   edasikantud PR-ide puhul); öine avaldamine jääb väljalülitatuks, kuni omanik määrab hoidla
+   muutuja `vars.NIGHTLY_PUBLISH` väärtuseks `true` ja npm Trusted Publishing aktsepteerib
+   faili `nightly-v4-build.yml`. Kanali määrab `scripts/release/dist-tag.mjs`, sama
+   lahendaja, mida kasutab `npm-publish.yml`.
+6. Kontrollige kanaleid: `npm view omniroute dist-tags --json` näitab, et `latest` = 3.9.0 ning
+   `next` / `nightly` puuduvad kuni v4 avaldamiseni.
+7. Vajaduse korral tagasipööramine: `git push origin --delete refs/heads/stable/v3 refs/heads/develop`
+   ja `npm dist-tag add omniroute@3.8.59 latest`.
+
+---
+
+## Tagasipööramine
+
+Kui väljalaskel esineb kriitiline probleem:
+
+1. `gh release edit vX.Y.Z --prerelease` (märgib selle mitte uusimaks)
+2. `git tag -d vX.Y.Z && git push --delete origin vX.Y.Z` (ainult juhul, kui kasutajad pole seda veel kasutusele võtnud)
+3. Või: kiirparandus harus `release/vX.Y.0` → paikväljalase `vX.Y.(Z+1)`
+4. Teavitage sellest kohe GitHub Discussionsis ja Discordis
+
+## Ranged reeglid
+
+- Ärge kunagi tehke commiti otse harusse `main`
+- Ärge kunagi kasutage käsku `git push --force` harus `main` ega `release/*` harudes
+- Ärge kunagi jätke Husky hook'e vahele (`--no-verify`)
+- Ärge kunagi lisage commiti saladusi, autentimisandmeid ega `.env`-faile
+- Testikate peab püsima tasemel ≥60/60/60/60 (laused/read/funktsioonid/harud)
+- Kui muudate tootmiskoodi kataloogides `src/`, `open-sse/`, `electron/` või `bin/`, lisage või uuendage alati teste
+
+## Automaatne sünkroonimiskontroll
+
+Käivitage enne PR-i avamist dokumentatsiooni sünkroonimise kontroll kohalikult:
 
 ```bash
 npm run check:docs-sync
 ```
 
-CI käivitab selle kontrolli ka `.github/workflows/ci.yml` failis (lint töö).
+CI käivitab selle kontrolli ka failis `.github/workflows/ci.yml` (lintimistöö).

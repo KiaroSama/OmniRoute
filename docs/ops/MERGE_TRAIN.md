@@ -4,6 +4,12 @@ title: Merge Queue & Manual Merge-Train Runbook
 
 # Merge Queue & Manual Merge-Train Runbook
 
+> **2026-11-19: the Mergify merge queue is retired** (owner's decision). `.mergify.yml` no
+> longer defines a queue and refuses the Mergify commands that merge or rewrite a pull request.
+> Release PRs are merged by hand under the repository ruleset "Require green gates on the active
+> release" (`Gate / CI` + `Gate / Quality`) until omni-queue runs in live mode, and through
+> omni-queue after that ([OMNI_QUEUE.md](./OMNI_QUEUE.md)). The Mergify sections below describe the queue as it was.
+
 Since v3.8.49 (WS3.2/WS3.4 of the quality/velocity plan) the default merge path for
 reviewed PRs into `release/vX.Y.Z` is the **Mergify merge queue** (`.mergify.yml`);
 the **manual merge-train** documented below is the FALLBACK — used during incidents,
@@ -15,9 +21,12 @@ release freezes, or if the Mergify Open Source plan ever changes.
    gate (the report + per-item decision — see `/merge-prs` Step 0.75).
 2. The owner (or the session acting on the owner's decision) applies the **`queue`**
    label. The label IS the merge approval; Mergify only executes it.
-3. Mergify batches up to 10 queued PRs, validates the batch against the fast-gates,
-   and merges (squash). A red batch is **bisected automatically** — the offending PR
-   is isolated in ~log2(N) revalidations and unqueued; the rest proceed.
+3. Mergify validates queued PRs **serially** (one at a time) against the fast-gates
+   and merges (squash). Batching + automatic bisection is a paid Mergify tier
+   ("Cannot use Merge Queue batch" on the free plan, #7220), so `.mergify.yml` sets no
+   `batch_size`; batching remains the job of the manual merge-train below. A PR whose
+   checks are still pending after `checks_timeout` (240 min = 2× the measured p95 of
+   `quality.yml`) is dequeued instead of stalling the queue.
 4. Post-merge, the continuous release-green workflow validates the new tip on push
    and opens an attribution issue if the combination regressed (never auto-revert).
 
@@ -69,3 +78,19 @@ one day during the v3.8.47 cycle:
 
 Nothing is validated less than before — the heavy surface just runs per batch/tip
 instead of per PR, which is what removes the O(N) round-trips.
+
+## Fresh-checkout prerequisites for `merge-train.sh`
+
+The script runs a fail-fast **preflight** on the root checkout (before any worktree
+work) so a broken install can never masquerade as a red train:
+
+1. `npm ci`, then run the `bun` postinstall that npm blocks:
+   `(cd node_modules/bun && node install.js)` — otherwise `check:provider-consistency`
+   and `check:known-symbols` (both `bun scripts/…`) fail on the train AND the base with
+   no violation line.
+2. No stray `node_modules/node_modules` (a duplicate dependency tree; React loads twice
+   and UI vitest suites fail instantly).
+3. `node_modules/.bin/tsc` present and executable (a partial install lacks it).
+
+The train runs the blocking `npm run check:cycles:ratchet`; bare `npm run check:cycles`
+is advisory (it lists the SCCs and exits non-zero even on a healthy base).

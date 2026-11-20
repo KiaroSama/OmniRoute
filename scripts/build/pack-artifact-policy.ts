@@ -29,6 +29,11 @@ export const APP_STAGING_REMOVAL_PATHS: string[] = [
   // past the registry 413 limit for npm.org.  It's only needed on systems
   // with a CUDA GPU — users install CUDA providers separately.
   "node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime_providers_cuda.so",
+  // 2026-11-17 (owner decision): the translated /docs mirrors (~397 MB unpacked, ~96 MB of the
+  // packed tarball) pushed omniroute 3.8.54 to 206.1 MB and the registry answered 413. npm
+  // installs serve /docs in English (docsI18nRender falls back when a mirror is missing);
+  // Docker and Electron keep the mirrors, since they ship the standalone build directly.
+  "docs/i18n",
 ];
 
 export const APP_STAGING_ALLOWED_EXACT_PATHS: string[] = [
@@ -44,6 +49,7 @@ export const APP_STAGING_ALLOWED_EXACT_PATHS: string[] = [
   // #7065: imported by dist/server-ws.mjs; assembleStandalone copies it but without
   // this bare entry the prepublish prune deleted it → every `omniroute` boot of the
   // published 3.8.47 crashed with ERR_MODULE_NOT_FOUND (same class as tls-options/3.8.41).
+  "h2c-upgrade-guard.cjs",
   "head-response-guard.cjs",
   "http-method-guard.cjs",
   "open-sse/mcp-server/server.js",
@@ -53,6 +59,9 @@ export const APP_STAGING_ALLOWED_EXACT_PATHS: string[] = [
   "open-sse/services/compression/engines/llmlingua/onnxWorker.js",
   "open-sse/services/compression/compressionWorker.js",
   "src/lib/usage/callLogArtifactWorker.js",
+  "src/lib/logExport/exportChild.js",
+  // Scoped ESM package survives pruning beneath a CommonJS standalone root.
+  "src/lib/logExport/package.json",
   "src/lib/db/healthCheckWorker.js",
   "package.json",
   "peer-stamp.mjs",
@@ -93,6 +102,13 @@ export const APP_STAGING_ALLOWED_PATH_PREFIXES: string[] = [
   "src/mitm/",
 ];
 
+/**
+ * Allowed paths that are neither one exact file nor a whole prefix. Empty since 2026-11-17:
+ * it used to admit the translated docs mirrors (2026-11-03), which now stay out of the npm
+ * package entirely (see the docs/i18n entry in APP_STAGING_REMOVAL_PATHS).
+ */
+export const APP_STAGING_ALLOWED_PATH_MATCHERS: Array<(filePath: string) => boolean> = [];
+
 export const PACK_ARTIFACT_ALLOWED_EXACT_PATHS: string[] = APP_STAGING_ALLOWED_EXACT_PATHS.map(
   (filePath: string) => `dist/${filePath}`
 );
@@ -100,6 +116,26 @@ export const PACK_ARTIFACT_ALLOWED_EXACT_PATHS: string[] = APP_STAGING_ALLOWED_E
 export const PACK_ARTIFACT_ALLOWED_PATH_PREFIXES: string[] = APP_STAGING_ALLOWED_PATH_PREFIXES.map(
   (directoryPath: string) => `dist/${directoryPath}`
 );
+
+export const PACK_ARTIFACT_ALLOWED_PATH_MATCHERS: Array<(filePath: string) => boolean> =
+  APP_STAGING_ALLOWED_PATH_MATCHERS.map(
+    (matches) => (filePath: string) => filePath.startsWith("dist/") && matches(filePath.slice(5))
+  );
+
+/**
+ * Packed-size ceiling for the npm tarball. The registry rejected omniroute 3.8.54 with E413 at
+ * 206.1 MB packed, after 3.8.53 went through at 193.6 MB, and the package grows ~12 MB per
+ * release. Failing check:pack-artifact below that limit catches the growth before the last
+ * step of a release does.
+ */
+export const PACK_ARTIFACT_MAX_PACKED_BYTES = 190_000_000;
+
+export function exceedsPackedSizeBudget(
+  packedBytes: number,
+  maxBytes: number = PACK_ARTIFACT_MAX_PACKED_BYTES
+): boolean {
+  return Number.isFinite(packedBytes) && packedBytes > maxBytes;
+}
 
 export const PACK_ARTIFACT_ROOT_ALLOWED_EXACT_PATHS: string[] = [
   ".env.example",
@@ -111,7 +147,8 @@ export const PACK_ARTIFACT_ROOT_ALLOWED_EXACT_PATHS: string[] = [
   "config/release/wreq-js-rust-notices.md",
   "bin/aliasResolver.mjs",
   // #14006: Antigravity MITM bridge (operator tool for the Antigravity IDE/CLI).
-  // Pure node:* imports, shipped via package.json "files": ["bin/"].
+  // Shipped via package.json "files": ["bin/"]; its only local import is the CJS shim
+  // ../src/mitm/_internal/bridgeCert.cjs (shipped via "src/mitm/").
   "bin/antigravity-bridge.mjs",
   "bin/chatgpt-web-codex-mcp.mjs",
   // #7808: ESM loader hook split out of bin/aliasResolver.mjs to silence CodeQL
@@ -156,10 +193,14 @@ export const PACK_ARTIFACT_ROOT_ALLOWED_EXACT_PATHS: string[] = [
   // shipped via package.json "files", so it must be allowed in the tarball.
   "open-sse/utils/setupPolyfill.ts",
   "package.json",
+  // OpenCode free-tier Bun relay, spawned by src/lib/opencodeFreeRelay.ts; shipped via package.json "files".
+  "scripts/ops/opencode-free-relay.ts",
   "scripts/build/assembleStandalone.mjs",
+  "scripts/build/publicOpenApi.mjs",
   "scripts/build/backendOnlyPages.mjs",
   "scripts/build/build-tproxy-native.mjs",
   "scripts/build/build-next-isolated.mjs",
+  "scripts/i18n/generate-global-error-messages.mjs",
   "scripts/check/check-supported-node-runtime.ts",
   "scripts/build/native-binary-compat.mjs",
   "scripts/build/wreqJsNative.mjs",
@@ -212,6 +253,10 @@ export const PACK_ARTIFACT_ROOT_ALLOWED_PATH_PREFIXES: string[] = [
 export const PACK_ARTIFACT_REQUIRED_PATHS: string[] = [
   "dist/open-sse/services/compression/engines/rtk/filters/generic-output.json",
   "dist/src/lib/usage/callLogArtifactWorker.js",
+  "dist/src/lib/logExport/exportChild.js",
+  "dist/src/lib/logExport/package.json",
+  // Unbundled destination helper also ships through package.json's src/lib/ prefix.
+  "src/lib/logExport/destinations/otlpRequestHeaders.ts",
   "dist/src/lib/db/healthCheckWorker.js",
   "dist/open-sse/vendor/codex-chatgpt-web/adapters/chatgpt-web/mcp-server.js",
   "dist/open-sse/services/compression/rules/en/filler.json",
@@ -230,6 +275,8 @@ export const PACK_ARTIFACT_REQUIRED_PATHS: string[] = [
   "dist/tls-options.mjs",
   // #7065: regression guard for the HEAD response guard (dist/server-ws.mjs import).
   "dist/head-response-guard.cjs",
+  // Cleartext h2c upgrade guard (dist/server-ws.mjs import) — same boot-crash class as above.
+  "dist/h2c-upgrade-guard.cjs",
   "dist/webdav-handler.mjs",
   "bin/cli/program.mjs",
   // Direct imports of bin/omniroute.mjs — bin/cli/ is only an allowlist PREFIX, so a
@@ -240,8 +287,12 @@ export const PACK_ARTIFACT_REQUIRED_PATHS: string[] = [
   // GHSA-2pg2-xm9r-8544: private-by-default DATA_DIR / .env modes, called on every boot.
   "bin/cli/privateDataDir.mjs",
   "bin/cli/utils/ensureAndroidCacheDir.mjs",
+  // `formatCliError` — the top-level CLI failure handler (OMNIROUTE_DEBUG_STACK opt-in).
+  "bin/cli/utils/formatCliError.mjs",
   "bin/cli/utils/parseEnvValue.mjs",
   "bin/cli/utils/storageKeyProvision.mjs",
+  // The allowlist of keys a working-directory .env may set; read on every CLI boot.
+  "bin/cli/utils/untrustedCwdEnv.mjs",
   "bin/cli/utils/versionFastPath.mjs",
   // #11437 import — `describeVolatileEnvWarning`, called on every CLI boot.
   "bin/cli/utils/volatileEnvPath.mjs",
@@ -369,10 +420,14 @@ export function findUnexpectedArtifactPaths(
     // DB-backed route in packaged boots while /api/monitoring/health stayed green.
     // The PUBLISH gate (validate-pack-artifact) keeps the strict default.
     neverAllowedSegments = PACK_ARTIFACT_NEVER_ALLOWED_SEGMENTS,
+    // Path predicates for allowed sets that are neither exact files nor whole prefixes
+    // (APP_STAGING_ALLOWED_PATH_MATCHERS / PACK_ARTIFACT_ALLOWED_PATH_MATCHERS).
+    pathMatchers = [],
   }: {
     exactPaths?: string[];
     prefixPaths?: string[];
     neverAllowedSegments?: string[];
+    pathMatchers?: Array<(filePath: string) => boolean>;
   } = {}
 ): string[] {
   const normalizedExact = new Set(exactPaths.map(normalizeArtifactPath));
@@ -388,7 +443,8 @@ export function findUnexpectedArtifactPaths(
       (filePath) =>
         hasForbiddenSegment(filePath) ||
         (!normalizedExact.has(filePath) &&
-          !normalizedPrefixes.some((prefix) => filePath.startsWith(prefix)))
+          !normalizedPrefixes.some((prefix) => filePath.startsWith(prefix)) &&
+          !pathMatchers.some((matches) => matches(filePath)))
     )
     .sort();
 }
@@ -402,5 +458,34 @@ export function findMissingArtifactPaths(
     .map(normalizeArtifactPath)
     .filter(Boolean)
     .filter((requiredPath) => !normalizedPaths.has(requiredPath))
+    .sort();
+}
+
+/**
+ * #20439: Turbopack names the server chunk of each full locale catalog
+ * (src/i18n/messages/<locale>.json) `src_i18n_messages_<locale>_json_[json]_cjs_<hash>._.js`.
+ * One per locale belongs to the page renderers (`server/chunks/ssr/`). npm 3.8.54 shipped a
+ * second copy of all 67 under `server/chunks/` (~79 MB unpacked) because the /authorize route
+ * handler — compiled in its own chunking context — reached src/i18n/request.ts through
+ * next-intl/server. Route handlers now translate through src/i18n/routeHandlerTranslations.ts;
+ * this returns every catalog chunk of a locale that has more than one, so check:pack-artifact
+ * fails if any server context starts bundling the catalogs again.
+ */
+const LOCALE_CATALOG_CHUNK = /(?:^|\/)src_i18n_messages_(.+?)_json_\[json\]_cjs_[^/]*\.js$/;
+
+export function localeCatalogChunkLocale(filePath: string): string | null {
+  return LOCALE_CATALOG_CHUNK.exec(normalizeArtifactPath(filePath))?.[1] ?? null;
+}
+
+export function findDuplicatedLocaleCatalogChunks(filePaths: string[]): string[] {
+  const byLocale = new Map<string, string[]>();
+  for (const filePath of filePaths.map(normalizeArtifactPath)) {
+    const locale = localeCatalogChunkLocale(filePath);
+    if (!locale) continue;
+    byLocale.set(locale, [...(byLocale.get(locale) ?? []), filePath]);
+  }
+  return [...byLocale.values()]
+    .filter((paths) => paths.length > 1)
+    .flat()
     .sort();
 }

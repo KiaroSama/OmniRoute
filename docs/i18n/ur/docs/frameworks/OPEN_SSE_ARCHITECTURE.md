@@ -30,30 +30,30 @@
 
 ```
 open-sse/
-├── index.ts              # عوامی داخلی نقطہ
+├── index.ts              # عوامی نقطۂ آغاز
 ├── types.d.ts            # عوامی ٹائپ ایکسپورٹس
 ├── package.json          # @omniroute/open-sse
-├── config/               # پرووائیڈر کنفیگز، مستقلات، رجسٹریاں
-├── executors/            # ہر پرووائیڈر کے HTTP ایگزیکیوٹرز (67 + base.ts/index.ts)
+├── config/               # فراہم کنندگان کی کنفیگریشنز، مستقل اقدار، رجسٹریاں
+├── executors/            # ہر فراہم کنندہ کے لیے HTTP ایگزیکیوٹرز (150 ماڈیولز + base.ts/index.ts)
 ├── handlers/             # درخواست ہینڈلرز (chatCore، responses، وغیرہ)
-├── lib/                  # اندرونی یوٹیلیٹیز
+├── lib/                  # اندرونی افادیتی اجزا
 ├── mcp-server/           # Model Context Protocol سرور
 ├── services/             # تقریباً 298 سروس ماڈیولز
 ├── transformer/          # Responses API فارمیٹ ٹرانسفارمر
-├── translator/           # فارمیٹ کا ترجمہ (OpenAI ↔ Claude ↔ Gemini)
-└── utils/                # مشترکہ یوٹیلیٹیز (لاگنگ، خرابی، اسٹریم، وغیرہ)
+├── translator/           # فارمیٹ ترجمہ (OpenAI ↔ Claude ↔ Gemini)
+└── utils/                # مشترکہ افادیتی اجزا (لاگنگ، خرابی، اسٹریم، وغیرہ)
 ```
 
 ### ماڈیولز کی تعداد
 
 | ڈائریکٹری | فائلیں | مقصد |
-| `executors/` | 167 | ہر پرووائیڈر کے HTTP ایگزیکیوٹرز (`DefaultExecutor` فیکٹری کے ذریعے یکجا) |
-| `handlers/` | 157 | درخواست کے داخلی نقاط (`chatCore`، `responses`، `embeddings`) |
+| `executors/` | 167 | ہر فراہم کنندہ کے لیے HTTP ایگزیکیوٹرز (DefaultExecutor فیکٹری کے ذریعے یکجا کیے گئے) |
+| `handlers/` | 157 | درخواست کے داخلی مقامات (chatCore، responses، embeddings) |
 | `services/` | ~536 | روٹنگ، کیشنگ، شرح کی تحدید، ریفریش، وغیرہ |
 | `translator/` | 56 | فارمیٹ کی تبدیلی (OpenAI ↔ Claude ↔ Gemini) |
 | `mcp-server/` | 44 | MCP ٹولز اور ٹرانسپورٹس |
-| `utils/` | ~108 | مختلف حصوں میں استعمال ہونے والی یوٹیلیٹیز (لاگنگ، خرابی، اسٹریم) |
-| `config/` | ~339 | پرووائیڈر کنفیگز، مستقلات، رجسٹریاں |
+| `utils/` | ~108 | تمام حصوں میں استعمال ہونے والے افادیتی اجزا (لاگنگ، خرابی، اسٹریم) |
+| `config/` | ~339 | فراہم کنندگان کی کنفیگریشنز، مستقل اقدار، رجسٹریاں |
 
 ---
 
@@ -165,30 +165,30 @@ needsTranslation(source, target): boolean
 
 ---
 
-## کلیدی فائلوں کا تفصیلی جائزہ
+## کلیدی فائلیں ڈیپ ڈائیو
 
 ### chatCore.ts (5977 لائنیں)
 
-**مرکزی درخواست ہینڈلر**۔ اپنے حجم کے باوجود، اس کی ساخت واضح ہے:
+دی** اہم درخواست ہینڈلر** . اس کے سائز کے باوجود، اس کی ایک واضح ساخت ہے:
 
 ```ts
-// chatCore.ts کی فرضی ساخت
+// Pseudo-structure of chatCore.ts
 export async function handleChat(request: NextRequest) {
-  // 1. توثیق + CORS
+  // 1. Auth + CORS
   await authenticateRequest(request);
   applyCorsHeaders(response);
 
-  // 2. باڈی کی توثیق
+  // 2. Body validation
   const body = await parseRequestBody(request);
 
-  // 3. فارمیٹ کی شناخت + ترجمہ
+  // 3. Format detection + translation
   const sourceFormat = detectFormat(request);
   const targetFormat = getTargetFormat(providerId);
   if (needsTranslation(sourceFormat, targetFormat)) {
     body = translateRequest(body, sourceFormat, targetFormat);
   }
 
-  // 4. کومبو روٹنگ
+  // 4. Combo routing
   const targets = await resolveComboTargets(comboId, body);
   for (const target of targets) {
     try {
@@ -196,20 +196,20 @@ export async function handleChat(request: NextRequest) {
       await recordUsage(result);
       return result;
     } catch (err) {
-      // اگلے ہدف پر جاری رکھیں
+      // Continue to next target
     }
   }
 
-  // 5. ہنگامی فال بیک
+  // 5. Emergency fallback
   return await emergencyFallback(body);
 }
 ```
 
-ایک بہت بڑا فنکشن ہونے کے باوجود، اسے **تبصروں پر مشتمل حصوں** میں منظم کیا گیا ہے جو 5 مرحلوں والی پائپ لائن سے مطابقت رکھتے ہیں۔
+ایک بڑا فنکشن ہونے کے باوجود، اس میں منظم ہے۔** تبصرہ والے حصے** وہ نقشہ 5 مرحلے کی پائپ لائن کا۔
 
 ### combo.ts (4456 LOC)
 
-یہ **روٹنگ انجن** ہے جو کسی کومبو کو ترتیب شدہ اہداف میں حل کرتا ہے۔
+دی** روٹنگ انجن** جو ترتیب دیے گئے اہداف کے لیے کامبو کو حل کرتا ہے۔
 
 ```ts
 // services/combo.ts
@@ -226,135 +226,140 @@ export async function handleComboChat(body, comboId): Promise<ChatResult> {
 }
 ```
 
-یہ **19 روٹنگ حکمت عملیوں** کو سپورٹ کرتا ہے (`src/shared/constants/routingStrategies.ts` دیکھیں):
+حمایت کرتا ہے۔** 22 روٹنگ کی حکمت عملی** ( `src/shared/constants/routingStrategies.ts` دیکھیں):
 
-| حکمت عملی           | طرزِ عمل                                                                             |
-| ------------------- | ------------------------------------------------------------------------------------ |
-| `priority`          | پہلے ہدف کو ترجیح دینے والی ترتیب شدہ فہرست                                          |
-| `weighted`          | ہر ہدف کے وزن کی بنیاد پر احتمالی انتخاب                                             |
-| `round-robin`       | اہداف میں ترتیب وار چکر لگانا                                                        |
-| `context-relay`     | اہداف کے درمیان سیاق منتقل کرنا                                                      |
-| `fill-first`        | اگلے ہدف پر جانے سے پہلے کوٹا مکمل استعمال کرنا                                      |
-| `p2c`               | دو انتخابات کی طاقت                                                                  |
-| `random`            | یکساں بے ترتیب انتخاب                                                                |
-| `least-used`        | حالیہ استعمالات میں سب سے کم استعمال ہونے والے کو منتخب کرنا                         |
-| `cost-optimized`    | سب سے سستا صحت مند ہدف پہلے                                                          |
-| `reset-aware`       | فراہم کنندہ کی ری سیٹ ونڈوز سے آگاہ                                                  |
-| `reset-window`      | ری سیٹ ونڈو پر مبنی روٹنگ                                                            |
-| `headroom`          | سب سے زیادہ باقی ماندہ کوٹا گنجائش والا ہدف پہلے                                     |
-| `strict-random`     | حقیقی طور پر یکساں (معیار کی کوئی وزن دہی نہیں)                                      |
-| `auto`              | 16 عوامل پر مبنی اسکورنگ استعمال کرنا (`autoCombo/`)                                 |
-| `lkgp`              | آخری معلوم کامیاب فراہم کنندہ پہلے                                                   |
-| `context-optimized` | طویل سیاق والی درخواستوں کے لیے بہترین                                               |
-| `fusion`            | متوازی طور پر ایک پینل کو درخواستیں بھیجنا، پھر جج کے ذریعے ترکیب کرنا (`fusion.ts`) |
+| حکمت عملی           | رویہ                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| `priority`          | پہلے ہدف کی ترتیب دی گئی فہرست                                                              |
+| `weighted`          | فی ہدف وزن کے لحاظ سے امکان                                                                 |
+| `round-robin`       | ترتیب میں اہداف کے ذریعے سائیکل                                                             |
+| `context-relay`     | اہداف میں سیاق و سباق کو ہینڈ آف کریں۔                                                      |
+| `fill-first`        | اگلے پر جانے سے پہلے کوٹہ پُر کریں۔                                                         |
+| `p2c`               | دو انتخاب کی طاقت                                                                           |
+| `random`            | یکساں بے ترتیب                                                                              |
+| `least-used`        | سب سے کم حالیہ استعمال کے ساتھ ایک کو چنیں۔                                                 |
+| `cost-optimized`    | سب سے سستا صحت مند ہدف پہلے                                                                 |
+| `reset-aware`       | فراہم کنندہ ری سیٹ ونڈوز کے بارے میں آگاہ                                                   |
+| `reset-window`      | ونڈو پر مبنی روٹنگ کو دوبارہ ترتیب دیں۔                                                     |
+| `expiry-first`      | وہ اکاؤنٹ خرچ کریں جس کا کوٹہ پہلے غیر استعمال شدہ ختم ہو جائے گا۔                          |
+| `headroom`          | سب سے زیادہ باقی کوٹہ ہیڈ روم پہلے                                                          |
+| `quota-weighted`    | ختم شدہ اکاؤنٹس کو چھوڑیں، پھر بقیہ کوٹہ ÷ ان فلائٹ لوڈ سے ڈرا کریں                         |
+| `strict-random`     | واقعی یکساں (کوئی معیار کا وزن نہیں)                                                        |
+| `auto`              | 16 فیکٹر اسکورنگ استعمال کریں (`autoCombo/`)                                                |
+| `lkgp`              | آخری معروف اچھا فراہم کنندہ پہلے                                                            |
+| `context-optimized` | طویل سیاق و سباق کی درخواستوں کے لیے بہترین                                                 |
+| `cache-optimized`   | ہر دوبارہ قابل استعمال پرامپٹ سابقہ کو ایک ہی اکاؤنٹ میں پن کریں (پرامپٹ کیش ہٹس)           |
+| `fusion`            | متوازی طور پر ایک پینل پر فین آؤٹ کریں، پھر جج کے ذریعے ترکیب کریں (`fusion.ts`)            |
+| `pipeline`          | زنجیر کے اقدامات — ہر ہدف کا آؤٹ پٹ اگلے کو فیڈ کرتا ہے۔                                    |
+| `jev`               | آپٹ ان: TypeSafe Jev تسلیم کرتا ہے کہ کون سی درجہ بندی کی اندراجات چلتی ہیں؛ ورنہ آپ کا حکم |
 
 ### base.ts (1170 LOC)
 
-یہ **تجریدی ایگزیکیوٹر** ہے جسے تمام 107 ایگزیکیوٹرز توسیع دیتے ہیں۔ اس میں شامل ہیں:
+دی** خلاصہ ایگزیکیوٹر** کہ ہر ایگزیکیوٹر کلاس میں توسیع ہوتی ہے (براہ راست یا `DefaultExecutor` اور دیگر ذیلی طبقات کے ذریعے)۔ اس میں شامل ہیں:
 
-- `buildUrl()` — ڈیفالٹ URL کی تشکیل (ذیلی کلاسیں حسبِ ضرورت اسے اوور رائیڈ کرتی ہیں)
-- `buildHeaders()` — ڈیفالٹ ہیڈرز (توثیق، مواد کی قسم)
-- `transformRequest()` — ڈیفالٹ طور پر بغیر تبدیلی کے آگے بھیجنا
-- `execute()` — دوبارہ کوشش/وقفہ/بریکر کے ساتھ مرکزی HTTP لوپ
+- `buildUrl()` — پہلے سے طے شدہ URL تعمیر (حسب ضرورت کے لیے ذیلی طبقات اوور رائڈ)
+- `buildHeaders()` — ڈیفالٹ ہیڈرز (تصویر، مواد کی قسم)
+- `transformRequest()` — ڈیفالٹ کے ذریعے پاس
+- `execute()` — مرکزی HTTP لوپ retry/backoff/breaker کے ساتھ
 
 ```ts
 // open-sse/executors/default.ts
 export class DefaultExecutor extends BaseExecutor {
-  // تمام OpenAI/Anthropic سے مطابقت رکھنے والے فراہم کنندگان کو سنبھالتا ہے
-  // فراہم کنندگان کنفیگریشنز (URL، توثیق، ہیڈرز) رجسٹر کرتے ہیں، لیکن ایگزیکیوٹر منطق مشترک ہوتی ہے
+  // Handles all OpenAI/Anthropic-compatible providers
+  // Providers register configurations (URL, auth, headers) but share executor logic
 }
 ```
 
-فراہم کنندہ سے مخصوص طرزِ عمل (توثیقی ہیڈرز، بنیادی URL، ورژن ہیڈرز) کو علیحدہ ایگزیکیوٹر کلاسوں کے بجائے فراہم کنندہ رجسٹری کے ذریعے کنفیگر کیا جاتا ہے۔
+فراہم کنندہ کے لیے مخصوص رویہ (تصنیف ہیڈر، بیس URL، ورژن ہیڈر) فراہم کنندہ کی رجسٹری کے ذریعے ترتیب دیا جاتا ہے، علیحدہ ایگزیکیوٹر کلاسز کے نہیں۔
 
 ````
 
 ---
 
-## سروسز (117 ماڈیولز)
+## خدمات (117 ماڈیولز)
 
-سروسز **مخصوص، واحد مقصد والے ماڈیولز** ہیں جنہیں ہینڈلرز یکجا کرتے ہیں۔ بڑی اقسام یہ ہیں:
+خدمات ہیں۔** مرکوز، واحد مقصدی ماڈیولز** جو ہینڈلرز کمپوز کرتے ہیں۔ بڑے زمرے:
 
 ### روٹنگ اور کومبو
 
-- `combo.ts` — کومبو روٹ شدہ درخواستوں کا نقطۂ آغاز
-- `services/autoCombo/` — 16 عوامل پر مبنی اسکورنگ، 8 خودکار روٹنگ حکمتِ عملیاں
-- `wildcardRouter.ts` — وائلڈ کارڈ روٹس (`gpt-*`) سے مماثلت کرتا ہے
-- `modelFamilyFallback.ts` — T5 خاندان کے اندر فال بیک
+- کومبو روٹڈ درخواستوں کے لیے `combo.ts` — انٹری پوائنٹ
+- `services/autoCombo/` — 16 فیکٹر اسکورنگ، 8 آٹو روٹنگ کی حکمت عملی
+- `wildcardRouter.ts` — وائلڈ کارڈ روٹس سے میل کھاتا ہے (`gpt-*`)
+- `modelFamilyFallback.ts` — T5 انٹرا فیملی فال بیک
 
-### شرح کی تحدید اور کوٹا
+### شرح کی حد اور کوٹہ
 
-- `rateLimitManager.ts` — ہر key+provider کے لیے ٹوکن بکٹ
+- `rateLimitManager.ts` — ٹوکن بالٹی فی کلیدی + فراہم کنندہ
 - `usage.ts` — استعمال کی ریکارڈنگ
-- `quotaCache.ts` — اِن میموری کوٹا اسنیپ شاٹس
+- `quotaCache.ts` — ان میموری کوٹہ سنیپ شاٹس
 
 ### اکاؤنٹ اور ٹوکن
 
-- `tokenRefresh.ts` — 401 پر OAuth ریفریش
-- `accountFallback.ts` — متبادل اکاؤنٹ پر منتقل ہونا
-- `sessionManager.ts` — متعدد مراحل والی سیشن حالت
+- 401 پر `tokenRefresh.ts` — OAuth ریفریش کریں۔
+- `accountFallback.ts` — متبادل اکاؤنٹ پر سوئچ کریں۔
+- `sessionManager.ts` — ملٹی ٹرن سیشن اسٹیٹ
 
 ### ذہانت
 
-- `intentClassifier.ts` — درخواست کے ارادے کی درجہ بندی
-- `taskAwareRouter.ts` — کام کی قسم کے لحاظ سے روٹنگ
-- `thinkingBudget.ts` — استدلالی ٹوکنز مختص کرنا
-- `contextManager.ts` — روٹنگ سیاق شامل کرنا
+- `intentClassifier.ts` — درخواست کے ارادے کی درجہ بندی کریں۔
+- `taskAwareRouter.ts` — روٹ بذریعہ ٹاسک ٹائپ
+- `thinkingBudget.ts` — سوچ کے ٹوکن مختص کریں۔
+- `contextManager.ts` — انجیکشن روٹنگ سیاق و سباق
 
-### پائیداری
+### لچک
 
-- `resilience.ts` — دوبارہ کوشش، بیک آف، اور بریکر کی تنظیم
-- `emergencyFallback.ts` — آخری چارۂ کار فال بیک
-- `modelDeprecation.ts` — جانشین ماڈلز کی جانب خودکار روٹنگ
+- `resilience.ts` — دوبارہ کوشش کریں، بیک آف، بریکر آرکیسٹریشن
+- `emergencyFallback.ts` — آخری ریزورٹ فال بیک
+- `modelDeprecation.ts` — جانشین ماڈل کے لیے آٹو روٹ
 
-### حالت
+### ریاست
 
-- `signatureCache.ts` — درخواست کے دستخط کے ذریعے نقلیں ختم کرنا
+- درخواست کے دستخط کے ذریعہ `signatureCache.ts` — ڈیڈ اپ
 - `volumeDetector.ts` — لوڈ شیڈنگ
 - `contextHandoff.ts` — سیشن سیریلائزیشن
 
 ### کمپریشن
 
-- `compression/` (ذیلی ڈائریکٹری) — مکمل کمپریشن پائپ لائن
-- انجنز، رول پیکس، اور اڈاپٹرز کا احاطہ کرنے والی 39 فائلیں
+- `compression/` (سب ڈائرکٹری) — مکمل کمپریشن پائپ لائن
+- 39 فائلیں جس میں انجن، رول پیک، اڈاپٹر شامل ہیں۔
 
-### مہارتیں
+### ہنر
 
-- ([SKILLS.md](./SKILLS.md) میں شامل ہیں)
+- ( [SKILLS.md](./SKILLS.md) میں احاطہ کرتا ہے)
 
-### میموری
+### یادداشت
 
-- ([MEMORY.md](./MEMORY.md) میں شامل ہے)
+- ( [MEMORY.md](./MEMORY.md) میں احاطہ کرتا ہے)
 
 ---
 
-## ایگزیکیوٹرز (75+ فائلیں)
+## ایگزیکیوٹرز (150 ماڈیول)
 
-ہر provider کے لیے ایک فائل۔ یہ سب `BaseExecutor` کو توسیع دیتے ہیں اور صرف مختلف حصوں کو اوور رائیڈ کرتے ہیں۔
+فی فراہم کنندہ زیادہ تر ایک فائل۔ ایگزیکیوٹر کلاسز تمام `BaseExecutor` بڑھاتے ہیں اور جو مختلف ہے اسے اوور رائڈ کرتے ہیں۔ دوسرے ماڈیول فی فراہم کنندہ کے مددگار ہیں (ٹول اسکیماس، fetch/TTS اڈاپٹر، quirk ہینڈلرز)۔
 
-### عمومی پیٹرنز
+### عام پیٹرن
 
-Providers کو `getExecutor(providerId)` کے ذریعے حل کیا جاتا ہے، جو تشکیل شدہ executor واپس کرتا ہے۔ OpenAI/Anthropic سے مطابقت رکھنے والے providers، `DefaultExecutor` (`executors/default.ts`) استعمال کرتے ہیں۔ Provider سے مخصوص رویہ (بنیادی URL، توثیقی ہیڈرز، API ورژن) `open-sse/config/providers/` میں تشکیل دیا جاتا ہے، جبکہ درخواست کی باڈی کی تبدیلیاں `open-sse/translator/` میں سنبھالی جاتی ہیں۔
+فراہم کنندگان کو `getExecutor(providerId)` کے ذریعے حل کیا جاتا ہے، جو کنفیگرڈ ایگزیکیوٹر کو واپس کرتا ہے۔ OpenAI/Anthropic-compatible فراہم کرنے والے `DefaultExecutor` (`executors/default.ts`) استعمال کرتے ہیں۔ فراہم کنندہ کے لیے مخصوص رویہ (بیس URL، auth ہیڈرز، API ورژن) کو `open-sse/config/providers/` میں کنفیگر کیا گیا ہے، جب کہ درخواست کے باڈی ٹرانسفارمیشنز کو `open-sse/translator/` میں ہینڈل کیا جاتا ہے۔
 
-**حسبِ ضرورت URL** کو provider کی تشکیل کے ذریعے مقرر کیا جاتا ہے:
+**اپنی مرضی کے مطابق URL** فراہم کنندہ کی ترتیب کے ذریعے ترتیب دیا گیا ہے:
 
 ```ts
-// open-sse/config/providers/ میں Provider کی تشکیل
+// Provider config in open-sse/config/providers/
 export default {
   id: "together",
   baseURL: "https://api.together.xyz/v1/chat/completions",
 }
 ````
 
-**حسبِ ضرورت توثیق** کو provider رجسٹری کی توثیقی تشکیل (API کلید، OAuth، ہیڈر پروفائلز) کے ذریعے سنبھالا جاتا ہے۔
+**حسب ضرورت تصدیق** فراہم کنندہ رجسٹری کی تصدیق کنفیگریشن (API key, OAuth، ہیڈر پروفائلز) کے ذریعے سنبھالا جاتا ہے۔
 
-**حسبِ ضرورت درخواست باڈی** کی تبدیلیاں (مثلاً Anthropic کا `system` کو `messages` سے الگ کرنا) ہر provider کے لیے `open-sse/translator/` میں رجسٹر کی جاتی ہیں۔
+**اپنی مرضی کے مطابق درخواست جسم** تبدیلیاں (مثال کے طور پر، Anthropic `system` `messages` سے الگ کرنا) `open-sse/translator/` میں فی فراہم کنندہ رجسٹرڈ ہیں۔
 
 ````
 
-### ایگزیکیوٹر فیکٹری
+### The Executor Factory
 
-`executors/index.ts`، `getExecutor(providerId)` ایکسپورٹ کرتی ہے:
+`executors/index.ts` exports `getExecutor(providerId)`:
 
 ```ts
 import { getExecutor } from "@omniroute/open-sse/executors";
@@ -366,7 +371,7 @@ const result = await executor.execute({
 });
 ````
 
-حل کرنے کا عمل `ExecutorRegistry` (`executors/registry.ts`) سے گزرتا ہے: ہر مخصوص executor کو `executors/index.ts` کے بلٹ اِن ٹیبل میں بیان کیا جاتا ہے اور ماڈیول لوڈ ہوتے وقت `registerExecutor(alias, instance)` کے ذریعے رجسٹر کیا جاتا ہے؛ `getExecutor()` رجسٹری سے رجوع کرتا ہے اور کسی ایسے provider کے لیے، جس کا کوئی مخصوص اندراج موجود نہ ہو، میموائزڈ `DefaultExecutor` پر فال بیک کرتا ہے۔ مکمل alias → executor میپنگ کو گولڈن ٹیسٹ `tests/unit/executor-map-golden.test.ts` کے ذریعے بیان کیا گیا ہے۔
+ریزولوشن `ExecutorRegistry` (`executors/registry.ts`) سے گزرتا ہے : ہر خصوصی ایگزیکیوٹر کو `executors/index.ts` کے بلٹ ان ٹیبل میں ڈکلیئر کیا جاتا ہے اور ماڈیول لوڈ پر `registerExecutor(alias, instance)` کے ذریعے رجسٹر کیا جاتا ہے۔ `getExecutor()` رجسٹری سے مشورہ کرتا ہے اور بغیر کسی خصوصی اندراج کے کسی بھی فراہم کنندہ کے لیے میموائزڈ `DefaultExecutor` پر واپس آتا ہے۔ مکمل عرف → ایگزیکیوٹر میپنگ کی خصوصیت گولڈن ٹیسٹ `tests/unit/executor-map-golden.test.ts` ہے۔
 
 ---
 
@@ -481,15 +486,15 @@ createResponsesApiTransformStream(): TransformStream
 
 ## کنفیگریشن
 
-`open-sse/config/` میں کنفیگریشن لیئر موجود ہے:
+`open-sse/config/` کنفیگریشن پرت رکھتا ہے:
 
-| فائل                          | مقصد                                           |
-| ----------------------------- | ---------------------------------------------- |
-| `providerRegistry.ts`         | 352 فراہم کنندگان کے کیٹلاگ پر چیٹ ماڈل رجسٹری |
-| `providerModels.ts`           | ماڈل عرفی نام، فارمیٹ میپنگ                    |
-| `constants.ts`                | ٹائم آؤٹس، حدود، اسٹیٹس کوڈز                   |
-| `defaultThinkingSignature.ts` | ڈیفالٹ Claude تھنکنگ سگنیچر                    |
-| `modelStrip.ts` (سروسز میں)   | فی فراہم کنندہ فیلڈ اسٹرپنگ                    |
+| فائل                          | مقصد                                      |
+| ----------------------------- | ----------------------------------------- |
+| `providerRegistry.ts`         | 394 فراہم کنندہ کیٹلاگ پر چیٹ ماڈل رجسٹری |
+| `providerModels.ts`           | ماڈل عرفی نام، فارمیٹ میپنگ               |
+| `constants.ts`                | ٹائم آؤٹ، حدود، اسٹیٹس کوڈز               |
+| `defaultThinkingSignature.ts` | پہلے سے طے شدہ Claude سوچ کا دستخط        |
+| `modelStrip.ts` (خدمات میں)   | فی فراہم کنندہ فیلڈ سٹرپنگ                |
 
 ### فراہم کنندہ رجسٹری اسکیما
 
@@ -506,7 +511,7 @@ interface ProviderConfig {
 }
 ```
 
-ماڈیول لوڈ ہوتے وقت Zod ویلیڈیشن یقینی بناتی ہے کہ تمام فراہم کنندہ کنفیگز درست ہیں۔
+ماڈیول لوڈ پر Zod توثیق اس بات کو یقینی بناتی ہے کہ فراہم کنندہ کی تمام تشکیل درست ہیں۔
 
 ---
 

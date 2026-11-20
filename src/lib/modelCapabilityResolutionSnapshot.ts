@@ -8,7 +8,13 @@
  * Override maps are nested by provider then model so provider/model pairs cannot
  * collide via delimiter composition.
  */
-import { listModelCapabilityOverrides } from "@/lib/db/modelCapabilityOverrides";
+import {
+  listModelCapabilityOverrides,
+  isBooleanKey,
+  type BooleanModelCapabilityOverrideKey,
+  type NestedBooleanOverrideMap,
+} from "@/lib/db/modelCapabilityOverrides";
+import { listInputModalities, type InputModalityMap } from "@/lib/db/models/inputModalities";
 import type { ReasoningEffortOverrideValue } from "@/shared/reasoning/reasoningEffortsOverride";
 import { listModelContextOverrides } from "@/lib/db/modelContextOverrides";
 import {
@@ -16,7 +22,9 @@ import {
   type ModelCompatVisionOverrideMap,
 } from "@/lib/db/models/compat";
 import {
-  listCustomModelVisionOverrides,
+  buildCustomModelVisionOverrides,
+  readCustomModelsByProvider,
+  type CustomModelsByProvider,
   type CustomModelVisionOverrideMap,
   type CustomModelVisionOverrideReadOptions,
   listSyncedAvailableModelVision,
@@ -35,12 +43,21 @@ export type NestedReasoningEffortsOverrideMap = ReadonlyMap<
 >;
 
 export interface ModelCapabilityResolutionSnapshot {
+  readonly inputModalities?: InputModalityMap;
   readonly synced: CapabilitiesByProvider;
   readonly maxTokenOverrides: NestedOverrideMap;
   readonly maxInputTokenOverrides: NestedOverrideMap;
   readonly reasoningEffortsOverrides: NestedReasoningEffortsOverrideMap;
+  readonly booleanCapabilityOverrides?: NestedBooleanOverrideMap;
   readonly contextOverrides: NestedOverrideMap;
   readonly customVisionOverrides: CustomModelVisionOverrideMap;
+  /**
+   * The `customModels` rows the vision overrides were derived from, exposed so
+   * listing consumers (#16929 operator endpoint overlay) reuse this one read
+   * instead of querying the namespace again. Optional: hand-built snapshots
+   * may omit it, and consumers then fall back to their own read.
+   */
+  readonly customModelsByProvider?: CustomModelsByProvider;
   readonly compatVisionOverrides: ModelCompatVisionOverrideMap;
   /** #14081: positive-only vision verdicts from synced custom-node model rows. */
   readonly syncedAvailableModelVision: SyncedAvailableModelVisionMap;
@@ -64,6 +81,26 @@ function setNestedOverride(
   byModel.set(modelId, value);
 }
 
+function setNestedBooleanOverride(
+  map: Map<string, Map<string, Map<BooleanModelCapabilityOverrideKey, boolean>>>,
+  provider: string,
+  modelId: string,
+  key: BooleanModelCapabilityOverrideKey,
+  value: boolean
+): void {
+  let byModel = map.get(provider);
+  if (!byModel) {
+    byModel = new Map();
+    map.set(provider, byModel);
+  }
+  let byKey = byModel.get(modelId);
+  if (!byKey) {
+    byKey = new Map();
+    byModel.set(modelId, byKey);
+  }
+  byKey.set(key, value);
+}
+
 /**
  * Load all capability/custom-model tables in one uninterrupted JS turn.
  * Callers must not yield between the bulk reads if they need a coherent view;
@@ -80,6 +117,10 @@ export function createModelCapabilityResolutionSnapshot(
     string,
     Map<string, readonly ReasoningEffortOverrideValue[]>
   >();
+  const booleanCapabilityOverrides = new Map<
+    string,
+    Map<string, Map<BooleanModelCapabilityOverrideKey, boolean>>
+  >();
   for (const entry of listModelCapabilityOverrides()) {
     if (entry.key === "max_output_tokens") {
       setNestedOverride(maxTokenOverrides, entry.provider, entry.modelId, entry.value);
@@ -92,6 +133,14 @@ export function createModelCapabilityResolutionSnapshot(
         reasoningEffortsOverrides.set(entry.provider, byModel);
       }
       byModel.set(entry.modelId, entry.value);
+    } else if (isBooleanKey(entry.key) && typeof entry.value === "boolean") {
+      setNestedBooleanOverride(
+        booleanCapabilityOverrides,
+        entry.provider,
+        entry.modelId,
+        entry.key,
+        entry.value
+      );
     }
   }
 
@@ -100,14 +149,19 @@ export function createModelCapabilityResolutionSnapshot(
     setNestedOverride(contextOverrides, entry.provider, entry.modelId, entry.realContext);
   }
 
+  const customModelsByProvider = readCustomModelsByProvider(options.customModelVision);
+
   return {
     synced,
     maxTokenOverrides,
     maxInputTokenOverrides,
     reasoningEffortsOverrides,
+    booleanCapabilityOverrides,
     contextOverrides,
-    customVisionOverrides: listCustomModelVisionOverrides(options.customModelVision),
+    customVisionOverrides: buildCustomModelVisionOverrides(customModelsByProvider),
+    customModelsByProvider,
     compatVisionOverrides: listModelCompatVisionOverrides(),
     syncedAvailableModelVision: listSyncedAvailableModelVision(),
+    inputModalities: listInputModalities(),
   };
 }

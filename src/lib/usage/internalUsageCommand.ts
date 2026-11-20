@@ -4,6 +4,8 @@ import {
   type ApiKeyUsageLimitStatus,
 } from "@/lib/usage/apiKeyUsageLimits";
 import { buildErrorBody } from "@omniroute/open-sse/utils/error";
+import { hasManageScope } from "@/shared/constants/managementScopes";
+import { hasSelfAccountQuotaScope } from "@/shared/constants/selfServiceScopes";
 
 export const INTERNAL_USAGE_COMMAND = "@@om-usage";
 export const USAGE_COMMAND_DISABLED_MESSAGE = "Usage command is disabled for this API key.";
@@ -22,6 +24,22 @@ export interface UsageCommandApiKeyMetadata {
   usageLimitEnabled?: boolean;
   dailyUsageLimitUsd?: number | null;
   weeklyUsageLimitUsd?: number | null;
+  fiveHourUsageLimitUsd?: number | null;
+  scopes?: string[] | null;
+}
+
+/**
+ * The shared provider accounts behind a key (plan, raw quota windows, reset
+ * times, connection ids) are operator data, not the key holder's. Only a key
+ * explicitly granted `self:account-quota` (the same scope that gates
+ * `accountQuotas` on /v1/me/status) or a management key may read them; any other
+ * key gets its own personal quota and nothing else. Missing scopes fail closed.
+ */
+export function canReadSharedAccountQuota(scopes: readonly string[] | null | undefined): boolean {
+  const list = Array.isArray(scopes)
+    ? scopes.filter((s): s is string => typeof s === "string")
+    : [];
+  return hasSelfAccountQuotaScope(list) || hasManageScope(list);
 }
 
 interface ProviderConnectionLike {
@@ -475,6 +493,18 @@ function resolveQuotaCutoffPercent(
   return policy.defaultThresholdPercent;
 }
 
+/**
+ * Computes the cutoff-adjusted effective remaining quota percentage.
+ *
+ * Scales the remaining quota so that the configured cutoff threshold
+ * (the protected reserve floor) reads as 0% left:
+ * - If remaining <= cutoff: returns 0%.
+ * - Otherwise: ((remaining - cutoff) / (100 - cutoff)) * 100.
+ *
+ * Used by {@link appendQuotaBlock} for terminal/text output (`NN% left`).
+ * In contrast, {@link buildUsageCommandJson} returns raw upstream snapshots
+ * in `provider.quotas` alongside `quotaWindowThresholds`.
+ */
 function effectiveRemainingPercent(
   realRemaining: number | null,
   cutoffPercent: number
@@ -531,6 +561,17 @@ function appendQuotaBlock(
  * asks for it via `?format=json`). Text and JSON share the exact same
  * collectors, so the two can never disagree about a number.
  *
+ * NOTE on percentage semantics (#15530):
+ * - JSON `provider.quotas` and `providers[].quotas` expose raw upstream
+ *   snapshots (unadjusted usage and remaining numbers/percentages), alongside
+ *   connection-level `quotaWindowThresholds` — ONLY to keys allowed to read the
+ *   shared accounts ({@link canReadSharedAccountQuota}). Every other key gets
+ *   `provider: null` and `providers: []`.
+ * - In contrast, text output (`buildUsageCommandText` / terminal `@@om-usage`)
+ *   renders cutoff-adjusted remaining percentages (`NN% left`) via
+ *   {@link effectiveRemainingPercent}, where the configured cutoff reserve
+ *   reads as 0% left.
+ *
  * The key design constraint is the 403 case: a key without `allowUsageCommand`
  * must reach the client as a *structured* reason, not a bare text error — a
  * caller rendering a usage panel has to be able to tell "the server does not
@@ -569,6 +610,9 @@ export async function buildUsageCommandJson(
           { now: resolvedDeps.now }
         )
       : null;
+  if (!canReadSharedAccountQuota(metadata.scopes)) {
+    return { allowed: true, personal, provider: null, providers: [] };
+  }
   const snapshots = await collectUsageSnapshots(metadata, resolvedDeps);
   const provider = selectUsageSnapshot(snapshots, selection);
   return { allowed: true, personal, provider, providers: snapshots };

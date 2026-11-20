@@ -13,17 +13,21 @@ UI/UX-ის, i18n-ის, CLI-ის, მონაცემთა ბაზი�
 
 ---
 
-## დეველოპმენტის გარემოს გამართვა
+## განვითარების გარემოს მომზადება
 
 ### წინაპირობები
 
-- **Node.js** `>=22.22.3 <23`, ან `>=24.0.0 <27` (რეკომენდებულია: 24 LTS)
+- **Node.js** `>=22.22.2 <23`, ან `>=24.0.0 <27` (რეკომენდებულია: 24 LTS)
 - **npm** 10+
 
-> **npm v11+-ის მომხმარებლები (Node 24+):** `npm install`-ის შემდეგ გადაამოწმეთ, რომ ნატიური მოდულები დაინსტალირდა:
-> `node -e "require('better-sqlite3')"`. თუ ის `MODULE_NOT_FOUND` შეცდომით დასრულდება,
+> **Windows Node 24-ით:** გამოიყენეთ მიმდინარე 24 LTS-ის პატჩ-რელიზი (მინიმუმ 24.20.0).
+> ადრინდელმა რელიზებმა შეიძლება წარმატებით დასრულებული ტესტების შემდეგ პროცესი შეწყვიტონ, როდესაც `--test-force-exit` პროცესს ხურავს. Node-ის [Windows libuv-ის შესწორება](https://github.com/nodejs/node/pull/61999) აგვარებს
+> ამ runtime-ის ავარიას; დატოვეთ ტესტის ასერტები და runner-ის გასვლის შემოწმებები ჩართული.
+
+> **npm v11+ მომხმარებლები (Node 24+):** `npm install`-ის შემდეგ გადაამოწმეთ, რომ native მოდულები დაინსტალირდა:
+> `node -e "require('better-sqlite3')"`. თუ შესრულება დასრულდა `MODULE_NOT_FOUND`-ით,
 > გაუშვით `npm approve-scripts better-sqlite3 && npm install`. იხილეთ
-> [პრობლემების მოგვარება](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module).
+> [პრობლემების აღმოფხვრა](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module).
 
 - **Git**
 
@@ -41,88 +45,83 @@ npm install
 # შექმენით თქვენი .env შაბლონიდან
 cp .env.example .env
 
-# დააგენერირეთ საჭირო საიდუმლო მნიშვნელობები
+# საჭირო საიდუმლოებების გენერირება
 echo "JWT_SECRET=$(openssl rand -base64 48)" >> .env
 echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 ```
 
-დეველოპმენტისთვის მნიშვნელოვანი ცვლადები:
+განვითარებისთვის საჭირო ძირითადი ცვლადები:
 
-| ცვლადი                 | დეველოპმენტის ნაგულისხმევი მნიშვნელობა | აღწერა                     |
-| ---------------------- | -------------------------------------- | -------------------------- |
-| `PORT`                 | `20128`                                | სერვერის პორტი             |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`               | ფრონტენდის საბაზისო URL    |
-| `JWT_SECRET`           | (დააგენერირეთ ზემოთ)                   | JWT-ის ხელმოწერის საიდუმლო |
-| `INITIAL_PASSWORD`     | `CHANGEME`                             | პირველი შესვლის პაროლი     |
-| `APP_LOG_LEVEL`        | `info`                                 | ჟურნალის დეტალიზაციის დონე |
+| ცვლადი                 | განვითარების ნაგულისხმევი მნიშვნელობა | აღწერა                      |
+| ---------------------- | ------------------------------------- | --------------------------- |
+| `PORT`                 | `20128`                               | სერვერის პორტი              |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`              | frontend-ის საბაზისო URL    |
+| `JWT_SECRET`           | (generate above)                      | JWT-ის ხელმოწერის საიდუმლო  |
+| `INITIAL_PASSWORD`     | `CHANGEME`                            | პირველი შესვლის პაროლი      |
+| `APP_LOG_LEVEL`        | `info`                                | ლოგირების დეტალიზაციის დონე |
 
-### მართვის პანელის პარამეტრები
+### Dashboard-ის პარამეტრები
 
-მართვის პანელი გთავაზობთ UI გადამრთველებს იმ ფუნქციებისთვის, რომელთა კონფიგურაციაც გარემოს ცვლადებით არის შესაძლებელი:
+Dashboard უზრუნველყოფს UI-ის გადამრთველებს იმ ფუნქციებისთვის, რომელთა კონფიგურაციაც გარემოს ცვლადების მეშვეობით არის შესაძლებელი:
 
-| პარამეტრის მდებარეობა      | გადამრთველი              | აღწერა                                       |
-| -------------------------- | ------------------------ | -------------------------------------------- |
-| პარამეტრები → გაფართოებული | გამართვის რეჟიმი         | გამართვის მოთხოვნების ჟურნალების ჩართვა (UI) |
-| პარამეტრები → ზოგადი       | გვერდითი ზოლის ხილვადობა | გვერდითი ზოლის სექციების ჩვენება/დამალვა     |
+| პარამეტრის მდებარეობა | გადამრთველი        | აღწერა                                |
+| --------------------- | ------------------ | ------------------------------------- |
+| Settings → Advanced   | Debug Mode         | debug მოთხოვნების ლოგების ჩართვა (UI) |
+| Settings → General    | Sidebar Visibility | sidebar-ის სექციების ჩვენება/დამალვა  |
 
-ეს პარამეტრები მონაცემთა ბაზაში ინახება და ხელახლა გაშვების შემდეგაც ნარჩუნდება; დაყენებისას ისინი გარემოს ცვლადების ნაგულისხმევ მნიშვნელობებს ანაცვლებს.
+ეს პარამეტრები ინახება მონაცემთა ბაზაში და შენარჩუნდება გადატვირთვების შემდეგაც; დაყენების შემთხვევაში ისინი უპირატესობას ანიჭებს env var-ის ნაგულისხმევ მნიშვნელობებს.
 
 ### ლოკალურად გაშვება
 
 ```bash
-# დეველოპმენტის რეჟიმი (ცხელი გადატვირთვა)
+# განვითარების რეჟიმი (ცხელი გადატვირთვა)
 npm run dev
 
-# საწარმოო აგება
-npm run build    # next build → .build/next/, შემდეგ assembleStandalone → dist/
+# Production-ის build
+npm run build    # next build → .build/next/ შემდეგ assembleStandalone → dist/
 npm run start
 
-# სწრაფი, მხოლოდ ბეკენდის/API-ის კომპილაცია კონტრიბუტორის ცვლილებებისთვის
+# სწრაფი backend/API-only კომპილაცია კონტრიბუტორის ცვლილებებისთვის
 npm run build:contributor
 
-# რელიზის აგება (სუფთა ხელახალი აგება + HEAD sentinel — აუცილებელია განთავსებისთვის)
-npm run build:release   # rm -rf .build dist && აგება + წერს dist/BUILD_SHA-ს
+# Release-ის build (გასუფთავებული rebuild + HEAD sentinel — საჭიროა deploy-ისთვის)
+npm run build:release   # rm -rf .build dist && build + writes dist/BUILD_SHA
 
-# პორტის გავრცელებული კონფიგურაცია
+# პორტის კონფიგურაციის გავრცელებული მაგალითი
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-კონტრიბუტორის აგება მხოლოდ კომპილაციის ვალიდაციას ასრულებს: ის არ აწყობს დამოუკიდებელ
-დისტრიბუციას და არ აგებს არჩევით ნატიურ დაფასოებით რესურსებს. გამოიყენეთ ჩვეულებრივი საწარმოო აგება, როდესაც
-გასავრცელებლად მზა პაკეტის ვალიდაცია გჭირდებათ.
+კონტრიბუტორის build ახორციელებს მხოლოდ კომპილაციის ვალიდაციას: ის არ აწყობს standalone დისტრიბუციას და არ აგებს optional native packaging-ის აქტივებს. გამოიყენეთ production-ის ჩვეულებრივი build, როდესაც საჭიროა deploy-ისთვის გამზადებული bundle-ის ვალიდაცია.
 
-### აგების შედეგების განლაგება
+### Build-ის შედეგის განლაგება
 
-| დირექტორია | შიგთავსი                                                                         | კონტროლდება |
-| ---------- | -------------------------------------------------------------------------------- | ----------- |
-| `src/`     | აპლიკაციის საწყისი კოდი (TypeScript / TSX)                                       | დიახ        |
-| `.build/`  | შუალედური ფაილები — `next build`-ის შედეგი (gitignored, `distDir = .build/next`) | არა         |
-| `dist/`    | გასავრცელებლად მზა პაკეტი — აწყობილია `assembleStandalone`-ის მიერ (gitignored)  | არა         |
+| დირექტორია | შიგთავსი                                                                               | კონტროლდება ვერსიებში |
+| ---------- | -------------------------------------------------------------------------------------- | --------------------- |
+| `src/`     | აპლიკაციის წყარო (TypeScript / TSX)                                                    | დიახ                  |
+| `.build/`  | შუალედური ფაილები — `next build`-ის შედეგი (gitignored, `distDir = .build/next`)       | არა                   |
+| `dist/`    | deploy-ისთვის გამზადებული bundle — აწყობილია `assembleStandalone`-ის მიერ (gitignored) | არა                   |
 
-აგების კონვეიერი ერთ გავლას იყენებს:
+Build-ის pipeline ერთ გავლას მოიცავს:
 
 ```
 npm run build
   └─ next build → .build/next/standalone  (Next.js-ის შედეგი)
-  └─ assembleStandalone()                 (აკოპირებს standalone + static + public + ნატიურ რესურსებს)
-       └─ შედეგი: dist/                   (server.js, .next/static/, public/, node_modules/)
+  └─ assembleStandalone()                 (standalone + static + public + native assets-ის კოპირება)
+       └─ output: dist/                   (server.js, .next/static/, public/, node_modules/)
 ```
 
-`npm run build:release` დამატებით ჯერ ორივე დირექტორიას ასუფთავებს და
-განთავსების მთლიანობის sentinel-ის სახით წერს `dist/BUILD_SHA`-ს (= `git rev-parse --short HEAD`).
+`npm run build:release` დამატებით ჯერ ასუფთავებს ორივე დირექტორიას და წერს
+`dist/BUILD_SHA`-ს (= `git rev-parse --short HEAD`) deploy-ის მთლიანობის sentinel-ის სახით.
 
-`npm run build:contributor` მხოლოდ ბეკენდის აგების პროფილს იყენებს. აგებისას ის დროებით ანაცვლებს
-მართვის პანელის UI ფაილებს დროებითი ჩანაცვლებებით, ინარჩუნებს API მარშრუტების დამმუშავებლებს და აგების შემდეგ აღადგენს თავდაპირველ ფაილებს.
-გამოიყენეთ `npm run build` იმ ცვლილებებისთვის, რომლებიც გავლენას ახდენს მართვის პანელის UI-ზე, ან რელიზის სრული
-ვალიდაციისთვის; კონტრიბუტორის პროფილი რელიზის აგებას არ ანაცვლებს.
+`npm run build:contributor` იყენებს backend-only build პროფილს. ის build-ის მიმდინარეობისას დროებით ქმნის dashboard-ის UI ფაილების stub-ებს, ინარჩუნებს API route handler-ებს და build-ის დასრულების შემდეგ აღადგენს თავდაპირველ ფაილებს. გამოიყენეთ `npm run build` dashboard-ის UI-ზე მოქმედი ცვლილებებისთვის ან სრული release-ის ვალიდაციისთვის; contributor პროფილი release build-ის შემცვლელი არ არის.
 
-> **VPS-ზე განთავსების შენიშვნა:** დისტანციური იმიჯის დირექტორია `/usr/lib/node_modules/omniroute/app/`
-> უცვლელია. განთავსების უნარები `dist/`-ის შიგთავსს მასში rsync-ით ასინქრონებს.
-> შეიცვალა მხოლოდ რეპოზიტორიაში არსებული აგების შედეგის გზა (`app/` → `dist/`).
+> **VPS deploy-ის შენიშვნა:** დისტანციური image-ის დირექტორია `/usr/lib/node_modules/omniroute/app/`
+> უცვლელი რჩება. deploy-ის skills მასში `dist/`-ის შიგთავსს rsync-ით აკოპირებს.
+> შეიცვალა მხოლოდ რეპოზიტორიის build-ის შედეგის გზა (`app/` → `dist/`).
 
 ნაგულისხმევი URL-ები:
 
-- **მართვის პანელი**: `http://localhost:20128/dashboard`
+- **Dashboard**: `http://localhost:20128/dashboard`
 - **API**: `http://localhost:20128/v1`
 
 ---
@@ -180,12 +179,12 @@ npm run test:all
 # ერთი სატესტო ფაილი (Node.js-ის ჩაშენებული ტესტების გამშვები — ტესტების უმეტესობა ამას იყენებს)
 node --import tsx/esm --test tests/unit/your-file.test.ts
 
-# მხოლოდ თქვენი ცვლილებით დაზარალებული მოდულური ტესტები (იგივე TIA სელექტორი, რაც CI ბარიერში, #8084)
-npm run test:scoped            # ბოლო commit-ში (ან სამუშაო ხეში) შეტანილი ცვლილებები
-npm run test:scoped:staged     # მხოლოდ staged ცვლილებები — კარგად ერწყმის pre-commit გაშვებას
-npm run test:scoped:full       # ჯერ ხელახლა ააგეთ import-graph რუკა (ფაილების დამატების/გადაადგილების შემდეგ)
-# Exit 1 + "run the full suite" ნიშნავს, რომ შეიცვალა ცენტრალური ფაილი (tsconfig, package.json, …) ან
-# რუკაზე არარსებული საწყისი კოდი — სელექტორი უსაფრთხოდ ასრულებს მუშაობას შეცდომით და არასოდეს გამოტოვებს ტესტებს შეუმჩნევლად.
+# მხოლოდ თქვენი ცვლილებით ზემოქმედებული unit-ტესტები (იგივე TIA სელექტორი, რომელსაც CI-ის შემოწმება იყენებს, #8084)
+npm run test:scoped            # ცვლილებები ბოლო commit-ში (ან სამუშაო ხეში)
+npm run test:scoped:staged     # მხოლოდ staged ცვლილებები — კარგად ეწყობა pre-commit გაშვებას
+npm run test:scoped:full       # ჯერ import-graph რუკის თავიდან აგება (ფაილების დამატების/გადატანის შემდეგ)
+# Exit 1 + "run the full suite" ნიშნავს, რომ შეიცვალა hub-ფაილი (tsconfig, package.json, …) ან
+# რუკაზე დაუტანელი წყარო — სელექტორი უსაფრთხოდ წყვეტს მუშაობას და არასოდეს გამოტოვებს ჩუმად.
 
 # Vitest (MCP სერვერი, autoCombo, cache)
 npm run test:vitest
@@ -193,66 +192,68 @@ npm run test:vitest
 # E2E ტესტები (საჭიროებს Playwright-ს)
 npm run test:e2e
 
-# პროტოკოლის კლიენტების E2E (MCP ტრანსპორტები, A2A)
+# პროტოკოლის კლიენტების E2E (MCP transports, A2A)
 npm run test:protocols:e2e
 
 # ეკოსისტემასთან თავსებადობის ტესტები
 npm run test:ecosystem
 
-# დაფარვის ბარიერი: დებულებების/სტრიქონების/ფუნქციების/განშტოებების 60%
+# დაფარვის ზღვარი: 60% statements/lines/functions/branches
 npm run test:coverage
 npm run coverage:report
 
-# Lint + ფორმატირების შემოწმება
+# Lint + ფორმატის შემოწმება
 npm run lint
 npm run check
 
-# ბარიერით დაცული რეალურ upstream-ზე combo-ს smoke-ტესტი (საჭიროებს VPS-ზე წვდომას + რეალური პროვაიდერის კრედიტებს)
-# მიმართავს რეალურ პროვაიდერებს — მცირე ხარჯთანაა დაკავშირებული. არასოდეს ეშვება CI-ში. ბარიერის გარეშე უპრობლემოდ გამოიტოვება.
-# საჭიროა: ssh root@192.168.0.15 წვდომა (VPS-იდან იყენებს DB-ის მხოლოდ წაკითხვად snapshot-ს).
+# რეალურ upstream-თან კომბინაციის შეზღუდული smoke-ტესტი (საჭიროებს VPS-ზე წვდომას + რეალური პროვაიდერების კრედიტებს)
+# მიმართავს რეალურ პროვაიდერებს — მცირე ხარჯით. არასოდეს გაეშვება CI-ში. შეზღუდვის გარეშე სუფთად გამოტოვებს.
+# საჭიროა: ssh root@192.168.0.15 წვდომა (VPS-იდან იტვირთება მხოლოდ წაკითხვადი DB snapshot).
 RUN_COMBO_LIVE=1 npm run test:combo:live
 
-# მე-3 ფაზის VPS-ის ცოცხალი smoke-ტესტი — ჩვეულებრივი Node ESM სკრიპტები, რომლებიც პირდაპირ ცოცხალ .15 სერვერს მიმართავენ.
-# საჭიროა: ssh root@192.168.0.15 წვდომა (combo-ები იქმნება/იშლება SSH sqlite-ის მეშვეობით).
-# მიმართავს რეალურ პროვაიდერებს (მცირე ხარჯი). ქმნის/შლის მხოლოდ __live_test__* combo-ებს. არასოდეს ეშვება CI-ში.
-# .15-ზე REQUIRE_API_KEY=false, ამიტომ API გასაღები საჭირო არ არის, თუმცა დაყენების შემთხვევაში ითვალისწინებს COMBO_LIVE_BASE_URL / COMBO_LIVE_API_KEY-ს.
+# Phase-3 VPS-ის ცოცხალი smoke-ტესტი — უბრალო Node ESM სკრიპტები, რომლებიც პირდაპირ ცოცხალ .15 სერვერს მიმართავს.
+# საჭიროა: ssh root@192.168.0.15 წვდომა (კომბინაციები იქმნება/იშლება SSH sqlite-ის საშუალებით).
+# მიმართავს რეალურ პროვაიდერებს (მცირე ხარჯით). ქმნის/შლის მხოლოდ __live_test__* კომბინაციებს. არასოდეს გაეშვება CI-ში.
+# .15-ზე REQUIRE_API_KEY=false-ია, ამიტომ API გასაღები საჭირო არ არის, თუმცა თუ მითითებულია, ითვალისწინებს COMBO_LIVE_BASE_URL / COMBO_LIVE_API_KEY-ს.
 npm run test:combo:live:vps              # 7 HTTP სცენარი (priority/round-robin/weighted/cost/fusion/auto + health)
-npm run test:combo:live:vps:failover     # ამატებს პროვაიდერებს შორის რეალურ failover სცენარს (სულ 8)
+npm run test:combo:live:vps:failover     # ამატებს რეალურ პროვაიდერებს შორის failover სცენარს (სულ 8)
 ```
 
 დაფარვის შენიშვნები:
 
-- `npm run test:coverage` ზომავს საწყისი კოდის დაფარვას ძირითადი მოდულური ტესტების ნაკრებისთვის, გამორიცხავს `tests/**`-ს და მოიცავს `open-sse/**`-ს
-- Pull Request-ებმა დებულებების/სტრიქონების/ფუნქციების/განშტოებების დაფარვის ბარიერი **60%+**-ზე უნდა შეინარჩუნონ
-- თუ PR ცვლის საწარმოო კოდს `src/`, `open-sse/`, `electron/` ან `bin/`-ში, იმავე PR-ში უნდა დაემატოს ან განახლდეს ავტომატიზებული ტესტები
-- `npm run coverage:report` ბეჭდავს ბოლო დაფარვის გაშვების დეტალურ, ფაილების მიხედვით დაყოფილ ანგარიშს
+- `npm run test:coverage` ზომავს წყაროს დაფარვას ძირითადი unit-ტესტების ნაკრებისთვის, გამორიცხავს `tests/**`-ს და მოიცავს `open-sse/**`-ს
+- Pull request-ებმა statements/lines/functions/branches-ის დაფარვის ზღვარი **60%+**-ზე უნდა შეინარჩუნონ
+- თუ PR ცვლის production კოდს `src/`, `open-sse/`, `electron/` ან `bin/`-ში, იმავე PR-ში უნდა დაამატოს ან განაახლოს ავტომატიზებული ტესტები
+- `npm run coverage:report` ბეჭდავს დაფარვის ბოლო გაშვების დეტალურ ანგარიშს თითოეული ფაილის მიხედვით
 - `npm run test:coverage:legacy` ისტორიული შედარებისთვის ინარჩუნებს ძველ მეტრიკას
-- დაფარვის ეტაპობრივი გაუმჯობესების სამოქმედო გეგმისთვის იხილეთ `docs/ops/COVERAGE_PLAN.md`
+- დაფარვის ეტაპობრივი გაუმჯობესების გეგმისთვის იხილეთ `docs/ops/COVERAGE_PLAN.md`
 
 ### Pull Request-ის მოთხოვნები
 
 PR-ის გახსნამდე გამოიყენეთ
-[Contribution Golden Path](docs/ops/CONTRIBUTION_GOLDEN_PATH.md), რათა თქვენი
-ცვლილებისთვის მიზნობრივი ციკლი გაუშვათ. მოდულური ტესტების სრული ნაკრები (CI-ის 4 shard), Vitest, **60%+** დაფარვის ბარიერი და
-საწარმოო build CI-ის პასუხისმგებლობაა — მათი ლოკალურად გაშვება არ იძლევა დამატებით ინფორმაციას, რომელსაც PR-ის
-შემოწმებები უკვე არ მოგაწვდით, ხოლო შედარებით სუსტ კომპიუტერებზე შეიძლება სისტემა სრულად დატვირთოს (#8084):
+[კონტრიბუციის ოქროს გზა](docs/ops/CONTRIBUTION_GOLDEN_PATH.md), რათა თქვენი
+ცვლილებისთვის მიზნობრივი ციკლი გაუშვათ. სრული unit-ტესტების ნაკრები (CI-ის 4 shard), Vitest, **60%+**
+დაფარვის ზღვარი და production build CI-ის პასუხისმგებლობაა — მათი ლოკალურად გაშვება არ იძლევა
+დამატებით სიგნალს, რომელსაც PR-ის შემოწმებები ისედაც არ მოგაწვდით, ხოლო ნაკლებად მძლავრ
+მანქანებზე შესაძლოა ჰოსტი სრულად დატვირთოს (#8084):
 
-- გაუშვით სატესტო ფაილები, რომლებიც თქვენს ცვლილებას ფარავს: `node --import tsx/esm --test tests/unit/<file>.test.ts`
+- გაუშვით თქვენი ცვლილების დამფარავი სატესტო ფაილები: `node --import tsx/esm --test tests/unit/<file>.test.ts`
 - გაუშვით `npm run lint`
-- საწარმოო კოდის ცვლილებისას იმავე PR-ში დაამატეთ ან განაახლეთ ავტომატიზებული ტესტები
-- საწარმოო კოდის ცვლილებისას PR-ის აღწერაში მიუთითეთ შეცვლილი ან დამატებული სატესტო ფაილები
-- თუ პროექტის საიდუმლოები CI-ში კონფიგურირებულია, შეამოწმეთ PR-ის SonarQube შედეგი
+- production კოდის ცვლილებისას იმავე PR-ში დაამატეთ ან განაახლეთ ავტომატიზებული ტესტები
+- `node:test` ფაილებში ყოველი ზედა დონის `await` (მაგალითად, `await import(...)`) მოათავსეთ პირველ `test()` / `describe()`-მდე: `--test-force-exit`-ის გამოყენებისას მის შემდეგ რეგისტრირებული ტესტები შეიძლება ჩუმად საერთოდ არ გაეშვას (#18045; კონტროლდება `npm run check:test-tla-order`-ით)
+- production კოდის ცვლილებისას PR-ის აღწერაში მიუთითეთ შეცვლილი ან დამატებული სატესტო ფაილები
+- როდესაც პროექტის secrets კონფიგურირებულია CI-ში, PR-ზე შეამოწმეთ SonarQube-ის შედეგი
 
-ტესტების მიმდინარე სტატუსი: **122 მოდულური სატესტო ფაილი**, რომლებიც ფარავს:
+ტესტების მიმდინარე სტატუსი: **122 unit-ტესტის ფაილი**, რომლებიც ფარავს:
 
-- პროვაიდერის ტრანსლატორებსა და ფორმატის გარდაქმნას
+- პროვაიდერების ტრანსლატორებსა და ფორმატის გარდაქმნას
 - სიხშირის შეზღუდვას, circuit breaker-სა და მდგრადობას
 - სემანტიკურ cache-ს, idempotency-სა და პროგრესის თვალყურის დევნებას
 - მონაცემთა ბაზის ოპერაციებსა და სქემას (21 DB მოდული)
-- OAuth ნაკადებსა და ავთენტიფიკაციას
+- OAuth პროცესებსა და ავთენტიფიკაციას
 - API endpoint-ების ვალიდაციას (Zod v4)
-- MCP სერვერის ინსტრუმენტებსა და არეების აღსრულებას
-- Memory და Skills სისტემებს
+- MCP სერვერის ხელსაწყოებსა და scope-ის აღსრულებას
+- მეხსიერებისა და უნარების სისტემებს
 
 ---
 
@@ -292,67 +293,67 @@ PR-ის გახსნამდე გამოიყენეთ
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # მართვის პანელის გვერდები (23 სექცია)
-│   ├── api/                # API მარშრუტები (51 დირექტორია)
-│   └── login/              # ავთენტიფიკაციის გვერდები (.tsx)
-├── domain/                 # პოლიტიკების ძრავა (policyEngine, comboResolver, costRules და სხვ.)
-├── lib/                    # ძირითადი ბიზნესლოგიკა (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 პროტოკოლის სერვერი
-│   ├── acp/                # Agent Communication Protocol-ის რეესტრი
-│   ├── compliance/         # შესაბამისობის პოლიტიკების ძრავა
-│   ├── db/                 # SQLite დომენის მოდულები + 130 მიგრაცია
-│   ├── memory/             # მუდმივი სასაუბრო მეხსიერება
-│   ├── oauth/              # OAuth-ის მომწოდებლები, სერვისები და დამხმარე საშუალებები
-│   ├── skills/             # გაფართოებადი უნარების ფრეიმვორკი
-│   ├── usage/              # გამოყენების აღრიცხვა და ღირებულების გამოთვლა
-│   └── localDb.ts          # მხოლოდ რეექსპორტის ფენა — აქ ლოგიკა არასოდეს დაამატოთ
-├── middleware/              # მოთხოვნების შუალედური პროგრამული უზრუნველყოფა (promptInjectionGuard)
-├── mitm/                   # MITM პროქსი (სერტიფიკატი, DNS, სამიზნის მარშრუტიზაცია)
+│   ├── (dashboard)/        # Dashboard pages (23 sections)
+│   ├── api/                # API routes (51 directories)
+│   └── login/              # Auth pages (.tsx)
+├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
+├── lib/                    # Core business logic (.ts)
+│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
+│   ├── acp/                # Agent Communication Protocol registry
+│   ├── compliance/         # Compliance policy engine
+│   ├── db/                 # SQLite domain modules + 130 migrations
+│   ├── memory/             # Persistent conversational memory
+│   ├── oauth/              # OAuth providers, services, and utilities
+│   ├── skills/             # Extensible skill framework
+│   ├── usage/              # Usage tracking and cost calculation
+│   └── localDb.ts          # Re-export layer only — never add logic here
+├── middleware/              # Request middleware (promptInjectionGuard)
+├── mitm/                   # MITM proxy (cert, DNS, target routing)
 ├── shared/
-│   ├── components/         # React კომპონენტები (.tsx)
-│   ├── constants/          # მომწოდებლების განსაზღვრებები (329), MCP-ის ფარგლები, მარშრუტიზაციის 19 სტრატეგია
-│   ├── utils/              # ავტომატური ამომრთველი, სანიტაიზერი, ავთენტიფიკაციის დამხმარე საშუალებები
-│   └── validation/         # Zod v4 სქემები
-└── sse/                    # SSE პროქსირების კონვეიერი
+│   ├── components/         # React components (.tsx)
+│   ├── constants/          # Provider definitions (329), MCP scopes, 22 routing strategies
+│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
+│   └── validation/         # Zod v4 schemas
+└── sse/                    # SSE proxy pipeline
 
-open-sse/                   # @omniroute/open-sse სამუშაო სივრცე
-├── executors/              # შემსრულებლის იმპლემენტაციის 89 მოდული
-├── handlers/               # მოთხოვნების 11 დამმუშავებელი (ჩატი, პასუხები, ემბედინგები, სურათები და სხვ.)
-├── mcp-server/             # MCP სერვერი (110 უნიკალური ხელსაწყო, 3 ტრანსპორტი, 33 მოქმედების სფერო)
-├── services/               # ზედა დონის 178 სერვისი (combo, autoCombo, rateLimitManager და სხვ.)
-├── translator/             # ფორმატების გარდამქმნელები (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API-ის გარდამქმნელი
-└── utils/                  # 22 დამხმარე მოდული (ნაკადი, TLS, პროქსი, ლოგირება)
+open-sse/                   # @omniroute/open-sse workspace
+├── executors/              # 150 executor modules (executor classes + per-provider helpers)
+├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
+├── mcp-server/             # MCP server (110 unique tools, 3 transports, 33 scopes)
+├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
+├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Responses API transformer
+└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
 
-electron/                   # Electron-ის დესკტოპ-აპლიკაცია (მრავალპლატფორმული)
+electron/                   # Electron desktop app (cross-platform)
 
 tests/
-├── unit/                   # Node.js ტესტების გამშვები (1,574 სატესტო ფაილი)
-├── integration/            # ინტეგრაციული ტესტები
-├── e2e/                    # Playwright-ის ტესტები
-├── security/               # უსაფრთხოების ტესტები
-├── translator/             # გარდამქმნელისთვის სპეციფიკური ტესტები
-└── load/                   # დატვირთვის ტესტები
+├── unit/                   # Node.js test runner (1,574 test files)
+├── integration/            # Integration tests
+├── e2e/                    # Playwright tests
+├── security/               # Security tests
+├── translator/             # Translator-specific tests
+└── load/                   # Load tests
 
 docs/
-├── adr/                     # არქიტექტურული გადაწყვეტილებების ჩანაწერები
-├── architecture/            # სისტემის არქიტექტურა და მდგრადობა
-├── comparison/              # OmniRoute ალტერნატივებთან შედარებით
-├── compression/             # შეკუმშვის სახელმძღვანელოები და წესები
-├── dev/                     # დეველოპმენტის სახელმძღვანელოები
-├── diagrams/                # არქიტექტურული დიაგრამები
-├── frameworks/              # MCP, A2A, OpenCode, მეხსიერება, უნარები
-├── guides/                  # მომხმარებლის სახელმძღვანელო, Docker, გამართვა, პრობლემების მოგვარება
-├── i18n/                    # README-ის ინტერნაციონალიზებული თარგმანები
-├── marketing/               # მარკეტინგული მასალები
-├── ops/                     # განთავსება, პროქსი, დაფარვა, გამოშვებები
-├── providers/               # მომწოდებლებისთვის სპეციფიკური დოკუმენტაცია
-├── reference/               # API ცნობარი, გარემოს ცვლადები, CLI ხელსაწყოები, უფასო დონეები
-├── releases/                # გამოშვების შენიშვნები
-├── routing/                 # ავტომატური კომბინაციების ძრავა, მსჯელობის განმეორებითი შესრულება
-├── screenshots/             # მართვის პანელის ეკრანის ანაბეჭდები
-├── security/                # დამცავი მექანიზმები, შესაბამისობა, ფარულობა, ტოკენები
-└── specs/                   # დიზაინის სპეციფიკაციები
+├── adr/                     # Architecture Decision Records
+├── architecture/            # System architecture & resilience
+├── comparison/              # OmniRoute vs alternatives
+├── compression/             # Compression guides & rules
+├── dev/                     # Development guides
+├── diagrams/                # Architecture diagrams
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # User guide, Docker, setup, troubleshooting
+├── i18n/                    # Internationalized README translations
+├── marketing/               # Marketing materials
+├── ops/                     # Deployment, proxy, coverage, releases
+├── providers/               # Provider-specific docs
+├── reference/               # API reference, env vars, CLI tools, free tiers
+├── releases/                # Release notes
+├── routing/                 # Auto-combo engine, reasoning replay
+├── screenshots/             # Dashboard screenshots
+├── security/                # Guardrails, compliance, stealth, tokens
+└── specs/                   # Design specs
 ```
 
 ---
@@ -398,17 +399,17 @@ docs/
 - [ ] ტესტები წარმატებით სრულდება (`npm test`)
 - [ ] ლინტინგი წარმატებით სრულდება (`npm run lint`)
 - [ ] აგება წარმატებით სრულდება (`npm run build`)
-- [ ] ახალი საჯარო ფუნქციებისა და ინტერფეისებისთვის დამატებულია TypeScript-ის ტიპები
-- [ ] არ არის მყარად გაწერილი საიდუმლოები ან სარეზერვო მნიშვნელობები
-- [ ] ზედა დონის საჯარო ავტორიზაციის მონაცემები ჩაშენებულია `resolvePublicCred()`-ის მეშვეობით (იხილეთ [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)) და არასოდეს — ლიტერალების სახით
-- [ ] შეცდომის პასუხები მუშავდება `buildErrorBody()` / `sanitizeErrorMessage()`-ის მეშვეობით — პასუხის სხეულებში არ არის დაუმუშავებელი სტეკის კვალები (იხილეთ [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] ახალ საჯარო ფუნქციებსა და ინტერფეისებს დამატებული აქვს TypeScript-ის ტიპები
+- [ ] არ არის მყარად გაწერილი საიდუმლო მონაცემები ან სარეზერვო მნიშვნელობები
+- [ ] საჯარო upstream ავტორიზაციის მონაცემები ჩაშენებულია `resolvePublicCred()`-ის მეშვეობით (იხილეთ [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)) და არასდროს — პირდაპირი ლიტერალების სახით
+- [ ] შეცდომის პასუხები მუშავდება `buildErrorBody()` / `sanitizeErrorMessage()`-ის მეშვეობით — პასუხის სხეულებში არ არის დაუმუშავებელი stack trace-ები (იხილეთ [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
 - [ ] გარსის ბრძანებები (`exec` / `spawn`) შესრულების დროის მნიშვნელობებს გადასცემს `env`-ის მეშვეობით და არა სტრიქონული ინტერპოლაციით
-- [ ] ყველა შეყვანილი მონაცემი შემოწმებულია Zod-ის სქემებით
-- [ ] მომხმარებლისთვის ხილული ცვლილებებისთვის ცვლილებების ჟურნალის **ფრაგმენტი** დამატებულია `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md`-ში (იხილეთ [`changelog.d/README.md`](./changelog.d/README.md)) — **არ** დაარედაქტიროთ `CHANGELOG.md` პირდაპირ; ფრაგმენტები გაერთიანდება გამოშვებისას და Pull Request-ებს შორის კონფლიქტს არასოდეს წარმოქმნის
+- [ ] ყველა შეყვანილი მონაცემი ვალიდირებულია Zod-ის სქემებით
+- [ ] მომხმარებლისთვის ხილული ცვლილებებისთვის `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md`-ში დამატებულია ცვლილებების ჟურნალის **ფრაგმენტი** (იხილეთ [`changelog.d/README.md`](./changelog.d/README.md)) — **არ** დაარედაქტიროთ `CHANGELOG.md` პირდაპირ; ფრაგმენტები ერთიანდება რელიზის დროს და Pull Request-ებს შორის კონფლიქტს არასდროს იწვევს
 - [ ] დოკუმენტაცია განახლებულია (თუ საჭიროა)
-- [ ] არ არის გახსნილი CodeQL-ის / Secret-Scanning-ის ახალი გაფრთხილებები, ან თითოეული მათგანი უარყოფილია ტექნიკური დასაბუთებით, რომელიც შესაბამის `docs/security/` დოკუმენტს მიუთითებს
+- [ ] არ გახსნილა CodeQL-ის / Secret-Scanning-ის ახალი გაფრთხილებები, ან თითოეული მათგანი უარყოფილია ტექნიკური დასაბუთებით, შესაბამის `docs/security/` დოკუმენტზე მითითებით
 - [ ] მარშრუტები, რომლებიც შვილობილ პროცესებს უშვებს (`/api/mcp/`, `/api/cli-tools/runtime/`), კლასიფიცირებულია როგორც `isLocalOnlyPath()` ფაილში `src/server/authz/routeGuard.ts` — იხილეთ [მკაცრი წესი #15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] commit-ის შეტყობინებებში არ არის `Co-Authored-By` ტრეილერები — commit-ები მხოლოდ რეპოზიტორიის მფლობელის Git-ის იდენტობის ქვეშ უნდა გამოჩნდეს (მკაცრი წესი #16)
+- [ ] commit-ის შეტყობინებებში არ არის AI/bot-ის `Co-authored-by` ტრეილერები (მკაცრი წესი #16) — ადამიან თანამშრომლებს, რომელთა ნამუშევარიც ხელახლა გამოიყენება, მიეთითებათ ავტორობა სტანდარტული `Co-authored-by: Name <email>` ტრეილერებით
 
 ---
 

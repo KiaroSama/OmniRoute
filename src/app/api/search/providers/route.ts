@@ -68,6 +68,20 @@ const FETCH_PROVIDERS: FetchProviderDef[] = [
     freeMonthlyQuota: 0,
     fetchFormats: ["markdown"],
   },
+  {
+    id: "parallel-search",
+    name: "Parallel Extract",
+    costPerQuery: 0.001,
+    freeMonthlyQuota: 0,
+    fetchFormats: ["markdown"],
+  },
+  {
+    id: "keenable-search",
+    name: "Keenable Fetch",
+    costPerQuery: 0,
+    freeMonthlyQuota: 0,
+    fetchFormats: ["markdown"],
+  },
 ];
 
 // ---------------------------------------------------------------------------

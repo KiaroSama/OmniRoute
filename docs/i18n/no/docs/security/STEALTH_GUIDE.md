@@ -20,60 +20,60 @@ Stealth-funksjoner finnes slik at OmniRoute kan fungere som et kompatibilitetsla
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-Vedvarende `wreq-js`-økter opprettes behovsstyrt per kontoomfang og løste proxy. Den prosessomfattende
-`TlsClient`-poolen inneholder maksimalt 128 økter som utgir seg for å være **Chrome 124 på macOS** overfor
-oppstrømstjenester bak Cloudflare. `TlsClient.fetch()` stanser med feil når den innebygde kjøretiden
-ikke er tilgjengelig. En kallende funksjon kan eksplisitt velge en reserveløsning utenfor denne wrapperen.
+Vedvarende `wreq-js`-økter opprettes ved behov per kontoomfang og løst proxy. Den
+prosessomfattende `TlsClient`-poolen inneholder maksimalt 128 økter som etterligner **Chrome 124 på macOS** for
+oppstrømstjenester bak Cloudflare. `TlsClient.fetch()` feiler lukket når den native kjøretiden ikke er
+tilgjengelig. En kallende part kan eksplisitt velge en reserveløsning utenfor denne innpakningen.
 
 - Øktprofil: `browser: "chrome_124", os: "macos"`
-- Proxy-oppløsning (prioritet): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (også med små bokstaver)
+- Proxyoppløsning (prioritet): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (også med små bokstaver)
 - Tidsavbrudd: `TLS_CLIENT_TIMEOUT_MS` (arves fra `FETCH_TIMEOUT_MS`, standardverdi 600000)
 - `wreq-js` Response er fetch-kompatibel (`headers`, `text()`, `json()`, `clone()`, `body`).
 - Vakthund for første byte (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): `TlsClient.fetch()`
-  fullføres så snart headere fra oppstrømstjenesten ankommer, så `TLS_CLIENT_TIMEOUT_MS` alene kan ikke sette en grense for en
-  kropp som aldri leverer en første byte. `guardTlsFirstByte()` kjører kroppens første `read()` i et kappløp
-  mot `TLS_FIRST_BYTE_WATCHDOG_MS` (standardverdi `10000`; `0` deaktiverer den). En velfungerende kropp
+  fullføres så snart oppstrømshodene ankommer, så `TLS_CLIENT_TIMEOUT_MS` alene kan ikke avgrense en
+  kropp som aldri leverer en første byte. `guardTlsFirstByte()` kjører kroppens første `read()`
+  parallelt mot `TLS_FIRST_BYTE_WATCHDOG_MS` (standardverdi `10000`, `0` deaktiverer den). En frisk kropp
   påvirkes ikke, mens en fastlåst kropp avbryter wreq-leseren og lar den eksisterende
-  TLS-reservelogikken i `proxyFetch` gå videre til direkte-/proxy-dispatcheren (en forespørsel som ikke trygt kan spilles av på nytt, for eksempel
-  en POST med en kropp, utløser fortsatt en feil i stedet for å bli forsøkt på nytt uten varsel).
+  TLS-reservelogikken i `proxyFetch` gå videre til direkte-/proxy-ruting (en forespørsel som ikke trygt kan spilles av på nytt, f.eks.
+  en POST med en kropp, kaster fortsatt en feil i stedet for å bli forsøkt på nytt uten varsel).
 
-### Transport for leverandører med web-informasjonskapsler — wreq-js 3.2.0
+### Transport for leverandører med nettinformasjonskapsler — wreq-js 3.2.0
 
 `open-sse/services/tlsClientBase.ts` er den delte adapteren for de fem spesialiserte
-transportene med web-informasjonskapsler nedenfor. Hver enkelt leverandør-wrapper velger en nettleser-/OS-profil. Adapteren
-bruker den felles wreq-kjøretidslasteren og transportpoolen i `open-sse/utils/tlsClient.ts`, indeksert etter
+transportene med nettinformasjonskapsler nedenfor. Hver tynne leverandørinnpakning velger en nettleser-/OS-profil. Adapteren
+bruker den ene wreq-kjøretidslasteren og transportpoolen i `open-sse/utils/tlsClient.ts`, indeksert etter
 profil + OS + løst proxy, mens hver forespørsel bruker `cookieMode: "ephemeral"`. Kontoer og
 forespørsler deler derfor tilkoblinger på transportnivå, men aldri en wreq-økt eller informasjonskapselbeholder.
 
-| Leverandør | Profil        | Emulert OS | Retningslinje for EOF i strøm         |
-| ---------- | ------------- | ---------- | ------------------------------------- |
-| Claude     | `chrome_146`  | Linux      | inkluder `[DONE]`                     |
-| Perplexity | `firefox_148` | macOS      | inkluder `event: end_of_stream`       |
-| Grok       | `chrome_146`  | Linux      | ekskluder `[DONE]`                    |
-| Notion     | `chrome_146`  | Windows    | inkluder `[DONE]`                     |
-| LMArena    | `chrome_146`  | Windows    | ingen sentinel; lukk ved innebygd EOF |
+| Leverandør | Profil        | Emulert OS | Retningslinje for strømmens EOF    |
+| ---------- | ------------- | ---------- | ---------------------------------- |
+| Claude     | `chrome_146`  | Linux      | inkluder `[DONE]`                  |
+| Perplexity | `firefox_151` | macOS      | inkluder `event: end_of_stream`    |
+| Grok       | `chrome_146`  | Linux      | utelat `[DONE]`                    |
+| Notion     | `chrome_146`  | Windows    | inkluder `[DONE]`                  |
+| LMArena    | `chrome_146`  | Windows    | ingen sentinel; lukk ved nativ EOF |
 
-- Strømming konsumerer den innebygde responsens `ReadableStream` direkte; ingen midlertidig fil eller sideprosess
+- Strømming bruker den native responsens `ReadableStream` direkte. Ingen midlertidig fil eller sideprosess
   opprettes.
-- Opptil 256 innledende byte inspiseres før en strøm eksponeres. SSE-leverandører bufrer feil som ikke er SSE;
-  Grok/LMArena tilordner Cloudflare-utfordringer til `403` og HTML-mellomsider til `502`.
-- Tidsavbruddet for den innebygde forespørselen er fortsatt omsluttet av en absolutt, hard JS-tidsfrist. En fastlåsing ugyldiggjør
+- Opptil 256 innledende byte inspiseres før en strøm eksponeres. SSE-leverandører bufrer ikke-SSE-
+  feil. Grok/LMArena tilordner Cloudflare-utfordringer til `403` og HTML-mellomsider til `502`.
+- Tidsavbruddet for den native forespørselen er fortsatt innpakket i en absolutt hard JS-tidsfrist. En fastlåsing ugyldiggjør
   og lukker bare den berørte profil-/OS-/proxy-transporten før neste forespørsel oppretter den på nytt.
-- Prioriteten for proxy-oppløsning er `proxyUrl` per kall → forespørselsavgrenset konto-/dashbordkontekst →
-  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (inkludert varianter med små bokstaver). Oppløsningsfeil stanser
-  med feil i stedet for å lekke en direkte tilkobling. LMArena foretar bevisst oppløsning mot `arena.ai`.
-- `byteResponse` returnerer en innholdstypeangitt `data:`-URL uten UTF-8-korrupsjon.
-- Feilene er `TlsClientUnavailableError` (pakken/tillegget er utilgjengelig), `TlsClientHangError`
-  (tidsfristen er overskredet) og `WreqTransportCapacityError` (feilkoden for delt øktkapasitet)
+- Prioriteten for proxyoppløsning er `proxyUrl` per kall → forespørselsavgrenset konto-/instrumentbordkontekst →
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (inkludert varianter med små bokstaver). Oppløsningsfeil feiler
+  lukket i stedet for å lekke en direkte tilkobling. LMArena utfører bevisst oppløsning mot `arena.ai`.
+- `byteResponse` returnerer en innholdstypet `data:`-URL uten UTF-8-korrupsjon.
+- Feilene er `TlsClientUnavailableError` (pakke/tillegg utilgjengelig), `TlsClientHangError`
+  (tidsfrist overskredet) og `WreqTransportCapacityError` (den delte feilkoden for øktkapasitet)
   når alle de 128 avgrensede profil-/OS-/proxy-plassene er aktive eller i ferd med å lukkes.
 
-Den generiske `TlsClient`-økten ovenfor er fortsatt spesialisert for vedvarende, nettleserstøttet
-informasjonskapseltilstand. Begge banene gjenbruker én bufret wreq-modullaster og livssykluskrok for prosessen. Poolene deres forblir
-separate fordi levetiden til informasjonskapslene deres med hensikt er forskjellig.
+Den generiske `TlsClient`-økten ovenfor er fortsatt spesialisert for vedvarende nettleserstøttet
+informasjonskapseltilstand. Begge banene gjenbruker én bufret wreq-modullaster og prosesslivssykluskrok. Poolene deres forblir
+separate fordi levetidene til informasjonskapslene deres med hensikt er forskjellige.
 
-Profilene støttes av den versjonslåste pakken, men faktisk WAF-aksept kan endres uavhengig
+Profilene støttes av den fastlåste pakken, men faktisk WAF-godkjenning kan endres uavhengig
 av lokale kontrakttester. Valider endringer i fingeravtrykk mot en eksplisitt autorisert aktiv konto
-før det hevdes samsvar med en oppstrømsnettleser.
+før du hevder samsvar med en oppstrømsnettleser.
 
 ---
 
@@ -122,7 +122,7 @@ Brukes på: `system`-blokker, alt `messages[].content` og `tools[].description` 
 
 For tredjeparts Anthropic-reléer som bare godtar trafikk fra «ekte Claude Code»:
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"` som standard
@@ -141,39 +141,61 @@ Beslektede moduler i samme pakke:
 
 ## Antigravity Stealth
 
-Antigravity-forespørsler bevarer innringerens tekst byte for byte. OmniRoute setter ikke inn tegn uten bredde i ledetekster og gir heller ikke verktøy nye navn eller injiserer dem for å etterligne en IDE-klient.
+Antigravity -forespørsler bevarer innringertekst byte-for-byte. OmniRoute setter ikke inn null-bredde tegn i ledetekster eller rename/inject verktøy for å imitere en IDE klient.
 
 ### `antigravityHeaderScrub.ts`
 
-Fjerner markører fra Stainless SDK (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) før videresending.
+Striper rustfrie SDK -markører (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) før videresending.
 
-### ⚠️ Risiko: `ANTIGRAVITY_CREDITS=always` (høyrisikoområde for kontosperring)
+### ⚠️ Risiko: `ANTIGRAVITY_CREDITS=always` (konto-forbud hot spot)
 
-`ANTIGRAVITY_CREDITS=always` (brukt av `open-sse/executors/antigravity.ts`) sender **hver eneste** forespørsel gjennom Antigravity AI Credit Overages (betalte Google-kreditter), i stedet for å la Googles gratiskvote begrense bruken. Dette er dokumentert som en funksjon, men det er **den vanligste rapporterte typen ToS-brudd vi ser** — flere Google Ultra-kontoer har blitt sperret med `403 / "service disabled for ToS violation" / insufficient_quota` etter å ha kjørt i noen timer med `=always`.
+`ANTIGRAVITY_CREDITS=always` (konsumert av `open-sse/executors/antigravity.ts`) ruter** hver eneste** forespørsel gjennom Antigravity AI Credit Overages (betalte Google kreditter) i stedet for å la Google gratis-lags kvote gate ting. Dette er dokumentert som en funksjon, men det er det** den mest vanlige ToS-bruddrapporten vi ser** — flere Google Ultra-kontoer har blitt utestengt med `403 / "service disabled for ToS violation" / insufficient_quota` etter å ha kjørt i noen timer med `=always`.
 
-Håndhevingen oppstrøms skjer på **Googles side**, og er ikke noe OmniRoute kan forhindre. Navnet på miljøvariabelen og den eksisterende dokumentasjonen får dette til å høres ut som en trygg innstilling å aktivere; det er det ikke.
+Oppstrøms håndhevelse er på**Google side** , ikke noe OmniRoute kan forhindre. Env var-navnet og de eksisterende dokumentene får det til å høres ut som en trygg knott å snu; det er det ikke.
 
-**Hvorfor dette utløser misbruksdeteksjon mer aggressivt enn bruk begrenset til gratiskvoten:**
+**Hvorfor dette trekker misbruksdeteksjon mer aggressivt enn gratis-lag-bruk:**
 
-- Vedvarende automatisert forbruk på én enkelt Google-konto flagges annerledes enn når gratiskvoten nås og bruken stopper.
-- Kredittoverforbruk har ingen øvre hastighetsgrense, så en feilkonfigurert klient kan bruke flere hundre USD på få minutter og se ut som videresalg av API-nøkler eller bottrafikk.
-- Når flere OmniRoute-brukere belaster overforbrukskreditter parallelt fra samme eksterne IP-adresse, forsterkes signalet.
+- Vedvarende automatiserte forbruk på en enkelt Google -konto flagger annerledes enn gratis-lags hits-quota-and-stops.
+- Kredittoverskridelser har ikke noe taksttak, så en feilkonfigurert klient kan brenne gjennom flere hundre USD på minutter og se ut som API-nøkkel videresalg eller bottrafikk.
+- Flere OmniRoute brukere som treffer overskuddskreditter parallelt fra den samme eksterne IP forsterker signalet.
 
-**Anbefalt praksis:**
+**Anbefalt holdning:**
 
-1. Behold standardinnstillingen `ANTIGRAVITY_CREDITS=off`, med mindre operatøren eksplisitt godtar risikoen knyttet til betalte kreditter og kontohåndheving. `retry` sender først den normale forespørselen og injiserer kreditter maksimalt én gang etter en kvalifiserende kvotefeil av typen 429; `always` injiserer kreditter i den første forespørselen.
-2. **Fordel belastningen på flere leverandører via Auto-Combo** (`model: "auto"` eller `kr/glm/etc`-combo) i stedet for å overbelaste én enkelt Antigravity-konto.
-3. **Angi RPM-grenser per tilkobling** på redigeringssiden til Antigravity-leverandøren (Dashboard → Providers → Antigravity → tilkobling → hastighetsgrense). 30–60 RPM er en forsvarlig øvre grense for vedvarende bruk.
-4. **Bruk stabil oppstrømsnettverkstilkobling kontrollert av operatøren**, og unngå å dele én konto mellom urelaterte brukere eller arbeidsbelastninger.
-5. **Ved sperring**: send en klage via `support.google.com` → «Restore Workspace/Account access» med den nøyaktige `quota_exceeded`- / `service disabled`-responsen Google sendte. Gjenoppretting er ikke garantert.
+1. Behold standard `ANTIGRAVITY_CREDITS=off` med mindre operatøren eksplisitt aksepterer risiko for betalt kreditt og kontohåndhevelse. `retry` sender den vanlige forespørselen først og tilfører kreditter maksimalt én gang etter en kvalifisert kvote 429; `always` injiserer kreditter på den første forespørselen.
+2. **Fordel belastningen på tvers av tilbydere via Auto-Combo** (`model: "auto"` eller `kr/glm/etc` -combo) i stedet for å mette en enkelt Antigravity konto.
+3. **Angi RPM -grenser per tilkobling** i Antigravity leverandørens redigeringsside (Dashboard → Providers → Antigravity → connection → rate limit). 30–60 RPM er en forsvarlig øvre grense for vedvarende bruk.
+4. **Bruk stabil, operatørstyrt oppstrømsnettverk** og unngå å dele én konto på tvers av ikke-relaterte brukere eller arbeidsbelastninger.
+5. **Hvis forbudt** : appell via `support.google.com` → "Gjenopprett Workspace/Account tilgang" med den eksakte `quota_exceeded` / `service disabled` -svarteksten Google sendt. Restaurering er ikke garantert.
 
-Miljøreferansen dokumenterer konsekvensene for konto og kostnader for hver kredittmodus.
+Miljøreferansen dokumenterer konto- og forbruksimplikasjonene for hver kredittmodus.
+
+#### Ikke bare `=always`: Antigravity OAuth -ruting generelt
+
+Suspensjonene er ikke begrenset til kredittoverskridelser. Rapporter i november 2026 (#19223, #19266) beskriver flere Google kontoer som ble suspendert under ruting gjennom `antigravity` og `agy` (Antigravity CLI)-leverandørene, med:
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+Begge leverandørene autentiserer med Antigravity produktets OAuth økt, som er tilfellet dashbordets risikovarsel ("Denne leverandøren bruker ditt offisielle produkt session/OAuth, som ikke er autorisert for proxy/router bruk") advarer om før en tilkobling legges til. Ingen av anbefalingene ovenfor gjør denne bruken autorisert; de reduserer bare hvor mye trafikk én konto har.
+
+**Autoriserte API grensesnitt for Gemini modeller.** Google tilbyr programmatisk tilgang til Gemini gjennom sin APIs, som OmniRoute støtter som vanlige API-nøkkelleverandører:
+
+| Leverandør-ID | Dashboardnavn             | Legitimasjon                                                                      |
+| ------------- | ------------------------- | --------------------------------------------------------------------------------- |
+| `gemini`      | Gemini (Google AI Studio) | Gemini API nøkkel fra Google AI Studio (gratis lag tilgjengelig)                  |
+| `vertex`      | Vertex AI                 | Tjenestekonto JSON, OAuth -tilgangstoken eller Vertex Express API nøkkel (Gemini) |
+
+Disse leverandørene bruker legitimasjon Google problemer for API tilgang, i motsetning til Antigravity -produktøkten. De gjør ikke enhver bruk kompatibel eller fjerner risikoen for håndhevelse: hver er styrt av sine egne vilkår, som operatøren må sjekke for utplassering. For eksempel tillater [Gemini API tilleggsvilkår](https://ai.google.dev/gemini-api/terms) kun betalte tjenester når API klienter gjøres tilgjengelig for brukere i det europeiske økonomiske samarbeidsområdet, Sveits eller Storbritannia, og innhold sendt til ubetalte tjenester kan brukes til å forbedre Google produkter. Vertex AI faller under Google Cloud-vilkårene i stedet ( [Tjenestespesifikke vilkår](https://cloud.google.com/terms/service-terms) ). Priser og kvoter følger disse API vilkårene i stedet for et Antigravity abonnement.
+
+Operatører som ønsker å unngå Antigravity -suspensjonene beskrevet ovenfor, bør rute Gemini trafikk gjennom en av disse leverandørene i stedet for `antigravity` / `agy`, etter å ha sjekket at bruken deres samsvarer med leverandørens vilkår.
 
 Berøringspunkter:
 
 - `open-sse/executors/antigravity.ts` — leser `process.env.ANTIGRAVITY_CREDITS`
-- `src/lib/oauth/providers/antigravity.ts` — håndtering av legitimasjon
-- Opprinnelig hendelsesrapport: Discussion [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
+- `src/lib/oauth/providers/antigravity.ts` — legitimasjon rørleggerarbeid
+- Original hendelsesrapport: Diskusjon [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
 
@@ -240,19 +262,18 @@ I tillegg installerer `updateNssDatabases()` sertifikatet i NSS-databaser per br
 
 Alle MITM-endepunkter krever administrasjonsautentisering (`requireCliToolsAuth`). Sudo-passordet bufres i modulens omfang (aldri `globalThis`) og slettes ved `stopMitm()`.
 
-## Overstyringer av User-Agent — miljøvariabler (`.env.example` del 12)
+## User-Agent overstyrer — env vars (`.env.example` seksjon 12)
 
-| Variabel                 | Standardverdi                                                   |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| Variabel            | Misligholde                                   |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-Brukes av `open-sse/executors/base.ts::buildHeaders()` via dynamisk oppslag. **Oppdater disse når leverandørene lanserer nye CLI-versjoner** — utdaterte UA-strenger begynner å bli avvist som utdaterte klienter.
+Brukes av `open-sse/executors/base.ts::buildHeaders()` via dynamisk oppslag.** Bump disse når leverandører slipper nye CLI versjoner** — foreldede UA -strenger begynner å bli avvist som utdaterte klienter.
 
 ## Brytere for CLI-kompatibilitetsmodus (`.env.example` del 13)
 

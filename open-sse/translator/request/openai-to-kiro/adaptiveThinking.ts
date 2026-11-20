@@ -7,11 +7,15 @@
  * rejects the field for `claude-sonnet-4.5` and `claude-haiku-4.5` with a raw
  * upstream 400 (`additionalModelRequestFields is not supported for this
  * model`, issue #6576) even though both ARE thinking-capable on Anthropic's
- * direct API. `claude-opus-5` and `claude-sonnet-5` are confirmed to accept
+ * direct API. `claude-opus-5`, `claude-opus-5.5` and `claude-sonnet-5` accept
  * the adaptive envelope on Kiro today. GPT-5.6 models use Kiro's separate
  * `reasoning.effort` shape, not this Claude adaptive envelope.
  */
-const KIRO_ADAPTIVE_THINKING_MODELS = new Set(["claude-opus-5", "claude-sonnet-5"]);
+const KIRO_ADAPTIVE_THINKING_MODELS = new Set([
+  "claude-opus-5",
+  "claude-opus-5.5",
+  "claude-sonnet-5",
+]);
 const KIRO_NATIVE_REASONING_MODELS = new Set(["gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"]);
 
 export function supportsKiroAdaptiveThinking(normalizedModel: string): boolean {
@@ -32,12 +36,16 @@ const KIRO_REMOVED_AUTO_ALIAS_MESSAGE =
   "'auto-kiro' is not a real Kiro upstream model. Select a model returned by the live catalog.";
 
 export function resolveKiroModelAlias(model: unknown): { upstream: string; thinking: boolean } {
-  let upstream = String(model || "");
+  // Fold case: Kiro ids are lowercase, clients may send MiniMax-M2.5 or Claude-Sonnet-4-5.
+  let upstream = String(model || "").toLowerCase();
   if (upstream.endsWith("-agentic")) throw new Error(KIRO_UNSUPPORTED_AGENTIC_MESSAGE);
   if (upstream === "auto-kiro") throw new Error(KIRO_REMOVED_AUTO_ALIAS_MESSAGE);
 
   const thinking = upstream.endsWith("-thinking");
   if (thinking) upstream = upstream.slice(0, -"-thinking".length);
+  // Strip the -YYYYMMDD snapshot suffix (claude-sonnet-4-5-20250929) before the minor-version rewrite.
+  // Claude ids only: another model's id can end in eight digits that belong to its name.
+  if (upstream.startsWith("claude-")) upstream = upstream.replace(/-\d{8}$/, "");
   upstream = upstream.replace(/^(claude-(?:opus|sonnet|haiku|3-\d+)-\d+)-(\d{1,2})$/, "$1.$2");
 
   if (thinking && !supportsKiroAdaptiveThinking(upstream)) {

@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type Key } from "react";
 import { useTranslations } from "next-intl";
 import Card from "../Card";
-import { getModelColor } from "@/shared/constants/colors";
+import { getSeriesColor } from "./chartColors";
 import {
   fmtCompact as fmt,
   fmtCost,
@@ -11,6 +11,17 @@ import {
 } from "@/shared/utils/formatting";
 import { PROVIDER_COLORS } from "./chartColors";
 import { ChartLoadingCard, DarkTooltip, useRecharts } from "./rechartsCore";
+
+type DonutSegment = { name: string; value: number; fill: string; fullName?: string };
+type CompactDonutCardProps = {
+  pieData: DonutSegment[];
+  title: string;
+  formatter: (value: number) => string;
+  valueClassName?: string;
+  labelClassName?: string;
+  getLegendKey?: (segment: DonutSegment, index: number) => Key;
+  getLegendTitle?: (segment: DonutSegment) => string;
+};
 
 function CompactDonutCard({
   pieData,
@@ -20,7 +31,7 @@ function CompactDonutCard({
   labelClassName = "",
   getLegendKey,
   getLegendTitle,
-}) {
+}: CompactDonutCardProps) {
   const recharts = useRecharts();
 
   if (!recharts) {
@@ -31,9 +42,7 @@ function CompactDonutCard({
 
   return (
     <Card className="p-4 flex-1">
-      <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-3">
-        {title}
-      </h3>
+      <h3 className="text-sm text-text-muted uppercase mb-3">{title}</h3>
       <div className="flex items-center gap-4">
         <ResponsiveContainer width={120} height={120}>
           <PieChart>
@@ -95,16 +104,14 @@ export function AccountDonut({ byAccount }) {
     return data.slice(0, 8).map((item, i) => ({
       name: item.account,
       value: item.totalTokens,
-      fill: getModelColor(i),
+      fill: getSeriesColor(i),
     }));
   }, [data]);
 
   if (!hasData) {
     return (
       <Card className="p-4 flex-1">
-        <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-3">
-          {t("chartByAccount")}
-        </h3>
+        <h3 className="text-sm text-text-muted uppercase mb-3">{t("chartByAccount")}</h3>
         <div className="text-center text-text-muted text-sm py-8">{t("chartNoData")}</div>
       </Card>
     );
@@ -125,16 +132,14 @@ export function ApiKeyDonut({ byApiKey }) {
       name: maskApiKeyLabel(item.apiKeyName, item.apiKeyId),
       fullName: item.apiKeyName || item.apiKeyId || t("unknownApiKey"),
       value: item.totalTokens,
-      fill: getModelColor(i),
+      fill: getSeriesColor(i),
     }));
   }, [data, t]);
 
   if (!hasData) {
     return (
       <Card className="p-4 flex-1">
-        <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-3">
-          {t("chartByApiKey")}
-        </h3>
+        <h3 className="text-sm text-text-muted uppercase mb-3">{t("chartByApiKey")}</h3>
         <div className="text-center text-text-muted text-sm py-8">{t("chartNoData")}</div>
       </Card>
     );
@@ -173,9 +178,7 @@ export function ProviderCostDonut({ byProvider }) {
   if (!hasData) {
     return (
       <Card className="p-4 flex-1">
-        <h3 className="text-sm font-semibold text-text-muted uppercase tracking-wider mb-3">
-          {t("chartCostByProvider")}
-        </h3>
+        <h3 className="text-sm text-text-muted uppercase mb-3">{t("chartCostByProvider")}</h3>
         <div className="text-center text-text-muted text-sm py-8">{t("chartNoCostData")}</div>
       </Card>
     );
@@ -186,7 +189,7 @@ export function ProviderCostDonut({ byProvider }) {
       pieData={pieData}
       title={t("chartCostByProvider")}
       formatter={fmtCost}
-      valueClassName="text-amber-500"
+      valueClassName="text-warning"
       labelClassName="capitalize"
     />
   );

@@ -10,10 +10,14 @@ import { createComboSchema, paginationSchema } from "@/shared/validation/schemas
 import { isValidationFailure, validateBody } from "@/shared/validation/helpers";
 import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { comboErrorResponse } from "@/lib/api/comboErrorResponse";
-import { computeComboContextLength } from "@/lib/combos/comboContext";
+import { computeComboContextLength, createComboContextResolution } from "@/lib/combos/comboContext";
 import { ComboInvariantError } from "@/lib/combos/invariants";
 import { buildComboNameCollisionWarning } from "@/lib/combos/modelNameCollision";
 import { stripDeadComboConfigKeys } from "@/lib/combos/deadConfigKeys";
+import {
+  comboWithCapabilityRouteSteps,
+  normalizeComboCapabilityRoutes,
+} from "@/lib/combos/capabilityRoutes";
 
 // GET /api/combos - Get all combos
 export async function GET(request: Request) {
@@ -34,9 +38,10 @@ export async function GET(request: Request) {
     const range = validation.data;
     const total = getCombosCount();
     const rawCombos = await getCombos(range.limit, range.offset);
+    const resolution = createComboContextResolution();
     const combos = rawCombos.map((combo) => ({
       ...combo,
-      computed_context_length: computeComboContextLength(combo, rawCombos),
+      computed_context_length: computeComboContextLength(combo, rawCombos, resolution),
     }));
     return NextResponse.json({ combos, total });
   } catch (error) {
@@ -70,6 +75,14 @@ export async function POST(request) {
     const comboInput = {
       ...validation.data,
       models: normalizedModels,
+      ...(validation.data.routes
+        ? {
+            routes: normalizeComboCapabilityRoutes(validation.data.routes, {
+              comboName: validation.data.name,
+              allCombos: allCombos as never,
+            }),
+          }
+        : {}),
     };
     if (comboInput.config && typeof comboInput.config === "object") {
       comboInput.config = stripDeadComboConfigKeys(comboInput.config);
@@ -97,16 +110,16 @@ export async function POST(request) {
 
     // Validate nested combo DAG (no circular references, max depth)
     // Temporarily add the new combo to validate its graph
-    const tempCombo = {
+    const tempCombo = comboWithCapabilityRouteSteps({
       ...comboInput,
       name,
       strategy,
       config,
-    };
+    });
     try {
       validateComboDAG(
         name,
-        [...allCombos, tempCombo],
+        [...allCombos.map(comboWithCapabilityRouteSteps), tempCombo],
         new Set(),
         0,
         clampComboDepth((config as { maxComboDepth?: unknown } | undefined)?.maxComboDepth)

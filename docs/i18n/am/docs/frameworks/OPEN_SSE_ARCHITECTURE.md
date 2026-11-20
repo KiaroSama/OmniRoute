@@ -30,30 +30,30 @@
 
 ```
 open-sse/
-├── index.ts              # ይፋዊ መግቢያ ነጥብ
-├── types.d.ts            # ይፋዊ የtype ወደ ውጭ ላኪዎች
+├── index.ts              # ይፋዊ የመግቢያ ነጥብ
+├── types.d.ts            # ይፋዊ የዓይነት ወደ ውጭ ላኪዎች
 ├── package.json          # @omniroute/open-sse
-├── config/               # የprovider ውቅሮች፣ ቋሚዎች፣ registries
-├── executors/            # ለእያንዳንዱ provider የHTTP executors (67 + base.ts/index.ts)
-├── handlers/             # የጥያቄ handlers (chatCore፣ responses፣ ወዘተ)
-├── lib/                  # ውስጣዊ utilities
-├── mcp-server/           # Model Context Protocol server
-├── services/             # ~298 የservice modules
-├── transformer/          # የResponses API ቅርጸት transformer
+├── config/               # የአቅራቢ ውቅሮች፣ ቋሚዎች፣ መዝገቦች
+├── executors/            # ለእያንዳንዱ አቅራቢ የHTTP አስፈጻሚዎች (150 ሞጁሎች + base.ts/index.ts)
+├── handlers/             # የጥያቄ ተቆጣጣሪዎች (chatCore፣ responses፣ ወዘተ)
+├── lib/                  # ውስጣዊ መገልገያዎች
+├── mcp-server/           # የModel Context Protocol አገልጋይ
+├── services/             # ~298 የአገልግሎት ሞጁሎች
+├── transformer/          # የResponses API ቅርጸት ለዋጭ
 ├── translator/           # የቅርጸት ትርጉም (OpenAI ↔ Claude ↔ Gemini)
-└── utils/                # የጋራ utilities (logging፣ error፣ stream፣ ወዘተ)
+└── utils/                # የጋራ መገልገያዎች (ምዝግብ፣ ስህተት፣ ዥረት፣ ወዘተ)
 ```
 
-### የModule ብዛቶች
+### የሞጁሎች ብዛት
 
 | ማውጫ | ፋይሎች | ዓላማ |
-| `executors/` | 167 | ለእያንዳንዱ provider የHTTP executors (በDefaultExecutor factory የተዋሃዱ) |
+| `executors/` | 167 | ለእያንዳንዱ አቅራቢ የHTTP አስፈጻሚዎች (በDefaultExecutor ፋብሪካ የተዋሃዱ) |
 | `handlers/` | 157 | የጥያቄ መግቢያ ነጥቦች (chatCore፣ responses፣ embeddings) |
-| `services/` | ~536 | Routing፣ caching፣ rate limiting፣ refresh፣ ወዘተ |
+| `services/` | ~536 | ማስተላለፍ፣ መሸጎጫ፣ የፍጥነት ገደብ፣ ማደስ፣ ወዘተ |
 | `translator/` | 56 | የቅርጸት ልወጣ (OpenAI ↔ Claude ↔ Gemini) |
-| `mcp-server/` | 44 | የMCP tools እና transports |
-| `utils/` | ~108 | በተለያዩ ክፍሎች የሚያገለግሉ utilities (logging፣ error፣ stream) |
-| `config/` | ~339 | የProvider ውቅሮች፣ ቋሚዎች፣ registries |
+| `mcp-server/` | 44 | MCP መሣሪያዎች እና ማጓጓዣዎች |
+| `utils/` | ~108 | ሁሉን አቀፍ መገልገያዎች (ምዝግብ፣ ስህተት፣ ዥረት) |
+| `config/` | ~339 | የአቅራቢ ውቅሮች፣ ቋሚዎች፣ መዝገቦች |
 
 ---
 
@@ -165,30 +165,30 @@ needsTranslation(source, target): boolean
 
 ---
 
-## የቁልፍ ፋይሎች ጥልቅ ትንተና
+## ቁልፍ ፋይሎች ጥልቅ-ዳይቭ
 
 ### chatCore.ts (5977 መስመሮች)
 
-**ዋናው የጥያቄ አስተናጋጅ**። መጠኑ ትልቅ ቢሆንም፣ ግልጽ መዋቅር አለው፦
+የ** ዋና ጥያቄ ተቆጣጣሪ** . ምንም እንኳን መጠኑ ቢኖረውም, ግልጽ የሆነ መዋቅር አለው.
 
 ```ts
-// የchatCore.ts አስመሳይ መዋቅር
+// Pseudo-structure of chatCore.ts
 export async function handleChat(request: NextRequest) {
-  // 1. ማረጋገጫ + CORS
+  // 1. Auth + CORS
   await authenticateRequest(request);
   applyCorsHeaders(response);
 
-  // 2. የbody ማረጋገጫ
+  // 2. Body validation
   const body = await parseRequestBody(request);
 
-  // 3. ቅርጸትን መለየት + መተርጎም
+  // 3. Format detection + translation
   const sourceFormat = detectFormat(request);
   const targetFormat = getTargetFormat(providerId);
   if (needsTranslation(sourceFormat, targetFormat)) {
     body = translateRequest(body, sourceFormat, targetFormat);
   }
 
-  // 4. የcombo ማዞሪያ
+  // 4. Combo routing
   const targets = await resolveComboTargets(comboId, body);
   for (const target of targets) {
     try {
@@ -196,20 +196,20 @@ export async function handleChat(request: NextRequest) {
       await recordUsage(result);
       return result;
     } catch (err) {
-      // ወደሚቀጥለው target ቀጥል
+      // Continue to next target
     }
   }
 
-  // 5. የአደጋ ጊዜ አማራጭ
+  // 5. Emergency fallback
   return await emergencyFallback(body);
 }
 ```
 
-አንድ ግዙፍ function ቢሆንም፣ ከ5-ደረጃው pipeline ጋር በሚዛመዱ **አስተያየት በተጨመረባቸው ክፍሎች** የተደራጀ ነው።
+ምንም እንኳን አንድ ግዙፍ ተግባር ቢሆንም, የተደራጀ ነው** አስተያየት የተሰጡ ክፍሎች** ያ ካርታ ወደ ባለ 5-ደረጃ የቧንቧ መስመር.
 
 ### combo.ts (4456 LOC)
 
-አንድ combo ወደ ቅደም ተከተል የተደረደሩ targets እንዲፈታ የሚያደርገው **የማዞሪያ ሞተር**።
+የ** የማዞሪያ ሞተር** ጥምርን ለታዘዙ ኢላማዎች የሚፈታ።
 
 ```ts
 // services/combo.ts
@@ -226,46 +226,51 @@ export async function handleComboChat(body, comboId): Promise<ChatResult> {
 }
 ```
 
-**19 የማዞሪያ ስልቶችን** ይደግፋል (`src/shared/constants/routingStrategies.ts`ን ይመልከቱ)፦
+ይደግፋል** 22 የማዞሪያ ስልቶች** ( `src/shared/constants/routingStrategies.ts` ተመልከት):
 
-| ስልት                 | ባህሪ                                                           |
-| ------------------- | ------------------------------------------------------------- |
-| `priority`          | የመጀመሪያውን target ቅድሚያ የሚሰጥ የተደረደረ ዝርዝር                         |
-| `weighted`          | በእያንዳንዱ target ክብደት ላይ የተመሠረተ የዕድል ስሌት                        |
-| `round-robin`       | targetsን በቅደም ተከተል በዙር ማለፍ                                    |
-| `context-relay`     | contextን በtargets መካከል ማስተላለፍ                                 |
-| `fill-first`        | ወደሚቀጥለው ከመሄድ በፊት quotaን መሙላት                                  |
-| `p2c`               | ከሁለት ምርጫዎች የተሻለውን መምረጥ                                        |
-| `random`            | ወጥ የሆነ የዘፈቀደ ምርጫ                                              |
-| `least-used`        | በቅርብ ጊዜ በትንሹ ጥቅም ላይ የዋለውን መምረጥ                                |
-| `cost-optimized`    | በመጀመሪያ በጣም ርካሹንና ጤናማውን target መምረጥ                            |
-| `reset-aware`       | የprovider reset windowsን ከግምት ውስጥ የሚያስገባ                      |
-| `reset-window`      | በreset window ላይ የተመሠረተ ማዞሪያ                                  |
-| `headroom`          | ከፍተኛው ቀሪ የquota headroom ያለውን ቅድሚያ መስጠት                       |
-| `strict-random`     | በእውነት ወጥ የሆነ ምርጫ (የጥራት ክብደት የሌለው)                             |
-| `auto`              | ባለ16-ምክንያት ውጤት አሰጣጥን መጠቀም (`autoCombo/`)                      |
-| `lkgp`              | በመጨረሻ ጥሩ እንደሆነ የታወቀውን provider ቅድሚያ መስጠት                      |
-| `context-optimized` | ረጅም context ላላቸው ጥያቄዎች ምርጥ                                    |
-| `fusion`            | በትይዩ ወደ panel በስፋት መላክ፣ ከዚያም በjudge አማካይነት ማዋሃድ (`fusion.ts`) |
+| ስልት                 | ባህሪ                                                                           |
+| ------------------- | ----------------------------------------------------------------------------- |
+| `priority`          | የመጀመሪያ ዒላማ የታዘዘ ዝርዝር                                                          |
+| `weighted`          | በዒላማ ክብደት ሊሆን ይችላል።                                                           |
+| `round-robin`       | በቅደም ተከተል ዒላማዎችን ያሽከርክሩ                                                       |
+| `context-relay`     | በዒላማዎች ላይ አውድ አጥፋ                                                             |
+| `fill-first`        | ወደሚቀጥለው ከመሄድዎ በፊት ኮታውን ይሙሉ                                                    |
+| `p2c`               | የሁለት ምርጫዎች ኃይል                                                                |
+| `random`            | ዩኒፎርም በዘፈቀደ                                                                   |
+| `least-used`        | በጣም ጥቂት የቅርብ ጊዜ ጥቅም ያላቸውን ይምረጡ                                                |
+| `cost-optimized`    | በጣም ርካሽ ጤናማ ግብ መጀመሪያ                                                          |
+| `reset-aware`       | መስኮቶችን ዳግም ማስጀመር አቅራቢን ያውቃል                                                   |
+| `reset-window`      | በመስኮት ላይ የተመሰረተ ማዘዋወርን ዳግም ያስጀምሩ                                              |
+| `expiry-first`      | ኮታው ጊዜው የሚያበቃበትን መለያ መጀመሪያ ጥቅም ላይ ሳይውል አሳልፉ                                   |
+| `headroom`          | መጀመሪያ የቀረው የኮታ ዋና ክፍል                                                         |
+| `quota-weighted`    | የደከሙ ሂሳቦችን ይዝለሉ፣ ከዚያ በበረራ ላይ ባለው ጭነት በተረፈ ኮታ ÷ ይሳሉ                            |
+| `strict-random`     | በትክክል አንድ ወጥ (ጥራት የሌለው ክብደት)                                                  |
+| `auto`              | ባለ 16 ነጥብ ነጥብ ተጠቀም (`autoCombo/`)                                             |
+| `lkgp`              | የመጨረሻው የታወቀ ጥሩ አቅራቢ በመጀመሪያ                                                    |
+| `context-optimized` | ለረጅም ጊዜ የአውድ ጥያቄዎች ምርጥ                                                        |
+| `cache-optimized`   | እያንዳንዱን እንደገና ጥቅም ላይ ሊውል የሚችል መጠየቂያ ቅድመ-ቅጥያ ወደ ተመሳሳዩ መለያ (ፈጣን-መሸጎጫ ስኬቶች) ይሰኩት |
+| `fusion`            | በትይዩ ወደ አንድ ፓነል ይውጡ፣ ከዚያ በዳኛ (`fusion.ts`) ያዋህዱ                               |
+| `pipeline`          | ሰንሰለት ደረጃዎች — የእያንዳንዱ ኢላማ ውፅዓት ቀጣዩን ይመገባል።                                    |
+| `jev`               | መርጠው ይግቡ TypeSafe Jev የትኞቹን የተቀመጡ ግቤቶች እንደሚያሄዱ አምኗል። ሌላ የእርስዎ ትዕዛዝ            |
 
 ### base.ts (1170 LOC)
 
-ሁሉም 107 executors የሚወርሱት **abstract executor**። የሚከተሉትን ይዟል፦
+የ** ረቂቅ አስፈፃሚ** እያንዳንዱ አስፈፃሚ ክፍል እንዲራዘም (በቀጥታ ወይም በ `DefaultExecutor` እና ሌሎች ንዑስ ክፍሎች)። በውስጡ የያዘው፡-
 
-- `buildUrl()` — ነባሪ የURL ግንባታ (subclasses ለብጁ አጠቃቀም override ያደርጉታል)
-- `buildHeaders()` — ነባሪ headers (auth፣ content-type)
-- `transformRequest()` — በነባሪ ሳይቀየር ያስተላልፋል
-- `execute()` — retry/backoff/breaker ያለው ዋናው የHTTP loop
+- `buildUrl()` — ነባሪ URL ግንባታ (ንዑስ መደቦች ለብጁ ይሻራሉ)
+- `buildHeaders()` — ነባሪ ራስጌዎች (የይዘት ዓይነት)
+- `transformRequest()` — በነባሪ ማለፍ
+- `execute()` — ዋናው HTTP loop ከ retry/backoff/breaker ጋር
 
 ```ts
 // open-sse/executors/default.ts
 export class DefaultExecutor extends BaseExecutor {
-  // ሁሉንም ከOpenAI/Anthropic ጋር ተኳኋኝ የሆኑ providers ያስተናግዳል
-  // Providers configurationsን (URL፣ auth፣ headers) ይመዘግባሉ፣ ነገር ግን የexecutor logicን ይጋራሉ
+  // Handles all OpenAI/Anthropic-compatible providers
+  // Providers register configurations (URL, auth, headers) but share executor logic
 }
 ```
 
-ለprovider የተለየ ባህሪ (auth headers፣ base URL፣ version headers) በተለያዩ executor classes ሳይሆን በprovider registry በኩል ይዋቀራል።
+አቅራቢ-ተኮር ባህሪ (auth headers፣ ቤዝ URL፣ የስሪት ራስጌዎች) የሚዋቀረው በአቅራቢው መዝገብ ቤት እንጂ በልዩ ልዩ የአስፈጻሚ ክፍሎች አይደለም።
 
 ````
 
@@ -273,88 +278,88 @@ export class DefaultExecutor extends BaseExecutor {
 
 ## አገልግሎቶች (117 ሞጁሎች)
 
-አገልግሎቶች handlers በማጣመር የሚጠቀሙባቸው **በአንድ ዓላማ ላይ ያተኮሩ ሞጁሎች** ናቸው። ዋናዎቹ ምድቦች፦
+አገልግሎቶች ናቸው።** ያተኮሩ, ነጠላ-ዓላማ ሞጁሎች** ተቆጣጣሪዎች ያዘጋጃሉ. ትላልቅ ምድቦች:
 
-### ማዘዋወር እና Combo
+### ማዞሪያ እና ጥምር
 
-- `combo.ts` — በcombo ለሚዘዋወሩ ጥያቄዎች የመግቢያ ነጥብ
-- `services/autoCombo/` — ባለ16-ምክንያት ነጥብ አሰጣጥ፣ 8 ራስ-ሰር የማዘዋወር ስልቶች
-- `wildcardRouter.ts` — የwildcard መንገዶችን (`gpt-*`) ያዛምዳል
-- `modelFamilyFallback.ts` — በT5 ቤተሰብ ውስጥ fallback
+- ጥምር-መንገድ ጥያቄዎች `combo.ts` — መግቢያ ነጥብ
+- `services/autoCombo/` — ባለ 16-ደረጃ ነጥብ፣ 8 ራስ-ሰር የማዞሪያ ስልቶች
+- `wildcardRouter.ts` — ከዱር ካርድ መስመሮች (`gpt-*`) ጋር ይዛመዳል
+- `modelFamilyFallback.ts` — T5 የቤተሰብ ውድቀት
 
-### የፍጥነት ገደብ እና ኮታ
+### የደረጃ ገደብ እና ኮታ
 
-- `rateLimitManager.ts` — ለእያንዳንዱ key+provider የtoken bucket
-- `usage.ts` — የአጠቃቀም መመዝገቢያ
-- `quotaCache.ts` — በማህደረ ትውስታ ውስጥ ያሉ የኮታ ቅጽበታዊ ቅጂዎች
+- `rateLimitManager.ts` — ማስመሰያ ባልዲ በቁልፍ + አቅራቢ
+- `usage.ts` — አጠቃቀም ቀረጻ
+- `quotaCache.ts` — የማህደረ ትውስታ ኮታ ቅጽበተ-ፎቶዎች
 
-### መለያ እና Token
+### መለያ እና ማስመሰያ
 
-- `tokenRefresh.ts` — በ401 ላይ OAuth ማደስ
-- `accountFallback.ts` — ወደ አማራጭ መለያ መቀየር
-- `sessionManager.ts` — የባለብዙ-ዙር session ሁኔታ
+- `tokenRefresh.ts` — OAuth አድስ 401 ላይ
+- `accountFallback.ts` — ወደ ተለዋጭ መለያ ቀይር
+- `sessionManager.ts` — ባለብዙ ዙር ክፍለ ጊዜ ሁኔታ
 
 ### ብልህነት
 
-- `intentClassifier.ts` — የጥያቄውን ዓላማ መመደብ
-- `taskAwareRouter.ts` — በተግባር ዓይነት ማዘዋወር
-- `thinkingBudget.ts` — የአስተሳሰብ tokens መመደብ
-- `contextManager.ts` — የማዘዋወር context ማስገባት
+- `intentClassifier.ts` — የጥያቄውን ሐሳብ መድብ
+- `taskAwareRouter.ts` — መንገድ በተግባር አይነት
+- `thinkingBudget.ts` — የአስተሳሰብ ምልክቶችን ይመድቡ
+- `contextManager.ts` — የማዞሪያ አውድ መርፌ
 
 ### የመቋቋም ችሎታ
 
-- `resilience.ts` — ዳግም ሙከራ፣ backoff እና breaker ማስተባበር
-- `emergencyFallback.ts` — የመጨረሻ አማራጭ fallback
-- `modelDeprecation.ts` — ወደ ተተኪ models ራስ-ሰር ማዘዋወር
+- `resilience.ts` — ድጋሚ ሞክር፣ ወደኋላ መመለስ፣ ሰባሪ ኦርኬስትራ
+- `emergencyFallback.ts` — የመጨረሻ-ሪዞርት ውድቀት
+- `modelDeprecation.ts` — ራስ-ሰር ወደ ተተኪ ሞዴሎች
 
-### ሁኔታ
+### ግዛት
 
-- `signatureCache.ts` — በጥያቄ signature ድግግሞሽን ማስወገድ
-- `volumeDetector.ts` — ጫናን መቀነስ
-- `contextHandoff.ts` — session serialization
+- `signatureCache.ts` — dedup በጥያቄ ፊርማ
+- `volumeDetector.ts` — ጭነት ማፍሰስ
+- `contextHandoff.ts` — ክፍለ ተከታታይ
 
-### መጭመቅ
+### መጨናነቅ
 
-- `compression/` (ንዑስ ማውጫ) — ሙሉ የመጭመቅ pipeline
-- engines፣ rule packs እና adapters የሚሸፍኑ 39 ፋይሎች
+- `compression/` (ንዑስ ማውጫ) — ሙሉ የማመቂያ ቧንቧ መስመር
+- 39 ሞተሮችን የሚሸፍኑ ፋይሎች ፣ ደንብ ጥቅሎች ፣ አስማሚዎች
 
-### ክህሎቶች
+### ችሎታዎች
 
-- (በ[SKILLS.md](./SKILLS.md) ውስጥ ተሸፍኗል)
+- (በ [SKILLS.md](./SKILLS.md) የተሸፈነ)
 
 ### ማህደረ ትውስታ
 
-- (በ[MEMORY.md](./MEMORY.md) ውስጥ ተሸፍኗል)
+- (በ [MEMORY.md](./MEMORY.md) የተሸፈነ)
 
 ---
 
-## Executors (75+ ፋይሎች)
+## አስፈፃሚዎች (150 ሞጁሎች)
 
-ለእያንዳንዱ provider አንድ ፋይል አለ። ሁሉም `BaseExecutor`ን ያራዝማሉ እና ልዩነት ያለውን ይተካሉ።
+በአብዛኛው አንድ ፋይል በአንድ አቅራቢ። የአስፈፃሚው ክፍሎች ሁሉም `BaseExecutor` ያራዝማሉ እና የሚለያዩትን ይሽራሉ; ሌሎቹ ሞጁሎች በአቅራቢዎች ረዳቶች (የመሳሪያዎች ንድፎች, fetch/TTS አስማሚዎች, ኩዊክ ተቆጣጣሪዎች) ናቸው.
 
-### የተለመዱ ንድፎች
+### የተለመዱ ቅጦች
 
-Providers የሚፈቱት በ`getExecutor(providerId)` ሲሆን፣ የተዋቀረውን executor ይመልሳል። ከOpenAI/Anthropic ጋር ተኳኋኝ የሆኑ providers `DefaultExecutor`ን (`executors/default.ts`) ይጠቀማሉ። ለprovider የተለዩ ባህሪያት (base URL፣ auth headers፣ API version) በ`open-sse/config/providers/` ውስጥ ይዋቀራሉ፤ የrequest body ለውጦች ግን በ`open-sse/translator/` ውስጥ ይከናወናሉ።
+አቅራቢዎች በ `getExecutor(providerId)` መፍትሄ ያገኛሉ፣ እሱም የተዋቀረውን አስፈፃሚ ይመልሳል። OpenAI/Anthropic-compatible አቅራቢዎች `DefaultExecutor` (`executors/default.ts`) ይጠቀማሉ። አቅራቢ-ተኮር ባህሪ (ቤዝ URL፣ auth ራስጌዎች፣ API ስሪት) በ `open-sse/config/providers/` ውስጥ ተዋቅሯል፣ የጥያቄ አካል ለውጦች ደግሞ በ `open-sse/translator/` ውስጥ ይያዛሉ።
 
-**ብጁ URL** በprovider ውቅር በኩል ይቀናበራል፦
+**ብጁ URL** በአቅራቢው ውቅር ተዘጋጅቷል፡-
 
 ```ts
-// በopen-sse/config/providers/ ውስጥ ያለ የProvider ውቅር
+// Provider config in open-sse/config/providers/
 export default {
   id: "together",
   baseURL: "https://api.together.xyz/v1/chat/completions",
 }
 ````
 
-**ብጁ auth** በprovider registry የauth ውቅር (API key፣ OAuth፣ header profiles) በኩል ይስተናገዳል።
+**ብጁ ማረጋገጫ** በአገልግሎት ሰጪው መዝገብ ቤት ማረጋገጫ (API key፣ OAuth፣ header profiles) በኩል ይካሄዳል።
 
-**ብጁ request body** ለውጦች (ለምሳሌ፣ Anthropic `system`ን ከ`messages` መለየቱ) ለእያንዳንዱ provider በ`open-sse/translator/` ውስጥ ይመዘገባሉ።
+**ብጁ ጥያቄ አካል** ትራንስፎርሜሽን (ለምሳሌ Anthropic `system` ከ `messages` መለየት) በ `open-sse/translator/` በያንዳንዱ አቅራቢ ተመዝግቧል።
 
 ````
 
-### የExecutor Factory
+### The Executor Factory
 
-`executors/index.ts` `getExecutor(providerId)`ን export ያደርጋል፦
+`executors/index.ts` exports `getExecutor(providerId)`:
 
 ```ts
 import { getExecutor } from "@omniroute/open-sse/executors";
@@ -366,7 +371,7 @@ const result = await executor.execute({
 });
 ````
 
-መፍታቱ በ`ExecutorRegistry` (`executors/registry.ts`) በኩል ያልፋል፦ እያንዳንዱ ልዩ executor በ`executors/index.ts` አብሮገነብ ሰንጠረዥ ውስጥ ይገለጻል እና module በሚጫንበት ጊዜ በ`registerExecutor(alias, instance)` ይመዘገባል፤ `getExecutor()` registryውን ይፈትሻል እና ልዩ ግቤት ለሌለው ማንኛውም provider ወደ memoized `DefaultExecutor` fallback ያደርጋል። ሙሉው alias → executor ማዛመጃ በgolden test `tests/unit/executor-map-golden.test.ts` ተዘርዝሯል።
+ውሳኔው በ `ExecutorRegistry` (`executors/registry.ts`) በኩል ያልፋል፡ እያንዳንዱ ልዩ አስፈፃሚ በተሰራው `executors/index.ts` ሠንጠረዥ ውስጥ ተገልጿል እና በሞጁል ጭነት በ `registerExecutor(alias, instance)` በኩል ተመዝግቧል። `getExecutor()` መዝገቡን ያማክራል እና ወደ ማስታወሻው `DefaultExecutor` ለማንኛውም አገልግሎት አቅራቢ ያለ ልዩ መግቢያ ይመለሳል። ሙሉው ቅጽል → አስፈፃሚ ካርታ በወርቅ ሙከራ `tests/unit/executor-map-golden.test.ts` ተለይቷል።
 
 ---
 
@@ -479,19 +484,19 @@ createResponsesApiTransformStream(): TransformStream
 
 ---
 
-## ውቅር
+## ማዋቀር
 
-`open-sse/config/` የውቅር ንብርብሩን ይይዛል፦
+`open-sse/config/` የማዋቀሪያውን ንብርብር ይይዛል፡-
 
-| ፋይል                             | ዓላማ                                 |
-| ------------------------------- | ----------------------------------- |
-| `providerRegistry.ts`           | በ352-አቅራቢ ካታሎግ ላይ ያለ የውይይት-ሞዴል መዝገብ |
-| `providerModels.ts`             | የሞዴል ተለዋጭ ስሞች፣ የቅርጸት ማዛመድ           |
-| `constants.ts`                  | የጊዜ ገደቦች፣ ገደቦች፣ የሁኔታ ኮዶች            |
-| `defaultThinkingSignature.ts`   | ነባሪ የClaude ማሰብ ፊርማ                 |
-| `modelStrip.ts` (በservices ውስጥ) | ለእያንዳንዱ አቅራቢ የመስክ ማስወገድ             |
+| ፋይል                           | ዓላማ                              |
+| ----------------------------- | -------------------------------- |
+| `providerRegistry.ts`         | በ394 አቅራቢ ካታሎግ ላይ የውይይት-ሞዴል መዝገብ |
+| `providerModels.ts`           | የሞዴል ተለዋጭ ስሞች፣ የቅርጸት ካርታ         |
+| `constants.ts`                | የጊዜ ማብቂያዎች፣ ገደቦች፣ የሁኔታ ኮዶች       |
+| `defaultThinkingSignature.ts` | ነባሪ Claude አስተሳሰብ ፊርማ            |
+| `modelStrip.ts` (በአገልግሎት ውስጥ) | በአቅራቢው መስክ ማራገፍ                  |
 
-### የአቅራቢ መዝገብ መርሐግብር
+### የአቅራቢዎች መዝገብ ቤት እቅድ
 
 ```ts
 interface ProviderConfig {
@@ -506,7 +511,7 @@ interface ProviderConfig {
 }
 ```
 
-ሞጁሉ ሲጫን የሚከናወነው የZod ማረጋገጫ ሁሉም የአቅራቢ ውቅሮች ትክክለኛ መሆናቸውን ያረጋግጣል።
+Zod በሞጁል ጭነት ማረጋገጥ ሁሉም የአቅራቢዎች ውቅሮች ትክክለኛ መሆናቸውን ያረጋግጣል።
 
 ---
 

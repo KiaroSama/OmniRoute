@@ -17,12 +17,17 @@ ar to līgumiem, mērķētiem testiem, CI pārklājumu un saskaņošanas darbīb
 
 ### Priekšnosacījumi
 
-- **Node.js** `>=22.22.3 <23` vai `>=24.0.0 <27` (ieteicams: 24 LTS)
+- **Node.js** `>=22.22.2 <23`, vai `>=24.0.0 <27` (ieteicams: 24 LTS)
 - **npm** 10+
 
-> **npm v11+ lietotājiem (Node 24+):** Pēc `npm install` pārbaudiet, vai vietējie moduļi ir instalēti:
+> **Windows ar Node 24:** izmantojiet pašreizējo 24 LTS labojumversiju (vismaz 24.20.0).
+> Vecākas versijas var pārtraukt darbību pēc veiksmīgiem testiem, kad `--test-force-exit` aizver
+> procesu. Node [Windows libuv labojums](https://github.com/nodejs/node/pull/61999) novērš
+> šo izpildlaika avāriju; atstājiet testu apgalvojumu un izpildītāja iziešanas pārbaudes iespējotas.
+
+> **npm v11+ lietotāji (Node 24+):** pēc `npm install` pārbaudiet, vai vietējie moduļi tika instalēti:
 > `node -e "require('better-sqlite3')"`. Ja komanda neizdodas ar `MODULE_NOT_FOUND`,
-> palaidiet `npm approve-scripts better-sqlite3 && npm install`. Skatiet
+> izpildiet `npm approve-scripts better-sqlite3 && npm install`. Skatiet
 > [Problēmu novēršana](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module).
 
 - **Git**
@@ -38,7 +43,7 @@ npm install
 ### Vides mainīgie
 
 ```bash
-# Izveidojiet .env failu no veidnes
+# Izveidojiet .env no veidnes
 cp .env.example .env
 
 # Ģenerējiet nepieciešamos noslēpumus
@@ -58,62 +63,67 @@ Galvenie izstrādes mainīgie:
 
 ### Informācijas paneļa iestatījumi
 
-Informācijas panelī ir pieejami funkciju pārslēgi, kurus var konfigurēt arī, izmantojot vides mainīgos:
+Informācijas panelī ir pieejami lietotāja saskarnes slēdži funkcijām, kuras var konfigurēt arī, izmantojot vides mainīgos:
 
-| Iestatījuma atrašanās vieta | Pārslēgs            | Apraksts                                         |
-| --------------------------- | ------------------- | ------------------------------------------------ |
-| Settings → Advanced         | Atkļūdošanas režīms | Iespējot atkļūdošanas pieprasījumu žurnālus (UI) |
-| Settings → General          | Sānjoslas redzamība | Rādīt/slēpt sānjoslas sadaļas                    |
+| Iestatījuma atrašanās vieta | Slēdzis            | Apraksts                                         |
+| --------------------------- | ------------------ | ------------------------------------------------ |
+| Settings → Advanced         | Debug Mode         | Iespējot atkļūdošanas pieprasījumu žurnālus (UI) |
+| Settings → General          | Sidebar Visibility | Rādīt/slēpt sānjoslas sadaļas                    |
 
-Šie iestatījumi tiek glabāti datubāzē un saglabājas pēc atkārtotas palaišanas; ja tie ir iestatīti, tie aizstāj vides mainīgo noklusējuma vērtības.
+Šie iestatījumi tiek glabāti datubāzē un saglabājas pēc atkārtotas palaišanas, ja tie ir iestatīti, ignorējot vides mainīgo noklusējuma vērtības.
 
-### Darbināšana lokāli
+### Palaišana lokāli
 
 ```bash
 # Izstrādes režīms (automātiska pārlāde)
 npm run dev
 
 # Produkcijas būvējums
-npm run build    # next build → .build/next/ un pēc tam assembleStandalone → dist/
+npm run build    # next build → .build/next/ then assembleStandalone → dist/
 npm run start
 
-# Ātra tikai backend/API kompilēšana izmaiņām, ko veic ieguldītāji
+# Ātra aizmugursistēmas/API kompilācija līdzautoru izmaiņām
 npm run build:contributor
 
-# Izlaiduma būvējums (tīra pārbūve + HEAD marķieris — nepieciešams izvietošanai)
-npm run build:release   # rm -rf .build dist un build + ieraksta dist/BUILD_SHA
+# Izlaides būvējums (tīra pārbūve + HEAD marķieris — nepieciešams izvietošanai)
+npm run build:release   # rm -rf .build dist && build + writes dist/BUILD_SHA
 
 # Izplatīta porta konfigurācija
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-Ieguldītāja būvējums veic tikai kompilēšanas validāciju: tas neizveido patstāvīgo izplatīšanu un nebūvē neobligātos vietējās pakotnes līdzekļus. Izmantojiet parasto produkcijas būvējumu, ja nepieciešams validēt izplatāmo pakotni.
+Līdzautoru būvējums veic tikai kompilācijas validāciju: tas neizveido atsevišķo
+distribūciju un nebūvē neobligātos vietējās pakotnes līdzekļus. Izmantojiet parasto produkcijas būvējumu,
+ja nepieciešams validēt publicējamo pakotni.
 
-### Būvējuma izvades struktūra
+### Būvējuma izvades izkārtojums
 
-| Direktorija | Saturs                                                               | Tiek izsekota |
-| ----------- | -------------------------------------------------------------------- | ------------- |
-| `src/`      | Lietotnes pirmkods (TypeScript / TSX)                                | Jā            |
-| `.build/`   | Starpfaili — `next build` izvade (ignorēta, `distDir = .build/next`) | Nē            |
-| `dist/`     | Izplatāmā pakotne — to izveido `assembleStandalone` (ignorēta)       | Nē            |
+| Direktorija | Saturs                                                                           | Izsekota |
+| ----------- | -------------------------------------------------------------------------------- | -------- |
+| `src/`      | Lietotnes pirmkods (TypeScript / TSX)                                            | Jā       |
+| `.build/`   | Starpfaili — `next build` izvade (ignorēta Git sistēmā, `distDir = .build/next`) | Nē       |
+| `dist/`     | Publicējamā pakotne — izveidota ar `assembleStandalone` (ignorēta Git sistēmā)   | Nē       |
 
-Būvēšanas konveijers darbojas vienā piegājienā:
+Būvēšanas process notiek vienā piegājienā:
 
 ```
 npm run build
   └─ next build → .build/next/standalone  (Next.js izvade)
   └─ assembleStandalone()                 (kopē standalone + static + public + native assets)
-       └─ izvade: dist/                   (server.js, .next/static/, public/, node_modules/)
+       └─ output: dist/                   (server.js, .next/static/, public/, node_modules/)
 ```
 
 `npm run build:release` papildus vispirms notīra abas direktorijas un ieraksta
 `dist/BUILD_SHA` (= `git rev-parse --short HEAD`) kā izvietošanas integritātes marķieri.
 
-`npm run build:contributor` izmanto tikai backend paredzēto būvējuma profilu. Būvēšanas laikā tas īslaicīgi aizstāj informācijas paneļa UI failus, saglabā API maršrutu apstrādātājus un pēc būvēšanas atjauno sākotnējos failus. Izmantojiet `npm run build`, lai pārbaudītu izmaiņas, kas ietekmē informācijas paneļa UI, vai veiktu pilnu izlaiduma validāciju; ieguldītāja profils neaizstāj izlaiduma būvējumu.
+`npm run build:contributor` izmanto tikai aizmugursistēmas būvējuma profilu. Būvēšanas laikā
+tas īslaicīgi aizstāj informācijas paneļa UI failus ar tukšiem failiem, saglabā API maršrutu
+apstrādātājus un pēc būvējuma atjauno sākotnējos failus. Izmantojiet `npm run build`, ja izmaiņas
+ietekmē informācijas paneļa UI, vai pilnai izlaides validācijai; līdzautoru profils neaizstāj izlaides būvējumu.
 
-> **Piezīme par izvietošanu VPS:** attālā attēla direktorija `/usr/lib/node_modules/omniroute/app/`
-> netiek mainīta. Izvietošanas prasmes tajā sinhronizē `dist/` saturu, izmantojot rsync.
-> Mainījies ir tikai repozitorijā esošais būvējuma izvades ceļš (`app/` → `dist/`).
+> **Piezīme par VPS izvietošanu:** attālā attēla direktorija `/usr/lib/node_modules/omniroute/app/`
+> paliek nemainīta. Izvietošanas prasmes tajā sinhronizē `dist/` saturu, izmantojot rsync.
+> Mainīts ir tikai repozitorijā esošais būvējuma izvades ceļš (`app/` → `dist/`).
 
 Noklusējuma URL:
 
@@ -167,87 +177,88 @@ Tvērumi (v3.8): `db`, `sse`, `oauth`, `dashboard`, `api`, `cli`, `docker`, `ci`
 
 ---
 
-## Testu palaišana
+## Testu izpilde
 
 ```bash
-# Visi testi (unit + vitest + ecosystem + e2e)
+# Visi testi (vienībtesti + vitest + ekosistēma + e2e)
 npm run test:all
 
-# Viens testa fails (Node.js native test runner — lielākā daļa testu izmanto šo)
+# Atsevišķs testa fails (Node.js iebūvētais testu izpildītājs — to izmanto lielākā daļa testu)
 node --import tsx/esm --test tests/unit/your-file.test.ts
 
-# Tikai izmaiņu ietekmētie unit testi (tas pats TIA selektors, ko izmanto CI vārteja, #8084)
-npm run test:scoped            # izmaiņas pēdējā commit (vai darba kokā)
-npm run test:scoped:staged     # tikai staged izmaiņas — labi piemērots pre-commit palaišanai
-npm run test:scoped:full       # vispirms atkārtoti izveidot import-graph karti (pēc failu pievienošanas/pārvietošanas)
-# Exit 1 + "run the full suite" nozīmē, ka mainīts hub fails (tsconfig, package.json, …) vai
-# nekartēts avots — selektors neuzņemas risku, tas nekad klusi neizlaiž testus.
+# Tikai jūsu izmaiņu ietekmētie vienībtesti (tas pats TIA atlasītājs kā CI pārbaudē, #8084)
+npm run test:scoped            # izmaiņas pēdējā komitā (vai darba kokā)
+npm run test:scoped:staged     # tikai sagatavotās izmaiņas — labi sader ar izpildi pirms komita
+npm run test:scoped:full       # vispirms no jauna izveido importēšanas grafa karti (pēc failu pievienošanas/pārvietošanas)
+# Izejas kods 1 + "izpildiet pilno komplektu" nozīmē, ka ir mainīts centrmezgla fails (tsconfig, package.json, …) vai
+# nekartēts avota fails — atlasītājs droši pārtrauc darbu un nekad klusām neizlaiž testus.
 
-# Vitest (MCP server, autoCombo, cache)
+# Vitest (MCP serveris, autoCombo, kešatmiņa)
 npm run test:vitest
 
 # E2E testi (nepieciešams Playwright)
 npm run test:e2e
 
-# Protokola klientu E2E (MCP transports, A2A)
+# Protokolu klientu E2E (MCP transporti, A2A)
 npm run test:protocols:e2e
 
-# Ecosystem saderības testi
+# Ekosistēmas saderības testi
 npm run test:ecosystem
 
-# Pārklājuma vārteja: 60% statements/lines/functions/branches
+# Pārklājuma slieksnis: 60% priekšrakstu/rindu/funkciju/zaru
 npm run test:coverage
 npm run coverage:report
 
-# Lint + format pārbaude
+# Lintēšanas un formatējuma pārbaude
 npm run lint
 npm run check
 
-# Kontrolēta reālo upstream kombināciju smoke pārbaude (nepieciešama VPS piekļuve + reāla provideru kredītu bilance)
-# Izmanto REAL providerus — izmaksas ir nelielas. NEKAD netiek palaists CI. Bez vārtejas tiek korekti izlaists.
-# Nepieciešama: ssh root@192.168.0.15 piekļuve (no VPS tiek iegūts tikai lasāms DB momentuzņēmums).
+# Ar slēdzi iespējota reālās augšupstraumes combo ātrā pārbaude (nepieciešama VPS piekļuve un reālu pakalpojumu sniedzēju kredīti)
+# Izmanto REĀLUS pakalpojumu sniedzējus — rada nelielas izmaksas. NEKAD netiek izpildīta CI. Ja slēdzis nav iestatīts, tiek korekti izlaista.
+# Nepieciešama: ssh root@192.168.0.15 piekļuve (no VPS tiek ielādēts tikai lasāms DB momentuzņēmums).
 RUN_COMBO_LIVE=1 npm run test:combo:live
 
-# 3. fāzes VPS live smoke pārbaude — vienkārši Node ESM skripti, kas tieši piekļūst live .15 serverim.
-# Nepieciešama: ssh root@192.168.0.15 piekļuve (kombinācijas tiek izveidotas/noņemtas, izmantojot SSH sqlite).
-# Izmanto REAL providerus (nelielas izmaksas). Izveido/dzēš tikai __live_test__* kombinācijas. NEKAD netiek palaists CI.
-# REQUIRE_API_KEY=false uz .15, tāpēc API atslēga nav nepieciešama, bet, ja iestatīti, tiek ņemti vērā COMBO_LIVE_BASE_URL / COMBO_LIVE_API_KEY.
-npm run test:combo:live:vps              # 7 HTTP scenāriji (priority/round-robin/weighted/cost/fusion/auto + health)
-npm run test:combo:live:vps:failover     # pievieno reālu starp-provideru failover scenāriju (kopā 8)
+# 3. posma VPS tiešā ātrā pārbaude — vienkārši Node ESM skripti, kas tieši izmanto aktīvo .15 serveri.
+# Nepieciešama: ssh root@192.168.0.15 piekļuve (combo tiek izveidoti/noņemti, izmantojot SSH sqlite).
+# Izmanto REĀLUS pakalpojumu sniedzējus (nelielas izmaksas). Izveido/dzēš tikai __live_test__* combo. NEKAD netiek izpildīta CI.
+# .15 serverī ir REQUIRE_API_KEY=false, tāpēc API atslēga nav nepieciešama, taču, ja iestatīti COMBO_LIVE_BASE_URL / COMBO_LIVE_API_KEY, tie tiek ievēroti.
+npm run test:combo:live:vps              # 7 HTTP scenāriji (prioritāte/cikliska atlase/svēršana/izmaksas/apvienošana/automātiska atlase + darbspēja)
+npm run test:combo:live:vps:failover     # pievieno reālu kļūmjpārlēces scenāriju starp pakalpojumu sniedzējiem (kopā 8)
 ```
 
-Pārklājuma piezīmes:
+Piezīmes par pārklājumu:
 
-- `npm run test:coverage` mēra avota pārklājumu galvenajai unit testu kopai, izslēdz `tests/**` un ietver `open-sse/**`
-- Pull Request ir jāsaglabā pārklājuma vārteja vismaz **60%+** apmērā statements/lines/functions/branches
-- Ja PR maina produkcijas kodu mapēs `src/`, `open-sse/`, `electron/` vai `bin/`, tajā pašā PR ir jāpievieno vai jāatjaunina automatizētie testi
-- `npm run coverage:report` izvada detalizētu pārskatu par katru failu no jaunākās pārklājuma palaišanas
+- `npm run test:coverage` mēra avota pārklājumu galvenajam vienībtestu komplektam, izslēdz `tests/**` un iekļauj `open-sse/**`
+- Izmaiņu pieprasījumos ir jāsaglabā vismaz **60%** priekšrakstu/rindu/funkciju/zaru pārklājuma slieksnis
+- Ja PR maina produkcijas kodu mapē `src/`, `open-sse/`, `electron/` vai `bin/`, tajā pašā PR ir jāpievieno vai jāatjaunina automatizētie testi
+- `npm run coverage:report` izdrukā jaunākās pārklājuma izpildes detalizētu pārskatu par katru failu
 - `npm run test:coverage:legacy` saglabā vecāko metriku vēsturiskai salīdzināšanai
-- Skatiet `docs/ops/COVERAGE_PLAN.md`, lai iepazītos ar pakāpenisku pārklājuma uzlabošanas ceļvedi
+- Pakāpeniskā pārklājuma uzlabošanas ceļvedi skatiet failā `docs/ops/COVERAGE_PLAN.md`
 
-### Pull Request prasības
+### Izmaiņu pieprasījuma prasības
 
 Pirms PR atvēršanas izmantojiet
-[Contribution Golden Path](docs/ops/CONTRIBUTION_GOLDEN_PATH.md), lai palaistu mērķēto ciklu
-atbilstoši veiktajām izmaiņām. Pilnā unit testu kopa (4 CI shards), Vitest, **60%+**
-pārklājuma vārteja un produkcijas build ir CI atbildība — to palaišana lokāli nedod nekādu papildu
-informāciju, ko PR pārbaudes jau nesniegs, turklāt mazākās ierīcēs tas var pārslogot hostu (#8084):
+[ieteicamo ieguldījumu procesu](docs/ops/CONTRIBUTION_GOLDEN_PATH.md), lai izpildītu mērķēto ciklu
+jūsu veiktajām izmaiņām. Par pilno vienībtestu komplektu (4 CI daļas), Vitest, **60%+** pārklājuma slieksni un
+produkcijas būvējumu atbild CI — to lokāla izpilde nesniedz nekādu papildu informāciju, ko PR
+pārbaudes jau nesniegtu, un mazāk jaudīgās iekārtās tā var pārslogot sistēmu (#8084):
 
-- Palaidiet testa failus, kas aptver jūsu izmaiņas: `node --import tsx/esm --test tests/unit/<file>.test.ts`
-- Palaidiet `npm run lint`
+- Izpildiet testa failus, kas pārbauda jūsu izmaiņas: `node --import tsx/esm --test tests/unit/<file>.test.ts`
+- Izpildiet `npm run lint`
 - Ikreiz, kad mainās produkcijas kods, tajā pašā PR iekļaujiet vai atjauniniet automatizētos testus
-- Ja mainījies produkcijas kods, PR aprakstā iekļaujiet mainītos vai pievienotos testa failus
-- Ja CI ir konfigurēti projekta noslēpumi, pārbaudiet SonarQube rezultātu PR
+- `node:test` failos katru augstākā līmeņa `await` (piemēram, `await import(...)`) novietojiet pirms pirmā `test()` / `describe()`: izmantojot `--test-force-exit`, pēc tā reģistrētie testi var klusām vispār netikt izpildīti (#18045; to nodrošina `npm run check:test-tla-order`)
+- Ja ir mainīts produkcijas kods, PR aprakstā norādiet mainītos vai pievienotos testa failus
+- Ja projektam CI vidē ir konfigurēti noslēpumi, pārbaudiet PR SonarQube rezultātu
 
-Pašreizējais testu statuss: **122 unit testu faili**, kas aptver:
+Pašreizējais testu statuss: **122 vienībtestu faili**, kas aptver:
 
-- Provideru translatorus un formātu konvertēšanu
-- Ātruma ierobežošanu, circuit breaker un noturību
-- Semantisko kešatmiņu, idempotenci, progresa izsekošanu
-- Datu bāzes darbības un shēmu (21 DB modulis)
+- Pakalpojumu sniedzēju tulkotājus un formātu pārveidošanu
+- Ātruma ierobežošanu, ķēdes pārtraucēju un noturību
+- Semantisko kešatmiņu, idempotenci un progresa izsekošanu
+- Datubāzes operācijas un shēmu (21 DB modulis)
 - OAuth plūsmas un autentifikāciju
 - API galapunktu validāciju (Zod v4)
-- MCP servera rīkus un tvērumu izpildes kontroli
+- MCP servera rīkus un tvēruma ierobežojumu piemērošanu
 - Memory un Skills sistēmas
 
 ---
@@ -288,67 +299,67 @@ Skatiet `open-sse/utils/stream.ts` un `open-sse/utils/streamHandler.ts`, lai iep
 ```
 src/                        # TypeScript (.ts / .tsx)
 ├── app/                    # Next.js 16 App Router
-│   ├── (dashboard)/        # Informācijas paneļa lapas (23 sadaļas)
-│   ├── api/                # API maršruti (51 direktorija)
-│   └── login/              # Autentifikācijas lapas (.tsx)
-├── domain/                 # Politiku dzinis (policyEngine, comboResolver, costRules u.c.)
-├── lib/                    # Galvenā biznesa loģika (.ts)
-│   ├── a2a/                # Agent-to-Agent v0.3 protokola serveris
-│   ├── acp/                # Agent Communication Protocol reģistrs
-│   ├── compliance/         # Atbilstības politiku dzinis
-│   ├── db/                 # SQLite domēna moduļi + 130 migrācijas
-│   ├── memory/             # Pastāvīga sarunu atmiņa
-│   ├── oauth/              # OAuth nodrošinātāji, pakalpojumi un utilītas
-│   ├── skills/             # Paplašināma prasmju infrastruktūra
-│   ├── usage/              # Lietojuma uzskaite un izmaksu aprēķināšana
-│   └── localDb.ts          # Tikai atkārtotas eksportēšanas slānis — nekad šeit nepievienojiet loģiku
-├── middleware/              # Pieprasījumu starpprogrammatūra (promptInjectionGuard)
-├── mitm/                   # MITM starpniekserveris (sertifikāts, DNS, mērķa maršrutēšana)
+│   ├── (dashboard)/        # Dashboard pages (23 sections)
+│   ├── api/                # API routes (51 directories)
+│   └── login/              # Auth pages (.tsx)
+├── domain/                 # Policy engine (policyEngine, comboResolver, costRules, etc.)
+├── lib/                    # Core business logic (.ts)
+│   ├── a2a/                # Agent-to-Agent v0.3 protocol server
+│   ├── acp/                # Agent Communication Protocol registry
+│   ├── compliance/         # Compliance policy engine
+│   ├── db/                 # SQLite domain modules + 130 migrations
+│   ├── memory/             # Persistent conversational memory
+│   ├── oauth/              # OAuth providers, services, and utilities
+│   ├── skills/             # Extensible skill framework
+│   ├── usage/              # Usage tracking and cost calculation
+│   └── localDb.ts          # Re-export layer only — never add logic here
+├── middleware/              # Request middleware (promptInjectionGuard)
+├── mitm/                   # MITM proxy (cert, DNS, target routing)
 ├── shared/
-│   ├── components/         # React komponenti (.tsx)
-│   ├── constants/          # Nodrošinātāju definīcijas (329), MCP tvērumi, 19 maršrutēšanas stratēģijas
-│   ├── utils/              # Automātiskais slēdzis, sanitizētājs, autentifikācijas palīgi
-│   └── validation/         # Zod v4 shēmas
-└── sse/                    # SSE starpniekservera konveijers
+│   ├── components/         # React components (.tsx)
+│   ├── constants/          # Provider definitions (329), MCP scopes, 22 routing strategies
+│   ├── utils/              # Circuit breaker, sanitizer, auth helpers
+│   └── validation/         # Zod v4 schemas
+└── sse/                    # SSE proxy pipeline
 
 open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 izpildītāju ieviešanas moduļi
-├── handlers/               # 11 pieprasījumu apstrādātāji (chat, responses, embeddings, images u.c.)
-├── mcp-server/             # MCP serveris (110 unikāli rīki, 3 transporti, 33 tvērumi)
-├── services/               # 178 augstākā līmeņa pakalpojumi (combo, autoCombo, rateLimitManager u.c.)
-├── translator/             # Formātu tulkotāji (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
-├── transformer/            # Responses API pārveidotājs
-└── utils/                  # 22 utilītas moduļi (straume, TLS, starpniekserveris, reģistrēšana)
+├── executors/              # 150 executor modules (executor classes + per-provider helpers)
+├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
+├── mcp-server/             # MCP server (110 unique tools, 3 transports, 33 scopes)
+├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
+├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
+├── transformer/            # Responses API transformer
+└── utils/                  # 22 utility modules (stream, TLS, proxy, logging)
 
-electron/                   # Electron darbvirsmas lietotne (daudzplatformu)
+electron/                   # Electron desktop app (cross-platform)
 
 tests/
-├── unit/                   # Node.js testu palaidējs (1,574 testu faili)
-├── integration/            # Integrācijas testi
-├── e2e/                    # Playwright testi
-├── security/               # Drošības testi
-├── translator/             # Tulkotājam specifiski testi
-└── load/                   # Slodzes testi
+├── unit/                   # Node.js test runner (1,574 test files)
+├── integration/            # Integration tests
+├── e2e/                    # Playwright tests
+├── security/               # Security tests
+├── translator/             # Translator-specific tests
+└── load/                   # Load tests
 
 docs/
-├── adr/                     # Arhitektūras lēmumu ieraksti
-├── architecture/            # Sistēmas arhitektūra un noturība
-├── comparison/              # OmniRoute salīdzinājumā ar alternatīvām
-├── compression/             # Saspiešanas ceļveži un noteikumi
-├── dev/                     # Izstrādes ceļveži
-├── diagrams/                # Arhitektūras diagrammas
+├── adr/                     # Architecture Decision Records
+├── architecture/            # System architecture & resilience
+├── comparison/              # OmniRoute vs alternatives
+├── compression/             # Compression guides & rules
+├── dev/                     # Development guides
+├── diagrams/                # Architecture diagrams
 ├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
-├── guides/                  # Lietotāja ceļvedis, Docker, iestatīšana, problēmu novēršana
-├── i18n/                    # Internacionalizēti README tulkojumi
-├── marketing/               # Mārketinga materiāli
-├── ops/                     # Izvietošana, starpniekserveris, pārklājums, laidieni
-├── providers/               # Konkrētiem nodrošinātājiem paredzēta dokumentācija
-├── reference/               # API atsauce, vides mainīgie, CLI rīki, bezmaksas līmeņi
-├── releases/                # Laidienu piezīmes
-├── routing/                 # Automātiskās kombinēšanas dzinis, spriešanas atkārtošana
-├── screenshots/              # Informācijas paneļa ekrānuzņēmumi
-├── security/                # Drošības vadīklas, atbilstība, slēpšana, pilnvarojuma marķieri
-└── specs/                   # Izstrādes specifikācijas
+├── guides/                  # User guide, Docker, setup, troubleshooting
+├── i18n/                    # Internationalized README translations
+├── marketing/               # Marketing materials
+├── ops/                     # Deployment, proxy, coverage, releases
+├── providers/               # Provider-specific docs
+├── reference/               # API reference, env vars, CLI tools, free tiers
+├── releases/                # Release notes
+├── routing/                 # Auto-combo engine, reasoning replay
+├── screenshots/             # Dashboard screenshots
+├── security/                # Guardrails, compliance, stealth, tokens
+└── specs/                   # Design specs
 ```
 
 ---
@@ -389,22 +400,22 @@ Uzrakstiet vienību testus direktorijā `tests/unit/`, kas aptver vismaz:
 
 ---
 
-## Pull Request kontrolsaraksts
+## Pull Request Checklist
 
-- [ ] Testi ir veiksmīgi (`npm test`)
-- [ ] Lint pārbaude ir veiksmīga (`npm run lint`)
+- [ ] Pārbaudes nokārtotas (`npm test`)
+- [ ] Šķērsošanas caurlaides (`npm run lint`)
 - [ ] Būvēšana ir veiksmīga (`npm run build`)
-- [ ] Jaunām publiskajām funkcijām un saskarnēm ir pievienoti TypeScript tipi
-- [ ] Nav cietkodētu noslēpumu vai rezerves vērtību
-- [ ] Publiskie augšupējā nodrošinātāja akreditācijas dati ir iegulti, izmantojot `resolvePublicCred()` (skatiet [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), nekad kā literāļi
-- [ ] Kļūdu atbildes tiek novirzītas caur `buildErrorBody()` / `sanitizeErrorMessage()` — atbildes pamattekstā nav neapstrādātu steka izsekojumu (skatiet [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
-- [ ] Čaulas komandas (`exec` / `spawn`) izpildlaika vērtības padod, izmantojot `env`, nevis virkņu interpolāciju
-- [ ] Visas ievades tiek validētas ar Zod shēmām
-- [ ] Lietotājiem redzamām izmaiņām ir pievienots izmaiņu žurnāla **fragment** fails `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` (skatiet [`changelog.d/README.md`](./changelog.d/README.md)) — **ne**rediģējiet `CHANGELOG.md` tieši; fragmenti tiek apkopoti laidiena izveides laikā un nekad nerada konfliktus starp PR
-- [ ] Dokumentācija ir atjaunināta (ja piemērojams)
-- [ ] Nav atvērti jauni CodeQL / Secret-Scanning brīdinājumi, vai arī katrs no tiem ir noraidīts ar tehnisku pamatojumu, atsaucoties uz atbilstošo `docs/security/` dokumentu
-- [ ] Maršruti, kas palaiž bērnprocesus (`/api/mcp/`, `/api/cli-tools/runtime/`), failā `src/server/authz/routeGuard.ts` ir klasificēti ar `isLocalOnlyPath()` — skatiet [Stingro noteikumu #15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] Komitziņojumos nav `Co-Authored-By` papildinājumu — komitiem ir jāparādās tikai repozitorija īpašnieka Git identitātes vārdā (Stingrais noteikums #16)
+- [ ] TypeScript veidi pievienoti jaunām publiskām funkcijām un saskarnēm
+- [ ] Nav šifrētu noslēpumu vai rezerves vērtību
+- [ ] Publiskie augšupējie akreditācijas dati, kas iegulti, izmantojot `resolvePublicCred()` (skatiet [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) ), nekad kā burti
+- [ ] Kļūdu atbildes virzās caur `buildErrorBody()` / `sanitizeErrorMessage()` — atbildes ķermeņos nav neapstrādātas steka pēdas (skatiet [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) )
+- [ ] Shell komandas (`exec` / `spawn`) nodod izpildlaika vērtības , izmantojot `env`, nevis virknes interpolāciju
+- [ ] Visas ievades ir apstiprinātas ar Zod shēmām
+- [ ] Izmaiņu žurnāls** fragments** pievienots zem `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` lietotājam paredzētām izmaiņām (sk. [`changelog.d/README.md`](./changelog.d/README.md) ) — do** nē** rediģēt `CHANGELOG.md` tieši; fragmenti tiek apkopoti izlaišanas laikā un nekad nav pretrunā starp PRs
+- [ ] Dokumentācija atjaunināta (ja piemērojama)
+- [ ] Nav atvērts neviens jauns CodeQL /Slepenās meklēšanas brīdinājums vai katrs no tiem ir noraidīts ar tehnisku pamatojumu, atsaucoties uz attiecīgo `docs/security/` dokumentu
+- [ ] Maršruti , kas rada bērnu procesus (`/api/mcp/`, `/api/cli-tools/runtime/`) , kas klasificēti kā `isLocalOnlyPath()` in `src/server/authz/routeGuard.ts` — skatiet [cieto noteikumu #15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] Nav AI/bot `Co-authored-by` piekabju saistību ziņojumos (Hard Rule #16) — līdzstrādniekiem, kuru darbs tiek atkārtoti izmantots, tiek piešķirti standarta `Co-authored-by: Name <email>` piekabes
 
 ---
 

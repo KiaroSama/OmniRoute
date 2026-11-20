@@ -16,65 +16,53 @@ Varjatud toimimise funktsioonid võimaldavad OmniRoute'il olla ühilduvuskiht ka
 
 ---
 
-## TLS-sõrmejäljestuse kiht
+## TLS-sõrmejäljestamise kiht
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-Püsivad `wreq-js`-seansid luuakse laisalt iga kontoskoobi ja lahendatud puhverserveri kohta. Protsessiülene `TlsClient` koondab kuni 128 seanssi, mis matkivad Cloudflare'i taga olevate lähteteenuste jaoks **Chrome 124 brauserit macOS-is**. `TlsClient.fetch()` katkestab vea korral töö, kui natiivne käituskeskkond pole saadaval; kutsuja võib väljaspool seda ümbrist sõnaselgelt valida varuvariandi.
+Püsivad `wreq-js`-seansid luuakse laisalt konto ulatuse ja lahendatud puhverserveri kohta. Protsessiülene `TlsClient` hoiab kogumis kuni 128 seanssi, mis jäljendavad Cloudflare'i taga olevate ülesvooluteenuste jaoks **Chrome 124 brauserit macOS-is**. Kui omamaine käituskeskkond pole saadaval, lõpetab `TlsClient.fetch()` turvaliselt veaga; kutsuja võib väljaspool seda ümbrist selgesõnaliselt valida varuvariandi.
 
 - Seansiprofiil: `browser: "chrome_124", os: "macos"`
-- Puhverserveri lahendamine (prioriteedi järjekorras): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (ka väiketähtedega variandid)
-- Ajalõpp: `TLS_CLIENT_TIMEOUT_MS` (pärineb muutujast `FETCH_TIMEOUT_MS`, vaikeväärtus 600000)
-- `wreq-js` Response ühildub fetchiga (`headers`, `text()`, `json()`, `clone()`, `body`).
+- Puhverserveri lahendamine (prioriteedi järjekorras): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (ka väiketähelised variandid)
+- Ajalõpp: `TLS_CLIENT_TIMEOUT_MS` (pärib väärtuse muutujalt `FETCH_TIMEOUT_MS`, vaikeväärtus 600000)
+- `wreq-js`-i vastus ühildub Fetch API-ga (`headers`, `text()`, `json()`, `clone()`, `body`).
 - Esimese baidi valve (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): `TlsClient.fetch()`
-  lõpetab kohe, kui lähteteenuse päised saabuvad, mistõttu `TLS_CLIENT_TIMEOUT_MS` üksi ei saa piirata
-  keha, mis ei väljasta kunagi esimest baiti. `guardTlsFirstByte()` paneb keha esimese `read()`-i
-  võistlema ajalõpuga `TLS_FIRST_BYTE_WATCHDOG_MS` (vaikimisi `10000`, väärtus `0` keelab selle);
-  terve keha tööd see ei mõjuta, kuid seiskunud keha korral tühistatakse wreq-lugeja ja lastakse
-  `proxyFetch`-i olemasoleval TLS-i varuloogikal jätkata otseühenduse/puhverserveri-dispetšeriga
-  (taasesituseks ebaturvaline päring, nt kehaga POST, põhjustab siiski vea ega käivitata vaikselt
-  uuesti).
+  laheneb kohe, kui ülesvooluteenuse päised saabuvad, seega ei saa `TLS_CLIENT_TIMEOUT_MS` üksi piirata
+  vastust, mille keha ei väljasta kunagi esimest baiti. `guardTlsFirstByte()` paneb keha esimese `read()`
+  kutse võistlema ajalõpuga `TLS_FIRST_BYTE_WATCHDOG_MS` (vaikeväärtus `10000`, `0` keelab selle); korras
+  keha ei mõjutata, kuid takerdunud keha korral tühistatakse wreq-lugeja ja `proxyFetch`-i olemasoleval
+  TLS-i varuloogikal lastakse jätkata otseühenduse/puhverserveri dispetšeriga (taasesitamiseks ebaturvaline
+  päring, nt kehaga POST-päring, annab endiselt vea, selle asemel et seda vaikimisi uuesti proovida).
 
-### Veebiküpsiseid kasutava teenusepakkuja transport — wreq-js 3.2.0
+### Veebiküpsiste teenusepakkuja transport — wreq-js 3.2.0
 
-`open-sse/services/tlsClientBase.ts` on alltoodud viie spetsiaalse veebiküpsiste transpordi ühine
-adapter. Iga õhuke teenusepakkujapõhine ümbris valib brauseri/OS-i profiili. Adapter kasutab
-failis `open-sse/utils/tlsClient.ts` olevat ühtset wreq käituskeskkonna laadijat ja transpordikogumit,
-mille võtmeks on profiil + OS + lahendatud puhverserver, samas kui iga päring kasutab sätet
-`cookieMode: "ephemeral"`. Seega jagavad kontod ja päringud transporditaseme ühendusi, kuid mitte
-kunagi wreq-seanssi ega küpsisehoidlat.
+`open-sse/services/tlsClientBase.ts` on alltoodud viie spetsialiseeritud veebiküpsiste transpordi ühine adapter. Iga õhuke teenusepakkujapõhine ümbris valib brauseri/OS-i profiili. Adapter kasutab faili `open-sse/utils/tlsClient.ts` ühtset wreq käituskeskkonna laadijat ja transpordikogumit, mille võtme moodustavad profiil + OS + lahendatud puhverserver, samas kui iga päring kasutab seadet `cookieMode: "ephemeral"`. Seega jagavad kontod ja päringud transporditaseme ühendusi, kuid mitte kunagi wreq-seanssi ega küpsisehoidlat.
 
-| Teenusepakkuja | Profiil       | Matkitav OS | Voo EOF-poliitika                            |
-| -------------- | ------------- | ----------- | -------------------------------------------- |
-| Claude         | `chrome_146`  | Linux       | lisa `[DONE]`                                |
-| Perplexity     | `firefox_148` | macOS       | lisa `event: end_of_stream`                  |
-| Grok           | `chrome_146`  | Linux       | jäta `[DONE]` välja                          |
-| Notion         | `chrome_146`  | Windows     | lisa `[DONE]`                                |
-| LMArena        | `chrome_146`  | Windows     | sentinel puudub; sulge natiivse EOF-i korral |
+| Teenusepakkuja | Profiil       | Emuleeritud OS | Voo EOF-i reegel                            |
+| -------------- | ------------- | -------------- | ------------------------------------------- |
+| Claude         | `chrome_146`  | Linux          | kaasa arvatud `[DONE]`                      |
+| Perplexity     | `firefox_151` | macOS          | kaasa arvatud `event: end_of_stream`        |
+| Grok           | `chrome_146`  | Linux          | välja arvatud `[DONE]`                      |
+| Notion         | `chrome_146`  | Windows        | kaasa arvatud `[DONE]`                      |
+| LMArena        | `chrome_146`  | Windows        | sentinel puudub; sulgemine omamaisel EOF-il |
 
-- Voogedastus tarbib natiivse vastuse `ReadableStream`-i otse; ajutist faili ega kõrvalprotsessi ei
+- Voogedastus tarbib omamaise vastuse `ReadableStream`-i otse; ajutist faili ega kõrvalprotsessi ei
   looda.
-- Enne voo avaldamist kontrollitakse kuni 256 algset baiti. SSE-teenusepakkujad puhverdavad mitte-SSE
-  vead; Grok/LMArena vastendavad Cloudflare'i kontrollpäringud olekule `403` ja HTML-vahelehed olekule `502`.
-- Natiivse päringu ajalõppu piirab endiselt absoluutne JS-i jäik tähtaeg. Hangumine muudab kehtetuks
-  ja sulgeb ainult mõjutatud profiili/OS-i/puhverserveri transpordi, enne kui järgmine päring selle
-  uuesti loob.
-- Puhverserveri lahendamise prioriteet on iga kutse puhul `proxyUrl` → päringupõhine konto-/töölauakontekst →
-  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (sealhulgas väiketähtedega variandid). Lahendusvead
-  katkestavad töö selle asemel, et otsese ühenduse kaudu andmeid lekitada. LMArena kasutab
-  lahendamisel teadlikult domeeni `arena.ai`.
-- `byteResponse` tagastab sisutüübiga `data:` URL-i ilma UTF-8 kodeeringut rikkumata.
+- Enne voo avaldamist kontrollitakse kuni 256 esimest baiti. SSE-teenusepakkujad puhverdavad mitte-SSE
+  vead; Grok/LMArena teisendavad Cloudflare'i kontrollpäringud olekuks `403` ja HTML-i vahelehed olekuks `502`.
+- Omamaise päringu ajalõpp jääb absoluutse JS-i tähtaja ümbrisesse. Hangumine muudab kehtetuks ja
+  sulgeb ainult mõjutatud profiili/OS-i/puhverserveri transpordi, enne kui järgmine päring selle uuesti loob.
+- Puhverserveri lahendamise prioriteet on iga kutse puhul `proxyUrl` → päringupõhine konto-/juhtpaneelikontekst →
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (sealhulgas väiketähelised variandid). Lahendamise vead blokeerivad
+  ühenduse turvaliselt, selle asemel et lubada otsese ühenduse leket. LMArena lahendab teadlikult domeeni `arena.ai` suhtes.
+- `byteResponse` tagastab sisutüübiga `data:` URL-i ilma UTF-8 andmeid rikkumata.
 - Vead on `TlsClientUnavailableError` (pakett/lisamoodul pole saadaval), `TlsClientHangError`
-  (tähtaeg ületatud) ja `WreqTransportCapacityError` (jagatud seansimahu veakood), kui kõik 128
-  piiratud profiili/OS-i/puhverserveri pesa on aktiivsed või sulgumas.
+  (tähtaeg ületatud) ja `WreqTransportCapacityError` (jagatud seansimahu veakood), kui kõik 128 piiratud
+  profiili/OS-i/puhverserveri pesa on aktiivsed või sulgemisel.
 
-Ülaltoodud üldine `TlsClient`-seanss jääb spetsialiseerituks püsiva brauseripõhise küpsiseoleku
-jaoks. Mõlemad teed taaskasutavad üht puhverdatud wreq-mooduli laadijat ja protsessi elutsükli
-konksu; nende kogumid jäävad eraldi, sest nende küpsiste eluead on tahtlikult erinevad.
+Ülaltoodud üldine `TlsClient`-i seanss jääb spetsialiseerituks brauseritoega küpsiste püsioleku jaoks. Mõlemad teed kasutavad uuesti üht puhverdatud wreq-mooduli laadijat ja protsessi elutsükli konksu; nende kogumid jäävad eraldi, sest nende küpsiste eluead on tahtlikult erinevad.
 
-Kinnitatud versiooniga pakett toetab neid profiile, kuid tegelik WAF-i aktsepteerimine võib
-kohalikest lepingutestidest sõltumatult muutuda. Enne lähteteenuse brauseriga võrdsuse väitmist
-kontrollige sõrmejäljemuudatusi sõnaselgelt volitatud reaalse kontoga.
+Kinnitatud pakett toetab neid profiile, kuid tegelik WAF-i aktsepteerimine võib muutuda kohalikest lepingutestidest sõltumatult. Enne ülesvoolubrauseriga võrdsuse väitmist valideerige sõrmejälje muudatused selgesõnaliselt volitatud päriskontoga.
 
 ---
 
@@ -123,7 +111,7 @@ Rakendatakse järgmistele: `system`-plokid, kogu `messages[].content` ning `tool
 
 Kolmandate osapoolte Anthropicu vahendusteenuste jaoks, mis aktsepteerivad ainult „päris Claude Code'i” liiklust:
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"` vaikimisi
@@ -140,41 +128,63 @@ Sama komplekti kaasmoodulid:
 
 ---
 
-## Antigravity varjatud režiim
+## Antigravity Stealth
 
-Antigravity päringud säilitavad kutsuja teksti baidi täpsusega. OmniRoute ei lisa viipadesse null-laiusega märke ega nimeta ümber või sisesta tööriistu IDE-kliendi jäljendamiseks.
+Antigravity taotlused säilitavad helistaja teksti bait-byte. OmniRoute ei lisa IDE kliendi jäljendamiseks viipadesse ega rename/inject tööriistadesse nulllaiusega märke.
 
 ### `antigravityHeaderScrub.ts`
 
-Eemaldab enne edastamist Stainless SDK markerid (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`).
+Ribad roostevabast terasest SDK markerid (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) enne edasisaatmist.
 
-### ⚠️ Risk: `ANTIGRAVITY_CREDITS=always` (konto blokeerimise peamine riskikoht)
+### ⚠️ risk: `ANTIGRAVITY_CREDITS=always` (konto keelu leviala)
 
-`ANTIGRAVITY_CREDITS=always` (seda kasutab `open-sse/executors/antigravity.ts`) suunab **iga** päringu Antigravity AI Credit Overagesi kaudu (tasulised Google'i krediidid), selle asemel et lasta Google'i tasuta taseme kvoodil kasutust piirata. Seda dokumenteeritakse funktsioonina, kuid see on **kõige sagedamini teatatud kasutustingimuste rikkumine, mida näeme** — mitu Google Ultra kontot on blokeeritud veaga `403 / "service disabled for ToS violation" / insufficient_quota` pärast mõnetunnist töötamist väärtusega `=always`.
+`ANTIGRAVITY_CREDITS=always` (kulub `open-sse/executors/antigravity.ts`) marsruudid** iga** taotlege Antigravity AI krediidi ülejääki (makstud Google krediiti), selle asemel, et lasta Google vabatasemel kvoodiväravaid asju. See on dokumenteeritud funktsioonina, kuid nii see on** kõige levinum teenusetingimuste rikkumise aruanne, mida näeme** — mitu Google Ultra kontot on `403 / "service disabled for ToS violation" / insufficient_quota` ga keelatud pärast mõnetunnist `=always` ga töötamist.
 
-Ülesvoolu jõustamine toimub **Google'i poolel** ning OmniRoute ei saa seda takistada. Keskkonnamuutuja nimi ja olemasolev dokumentatsioon jätavad mulje, et selle võib ohutult sisse lülitada; tegelikult pole see ohutu.
+Ülesvoolu jõustamine on sisse lülitatud**Google pool** , ei saa midagi OmniRoute ära hoida. env var nimi ja olemasolevad dokumendid panevad selle kõlama nagu turvaline klapp; see ei ole.
 
-**Miks see käivitab väärkasutuse tuvastamise agressiivsemalt kui ainult tasuta taseme kasutamine:**
+**Miks see tuvastab väärkasutuse agressiivsemalt kui ainult vaba taseme kasutamine:**
 
-- Püsiv automatiseeritud kulu ühe Google'i konto kaudu märgistatakse teisiti kui tasuta taseme kasutus, mis kvoodini jõudes peatub.
-- Krediidi ülekasutusel puudub kiiruslagi, mistõttu võib valesti seadistatud klient kulutada mõne minutiga mitusada USA dollarit ning paista API-võtmete edasimüügi või robotliiklusena.
-- Kui mitu OmniRoute'i kasutajat kasutavad sama välise IP kaudu paralleelselt ülekasutuskrediite, võimendab see signaali.
+- Püsivad automatiseeritud kulutused ühele Google kontole märgivad teisiti kui vabataseme tabamus-ja-peatused.
+- Krediidi ületamisel ei ole intressilagi, nii et valesti konfigureeritud klient võib minutitega läbi põletada mitusada USD ja näeb välja nagu API-võtme edasimüük või robotiliiklus.
+- Mitu OmniRoute kasutajat, kes löövad paralleelselt sama välise IP ülejäägikrediiti, ühendavad signaali.
 
-**Soovitatav lähenemine:**
+**Soovitatav asend:**
 
-1. Hoidke vaikeväärtust `ANTIGRAVITY_CREDITS=off`, välja arvatud juhul, kui operaator nõustub selgesõnaliselt tasulise krediidi ja konto suhtes rakendatavate jõustamismeetmete riskiga. `retry` saadab esmalt tavapärase päringu ja lisab krediidid kõige rohkem ühe korra pärast sobivat kvoodiga seotud 429 vastust; `always` lisab krediidid juba esimesele päringule.
-2. **Jaotage koormus Auto-Combo abil pakkujate vahel** (`model: "auto"` või `kr/glm/etc`-combo), selle asemel et koormata üks Antigravity konto küllastuseni.
-3. **Määrake ühendusepõhised RPM-i piirangud** Antigravity pakkuja redigeerimislehel (juhtpaneel → pakkujad → Antigravity → ühendus → kiiruspiirang). 30–60 RPM on pideva kasutuse puhul põhjendatav ülempiir.
-4. **Kasutage stabiilset, operaatori kontrollitavat ülesvoolu võrguühendust** ning vältige ühe konto jagamist omavahel mitteseotud kasutajate või töökoormuste vahel.
-5. **Blokeerimise korral**: esitage apellatsioon lehel `support.google.com` → „Restore Workspace/Account access” koos Google'i saadetud täpse `quota_exceeded` / `service disabled` vastuse kehaga. Juurdepääsu taastamine pole garanteeritud.
+1. Säilitage vaikimisi `ANTIGRAVITY_CREDITS=off` välja arvatud juhul, kui operaator nõustub selgesõnaliselt makstud krediidi ja konto jõustamise riskiga. `retry` saadab esimesena tavalise päringu ja lisab krediiti kõige rohkem üks kord pärast sobivat kvooti 429; `always` sisestab krediiti esimesel päringul.
+2. **Jaotage koormus teenusepakkujate vahel automaatse kombineerimise kaudu** (`model: "auto"` või `kr/glm/etc` -combo), selle asemel, et küllastada ühte Antigravity kontot.
+3. **Määrake ühenduse kohta RPM piirangud** Antigravity pakkuja redigeerimislehel (Armatuurlaud → Providers → Antigravity → ühenduse → kiiruspiirang). 30–60 RPM on kaitstud ülemine piir püsivaks kasutamiseks.
+4. **Kasutage stabiilset operaatori juhitavat ülesvoolu võrku** ja vältige ühe konto jagamist mitteseotud kasutajate või töökoormusega.
+5. **Kui keelatud** : apellatsioon `support.google.com` → kaudu "Taasta Workspace/Account juurdepääs" koos täpselt saadetud `quota_exceeded` / `service disabled` vastuse kehaga Google. Taastamine ei ole garanteeritud.
 
-Keskkonnamuutujate juhend dokumenteerib iga krediidirežiimi mõju kontole ja kuludele.
+Keskkonna viide dokumenteerib iga krediidirežiimi konto ja kulutamise mõju.
 
-Puudutatud kohad:
+#### Mitte ainult `=always`: Antigravity OAuth marsruutimine üldiselt
 
-- `open-sse/executors/antigravity.ts` — loeb väärtust `process.env.ANTIGRAVITY_CREDITS`
-- `src/lib/oauth/providers/antigravity.ts` — mandaadi edastamine
-- Algne intsidendiaruanne: arutelu [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
+Peatamised ei piirdu krediidi ülejäägiga. Aruanded 2026. aasta novembris (#19223, #19266) kirjeldavad mitut Google kontot, mis peatati marsruutimisel läbi `antigravity` ja `agy` (Antigravity CLI) teenusepakkujate kaudu.
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+Mõlemad pakkujad autentivad end Antigravity toote OAuth seansiga, mille kohta hoiatab armatuurlaua riskiteade ("See pakkuja kasutab teie ametlikku toodet session/OAuth, mis pole proxy/router kasutamiseks volitatud") enne ühenduse lisamist. Ükski ülaltoodud soovitustest ei muuda seda kasutamist lubatavaks; need vähendavad ainult ühe konto liiklust.
+
+**Autoriseeritud API liidesed Gemini mudelitele.** Google pakub programmilist juurdepääsu Gemini oma APIs kaudu, mida OmniRoute toetab tavaliste API-võtme pakkujatena:
+
+| Pakkuja id | Armatuurlaua nimi         | Mandaat                                                                         |
+| ---------- | ------------------------- | ------------------------------------------------------------------------------- |
+| `gemini`   | Gemini (Google AI Studio) | Gemini API võti Google AI Studiost (saadaval tasuta tase)                       |
+| `vertex`   | Vertex AI                 | Teenusekonto JSON, OAuth juurdepääsuluba või Vertex Expressi API -võti (Gemini) |
+
+Erinevalt Antigravity tooteseansist kasutavad need pakkujad API le juurdepääsuks mandaatide Google probleeme. Need ei muuda iga kasutust nõuetele vastavaks ega eemalda jõustamise ohtu: igaühele kehtivad oma tingimused, mida operaator peab nende kasutuselevõtuks kontrollima. Näiteks [Gemini API täiendavad teenusetingimused](https://ai.google.dev/gemini-api/terms) lubavad ainult tasulisi teenuseid, kui API kliendid tehakse kättesaadavaks kasutajatele Euroopa Majanduspiirkonnas, Šveitsis või Ühendkuningriigis ning Tasuta teenustele saadetud sisu võidakse kasutada Google toodete täiustamiseks. Vertex AI kuulub selle asemel Google pilvetingimuste alla ( [teenusespetsiifilised tingimused](https://cloud.google.com/terms/service-terms) ). Hinnakujundus ja kvoodid järgivad neid API tingimusi, mitte Antigravity tellimust.
+
+Operaatorid, kes soovivad vältida ülalkirjeldatud Antigravity peatamist, peaksid pärast seda, kui on kontrollinud, kas nende kasutus vastab teenusepakkuja tingimustega, suunama Gemini liikluse läbi ühe nendest pakkujatest, mitte `antigravity` / `agy`.
+
+Puutepunktid:
+
+- `open-sse/executors/antigravity.ts` — `process.env.ANTIGRAVITY_CREDITS`
+- `src/lib/oauth/providers/antigravity.ts` — mandaadi torustik
+- Algne vahejuhtumiaruanne: Discussion [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
 
@@ -243,19 +253,18 @@ Kõik MITM-i lõpp-punktid nõuavad haldusautentimist (`requireCliToolsAuth`). S
 
 ---
 
-## User-Agenti ülekirjutused — keskkonnamuutujad (`.env.example` jaotis 12)
+## User-Agent alistab — env vars (`.env.example` jaotis 12)
 
-| Muutuja                  | Vaikeväärtus                                                    |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| Muutuv              | Vaikimisi                                     |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-Seda kasutab `open-sse/executors/base.ts::buildHeaders()` dünaamilise otsingu kaudu. **Uuendage neid väärtusi, kui teenusepakkujad annavad välja uued CLI-versioonid** — aegunud UA-stringe hakatakse tagasi lükkama, kuna neid peetakse aegunud klientideks.
+Tarbib `open-sse/executors/base.ts::buildHeaders()` dünaamilise otsingu kaudu.** Kui pakkujad lasevad välja uued CLI versioonid, tehke need löögiks** — aegunud UA stringid lükatakse tagasi kui aegunud kliendid.
 
 ## CLI ühilduvusrežiimi lülitid (`.env.example` jaotis 13)
 

@@ -8,190 +8,144 @@
 
 Gbogbo àwọn ipa-ọ̀nà API ìṣàkóso OmniRoute ni a pín sí ọ̀kan nínú àwọn ìpele ààbò mẹ́ta. Ìpínsọ̀rí náà jẹ́ àìyípadà, a ṣàlàyé rẹ̀ nínú `src/server/authz/routeGuard.ts`, a sì máa ṣe àyẹ̀wò rẹ̀ kí ẹ̀ka ìfàṣẹsí míì èyíkéyìí tó ṣiṣẹ́.
 
-## Àwọn Ìpele
+## Awọn ipele
 
-### Ìpele 1 — LOCAL_ONLY
+### Ipele 1 — LOCAL_ONLY
 
-**A fi agbára mú un nípasẹ̀:** `isLocalOnlyPath(path)` → àyẹ̀wò olùgbàlejò loopback  
-**Ọ̀nà àjálù:** Kò sí ní àìròtẹ́lẹ̀. Ìyọkúrò tó ní ààlà wà fún àwọn ipa-ọ̀nà inú
-`LOCAL_ONLY_MANAGE_SCOPE_BYPASS_PREFIXES` nígbà tí ìbéèrè náà bá ní kọ́kọ́rọ́
-API tó fẹsẹ̀ múlẹ̀ pẹ̀lú scope `manage` (wo [Ìyọkúrò scope manage](#manage-scope-carve-out)).
+**Ti fi agbara mu nipasẹ:** `isLocalOnlyPath(path)` → loopback ogun ayẹwo** Fori:** Ko si nipasẹ aiyipada. Din-jade fun awọn ọna ni `LOCAL_ONLY_MANAGE_SCOPE_BYPASS_PREFIXES` nigbati ibeere ba gbe bọtini API to wulo pẹlu iwọn `manage` (wo [Ṣakoso-scope carve-out](#manage-scope-carve-out) ).
 
-Àwọn route wọ̀nyí máa ń dá àwọn process ọmọ sílẹ̀ tàbí ṣiṣẹ́ kóòdù runtime. Ṣíṣí wọn sí
-traffic tí kì í ṣe loopback yóò jẹ́ kí olùkọlù tó bá gba JWT tó fẹsẹ̀ múlẹ̀ (fún àpẹẹrẹ,
-nípasẹ̀ tunnel Cloudflared/Ngrok) lè mú kí process bẹ̀rẹ̀ — irú CVE kan tí a mọ̀ sí
-([GHSA-fhh6-4qxv-rpqj](https://github.com/advisories/GHSA-fhh6-4qxv-rpqj)).
+Awọn ipa-ọna wọnyi nfa awọn ilana ọmọ tabi ṣiṣẹ koodu asiko. Ṣiṣafihan wọn si ijabọ ti kii ṣe loopback yoo gba ikọlu ti o gba JWT to wulo (fun apẹẹrẹ, nipasẹ oju eefin Cloudflared/Ngrok ) lati ṣe okunfa ilana spawning — kilasi CVE ti a mọ ( [GHSA-fhh6-4qxv-rpqj](https://github.com/advisories/GHSA-fhh6-4qxv-rpqj) ).
 
-**Ohun tí GHSA-fhh6-4qxv-rpqj jẹ́ (irú ìkọlù náà):** server ìṣàkóso/agent kan
-ṣí endpoint kan tí ń ṣe ìfilọ́lẹ̀ subprocess (`npm install`, `node`, browser kan,
-proxy kan, `git`, `tar`, …). Bí endpoint yẹn bá ṣeé dé láti òde host — nítorí pé
-olùṣàkóso fi OmniRoute sí ẹ̀yìn tunnel nginx/Cloudflare/Tailscale kan tí JWT sì
-ti tú jáde, tàbí tí a ṣàtúnṣe auth lọ́nà tí kò tọ́ — olùkọlù náà yí “pe API kan” padà sí “ṣiṣẹ́
-command kan lórí host” (remote code execution). OmniRoute dí èyí nípa fífi
-**àyẹ̀wò host loopback múlò láìsí àyípadà, ṣáájú àyẹ̀wò auth èyíkéyìí**, lórí gbogbo
-route tó lè dá process sílẹ̀: token tó tú jáde lórí tunnel kò ṣì lè dé ibi ìdásílẹ̀ process náà.
+**Kini GHSA-fhh6-4qxv-rpqj jẹ (kilasi ikọlu):** olupin management/agent kan ṣafihan aaye ipari kan ti o ṣe ifilọlẹ ilana abẹlẹ kan (`npm install`, `node`, aṣawakiri kan, aṣoju, `git`, `tar`,…). Ti aaye ipari yẹn ba le de ọdọ — -olugbalejo nitori oniṣẹ fi OmniRoute si ẹhin eefin nginx/Cloudflare/Tailscale ati JWT kan ti jo, tabi auth ti jẹ ṣiṣatunṣe — olukolu naa yi “pe API kan” sinu “Ṣiṣe aṣẹ kan lori agbalejo” (imuṣiṣẹ koodu latọna jijin). OmniRoute tilekun eyi nipa imuse a** loopback ogun ṣayẹwo lainidi, ṣaaju ayẹwo eyikeyi auth** , lori gbogbo ipa-ọna ti o ni agbara-spawn: ami ti o jo lori oju eefin kan ṣi ko le de ọdọ spawn.
 
-**Àkójọpọ̀ LOCAL_ONLY ní kíkún.** Orísun aláṣẹ ni
-`LOCAL_ONLY_API_PREFIXES` / `LOCAL_ONLY_API_PATTERNS` nínú
-`src/server/authz/routeGuard.ts`; tábìlì tó wà nísàlẹ̀ ṣe àfihàn ipò lọ́wọ́lọ́wọ́. Ẹnubodè
-`check-route-guard-membership` ṣe àkójọ gbogbo `route.ts` lábẹ́ àwọn
-prefix tó lè dá process sílẹ̀, ó sì mú kí CI kùnà bí a kò bá pín èyíkéyìí sí local-only.
+**Eto LOCAL_ONLY ni kikun.** Orisun alaṣẹ ni `LOCAL_ONLY_API_PREFIXES` / `LOCAL_ONLY_API_PATTERNS` ni `src/server/authz/routeGuard.ts`; tabili ni isalẹ digi awọn ti isiyi ipo. Ẹnu-ọna `check-route-guard-membership` n ṣe alaye gbogbo `route.ts` labẹ awọn ami-iṣaaju ti o ni agbara spawn ati kuna CI ti eyikeyi ko ba ni ipin agbegbe-nikan.
 
-| Àkọ́tẹ́lẹ̀ / àpẹẹrẹ                                                                                         | Ìdí tí ó fi jẹ́ ti agbègbè nìkan                                                                           |
-| -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `/api/mcp/`                                                                                              | Olùpèsè MCP — ń ṣe ìpilẹ̀ṣẹ̀ àwọn afárá stdio + àwọn olùṣàkóso SSE                                          |
-| `/api/cli-tools/runtime/`                                                                                | Àkókò-ṣiṣe irinṣẹ́ CLI — ń ṣiṣẹ́ kóòdù plugin èyíkéyìí                                                      |
-| `/api/cli-tools/{omp,letta,grok-build,forge,jcode,qwen}-settings`                                        | Àwọn olùkọ ètò fún irinṣẹ́ kọ̀ọ̀kan tí ó lè fọwọ́ kan àwọn binary/àtúnṣe irinṣẹ́ lórí host                     |
-| `/api/cli-tools/{claude,cline,codewhale,codex,crush,deepseek-tui,droid,kilo,openclaw,pi,smelt}-settings` | Ìpilẹ̀ṣẹ̀ `getCliRuntimeStatus()` kan náà bí ti àwọn mẹ́fà tí wọ́n jọ jẹ́ arákùnrin lókè (GHSA-35fw-cv32-2373) |
-| `/api/cli-tools/{all-statuses,status,detect}`                                                            | Àwọn àyẹ̀wò àkójọ CLI — ń ṣe ìpilẹ̀ṣẹ̀ `command -v` / `--version` fún irinṣẹ́ kọ̀ọ̀kan (GHSA-35fw-cv32-2373)    |
-| `/api/cli-tools/antigravity-mitm`                                                                        | Ìṣàkóso aṣojú Antigravity MITM (ń ṣe ìpilẹ̀ṣẹ̀/ń tọ́ka aṣojú ètò)                                            |
-| `/api/modality-bridge/video/`                                                                            | Àyẹ̀wò àkókò-ṣiṣe Video Bridge loopback tí a fọkàn tán gidi àti afárá ìyọkúrò inú                          |
-| `/api/services/`                                                                                         | Àwọn iṣẹ́ tí a fi sínú rẹ̀ (9Router / CLIProxy / Bifrost / Mux / Dario) — `npm install` + ìpilẹ̀ṣẹ̀           |
-| `/dashboard/providers/services/`                                                                         | Aṣojú ìyípadà sí àwọn UI iṣẹ́ tí a fi sínú rẹ̀                                                              |
-| `/api/tunnels/cloudflared`                                                                               | Ń fi binary cloudflared sílẹ̀/ń ṣe ìpilẹ̀ṣẹ̀ rẹ̀                                                              |
-| `/api/tunnels/tailscale/{install,enable,disable,login,start-daemon}`                                     | Ń fi tailscaled sílẹ̀/ń ṣàkóso rẹ̀ lórí host                                                                |
-| `/api/copilot/`                                                                                          | Olùdarí LLM tí kò ní ìfàṣẹsí — CLI nìkan nípa àìrísí                                                      |
-| `/api/tools/agent-bridge/`                                                                               | AgentBridge — ń ṣe ìpilẹ̀ṣẹ̀ olùpèsè MITM + àwọn àtúnṣe DNS                                                 |
-| `/api/tools/traffic-inspector/`                                                                          | Traffic Inspector — olùgbọ́ http-proxy + aṣojú ètò                                                         |
-| `/api/settings/mitm`                                                                                     | Ń mú ìdáwọ́lé MITM ṣiṣẹ́ (ipò aṣojú ipele-ètò)                                                              |
-| `/api/issue-agent/`                                                                                      | Aṣojú ọ̀ràn — ń ṣe ìpilẹ̀ṣẹ̀ àwọn irinṣẹ́ agbègbè lòdì sí repo                                                |
-| `/api/plugins/`, `/api/plugins`                                                                          | Àwọn plugin — ń kó/ṣiṣẹ́ wọn nípasẹ̀ `worker_threads` + `child_process`                                     |
-| `/api/middleware/`                                                                                       | Middleware oníṣe — ń kó/ṣiṣẹ́ kóòdù olùṣàkóso nínú process                                                 |
-| `/api/system/version`                                                                                    | Ìmúdójúìwọ̀n aládàáṣe (POST nìkan; GET/HEAD/OPTIONS yọ kúrò) — ń ṣe ìpilẹ̀ṣẹ̀ `git checkout` + `npm install` |
-| `/api/db-backups/exportAll`                                                                              | Ń ṣe ìpilẹ̀ṣẹ̀ `tar` fún àpamọ́ ìkójáde                                                                      |
-| `/api/local/`                                                                                            | Àwọn olùpilẹ̀ṣẹ̀ agbègbè pẹ̀lú títẹ̀ kan (Redis ní báyìí) — ń ṣe ìpilẹ̀ṣẹ̀ podman/docker                        |
-| `/api/headroom/start`, `/api/headroom/stop`                                                              | Yíyí-ayé aṣojú Headroom — ń ṣe ìpilẹ̀ṣẹ̀ python CLI / ń fi àwọn àmì ránṣẹ́ sí PID                            |
-| `/api/jobs`, `/api/jobs/`                                                                                | Ìṣàkóso olùṣiṣẹ́ iṣẹ́ — ń ṣiṣẹ́ iṣẹ́ tí a ṣètò ní ẹ̀gbẹ́ host                                                   |
-| `/api/oauth/cursor/auto-import`                                                                          | `execFile("which", ["cursor"])` ṣáájú gbígbé àwọn ìwé ẹ̀rí wọlé                                            |
-| `/api/oauth/kiro/auto-import`                                                                            | Ń ka àwọn fáìlì ìwé ẹ̀rí Kiro CLI láti host                                                                |
-| `/api/skills/collect/`                                                                                   | Àkójọpọ̀ ọgbọ́n — ń ṣàwárí/fi àwọn irinṣẹ́ agbègbè sílẹ̀                                                      |
-| `/api/skills/install`, `/api/skills/executions`                                                          | Ìforúkọsílẹ̀ + ìṣiṣẹ́ olùṣàkóso ọgbọ́n — wọ́n dé ìpilẹ̀ṣẹ̀ container sandbox (GHSA-jx89)                        |
-| `/api/discovery/`                                                                                        | Àwọn àyẹ̀wò ìṣàwárí nẹ́tíwọ́ọ̀kì/olùpèsè agbègbè                                                              |
-| `/api/vnc-session` (`VNC_ROUTE_PREFIX`)                                                                  | Ṣí aṣàwákiri tó ní ìrísí + ìgbà VNC fún ìwọlé aláṣepọ̀                                                     |
-| `/api/acp/agents`                                                                                        | ACP — ṣàwárí ó sì ṣí àwọn fáìlì binary aṣojú CLI agbègbè                                                  |
-| `/api/resilience/connections`                                                                            | JSON ìfaradà fún àkọọ́lẹ̀ kọ̀ọ̀kan (cooldown, breaker, lockout). HTML dashboard náà kò mọ sí agbègbè nìkan.   |
-| `/api/providers/cursor/agent-availability`                                                               | Àyẹ̀wò ìránnilétí-fífi-sórí dashboard — ṣí `cursor-agent status --format json`                             |
-| `/api/providers/{id}/login` (regex)                                                                      | Ṣí Playwright Chromium tó ní ìrísí fún ìwọlé kúkì wẹ́ẹ̀bù                                                   |
-| `/api/providers/volcengine-plan/connect` (regex)                                                         | Ìṣàn aláfọwọ́ṣe tó ní ìrísí + ìwọlé aládàáṣiṣẹ́ tẹlifóònù/SMS tó dá lórí ìgbà (ṣí Playwright)               |
-| `/api/providers/{id}/refresh-cursor` (regex)                                                             | Ìsọdọtun ìgbà Cursor aláfọwọ́ṣe — ta `cursor-agent` níyànjú                                                |
-| `/api/providers/{id}/chatgpt-web-codex-doctor` (regex)                                                   | Ṣàyẹ̀wò ìṣòro fífi Codex CLI agbègbè sórí ẹrọ (ṣí fáìlì binary náà)                                        |
+| Apejuwe / Àpẹẹrẹ                                                                                         | Kini idi ti agbegbe-nikan                                                                              |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `/api/mcp/`                                                                                              | MCP server — spawns stdio afara + SSE handlers                                                         |
+| `/api/cli-tools/runtime/`                                                                                | CLI ọpa asiko isise — ṣiṣẹ koodu itanna lainidii                                                       |
+| `/api/cli-tools/{omp,letta,grok-build,forge,jcode,qwen}-settings`                                        | Awọn onkọwe eto-ọpa-ọpa ti o le fi ọwọ kan ọpa binaries/config lori agbalejo naa                       |
+| `/api/cli-tools/{claude,cline,codewhale,codex,crush,deepseek-tui,droid,kilo,openclaw,pi,smelt}-settings` | `getCliRuntimeStatus()` kanna bi awọn arakunrin mẹfa ti o wa loke (GHSA-35fw-cv32-2373)                |
+| `/api/cli-tools/{all-statuses,status,detect}`                                                            | CLI iwadi oja — spawn `command -v` / `--version` fun ọpa (GHSA-35fw-cv32-2373)                         |
+| `/api/cli-tools/antigravity-mitm`                                                                        | Antigravity MITM iṣakoso aṣoju (aṣoju eto spawns/points )                                              |
+| `/api/modality-bridge/video/`                                                                            | Igbẹkẹle ti o muna-loopback Fidio Afara asiko asiko asiko ati afara isediwon inu                       |
+| `/api/services/`                                                                                         | Awọn iṣẹ ifibọ (9Router / CLIProxy / Bifrost / Mux / Dario) — `npm install` + spawn                    |
+| `/dashboard/providers/services/`                                                                         | Yi aṣoju pada si iṣẹ ifibọ UIs                                                                         |
+| `/api/tunnels/cloudflared`                                                                               | Installs/spawns awọn cloudflared alakomeji                                                             |
+| `/api/tunnels/tailscale/{install,enable,disable,login,start-daemon}`                                     | Installs/controls tailscaled lori ogun                                                                 |
+| `/api/copilot/`                                                                                          | Awakọ LLM ti ko ni ijẹrisi — CLI-nikan nipasẹ aiyipada                                                 |
+| `/api/tools/agent-bridge/`                                                                               | AgentBridge — spawns MITM olupin + DNS awọn atunṣe                                                     |
+| `/api/tools/traffic-inspector/`                                                                          | Oluyewo ijabọ — http-aṣoju olutẹtisi eto + eto aṣoju                                                   |
+| `/api/settings/mitm`                                                                                     | Nṣiṣẹ idilọwọ MITM (ipinle aṣoju ipele eto)                                                            |
+| `/api/issue-agent/`                                                                                      | Aṣoju ọrọ — spawns agbegbe tooling lodi si repo                                                        |
+| `/api/plugins/`, `/api/plugins`                                                                          | Awọn afikun — load/execute nipasẹ `worker_threads` + `child_process`                                   |
+| `/api/middleware/`                                                                                       | Aarin ẹrọ olumulo — loads/executes koodu oniṣẹ ninu ilana                                              |
+| `/api/system/version`                                                                                    | Imudojuiwọn alaifọwọyi (POST nikan; imukuro GET/HEAD/OPTIONS ) — spawns `git checkout` + `npm install` |
+| `/api/db-backups/exportAll`                                                                              | Spawns `tar` fun okeere pamosi                                                                         |
+| `/api/local/`                                                                                            | 1-tẹ awọn ifilọlẹ agbegbe (Redis loni) — spawns podman/docker                                          |
+| `/api/headroom/start`, `/api/headroom/stop`                                                              | Headroom aṣoju lifecycle — spawns Python CLI / awọn ifihan agbara PID                                  |
+| `/api/jobs`, `/api/jobs/`                                                                                | Iṣakoso olusare iṣẹ — ṣe iṣẹ-ṣiṣe ẹgbẹ-ogun ti a ṣeto                                                  |
+| `/api/oauth/cursor/auto-import`                                                                          | `execFile("which", ["cursor"])` ṣaaju ki o to gbe wọle creds                                           |
+| `/api/oauth/kiro/auto-import`                                                                            | Ka Kiro CLI awọn faili ijẹrisi lati ọdọ agbalejo                                                       |
+| `/api/skills/collect/`                                                                                   | Akojọpọ ogbon — detects/installs ohun elo agbegbe                                                      |
+| `/api/skills/install`, `/api/skills/executions`                                                          | Iforukọsilẹ oluṣakoso oye + ipaniyan — de apoti apoti iyanrin (GHSA-jx89)                              |
+| `/api/discovery/`                                                                                        | Awọn iwadii wiwa network/provider agbegbe                                                              |
+| `/api/vnc-session` (`VNC_ROUTE_PREFIX`)                                                                  | Spawns a headful browser + VNC igba fun ibanisọrọ wiwọle                                               |
+| `/api/acp/agents`                                                                                        | ACP — iwari ati spawns agbegbe CLI oluranlowo alakomeji                                                |
+| `/api/resilience/connections`                                                                            | JSON resilience fun akọọlẹ kan (itutu, fifọ, titiipa). Dasibodu HTML kii ṣe agbegbe-nikan.             |
+| `/api/providers/cursor/agent-availability`                                                               | Dasibodu fi sori ẹrọ-nudge ṣayẹwo — spawns `cursor-agent status --format json`                         |
+| `/api/providers/{id}/login` (regex)                                                                      | Ṣe ifilọlẹ Playwright Chromium ti o ni ori fun iwọle kuki wẹẹbu                                        |
+| `/api/providers/volcengine-plan/connect` (regex)                                                         | Ṣiṣan ori afọwọṣe + ti o da lori igba-iwọle phone/SMS aladaaṣe (spawns Playwright)                     |
+| `/api/providers/{id}/refresh-cursor` (regex)                                                             | Afọwọṣe Cursor igba isọdọtun — nudges `cursor-agent`                                                   |
+| `/api/providers/{id}/chatgpt-web-codex-doctor` (regex)                                                   | Ṣe iwadii fifi sori Codex CLI agbegbe (ṣe alakomeji)                                                   |
 
-**Ìdáhùn nígbà ìrúfin:** `403 LOCAL_ONLY`
+**Idahun lori irufin:** `403 LOCAL_ONLY`
 
-#### Ààyè àkànṣe fún scope ìṣàkóso
+#### Ṣakoso awọn-dopin carve-jade
 
-Apá kan lára àwọn ọ̀nà LOCAL_ONLY tún LE jẹ́ wíwọlé láti non-loopback bí ó bá jẹ́
-pé ìbéèrè náà ní `Authorization: Bearer <api-key>` tí metadata rẹ̀
-ní scope `manage` (tàbí `admin`) nìkan. Ààyè àkànṣe náà ni a ń ṣàkóso
-ní kedere fún ọ̀nà kọ̀ọ̀kan nípasẹ̀ `LOCAL_ONLY_MANAGE_SCOPE_BYPASS_PREFIXES` kí
-ìpìlẹ̀ fún ọ̀nà LOCAL_ONLY tuntun èyíkéyìí lè máa jẹ́ strict-loopback. Àwọn ìbéèrè
-tí kò ní ìfàṣẹsí àti àwọn ìbéèrè pẹ̀lú kọ́kọ́rọ́ tí kì í ṣe manage ni a ṣì kọ̀ pẹ̀lú
-`403 LOCAL_ONLY`.
+Apapọ awọn ọna LOCAL_ONLY MAY tun jẹ iraye si lati kii ṣe loopback ti ati pe nikan ti ibeere ba gbe `Authorization: Bearer <api-key>` kan ti metadata pẹlu aaye `manage` (tabi `admin`). Igi-jade ti wa ni titọ ni gbangba nipasẹ ọna `LOCAL_ONLY_MANAGE_SCOPE_BYPASS_PREFIXES` nitoribẹẹ aiyipada fun eyikeyi ọna LOCAL_ONLY tuntun duro-loopback to muna. Awọn ibeere ti ko ni ijẹrisi ati awọn ibeere pẹlu awọn bọtini ti kii ṣe iṣakoso ni a tun kọ pẹlu `403 LOCAL_ONLY`.
 
-Lónìí, prefix kan ṣoṣo tí a lè forí rẹ̀ kọjá ni `/api/mcp/`. `/api/cli-tools/runtime/` àti
-`/api/services/` ni a mọ̀ọ́mọ̀ yọ kúrò nítorí wọ́n lè ṣí àwọn subprocess
-láìsí ààlà (`npm install`, `node`), èyí sì ni ẹ̀ka CVE gan-an tí
-ìpele LOCAL_ONLY wà láti dènà.
+Loni ìpele ti o le kọja nikan ni `/api/mcp/`. `/api/cli-tools/runtime/` ati `/api/services/` ni a mọọmọ yọkuro nitori wọn le fa awọn ilana abẹlẹ lainidii (`npm install`, `node`), eyiti o jẹ kilasi CVE gangan ti ipele LOCAL_ONLY wa lati ṣe idiwọ.
 
-**#7895 — scope tóóró `mcp:connect`:** ààyè àkànṣe `/api/mcp/` náà TÚN gba
-kọ́kọ́rọ́ Bearer tó ní scope tóóró `mcp:connect`
-(`src/shared/constants/managementScopes.ts::MCP_CONNECT_SCOPE`), tí a ń ṣàyẹ̀wò nípasẹ̀
-`hasMcpConnectOrManageScope()` nínú `src/server/authz/policies/management.ts`.
-Èyí ní ààlà sí `/api/mcp/` NÌKAN — `mcp:connect` kò fúnni ní àṣẹ kankan lórí ọ̀nà
-ìṣàkóso mìíràn (pẹ̀lú gbogbo prefix LOCAL_ONLY mìíràn tí a lè forí rẹ̀ kọjá, bí a bá
-fi èyíkéyìí kún un lọ́jọ́ iwájú), a sì mọ̀ọ́mọ̀ yọ ọ́ kúrò nínú
-`MANAGEMENT_API_KEY_SCOPES`. Kọ́kọ́rọ́ tó ní `manage`/`admin` ṣì ń gba ààyè
-àkànṣe náà kọjá gẹ́gẹ́ bí tẹ́lẹ̀; `mcp:connect` jẹ́ àṣàyàn aláṣẹ-kékeré
-fún àwọn olùpè MCP-nìkan tó wà ní ọ̀nà jíjìn, tí kò yẹ kí wọ́n nílò ààyè ìṣàkóso gbòòrò.
+**#7895 — `mcp:connect` dopin:** `/api/mcp/` carve-out ALSO gba bọtini Bearer ti o mu aaye `mcp:connect` dín (`src/shared/constants/managementScopes.ts::MCP_CONNECT_SCOPE`), ṣayẹwo nipasẹ `hasMcpConnectOrManageScope()` ni `src/server/authz/policies/management.ts`. Eyi ni opin si `/api/mcp/` ONLY — `mcp:connect` ko funni ni nkankan lori eyikeyi ọna iṣakoso miiran (pẹlu gbogbo ìpele LOCAL_ONLY fori ìpele, ti o ba jẹ pe ọkan ti wa ni afikun), ati pe a mọọmọ yọkuro lati `MANAGEMENT_API_KEY_SCOPES`. Bọtini kan ti o mu `manage`/`admin` ṣi n kọja gbigbẹ-jade gangan bi ti iṣaaju; `mcp:connect` jẹ yiyan anfani-kekere fun awọn olupe latọna jijin MCP-nikan ti ko yẹ ki o nilo iraye si iṣakoso gbooro.
 
-| Ìbéèrè                                            | Ọ̀nà                        | Àbájáde              |
-| ------------------------------------------------- | -------------------------- | -------------------- |
-| Non-loopback, kò sí Bearer                        | `/api/mcp/*`               | 403 LOCAL_ONLY       |
-| Non-loopback, Bearer pẹ̀lú scope `manage`          | `/api/mcp/*`               | Fàyè gba             |
-| Non-loopback, Bearer pẹ̀lú scope `mcp:connect`     | `/api/mcp/*`               | Fàyè gba             |
-| Non-loopback, Bearer láìsí `manage`/`mcp:connect` | `/api/mcp/*`               | 403 LOCAL_ONLY       |
-| Non-loopback, Bearer pẹ̀lú scope `mcp:connect`     | `/api/cli-tools/runtime/*` | 403 LOCAL_ONLY       |
-| Non-loopback, Bearer pẹ̀lú scope `manage`          | `/api/cli-tools/runtime/*` | 403 LOCAL_ONLY       |
-| Loopback, Bearer èyíkéyìí/kò sí Bearer            | LOCAL_ONLY èyíkéyìí        | Fàyè gba (gate kọjá) |
+| Ibere                                           | Ona                        | Abajade                          |
+| ----------------------------------------------- | -------------------------- | -------------------------------- |
+| Non-loopback, ko si Oluduro                     | `/api/mcp/*`               | 403 LOCAL_ONLY                   |
+| Non-loopback, Bearer pẹlu `manage` dopin        | `/api/mcp/*`               | Gba laaye                        |
+| Non-loopback, Bearer pẹlu `mcp:connect` dopin   | `/api/mcp/*`               | Gba laaye                        |
+| Non-loopback, Bearer lai `manage`/`mcp:connect` | `/api/mcp/*`               | 403 LOCAL_ONLY                   |
+| Non-loopback, Bearer pẹlu `mcp:connect` dopin   | `/api/cli-tools/runtime/*` | 403 LOCAL_ONLY                   |
+| Non-loopback, Bearer pẹlu `manage` dopin        | `/api/cli-tools/runtime/*` | 403 LOCAL_ONLY                   |
+| Loopback, any/no Bearer                         | eyikeyi LOCAL_ONLY         | Gba laaye (awọn ẹnu-ọna ẹnu-ọna) |
 
-#### Ìtọ́nisọ́nà àti àyẹ̀wò fún olùṣàkóso
+#### Itọsọna onišẹ & iṣatunṣe
 
-Bí o bá ń lo OmniRoute lẹ́yìn reverse proxy tàbí tunnel (nginx, Caddy, Cloudflare
-Tunnel, Tailscale, Ngrok), àyẹ̀wò loopback náà ṣì ń dáàbò bo àwọn ọ̀nà tó lè
-ṣí process lókè — ìbéèrè tí àdírẹ́sì client rẹ̀ jẹ́ non-loopback ni a kọ̀ pẹ̀lú
-`403 LOCAL_ONLY` **kí ìfàṣẹsí tó ṣiṣẹ́**, nítorí náà JWT tó ti tú jáde kò lè dé ibi ṣíṣí process. Ojúṣe
-méjì ṣì wà fún olùṣàkóso:
+Ti o ba ṣiṣẹ OmniRoute lẹhin aṣoju iyipada tabi oju eefin (nginx, Caddy, Cloudflare Tunnel, Tailscale, Ngrok), ayẹwo loopback tun ṣe aabo awọn ipa-ọna ti o ni agbara ti o lagbara loke — ibeere ti adirẹsi alabara rẹ kii ṣe loopback ti kọ pẹlu `403 LOCAL_ONLY`** ṣaaju ṣiṣe auth** , nitorina JWT ti o ti jo ko le de ibi-ẹran. Awọn ojuse oniṣẹ meji wa:
 
-- **Má ṣe “ṣe àtúnṣe” 403 nípa ṣíṣe IP client bí ẹni pé loopback ni.** Ṣíṣètò
-  `X-Forwarded-For: 127.0.0.1`, tàbí proxy tó tún àdírẹ́sì orísun kọ sí
-  loopback, yóò tún ṣí ẹ̀ka RCE gan-an tí ìpele yìí ti pa. Ṣe
-  dashboard/API ní gbangba nípasẹ̀ proxy — má ṣe fi àwọn ọ̀nà tó lè ṣí process hàn síta láéláé.
-- **Jẹ́ kí ààyè àkànṣe scope manage kéré jù lọ.** `/api/mcp/` nìkan ni a lè forí rẹ̀ kọjá, àti
-  pẹ̀lú kọ́kọ́rọ́ API tó ní scope `manage` nìkan. A kò lè fi `SPAWN_CAPABLE_PREFIXES` kún
-  àkójọ ààyè àkànṣe láéláé — schema zod kọ̀ wọ́n, àti
-  `isLocalOnlyBypassableByManageScope` kọ̀ wọ́n ní runtime (ààbò-onípele-púpọ̀),
-  èyí ni dashboard túmọ̀ sí nígbà tó sọ pé “a kò lè mú un ṣe èyí tí a lè forí kọjá”. Àwọn ọ̀nà
-  tó lè ṣí process tí wọ́n ní segment aláyípadà àti ọ̀nà static lábẹ́ `/api/providers/` (fún àpẹẹrẹ `/login`,
-  `/refresh-cursor`) ni companion tó dá lórí regex `SPAWN_CAPABLE_PATTERNS` /
-  `SPAWN_CAPABLE_PATTERN_ANCESTORS` nínú
-  `src/shared/constants/spawnCapablePrefixes.ts` bo, kì í ṣe array pẹlẹbẹ
-  `SPAWN_CAPABLE_PREFIXES` — array pẹlẹbẹ náà yóò ní láti bo gbogbo
-  prefix `/api/providers/` láti lè mú wọn, èyí tí yóò mú igi ọ̀nà tí àwọn
-  dashboard ọ̀nà jíjìn ń lò lọ́nà tó bófin mu fún CRUD provider gbòòrò ju.
+- **Ma ṣe "ṣe atunṣe" 403 kan nipa sisọ IP onibara bi loopback.** Ṣiṣeto `X-Forwarded-For: 127.0.0.1`, tabi aṣoju kan ti o tun atunkọ adirẹsi orisun si loopback, tun-ṣii deede kilasi RCE ipele yii tilekun. Ṣe afihan dashboard/API nipasẹ aṣoju — kii ṣe awọn ipa-ọna ti o lagbara.
+- **Jeki idari-opin fori iwonba.** `/api/mcp/` nikan ni o le kọja, ati pe pẹlu bọtini `manage` -scoped API nikan. `SPAWN_CAPABLE_PREFIXES` ko le ṣe afikun si atokọ fori — eto zod kọ wọn ati `isLocalOnlyBypassableByManageScope` kọ wọn ni asiko asiko (olugbeja-ijinle), eyiti o jẹ ohun ti dasibodu tumọ si nipasẹ “ko le ṣe bypassable”. Atokọ sẹ kanna naa tun ni awọn ipa-ọna LOCAL_ONLY diẹ ti ko ni irẹwẹsi ṣugbọn ko yẹ ki o le de ọdọ latọna jijin boya — `/api/oauth/kiro/auto-import` (ka awọn faili ijẹrisi Kiro agbalejo agbegbe), `/api/discovery/` ati `/api/issue-agent/`. Agberu fọto fọto asiko asiko tun ju iru awọn titẹ sii silẹ lati ọna eto ti o fipamọ, ati pe ogún JSON gbe wọle (`/api/settings/import-json`) ko kọ awọn bọtini fori rara. Gbogbo titẹ sii `LOCAL_ONLY_API_PREFIXES` gbọdọ jẹ boya ninu atokọ-kikọ tabi ṣe atunyẹwo bi o yẹ fun fori (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`). Dynamic-segment and static-path spawn-capable ipa labẹ `/api/providers/` (eg `/login`, `/refresh-cursor`) wa ni bo nipasẹ awọn regex-orisun `SPAWN_CAPABLE_PATTERNS` / `SPAWN_CAPABLE_PATTERN_ANCESTORS` Companion ni `src/shared/constants/spawnCapablePrefixes.ts`, ko nipa alapin `SPAWN_CAPABLE_PREFIXES` orun — alapin orun yoo ni lati bo gbogbo `/api/providers/` CRUD lati yẹ wọn, lori-broading igi dandalu dandalu.
 
-**Ṣíṣàyẹ̀wò ìwọlé** — láti jẹ́rìí pé kò sí ohunkóhun láti òde host tó ń dé àwọn ọ̀nà wọ̀nyí:
+**Wiwọle iṣatunṣe** — lati rii daju pe ko si ohun ti o wa ni pipa-ogun ti o de awọn ipa-ọna wọnyi:
 
-- Ṣí **Àkójọ Àṣẹ** lórí `/dashboard/settings/security`: ó ń ṣàfihàn àkójọ prefix LOCAL_ONLY tó ń ṣiṣẹ́ lọ́wọ́lọ́wọ́, àwọn prefix wo ni a lè forí kọjá, àti àkójọpọ̀ àwọn tó lè dá process tuntun sílẹ̀ ní àkókò ìkójọpọ̀ ("a kò lè mú kí a forí kọjá wọn").
-- Lo grep lórí àwọn àkọsílẹ̀ reverse-proxy / access rẹ fún àwọn prefix tó wà lókè tí a so pọ̀ mọ́ àdírẹ́sì client tí kì í ṣe loopback. Ìkọlù èyíkéyìí bẹ́ẹ̀ tó dá `200` padà dípò
-  `403 LOCAL_ONLY` túmọ̀ sí pé proxy náà ń bo IP client gidi mọ́lẹ̀ — ṣàtúnṣe proxy náà.
-- `403 LOCAL_ONLY` nínú àwọn àkọsílẹ̀ OmniRoute fún ọ̀kan lára àwọn path wọ̀nyí túmọ̀ sí pé guard náà
-  ń ṣiṣẹ́ gẹ́gẹ́ bí a ti pinnu, kì í ṣe àṣìṣe tó yẹ kí a pa mọ́.
+- Ṣii awọn** Aṣẹ Oja** lori `/dashboard/settings/security`: o ṣe akojọ ifiwe LOCAL_ONLY ìpele, eyi ti awọn ìpele wa ni fori, ati akopo-akoko spawn-agbara ("ko le ṣe bypassable") ṣeto.
+- Grep awọn iforukọsilẹ-aṣoju-aṣoju / wiwọle rẹ fun awọn asọtẹlẹ loke ti a so pọ pẹlu adirẹsi alabara ti kii ṣe loopback. Eyikeyi iru lilu ti o da `200` pada dipo `403 LOCAL_ONLY` tumọ si pe aṣoju n bo ojulowo onibara IP — ṣe atunṣe aṣoju naa.
+- A `403 LOCAL_ONLY` ninu awọn akọọlẹ OmniRoute fun ọkan ninu awọn ọna wọnyi ni ẹṣọ ti n ṣiṣẹ bi a ti pinnu, kii ṣe aṣiṣe lati dinku.
 
-### Ìpele 2 — ALWAYS_PROTECTED
+#### Awọn ipa ọna ti o le de ọdọ jijin pẹlu ẹnu-ọna iwadii aaye ipe kan
 
-**Ohun tó ń mú un ṣiṣẹ́:** `isAlwaysProtectedPath(path)` → foju kọ ìforíkọjá `requireLogin=false`
-**Ìforíkọjá:** Kò sí nígbà tí `requireLogin=false`; JWT jẹ́ dandan ní gbogbo ìgbà
+Diẹ ninu awọn ipa-ọna gbọdọ wa ni wiwa lati dasibodu latọna jijin ṣugbọn ṣiṣe iwadii ẹgbẹ-ogun (`which <binary>`, `<binary> --version`, `tailscale status --json`) fun awọn olupe agbegbe. Nwpn ko LOCAL_ONLY fun `GET`; dipo olutọju naa ka idajọ ẹlẹgbẹ ti o gbẹkẹle pẹlu `getRequestPeerLocality()` (`src/shared/utils/apiAuth.ts`) ati pe o nṣiṣẹ iwadi nikan fun awọn olupe `loopback` / `lan`. Olupe `remote` kan n gba apẹrẹ idahun kanna ti a ṣe lati awọn orisun ti kii-spawing (ipinle ti o tẹsiwaju, awọn eto, awọn sọwedowo fs), `probed: false` ti asia.
 
-Àwọn route wọ̀nyí lè ba nǹkan jẹ́ tàbí kí a má lè dá ohun tí wọ́n ṣe padà. Gbigba wọn láàyè nínú ìṣàgbékalẹ̀ "aláìsí-ọ̀rọ̀-ìwọlé"
-yóò túmọ̀ sí pé ẹnikẹ́ni lórí LAN kan náà lè pa database rẹ́ tàbí dá
-process server dúró.
+| Ona                                                              | Iwadi skipped fun awọn olupe latọna jijin                         |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `POST /api/providers/{id}/test`, `/api/providers/test-batch`     | CLI asiko isise (`allowLocalRuntimeProbe`) ati CLI-fallback spawn |
+| `GET /api/headroom/status`                                       | `which headroom` ati awọn iwadii Python `--version`               |
+| `GET /api/tunnels/tailscale`, `GET /api/tunnels/tailscale/check` | `which tailscale`, `tailscale status/funnel --json`, `which brew` |
+| `GET /api/tunnels/cloudflared` (GET-alayokuro lati LOCAL_ONLY)   | `which cloudflared` PATH àyẹwò                                    |
 
-| Path                                      | Ìdí                                                      |
-| ----------------------------------------- | -------------------------------------------------------- |
-| `/api/shutdown`                           | Ó dá process server dúró                                 |
-| `/api/settings/database`                  | Export, import, àti pípa database rẹ́                     |
-| `/api/db-backups`                         | Ìráyè sí gbogbo archive backup database                  |
-| `/api/settings/export-json`               | Ó export gbogbo blob àwọn settings (pẹ̀lú secrets)        |
-| `/api/settings/import-json`               | Ó rọ́pò gbogbo blob àwọn settings                         |
-| `/api/providers/health-autopilot/actions` | Ó ṣiṣẹ́ àwọn ìgbésẹ̀ àtúnṣe autopilot                      |
-| `/api/settings/obsidian`                  | Ó dá creds WebDAV tí a lè tún lò fún root vault èyíkéyìí |
+Ọna kika tuntun ti o ṣe iwadii agbalejo naa tẹle ilana kanna, tabi ti wa ni ipin LOCAL_ONLY taara.
 
-**Ìdáhùn nígbà ìrúfin:** `401 Authentication required`
+### Ipele 2 — ALWAYS_PROTECTED
 
-`/api/settings/obsidian` tún bo ọmọ rẹ̀ `/webdav`: `POST` ń darí iṣẹ́ file WebDAV —
-èyí tí layer Node àkànṣe ń pèsè ṣáájú Next.js, ní òde pipeline yìí — sí root tí olùpè yàn,
-ó sì ń dá àwọn credentials Basic tuntun tí a ṣẹ̀ṣẹ̀ dá padà, `DELETE` ń yí wọn padà, `POST` ti parent náà sì ń tọ́jú
-token REST API Obsidian. GHSA-62vw bo ìṣípayá password `GET` nìkan; ṣíṣẹ̀dá náà
-ṣì wà lórí ìpele fail-open (GHSA-7pq4-8pvv-rx7r). `enableObsidianVaultSync()` tún
-kọ vault tí ó jẹ́ data directory, tó wà nínú rẹ̀, tàbí tó ní data directory nínú rẹ̀.
+**Ti fi agbara mu nipasẹ:** `isAlwaysProtectedPath(path)` → foo `requireLogin=false` fori** Fori:** Ko si nigbati `requireLogin=false`; JWT nigbagbogbo beere
 
-### Bootstrap ìṣàgbékalẹ̀ tuntun jẹ́ ti loopback nìkan — nípasẹ̀ peer gidi, kì í ṣe `Host`
+Awọn ipa-ọna wọnyi jẹ apanirun tabi ti ko le yipada. Gbigba wọn laaye ni fifi sori ẹrọ “ko si-ọrọ igbaniwọle” yoo tumọ si ẹnikẹni ti o wa lori LAN kanna le nu data data tabi pa ilana olupin naa.
 
-Nígbà tí a kò tíì ṣètò password ìṣàkóso (tí `INITIAL_PASSWORD` kò sì sí), `isAuthRequired()` nínú
-`src/shared/utils/apiAuth.ts` ń jẹ́ kí bootstrap aláìlórúkọ ṣí sílẹ̀ **fún àwọn peer loopback nìkan**.
-A ń pinnu loopback láti inú àwọn signal peer tí a fọkàn tán, ní ìtòlẹ́sẹẹsẹ yìí: peer TCP gidi tí a fi token tẹ̀ lé
-(`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, ohun tí policy rí), ìdájọ́
-`AUTHZ_HEADER_PEER_LOCALITY` ti pipeline fúnra rẹ̀ (ohun tí àwọn route handler rí, tí a fọkàn tán nìkan nígbà tí
-a bá ṣètò `OMNIROUTE_PEER_STAMP_TOKEN`), tàbí peer socket gidi fún àwọn olùpè tààrà. A kì í lo `Host` /
-`nextUrl.hostname` rárá, ìkọ password àkọ́kọ́
-(`POST /api/settings/require-login`) sì wà lábẹ́ ìdíwọ́ kan náà dípò kí ó ṣí sí gbogbo
-peer network (GHSA-7pq4-8pvv-rx7r). `managementPolicy` ń fi ìdájọ́ `peerContext` tirẹ̀
-ránṣẹ́ sí ìsàlẹ̀ ní tààrà, nítorí náà àwọn header ìbéèrè ORIGINAL (ṣáájú-strip) kì í pinnu rẹ̀ láé.
+| Ona                                       | Idi                                                               |
+| ----------------------------------------- | ----------------------------------------------------------------- |
+| `/api/shutdown`                           | Pari ilana olupin naa                                             |
+| `/api/settings/database`                  | Sitajasita aaye data, gbe wọle, ati mu ese                        |
+| `/api/db-backups`                         | Wiwọle ibi ipamọ afẹyinti ni kikun aaye data                      |
+| `/api/settings/export-json`               | Ṣe okeere ni kikun eto blob (pẹlu awọn aṣiri)                     |
+| `/api/settings/import-json`               | Rọpo blob eto ni kikun                                            |
+| `/api/providers/health-autopilot/actions` | Ṣiṣẹ awọn iṣẹ atunṣe autopilot                                    |
+| `/api/settings/obsidian`                  | Mints reusable WebDAV creds fun eyikeyi vault root                |
+| `/api/relay/tokens`                       | Mints, awọn atokọ, awọn atunṣe ati awọn ifasilẹ awọn ami isọdọtun |
+| `/api/agent-skills/generate`              | Kọ ati ki o prunes olorijori awọn folda lori ogun                 |
+| `/api/skills/marketplace/install`         | Fi imọ-ẹrọ agbaye sori ẹrọ fun bọtini kọọkan                      |
+| `/api/skills/skillssh/install`            | Fi imọ-ẹrọ agbaye sori ẹrọ fun bọtini kọọkan                      |
+| `/api/cli-tools/apply`                    | Tun atunto CLI agbalejo onišẹ ṣe                                  |
+| `/api/cli-tools/guide-settings`           | Kọ awọn faili atunto CLI ti o dari itọsọna                        |
+| `/api/cli-tools/hermes-agent-settings`    | Kọ Hermes oluranlowo konfigi                                      |
+| `/api/cli-tools/backups`                  | Mu pada ati paarẹ awọn afẹyinti atunto atunto CLI                 |
+| `/api/log-export`                         | Awọn ọkọ oju omi pe awọn akọọlẹ si ibi ti a ṣeto                  |
+| `/api/restart`                            | Tun ilana olupin bẹrẹ                                             |
 
-### Ìpele 3 — MANAGEMENT (àiyipada)
+**Idahun lori irufin:** `401 Authentication required`
 
-Gbogbo àwọn route ìṣàkóso mìíràn. Auth jẹ́ dandan àfi tí a bá ṣètò
-`requireLogin=false`. Àwọn token CLI lè ṣe authenticate àwọn route wọ̀nyí (loopback + HMAC tó péye).
+`/api/settings/obsidian` bo ọmọ `/webdav` rẹ: `POST` tọkasi iṣẹ faili WebDAV — ti a nṣe nipasẹ aṣa Node Layer ṣaaju Next.js, ni ita opo gigun ti epo — ni gbongbo olupe ti o yan ati ṣe atunwi awọn iwe-ẹri Ipilẹ ti a ṣẹṣẹ tuntun, `DELETE` yi wọn pada, ati pe obi `POST` tọju ami Obsidian REST API. GHSA-62vw nikan ni o boju mu ifihan ọrọ igbaniwọle `GET` ; ipinfunni naa tun wa lori ipele ṣiṣi-ikuna (GHSA-7pq4-8pvv-rx7r). `enableObsidianVaultSync()` ni afikun kọ ifinkan kan ti o jẹ, joko inu, tabi ni iwe ilana data ninu.
+
+#### Awọn ọja okeere ti ijẹrisi ati imupadabọ jẹ oniṣẹ ẹrọ nikan
+
+Ipele ti o wa loke nikan pinnu boya o nilo ijẹrisi _some_. Awọn ipa-ọna ti o ṣe igbasilẹ awọn iwe-ẹri ti o fipamọ ṣe ṣafikun ayẹwo keji ninu oluṣakoso: `GET /api/settings/export-json` (awọn asopọ olupese ti a ti sọ dicrypted ati awọn bọtini API aise), `GET /api/db-backups/export` (faili SQLite ) ati `GET /api/db-backups/exportAll` (ipamọ kikun) pe `requireOperatorCredential()` (`src/lib/api/operatorCredential.ts`). O gba igba dasibodu kan, koko-ọrọ CLI agbegbe, tabi apẹẹrẹ pẹlu alaabo iwọle, o si dahun `403` si awọn bọtini API ti iwọn eyikeyi (pẹlu `manage` ati `admin`) ati si awọn ami iraye si `oma_`. Awọn ẹlẹgbẹ apanirun mu aala kanna mu: `POST /api/db-backups/import` (ti a gbejade `.sqlite`, `dryRun=true` to wa), `POST /api/db-backups` (pada sipo afẹyinti ti o fipamọ nipasẹ id) ati `POST /api/settings/import-json` (mupadabọ sipo JSON julọ) rọpo aaye data laaye tabi gbogbo eto settings/connections/API-key, nitorinaa ẹri ẹrọ ko le fa wọn boya. Bibajẹ awọn aaye imupadabọ ni o ni aala kanna: `DELETE /api/db-backups` (afọmọ — tọju N / ju silẹ ti o dagba ju awọn ọjọ D lọ) ati `PATCH /api/db-backups` (awọn eto idaduro), nitori idaduro idaduro jẹ deede ohun ti `cleanupDbBackups()` kan lẹhin gbogbo afẹyinti laifọwọyi (`src/lib/db/backup.ts`), nitorinaa ẹri ẹrọ ti o le fipamọ `keepLatest: 1` yoo ge ohun gbogbo lori aworan atẹle. Kikojọ ati ṣiṣẹda awọn afẹyinti (`GET`/`PUT /api/db-backups`) tọju auth iṣakoso lasan. Ipinfunni ami amuṣiṣẹpọ (`POST /api/sync/tokens`) nlo oluranlọwọ kanna, pẹlu igbẹkẹle loopback iṣẹ inu-iṣẹ.
+
+### Ti fi sori ẹrọ bootstrap tuntun jẹ loopback-nikan — nipasẹ ẹlẹgbẹ gidi, kii ṣe `Host`
+
+Pẹlu ko si ọrọ igbaniwọle iṣakoso ti tunto (ko si `INITIAL_PASSWORD`), `isAuthRequired()` ni `src/shared/utils/apiAuth.ts` jẹ ki bata bata ailorukọ ṣii ṣii** nikan fun loopback ẹlẹgbẹ** . Loopback ti pinnu lati awọn ifihan agbara ẹlẹgbẹ ti o ni igbẹkẹle, ni ibere: ami-ami ti o ni aami-ami TCP ẹlẹgbẹ (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, kini eto imulo naa rii), idajo `AUTHZ_HEADER_PEER_LOCALITY` ti opo gigun ti ara (kini awọn olutọju ipa ọna wo, ti o gbẹkẹle nikan nigba ti `OMNIROUTE_PEER_STAMP_TOKEN` ti ṣeto), tabi ẹlẹgbẹ iho gidi fun awọn olupe taara. `Host` / `nextUrl.hostname` ko ni ijumọsọrọpọ rara, ati pe ọrọ igbaniwọle akọkọ kọ (`POST /api/settings/require-login`) wa labẹ ihamọ kanna dipo ṣiṣi si gbogbo ẹlẹgbẹ nẹtiwọki (GHSA-7pq4-8pvv-rx7r). `managementPolicy` gba idajo `peerContext` tirẹ silẹ ni kedere, nitorinaa awọn akọle ibeere ORIGINAL (ṣaaju-rinho) ko pinnu rẹ rara.
+
+### Ipele 3 — MANAGEMENT (aiyipada)
+
+Gbogbo awọn ọna iṣakoso miiran. Ijeri beere ayafi `requireLogin=false` ti wa ni tunto. awọn ami CLI le jẹri awọn ipa-ọna wọnyi (loopback + wulo HMAC).
 
 ## Ìtòlẹ́sẹẹsẹ ìṣàyẹ̀wò
 

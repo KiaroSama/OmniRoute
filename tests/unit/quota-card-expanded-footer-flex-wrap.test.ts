@@ -12,24 +12,36 @@ const COMPONENT_PATH = path.resolve(
 test("QuotaCardExpanded footer enables flex-wrap to prevent action button clipping", () => {
   const content = fs.readFileSync(COMPONENT_PATH, "utf8");
 
-  // Assert footer container has flex-wrap and border-t
+  // contract changed by #15138: the footer was redesigned for narrow cards — the
+  // "Refresh now" action became a fixed-size icon button on its own row (shrink-0, at the
+  // end of the row, so it can never be pushed off-screen) and the remaining actions moved
+  // into an auto-fit grid that wraps instead of a flex-wrap row. The #11464 invariant
+  // (no action button is clipped on narrow cards) is kept below; the real-browser
+  // layout check lives in tests/helpers/assertQuotaCardLayout.cjs.
+
+  // Footer container keeps the border-t separator and can shrink with the card
   assert.match(
     content,
-    /className="[^"]*flex\s+flex-wrap[^"]*border-t[^"]*"/,
-    "Footer container must include flex-wrap to allow wrapping on narrow cards"
+    /className="[^"]*min-w-0[^"]*border-t[^"]*"/,
+    "Footer container must be shrinkable (min-w-0) and keep the border-t separator"
   );
 
-  // Assert buttons container has flex-wrap
+  // Secondary action buttons wrap via an auto-fit grid instead of overflowing
   assert.match(
     content,
-    /className="[^"]*flex\s+flex-wrap[^"]*ml-auto[^"]*"/,
-    "Action buttons container must include flex-wrap to prevent pushing Refresh now button off-screen"
+    /className="grid min-w-0 grid-cols-\[repeat\(auto-fit,minmax\(min\(100%,[^"]*\)\)\]/,
+    "Action buttons container must wrap (auto-fit grid) to prevent clipping on narrow cards"
   );
 
-  // Assert Refresh now button has shrink-0
+  // Refresh now button is never compressed or pushed off-screen. Since the Button adapter wraps
+  // a titled, disableable button in its tooltip trigger, a margin on the button no longer
+  // reaches the row: the row itself ends at the button (justify-end) and the "Updated" label
+  // takes the free space (mr-auto), with or without that label.
   assert.ok(
-    content.includes("inline-flex shrink-0 items-center gap-1 text-[11px] font-medium") &&
-      content.includes('tr("forceRefresh", "Refresh now")'),
-    "Action buttons must include shrink-0 to prevent compression"
+    /className="flex min-w-0 items-center justify-end gap-2"/.test(content) &&
+      /className=\{`mr-auto text-\[10px\] tabular-nums /.test(content) &&
+      /className="inline-flex size-7 shrink-0 /.test(content) &&
+      content.includes('aria-label={tr("forceRefresh", "Refresh now")}'),
+    "Refresh now button must be a shrink-0 icon button at the end of its row, with an accessible label"
   );
 });

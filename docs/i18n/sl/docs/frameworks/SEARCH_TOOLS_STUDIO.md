@@ -38,34 +38,34 @@ Studio s tremi zavihki, ki združuje spletno iskanje, pridobivanje spletne vsebi
 
 ### Zavihek Iskanje
 
-Obstoječe komponente `SearchForm` + `ResultsPanel` + `RerankPanel` razširi v zavihek:
+Razvije obstoječi `SearchForm` + `ResultsPanel` + `RerankPanel` v zavihek:
 
-- Poizvedba → rezultati (naslov, URL, izsek, ocena ustreznosti).
-- Metapodatki ponudnika v podoknu Konfiguracija (strošek, kvota, stanje).
-- Razdelek za prerazvrščanje: izbira modela za prerazvrščanje, preureditev rezultatov in prikaz `positionDelta`.
-- Prazno stanje s pozivom k dejanju, ko ni konfiguriran noben ponudnik iskanja.
+- Rezultati poizvedbe → (naslov, URL, izrezek, ocena ustreznosti).
+- Metapodatki ponudnika v podoknu Config (cena, kvota, status).
+- Razdelek za ponovno razvrščanje: izberite model za ponovno razvrščanje, preuredite rezultate, pokažite `positionDelta`.
+- Prazno stanje z CTA, ko ni konfiguriran noben ponudnik iskanja.
 - Zgodovina iskanja prek `SearchHistory.tsx`.
 - Kliče `POST /v1/search` (obstoječa končna točka, brez sprememb).
 
-### Zavihek Pridobivanje
+### Zavihek za strganje
 
-Nov zavihek za pridobivanje vsebine z URL-ja prek `POST /v1/web/fetch` (ustvarjeno v načrtu 05):
+Nov zavihek za pridobivanje vsebine iz URL prek `POST /v1/web/fetch` (ustvarjen v načrtu 05):
 
-- Vnos: URL + preklop za celotno stran + izbirnik oblike (markdown / besedilo / HTML).
-- Oddaja → pridobivanje → izris `ScrapeResult.tsx`.
-- `ScrapeResult` izriše predogled markdowna in preklop za neobdelano vsebino.
-- Omejitev: če je telo odgovora večje od **256 KB**, uporabniški vmesnik prikaže `(skrajšano, ogled neobdelane vsebine)` in neobdelano vsebino odpre v modalnem oknu Monaco (D21).
-- Podokno z metapodatki: ponudnik (firecrawl/jina-reader/tavily-search/tinyfish/nimble-search/anysearch-search), zakasnitev, strošek, velikost odgovora, število povezav.
+- Vnos: URL + celostranski preklop + izbirnika formata (markdown / besedilo / HTML).
+- Predloži → fetch → render `ScrapeResult.tsx`.
+- `ScrapeResult` upodablja predogled oznake + raw preklop.
+- Kapica: če je telo odziva >** 256 KB** , UI prikaže `(truncated, view raw)` in se odpre neobdelano v monaškem modalu (D21).
+- Plošča z metapodatki: ponudnik (firecrawl/jina-reader/tavily-search/tinyfish/nimble-search/anysearch-search/parallel-search/keenable-search), zakasnitev, cena, velikost odziva, število povezav.
 - Uporablja kavelj `useScrapeFetch.ts`.
 
-### Zavihek Primerjava
+### Primerjaj tab
 
-Izvede isto poizvedbo oziroma URL vzporedno pri največ **4 ponudnikih** (D22):
+Izvaja isti query/URL do** 4 ponudniki vzporedno** (D22):
 
-- Vzporedni stolpci za posamezne ponudnike.
-- Metrike: zakasnitev, strošek, število rezultatov, velikost odgovora.
-- Izračun prekrivanja URL-jev za iskanje (število skupnih URL-jev glede na začetni rezultat).
-- Za vsakega ponudnika kliče `POST /v1/search` (iskanje) ali `POST /v1/web/fetch` (pridobivanje).
+- Vzporedni stolpci na ponudnika.
+- Meritve: zakasnitev, stroški, število rezultatov, velikost odgovora.
+- izračun prekrivanja URL za iskanje (število deljenih URLs v primerjavi z začetnim rezultatom).
+- Klici `POST /v1/search` (iskanje) ali `POST /v1/web/fetch` (strganje) na ponudnika.
 
 ---
 
@@ -98,15 +98,15 @@ Izvede isto poizvedbo oziroma URL vzporedno pri največ **4 ponudnikih** (D22):
 
 ---
 
-## Katalog ponudnikov
+## Katalog ponudnika
 
-`ProviderCatalog.tsx` prikaže celoten seznam ponudnikov iz `GET /api/search/providers`
-(razširjen v F4, da vključuje ponudnike pridobivanja vsebine):
+`ProviderCatalog.tsx` razkrije celoten seznam ponudnikov iz `GET /api/search/providers` (razširjen v F4, da vključuje ponudnike pridobivanja):
 
-| `kind` | `"search"` (20 ponudnikov) ali `"fetch"` (firecrawl, jina-reader, tavily-search, tinyfish, nimble-search, anysearch-search) |
+| `kind` | `"search"` (24 ponudnikov) ali `"fetch"` (firecrawl, jina-reader, tavily-search, tinyfish, nimble-search, anysearch-search, parallel-search, keenable-search) |
 
-Stanje je **izpeljano ob času zahteve** s preverjanjem, ali poverilnice obstajajo in ali
-so vsi ključi trenutno v obdobju ohlajanja.
+Stanje je** izpeljano ob času zahteve** s preverjanjem, ali poverilnice obstajajo in ali so vsi ključi trenutno v ohlajanju.
+
+`codex-search` (spletno iskanje Codex ) nima lastnega ključa: ponovno uporablja povezani račun Codex (ChatGPT), tako da vsako iskanje porabi naročniško kvoto ChatGPT in traja približno 10–40 s. Zažene se, ko ga zahteva poimenuje; samodejna izbira potrebuje oznako funkcije `CODEX_SEARCH_AUTO_FALLBACK_ENABLED` (privzeto izklopljena).
 
 ---
 
@@ -120,16 +120,16 @@ Ograda za ključ API je vedno `$OMNIROUTE_API_KEY` (D11, v skupni rabi s Playgro
 
 ## Spremembe zaledja
 
-Za to funkcionalnost je bila potrebna samo ena sprememba zaledja:
+Za to funkcijo je bila potrebna samo ena sprememba zaledja:
 
 ### Razširjeni `GET /api/search/providers`
 
-`src/app/api/search/providers/route.ts` je bil razširjen tako, da:
+`src/app/api/search/providers/route.ts` je bil razširjen na:
 
-- V polje vključi vseh 6 ponudnikov pridobivanja vsebine (`firecrawl`, `jina-reader`, `tavily-search`, `tinyfish`, `nimble-search`, `anysearch-search`).
-- Vsakemu elementu doda `kind: "search" | "fetch"`.
-- Doda `status: "configured" | "missing" | "rate_limited"`, izpeljan iz trenutnega stanja poverilnic.
-- Ohrani združljivost za nazaj — obstoječa polja (`id`, `name` itd.) ostanejo nespremenjena.
+- V matriko vključite vse ponudnike pridobivanja (`firecrawl`, `jina-reader`, `tavily-search`, `tinyfish`, `nimble-search`, `anysearch-search`, `parallel-search`, `keenable-search`).
+- Vsakemu artiklu dodajte `kind: "search" | "fetch"`.
+- Dodajte `status: "configured" | "missing" | "rate_limited"` izpeljano iz stanja poverilnice v živo.
+- Ohranite povratno združljivost obstoječa polja — (`id`, `name` itd.) nespremenjena.
 
 ---
 

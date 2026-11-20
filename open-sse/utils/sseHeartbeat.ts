@@ -1,3 +1,4 @@
+import { transformStreamWithCancel } from "./cancelableTransformStream.ts";
 /**
  * @file sseHeartbeat.ts
  * @description Mid-stream SSE heartbeat transform (comment / Anthropic ping / OpenAI chunk).
@@ -5,19 +6,45 @@
  * @changes
  * - [2026-07-28] [Cursor Grok 4.5] - Brand-neutral default OpenAI keepalive id/model
  */
-import { SYNTHETIC_RESPONSES_SEQUENCE_NUMBER } from "./responsesSequence.ts";
+import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
+import {
+  buildResponsesInProgressPayload,
+  createResponsesInProgressTracker,
+} from "./responsesKeepaliveFrame.ts";
 
 const HEARTBEAT_ENCODER = new TextEncoder();
-// #14330: a bare {"type":"response.in_progress"} frame has no `sequence_number` or
-// `response` object, so a strict Responses decoder (openai-python, Codex/OpenCode/Grok
-// CLIs) aborts on it. Every typed Responses event requires both fields.
-const OPENAI_RESPONSES_IN_PROGRESS_PAYLOAD = `data: ${JSON.stringify({
-  type: "response.in_progress",
-  sequence_number: SYNTHETIC_RESPONSES_SEQUENCE_NUMBER,
-  response: { id: null, status: "in_progress" },
-})}\n\n`;
+// #14330 / #15202 / #17825: the keepalive must be a complete, spec-valid Responses event
+// (sequence_number, string response.id, created_at, model, ...) — see responsesKeepaliveFrame.ts.
+const OPENAI_RESPONSES_IN_PROGRESS_PAYLOAD = buildResponsesInProgressPayload();
 
 export const DEFAULT_SSE_HEARTBEAT_INTERVAL_MS = 15_000;
+export const DEFAULT_MAX_UNCONSUMED_HEARTBEATS = 8;
+
+export function maxUnconsumedHeartbeatsConfig(): number {
+  if (typeof process === "undefined") return DEFAULT_MAX_UNCONSUMED_HEARTBEATS;
+  const raw = process.env.SSE_HEARTBEAT_MAX_UNCONSUMED;
+  if (!raw) return DEFAULT_MAX_UNCONSUMED_HEARTBEATS;
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_MAX_UNCONSUMED_HEARTBEATS;
+}
+
+/** Transport liveness without inventing a response identity or lifecycle event. */
+export const RESPONSES_KEEPALIVE_FRAME = HEARTBEAT_ENCODER.encode("\n\n");
+
+/**
+ * Responses keepalive shape (RESPONSES_TRANSPORT_KEEPALIVE_ENABLED, default off). Off, timers send
+ * the spec-valid response.in_progress event, as they always did. On, they send only a blank line,
+ * which a synthetic snapshot cannot replace in the official SDK, but which also dispatches no SSE
+ * event, so a client watchdog that resets only on events would not be reset.
+ */
+export function isResponsesTransportKeepaliveEnabled(): boolean {
+  try {
+    return isFeatureFlagEnabled("RESPONSES_TRANSPORT_KEEPALIVE_ENABLED");
+  } catch {
+    // no-effect: an unreadable flag store keeps the response.in_progress keepalive
+    return false;
+  }
+}
 
 /** Shared Responses API heartbeat frame for early and mid-stream keepalives. */
 export const OPENAI_RESPONSES_IN_PROGRESS_FRAME = HEARTBEAT_ENCODER.encode(
@@ -52,20 +79,21 @@ export function shapeForClientFormat(
 
 function buildHeartbeatPayload(
   shape: HeartbeatShape,
-  opts: { chunkId?: string; chunkModel?: string } = {}
+  opts: { chunkId?: string; chunkModel?: string; responsesPayload?: () => string } = {}
 ): string {
   switch (shape) {
     case HEARTBEAT_SHAPES.ANTHROPIC_PING:
       return 'event: ping\ndata: {"type":"ping"}\n\n';
     case HEARTBEAT_SHAPES.OPENAI_RESPONSES_IN_PROGRESS:
-      return OPENAI_RESPONSES_IN_PROGRESS_PAYLOAD;
+      return opts.responsesPayload?.() ?? OPENAI_RESPONSES_IN_PROGRESS_PAYLOAD;
     case HEARTBEAT_SHAPES.OPENAI_CHUNK: {
       const payload = {
         id: opts.chunkId ?? "chatcmpl-keepalive",
         object: "chat.completion.chunk",
         created: Math.floor(Date.now() / 1000),
         model: opts.chunkModel ?? "keepalive",
-        choices: [{ index: 0, delta: {}, finish_reason: null }],
+        // Transport liveness must not initialize a client message before its role (#18410).
+        choices: [],
       };
       return `data: ${JSON.stringify(payload)}\n\n`;
     }
@@ -81,6 +109,7 @@ type SseHeartbeatTransformOptions = {
   shape?: HeartbeatShape;
   chunkId?: string;
   chunkModel?: string;
+  maxUnconsumedHeartbeats?: number;
 };
 
 /**
@@ -99,12 +128,99 @@ export function sseCommentsEnabled(): boolean {
   return normalized === "on" || normalized === "true" || normalized === "1" || normalized === "yes";
 }
 
+/**
+ * Tracks SSE framing over raw bytes so a timer never splices a heartbeat mid-event.
+ * Scans ASCII separators, not payload characters. A chunk can end inside JSON, a CRLF
+ * pair or a UTF-8 code point; no timer may splice bytes there.
+ */
+function createSseFramingTracker() {
+  let atEventBoundary = true;
+  let lineHasBytes = false;
+  let pendingCR = false;
+  return {
+    note(chunk: Uint8Array): void {
+      for (const byte of chunk) {
+        if (pendingCR) {
+          pendingCR = false;
+          if (byte === 10) continue;
+        }
+        if (byte === 10 || byte === 13) {
+          atEventBoundary = !lineHasBytes;
+          lineHasBytes = false;
+          pendingCR = byte === 13;
+        } else {
+          lineHasBytes = true;
+          atEventBoundary = false;
+        }
+      }
+    },
+    atBoundary: (): boolean => atEventBoundary,
+  };
+}
+
+type ResponsesInProgressTracker = ReturnType<typeof createResponsesInProgressTracker>;
+
+function encodeHeartbeatFrame(
+  shape: HeartbeatShape,
+  opts: {
+    transportOnly: boolean;
+    chunkId?: string;
+    chunkModel?: string;
+    responsesTracker: ResponsesInProgressTracker | null;
+  }
+): Uint8Array {
+  if (opts.transportOnly) return RESPONSES_KEEPALIVE_FRAME;
+  const tracker = opts.responsesTracker;
+  return HEARTBEAT_ENCODER.encode(
+    buildHeartbeatPayload(shape, {
+      chunkId: opts.chunkId,
+      chunkModel: opts.chunkModel,
+      responsesPayload: tracker ? () => tracker.payload() : undefined,
+    })
+  );
+}
+
+type BackpressureVerdict = "send" | "skip" | "abandon";
+
+/**
+ * #19640: while the readable queue is full (desiredSize <= 0) the previous frame is still
+ * unread, so a heartbeat tick is skipped instead of growing the queue; after `maxUnconsumed`
+ * consecutive full ticks the stream is treated as abandoned. Any upstream chunk resets the count.
+ */
+function createBackpressureGuard(maxUnconsumed: number) {
+  let consecutiveTicks = 0;
+  return {
+    check(desiredSize: number | null): BackpressureVerdict {
+      if (typeof desiredSize !== "number" || desiredSize > 0) {
+        consecutiveTicks = 0;
+        return "send";
+      }
+      consecutiveTicks++;
+      return maxUnconsumed > 0 && consecutiveTicks >= maxUnconsumed ? "abandon" : "skip";
+    },
+    reset(): void {
+      consecutiveTicks = 0;
+    },
+  };
+}
+
+function abandonStream(controller: TransformStreamDefaultController<Uint8Array>): void {
+  try {
+    controller.error(
+      new Error("SSE stream abandoned: consumer stopped reading (backpressure timeout)")
+    );
+  } catch {
+    // ignore if already closed/errored
+  }
+}
+
 export function createSseHeartbeatTransform({
   intervalMs = DEFAULT_SSE_HEARTBEAT_INTERVAL_MS,
   signal,
   shape = DEFAULT_SSE_HEARTBEAT_SHAPE,
   chunkId,
   chunkModel,
+  maxUnconsumedHeartbeats,
 }: SseHeartbeatTransformOptions = {}): TransformStream<Uint8Array, Uint8Array> {
   if (!Number.isFinite(intervalMs) || intervalMs <= 0) {
     return new TransformStream<Uint8Array, Uint8Array>();
@@ -118,6 +234,14 @@ export function createSseHeartbeatTransform({
   }
 
   let intervalId: ReturnType<typeof setInterval> | undefined;
+  const backpressure = createBackpressureGuard(
+    maxUnconsumedHeartbeats ?? maxUnconsumedHeartbeatsConfig()
+  );
+  const isResponsesShape = shape === HEARTBEAT_SHAPES.OPENAI_RESPONSES_IN_PROGRESS;
+  const transportOnly = isResponsesShape && isResponsesTransportKeepaliveEnabled();
+  const responsesTracker =
+    isResponsesShape && !transportOnly ? createResponsesInProgressTracker() : null;
+  const framing = createSseFramingTracker();
 
   const stop = () => {
     if (!intervalId) return;
@@ -125,40 +249,56 @@ export function createSseHeartbeatTransform({
     intervalId = undefined;
   };
 
-  return new TransformStream<Uint8Array, Uint8Array>({
-    start(controller) {
-      intervalId = globalThis.setInterval(() => {
-        if (signal?.aborted) {
-          stop();
-          return;
+  return transformStreamWithCancel<Uint8Array, Uint8Array>(
+    {
+      start(controller) {
+        intervalId = globalThis.setInterval(() => {
+          if (signal?.aborted) {
+            stop();
+            return;
+          }
+
+          // #19640: bound queue growth if the downstream consumer stops reading.
+          const pressure = backpressure.check(controller.desiredSize);
+          if (pressure === "abandon") {
+            stop();
+            abandonStream(controller);
+          }
+          if (pressure !== "send") return;
+
+          if (!framing.atBoundary()) return;
+          try {
+            controller.enqueue(
+              encodeHeartbeatFrame(shape, { transportOnly, chunkId, chunkModel, responsesTracker })
+            );
+          } catch {
+            stop();
+          }
+        }, intervalMs);
+
+        if (intervalId && typeof intervalId === "object" && "unref" in intervalId) {
+          intervalId.unref?.();
         }
 
-        try {
-          controller.enqueue(
-            HEARTBEAT_ENCODER.encode(buildHeartbeatPayload(shape, { chunkId, chunkModel }))
-          );
-        } catch {
-          stop();
-        }
-      }, intervalMs);
+        signal?.addEventListener("abort", stop, { once: true });
+      },
 
-      if (intervalId && typeof intervalId === "object" && "unref" in intervalId) {
-        intervalId.unref?.();
-      }
+      transform(chunk, controller) {
+        backpressure.reset();
+        framing.note(chunk);
+        responsesTracker?.observe(chunk);
+        controller.enqueue(chunk);
+      },
 
-      signal?.addEventListener("abort", stop, { once: true });
+      flush() {
+        stop();
+      },
+
+      cancel() {
+        stop();
+      },
     },
-
-    transform(chunk, controller) {
-      controller.enqueue(chunk);
-    },
-
-    flush() {
-      stop();
-    },
-
-    cancel() {
-      stop();
-    },
-  });
+    undefined,
+    { highWaterMark: 1 }
+  );
 }

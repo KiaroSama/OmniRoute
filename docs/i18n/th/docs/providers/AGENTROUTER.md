@@ -51,7 +51,7 @@ docker run -d --name omniroute \
   -p 20128:20128 \
   -v omniroute-data:/app/data \
   -e ENABLE_CC_COMPATIBLE_PROVIDER=true \
-  diegosouzapw/omniroute:latest
+  cheaperinference/omniroute:latest
 ```
 
 หลังจากรีสตาร์ต แดชบอร์ดจะแสดงตัวเลือก **Add Claude Code Compatible** เพิ่มเติมจากขั้นตอนการตั้งค่าที่เข้ากันได้กับ OpenAI และ Anthropic ซึ่งมีอยู่แล้ว
@@ -107,7 +107,7 @@ curl -X POST http://localhost:20128/v1/chat/completions \
 | ส่วนหัว                                      | ค่า                                                                                            |
 | -------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | `Authorization`                              | `Bearer <api-key>`                                                                             |
-| `User-Agent`                                 | `claude-cli/2.1.258 (external, sdk-cli)`                                                       |
+| `User-Agent`                                 | `claude-cli/2.1.280 (external, sdk-cli)`                                                       |
 | `anthropic-version`                          | `2023-06-01`                                                                                   |
 | `anthropic-beta`                             | `claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24`                       |
 | ตัวสลับเบต้า redact-thinking ต่อการเชื่อมต่อ | เพิ่ม `redact-thinking-2026-02-12` สำหรับต้นทางที่กำหนดให้ต้องใช้สตรีมการคิดแบบปกปิดโดยเฉพาะ   |

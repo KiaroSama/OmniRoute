@@ -10,155 +10,144 @@ Aicmítear gach bealach API bainistíochta OmniRoute i gceann amháin de thrí s
 chosanta. Tá an t-aicmiú statach, sainmhínithe in `src/server/authz/routeGuard.ts`,
 agus déantar é a mheas sula ritear aon bhrainse fíordheimhnithe eile.
 
-## Leibhéil
+## Sraitheanna
 
-### Leibhéal 1 — LOCAL_ONLY
+### Sraith 1 — LOCAL_ONLY
 
-**Forfheidhmithe ag:** `isLocalOnlyPath(path)` → seiceáil óstach lúbchúlaithe
-**Seachbhóthar:** Níl aon cheann de réir réamhshocraíochta. Eisceacht chúng do chosáin i
-`LOCAL_ONLY_MANAGE_SCOPE_BYPASS_PREFIXES` nuair a iompraíonn an t-iarratas eochair API bailí leis an scóip `manage` (féach [Eisceacht scóip bainistíochta](#manage-scope-carve-out)).
+**Forfheidhmithe ag:** `isLocalOnlyPath(path)` → seiceáil óstach loopback** Seachbhóthar:** Ceann ar bith de réir réamhshocraithe. Snoite amach caol le haghaidh cosáin i `LOCAL_ONLY_MANAGE_SCOPE_BYPASS_PREFIXES` nuair a bhíonn eochair API bhailí leis an scóip `manage` ag baint leis an iarratas (féach [Bainistigh an scóip a shnoí amach](#manage-scope-carve-out) ).
 
-Gineann na bealaí seo próisis leanaí nó forghníomhaíonn siad cód reatha. Dá nochtfaí iad do thrácht neamh-lúbchúlaithe, ligfeadh sé d'ionsaitheoir a fuair JWT bailí (m.sh., trí thollán Cloudflared/Ngrok) gineadh próisis a spreagadh — aicme CVE aitheanta ([GHSA-fhh6-4qxv-rpqj](https://github.com/advisories/GHSA-fhh6-4qxv-rpqj)).
+Sceálann na bealaí seo próisis linbh nó cuireann siad cód ama rite i bhfeidhm. Dá nochtfaí iad do thrácht neamh-lúbtha d’fhéadfadh ionsaitheoir a fuair JWT bailí (m.sh., trí thollán Cloudflared/Ngrok ) próiseas sceathraí — d’aicme CVE aitheanta ( [GHSA-fhh6-4qxv-rpqj](https://github.com/advisories/GHSA-fhh6-4qxv-rpqj) ) a spreagadh.
 
-**Cad is GHSA-fhh6-4qxv-rpqj ann (an aicme ionsaithe):** nochtann freastalaí bainistíochta/gníomhaire pointe deiridh a sheolann fo-phróiseas (`npm install`, `node`, brabhsálaí, seachfhreastalaí, `git`, `tar`, …). Má tá an pointe deiridh sin inrochtana ó lasmuigh den óstach — toisc gur chuir an t-oibreoir OmniRoute taobh thiar de thollán nginx/Cloudflare/Tailscale agus gur sceitheadh JWT, nó gur mícheartú an fíordheimhniú — athraíonn an t-ionsaitheoir "glaoigh ar API" go "rith ordú ar an óstach" (forghníomhú cóid cianda). Dúnann OmniRoute é seo trí **seiceáil óstach lúbchúlaithe a fhorfheidhmiú gan choinníoll, roimh aon seiceáil fíordheimhnithe**, ar gach bealach atá in ann gineadh: ní féidir le comhartha sceite thar thollán an gineadh a bhaint amach fós.
+**Cad é GHSA-fhh6-4qxv-rpqj (an rang ionsaithe):** nochtar freastalaí management/agent críochphointe a sheolann fophróiseas (`npm install`, `node`, brabhsálaí, seachfhreastalaí, `git`, `tar`, …). Má tá an críochphointe sin insroichte ó — lasmuigh den óstach toisc gur chuir an t-oibreoir OmniRoute taobh thiar de thollán nginx/Cloudflare/Tailscale agus gur sceitheadh JWT, nó go raibh an t-údar míchumraithe — déanann an t-ionsaitheoir "call ar API" a thiontú ina "rith ordú ar an ósta" (rith cód cianda). Dúnann OmniRoute é seo trí fhorfheidhmiú a** seiceáil óstach loopback gan choinníoll, roimh aon seiceáil údaráis** , ar gach bealach sceite: ní féidir le comhartha sceite thar tollán an sceith a bhaint amach go fóill.
 
-**An tacar iomlán LOCAL_ONLY.** Is é an fhoinse údarásach ná
-`LOCAL_ONLY_API_PREFIXES` / `LOCAL_ONLY_API_PATTERNS` i
-`src/server/authz/routeGuard.ts`; léiríonn an tábla thíos an staid reatha. Déanann an
-geata `check-route-guard-membership` gach `route.ts` a liostáil faoi na
-réimíreanna atá in ann gineadh agus teipeann ar CI mura bhfuil aon cheann acu aicmithe mar áitiúil-amháin.
+**An sraith iomlán LOCAL_ONLY.** Is é an fhoinse údarásach `LOCAL_ONLY_API_PREFIXES` / `LOCAL_ONLY_API_PATTERNS` in `src/server/authz/routeGuard.ts`; léiríonn an tábla thíos an staid reatha. Áiríonn an geata `check-route-guard-membership` gach `route.ts` faoi na réimíreanna atá in ann sceitheadh agus teipeann ar CI mura rangaítear aon cheann díobh go háitiúil amháin.
 
-| Réimír / patrún                                                                                          | Cén fáth a bhfuil sé áitiúil amháin                                                                                           |
-| :------------------------------------------------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------- |
-| `/api/mcp/`                                                                                              | Freastalaí MCP — cruthaíonn sé droichid stdio + láimhseálaithe SSE                                                            |
-| `/api/cli-tools/runtime/`                                                                                | Amchóras uirlisí CLI — forghníomhaíonn sé cód breiseáin treallach                                                             |
-| `/api/cli-tools/{omp,letta,grok-build,forge,jcode,qwen}-settings`                                        | Scríbhneoirí socruithe in aghaidh na huirlise ar féidir leo teagmháil a dhéanamh le dénárthaí/cumraíocht uirlisí ar an óstach |
-| `/api/cli-tools/{claude,cline,codewhale,codex,crush,deepseek-tui,droid,kilo,openclaw,pi,smelt}-settings` | An cruthú `getCliRuntimeStatus()` céanna leis na sé siblíní thuas (GHSA-35fw-cv32-2373)                                       |
-| `/api/cli-tools/{all-statuses,status,detect}`                                                            | Taiscéalaithe fardail CLI — cruthaíonn siad `command -v` / `--version` in aghaidh na huirlise (GHSA-35fw-cv32-2373)           |
-| `/api/cli-tools/antigravity-mitm`                                                                        | Rialú seachfhreastalaí Antigravity MITM (cruthaíonn/pointeálann sé seachfhreastalaí córais)                                   |
-| `/api/modality-bridge/video/`                                                                            | Taiscéalaí amchórais Droichead Físeáin lúb-ais iontaofa dian agus droichead eastósctha inmheánach                             |
-| `/api/services/`                                                                                         | Seirbhísí leabaithe (9Router / CLIProxy / Bifrost / Mux / Dario) — `npm install` + cruthaigh                                  |
-| `/dashboard/providers/services/`                                                                         | Seachfhreastalaí droim ar ais chuig comhéadain úsáideora seirbhísí leabaithe                                                  |
-| `/api/tunnels/cloudflared`                                                                               | Suiteálann/cruthaíonn sé an dénártha cloudflared                                                                              |
-| `/api/tunnels/tailscale/{install,enable,disable,login,start-daemon}`                                     | Suiteálann/rialálann sé tailscaled ar an óstach                                                                               |
-| `/api/copilot/`                                                                                          | Tiománaí LLM neamhfhíordheimhnithe — CLI-amháin de réir réamhshocraithe                                                       |
-| `/api/tools/agent-bridge/`                                                                               | AgentBridge — cruthaíonn sé freastalaí MITM + eagarthóireacht DNS                                                             |
-| `/api/tools/traffic-inspector/`                                                                          | Cigire Tráchta — éisteoir http-proxy + seachfhreastalaí córais                                                                |
-| `/api/settings/mitm`                                                                                     | Cumasaíonn sé idircheapadh MITM (stát seachfhreastalaí ar leibhéal an chórais)                                                |
-| `/api/issue-agent/`                                                                                      | Gníomhaire eisiúna — cruthaíonn sé uirlisí áitiúla i gcoinne an repo                                                          |
-| `/api/plugins/`, `/api/plugins`                                                                          | Breiseáin — luchtú/forghníomhú trí `worker_threads` + `child_process`                                                         |
-| `/api/middleware/`                                                                                       | Bogearraí idirghabhála úsáideora — luchtú/forghníomhú cód oibreora in-phróiseas                                               |
-| `/api/system/version`                                                                                    | Uath-nuashonrú (POST amháin; GET/HEAD/OPTIONS díolmhaithe) — cruthaíonn sé `git checkout` + `npm install`                     |
-| `/api/db-backups/exportAll`                                                                              | Cruthaíonn sé `tar` don chartlann easpórtála                                                                                  |
-| `/api/local/`                                                                                            | Seoladáin áitiúla 1-cliceáil (Redis inniu) — cruthaíonn sé podman/docker                                                      |
-| `/api/headroom/start`, `/api/headroom/stop`                                                              | Saolré seachfhreastalaí Headroom — cruthaíonn sé CLI python / comharthaí PID                                                  |
-| `/api/jobs`, `/api/jobs/`                                                                                | Rialú reathaí poist — forghníomhaíonn sé obair sceidealta ar thaobh an óstaigh                                                |
-| `/api/oauth/cursor/auto-import`                                                                          | `execFile("which", ["cursor"])` roimh chreidiúintí a iompórtáil                                                               |
-| `/api/oauth/kiro/auto-import`                                                                            | Léann sé comhaid chreidiúnacha Kiro CLI ón óstach                                                                             |
-| `/api/skills/collect/`                                                                                   | Bailiú scileanna — aimsíonn/suiteálann sé uirlisí áitiúla                                                                     |
-| `/api/skills/install`, `/api/skills/executions`                                                          | Clárú + forghníomhú láimhseálaí scileanna — sroicheann sé cruthú coimeádán an bhosca gainimh (GHSA-jx89)                      |
-| `/api/discovery/`                                                                                        | Taiscéalaithe aimsithe líonra/soláthraí áitiúla                                                                               |
-| `/api/vnc-session` (`VNC_ROUTE_PREFIX`)                                                                  | Seolann brabhsálaí ceannúil + seisiún VNC le haghaidh logáil isteach idirghníomhach                                           |
-| `/api/acp/agents`                                                                                        | ACP — aimsíonn agus seolann dénárthaí gníomhaire CLI áitiúla                                                                  |
-| `/api/resilience/connections`                                                                            | JSON athléimneachta in aghaidh an chuntais (fuarú, briseadh, glasáil). Níl an HTML painéil áitiúil amháin.                    |
-| `/api/providers/cursor/agent-availability`                                                               | Seiceáil suiteála-spreagtha an Phainéil — seolann `cursor-agent status --format json`                                         |
-| `/api/providers/{id}/login` (slonn rialta)                                                               | Seolann Playwright Chromium ceannúil le haghaidh logáil isteach fianán gréasáin                                               |
-| `/api/providers/volcengine-plan/connect` (slonn rialta)                                                  | Sreabhadh ceannúil láimhe + uath-logáil isteach teileafóin/SMS bunaithe ar sheisiún (seolann Playwright)                      |
-| `/api/providers/{id}/refresh-cursor` (slonn rialta)                                                      | Athnuachan seisiúin Cúrsóra láimhe — spreagann `cursor-agent`                                                                 |
-| `/api/providers/{id}/chatgpt-web-codex-doctor` (slonn rialta)                                            | Déanann sé diagnóis ar shuiteáil áitiúil Codex CLI (seolann sé an dénártha)                                                   |
+| Réimír / patrún                                                                                          | Cén fáth go bhfuil sé áitiúil-amháin                                                                                 |
+| -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `/api/mcp/`                                                                                              | freastalaí MCP — spawns stdio bridges láimhseálaithe + SSE                                                           |
+| `/api/cli-tools/runtime/`                                                                                | CLI tool runtime Feidhmíonn — cód treallach breiseán                                                                 |
+| `/api/cli-tools/{omp,letta,grok-build,forge,jcode,qwen}-settings`                                        | Scríbhneoirí socruithe per-uirlis ar féidir leo teagmháil a dhéanamh le uirlis binaries/config ar an ósta            |
+| `/api/cli-tools/{claude,cline,codewhale,codex,crush,deepseek-tui,droid,kilo,openclaw,pi,smelt}-settings` | Sceitheadh `getCliRuntimeStatus()` céanna leis an seisear deartháireacha thuas (GHSA-35fw-cv32-2373)                 |
+| `/api/cli-tools/{all-statuses,status,detect}`                                                            | taiscéalaithe fardail CLI — sceith `command -v` / `--version` in aghaidh an uirlis (GHSA-35fw-cv32-2373)             |
+| `/api/cli-tools/antigravity-mitm`                                                                        | rialú seachfhreastalaí Antigravity MITM (seachfhreastalaí córais spawns/points )                                     |
+| `/api/modality-bridge/video/`                                                                            | Taiscéaladh ama rite an Droichid Físe agus an droichead eastósctha inmheánach                                        |
+| `/api/services/`                                                                                         | Seirbhísí leabaithe (9Router / CLIProxy / Bifrost / Mux / Dario) — `npm install` + sceith                            |
+| `/dashboard/providers/services/`                                                                         | Seachfhreastalaí droim ar ais chuig UIs seirbhís leabaithe                                                           |
+| `/api/tunnels/cloudflared`                                                                               | Installs/spawns an dénártha cloudflared                                                                              |
+| `/api/tunnels/tailscale/{install,enable,disable,login,start-daemon}`                                     | Installs/controls tailscaled ar an ósta                                                                              |
+| `/api/copilot/`                                                                                          | Tiománaí LLM neamhdheimhnithe — CLI-amháin de réir réamhshocraithe                                                   |
+| `/api/tools/agent-bridge/`                                                                               | AgentBridge — spawns freastalaí MITM + DNS edits                                                                     |
+| `/api/tools/traffic-inspector/`                                                                          | Cigire Tráchta — http-seachfhreastalaí éisteoir + córais seachfhreastalaí                                            |
+| `/api/settings/mitm`                                                                                     | Cumasaíonn sé idircheapadh MITM (stát seachfhreastalaí ar leibhéal an chórais)                                       |
+| `/api/issue-agent/`                                                                                      | Scaipeann an gníomhaire eisiúna — uirlisí áitiúla i gcoinne an repo                                                  |
+| `/api/plugins/`, `/api/plugins`                                                                          | Íosluchtaigh breiseáin — load/execute via `worker_threads` + `child_process`                                         |
+| `/api/middleware/`                                                                                       | Cód oibreoir middleware — loads/executes i bpróiseas an úsáideora                                                    |
+| `/api/system/version`                                                                                    | Uath-nuashonrú (POST amháin; GET/HEAD/OPTIONS díolmhaithe) sceitheanna — `git checkout` + `npm install`              |
+| `/api/db-backups/exportAll`                                                                              | Spawns `tar` don chartlann easpórtála                                                                                |
+| `/api/local/`                                                                                            | 1-cliceáil lainseálaithe áitiúla (Redis inniu) — sceith podman/docker                                                |
+| `/api/headroom/start`, `/api/headroom/stop`                                                              | Saolré seachfhreastalaí ceannsheomra — sceith python CLI / comharthaí PID                                            |
+| `/api/jobs`, `/api/jobs/`                                                                                | Déanann rialú rádala poist — obair óstach sceidealaithe a fhorghníomhú                                               |
+| `/api/oauth/cursor/auto-import`                                                                          | `execFile("which", ["cursor"])` roimh creidmheasanna a allmhairiú                                                    |
+| `/api/oauth/kiro/auto-import`                                                                            | Léann sé comhaid inchreidte Kiro CLI ón ósta                                                                         |
+| `/api/skills/collect/`                                                                                   | Bailiúchán scileanna — detects/installs local tooling                                                                |
+| `/api/skills/install`, `/api/skills/executions`                                                          | Clárú láimhseálaí scile + execution — sroichfidh an coimeádán bosca gainimh sceith (GHSA-jx89)                       |
+| `/api/discovery/`                                                                                        | Taiscéalaithe fionnachtana network/provider áitiúla                                                                  |
+| `/api/vnc-session` (`VNC_ROUTE_PREFIX`)                                                                  | Spawns brabhsálaí ceannasach + VNC seisiún le haghaidh logáil isteach idirghníomhach                                 |
+| `/api/acp/agents`                                                                                        | ACP — aimsíonn agus sceitheann sé dénártha gníomhairí CLI áitiúla                                                    |
+| `/api/resilience/connections`                                                                            | Athléimneacht in aghaidh an chuntais JSON (fuascailliú, briseadh, frithdhúnadh). Níl an painéal HTML áitiúil amháin. |
+| `/api/providers/cursor/agent-availability`                                                               | Painéal suiteáil-nudge seiceáil — sceitheanna `cursor-agent status --format json`                                    |
+| `/api/providers/{id}/login` (regex)                                                                      | Seolann Playwright Cróimiam ceannasach le haghaidh logáil isteach fianán gréasáin                                    |
+| `/api/providers/volcengine-plan/connect` (regex)                                                         | Sreabhadh ceannteidil láimhe + uathoibríoch-logáil isteach phone/SMS bunaithe ar seisiún (sceathraí Playwright)      |
+| `/api/providers/{id}/refresh-cursor` (regex)                                                             | Lámhleabhar Cursor seisiún athnuachan — nudges `cursor-agent`                                                        |
+| `/api/providers/{id}/chatgpt-web-codex-doctor` (regex)                                                   | Diagnóisíonn sé an suiteáil Codex CLI áitiúil (scaipeann sé an dénártha)                                             |
 
 **Freagra ar shárú:** `403 LOCAL_ONLY`
 
-#### Snoíodóireacht raon feidhme bainistíochta
+#### Bainistigh-scóip carve-amach
 
-Féadfar rochtain a fháil ar fho-thacar de chosáin LOCAL_ONLY ó neamh-lúbchúl freisin má tá
-`Authorization: Bearer <api-key>` ag an iarratas a bhfuil an raon feidhme `manage` (nó `admin`) ina mheiteashonraí. Tá an snoíodóireacht
-gated go sainráite in aghaidh an chosáin trí `LOCAL_ONLY_MANAGE_SCOPE_BYPASS_PREFIXES` ionas go
-bhfanann an réamhshocrú d'aon chosán nua LOCAL_ONLY mar lúbchúl dian. Diúltaítear fós d'iarratais neamh-fhíordheimhnithe
-agus d'iarratais le heochracha neamh-bhainistíochta le
-`403 LOCAL_ONLY`.
+Is féidir fothacar de chonairí LOCAL_ONLY MAY a rochtain freisin ó neamh-lúb siar más rud é agus sa chás sin amháin go bhfuil `Authorization: Bearer <api-key>` ag baint leis an iarratas a n-áirítear a meiteashonraí an scóip `manage` (nó `admin`). Tá geata sainráite ag an snoíodóireacht in aghaidh an chosáin trí `LOCAL_ONLY_MANAGE_SCOPE_BYPASS_PREFIXES` agus mar sin is é an réamhshocrú d’aon chosán LOCAL_ONLY nua ná cúl docht. Diúltaítear iarratais neamhdheimhnithe agus iarratais a bhfuil eochracha neamh-bhainistithe acu le `403 LOCAL_ONLY`.
 
-Sa lá atá inniu ann, is é `/api/mcp/` an t-aon réimír is féidir a sheachbhóthar. Tá `/api/cli-tools/runtime/` agus
-`/api/services/` eisiata d'aon ghnó toisc gur féidir leo fo-phróisis treallacha a sheoladh
-(`npm install`, `node`), arb é an aicme CVE cruinn é a bhfuil an ciseal LOCAL_ONLY ann chun é a chosc.
+Sa lá atá inniu ann is é `/api/mcp/` an t-aon réimír do sheachbhóthar . Tá `/api/cli-tools/runtime/` agus `/api/services/` eisiata d'aon ghnó toisc gur féidir leo fophróisis treallacha (`npm install`, `node`) a sceitheadh, arb é an rang CVE cruinn a bhfuil an ciseal LOCAL_ONLY ann chun a chosc.
 
-**#7895 — raon feidhme cúng `mcp:connect`:** glacann an snoíodóireacht `/api/mcp/` freisin
-eochair Bearer a bhfuil an raon feidhme cúng `mcp:connect` aici
-(`src/shared/constants/managementScopes.ts::MCP_CONNECT_SCOPE`), a sheiceáiltear trí
-`hasMcpConnectOrManageScope()` i `src/server/authz/policies/management.ts`.
-Tá sé seo scóipithe go `/api/mcp/` AMHÁIN — ní dheonaíonn `mcp:connect` aon rud ar aon
-bhealach bainistíochta eile (lena n-áirítear gach réimír seachbhóthar LOCAL_ONLY eile, dá gcuirfí ceann leis riamh),
-agus tá sé eisiata d'aon ghnó ó
-`MANAGEMENT_API_KEY_SCOPES`. Pasann eochair a bhfuil `manage`/`admin` aici an
-snoíodóireacht díreach mar a bhí roimhe seo; is rogha eile í `mcp:connect` le pribhléid níos ísle
-do ghlaoiteoirí MCP-amháin iargúlta nach mbeadh gá acu le rochtain leathan bainistíochta.
+**#7895 — `mcp:connect` raon feidhme caol:** glacann an `/api/mcp/` carve-out ALSO eochair Iompróra a bhfuil an raon feidhme caol `mcp:connect` (`src/shared/constants/managementScopes.ts::MCP_CONNECT_SCOPE`), seiceáilte trí `hasMcpConnectOrManageScope()` in `src/server/authz/policies/management.ts`. Déantar é seo a scóip chun `/api/mcp/` ONLY — `mcp:connect` a dheonú ar aon bhealach bainistíochta eile (lena n-áirítear gach réimír sheachbhóthar LOCAL_ONLY eile, ar cheart ceann amháin a chur leis), agus tá sé eisiata d'aon ghnó ó `MANAGEMENT_API_KEY_SCOPES`. Gabhann eochair-shealbhú `manage`/`admin` an carve-amach díreach mar a bhí roimhe; Is rogha eile lena mbaineann pribhléid níos ísle é `mcp:connect` do ghlaoiteoirí cianda MCP amháin nár cheart go mbeadh rochtain leathan bainistíochta de dhíth orthu.
 
-| Iarratas                                            | Cosán                      | Toradh                  |
-| --------------------------------------------------- | -------------------------- | ----------------------- |
-| Neamh-lúbchúl, gan Bearer                           | `/api/mcp/*`               | 403 LOCAL_ONLY          |
-| Neamh-lúbchúl, Bearer le raon feidhme `manage`      | `/api/mcp/*`               | Ceadaigh                |
-| Neamh-lúbchúl, Bearer le raon feidhme `mcp:connect` | `/api/mcp/*`               | Ceadaigh                |
-| Neamh-lúbchúl, Bearer gan `manage`/`mcp:connect`    | `/api/mcp/*`               | 403 LOCAL_ONLY          |
-| Neamh-lúbchúl, Bearer le raon feidhme `mcp:connect` | `/api/cli-tools/runtime/*` | 403 LOCAL_ONLY          |
-| Neamh-lúbchúl, Bearer le raon feidhme `manage`      | `/api/cli-tools/runtime/*` | 403 LOCAL_ONLY          |
-| Lúbchúl, aon/gan Bearer                             | aon LOCAL_ONLY             | Ceadaigh (pasann geata) |
+| Iarratas                                          | Conair                     | Toradh               |
+| ------------------------------------------------- | -------------------------- | -------------------- |
+| Neamh-lúb, gan Iompróir                           | `/api/mcp/*`               | 403 LOCAL_ONLY       |
+| Neamh-lúb, Iompróir le raon feidhme `manage`      | `/api/mcp/*`               | Ceadaigh             |
+| Neamh-lúb, Iompróir le raon feidhme `mcp:connect` | `/api/mcp/*`               | Ceadaigh             |
+| Neamh-lúb, Iompróir gan `manage`/`mcp:connect`    | `/api/mcp/*`               | 403 LOCAL_ONLY       |
+| Neamh-lúb, Iompróir le raon feidhme `mcp:connect` | `/api/cli-tools/runtime/*` | 403 LOCAL_ONLY       |
+| Neamh-lúb, Iompróir le raon feidhme `manage`      | `/api/cli-tools/runtime/*` | 403 LOCAL_ONLY       |
+| Lúb, any/no Iompróir                              | aon LOCAL_ONLY             | Ceadaigh (pas geata) |
 
-#### Treoir agus iniúchadh oibreora
+#### Treoir agus iniúchadh oibreoirí
 
-Má ritheann tú OmniRoute taobh thiar de sheachfhreastalaí droim ar ais nó tollán (nginx, Caddy, Cloudflare
-Tunnel, Tailscale, Ngrok), cosnaíonn an seiceáil lúbchúil fós na bealaí atá in ann seoladh thuas — diúltaítear d'iarratas
-a bhfuil a sheoladh cliant neamh-lúbchúil le
-`403 LOCAL_ONLY` **sula ritheann an fíordheimhniú**, ionas nach féidir le JWT sceite seoladh a bhaint amach. Fanann dhá fhreagracht oibreora:
+Má ritheann tú OmniRoute taobh thiar de seachfhreastalaí nó tollán droim ar ais (nginx, Caddy, Cloudflare Tunnel, Tailscale, Ngrok), cosnaíonn an tseiceáil loopback fós na bealaí sceite os cionn — diúltaítear iarratas a bhfuil seoladh an chliaint neamh-lúbtha aige le `403 LOCAL_ONLY`** sula ritheann an t-údar** , mar sin ní féidir le JWT sceite teacht ar sceith. Tá dhá fhreagracht oibritheora fós ann:
 
-- **Ná "deisigh" 403 trí IP an chliaint a bhrionnú mar lúbchúl.** Má shocraítear
-  `X-Forwarded-For: 127.0.0.1`, nó seachfhreastalaí a athscríobhann an seoladh foinseach go
-  lúbchúl, athosclaítear an aicme RCE cruinn a dhúnann an ciseal seo. Nocht an
-  painéal/API tríd an seachfhreastalaí — ná nocht na bealaí atá in ann seoladh riamh.
-- **Coinnigh an seachbhóthar raon feidhme bainistíochta chomh beag agus is féidir.** Níl ach `/api/mcp/` in ann a sheachbhóthar, agus
-  níl sé ach le heochair API a bhfuil raon feidhme `manage` aici. Ní féidir na `SPAWN_CAPABLE_PREFIXES` a chur leis an liosta seachbhóthar riamh — diúltaíonn an scéimre zod dóibh agus
-  diúltaíonn `isLocalOnlyBypassableByManageScope` dóibh ag am rite (cosaint-i-doimhneacht),
-  arb é sin an rud a chiallaíonn an painéal le "ní féidir é a dhéanamh in-seachbhóthair". Tá bealaí atá in ann seoladh le deighleog dhinimiciúil
-  agus cosán statach faoi `/api/providers/` (e.g. `/login`,
-  `/refresh-cursor`) clúdaithe ag an gcomhpháirt `SPAWN_CAPABLE_PATTERNS` /
-  `SPAWN_CAPABLE_PATTERN_ANCESTORS` bunaithe ar shlonn rialta i
-  `src/shared/constants/spawnCapablePrefixes.ts`, ní ag an eagar cothrom
-  `SPAWN_CAPABLE_PREFIXES` — bheadh ar an eagar cothrom an réimír `/api/providers/` iomlán a chlúdach chun iad a ghabháil, ag leathnú ró-leathan crann bealaí
-  a úsáideann painéil iargúlta go dlisteanach le haghaidh CRUD soláthraí.
+- **Ná "deisigh" 403 tríd an gcliant IP a bhrionnú mar loopback.** Má shocraítear `X-Forwarded-For: 127.0.0.1`, nó seachfhreastalaí a athscríobhann an seoladh foinse go loopback, athosclaíonn sé go díreach an rang RCE a dhúnann an tsraith seo. Nocht an dashboard/API tríd an seachfhreastalaí — riamh na bealaí sceite-in ann.
+- **Coinnigh an seachbhóthar bainistithe-scóip íosta.** Ní féidir ach `/api/mcp/` a sheachaint, agus gan eochair `manage` -scoped API amháin. Ní féidir an `SPAWN_CAPABLE_PREFIXES` a chur leis an liosta seachbhóthar riamh — ní dhiúltaíonn scéimre an zod iad agus diúltaíonn `isLocalOnlyBypassableByManageScope` iad ag am rite (doimhneacht cosanta), agus is é sin a chiallaíonn an painéal le "ní féidir é a sheachbhóthar". Tá cúpla bealach LOCAL_ONLY ag an liosta shéanta céanna freisin nach sceithtear ach nach féidir a bheith insroichte go cianda ach an oiread agus is féidir — `/api/oauth/kiro/auto-import` (léann comhaid inchreidte Kiro óstach-áitiúla), `/api/discovery/` agus `/api/issue-agent/`. Titeann an lódóir seat ama rite a leithéid d’iontrálacha ó shraith socruithe stóráilte freisin, agus ní scríobhann an oidhreacht JSON import (`/api/settings/import-json`) na heochracha seachbhóthar riamh. Ní mór do gach iontráil `LOCAL_ONLY_API_PREFIXES` a bheith sa liosta diúltaithe nó athbhreithnithe mar sheachbhóthar incháilithe (`tests/unit/authz/local-only-bypass-spawn-denylist.test.ts`). Clúdaíonn an compánach `SPAWN_CAPABLE_PATTERNS` / `SPAWN_CAPABLE_PATTERN_ANCESTORS` atá bunaithe ar regex in `src/shared/constants/spawnCapablePrefixes.ts` deighleog dhinimiciúil agus cosán statach atá in ann sceitheadh faoi `/api/providers/` (m.sh. `/login`, `/refresh-cursor`) , ní ag an eagar cothrom `SPAWN_CAPABLE_PREFIXES` — bheadh ar an eagar comhréidh an réimír `/api/providers/` iomlán a chlúdach chun iad a ghabháil, ag cur ró-leathnú ar sholáthraí cianchláir bhealaigh le húsáid dhlisteanach CRUD.
 
-**Iniúchadh rochtana** — chun a fhíorú nach bhfuil aon rud lasmuigh den óstach ag teacht ar na bealaí seo:
+**Iniúchadh ar rochtain** — chun a fhíorú nach bhfuil aon rud seach-óstach ag teacht ar na bealaí seo:
 
-- Oscail an **Fardal Údaraithe** ar `/dashboard/settings/security`: taispeánann sé an liosta réimíreanna LOCAL_ONLY beo, cé na réimíreanna is féidir a sheachaint, agus an tacar atá in ann a ghiniúint le linn tiomsaithe ("ní féidir é a dhéanamh in-sheachanta").
-- Déan grep ar do logaí droim-seachfhreastalaí / rochtana le haghaidh na réimíreanna thuas péireáilte le seoladh cliant neamh-loopback. Aon bhuille den sórt sin a d'fhill `200` in ionad `403 LOCAL_ONLY` ciallaíonn sé go bhfuil an seachfhreastalaí ag folach fíor-IP an chliaint — deisigh an seachfhreastalaí.
-- Is é `403 LOCAL_ONLY` i logaí OmniRoute do cheann de na cosáin seo an garda ag obair mar a bhí beartaithe, ní earráid le cur faoi chois.
+- Oscail an** Fardal Údaraithe** ar `/dashboard/settings/security`: cuireann sé liosta na réimírí beo LOCAL_ONLY le fáil, ar féidir na réimíreanna a sheachaint, agus an tacar in ann am tiomsaithe ("ní féidir é a sheachbhóthar").
+- Grep do logaí droim ar ais seachfhreastalaí / rochtana do na réimíreanna thuas péireáilte le seoladh cliant neamh-lúb. Ciallaíonn aon bhuail den sórt sin a d'fhill `200` in ionad `403 LOCAL_ONLY` go bhfuil an seachfhreastalaí ag folach an fhíorchliant IP — fix an seachfhreastalaí.
+- `403 LOCAL_ONLY` i logs OmniRoute do cheann de na cosáin seo is ea an garda ag obair mar a bhí beartaithe, ní earráid le cur faoi chois.
 
-### Ciseal 2 — ALWAYS_PROTECTED
+#### Bealaí insroichte iargúlta le geata taiscéalaithe glao-láithreáin
 
-**Forfheidhmithe ag:** `isAlwaysProtectedPath(path)` → skip `requireLogin=false` bypass
-**Seachaint:** Níl aon cheann nuair a bhíonn `requireLogin=false`; JWT ag teastáil i gcónaí
+Caithfidh bealaí áirithe fanacht insroichte ó chianchlár ach taiscéalaí taobh óstaigh a reáchtáil (`which <binary>`, `<binary> --version`, `tailscale status --json`) do ghlaoiteoirí áitiúla. Níl siad LOCAL_ONLY le haghaidh `GET`; ina ionad sin léann an láimhseálaí fíorasc iontaofa an phiaraí le `getRequestPeerLocality()` (`src/shared/utils/apiAuth.ts`) agus ní ritheann sé ach an taiscéalaí do ghlaoiteoirí `loopback` / `lan`. Faigheann glaoiteoir `remote` an cruth freagartha céanna a tógadh ó fhoinsí neamh-sceite (staid sheasmhach, socruithe, seiceálacha fs), `probed: false` bratach .
 
-Tá na bealaí seo millteach nó dochúlaithe. Dá gceadófaí iad i suiteáil "gan pasfhocal" chiallódh sé go bhféadfadh aon duine ar an LAN céanna an bunachar sonraí a ghlanadh nó an próiseas freastalaí a mharú.
+| Bealach                                                          | Léiríodh an taiscéalaí do ghlaoiteoirí cianda                               |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `POST /api/providers/{id}/test`, `/api/providers/test-batch`     | CLI taiscéalaí ama rite (`allowLocalRuntimeProbe`) agus sceith CLI-fallback |
+| `GET /api/headroom/status`                                       | `which headroom` agus na tóireadóirí python `--version`                     |
+| `GET /api/tunnels/tailscale`, `GET /api/tunnels/tailscale/check` | `which tailscale`, `tailscale status/funnel --json`, `which brew`           |
+| `GET /api/tunnels/cloudflared` (GET-díolmhaithe ó LOCAL_ONLY)    | cuardaigh `which cloudflared` PATH                                          |
 
-| Cosán                                     | Cúis                                                                    |
+Leanann bealach léite nua a scrúdaíonn an t-óstach an patrún céanna, nó aicmítear LOCAL_ONLY thar barr amach.
+
+### Sraith 2 — ALWAYS_PROTECTED
+
+**Forfheidhmithe ag:** `isAlwaysProtectedPath(path)` → skip sheachbhóthar `requireLogin=false`** Seachbhóthar:** Dada nuair `requireLogin=false`; JWT ag teastáil i gcónaí
+
+Tá na bealaí seo millteach nó do-aisiompaithe. Dá gceadófaí iad i suiteáil "gan pasfhocal" d'fhéadfadh duine ar bith ar an LAN céanna an bunachar sonraí a scriosadh nó an próiseas freastalaí a mharú.
+
+| Conair                                    | Cúis                                                                    |
 | ----------------------------------------- | ----------------------------------------------------------------------- |
-| `/api/shutdown`                           | Cuireann sé deireadh leis an bpróiseas freastalaí                       |
-| `/api/settings/database`                  | Easpórtáil, iompórtáil, agus glanadh bunachar sonraí                    |
-| `/api/db-backups`                         | Rochtain ar chartlann cúltaca iomlán an bhunachair sonraí               |
-| `/api/settings/export-json`               | Easpórtálann sé an blob socruithe iomlán (lena n-áirítear rúin)         |
-| `/api/settings/import-json`               | Cuireann sé an blob socruithe iomlán in ionad                           |
-| `/api/providers/health-autopilot/actions` | Forghníomhaíonn sé gníomhartha leigheasacha uathphíolóta                |
-| `/api/settings/obsidian`                  | Cruthaíonn sé dintiúir WebDAV in-athúsáidte d'aon fhréamh cruinneacháin |
+| `/api/shutdown`                           | Críochnaíonn an próiseas freastalaí                                     |
+| `/api/settings/database`                  | Bunachar sonraí a onnmhairiú, a allmhairiú, agus wipe                   |
+| `/api/db-backups`                         | Rochtain iomlán ar bhunachar sonraí cúltaca cartlainne                  |
+| `/api/settings/export-json`               | Easpórtálann sé blob na socruithe iomlána (rúin san áireamh)            |
+| `/api/settings/import-json`               | Cuirtear an blob socruithe iomlán in ionad é                            |
+| `/api/providers/health-autopilot/actions` | Déanann sé gníomhartha leasúcháin uathphíolótacha                       |
+| `/api/settings/obsidian`                  | Miontaí in-athúsáidte WebDAV creds le haghaidh aon fhréamh cruinneachán |
+| `/api/relay/tokens`                       | Miontaí, liostaí, athruithe agus cúlghairtear comharthaí sealaíochta    |
+| `/api/agent-skills/generate`              | Scríobhann agus prunes fillteáin scileanna ar an ósta                   |
+| `/api/skills/marketplace/install`         | Suiteáil scil dhomhanda do gach eochair                                 |
+| `/api/skills/skillssh/install`            | Suiteáil scil dhomhanda do gach eochair                                 |
+| `/api/cli-tools/apply`                    | Athscríobhtar config CLI ósta an oibreora                               |
+| `/api/cli-tools/guide-settings`           | Scríobhann treoir-tiomáinte comhaid config CLI                          |
+| `/api/cli-tools/hermes-agent-settings`    | Scríobhann config gníomhaire Hermes                                     |
+| `/api/cli-tools/backups`                  | Athchóiríonn agus scriosann cúltacaí cumraíochta CLI                    |
+| `/api/log-export`                         | Logchomhaid glaonna long chuig ceann scríbe cumraithe                   |
+| `/api/restart`                            | Atosaíonn sé an próiseas freastalaí                                     |
 
 **Freagra ar shárú:** `401 Authentication required`
 
-Clúdaíonn `/api/settings/obsidian` a leanbh `/webdav`: `POST` dírithe ar an tseirbhís comhad WebDAV — a fhreastalaíonn an ciseal saincheaptha Node roimh Next.js, lasmuigh den phíblíne seo — ag fréamh roghnaithe ag an nglaoiteoir agus a fhilleann dintiúir Bhunúsacha nua-chruthaithe, déanann `DELETE` iad a rothlú, agus stórálann an tuismitheoir `POST` an comhartha API REST Obsidian. Níor cheilt GHSA-62vw ach an nochtadh pasfhocail `GET`; bhí an eisiúint fós ar an gciseal teip-oscailte (GHSA-7pq4-8pvv-rx7r). Diúltaíonn `enableObsidianVaultSync()` freisin do chruinneachán atá, a shuíonn laistigh de, nó a bhfuil an eolaire sonraí ann.
+Clúdaíonn `/api/settings/obsidian` a leanbh `/webdav` : pointeálann `POST` an tseirbhís comhaid WebDAV — a sheirbheáil an ciseal Nód saincheaptha roimh Next.js, taobh amuigh den phíblíne seo — ag fréamh a roghnaíonn an té atá ag glaoch agus macallaí ar na dintiúir Bunúsacha úrnua, rothlaíonn `DELETE` iad, agus stórálann an tuismitheoir `POST` an comhartha Obsidian REST API. níor chlúdaigh GHSA-62vw ach an focal faire `GET` ; bhí an eisiúint fós ar an tsraith teip-oscailte (GHSA-7pq4-8pvv-rx7r). Diúltaíonn `enableObsidianVaultSync()` freisin cruinneachán atá, a shuíonn laistigh, nó a bhfuil an t-eolaire sonraí ann.
 
-### Níl an tosaithe suiteála úire ach loopback — ag fíor-chomhghleacaí, ní `Host`
+#### Is oibreoir-amháin iad onnmhairí agus aischuir inchreidte
 
-Gan aon phasfhocal bainistíochta cumraithe (agus gan aon `INITIAL_PASSWORD`), coinníonn `isAuthRequired()` i `src/shared/utils/apiAuth.ts` an tosaithe anaithnid oscailte **do chomhghleacaithe loopback amháin**. Déantar loopback a chinneadh ó na comharthaí comhghleacaí iontaofa, in ord: an fíor-chomhghleacaí TCP le comhartha (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, an méid a fheiceann an polasaí), breithiúnas `AUTHZ_HEADER_PEER_LOCALITY` an phíblíne féin (an méid a fheiceann láimhseálaithe bealaigh, iontaofa ach amháin nuair a bhíonn `OMNIROUTE_PEER_STAMP_TOKEN` socraithe), nó fíor-chomhghleacaí soicéad do ghlaoiteoirí díreacha. Ní dhéantar comhairliúchán riamh ar `Host` / `nextUrl.hostname`, agus tá an chéad scríobh pasfhocail (`POST /api/settings/require-login`) faoin srian céanna seachas a bheith oscailte do gach comhghleacaí líonra (GHSA-7pq4-8pvv-rx7r). Cuireann `managementPolicy` a bhreithiúnas `peerContext` féin síos go sainráite, mar sin ní chinneann ceanntásca an iarratais BHUNAIDH (réamh-stiallta) é riamh.
+Ní chinneann an tsraith thuas ach an bhfuil _some_ credential ag teastáil. Cuireann na bealaí a íoslódálann dintiúir stóráilte an dara seiceáil sa láimhseálaí: `GET /api/settings/export-json` (naisc soláthraithe díchriptithe agus eochracha API amh), `GET /api/db-backups/export` (an comhad SQLite ) agus `GET /api/db-backups/exportAll` (an chartlann iomlán) glaoigh ar `requireOperatorCredential()` (`src/lib/api/operatorCredential.ts`). Glacann sé le seisiún deais, an t-ábhar CLI áitiúil, nó cás a bhfuil logáil isteach díchumasaithe, agus freagraíonn sé `403` ar eochracha API d'aon scóip (lena n-áirítear `manage` agus `admin`) agus ar chomharthaí rochtana `oma_`. Tá an teorainn chéanna ag na comhghleacaithe millteach: `POST /api/db-backups/import` ( `.sqlite` uaslódála , `dryRun=true` san áireamh), `POST /api/db-backups` (cúltaca stóráilte a athchóiriú le id) agus `POST /api/settings/import-json` (legacy JSON restore) in ionad an bhunachar sonraí beo nó an tsraith iomlán settings/connections/API-key, mar sin ní féidir le dintiúir meaisín iad a spreagadh ach an oiread. Scriosadh pointí ar ais tá an teorainn chéanna: `DELETE /api/db-backups` (glanta — choinneáil ar a dhéanaí N / titim níos sine ná D lá) agus `PATCH /api/db-backups` (socruithe coinneála), toisc go bhfuil an coinneáil leanúnach go díreach cad `cleanupDbBackups()` feidhm tar éis gach cúltaca uathoibríoch (`src/lib/db/backup.ts`), mar sin dintiúir meaisín a d'fhéadfadh a shábháil `keepLatest: 1` bheadh prune gach rud ar an pictiúr seo chugainn. Coimeádtar gnáth-údarás bainistíochta trí chúltacaí a liostú agus a chruthú (`GET`/`PUT /api/db-backups`). Úsáideann eisiúint chomharthaí sioncronaithe (`POST /api/sync/tokens`) an cúntóir céanna, chomh maith leis an comhartha seirbhíse inmheánaí loopback iontaofa.
 
-### Ciseal 3 — MANAGEMENT (réamhshocrú)
+### Is éard atá i bootstrap úr-shuiteála ná loopback-amháin — ag piaraí fíor, ní `Host`
 
-Gach bealach bainistíochta eile. Fíordheimhniú ag teastáil mura bhfuil `requireLogin=false` cumraithe. Is féidir le comharthaí CLI na bealaí seo a fhíordheimhniú (loopback + HMAC bailí).
+Gan focal faire bainistíochta ar bith cumraithe (agus gan `INITIAL_PASSWORD`), coinníonn `isAuthRequired()` in `src/shared/utils/apiAuth.ts` an bootstrap gan ainm ar oscailt** ach amháin le haghaidh piaraí loopback** . Déantar loopback a chinneadh ó na comharthaí piaraí iontaofa, in ord: an piaraí TCP fíor-stampáilte comhartha (`PEER_IP_HEADER` + `VIA_PROXY_HEADER`, cad a fheiceann an polasaí), fíorasc `AUTHZ_HEADER_PEER_LOCALITY` an phíblíne féin (an rud a fheiceann láimhseálaithe bealaigh, nach bhfuil iontaofa ach amháin nuair a leagtar `OMNIROUTE_PEER_STAMP_TOKEN` ), nó piaraí fíor-soicéad do ghlaoiteoirí díreacha. Ní théitear i gcomhairle riamh le `Host` / `nextUrl.hostname`, agus tá an scríobh céad-fhocal faire (`POST /api/settings/require-login`) faoin srian céanna seachas a bheith oscailte do gach piaraí líonra (GHSA-7pq4-8pvv-rx7r). Gabhann `managementPolicy` a bhreithiúnas `peerContext` féin síos go sainráite, mar sin ní shocraíonn ceanntásca an iarratais ORIGINAL (réamh-stiall) riamh é.
+
+### Leibhéal 3 — MANAGEMENT (réamhshocraithe)
+
+Gach bealach bainistíochta eile. Teastaíonn údar mura bhfuil `requireLogin=false` cumraithe. Is féidir le comharthaí CLI na bealaí seo a fhíordheimhniú ( loopback + valid HMAC).
 
 ## Ord meastóireachta
 

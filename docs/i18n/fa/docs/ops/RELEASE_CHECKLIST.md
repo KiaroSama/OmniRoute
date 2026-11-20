@@ -5,9 +5,9 @@
 ---
 
 > **آخرین بهروزرسانی:** 2026-08-28 — v3.8.51
-> فرایند انتشار سادهسازیشدهای که از مهارتهای Claude Code برای خودکارسازی بهره میگیرد.
+> فرایند انتشار سادهسازیشده که از مهارتهای Claude Code برای خودکارسازی استفاده میکند.
 >
-> **صف/شاخه را بین انتشارها سبز نگه دارید:** به [RELEASE_GREEN.md](./RELEASE_GREEN.md) مراجعه کنید
+> **بین انتشارها صف/شاخه را سبز نگه دارید:** به [RELEASE_GREEN.md](./RELEASE_GREEN.md) مراجعه کنید
 > (خانوادهٔ `/green-prs` + `npm run check:release-green` + `/babysit` + اجرای شبانه). اجرای
 > دورهای این فرایند — و بهویژه **پیش از** این چکلیست — باعث میشود PR انتشار از ابتدا سبز باشد.
 
@@ -18,12 +18,12 @@
 /version-bump-cc patch    # یا minor/major
 
 # 2. اجرای دروازهٔ کیفیت بهصورت محلی
-npm run check              # لینت + آزمونها
+npm run check              # lint + تستها
 npm run test:coverage      # دروازهٔ کامل پوشش (60/60/60/60)
 
 # 3. ساخت و آزمون دود
 npm run build
-npm run test:e2e           # اختیاری، اما توصیه میشود
+npm run test:e2e           # اختیاری، اما توصیهشده
 
 # 4. تولید انتشار (مهارت)
 /generate-release-cc
@@ -35,372 +35,453 @@ npm run test:e2e           # اختیاری، اما توصیه میشود
 /capture-release-evidences-cc
 ```
 
-## انتشار مورد اعتماد npm (پیشفرض از v3.8.51) — مرحلهای در صورت درخواست، مستقیم بهعنوان راهکار جایگزین
+## npm Trusted Publishing (پیشفرض از نسخه 3.8.51) — در صورت درخواست، مستقیماً بهعنوان جایگزین
 
-`npm-publish.yml` بهطور پیشفرض از طریق **انتشار مورد اعتماد npm (OIDC)** منتشر میکند:
-وظیفهٔ `stage-npm` (میزبانیشده در GitHub)، id-token گیتهاب را با یک اعتبارنامهٔ کوتاهعمر npm
-برای همان اجرا مبادله میکند — بدون توکن بلندمدت npm در اسرار مخزن، بدون درخواست 2FA و با منشأ پیوستشده.
-اکنون که توکنهای عبورکننده از 2FA در حال منسوخشدن هستند، این همان روش عبور مورد تأیید npm است؛
-این روش ضمن حفظ تضمین WS1.3، جریان کاملاً خودکاری را که پروژه تا v3.8.48 داشت بازیابی میکند
-(یک توکن افشاشده بهتنهایی نمیتواند منتشر کند — زیرا اصلاً توکنی وجود ندارد).
+`npm-publish.yml` از طریق منتشر می کند** npm Trusted Publishing (OIDC)** بهطور پیشفرض: کار `stage-npm` (میزبانشده توسط github) شناسه GitHub را با اعتبار کوتاهمدت npm برای آن اجرا — بدون رمز npm طولانیمدت در مخزن مخزن، بدون اعلان 2FA، منشأ پیوست شده مبادله میکند. اکنون که توکن هایی که از 2FA عبور می کنند بازنشسته می شوند، این تحریم های دور زدن npm است. جریان کاملا اتوماتیک پروژه را تا نسخه 3.8.48 بازیابی می کند و در عین حال ضمانت WS1 0.3 را حفظ می کند (یک توکن لو رفته نمی تواند به تنهایی منتشر کند — هیچ توکنی وجود ندارد).
 
-**راهاندازی یکباره (مالک):** npmjs.com → بستهٔ `omniroute` → Settings → _Trusted
-Publisher_ → GitHub: مالک `diegosouzapw`، مخزن `OmniRoute`، گردشکار `npm-publish.yml`
-(محیط: هیچکدام). تا زمانی که این مورد ایجاد نشده باشد، مرحلهٔ خودکار با `ENEEDAUTH` شکست میخورد:
-دوباره با `publish_mode=staged` (در ادامه) یا `direct` اجرا کنید.
+**راه اندازی یکباره (مالک):** npmjs.com → package `omniroute` → تنظیمات → _Trusted Publisher_ → GitHub: صاحب `diegosouzapw`, repo `OmniRoute`, workflow `npm-publish.yml` (محیط: هیچکدام). تا زمانی که وجود نداشته باشد، مرحله خودکار با `ENEEDAUTH` ناموفق است: ارسال مجدد با `publish_mode=staged` (زیر) یا `direct`.
 
 ### انتشار مرحلهای (در صورت درخواست — `publish_mode=staged`)
 
-گردشکار npm-publish دیگر مستقیماً منتشر نمیکند: tarball بستهبندیشده را
-راهاندازی میکند (`check:pack-boot`) و سپس `npm stage publish` را اجرا میکند — دقیقاً همان بایتها
-در رجیستری نگه داشته میشوند و تا زمان تأیید مالک، **قابل نصب نیستند**. دروازهٔ انسانی 2FA
-به بعد از اثبات منتقل شده است، نه پیش از آن.
+گردش کار npm-publish دیگر مستقیماً منتشر نمی شود: tarball بسته بندی شده (`check:pack-boot`) را بوت می کند و سپس `npm stage publish` — را اجرا می کند و بایت های دقیق در رجیستری پارک می شوند.** قابل نصب نیست** تا زمانی که مالک آن را تایید کند. دروازه انسانی 2FA برای AFTER اثبات حرکت کرد، نه قبل از آن.
 
-**جریان کار مالک پس از سبزشدن گردشکار:**
+**جریان مالک پس از سبز شدن گردش کار:**
 
-1. `npm stage list omniroute` — شناسهٔ مرحله را پیدا کنید (در خلاصهٔ گردشکار نیز چاپ میشود).
-2. بایتهای مرحلهبندیشده را تأیید کنید (توصیه میشود): `npm stage download <id>`، سپس
-   tarball دانلودشده را در یک پیشوند موقت نصب و راهاندازی کنید (`npm run check:pack-boot` همین
-   نتیجهگیری pack→install→boot را در CI خودکار میکند).
-3. `npm stage approve <id>` — درخواست 2FA همان انتشار است. `npm stage reject <id>` آن را کنار میگذارد.
-4. شبکهٔ ایمنی پس از انتشار: تأییدکنندهٔ پس از انتشار (WS1.4 از برنامهٔ v3.8.49)،
-   نسخهٔ منتشرشده را از رجیستری عمومی در یک کانتینر پاک نصب و راهاندازی میکند.
+1. `npm stage list omniroute` — شناسه مرحله را پیدا کنید (همچنین در خلاصه گردش کار چاپ شده است).
+2. بایت های مرحله بندی شده را تأیید کنید (توصیه می شود): `npm stage download <id>`، سپس tarball دانلود شده را در یک پیشوند موقت نصب کنید و آن را بوت کنید (`npm run check:pack-boot` همان بسته → به صورت خودکار نصب → boot verdict در CI می کند).
+3. `npm stage approve <id>` — اعلان 2FA IS انتشار. `npm stage reject <id>` دور می اندازد.
+4. شبکه پس از انتشار: تأیید کننده پس از انتشار (WS1 0.4 از طرح v3.8.49) نسخه منتشر شده را از رجیستری عمومی در یک ظرف تمیز نصب می کند و آن را بوت می کند.
 
-**راهکار اضطراری جایگزین:** `workflow_dispatch` با `publish_mode=direct`، رفتار قدیمی
-`npm publish` فوری را بازیابی میکند (فقط در صورتی استفاده کنید که خود مرحلهبندی درست عمل نکند؛ دلیل را ثبت کنید).
+**بازگشت اضطراری:** `workflow_dispatch` با `publish_mode=direct` میراث `npm publish` فوری را بازیابی میکند (فقط در صورتی استفاده کنید که خود صحنهسازی بد رفتار کند؛ چرایی را ثبت کنید).
 
-**سختسازی یکباره (مالک، npmjs.com):** Trusted Publisher را برای
-`omniroute` در حالت فقط مرحلهبندی پیکربندی کنید تا یک توکن بلندمدت افشاشده نتواند
-از هیچجا مستقیماً `npm publish` را اجرا کند — CI فقط میتواند مرحلهبندی کند؛ تنها 2FA مالک انتشار را انجام میدهد.
+**سخت شدن یکباره (مالک، npmjs.com):** Trusted Publisher را برای `omniroute` در حالت فقط مرحله پیکربندی کنید تا یک توکن طولانی مدت فاش شده نتواند مستقیماً از هر جایی که — CI فقط بتواند مرحلهبندی کند، `npm publish`. فقط 2FA مالک منتشر می شود.
 
-**راهنمای عملیاتی آرتیفکت خراب (بدون تغییر):** `npm deprecate omniroute@<bad> "<reason> — use <fixed>"`
-بهعنوان واکنش پیشفرض (چند دقیقه، برگشتپذیر)؛ `npm unpublish` فقط در بازهٔ 72h/بدون وابستگان
-و هرگز بهعنوان نخستین اقدام. Docker: هرگز یک برچسب نسخه را بازنویسی نکنید — بازگردانی یعنی
-اشارهٔ مجدد `latest` به آخرین digest سالم.
+**کتاب نمایش مصنوع شکسته (بدون تغییر):** `npm deprecate omniroute@<bad> "<reason> — use <fixed>"` به عنوان رفلکس پیش فرض (دقیقه، برگشت پذیر)؛ `npm unpublish` فقط در داخل پنجره 72h/no-dependents و هرگز به عنوان اولین حرکت. Docker: هرگز یک تگ نسخه `latest` بازنویسی —.
 
-**Docker Hub `latest` (برای هر انتشار پایدار SemVer الزامی است):**
-گردشکار `docker-publish` باید **هر دو** برچسب `X.Y.Z` و، هنگامی که
-`should-promote-latest.sh` تأیید میکند این بالاترین SemVer پایدار است، `:latest`
-را با **digest یکسان** اعمال کند. پس از اجرای وظیفه: digest مربوط به `latest` در Hub با digest جدید
-SemVer برابر است و `last_updated` بهروزرسانی شده است. اجازه ندهید `:latest` روی یک
-ساخت قدیمی باقی بماند، درحالیکه یادداشتهای انتشار از اصلاحاتی صحبت میکنند که فقط در git وجود دارند.
-شروعهای سریع Compose از `:latest` استفاده میکنند؛ GitOps باید همچنان `X.Y.Z` را پین کند. به
-[کانالهای انتشار Docker](../guides/DOCKER_GUIDE.md#release-channels) و #10317 مراجعه کنید.
+**Docker Hub `latest` (الزامی در هر انتشار SemVer پایدار):** گردش کار `docker-publish` باید تگ کند** هر دو** `X.Y.Z` و وقتی `should-promote-latest.sh` موافق است این بالاترین پایدار SemVer است، `:latest` با** همان هضم** . بعد از کار: Hub `latest` digest برابر است با SemVer digest و `last_updated` moved جدید. در حالی که یادداشتهای انتشار در مورد اصلاحاتی صحبت میکنند که فقط در git وجود دارند، `:latest` روی یک بیلد قدیمیتر رها نکنید. نوشتن شروع سریع `:latest` استفاده کنید. GitOps باید `X.Y.Z` پین کند. [کانال های انتشار Docker](../guides/DOCKER_GUIDE.md#release-channels) و #10317 را ببینید.
+
+**مخزن سازمان Docker Hub (`cheaperinference/omniroute`):** Docker Hub نمیتواند یک مخزن را بین فضاهای نام جابهجا کند، بنابراین `diegosouzapw/omniroute` تاریخچه کشش و هر نسخه را نگه میدارد، و کار `mirror-org-dockerhub` از `docker-publish` هر نسخه منتشر شده (و `:latest` در صورت ارتقا) را از `ghcr.io/cheaper-inference/omniroute` به مخزن سازمان کپی میکند. به اسرار `DOCKERHUB_ORG_USERNAME` / `DOCKERHUB_ORG_TOKEN` نیاز دارد. بدون آنها، کار با اخطار "Docker Hub org mirror skipped" سبز می ماند و سایر رجیستری ها به طور معمول منتشر می شوند. برای انتشار نسخه منتشر شده در آنجا بعداً اجرا کنید** اقدامات → تصویر Docker را به Docker Hub org → گردش کار را اجرا کنید** با `version=X.Y.Z` (و `promote_latest` برای بالاترین نسخه پایدار): تصاویر موجود را کپی می کند، بدون بازسازی.
 
 ## مسیر سریع اصلاح فوری (برچسب `hotfix`)
 
-یک PR با برچسب `hotfix` از ماتریس سنگین CI (E2E با 9 شارد، ضامن پوشش،
-quality-gate، quality-extended) عبور میکند و گیتهای سریع و پُرسیگنال را حفظ میکند: ساخت،
+یک PR با برچسب `hotfix` از ماتریس سنگین CI (آزمون E2E با ۹ شارد، رچت پوشش،
+quality-gate، quality-extended) عبور میکند و گیتهای سریع و پُرسیگنال را نگه میدارد: ساخت،
 شاردهای واحد، یکپارچهسازی، vitest، lint/typecheck، docs-sync، `check:pack-artifact`
-و آزمون اولیهٔ بوتِ tarball (`check:pack-boot`). هدف: سبزشدن در ≤15min بهجای ~33min.
+و آزمون دودِ راهاندازی tarball (`check:pack-boot`). هدف: سبز شدن در ≤15min بهجای ~33min.
 
-**سیاست ورود — هر چهار مورد الزامیاند (الگوبرداریشده از مسیرهای اضطراری Chromium/VS Code/Node):**
+**سیاست ورود — هر چهار مورد الزامیاند (با الگوبرداری از مسیرهای اضطراری Chromium/VS Code/Node):**
 
-1. **شدت**: محیط production از کار افتاده است — یک آرتیفکت منتشرشده هنگام بوت کرش میکند / یک
-   اصلاح امنیتی / تمام کاربران نسخه تحت تأثیر قرار گرفتهاند. «مهم» بهمعنای «ازکارافتاده» نیست.
-2. **اختیار**: فقط مالک مخزن برچسب `hotfix` را اعمال میکند. خودِ برچسب
-   بهمنزلهٔ تأیید است — هرگز آن را شخصاً روی یک PR کارزاری اعمال نکنید.
-3. **شواهد**: بدنهٔ PR به اجرای سنگین قبلی که کاملاً سبز بوده پیوند میدهد (مجموعهای که
-   jobهای ردشده دوباره اعتبارسنجی میکردند)، بهعلاوهٔ تست خودِ اصلاح که ابتدا شکست خورده و سپس قبول شده است.
+1. **شدت**: محیط تولید خراب است — یک آرتیفکت منتشرشده هنگام راهاندازی کرش میکند / یک
+   اصلاح امنیتی / همه کاربران نسخه تحت تأثیر هستند. «مهم» بهمعنای «خراب» نیست.
+2. **اختیار**: فقط مالک مخزن برچسب `hotfix` را اعمال میکند. خودِ برچسب همان
+   تأیید است — هرگز در یک PR کارزاری بهصورت خودسرویس از آن استفاده نکنید.
+3. **شواهد**: بدنه PR به اجرای سنگین قبلی که کاملاً سبز بوده است (مجموعهای که
+   jobهای ردشده دوباره اعتبارسنجی میکردند) و نیز آزمون خودِ اصلاح که ابتدا شکست خورده و سپس موفق شده، پیوند میدهد.
 4. **دامنه**: فقط cherry-pick — حداقل اصلاح ممکن، بدون بازآرایی و بدون تغییرات جانبی.
 
-سطح پوشش/ضامنِ ردشده در اجرای کامل بعدی روی شاخهٔ
-انتشار دوباره اعتبارسنجی میشود (سبز ماندن پیوستهٔ انتشار) — این مسیر فقط «انتظار» را حذف میکند، نه اعتبارسنجی را.
-تغییرات صرفاً مربوط به تست (همهٔ فایلها زیر `tests/` و هیچکدام زیر `tests/e2e/`) بدون نیاز به هیچ برچسبی،
-ماتریس E2E را بهصورت خودکار رد میکنند.
+سطح پوشش/رچت ردشده در اجرای کامل بعدی روی
+شاخه انتشار دوباره اعتبارسنجی میشود (سبز ماندن پیوسته انتشار) — این مسیر فقط انتظار را حذف میکند، نه اعتبارسنجی را.
+تفاوتهای فقط-آزمون (همه فایلها زیر `tests/` و هیچکدام زیر `tests/e2e/`) بهطور خودکار و
+بدون هیچ برچسبی از ماتریس E2E عبور میکنند.
 
-## چکلیست تفصیلی
+## چک لیست تفصیلی
 
 ### پیش از انتشار
 
-- [ ] همهٔ PRهای هدفگذاریشده برای این انتشار در `release/vX.Y.0` ادغام شدهاند
-- [ ] همهٔ آیتمهای باز Linear/issue برای این نسخه بسته شده یا به milestone بعدی منتقل شدهاند
-- [ ] CI روی شاخهٔ `release/vX.Y.0` سبز است
-- [ ] هیچ نشانگر `TODO(release)` در کد وجود ندارد: `grep -r "TODO(release)" src/ open-sse/`
-- [ ] ایمیج پایهٔ Docker بهروز است (در حال حاضر `node:24.15.0-trixie-slim`)
+- [ ] همه PRs هدف این نسخه با `release/vX.Y.0` ادغام شدند
+- [ ] همه موارد Linear/issue باز برای این نسخه بسته شده یا به نقطه عطف بعدی منتقل می شوند
+- [ ] CI سبز روی شاخه `release/vX.Y.0`
+- [ ] هیچ نشانگر `TODO(release)` در کد: `grep -r "TODO(release)" src/ open-sse/` وجود ندارد
+- [ ] تصویر پایه Docker به روز (در حال حاضر `node:24.15.0-trixie-slim`)
 
-### نسخه و گزارش تغییرات
+### نسخه و تغییرات
 
-- [ ] `/version-bump-cc <patch|minor|major>` را اجرا کنید (مهارت Claude Code)
-  - نسخهٔ `package.json` و `electron/package.json` را افزایش میدهد
-  - `CHANGELOG.md` را از روی commitهای git پس از آخرین تگ دوباره تولید میکند
-  - نشانهای README.md را بهروزرسانی میکند
-- [ ] `CHANGELOG.md` را بهصورت دستی بازبینی کرده و در صورت نیاز پیامهای commit را پاکسازی کنید
-- [ ] اطمینان حاصل کنید که آخرین بخش semver در `CHANGELOG.md` با نسخهٔ `package.json` برابر است
-- [ ] `## [Unreleased]` را بهعنوان نخستین بخش گزارش تغییرات برای کارهای آینده حفظ کنید
-- [ ] `docs/openapi.yaml` را بهروزرسانی کنید ← `info.version` باید با نسخهٔ `package.json` برابر باشد
+- [ ] اجرای `/version-bump-cc <patch|minor|major>` (مهارت کد Claude )
+  - برآمدگی `package.json`, `electron/package.json`
+  - از آخرین تگ، `CHANGELOG.md` از commit های git بازسازی می کند
+  - نشان های README.md را به روز می کند
+- [ ] به صورت دستی CHANGELOG.md بررسی کنید و در صورت نیاز پیام های commit را پاک کنید
+- [ ] اطمینان حاصل کنید که آخرین بخش semver در `CHANGELOG.md` برابر با نسخه `package.json` است
+- [ ] `## [Unreleased]` به عنوان اولین بخش تغییرات برای کارهای آینده نگه دارید
+- [ ] به روز رسانی `docs/openapi.yaml` → `info.version` باید با نسخه `package.json` برابری کند
 
 ### کیفیت کد
 
-- [ ] `npm run lint` — 0 خطا (هشدارها از قبل وجود داشتهاند)
-- [ ] `npm run typecheck:core` — بدون خطا
-- [ ] `npm run typecheck:noimplicit:core` — بدون خطا (سختگیرانه)
-- [ ] `npm run check:cycles` — بدون وابستگی دوری
-- [ ] `npm run check:any-budget:t11` — در محدودهٔ بودجه
-- [ ] `npm run check:route-validation:t06` — بدون خطا
-- [ ] `npm run check:node-runtime` — حداقل نسخهٔ runtime پشتیبانیشده رعایت شده است (`>=22.22.2 <23`، `>=24.0.0 <27`، طبق `SUPPORTED_NODE_RANGE` در `src/shared/utils/nodeRuntimeSupport.ts`؛ همراستا با `engines` در `package.json`)
+- [ ] خطاهای `npm run lint` — 0 (هشدارها از قبل وجود دارند)
+- [ ] `npm run typecheck:core` — پاک
+- [ ] `npm run typecheck:noimplicit:core` — تمیز (سخت)
+- [ ] `npm run check:cycles:ratchet` — در سقف `metrics.cycles` منجمد ( `check:cycles` خالی از 1 در هر چرخه خارج می شود، #15281)
+- [ ] `npm run check:any-budget:t11` — در حد بودجه
+- [ ] `npm run check:route-validation:t06` — پاک
+- [ ] `npm run check:node-runtime` — کف زمان اجرا پشتیبانی میشود (`>=22.22.2 <23`، `>=24.0.0 <27`، هر `SUPPORTED_NODE_RANGE` در `src/shared/utils/nodeRuntimeSupport.ts`؛ تراز با `package.json` `engines`)
 
-### تست
+### تست کردن
 
-- [ ] `npm run test:unit` — قبول
-- [ ] `npm run test:vitest` — قبول (سرور MCP، autoCombo، cache)
-- [ ] `npm run test:coverage` — گیت 60/60/60/60 برقرار است (دستورها/خطوط/توابع/شاخهها)
-- [ ] `npm run test:integration` — قبول (اگر تغییرات DB / handlerها را تحت تأثیر قرار میدهند)
-- [ ] `npm run test:combo:matrix` — قبول (ماتریس راهبرد combo: تصمیمهای انتخاب هر 19 راهبرد مسیریابی عمومی را بهصورت قطعی اثبات میکند؛ هنگام تغییر مسیریابی combo، تفکیک راهبرد یا منطق fallback اجرا شود)
-- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **اختیاری/دستی** (آزمون اولیهٔ کنترلشده با upstream واقعی؛ یک snapshot فقطخواندنی از DB را از VPS با آدرس `root@192.168.0.15` دریافت میکند؛ ارائهدهندگان واقعی را فراخوانی میکند و اعتبار مصرف میکند؛ هرگز در CI اجرا نمیشود؛ بدون گیت بهشکلی تمیز رد میشود)
-- [ ] `npm run test:combo:live:vps` — **اختیاری/دستی** (آزمون اولیهٔ زندهٔ VPS در Phase-3: شامل 7 سناریوی HTTP روی سرور زندهٔ `.15` از طریق Node ESM ساده؛ نیازمند `ssh root@192.168.0.15` است؛ فقط comboهای `__live_test__*` را ایجاد/حذف میکند؛ ارائهدهندگان واقعی را فراخوانی میکند؛ هرگز در CI اجرا نمیشود)
-- [ ] `npm run test:e2e` — قبول (تغییرات UI)
-- [ ] `npm run test:protocols:e2e` — قبول (تغییرات MCP/A2A)
-- [ ] `npm run test:ecosystem` — قبول
+- [ ] پاس `npm run test:unit` —
+- [ ] پاس `npm run test:vitest` — (سرور MCP ، autoCombo، کش)
+- [ ] `npm run test:coverage` — gate 60/60/60/60 راضی (statements/lines/functions/branches)
+- [ ] پاس `npm run test:integration` — (در صورت تغییر DB / handlers را لمس کنید)
+- [ ] پاس `npm run test:combo:matrix` — (ماتریس استراتژی ترکیبی: تصمیمات انتخابی 22 استراتژی مسیریابی عمومی را به طور قطعی ثابت می کند؛ هنگام لمس مسیریابی ترکیبی، وضوح استراتژی یا منطق بازگشتی اجرا می شود)
+- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` —**optional/manual** (دود واقعی بالادستی دردار؛ یک عکس فوری DB فقط خواندنی از VPS `root@192.168.0.15` تهیه میکند؛ به ارائهدهندگان واقعی ضربه میزند، اعتبار هزینه میکند؛ هرگز در CI اجرا نمیشود؛ بدون گیت بهطور تمیز رد میشود)
+- [ ] `npm run test:combo:live:vps` —**optional/manual** (Phase-3 VPS live smoke: 7 سناریو HTTP علیه سرور `.15` زنده از طریق Node ESM ساده؛ به `ssh root@192.168.0.15` نیاز دارد؛ creates/deletes فقط ترکیبهای ترکیبی `__live_test__*` ؛ به ارائهدهندگان واقعی ضربه میزند؛ هرگز در CI اجرا نمیشود)
+- [ ] پاس `npm run test:e2e` — (تغییر UI )
+- [ ] پاس `npm run test:protocols:e2e` — (تغییر MCP/A2A )
+- [ ] پاس `npm run test:ecosystem` —
 
-### هوکها (اعتبارسنجیشده با Husky)
+### قلاب (هاسکی تایید شده)
 
-هوکهای Husky در `.husky/` قرار دارند و بهطور خودکار هنگام عملیات git اجرا میشوند.
+قلاب هاسکی در `.husky/` زندگی می کنند و به طور خودکار در عملیات git اجرا می شوند.
 
-- **pre-commit:** `npx lint-staged + node scripts/check/check-docs-sync.mjs + npm run check:any-budget:t11`
-- **pre-push:** گیتهای سریع و قطعی — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (فعالشده در 2026-06-13). عمداً `test:unit` را شامل نمیشود (کند است؛ job مربوط به `test-unit` در CI آن را پوشش میدهد).
-  - پیش از push کردن شاخههای انتشار، `npm run test:unit` را بهصورت دستی اجرا کنید.
+- **پیش تعهد:** `npx lint-staged + node scripts/check/check-docs-sync.mjs + npm run check:any-budget:t11`
+- **پیش فشار:** دروازه های قطعی سریع — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (فعال شد 13-06-2026). عمدا `test:unit` استثنا می کند (آهسته؛ تحت پوشش کار CI `test-unit` ).
+  - قبل از فشار دادن شاخه های آزاد، `npm run test:unit` به صورت دستی اجرا کنید.
 
-اگر یک هوک شکست خورد: مشکل زیربنایی را اصلاح کنید؛ با `--no-verify` آن را دور نزنید.
+اگر یک قلاب خراب شد: مشکل اساسی را برطرف کنید، با `--no-verify` دور نزنید.
 
-### Conventional Commits
+### تعهدات متعارف
 
-همهٔ commitهایی که قرار است وارد انتشار شوند باید از قالب `type(scope): subject` پیروی کنند.
+همه کامیت های آزادسازی باید از فرمت `type(scope): subject` پیروی کنند.
 
-**نوعهای معتبر:** `feat`، `fix`، `refactor`، `docs`، `test`، `chore`، `perf`، `style`، `ci`
+**انواع معتبر:** `feat`، `fix`، `refactor`، `docs`، `test`، `chore`، `perf`، `style`، `ci`
 
-**دامنههای معتبر:** `db`، `sse`، `oauth`، `dashboard`، `api`، `cli`، `docker`، `ci`، `mcp`، `a2a`، `memory`، `skills`، `cloud-agent`، `guardrails`، `compression`، `auto-combo`، `resilience`، `providers`، `executors`، `translator`، `domain`، `authz`
+**دامنه های معتبر:** `db`, `sse`, `oauth`, `dashboard`, `api`, `cli`, `docker` `authz` `ci`, `mcp`, `a2a`, `memory`, `skills`, `cloud-agent`, `guardrails`, `compression`, `auto-combo`, `resilience`, `providers`, `executors`, `translator`, `domain`
 
-تغییرات ناسازگار: پاورقی `BREAKING CHANGE:` یا `!` را پس از دامنه اضافه کنید (برای مثال `feat(api)!: drop /v0`).
+تغییرات شکستن: فوتر `BREAKING CHANGE:` یا `!` را بعد از محدوده اضافه کنید (مثلا `feat(api)!: drop /v0`).
 
 ### مستندات
 
-- [ ] `npm run check:docs-sync` با موفقیت اجرا میشود (بهصورت خودکار توسط pre-commit اجرا میشود)
-- [ ] `npm run check:docs-all` با موفقیت اجرا میشود (دستور جامع: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links)
-- [ ] `npm run check:env-doc-sync` با کد 0 خاتمه مییابد — قرارداد متغیرهای محیطی میان کد ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` دستنخورده است
-- [ ] `npm run check:doc-links` با کد 0 خاتمه مییابد — پس از بازساختاربندی، هیچ ارجاع داخلی شکستهای در markdown وجود ندارد
-- [ ] `docs/architecture/ARCHITECTURE.md` از نظر ناهماهنگی فضای ذخیرهسازی/زمان اجرا بازبینی شده است
-- [ ] `docs/guides/TROUBLESHOOTING.md` از نظر ناهماهنگی متغیرهای محیطی و عملیاتی بازبینی شده است
-- [ ] اگر `.env.example` تغییر کرده است: `docs/reference/ENVIRONMENT.md` بهروزرسانی شده است
-- [ ] اگر قابلیت جدید دارای رابط کاربری است: در `docs/guides/USER_GUIDE.md` به آن اشاره شده است
-- [ ] اگر قابلیت جدید دارای API است: `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` بهروزرسانی شدهاند
-- [ ] اگر قابلیت جدید یک ماژول است: فایل اختصاصی `docs/<MODULE>.md` وجود دارد
-- [ ] اگر تغییر ناسازگار وجود دارد: `docs/guides/TROUBLESHOOTING.md` شامل یادداشت مهاجرت است
+- [ ] پاسهای `npm run check:docs-sync` (اجرای خودکار با پیشارتکاب)
+- [ ] پاسهای `npm run check:docs-all` (چتر: docs-sync + docs-counts + env-doc-sync + منسوخ شده-نسخههای + doc-links)
+- [ ] `npm run check:env-doc-sync` خارج شد 0 کد — ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` env قرارداد دست نخورده است
+- [ ] `npm run check:doc-links` از 0 — خارج می شود، پس از بازسازی، هیچ مرجع نشانه گذاری داخلی شکسته ای وجود ندارد
+- [ ] `docs/architecture/ARCHITECTURE.md` برای storage/runtime drift بررسی شد
+- [ ] `docs/guides/TROUBLESHOOTING.md` برای env var و عملیات رانش بررسی شد
+- [ ] اگر `.env.example` تغییر کرد: `docs/reference/ENVIRONMENT.md` به روز شد
+- [ ] اگر ویژگی جدید UI داشته باشد: `docs/guides/USER_GUIDE.md` آن را ذکر می کند
+- [ ] اگر ویژگی جدید API دارد: `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` به روز شده است
+- [ ] اگر ویژگی جدید یک ماژول است: `docs/<MODULE>.md` اختصاصی وجود دارد
+- [ ] اگر تغییر تغییر کند: `docs/guides/TROUBLESHOOTING.md` دارای یادداشت مهاجرت است
 
-### بینالمللیسازی
+### i18n
 
-- [ ] `npm run i18n:check` با کد 0 خاتمه مییابد — وضعیت ترجمه (`.i18n-state.json`) با مستندات منبع همگام است (در حالت سختگیرانه هیچ منبع ناهماهنگی وجود ندارد؛ هشدارهای حالت هشدار برای اصلاحات لحظه آخری مستندات قابل قبولاند، اما پیش از برچسبگذاری باید مقدار 0 باشد)
-- [ ] `npm run i18n:check-ui-coverage` با کد 0 خاتمه مییابد — پوشش هر زبان رابط کاربری برابر یا بیشتر از حداقل 80٪ است
-- [ ] `npm run i18n:sync-ui:dry` برای هر 42 زبان، 0 کلید مفقود گزارش میکند
-- [ ] اگر مستندات انگلیسی منبع تغییر کردهاند، پیش از برچسبگذاری `npm run i18n:run` را اجرا کنید (به `OMNIROUTE_TRANSLATION_API_KEY` در `.env` نیاز دارد)
-- [ ] اگر تغییرات ترجمه جزئی هستند، میتوان آنها را به انتشار بعدی موکول کرد (در CHANGELOG پیگیری شود)
+- [ ] `npm run i18n:check` از حالت ترجمه 0 — (`.i18n-state.json`) در هماهنگی با اسناد منبع خارج می شود (هیچ منبع جابجایی در حالت سختگیرانه وجود ندارد؛ توصیه حالت هشدار برای لمس اسناد لحظه آخری قابل قبول است، اما باید قبل از برچسب زدن 0 باشد)
+- [ ] `npm run i18n:check-ui-coverage` 0 — در هر منطقه UI در سطح پوشش 80٪ یا بالاتر از آن خارج می شود
+- [ ] `npm run i18n:sync-ui:dry` 0 کلید از دست رفته را در تمام 66 منطقه هدف (هر محلی به جز منبع `en` ) گزارش میکند.
+- [ ] اگر اسناد انگلیسی منبع تغییر کرد، `npm run i18n:run` اجرا کنید ( `OMNIROUTE_TRANSLATION_API_KEY` در `.env` نیاز دارد) قبل از برچسب زدن
+- [ ] اگر جزئی باشد، میتوان مشارکتهای ترجمه را به نسخه بعدی موکول کرد (آهنگ در CHANGELOG)
 
-### مهاجرتهای پایگاه داده
+### مهاجرت های پایگاه داده
 
-- [ ] اگر `src/lib/db/migrations/` فایلهای جدیدی دارد:
-  - [ ] هر مهاجرت همتوان است (`CREATE TABLE IF NOT EXISTS` و غیره)
-  - [ ] مهاجرتها در تراکنشها محصور شدهاند
-  - [ ] شمارهگذاری صحیح است (هیچ شکافی در ترتیب وجود ندارد)
-- [ ] آزمایش روی نصب تازه: `~/.omniroute/omniroute.db` را حذف و `npm run dev` را اجرا کنید
-- [ ] آزمایش روی نصب موجود: از پایگاه داده نسخه پشتیبان تهیه کنید، مهاجرت را اجرا کنید و شِما را تأیید کنید
-- [ ] اگر مهاجرت جدولها را بازنویسی میکند، فایلهای WAL (`-wal`، `-shm`) بهدرستی مدیریت میشوند
+- [ ] اگر `src/lib/db/migrations/` فایل های جدیدی دارد:
+  - [ ] هر هجرت ناتوان است (`CREATE TABLE IF NOT EXISTS`و غیره)
+  - [ ] مهاجرت های پیچیده در معاملات
+  - [ ] شماره گذاری صحیح (بدون شکاف در ترتیب)
+- [ ] تست در نصب تازه: `~/.omniroute/omniroute.db` حذف کنید و `npm run dev` را اجرا کنید
+- [ ] آزمایش در نصب موجود: پشتیبان گیری از DB، اجرای مهاجرت، تأیید طرح
+- [ ] اگر مهاجرت جداول را بازنویسی کند، فایلهای WAL (`-wal`، `-shm`) به درستی مدیریت میشوند
 
-### کاتالوگ ارائهدهندگان (اعتبارسنجیشده با Zod)
+### کاتالوگ ارائه دهنده (تأیید شده توسط Zod)
 
-- [ ] شِمای Zod در `src/shared/constants/providers.ts` هنگام بارگذاری معتبر است
-  - [ ] همه ارائهدهندگان فیلدهای الزامی (`id`، `label`، `kind` و غیره) را دارند
-  - [ ] برای ارائهدهندگان رایگان جدید، `freeNote` ارائه شده است
-  - [ ] ارائهدهندگان OAuth دارای `oauthConfig` ثبتشده در `src/lib/oauth/constants/oauth.ts` هستند
-- [ ] اگر ارائهدهنده جدیدی اضافه شده است: اجراکننده متناظر در `open-sse/executors/` وجود دارد
-- [ ] اگر قالب غیر OpenAI است: مترجم در `open-sse/translator/` وجود دارد
-- [ ] مدلها در `open-sse/config/providerRegistry.ts` ثبت شدهاند
-- [ ] آزمونهای واحد در `tests/unit/` طبقهبندی و مسیریابی ارائهدهنده را پوشش میدهند
+- [ ] طرح `src/shared/constants/providers.ts` Zod در زمان بارگذاری معتبر است
+  - [ ] همه ارائه دهندگان دارای فیلدهای الزامی هستند (`id`، `label`، `kind`، و غیره)
+  - [ ] `freeNote` برای ارائه دهندگان رایگان جدید ارائه شده است
+  - [ ] ارائه دهندگان OAuth `oauthConfig` را در `src/lib/oauth/constants/oauth.ts` ثبت کرده اند
+- [ ] اگر ارائه دهنده جدید اضافه شود: مجری مربوطه در `open-sse/executors/`
+- [ ] اگر فرمت OpenAI نیست: مترجم در `open-sse/translator/`
+- [ ] مدل های ثبت شده در `open-sse/config/providerRegistry.ts`
+- [ ] تست های واحد در طبقه بندی و مسیریابی ارائه دهنده پوشش `tests/unit/`
 
-### دسکتاپ (Electron)
+### رومیزی (Electron)
 
-اگر `electron/` تغییر کرده است:
+اگر `electron/` تغییر کرد:
 
-- [ ] `npm run electron:smoke:packaged` با موفقیت اجرا میشود
+- [ ] `npm run electron:smoke:packaged` می گذرد
 - [ ] ساختها برای حداقل یکی از `:win`، `:mac`، `:linux` آزمایش شدهاند
-- [ ] گواهیهای امضای کد منقضی نشدهاند (در صورت امضا)
-- [ ] نسخه `electron/package.json` با `package.json` ریشه مطابقت دارد
-- [ ] در صورت انتشار در `stable`، اشارهگر کانال بهروزرسانی خودکار بهروزرسانی شده است
+- [ ] گواهی امضای کد منقضی نشده است (در صورت امضا)
+- [ ] نسخه `electron/package.json` با ریشه `package.json` مطابقت دارد
+- [ ] بهروزرسانی خودکار نشانگر کانال در صورت انتشار به `stable` بهروزرسانی شد
 
-### چیدمان ساخت
+### Build Layout
 
-مخزن از سه پوشه خروجی مجزا استفاده میکند — هرگز آنها را با هم اشتباه نگیرید:
+مخزن از سه دایرکتوری خروجی مجزا استفاده می کند — هرگز آنها را با هم مخلوط نمی کند:
 
-| پوشه      | هدف                                                       | ردیابی میشود؟      |
-| --------- | --------------------------------------------------------- | ------------------ |
-| `src/`    | منبع برنامه (TypeScript / TSX)                            | بله                |
-| `.build/` | فایلهای میانی ساخت — خروجی `next build` (`distDir`)       | خیر (در gitignore) |
-| `dist/`   | بسته قابلانتشار npm — مونتاژشده توسط `assembleStandalone` | خیر (در gitignore) |
+| دایرکتوری | هدف                                                      | پیگیری شد؟            |
+| --------- | -------------------------------------------------------- | --------------------- |
+| `src/`    | منبع برنامه (TypeScript / TSX)                           | بله                   |
+| `.build/` | ساخت واسطه های خروجی — `next build` (`distDir`)          | نه (نادیده گرفته شده) |
+| `dist/`   | بسته npm قابل حمل — مونتاژ شده توسط `assembleStandalone` | نه (نادیده گرفته شده) |
 
-> **یادداشت اپراتور:** پوشه ایمیج VPS راهدور همچنان `/usr/lib/node_modules/omniroute/app/` است.
-> فقط خروجی ساخت **درون مخزن** جابهجا شده است (`app/` → `dist/`). مهارتهای استقرار، محتوای
-> `dist/` را با rsync به پوشه راهدور `app/` منتقل میکنند — هیچ تغییری در مسیر VPS لازم نیست.
+> **یادداشت اپراتور:** فهرست راه دور تصویر VPS `/usr/lib/node_modules/omniroute/app/` باقی می ماند. فقط** در مخزن** خروجی ساخت منتقل شد (`app/` → `dist/`). استقرار مهارتها محتویات `dist/` را در راه دور `app/` dir — بدون تغییر مسیر VPS مورد نیاز است.
 
-**جریان تکساخت:**
+**جریان تک ساخت:**
 
 ```
 npm run build:release
-  └─ rm -rf .build dist          (پاکسازی)
-  └─ next build → .build/next/   (فایلهای میانی)
-  └─ assembleStandalone          (standalone + static + public + natives را در dist/ کپی میکند)
-  └─ writes dist/BUILD_SHA       (نشانگر HEAD)
+  └─ rm -rf .build dist          (clean)
+  └─ next build → .build/next/   (intermediates)
+  └─ assembleStandalone          (copies standalone + static + public + natives → dist/)
+  └─ writes dist/BUILD_SHA       (HEAD sentinel)
 ```
 
-برای استقرار، `npm run build` را در پی اجرای جداگانه `npm run build:cli` اجرا نکنید — از
-`npm run build:release` استفاده کنید که بازسازی پاک + نشانگر را در یک فرمان انجام میدهد.
+NOT اجرا کنید `npm run build` و به دنبال آن یک `npm run build:cli` جداگانه برای استقرار — استفاده کنید `npm run build:release` که یک بازسازی تمیز نگهبان + در یک دستور انجام می دهد.
 
-### اعتبارسنجی آرتیفکت
+### اعتبار سنجی مصنوع
 
-- [ ] `npm run build:release` با موفقیت اجرا میشود و `dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] `npm run check:pack-artifact` پاک است — هیچ `app.__qa_backup`، `scripts/scratch`، `package-lock.json` یا باقیمانده محلی دیگری وجود ندارد
-- [ ] پس از ساخت، `dist/server.js` وجود دارد
+- [ ] `npm run build:release` موفق می شود و `dist/BUILD_SHA` == `git rev-parse --short HEAD`
+- [ ] `npm run check:pack-artifact` تمیز — بدون `app.__qa_backup`, `scripts/scratch`, `package-lock.json`, یا باقی مانده های محلی دیگر
+- [ ] `dist/server.js` بعد از ساخت وجود دارد
+- [ ] دود بسته بندی شده محلی اختیاری در زمان اجرا: `npm run dev:candidate -- validate` بعد از `npm run dev:candidate -- build` تاربال بسته بندی شده را روی `DATA_DIR` ایزوله چک می کند و `/api/health` + `/v1/models` بررسی می کند ( [به Contribution Golden Path](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop) مراجعه کنید)
 
-### برچسبگذاری و انتشار
+### برچسب گذاری و انتشار
 
-- [ ] `/generate-release-cc` (مهارت Claude Code) را اجرا کنید:
-  - برچسب `vX.Y.Z` را ایجاد میکند
-  - برچسب و شاخه را push میکند
-  - یک انتشار GitHub با بدنه تغییرات باز میکند
-  - نصبکنندههای Electron را پیوست میکند (اگر ساخته شده باشند)
-- [ ] یا بهصورت دستی:
+- [ ] اجرای `/generate-release-cc` (مهارت کد Claude ):
+  - تگ `vX.Y.Z` را ایجاد می کند
+  - برچسب و شاخه را فشار می دهد
+  - انتشار GitHub را با بدنه تغییرات باز می کند
+  - نصب کننده های Electron را (در صورت ساخته شدن) وصل می کند
+- [ ] یا به صورت دستی:
   ```bash
   git tag -a vX.Y.Z -m "Release vX.Y.Z"
   git push origin vX.Y.Z
   gh release create vX.Y.Z --notes-from-tag
   ```
 
-### استقرار
+### مستقر کنید
 
-مهارتهای استقرار از جریان سبک rsync استفاده میکنند — بدون `npm pack` و بدون `npm i -g`:
+مهارتهای استقرار با استفاده از نور rsync flow — no `npm pack`، no `npm i -g`:
 
-- [ ] از مهارت استقرار متناسب با مقصد استفاده کنید:
-  - `/deploy-vps-local-cc` — VPS محلی (192.168.0.15)
-  - `/deploy-vps-akamai-cc` — VPS آکامای (69.164.221.35)
+- [ ] از مهارت استقرار استفاده کنید که با هدف مطابقت دارد:
+  - `/deploy-vps-local-cc` — محلی VPS (192.168.0.15)
+  - `/deploy-vps-akamai-cc` — Akamai VPS (69.164.221.35)
   - `/deploy-vps-both-cc` — هر دو
-- [ ] پیش از استقرار، تأیید کنید که `dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] ساخت باید در جایی اجرا شود که `node_modules` واقعی باشد (checkout اصلی یا worktreeای که در آن `npm ci` اجرا شده است — نه یک worktree دارای پیوند نمادین)
-- [ ] آزمایش دود نمونه مستقرشده:
-  - `/dashboard/health` را باز کنید → بررسی کنید رشته نسخه با انتشار مطابقت دارد
-  - یک درخواست `/v1/chat/completions` را در برابر یک ارائهدهنده شناختهشده اجرا کنید
-  - تأیید کنید که `/api/monitoring/health` قطعکنندههای مدار `CLOSED` را برمیگرداند
-  - تأیید کنید انتقالهای MCP پاسخ میدهند (`/mcp` HTTP، `/mcp-sse` SSE)
+- [ ] قبل از استقرار، `dist/BUILD_SHA` == `git rev-parse --short HEAD` را تأیید کنید
+- [ ] Build باید در جایی اجرا شود که `node_modules` واقعی است (خروج اصلی یا `npm ci`'d worktree — NOT یک درخت کاری همپیوند شده)
+- [ ] نمونه اجرا شده تست دود:
+  - باز کردن `/dashboard/health` → چک نسخه رشته مسابقات انتشار
+  - درخواست `/v1/chat/completions` را علیه یک ارائه دهنده شناخته شده اجرا کنید
+  - بررسی کنید `/api/monitoring/health` کلیدهای مدار `CLOSED` را برمی گرداند
+  - تأیید پاسخ حمل و نقل MCP (`/mcp` HTTP، `/mcp-sse` SSE)
 
 ### پس از انتشار
 
-- [ ] اجرای `/capture-release-evidences-cc` (مهارت Claude Code)
-  - ثبت اسکرینشاتها/ضبطهای WebP از قابلیتهای جدید
-  - پیوستکردن به یادداشتهای انتشار / پست وبلاگ
-- [ ] بهروزرسانی GitHub Discussions / Discord با اطلاعیهٔ انتشار
-- [ ] ایجاد milestone برای نسخهٔ بعدی
-- [ ] در صورت بحرانیبودن: سنجاقکردن گفتوگو یا انتشار در `news.json` برای بنر درونبرنامهای
+- [ ] اجرای `/capture-release-evidences-cc` (مهارت کد Claude )
+  - ویژگیهای جدید WebP screenshots/recordings را ضبط میکند
+  - به انتشار یادداشت ها / پست وبلاگ پیوست می کند
+- [ ] به روز رسانی GitHub Discussions / Discord با اعلام انتشار
+- [ ] نقطه عطف باز برای نسخه بعدی
+- [ ] اگر مهم است: بحث را پین کنید یا در `news.json` برای بنر درون برنامه پست کنید
 
-### دروازهٔ انتشار عمومی Radar
+### دروازه پرتاب عمومی رادار
 
-اطلاعیهٔ Radar عمداً با `active: false` ثبت شده است. فعالسازی، تغییری جداگانه است که پس از ارائهٔ شواهد برای تمام موارد زیر انجام میشود:
+اعلام رادار عمداً با `active: false` انجام شده است. پس از اثبات هر مورد زیر، فعال سازی یک تغییر جداگانه است:
 
-- [ ] تمام PRهای پشتهای Radar ادغام شدهاند و CI مربوط به نوک انتشار سبز است
-- [ ] مسیرهای OSS مربوط به Radar را در حالی مستقر و smoke test کنید که `RADAR_ENABLED` همچنان بهصورت پیشفرض خاموش است
-- [ ] روی میزبان تعیینشدهٔ Radar، مسیرهای `GET /planos`، `/termos`، `/privacidade` و `/reembolso` را smoke test کنید
-- [ ] هویت/اطلاعات تماس/نشانی اپراتور و بازبینی حقوقی تأییدشده توسط مالک را در سرویس خصوصی ثبت کنید
-- [ ] Stripe Checkout و webhook امضاشده را فقط در حالت آزمایشی تست کنید
-- [ ] یک ارسال ایمیل تراکنشی رمزگذاریشده را با فرستنده/دامنهٔ تأییدشده آزمایش کنید
-- [ ] بازیابی نسخهٔ پشتیبان و اجرای یک پژوهش تحت نظارت با سقف بودجه را اثبات کنید
-- [ ] پیش از پذیرش شواهد کمک مالی، سیاست بازبینی BRL/PIX را تأیید کنید
-- [ ] Checkout عمومی را فقط پس از عبور از دروازههای پیشین فعال کنید و سپس ID جدید `news.json` را فعال کنید
-- [ ] تأیید کنید که بنر صفحهٔ اصلی از متن بومیسازیشده استفاده میکند و پس از نادیدهگرفتن یک ID قدیمی، ID جدید دوباره ظاهر میشود
+- [ ] همه Radar PRs انباشته شده ادغام شده اند و CI نوک انتشار سبز است
+- [ ] مسیرهای رادار OSS را با `RADAR_ENABLED` به طور پیشفرض خاموش و خاموش کنید
+- [ ] Smoke `GET /planos`، `/termos`، `/privacidade`، و `/reembolso` در میزبان رادار نامگذاری شده
+- [ ] ضبط اپراتور identity/contact/address و بررسی قانونی مورد تایید مالک در سرویس خصوصی
+- [ ] Stripe Checkout و webhook امضا شده را فقط در حالت آزمایشی تمرین کنید
+- [ ] یک تحویل ایمیل رمزگذاری شده تراکنشی را با sender/domain تایید شده انجام دهید
+- [ ] بازیابی پشتیبان و یک اجرای تحقیقاتی تحت نظارت و با محدودیت بودجه را اثبات کنید
+- [ ] قبل از پذیرش مدارک اهدایی، خط مشی بررسی BRL/PIX را تأیید کنید
+- [ ] Checkout عمومی را فقط بعد از گیت های قبلی فعال کنید، سپس `news.json` ID جدید را فعال کنید
+- [ ] تأیید کنید که بنر صفحه اصلی از کپی بومیسازی شده استفاده میکند و پس از رد شدن یک ID قدیمی، یک ID جدید دوباره ظاهر میشود.
 
-## آزمون دودِ سرویسهای تعبیهشده (v3.8.4+)
+## آزمون دود سرویسهای تعبیهشده (v3.8.4+)
 
 پیش از انتشار هر نسخهای که شامل تغییرات سرویسهای تعبیهشده است، موارد زیر را بررسی کنید:
 
-### راهاندازی با DB تازه (تداخلهای migration را شناسایی میکند — پس از hotfix نسخهٔ v3.8.4 اضافه شده است)
+### راهاندازی با پایگاهداده تازه (تداخلهای مهاجرت را شناسایی میکند — پس از اصلاح فوری v3.8.4 اضافه شد)
 
-- [ ] `DATA_DIR=$(mktemp -d) npm start &` — برای راهاندازی ۱۰ ثانیه صبر کنید
-- [ ] `curl -s http://127.0.0.1:20128/api/services/9router/status | jq '.tool'` مقدار `"9router"` را برمیگرداند (نه 404 و نه 500). تأیید میکند که migration مربوط به `071_services.sql` اعمال شده و ردیف اولیه درج شده است.
-- [ ] `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(version_manager);" | grep -E "provider_expose|logs_buffer_path|last_sync_at"` تعداد ۳ ردیف برمیگرداند.
-- [ ] `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(webhooks);" | grep -E "kind|metadata_encrypted"` تعداد ۲ ردیف برمیگرداند (اعمال شدن `070_webhooks_kind_metadata.sql` را اعتبارسنجی میکند).
-- [ ] `node --import tsx/esm --test tests/unit/db/no-migration-collisions.test.ts` با موفقیت اجرا میشود — از بروز تداخلهای آینده جلوگیری میکند.
+- [ ] `DATA_DIR=$(mktemp -d) npm start &` — برای راهاندازی 10 ثانیه صبر کنید
+- [ ] دستور `curl -s http://127.0.0.1:20128/api/services/9router/status | jq '.tool'` باید `"9router"` را برگرداند (نه 404 و نه 500). این مورد تأیید میکند که مهاجرت `071_services.sql` اعمال و ردیف اولیه درج شده است.
+- [ ] دستور `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(version_manager);" | grep -E "provider_expose|logs_buffer_path|last_sync_at"` باید 3 ردیف برگرداند.
+- [ ] دستور `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(webhooks);" | grep -E "kind|metadata_encrypted"` باید 2 ردیف برگرداند (اعمال شدن `070_webhooks_kind_metadata.sql` را اعتبارسنجی میکند).
+- [ ] دستور `node --import tsx/esm --test tests/unit/db/no-migration-collisions.test.ts` با موفقیت اجرا شود — از تداخلهای آینده جلوگیری میکند.
 
 ### 9Router
 
-- [ ] `POST /api/services/9router/install` در کمتر از ۲ دقیقه، پاسخ 200 را بههمراه `installedVersion` برمیگرداند
-- [ ] `POST /api/services/9router/start` در کمتر از ۳۰ ثانیه، پاسخ 200 و `state: "running"` را برمیگرداند
-- [ ] `GET /api/services/9router/status` وضعیت `health: "healthy"` را گزارش میکند
-- [ ] `POST /v1/chat/completions` با `"model": "9router/auto/..."` پاسخ 200 را برمیگرداند (مسیریابی سرتاسری از طریق 9Router)
-- [ ] `GET /dashboard/providers/services/9router/embed/dashboard` رابط کاربری بومی 9Router را داخل proxy رندر میکند (بدون iframe مستقیم با `127.0.0.1:port`)
-- [ ] `POST /api/services/9router/rotate-key` مقدار `{ keyRotated: true }` را برمیگرداند و سرویس بدون مشکل راهاندازی مجدد میشود
-- [ ] `POST /api/services/9router/stop` پاسخ 200 و `state: "stopped"` را برمیگرداند
-- [ ] `GET /api/services/9router/logs?tail=50` جریان SSE را با رویداد `snapshot` شامل خطوط اخیر برمیگرداند
-- [ ] نصب در محیطی که `npm` در PATH آن وجود ندارد، پاسخ 500 را با یک پیام خطای کاربرپسند (بدون stack trace) برمیگرداند
+- [ ] `POST /api/services/9router/install` در کمتر از 2 دقیقه، کد 200 را همراه با `installedVersion` برگرداند
+- [ ] `POST /api/services/9router/start` در کمتر از 30 ثانیه، کد 200 و `state: "running"` را برگرداند
+- [ ] `GET /api/services/9router/status` مقدار `health: "healthy"` را گزارش کند
+- [ ] `POST /v1/chat/completions` با `"model": "9router/auto/..."` کد 200 را برگرداند (مسیریابی سرتاسری از طریق 9Router)
+- [ ] `GET /dashboard/providers/services/9router/embed/dashboard` رابط کاربری بومی 9Router را داخل پراکسی رندر کند (بدون iframe مستقیم `127.0.0.1:port`)
+- [ ] `POST /api/services/9router/rotate-key` مقدار `{ keyRotated: true }` را برگرداند و سرویس بهدرستی راهاندازی مجدد شود
+- [ ] `POST /api/services/9router/stop` کد 200 و `state: "stopped"` را برگرداند
+- [ ] `GET /api/services/9router/logs?tail=50` جریان SSE را همراه با رویداد `snapshot` شامل خطوط اخیر برگرداند
+- [ ] نصب در محیطی که `npm` در PATH آن وجود ندارد، کد 500 را همراه با پیغام خطای مناسب و قابلفهم (بدون ردگیری پشته) برگرداند
 
 ### CLIProxyAPI
 
-- [ ] `POST /api/services/cliproxy/install` در کمتر از ۲ دقیقه پاسخ 200 را برمیگرداند
-- [ ] `POST /api/services/cliproxy/start` در کمتر از ۳۰ ثانیه، پاسخ 200 و `state: "running"` را برمیگرداند
-- [ ] `GET /api/services/cliproxy/status` وضعیت `health: "healthy"` را گزارش میکند
-- [ ] `POST /api/services/cliproxy/stop` پاسخ 200 و `state: "stopped"` را برمیگرداند
-- [ ] `GET /api/services/cliproxy/logs?tail=50` جریان SSE را برمیگرداند
+- [ ] `POST /api/services/cliproxy/install` در کمتر از 2 دقیقه کد 200 را برگرداند
+- [ ] `POST /api/services/cliproxy/start` در کمتر از 30 ثانیه، کد 200 و `state: "running"` را برگرداند
+- [ ] `GET /api/services/cliproxy/status` مقدار `health: "healthy"` را گزارش کند
+- [ ] `POST /api/services/cliproxy/stop` کد 200 و `state: "stopped"` را برگرداند
+- [ ] `GET /api/services/cliproxy/logs?tail=50` جریان SSE را برگرداند
 
-### آزمون رگرسیون امنیتی
+### پسرفت امنیتی
 
-- [ ] `curl -H "X-Forwarded-For: 1.2.3.4" http://localhost:20128/api/services/9router/start` مقدار `403 LOCAL_ONLY` را برمیگرداند
-- [ ] `curl -H "X-Forwarded-For: 1.2.3.4" http://localhost:20128/api/services/cliproxy/start` مقدار `403 LOCAL_ONLY` را برمیگرداند
-- [ ] پاسخهای خطای `/api/services/*` شامل `err.stack` یا مسیرهای مطلق فایل نیستند
+- [ ] دستور `curl -H "X-Forwarded-For: 1.2.3.4" http://localhost:20128/api/services/9router/start` باید `403 LOCAL_ONLY` را برگرداند
+- [ ] دستور `curl -H "X-Forwarded-For: 1.2.3.4" http://localhost:20128/api/services/cliproxy/start` باید `403 LOCAL_ONLY` را برگرداند
+- [ ] پاسخهای خطای `/api/services/*` نباید شامل `err.stack` یا مسیرهای مطلق فایل باشند
 
 ## بررسیهای v3.8.0+
 
-پیش از انتشار هر نسخهٔ v3.8.x، این موارد اضافی را بررسی کنید:
+پیش از انتشار هر نسخه v3.8.x، این موارد اضافی را بررسی کنید:
 
-- [ ] `omniroute --tray` در macOS راهاندازی میشود (systray2 در `~/.omniroute/runtime/` نصب شده است)
-- [ ] `omniroute --tray` در Linux راهاندازی میشود (به DISPLAY نیاز دارد؛ اگر تنظیم نشده باشد، خطای کنترلشده نمایش داده میشود)
-- [ ] `omniroute --tray` در Windows راهاندازی میشود (PowerShell NotifyIcon، بدون فایلهای باینری اضافی)
-- [ ] `omniroute config tray enable` ورودی autostart را ایجاد میکند؛ غیرفعالسازی آن را حذف میکند
-- [ ] `npm install -g omniroute@<this-version>` مرحلهٔ postinstall را بدون خروج بحرانی اجرا میکند
-- [ ] مسیر بهروزرسانی وابستگیهای اختیاری را حفظ میکند: `omniroute update --apply` و بهروزرسان خودکار
-      دستور `npm install -g … --include=optional` را اجرا میکنند تا `optionalDependencies` (better-sqlite3،
-      keytar، tls-client و پشتهٔ SLM مربوط به llmlingua: `@atjsh/llmlingua-2@2.0.5`،
-      `js-tiktoken`) پس از بهروزرسانی باقی بمانند. سطح ultra مربوط به `modelPath` در SLM نیز به
-      مدل tinybert نیاز دارد که هنگام نخستین استفاده بهصورت خودکار در `${DATA_DIR}/models/llmlingua` دانلود میشود. سپس postinstall
-      (`scripts/build/colocateOptionals.mjs`) بستار اختیاری SLM را در
-      `dist/node_modules` هممکان میکند تا worker دقیقاً یک نمونهٔ `@huggingface/transformers` ^4.2.0
-      را resolve کند — trace مستقل فقط transformers را bundle میکند، نه گزینههایی را که بهصورت پویا import شدهاند؛
-      بنابراین بدون این کار، worker، llmlingua-2 را در برابر transformers موجود در root بارگذاری میکند
-      و سطح SLM بهصورت بیصدا در حالت fail-open قرار میگیرد.
-- [ ] `omniroute status` بدون `.env` کار میکند (مسیر token در CLI، فقط loopback)
-- [ ] `curl http://localhost:20128/api/shutdown` پاسخ 401 را برمیگرداند (مسیری که همیشه محافظت میشود)
-- [ ] `curl -H "host: evil.com" http://localhost:20128/api/mcp/sse` پاسخ 401 را برمیگرداند (محافظ loopback)
-- [ ] runtime مربوط به SQLite در نخستین اجرا به `bundled` resolve میشود (فایل باینری bundleشده برای پلتفرم معتبر است)
-- [ ] وقتی `node_modules/better-sqlite3` حذف میشود، runtime مربوط به SQLite به `runtime` fallback میکند
-- [ ] فیلتر هوشمند MCP، خروجی واقعی `playwright-mcp browser_snapshot` را فشرده میکند (کاهش ≥۵۰٪)
-- [ ] هر ۱۰ فایل `skills/omniroute*/SKILL.md` از طریق URL خام GitHub بهصورت عمومی قابل دریافت هستند
-- [ ] جادوگر onboarding در راهاندازی تازه، مرحلهٔ معرفی سطحها با عنوان "نحوهٔ کارکرد" را نمایش میدهد
-- [ ] ویجت پوشش سطحها در داشبورد Home، تعداد موارد پیکربندیشده/فعال را نمایش میدهد
+- [ ] `omniroute --tray` در macOS راهاندازی شود (systray2 در `~/.omniroute/runtime/` نصب شده باشد)
+- [ ] `omniroute --tray` در Linux راهاندازی شود (به DISPLAY نیاز دارد؛ اگر تنظیم نشده باشد، خطای مناسبی نمایش داده شود)
+- [ ] `omniroute --tray` در Windows راهاندازی شود (PowerShell NotifyIcon، بدون فایلهای اجرایی اضافی)
+- [ ] `omniroute config tray enable` ورودی شروع خودکار را ایجاد کند؛ غیرفعالسازی آن را حذف کند
+- [ ] `npm install -g omniroute@<this-version>` مرحله postinstall را بدون خروج بحرانی اجرا کند
+- [ ] مسیر بهروزرسانی وابستگیهای اختیاری را حفظ کند: `omniroute update --apply` و بهروزرسان خودکار
+      دستور `npm install -g … --include=optional` را اجرا کنند تا `optionalDependencies` (better-sqlite3،
+      keytar، tls-client و پشته SLM مربوط به llmlingua: `@atjsh/llmlingua-2@2.0.5`،
+      `js-tiktoken`) پس از بهروزرسانی باقی بمانند. سطح SLM فوقسبک `modelPath` همچنین به مدل
+      tinybert نیاز دارد که در نخستین استفاده بهصورت خودکار در `${DATA_DIR}/models/llmlingua` بارگیری میشود. سپس postinstall
+      (`scripts/build/colocateOptionals.mjs`) مجموعه وابستگیهای اختیاری SLM را در
+      `dist/node_modules` هممکان میکند تا worker دقیقاً یک نمونه `@huggingface/transformers` ^4.2.0
+      را resolve کند — رهگیری مستقل فقط transformers را بستهبندی میکند، نه گزینههایی را که بهصورت پویا import شدهاند؛
+      بنابراین بدون این کار، worker بسته llmlingua-2 را در برابر transformers ریشه بارگیری میکند
+      و سطح SLM بدون اعلام خطا بهصورت fail-open عمل خواهد کرد.
+- [ ] `omniroute status` بدون `.env` کار کند (مسیر توکن CLI، فقط loopback)
+- [ ] دستور `curl http://localhost:20128/api/shutdown` باید 401 را برگرداند (مسیری که همیشه محافظت میشود)
+- [ ] دستور `curl -H "host: evil.com" http://localhost:20128/api/mcp/sse` باید 401 را برگرداند (محافظ loopback)
+- [ ] زماناجرای SQLite در نخستین اجرا به `bundled` resolve شود (فایل اجرایی بستهبندیشده برای پلتفرم معتبر باشد)
+- [ ] وقتی `node_modules/better-sqlite3` حذف میشود، زماناجرای SQLite به `runtime` بازگردد
+- [ ] فیلتر هوشمند MCP خروجی واقعی `playwright-mcp browser_snapshot` را فشرده کند (کاهش ≥50٪)
+- [ ] هر 10 فایل `skills/omniroute*/SKILL.md` از طریق URL خام GitHub بهصورت عمومی قابل دریافت باشند
+- [ ] راهنمای شروع به کار در راهاندازی تازه، مرحله معرفی سطوح «نحوه کار» را نمایش دهد
+- [ ] ویجت پوشش سطوح در داشبورد اصلی، تعداد موارد پیکربندیشده/فعال را نمایش دهد
+
+---
+
+## برش 3.9.0 LTS (تمرینشده در 3.8.58)
+
+پس از v3.8.59، نسخه بعدی 3.9.0 است و نوک آن به دو شاخه با عمر طولانی تبدیل میشود:
+`stable/v3` (خط v3 LTS، برچسب npm با نام `latest`) و `develop` (نسخه v4 که به 4.0.0 ارتقا مییابد، برچسب npm با نام
+`nightly`). مدل شاخه/کانال، انتقال روبهجلو و برچسبها در
+[RELEASE_STRATEGY.md](./RELEASE_STRATEGY.md) آمدهاند؛ برنامه در [ROADMAP](../../ROADMAP.md) (فاز 3) قرار دارد. برش فقط یکبار اجرا میشود؛
+3.8.58 آن را از ابتدا تا انتها روی یک فورک تمرین میکند و 3.8.59 با
+[چکلیست GO/NO-GO](./LTS_GO_NO_GO.md) خاتمه مییابد.
+
+### اجرای آزمایشی (فقط خواندنی، در هر زمان امن)
+
+```bash
+npm run release:dry-run-lts-cut                       # برش واقعی: 3.9.0 از HEAD، تگ قبلی v3.8.59
+npm run release:dry-run-lts-cut -- --from <3.9.0-tip> # ثابتکردن کامیت مبدأ
+```
+
+`scripts/release/dry-run-lts-cut.mjs` هیچچیزی را اجرا نمیکند: این اسکریپت git و `gh` را میخواند و
+کل توالی را چاپ میکند — پیششرطها (مبدأ resolve میشود، مخزن مبدأ تاریخچه کامل دارد —
+یک clone کمعمق نمیتواند `stable/v3` را push کند، سمت دریافتکننده pack را در نخستین
+والد graftشده رد میکند؛ بنابراین ابتدا برش را از یک clone کامل انجام دهید یا `git fetch --unshallow origin` را اجرا کنید —
+تگ قبلی وجود دارد، `package.json` دارای نسخه هدف است، یک issue با برچسب `release-freeze` باز است، هیچ
+issue بازی با عنوان `Release branch not green`
+در یک شاخه انتشار موجود وجود ندارد — شاخهای که وجود ندارد وضعیت ناشناخته `?` را گزارش میکند و هرگز
+سبز نیست — صف `release` در Mergify پیکربندی شده است (G11: `queue_rules`، `checks_timeout`،
+برچسب `queue`)، مجموعهقواعد `release/*` همچنان حذف و force-push را مسدود میکند، و
+`stable/v3` و `develop` هنوز وجود ندارند)، دو مرحله شاخه، اینکه کدام triggerهای workflow غیرفعال و
+شرطهای `if:` برقرار میشوند (و کدامیک همچنان توسط یک متغیر مخزن محدود میمانند یا
+به مخزن canonical مقید هستند)، dist-tagهای مورد انتظار (`latest` ← 3.9.0 و `next` و
+`nightly` خالی) و rollback. کد خروج `0` = `RESULT: READY`، کد `1` = شکست یک پیششرط
+مسدودکننده (`✗`)، کد `2` = خطای نحوه استفاده. گزینه `--advisory <id,...>` یک بررسی را بدون
+پنهانکردن آن به هشدار (`!`) تنزل میدهد.
+
+اجرای آزمایشی برش واقعی را زمانی انجام دهید که freeze انتشار 3.9.0 هنوز برقرار است — شاخهها
+پس از تگ و پیش از آنکه فاز 12c وضعیت freeze را بردارد، ایجاد میشوند.
+
+### تمرین 3.8.58 (فقط روی فورک)
+
+```bash
+# 1. اجرای آزمایشی روی نوک فعلی با پارامترهای تمرین
+npm run release:dry-run-lts-cut -- --target-version 3.8.58 --previous-tag v3.8.57 \
+  --advisory freeze,base-green
+
+# 2. اجرا در برابر یک remote از نوع FORK (استفاده از origin یا هر remote دیگری که URL آن متعلق به
+#    مخزن canonical باشد رد میشود؛ هر مرحله در ترمینال درخواست تأیید میکند)
+git remote add rehearsal https://github.com/<you>/OmniRoute.git
+node scripts/release/dry-run-lts-cut.mjs --execute --remote rehearsal \
+  --target-version 3.8.58 --previous-tag v3.8.57 --advisory freeze,base-green
+
+# 3. workflowهای غیرفعال را در فورک اجرا کنید (در جاهایی که اجرای آزمایشی
+#    مقیدبودن به مخزن canonical را گزارش میکند از workflow_dispatch استفاده کنید)، سپس rollback کنید
+node scripts/release/dry-run-lts-cut.mjs --execute --rollback --remote rehearsal \
+  --target-version 3.8.58 --previous-tag v3.8.57 --advisory freeze,base-green
+```
+
+کامیت ارتقای develop با ابزارهای سطحپایین git ساخته میشود (هیچ working treeای تغییر نمیکند) و
+همان پنج فایل یک کامیت آغاز چرخه را ارتقا میدهد: `package.json`، `open-sse/package.json`،
+`electron/package.json`، `package-lock.json` و `docs/openapi.yaml`. بخش `[4.0.0]`
+در CHANGELOG و نسخههای i18n متناظر آن پس از آن روی `develop` و پیش از نخستین
+PR این شاخه باز میشوند. اسکریپت هرگز dist-tagهای npm را تغییر نمیدهد — آنها را روی یک پکیج موقت تمرین کنید.
+
+### artifact پیشنمایش PR (یکبار build کنید، همان بایتها را ارتقا دهید)
+
+`.github/workflows/preview-artifact.yml` یک tarball تولید را از head یک PR میسازد و
+دقیقاً همان build را اعتبارسنجی میکند (بخش (a) از #8084). فقط PRهای داخل همان مخزن؛ چیزی منتشر نمیشود.
+
+```bash
+gh workflow run preview-artifact.yml -f pr_number=<N>   # یا برچسب `preview-artifact` را اضافه کنید
+gh run download <run-id> --name preview-artifact-pr<N>-<sha7> --dir preview
+cd preview && sha256sum -c SHA256SUMS
+gh attestation verify omniroute-*.tgz --repo diegosouzapw/OmniRoute
+npm install -g ./omniroute-*.tgz                          # نصب نسخه پیشنمایش
+```
+
+این اجرا `npm ci`، سپس `npm run build:release` و `npm run check:pack-artifact` را انجام میدهد، tarball را
+بستهبندی میکند، `npm run check:pack-boot` را اجرا میکند (secretهای جعلی، پوشه داده موقت)، دوباره بستهبندی میکند و
+اگر digest یکسان نباشد شکست میخورد؛ سپس `artifact-identity.json` را ثبت میکند (SHA مربوط به head، SHA
+مربوط به base، hash فایل lock، پلتفرم، معماری، ABI مربوط به node، bundler، سیاست build —
+`scripts/release/artifact-identity.mjs`) و در یک job جداگانه برای tarball گواهی صادر میکند. ارتقای
+یک نسخه پیشنمایش بهمعنای نصب همان tarball است: هرگز آن را دوباره از کد منبع build نکنید.
+
+### برش (3.9.0، پس از GO)
+
+1. GO در [LTS_GO_NO_GO.md](./LTS_GO_NO_GO.md) ثبت شده است.
+2. `npm run release:dry-run-lts-cut -- --from v3.9.0` عبارت `RESULT: READY` را چاپ میکند.
+3. شاخهها را بهصورت دستی و با فرمانهایی که اجرای آزمایشی چاپ میکند روی `origin` ایجاد کنید —
+   اسکریپت از push کردن به `origin` خودداری میکند. برای استفاده مجدد از یک کامیت develop بازبینیشده،
+   ابتدا تمرین `--execute` را روی نوک 3.9.0 و در برابر فورک خود اجرا کنید؛ این کار هر دو SHA را چاپ میکند و
+   همان کامیتها را میتوان push کرد:
+
+   ```bash
+   git push origin <stable-sha>:refs/heads/stable/v3 <develop-sha>:refs/heads/develop
+   ```
+
+4. پیش از ادغام نخستین PR، از `stable/v3` و `develop` محافظت کنید (مجموعهقواعد + صف ادغام).
+5. گردشکارهای غیرفعال با ایجاد شاخه فعال میشوند: `forward-port.yml` (ارسال به
+   `stable/v3`)، `validate-stable-pr.yml` (PRهای ارسالشده به `stable/v3`) و `nightly-v4-build.yml`
+   (ساخت `develop`). پیش از راهاندازی، راز مخزن `secrets.FORWARD_PORT_TOKEN` را تنظیم کنید (تا CI روی
+   PRهای forward-port اجرا شود)؛ انتشار شبانه تا زمانی غیرفعال میماند که مالک، متغیر مخزن
+   `vars.NIGHTLY_PUBLISH` را روی `true` تنظیم کند و npm Trusted Publishing فایل
+   `nightly-v4-build.yml` را بپذیرد. تعیین کانال در `scripts/release/dist-tag.mjs` انجام میشود؛ همان
+   تعیینکنندهای که `npm-publish.yml` استفاده میکند.
+6. کانالها را بررسی کنید: `npm view omniroute dist-tags --json` باید `latest` = 3.9.0 را نشان دهد و تا
+   زمان انتشار v4 هیچ `next` / `nightly` وجود نداشته باشد.
+7. در صورت نیاز، بازگردانی: `git push origin --delete refs/heads/stable/v3 refs/heads/develop`
+   و `npm dist-tag add omniroute@3.8.59 latest`.
 
 ---
 
 ## بازگردانی
 
-اگر انتشار با مشکل بحرانی مواجه است:
+اگر انتشار دارای مشکل بحرانی است:
 
 1. `gh release edit vX.Y.Z --prerelease` (آن را بهعنوان آخرین نسخه علامتگذاری نمیکند)
-2. `git tag -d vX.Y.Z && git push --delete origin vX.Y.Z` (فقط اگر هنوز توسط کاربران استفاده نشده باشد)
-3. یا: رفع فوری روی `release/vX.Y.0` ← انتشار وصله `vX.Y.(Z+1)`
-4. فوراً در GitHub Discussions و Discord اطلاعرسانی کنید
+2. `git tag -d vX.Y.Z && git push --delete origin vX.Y.Z` (فقط اگر هنوز توسط کاربران استفاده نشده است)
+3. یا: یک اصلاح فوری روی `release/vX.Y.0` → انتشار اصلاحیه `vX.Y.(Z+1)`
+4. فوراً از طریق GitHub Discussions و Discord اطلاعرسانی کنید
 
 ## قوانین سختگیرانه
 
 - هرگز مستقیماً در `main` کامیت نکنید
 - هرگز از `git push --force` برای شاخههای `main` یا `release/*` استفاده نکنید
 - هرگز هوکهای Husky را نادیده نگیرید (`--no-verify`)
-- هرگز اطلاعات محرمانه، اطلاعات احراز هویت یا فایلهای `.env` را کامیت نکنید
-- پوشش آزمون باید در سطح ≥60/60/60/60 (عبارتها/خطوط/توابع/شاخهها) باقی بماند
+- هرگز اطلاعات محرمانه، اعتبارنامهها یا فایلهای `.env` را کامیت نکنید
+- پوشش آزمون باید در سطح ≥60/60/60/60 (گزارهها/خطوط/توابع/شاخهها) باقی بماند
 - هنگام تغییر کد عملیاتی در `src/`، `open-sse/`، `electron/` یا `bin/`، همیشه آزمونها را اضافه یا بهروزرسانی کنید
 
-## بررسی همگامسازی خودکار
+## بررسی خودکار همگامسازی
 
 پیش از باز کردن یک PR، محافظ همگامسازی مستندات را بهصورت محلی اجرا کنید:
 

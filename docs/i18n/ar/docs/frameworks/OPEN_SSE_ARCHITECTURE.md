@@ -34,25 +34,25 @@ open-sse/
 ├── types.d.ts            # تصديرات الأنواع العامة
 ├── package.json          # @omniroute/open-sse
 ├── config/               # إعدادات المزوّدين، والثوابت، والسجلات
-├── executors/            # منفّذات HTTP لكل مزوّد (67 + base.ts/index.ts)
-├── handlers/             # معالجات الطلبات (chatCore وresponses وما إلى ذلك)
+├── executors/            # منفّذات HTTP لكل مزوّد (150 وحدة + base.ts/index.ts)
+├── handlers/             # معالجات الطلبات (chatCore، responses، وغيرها)
 ├── lib/                  # أدوات مساعدة داخلية
 ├── mcp-server/           # خادم Model Context Protocol
 ├── services/             # نحو 298 وحدة خدمة
 ├── transformer/          # محوّل تنسيق Responses API
 ├── translator/           # ترجمة التنسيقات (OpenAI ↔ Claude ↔ Gemini)
-└── utils/                # أدوات مساعدة مشتركة (التسجيل، والأخطاء، والبث، وما إلى ذلك)
+└── utils/                # أدوات مساعدة مشتركة (التسجيل، والأخطاء، والتدفق، وغيرها)
 ```
 
 ### أعداد الوحدات
 
 | الدليل | الملفات | الغرض |
 | `executors/` | 167 | منفّذات HTTP لكل مزوّد (موحّدة عبر مصنع DefaultExecutor) |
-| `handlers/` | 157 | نقاط دخول الطلبات (chatCore وresponses وembeddings) |
-| `services/` | ~536 | التوجيه، والتخزين المؤقت، وتحديد المعدّل، والتحديث، وما إلى ذلك |
+| `handlers/` | 157 | نقاط دخول الطلبات (chatCore، وresponses، وembeddings) |
+| `services/` | ~536 | التوجيه، والتخزين المؤقت، وتحديد المعدل، والتحديث، وغيرها |
 | `translator/` | 56 | تحويل التنسيقات (OpenAI ↔ Claude ↔ Gemini) |
 | `mcp-server/` | 44 | أدوات MCP ووسائل النقل |
-| `utils/` | ~108 | أدوات مساعدة شاملة (التسجيل، والأخطاء، والبث) |
+| `utils/` | ~108 | أدوات مساعدة شاملة (التسجيل، والأخطاء، والتدفق) |
 | `config/` | ~339 | إعدادات المزوّدين، والثوابت، والسجلات |
 
 ---
@@ -165,30 +165,30 @@ needsTranslation(source, target): boolean
 
 ---
 
-## نظرة متعمقة على الملفات الرئيسية
+## الملفات الرئيسية الغوص العميق
 
 ### chatCore.ts (5977 سطرًا)
 
-**معالج الطلبات الرئيسي**. رغم حجمه، فإنه يتمتع ببنية واضحة:
+ال** معالج الطلب الرئيسي** . وعلى الرغم من حجمها، إلا أنها تتمتع ببنية واضحة:
 
 ```ts
-// البنية التقريبية لملف chatCore.ts
+// Pseudo-structure of chatCore.ts
 export async function handleChat(request: NextRequest) {
-  // 1. المصادقة + CORS
+  // 1. Auth + CORS
   await authenticateRequest(request);
   applyCorsHeaders(response);
 
-  // 2. التحقق من صحة جسم الطلب
+  // 2. Body validation
   const body = await parseRequestBody(request);
 
-  // 3. اكتشاف التنسيق + التحويل
+  // 3. Format detection + translation
   const sourceFormat = detectFormat(request);
   const targetFormat = getTargetFormat(providerId);
   if (needsTranslation(sourceFormat, targetFormat)) {
     body = translateRequest(body, sourceFormat, targetFormat);
   }
 
-  // 4. توجيه المجموعة
+  // 4. Combo routing
   const targets = await resolveComboTargets(comboId, body);
   for (const target of targets) {
     try {
@@ -196,20 +196,20 @@ export async function handleChat(request: NextRequest) {
       await recordUsage(result);
       return result;
     } catch (err) {
-      // المتابعة إلى الهدف التالي
+      // Continue to next target
     }
   }
 
-  // 5. البديل الاحتياطي للطوارئ
+  // 5. Emergency fallback
   return await emergencyFallback(body);
 }
 ```
 
-رغم كونه دالة عملاقة واحدة، فإنه منظّم في **أقسام موضحة بالتعليقات** تتوافق مع خط الأنابيب ذي المراحل الخمس.
+على الرغم من كونها وظيفة واحدة عملاقة، إلا أنها منظمة** الأقسام التي تم التعليق عليها** تلك الخريطة لخط الأنابيب المكون من 5 مراحل.
 
-### combo.ts (4456 سطرًا من التعليمات البرمجية)
+### combo.ts (4456 LOC)
 
-**محرك التوجيه** الذي يحوّل المجموعة إلى أهداف مرتبة.
+ال** محرك التوجيه** الذي يحل التحرير والسرد للأهداف المطلوبة.
 
 ```ts
 // services/combo.ts
@@ -226,46 +226,51 @@ export async function handleComboChat(body, comboId): Promise<ChatResult> {
 }
 ```
 
-يدعم **19 استراتيجية توجيه** (راجع `src/shared/constants/routingStrategies.ts`):
+يدعم** 22 استراتيجية توجيه** (انظر `src/shared/constants/routingStrategies.ts`):
 
-| الاستراتيجية        | السلوك                                                                      |
-| ------------------- | --------------------------------------------------------------------------- |
-| `priority`          | قائمة مرتبة يبدأ تنفيذها من الهدف الأول                                     |
-| `weighted`          | اختيار احتمالي بحسب وزن كل هدف                                              |
-| `round-robin`       | التنقل دوريًا بين الأهداف بالترتيب                                          |
-| `context-relay`     | تمرير السياق بين الأهداف                                                    |
-| `fill-first`        | استنفاد الحصة قبل الانتقال إلى الهدف التالي                                 |
-| `p2c`               | قوة الاختيار بين خيارين                                                     |
-| `random`            | اختيار عشوائي منتظم                                                         |
-| `least-used`        | اختيار الهدف ذي أقل عدد من الاستخدامات الأخيرة                              |
-| `cost-optimized`    | اختيار أرخص هدف سليم أولًا                                                  |
-| `reset-aware`       | مراعاة نوافذ إعادة تعيين المزوّد                                            |
-| `reset-window`      | التوجيه استنادًا إلى نافذة إعادة التعيين                                    |
-| `headroom`          | اختيار الهدف ذي أكبر هامش متبقٍ من الحصة أولًا                              |
-| `strict-random`     | اختيار منتظم فعليًا (من دون ترجيح الجودة)                                   |
-| `auto`              | استخدام تقييم قائم على 16 عاملًا (`autoCombo/`)                             |
-| `lkgp`              | استخدام آخر مزوّد معروف بأنه يعمل جيدًا أولًا                               |
-| `context-optimized` | الأنسب للطلبات ذات السياق الطويل                                            |
-| `fusion`            | إرسال الطلب بالتوازي إلى مجموعة، ثم توليف النتائج عبر مُحكِّم (`fusion.ts`) |
+| استراتيجية          | سلوك                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------- |
+| `priority`          | قائمة الهدف الأول مرتبة                                                                           |
+| `weighted`          | الاحتمالية حسب الوزن لكل هدف                                                                      |
+| `round-robin`       | التنقل بين الأهداف بالترتيب                                                                       |
+| `context-relay`     | قم بتسليم السياق عبر الأهداف                                                                      |
+| `fill-first`        | ملء الحصة قبل الانتقال إلى التالي                                                                 |
+| `p2c`               | قوة خيارين                                                                                        |
+| `random`            | عشوائية موحدة                                                                                     |
+| `least-used`        | اختر النوع الذي يحتوي على أقل عدد من الاستخدامات الحديثة                                          |
+| `cost-optimized`    | أرخص هدف صحي أولا                                                                                 |
+| `reset-aware`       | على علم بنوافذ إعادة تعيين الموفر                                                                 |
+| `reset-window`      | إعادة تعيين التوجيه المستند إلى النافذة                                                           |
+| `expiry-first`      | قم بإنفاق الحساب الذي ستنتهي حصته غير مستخدمة أولاً                                               |
+| `headroom`          | معظم المساحة المتبقية للحصص أولاً                                                                 |
+| `quota-weighted`    | تخطى الحسابات المنهكة، ثم اسحب من خلال الحصة المتبقية ÷ التحميل أثناء الرحلة                      |
+| `strict-random`     | موحد حقًا (بدون ترجيح للجودة)                                                                     |
+| `auto`              | استخدم التهديف المكون من 16 عاملًا (`autoCombo/`)                                                 |
+| `lkgp`              | آخر مزود جيد معروف أولاً                                                                          |
+| `context-optimized` | الأفضل للطلبات ذات السياق الطويل                                                                  |
+| `cache-optimized`   | تثبيت كل بادئة مطالبة قابلة لإعادة الاستخدام في نفس الحساب (زيارات ذاكرة التخزين المؤقت للمطالبة) |
+| `fusion`            | قم بالتوزيع على لوحة بالتوازي، ثم قم بالتوليف عبر القاضي (`fusion.ts`)                            |
+| `pipeline`          | خطوات متسلسلة — يغذي مخرج كل هدف الهدف التالي                                                     |
+| `jev`               | الاشتراك: يعترف TypeSafe Jev بالمدخلات المصنفة التي يتم تشغيلها؛ آخر طلبك                         |
 
-### base.ts (1170 سطرًا من التعليمات البرمجية)
+### base.ts (1170 LOC)
 
-**المنفّذ المجرّد** الذي ترث منه جميع المنفّذات البالغ عددها 107. يحتوي على:
+ال** منفذ مجردة** أن كل فئة منفذة تمتد (مباشرة أو من خلال `DefaultExecutor` والفئات الفرعية الأخرى). أنه يحتوي على:
 
-- `buildUrl()` — إنشاء عنوان URL الافتراضي (تتجاوزه الأصناف الفرعية للحالات المخصصة)
-- `buildHeaders()` — الترويسات الافتراضية (المصادقة، نوع المحتوى)
-- `transformRequest()` — تمرير مباشر افتراضيًا
-- `execute()` — حلقة HTTP الرئيسية مع إعادة المحاولة/التراجع/قاطع الدائرة
+- `buildUrl()` — إنشاء URL الافتراضي (تجاوز الفئات الفرعية المخصصة)
+- الرؤوس الافتراضية `buildHeaders()` — (المصادقة، نوع المحتوى)
+- `transformRequest()` — التمريري بشكل افتراضي
+- `execute()` — حلقة HTTP الرئيسية مع retry/backoff/breaker
 
 ```ts
 // open-sse/executors/default.ts
 export class DefaultExecutor extends BaseExecutor {
-  // يتعامل مع جميع المزوّدين المتوافقين مع OpenAI/Anthropic
-  // يسجّل المزوّدون الإعدادات (عنوان URL، والمصادقة، والترويسات)، لكنهم يشتركون في منطق المنفّذ
+  // Handles all OpenAI/Anthropic-compatible providers
+  // Providers register configurations (URL, auth, headers) but share executor logic
 }
 ```
 
-تُضبط السلوكيات الخاصة بكل مزوّد (ترويسات المصادقة، وعنوان URL الأساسي، وترويسات الإصدار) من خلال سجل المزوّدين، وليس عبر أصناف منفّذات منفصلة.
+يتم تكوين السلوك الخاص بالموفر (رؤوس المصادقة، URL الأساسية، ورؤوس الإصدار) عبر سجل الموفر، وليس فئات المنفذ المنفصلة.
 
 ````
 
@@ -273,88 +278,88 @@ export class DefaultExecutor extends BaseExecutor {
 
 ## الخدمات (117 وحدة)
 
-الخدمات هي **وحدات مركّزة ذات غرض واحد** تقوم المعالجات بتركيبها. الفئات الرئيسية:
+الخدمات هي** وحدات مركزة ذات غرض واحد** التي يؤلفها المعالجون. الفئات الكبرى:
 
-### التوجيه والدمج
+### التوجيه والسرد
 
-- `combo.ts` — نقطة الدخول للطلبات الموجّهة عبر الدمج
-- `services/autoCombo/` — تقييم قائم على 16 عاملًا، و8 استراتيجيات للتوجيه التلقائي
-- `wildcardRouter.ts` — يطابق المسارات ذات أحرف البدل (`gpt-*`)
-- `modelFamilyFallback.ts` — رجوع احتياطي ضمن عائلة T5
+- نقطة دخول `combo.ts` — للطلبات الموجهة التحرير والسرد
+- `services/autoCombo/` — تسجيل 16 عامل، 8 إستراتيجيات التوجيه التلقائي
+- `wildcardRouter.ts` — يطابق مسارات البدل (`gpt-*`)
+- `modelFamilyFallback.ts` — T5 احتياطي داخل الأسرة
 
-### تحديد المعدّل والحصة
+### تحديد المعدل والحصص
 
-- `rateLimitManager.ts` — دلو رموز لكل مفتاح+موفّر
-- `usage.ts` — تسجيل الاستخدام
-- `quotaCache.ts` — لقطات الحصة المخزّنة في الذاكرة
+- مجموعة الرمز المميز `rateLimitManager.ts` — لكل مزود مفتاح +
+- تسجيل استخدام `usage.ts` —
+- `quotaCache.ts` — لقطات الحصص في الذاكرة
 
-### الحساب والرمز المميّز
+### الحساب والرمز المميز
 
-- `tokenRefresh.ts` — تحديث OAuth عند حدوث 401
-- `accountFallback.ts` — التبديل إلى حساب بديل
-- `sessionManager.ts` — حالة الجلسة متعددة الأدوار
+- تحديث `tokenRefresh.ts` — OAuth على 401
+- `accountFallback.ts` — قم بالتبديل إلى الحساب البديل
+- `sessionManager.ts` — حالة الجلسة متعددة المنعطفات
 
-### الذكاء
+### ذكاء
 
-- `intentClassifier.ts` — تصنيف مقصد الطلب
-- `taskAwareRouter.ts` — التوجيه حسب نوع المهمة
+- `intentClassifier.ts` — تصنيف نية الطلب
+- مسار `taskAwareRouter.ts` — حسب نوع المهمة
 - `thinkingBudget.ts` — تخصيص رموز التفكير
 - `contextManager.ts` — حقن سياق التوجيه
 
-### المرونة
+### صمود
 
-- `resilience.ts` — تنسيق إعادة المحاولة، والتراجع، وقاطع الدائرة
-- `emergencyFallback.ts` — رجوع احتياطي كملاذ أخير
+- إعادة المحاولة `resilience.ts` — ، التراجع، تنسيق الكسارة
+- `emergencyFallback.ts` — الأخير الاحتياطي
 - `modelDeprecation.ts` — التوجيه التلقائي إلى النماذج اللاحقة
 
-### الحالة
+### ولاية
 
-- `signatureCache.ts` — إزالة التكرار حسب توقيع الطلب
-- `volumeDetector.ts` — تخفيف الحمل
-- `contextHandoff.ts` — تسلسل الجلسة
+- `signatureCache.ts` — dedup عن طريق توقيع الطلب
+- `volumeDetector.ts` — سفك الأحمال
+- تسلسل جلسة `contextHandoff.ts` —
 
-### الضغط
+### ضغط
 
-- `compression/` (دليل فرعي) — مسار معالجة الضغط الكامل
-- 39 ملفًا تغطي المحركات، وحزم القواعد، والمحوّلات
+- `compression/` (دليل فرعي) خط أنابيب الضغط الكامل —
+- 39 ملفًا يغطي المحركات وحزم القواعد والمحولات
 
-### المهارات
+### مهارات
 
-- (موضّحة في [SKILLS.md](./SKILLS.md))
+- (مغطاة [SKILLS.md](./SKILLS.md) )
 
-### الذاكرة
+### ذاكرة
 
-- (موضّحة في [MEMORY.md](./MEMORY.md))
+- (مغطاة [MEMORY.md](./MEMORY.md) )
 
 ---
 
-## المنفّذات (أكثر من 75 ملفًا)
+## المنفذون (150 وحدة)
 
-ملف واحد لكل موفّر. جميعها توسّع `BaseExecutor` وتتجاوز ما يختلف.
+في الغالب ملف واحد لكل مزود. جميع فئات المنفذ توسع نطاق `BaseExecutor` وتتجاوز ما يختلف؛ الوحدات الأخرى عبارة عن مساعدين لكل مزود (مخططات الأدوات، ومحولات fetch/TTS ، ومعالجات Quirk).
 
 ### الأنماط الشائعة
 
-يُحدَّد الموفّرون عبر `getExecutor(providerId)`، التي تعيد المنفّذ الذي جرى تكوينه. تستخدم الموفّرات المتوافقة مع OpenAI/Anthropic المنفّذ `DefaultExecutor` (`executors/default.ts`). يُضبط السلوك الخاص بكل موفّر (عنوان URL الأساسي، وترويسات المصادقة، وإصدار API) في `open-sse/config/providers/`، بينما تُعالَج تحويلات جسم الطلب في `open-sse/translator/`.
+يتم حل الموفرين عبر `getExecutor(providerId)`، الذي يُرجع المنفذ الذي تم تكوينه. يستخدم موفرو OpenAI/Anthropic-compatible `DefaultExecutor` (`executors/default.ts`). يتم تكوين السلوك الخاص بالموفر (قاعدة URL، ورؤوس auth، وإصدار API ) في `open-sse/config/providers/`، بينما تتم معالجة تحويلات نص الطلب في `open-sse/translator/`.
 
-يُعيَّن **عنوان URL المخصّص** عبر تكوين الموفّر:
+**URL مخصصة** يتم تعيينه عبر تكوين الموفر:
 
 ```ts
-// تكوين الموفّر في open-sse/config/providers/
+// Provider config in open-sse/config/providers/
 export default {
   id: "together",
   baseURL: "https://api.together.xyz/v1/chat/completions",
 }
 ````
 
-تُعالَج **المصادقة المخصّصة** من خلال تكوين المصادقة في سجل الموفّرين (مفتاح API، وOAuth، وملفات تعريف الترويسات).
+**مصادقة مخصصة** تتم معالجتها من خلال تكوين مصادقة تسجيل الموفر (مفتاح API ، OAuth، ملفات تعريف الرأس).
 
-تُسجَّل تحويلات **جسم الطلب المخصّص** (مثل فصل Anthropic للحقل `system` عن `messages`) لكل موفّر في `open-sse/translator/`.
+**هيئة الطلب المخصصة** يتم تسجيل التحويلات (على سبيل المثال، Anthropic التي تفصل `system` عن `messages`) لكل مزود في `open-sse/translator/`.
 
 ````
 
-### مصنع المنفّذات
+### The Executor Factory
 
-يصدّر `executors/index.ts` الدالة `getExecutor(providerId)`:
+`executors/index.ts` exports `getExecutor(providerId)`:
 
 ```ts
 import { getExecutor } from "@omniroute/open-sse/executors";
@@ -366,7 +371,7 @@ const result = await executor.execute({
 });
 ````
 
-تمر عملية التحديد عبر `ExecutorRegistry` (`executors/registry.ts`): يُصرَّح بكل منفّذ متخصص في الجدول المضمّن داخل `executors/index.ts` ويُسجَّل عبر `registerExecutor(alias, instance)` عند تحميل الوحدة؛ وتستشير `getExecutor()` السجل، ثم ترجع إلى `DefaultExecutor` مخزّن مؤقتًا لأي موفّر لا يملك إدخالًا متخصصًا. ويحدّد الاختبار الذهبي `tests/unit/executor-map-golden.test.ts` التعيين الكامل من الاسم البديل إلى المنفّذ.
+يمر الحل عبر `ExecutorRegistry` (`executors/registry.ts`): يتم الإعلان عن كل منفذ متخصص في جدول `executors/index.ts` المدمج وتسجيله عبر `registerExecutor(alias, instance)` عند تحميل الوحدة؛ يقوم `getExecutor()` بمراجعة السجل ويعود إلى `DefaultExecutor` المحفوظ لأي مزود بدون إدخال متخصص. يتميز تعيين المنفذ الكامل للاسم المستعار → بالاختبار الذهبي `tests/unit/executor-map-golden.test.ts`.
 
 ---
 
@@ -479,19 +484,19 @@ createResponsesApiTransformStream(): TransformStream
 
 ---
 
-## الإعداد
+## إعدادات
 
-يحتوي `open-sse/config/` على طبقة الإعداد:
+`open-sse/config/` يحمل طبقة التكوين:
 
-| الملف                         | الغرض                                          |
-| ----------------------------- | ---------------------------------------------- |
-| `providerRegistry.ts`         | سجل نماذج المحادثة ضمن دليل يضم 352 موفّر خدمة |
-| `providerModels.ts`           | أسماء النماذج البديلة وتعيين التنسيقات         |
-| `constants.ts`                | المُهل والحدود ورموز الحالة                    |
-| `defaultThinkingSignature.ts` | توقيع التفكير الافتراضي لـ Claude              |
-| `modelStrip.ts` (في الخدمات)  | إزالة الحقول لكل موفّر خدمة                    |
+| ملف                           | غاية                                          |
+| ----------------------------- | --------------------------------------------- |
+| `providerRegistry.ts`         | تسجيل نموذج الدردشة عبر كتالوج الموفر 394     |
+| `providerModels.ts`           | الأسماء المستعارة للنموذج، ورسم الخرائط الشكل |
+| `constants.ts`                | المهلات والحدود ورموز الحالة                  |
+| `defaultThinkingSignature.ts` | توقيع التفكير Claude الافتراضي                |
+| `modelStrip.ts` (في الخدمات)  | تجريد الحقل لكل مزود                          |
 
-### مخطط سجل موفّري الخدمات
+### مخطط تسجيل الموفر
 
 ```ts
 interface ProviderConfig {
@@ -506,7 +511,7 @@ interface ProviderConfig {
 }
 ```
 
-يضمن تحقق Zod عند تحميل الوحدة صلاحية جميع إعدادات موفّري الخدمات.
+يضمن التحقق من صحة Zod عند تحميل الوحدة أن جميع تكوينات الموفر صالحة.
 
 ---
 

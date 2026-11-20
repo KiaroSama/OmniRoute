@@ -75,13 +75,13 @@ export function ResponseNode({ data }: NodeProps) {
 
       {/* Finished timestamp */}
       {finishedAt != null && (
-        <span className="text-[9px] text-muted font-mono" data-testid="response-finished-at">
+        <span className="text-[9px] text-text-muted font-mono" data-testid="response-finished-at">
           {new Date(finishedAt as number).toLocaleTimeString()}
         </span>
       )}
 
       {/* Response label */}
-      <span className="text-xs font-bold" style={{ color }}>
+      <span className="text-xs font-semibold" style={{ color }}>
         Response
       </span>
     </div>

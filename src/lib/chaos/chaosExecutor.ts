@@ -8,6 +8,7 @@
  * Eliminates the ~150 lines of duplicate dispatch logic that previously existed
  * in both route files.
  */
+import { resolveSelfLoopBearer } from "@/shared/middleware/chatAdmissionIdentity";
 import { getProviderConnections } from "@/models";
 import { getChaosConfig, type ChaosConfig } from "@/lib/chaos/chaosConfig";
 import { POST as postChatCompletion } from "@/app/api/v1/chat/completions/route";
@@ -53,9 +54,8 @@ export interface ChaosRunInput {
   maxTokens?: number;
   /**
    * API key to attribute the in-process dispatch calls to (usage accounting,
-   * per-key policy). Optional — omitted for dashboard-initiated runs, which fall
-   * back to the same "local mode" (no Authorization header) path used by
-   * src/lib/evals/runtime.ts and src/lib/batches/dispatch.ts.
+   * per-key policy). Dashboard-initiated runs without a selected key use the
+   * internal self-loop identity. Synthetic tasks do not import user memory.
    */
   apiKey?: string | null;
 }
@@ -117,21 +117,41 @@ function resolveEffectiveRunParams(
 }
 
 /**
- * Resolve the best model ID for a provider connection.
- * Applies provider overrides from global chaos config if present.
+ * Resolve the model ID for a provider connection: an enabled override's `modelId`
+ * wins, then the connection's `defaultModel`. Returns `null` when neither is set —
+ * a provider id is not a model name, so it is never used as a fallback.
  */
 function resolveModelId(
   conn: { provider?: string; id?: string; defaultModel?: string | null },
   overrides: ChaosConfig["providerOverrides"]
-): string {
+): string | null {
   const override = overrides.find(
     (o) =>
       o.enabled &&
       (o.providerId.toLowerCase() === (conn.provider || "").toLowerCase() ||
         o.providerId.toLowerCase() === (conn.id || "").toLowerCase())
   );
-  if (override?.modelId) return override.modelId;
-  return conn.defaultModel || conn.provider || conn.id || "unknown";
+  const overrideModel = override?.modelId?.trim();
+  if (overrideModel) return overrideModel;
+  return conn.defaultModel?.trim() || null;
+}
+
+export const NO_MODEL_PARTICIPANT_ERROR =
+  "No model set for this provider. Set a model for it on the Chaos Mode page or a default model on the connection.";
+export const NO_MODEL_RUN_ERROR =
+  "No provider has a model set. Set a model for each provider on the Chaos Mode page or a default model on its connection.";
+
+/** A participant that could not be dispatched because it has no model; nothing is sent upstream. */
+function buildNoModelResult(provider: ProviderInfo): ModelResult {
+  return {
+    providerId: provider.id,
+    providerName: provider.name,
+    modelId: "",
+    status: "error",
+    content: null,
+    error: NO_MODEL_PARTICIPANT_ERROR,
+    durationMs: 0,
+  };
 }
 
 // ── Internal helpers — provider selection ───────────────────────────────────
@@ -154,7 +174,8 @@ function filterByEnabledOverrides(
   const overrideIds = new Set(enabledOverrides.map((o) => o.providerId.toLowerCase()));
   const selected = active.filter(
     (c: any) =>
-      overrideIds.has((c.provider ?? "").toLowerCase()) || overrideIds.has((c.id ?? "").toLowerCase())
+      overrideIds.has((c.provider ?? "").toLowerCase()) ||
+      overrideIds.has((c.id ?? "").toLowerCase())
   );
   return selected.length > 0 ? selected : active; // fallback to all active
 }
@@ -214,10 +235,11 @@ function buildDispatchRequest(
   timeoutMs: number,
   apiKey?: string | null
 ): Request {
-  const headers = new Headers({ "Content-Type": "application/json" });
-  if (apiKey) {
-    headers.set("Authorization", `Bearer ${apiKey}`);
-  }
+  const headers = new Headers({
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${apiKey || resolveSelfLoopBearer()}`,
+    "x-omniroute-no-memory": "true",
+  });
   return new Request("http://localhost/api/v1/chat/completions", {
     method: "POST",
     headers,
@@ -291,8 +313,7 @@ async function dispatchToModel(
   const ctx = { providerId, providerName, modelId };
 
   try {
-    const model = modelId || providerId;
-    const request = buildDispatchRequest(model, messages, maxTokens, timeoutMs, apiKey);
+    const request = buildDispatchRequest(modelId, messages, maxTokens, timeoutMs, apiKey);
     const res = await chatDispatch.postChatCompletion(request);
     return await parseDispatchResponse(res, ctx, start);
   } catch (err: unknown) {
@@ -305,7 +326,10 @@ async function dispatchToModel(
  * Uses a simple pooling approach: start up to `limit` tasks at once,
  * and as each completes, start the next one.
  */
-async function runWithConcurrencyLimit<T>(tasks: (() => Promise<T>)[], limit: number): Promise<T[]> {
+async function runWithConcurrencyLimit<T>(
+  tasks: (() => Promise<T>)[],
+  limit: number
+): Promise<T[]> {
   const results: T[] = new Array(tasks.length);
   let nextIndex = 0;
 
@@ -339,8 +363,9 @@ async function dispatchParallel(
   overrides: ChaosConfig["providerOverrides"],
   params: EffectiveRunParams
 ): Promise<ModelResult[]> {
-  const tasks = providers.map((p) => () => {
+  const tasks = providers.map((p) => async () => {
     const modelId = resolveModelId(p, overrides);
+    if (!modelId) return buildNoModelResult(p);
     const messages = buildMessages(params.effectiveSystemPrompt, input.task);
     return dispatchToModel(
       p.id,
@@ -376,6 +401,10 @@ async function dispatchCollaborative(
 
   for (const p of providers) {
     const modelId = resolveModelId(p, overrides);
+    if (!modelId) {
+      results.push(buildNoModelResult(p));
+      continue;
+    }
     const messages = buildMessages(params.effectiveSystemPrompt, context);
 
     const result = await dispatchToModel(
@@ -418,6 +447,10 @@ export async function executeChaosRun(input: ChaosRunInput): Promise<ChaosRunRes
   const globalConfig = await getChaosConfig();
   const params = resolveEffectiveRunParams(input, globalConfig);
   const { providers, enabledOverrides } = await selectChaosProviders(input, globalConfig);
+
+  if (!providers.some((p) => resolveModelId(p, enabledOverrides))) {
+    throw new Error(NO_MODEL_RUN_ERROR);
+  }
 
   const startedAt = new Date().toISOString();
   const results =

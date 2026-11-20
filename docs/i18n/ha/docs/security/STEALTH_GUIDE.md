@@ -16,63 +16,60 @@ An samar da fasalolin ɓoye-sawu ne domin OmniRoute ya iya aiki a matsayin shimf
 
 ---
 
-## Shimfiɗar Gano Sawun TLS
+## Matakin Gano Sawun TLS
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-Ana ƙirƙirar zaman `wreq-js` masu ɗorewa ne a hankali bisa kowane iyakar asusu da proxy da aka warware. Rukunin `TlsClient` na gaba ɗayan
-process yana riƙe da zaman da ba su wuce 128 ba waɗanda ke kwaikwayon **Chrome 124 a kan macOS** ga
-tushen sabis da ke bayan Cloudflare. `TlsClient.fetch()` yana hana ci gaba idan native runtime ba ya
-samuwa; mai kira zai iya zaɓar madadin a wajen wannan wrapper a bayyane.
+Ana ƙirƙirar zaman `wreq-js` masu ɗorewa ne kawai lokacin da ake buƙata ga kowane iyakar asusu da proxy da aka warware. `TlsClient` na gaba ɗayan tsari yana tara zaman da ba su wuce 128 ba waɗanda suke kwaikwayon **Chrome 124 a kan macOS** don sabis na sama da ke bayan Cloudflare. `TlsClient.fetch()` yana dakatar da aiki cikin aminci idan native runtime ba ya samuwa; mai kira zai iya zaɓar madadin a wajen wannan wrapper a sarari.
 
 - Bayanan zaman: `browser: "chrome_124", os: "macos"`
-- Warware proxy (bisa fifiko): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (har da ƙananan haruffa)
-- Iyakar lokaci: `TLS_CLIENT_TIMEOUT_MS` (yana gada daga `FETCH_TIMEOUT_MS`, tsoho 600000)
+- Warware proxy (bisa fifiko): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (har da masu ƙananan haruffa)
+- Wa'adin lokaci: `TLS_CLIENT_TIMEOUT_MS` (yana gado daga `FETCH_TIMEOUT_MS`, tsoho 600000)
 - Response na `wreq-js` ya dace da fetch (`headers`, `text()`, `json()`, `clone()`, `body`).
 - Mai sa ido kan byte na farko (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): `TlsClient.fetch()`
-  yana warwarewa da zarar kanun bayanan tushe sun iso, don haka `TLS_CLIENT_TIMEOUT_MS` shi kaɗai ba zai iya kayyade
-  jikin da bai taɓa fitar da byte na farko ba. `guardTlsFirstByte()` yana sa `read()` na farko na jikin
-  ya yi tsere da `TLS_FIRST_BYTE_WATCHDOG_MS` (tsoho `10000`, `0` yana kashe shi); jiki mai lafiya
-  ba ya shafuwa, yayin da jikin da ya tsaya yake soke wreq reader kuma ya bar dabarar
-  komawa ga TLS ta `proxyFetch` ta wuce zuwa mai rarraba direct/proxy (buƙatar da ba a iya sake kunnawa cikin aminci ba, misali
-  POST mai jiki, har yanzu za ta jefa kuskure maimakon a sake gwada ta ba tare da sanarwa ba).
+  yana kammala warwarewa da zarar headers na sabis na sama sun iso, saboda haka `TLS_CLIENT_TIMEOUT_MS` kaɗai ba zai iya iyakance
+  body da bai taɓa samar da byte na farko ba. `guardTlsFirstByte()` yana fafata da `read()` na farko na body
+  a kan `TLS_FIRST_BYTE_WATCHDOG_MS` (tsoho `10000`, `0` yana kashe shi); body mai lafiya ba ya
+  shafuwa, yayin da body da ya tsaya cak ke soke wreq reader kuma ya bar dabarar komawa-baya ta TLS
+  da ke cikin `proxyFetch` ta wuce zuwa mai tura buƙata kai tsaye/ta proxy (buƙatar da ba ta da aminci ga sake kunnawa, misali
+  POST mai body, har yanzu tana jefa kuskure maimakon a sake gwada ta a ɓoye).
 
-### Hanyar jigilar mai samarwa ta web-cookie — wreq-js 3.2.0
+### Sufurin mai samar da web-cookie — wreq-js 3.2.0
 
-`open-sse/services/tlsClientBase.ts` shi ne adapter na bai ɗaya ga hanyoyin jigilar
-web-cookie guda biyar na musamman da ke ƙasa. Kowane ƙaramin wrapper na mai samarwa yana zaɓar bayanan browser/OS. Adapter ɗin
-yana amfani da loader guda ɗaya na wreq runtime da rukunin jigila a `open-sse/utils/tlsClient.ts`, waɗanda aka tsara bisa
+`open-sse/services/tlsClientBase.ts` shi ne adapter ɗin gama-gari don takamaiman
+sufurin web-cookie guda biyar da ke ƙasa. Kowane siririn wrapper na mai samarwa yana zaɓar bayanan browser/OS. Adapter ɗin
+yana amfani da runtime loader guda ɗaya na wreq da tarin sufuri da ke cikin `open-sse/utils/tlsClient.ts`, waɗanda aka tsara maɓallinsu da
 profile + OS + proxy da aka warware, yayin da kowace buƙata ke amfani da `cookieMode: "ephemeral"`. Saboda haka, asusu da
-buƙatu suna amfani da haɗin jigila iri ɗaya, amma ba sa taɓa amfani da zaman wreq ko cookie jar ɗaya.
+buƙatu suna raba haɗin matakin-sufuri, amma ba sa taɓa raba zaman wreq ko ma'ajin cookie.
 
-| Mai samarwa | Profile       | OS da aka kwaikwaya | Manufar EOF ta stream            |
-| ----------- | ------------- | ------------------- | -------------------------------- |
-| Claude      | `chrome_146`  | Linux               | haɗa `[DONE]`                    |
-| Perplexity  | `firefox_148` | macOS               | haɗa `event: end_of_stream`      |
-| Grok        | `chrome_146`  | Linux               | cire `[DONE]`                    |
-| Notion      | `chrome_146`  | Windows             | haɗa `[DONE]`                    |
-| LMArena     | `chrome_146`  | Windows             | babu sentinel; rufe a native EOF |
+| Mai samarwa | Profile       | OS da aka kwaikwaya | Manufar EOF ta stream                 |
+| ----------- | ------------- | ------------------- | ------------------------------------- |
+| Claude      | `chrome_146`  | Linux               | haɗa da `[DONE]`                      |
+| Perplexity  | `firefox_151` | macOS               | haɗa da `event: end_of_stream`        |
+| Grok        | `chrome_146`  | Linux               | cire `[DONE]`                         |
+| Notion      | `chrome_146`  | Windows             | haɗa da `[DONE]`                      |
+| LMArena     | `chrome_146`  | Windows             | babu alamar ƙarshe; rufe a native EOF |
 
-- Streaming yana cinye `ReadableStream` na native response kai tsaye; ba a ƙirƙirar temp file ko sidecar ba.
-- Ana duba har zuwa bytes 256 na farko kafin a bayyana stream. Masu samar da SSE suna tara kurakuran da ba na SSE ba;
-  Grok/LMArena suna mayar da ƙalubalen Cloudflare zuwa `403`, sannan HTML interstitials zuwa `502`.
-- Har yanzu ana lulluɓe native request timeout da cikakkiyar JS hard deadline. Tsayawa cak yana lalata
-  kuma yana rufe jigilar profile/OS/proxy da abin ya shafa kawai kafin buƙata ta gaba ta sake ƙirƙirarta.
-- Fifikon warware proxy shi ne `proxyUrl` na kowane kira → mahallin account/dashboard na wannan buƙatar →
-  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (har da nau'ikan ƙananan haruffa). Kurakuran warwarewa suna
-  hana ci gaba maimakon fallasa haɗin kai tsaye. Da gangan LMArena yana warwarewa bisa `arena.ai`.
-- `byteResponse` yana mayar da `data:` URL mai nau'in abun ciki ba tare da lalata UTF-8 ba.
-- Kurakurai su ne `TlsClientUnavailableError` (package/addon ba ya samuwa), `TlsClientHangError`
-  (an wuce deadline), da `WreqTransportCapacityError` (lambar kuskuren iyakar zaman ta bai ɗaya)
-  lokacin da duk guraben profile/OS/proxy guda 128 masu iyaka suke aiki ko ake rufe su.
+- Streaming yana amfani da `ReadableStream` na native response kai tsaye; ba a ƙirƙirar fayil na ɗan lokaci ko sidecar.
+- Ana bincika har zuwa bytes 256 na farko kafin a bayyana stream. Masu samar da SSE suna adana kurakuran da ba na SSE ba a buffer;
+  Grok/LMArena suna mayar da ƙalubalen Cloudflare zuwa `403`, sannan shafukan HTML na tsaka-tsaki zuwa `502`.
+- Har yanzu ana naɗe wa'adin lokacin native request da cikakken wa'adin ƙarshe na JS. Tsayawar aiki tana soke inganci
+  kuma tana rufe sufuri na profile/OS/proxy da abin ya shafa kaɗai, kafin buƙata ta gaba ta sake ƙirƙirarsa.
+- Fifikon warware proxy shi ne `proxyUrl` na kowane kira → mahallin asusu/dashboard na takamaiman buƙata →
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (har da sigogin ƙananan haruffa). Kurakuran warwarewa suna dakatar da aiki
+  cikin aminci maimakon su fallasa haɗin kai tsaye. LMArena da gangan yana warwarewa bisa `arena.ai`.
+- `byteResponse` yana dawo da URL na `data:` mai nau'in abun ciki ba tare da lalata UTF-8 ba.
+- Kurakuran su ne `TlsClientUnavailableError` (package/addon ba ya samuwa), `TlsClientHangError`
+  (an wuce wa'adin ƙarshe), da `WreqTransportCapacityError` (lambar kuskuren ƙarfin zaman da aka raba)
+  lokacin da duk iyakantattun guraben profile/OS/proxy guda 128 suke aiki ko ana rufe su.
 
-Zaman generic `TlsClient` da ke sama yana ci gaba da kasancewa na musamman don matsayin cookie
-mai ɗorewa wanda browser ke tallafawa. Dukkan hanyoyin biyu suna sake amfani da cached wreq module loader guda ɗaya da process lifecycle hook; rukunan su suna
-zama dabam saboda an tsara tsawon rayuwar cookies ɗinsu ya bambanta.
+Zaman `TlsClient` na gama-gari da ke sama yana ci gaba da kasancewa na musamman don yanayin cookie mai ɗorewa
+wanda browser ke tallafawa. Duk hanyoyin biyu suna sake amfani da cached wreq module loader guda ɗaya da process lifecycle hook; tarukansu suna
+ci gaba da kasancewa daban saboda tsawon rayuwar cookies ɗinsu ya bambanta da gangan.
 
-Pinned package yana goyon bayan profiles ɗin, amma amincewar WAF ta zahiri na iya canzawa ba tare da alaƙa
-da local contract tests ba. Tabbatar da sauye-sauyen fingerprint ta amfani da live account da aka ba da izini a bayyane
-kafin a yi ikirarin daidaito da upstream browser.
+Pinned package ɗin yana goyon bayan profiles ɗin, amma karɓuwar WAF ta ainihi na iya sauyawa ba tare da la'akari
+da gwaje-gwajen kwangilar cikin gida ba. Tabbatar da sauye-sauyen fingerprint ta amfani da live account da aka ba da izini a sarari
+kafin a yi iƙirarin daidaito da browser na sabis na sama.
 
 ---
 
@@ -121,7 +118,7 @@ Ana amfani da shi ga: tubalan `system`, duk `messages[].content`, da `tools[].de
 
 Ga relay na Anthropic na ɓangare na uku waɗanda kawai suke karɓar zirga-zirgar "Claude Code na gaske":
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"` ne ta tsohuwa
@@ -138,41 +135,63 @@ Module masu alaƙa a cikin wannan kunshi:
 
 ---
 
-## Ɓoye-Ɓoyen Antigravity
+## Antigravity Stealth
 
-Buƙatun Antigravity suna kiyaye rubutun mai kira byte-zuwa-byte. OmniRoute ba ya saka haruffan zero-width a cikin prompt ko sake suna/saka tool domin kwaikwayon client na IDE.
+buƙatun Antigravity adana rubutun mai kira byte-for-byte. OmniRoute baya saka haruffa masu faɗin sifili cikin faɗakarwa ko kayan aikin rename/inject don yin koyi da abokin ciniki IDE.
 
 ### `antigravityHeaderScrub.ts`
 
-Yana cire alamomin Stainless SDK (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) kafin turawa.
+Yanki Bakin alamar SDK (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) kafin turawa.
 
-### ⚠️ Haɗari: `ANTIGRAVITY_CREDITS=always` (babban wurin haɗarin dakatar da account)
+### Hadarin ⚠️ : `ANTIGRAVITY_CREDITS=always` (asusun ban hot tabo)
 
-`ANTIGRAVITY_CREDITS=always` (wanda `open-sse/executors/antigravity.ts` ke amfani da shi) yana tura **kowace** buƙata ta Antigravity AI Credit Overages (credits na Google da ake biya) maimakon barin quota na matakin kyauta na Google ya takaita abubuwa. An rubuta wannan a matsayin wata fasali, amma shi ne **rahoton keta ToS mafi yawan faruwa da muke gani** — an dakatar da account na Google Ultra da dama tare da `403 / "service disabled for ToS violation" / insufficient_quota` bayan gudanarwa na wasu awanni da `=always`.
+hanyoyin `ANTIGRAVITY_CREDITS=always` (cinyewa ta hanyar `open-sse/executors/antigravity.ts`).** kowane** nema ta hanyar Antigravity AI Kiredit Overages (biya Google credits) maimakon barin Google's kyauta-teer keɓaɓɓen ƙofar abubuwan. An rubuta wannan a matsayin sifa, amma yana da** rahoton cin zarafin ToS guda ɗaya da muke gani** — mahara asusun Google Ultra an dakatar da su tare da `403 / "service disabled for ToS violation" / insufficient_quota` bayan sun yi aiki na 'yan sa'o'i tare da `=always`.
 
-Tilasta dokokin upstream yana faruwa ne a **ɓangaren Google**, ba wani abu da OmniRoute zai iya hana ba. Sunan env var da takardun da ake da su suna sa ya yi kama da maɓalli mai aminci da za a kunna; amma ba haka ba ne.
+Ana ci gaba da aiwatar da aikin** gefe Google** , ba wani abu da OmniRoute zai iya hanawa ba. Sunan env var da takaddun da ke akwai suna sa ya zama kamar kulli mai aminci don juyawa; ba haka ba.
 
-**Dalilin da ya sa wannan ke jawo gano amfani ba daidai ba fiye da amfani da matakin kyauta kawai:**
+**Me yasa wannan ke jawo gano cin zarafi fiye da amfani da matakin kyauta kawai:**
 
-- Ci gaba da kashe kuɗi ta atomatik a kan account ɗin Google guda ɗaya yana haifar da alama ta daban da matakin kyauta wanda zai kai quota sannan ya tsaya.
-- Credit overages ba su da iyakar rate, don haka client da aka saita ba daidai ba zai iya cinye ɗaruruwan USD cikin mintuna kuma ya yi kama da sake sayar da API key ko zirga-zirgar bot.
-- Masu amfani da OmniRoute da dama da suke amfani da overage credits lokaci guda daga external IP ɗaya suna ƙara ƙarfin wannan alama.
+- Ci gaba da ciyarwa ta atomatik akan tutocin asusun Google guda ɗaya daban-daban fiye da matakin hits-ke-da-tsayawa.
+- Ƙididdigar ƙididdiga ba ta da rufin ƙima, don haka abokin ciniki da ba daidai ba zai iya ƙone ta cikin ɗaruruwan USD a cikin mintuna kuma yayi kama da sake siyarwar API-key ko zirga-zirgar bot.
+- Masu amfani da OmniRoute da yawa suna bugun ƙididdiga masu yawa a layi daya daga IP na waje guda suna haɗa siginar.
 
-**Matsayin da ake ba da shawara:**
+**Matsayin da aka ba da shawarar:**
 
-1. Bar tsohon saitin `ANTIGRAVITY_CREDITS=off` sai idan mai gudanarwa ya amince kai tsaye da haɗarin biyan credits da kuma matakin tilasta doka kan account. `retry` yana fara aika buƙata ta al'ada sannan ya saka credits sau ɗaya kacal bayan quota 429 mai cancanta; `always` yana saka credits a buƙata ta farko.
-2. **Rarraba load tsakanin masu samarwa ta Auto-Combo** (`model: "auto"` ko `kr/glm/etc`-combo) maimakon cika ƙarfin account ɗin Antigravity guda ɗaya.
-3. **Saita iyakokin RPM ga kowane haɗi** a shafin gyaran mai samar da Antigravity (Dashboard → Providers → Antigravity → connection → rate limit). 30–60 RPM iyaka ce ta sama da za a iya kare hujjarta don amfani mai ɗorewa.
-4. **Yi amfani da tsayayyen upstream networking da mai gudanarwa ke sarrafawa** kuma a guji raba account guda ɗaya tsakanin masu amfani ko workloads marasa alaƙa.
-5. **Idan an dakatar da account**: shigar da roƙon ɗaukaka ƙara ta `support.google.com` → "Restore Workspace/Account access" tare da ainihin body na martanin `quota_exceeded` / `service disabled` da Google ya aika. Ba a tabbatar da maido da account ba.
+1. Ajiye `ANTIGRAVITY_CREDITS=off` tsoho sai dai idan mai aiki ya karɓi kiredit da aka biya a sarari da haɗarin tilasta aiwatar da asusu. `retry` yana aika buƙatu na al'ada da farko kuma yana allura ƙididdigewa sau ɗaya bayan adadin da ya cancanta 429; `always` yayi alluran ƙididdiga akan buƙatun farko.
+2. **Yada kaya a kan masu samarwa ta hanyar Auto-Combo** (`model: "auto"` ko `kr/glm/etc` -combo) maimakon a cika asusun Antigravity guda ɗaya.
+3. **Saita iyakoki RPM kowane-haɗi** a cikin shafin gyara na mai bada Antigravity (Dashboard → Masu bayarwa → Antigravity → haɗin → iyakar ƙimar ƙima). 30-60 RPM shine babban abin kariya don amfani mai dorewa.
+4. **Yi amfani da tsayayye, hanyar sadarwar sama mai sarrafa afareta** kuma a guji raba asusu ɗaya a tsakanin masu amfani ko nauyin aiki marasa alaƙa.
+5. **Idan an hana** : roko ta hanyar `support.google.com` → "Mayar da shiga Workspace/Account " tare da ainihin `quota_exceeded` / `service disabled` amsa da Google aiko. Ba a da garantin maidowa.
 
-Takardar bayanin environment tana bayyana tasirin kowane yanayin credits kan account da kashe kuɗi.
+Bayanin yanayi yana rubuta asusu kuma yana kashe tasirin kowane yanayin ƙididdigewa.
 
-Wuraren da abin ya shafa:
+#### `=always` kawai ba: Antigravity OAuth routing gaba ɗaya
 
-- `open-sse/executors/antigravity.ts` — yana karanta `process.env.ANTIGRAVITY_CREDITS`
-- `src/lib/oauth/providers/antigravity.ts` — sarrafa credentials
-- Rahoton farko na matsalar: Tattaunawa [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
+Dakatarwar ba ta iyakance ga yawan kiredit ba. Rahotanni a cikin Nuwamba 2026 (#19223, #19266) sun bayyana wasu asusun Google da aka dakatar yayin da suke tafiya ta hanyar `antigravity` da `agy` (Antigravity CLI), tare da:
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+Dukansu masu samarwa sun tabbatar da zaman OAuth na samfurin Antigravity, wanda shine yanayin sanarwar haɗarin dashboard ("Wannan mai bada yana amfani da samfurin ku na hukuma session/OAuth, wanda ba a ba da izini don amfani da proxy/router ") yayi gargaɗi game da kafin haɗa haɗin. Babu ɗayan shawarwarin da ke sama da ya ba da izinin amfani; suna rage yawan zirga-zirgar ababen hawa ne kawai.
+
+**Izinin musaya na API don ƙirar Gemini.** Google yana ba da damar shirye-shirye zuwa Gemini ta hanyar APIs, wanda OmniRoute ke goyan bayan a matsayin masu samar da maɓalli na API na yau da kullun:
+
+| Id mai bayarwa | Dashboard sunan           | Takaddun shaida                                                               |
+| -------------- | ------------------------- | ----------------------------------------------------------------------------- |
+| `gemini`       | Gemini (Google AI Studio) | maɓallin Gemini API daga Google AI Studio (akwai matakin kyauta)              |
+| `vertex`       | Vertex AI                 | Asusun Sabis JSON, alamar shiga OAuth ko maɓallin API Vertex Express (Gemini) |
+
+Waɗannan masu samarwa suna amfani da al'amuran Google takaddun shaida don samun damar API, sabanin zaman samfurin Antigravity. Ba su sa kowane amfani ya dace ba ko cire haɗarin tilastawa: kowanne ana sarrafa shi da nasa sharuɗɗan, wanda ma'aikacin dole ne ya bincika jigilar su. Misali, [ƙarin Sharuɗɗan Sabis Gemini API](https://ai.google.dev/gemini-api/terms) yana ba da damar Sabis ɗin Biya kawai lokacin da aka samar da abokan cinikin API ga masu amfani a cikin Yankin Tattalin Arziki na Turai, Switzerland ko Burtaniya, kuma ana iya amfani da abun ciki da aka aika zuwa Sabis ɗin da ba a biya ba don haɓaka samfuran Google. Vertex AI ya faɗi ƙarƙashin Google Cloud sharuɗɗan maimakon ( [Sharuɗɗan Takaddun Sabis](https://cloud.google.com/terms/service-terms) ). Farashi da ƙididdiga suna bin waɗannan sharuɗɗan API maimakon biyan kuɗin Antigravity.
+
+Masu aiki waɗanda ke son guje wa dakatarwar Antigravity da aka kwatanta a sama ya kamata su bi hanyar Gemini ta ɗaya daga cikin waɗannan masu samarwa maimakon `antigravity` / `agy`, bayan sun duba cewa amfani da su ya yi daidai da sharuddan mai samarwa.
+
+Abubuwan taɓawa:
+
+- `open-sse/executors/antigravity.ts` — karanta `process.env.ANTIGRAVITY_CREDITS`
+- `src/lib/oauth/providers/antigravity.ts` — shaidar aikin famfo
+- Rahoton abin da ya faru na asali: Tattaunawa [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
 
@@ -239,19 +258,18 @@ Bugu da ƙari, `updateNssDatabases()` yana shigarwa cikin NSS DBs na kowane mai 
 
 Duk MITM endpoints suna buƙatar management auth (`requireCliToolsAuth`). Ana cache ɗin kalmar sirrin sudo a module scope (ba a taɓa amfani da `globalThis` ba) kuma ana share ta a `stopMitm()`.
 
-## Sauya User-Agent — env vars (`.env.example` sashe na 12)
+## Wakilin Mai Amfani Ya Kore — env vars (`.env.example` sashe 12)
 
-| Variable                 | Tsoho                                                           |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| Mai canzawa         | Tsohuwar                                      |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-Ana amfani da su ta `open-sse/executors/base.ts::buildHeaders()` ta hanyar nema mai sauyawa. **A sabunta waɗannan idan masu samarwa suka fitar da sabbin nau'ikan CLI** — tsofaffin kirtanin UA kan fara fuskantar ƙin karɓuwa saboda ana ɗaukar su a matsayin tsofaffin clients.
+Wanda `open-sse/executors/base.ts::buildHeaders()` ke cinyewa ta hanyar bincike mai ƙarfi.** Kashe waɗannan lokacin da masu samarwa suka fito da sabbin nau'ikan CLI** — stale UA kirtani sun fara ƙi kamar abokan ciniki da suka wuce.
 
 ## Maɓallan Kunna/Kashe Yanayin Dacewar CLI (`.env.example` sashe na 13)
 

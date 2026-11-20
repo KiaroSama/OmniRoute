@@ -4,261 +4,241 @@
 
 ---
 
-# Checklist za izdavanje (Release Checklist)
-
-> **Zadnje ažurirano:** 2026-08-28 — v3.8.51
-> Optimizovan proces izdavanja koji koristi Claude Code vještine za automatizaciju.
+> **Posljednje ažuriranje:** 2026-08-28 — v3.8.51
+> Pojednostavljen tok izdanja koji koristi vještine Claude Codea za automatizaciju.
 >
-> **Održavajte queue/branch zelenim između izdanja:** pogledajte [RELEASE_GREEN.md](./RELEASE_GREEN.md)
-> (`/green-prs` porodica + `npm run check:release-green` + `/babysit` + nightly). Periodično pokretanje
-> ovoga — i posebno **prije** ovog checklista — čini da release PR krene kao zelen.
+> **Održavajte red čekanja/granu zelenom između izdanja:** pogledajte [RELEASE_GREEN.md](./RELEASE_GREEN.md)
+> (`/green-prs` porodica + `npm run check:release-green` + `/babysit` + noćno pokretanje). Periodično pokretanje
+> ovoga — a naročito **prije** ove kontrolne liste — osigurava da PR izdanja započne zeleno.
 
-## TL;DR
+## Ukratko
 
 ```bash
-# 1. Povećaj verziju + generiši CHANGELOG (vještina)
+# 1. Povećajte verziju + generišite CHANGELOG (vještina)
 /version-bump-cc patch    # ili minor/major
 
-# 2. Pokreni quality gate lokalno
-npm run check              # lint + testovi
-npm run test:coverage      # potpuni coverage gate (60/60/60/60)
+# 2. Lokalno pokrenite provjeru kvaliteta
+npm run check              # lintanje + testovi
+npm run test:coverage      # potpuna provjera pokrivenosti (60/60/60/60)
 
-# 3. Build & smoke
+# 3. Izgradite i obavite osnovnu provjeru
 npm run build
 npm run test:e2e           # opcionalno, ali preporučeno
 
-# 4. Generiši release (vještina)
+# 4. Generišite izdanje (vještina)
 /generate-release-cc
 
-# 5. Deploy (vještina)
+# 5. Izvršite implementaciju (vještina)
 /deploy-vps-both-cc        # ili akamai-cc / local-cc
 
-# 6. Zapiši dokaze o izdanju (vještina)
+# 6. Prikupite dokaze o izdanju (vještina)
 /capture-release-evidences-cc
 ```
 
-## npm Trusted Publishing (podrazumijevano od v3.8.51) — staged na zahtjev, direct kao fallback
+## npm Trusted Publishing (zadano od v3.8.51) — postavljeno na zahtjev, direktno kao rezervni
 
-`npm-publish.yml` objavljuje putem **npm Trusted Publishing (OIDC)** po defaultu:
-`stage-npm` posao (hostovan na GitHub-u) zamjenjuje GitHub-ov id-token kratkotrajnim npm
-credentialom za to pokretanje — nema dugotrajnih npm tokena u tajnama repozitorija, nema 2FA
-zahtjeva, a provenance je priložen. To je zaobilaznica za npm sankcije sada kada se tokeni koji
-zaobilaze 2FA povlače; to vraća potpuno automatski tok koji je projekat imao do v3.8.48, dok
-zadržava WS1.3 garanciju (curenje tokena ne može samo po sebi objaviti — token ne postoji).
+`npm-publish.yml` objavljuje putem** npm Trusted Publishing (OIDC)** podrazumevano: `stage-npm` posao (hostovan na github-u) razmenjuje GitHub-ov id-token za kratkotrajne npm akreditive za to pokretanje — nema dugotrajnog npm tokena u tajnama spremišta, nema 2FA prompt, priloženo poreklo. To je zaobilaženje npm sankcija sada kada se tokeni koji preskaču 2FA povlače; vraća potpuno automatski tok koji je projekat imao do v3.8.48 uz zadržavanje WS1.3 garancije (procureli token ne može objaviti sam — nema tokena).
 
-**Jednokratno podešavanje (vlasnik):** npmjs.com → paket `omniroute` → Settings → _Trusted
-Publisher_ → GitHub: owner `diegosouzapw`, repo `OmniRoute`, workflow `npm-publish.yml`
-(environment: none). Dok to ne bude kreirano, automatski korak će pasti sa `ENEEDAUTH`:
-ponovite dispatch sa `publish_mode=staged` (ispod) ili `direct`.
+**Jednokratno podešavanje (vlasnik):** npmjs.com → paket `omniroute` → Postavke → _Trusted Publisher_ → GitHub: vlasnik `diegosouzapw`, repo `OmniRoute`, radni tok `npm-publish.yml` (okruženje: nema). Dok to ne postoji, automatski korak ne uspijeva sa `ENEEDAUTH`: ponovno slanje sa `publish_mode=staged` (ispod) ili `direct`.
 
-### Staged objavljivanje (na zahtjev — `publish_mode=staged`)
+### Etapno izdavanje (na zahtjev — `publish_mode=staged`)
 
-npm-publish workflow više ne objavljuje direktno: on pokreće zapakovani tarball
-(`check:pack-boot`) i zatim pokreće `npm stage publish` — tačni bajtovi su parkirani na
-registru, **nisu instalabilni** dok vlasnik ne odobri. Ljudski 2FA gate je pomjeren
-NAKON dokaza, a ne prije njega.
+Radni tok npm-publish više se ne objavljuje direktno: pokreće upakovani tarball (`check:pack-boot`), a zatim pokreće `npm stage publish` — tačni bajtovi su parkirani u registru,** nije moguće instalirati** dok vlasnik ne odobri. Ljudska 2FA kapija se preselila na AFTER dokaz, a ne prije njega.
 
-**Tok za vlasnika nakon što workflow postane zelen:**
+**Tok vlasnika nakon što tok posla postane zelen:**
 
-1. `npm stage list omniroute` — pronađite stage id (također ispisan u workflow summary-ju).
-2. Verifikujte staged bajtove (preporučeno): `npm stage download <id>`, zatim instalirajte
-   preuzeti tarball u temp prefix i pokrenite ga (`npm run check:pack-boot` automatizuje
-   isti pack→install→boot verdict u CI-ju).
-3. `npm stage approve <id>` — 2FA zahtjev JE zapravo objavljivanje. `npm stage reject <id>` odbacuje.
-4. Post-publish mreža: post-publish verifikator (WS1.4 plana v3.8.49) instalira
-   objavljenu verziju sa javnog registra u čistom kontejneru i pokreće je.
+1. `npm stage list omniroute` — pronađite ID faze (takođe odštampan u sažetku toka posla).
+2. Provjerite etablirane bajtove (preporučeno): `npm stage download <id>`, zatim instalirajte preuzeti tarball u privremeni prefiks i pokrenite ga (`npm run check:pack-boot` automatizira isti paket → install → presuda pokretanja u CI).
+3. `npm stage approve <id>` — 2FA prompt IS za objavljivanje. `npm stage reject <id>` odbacuje.
+4. Mreža nakon objavljivanja: verifikator nakon objavljivanja (WS1.4 plana v3.8.49) instalira objavljenu verziju iz javnog registra u čist kontejner i pokreće je.
 
-**Hitni fallback:** `workflow_dispatch` sa `publish_mode=direct` vraća
-naslijeđeni trenutni `npm publish` (koristiti samo ako staging sam po sebi ne radi ispravno; zabilježiti zašto).
+**Hitna pomoć:** `workflow_dispatch` sa `publish_mode=direct` vraća naslijeđeni trenutni `npm publish` (koristite samo ako se sama inscenacija ne ponaša loše; zapišite zašto).
 
-**Jednokratno ojačavanje (vlasnik, npmjs.com):** konfigurišite Trusted Publisher za
-`omniroute` u stage-only modu tako da curenje dugotrajnog tokena ne može `npm publish`
-direktno s bilo kojeg mjesta — CI može samo stage-ovati; samo vlasnikov 2FA objavljuje.
+**Jednokratno kaljenje (vlasnik, npmjs.com):** konfigurirajte Pouzdanog izdavača za `omniroute` u načinu rada samo na pozornici tako da procureli dugovječni token ne može `npm publish` direktno s bilo kojeg mjesta gdje — CI može samo postaviti; samo vlasnička 2FA izdanja.
 
-**Playbook za neispravne artefakte (nepromijenjeno):** `npm deprecate omniroute@<bad> "<reason> — use <fixed>"`
-kao defaultni refleks (minuti, reverzibilno); `npm unpublish` samo unutar prozora od 72h/bez-zavisnosti
-i nikada kao prvi potez. Docker: nikada ne prepisujte tag verzije — rollback je
-preusmjeravanje `latest` na posljednji ispravan digest.
+**Knjiga slomljenih artefakata (nepromijenjena):** `npm deprecate omniroute@<bad> "<reason> — use <fixed>"` kao podrazumevani refleks (minuti, reverzibilni); `npm unpublish` samo unutar 72h/no-dependents prozora i nikada kao prvi potez. Docker: nikad ne prepisivati oznaku verzije — rollback je ponovno usmjeravanje `latest` na posljednji dobar sažetak.
 
-**Docker Hub `latest` (obavezno pri svakom stabilnom SemVer objavljivanju):**
-`docker-publish` workflow mora tagovati **i** `X.Y.Z` i, kada
-`should-promote-latest.sh` potvrdi da je ovo najviši stabilni SemVer, `:latest`
-sa **istim digestom**. Nakon posla: Hub `latest` digest je jednak novom
-SemVer digestu i `last_updated` je pomjeren. Ne ostavljajte `:latest` na starijem
-build-u dok release notes govore o ispravkama koje postoje samo na git-u. Compose
-quickstarts koriste `:latest`; GitOps bi trebao nastaviti pinovati `X.Y.Z`. Pogledajte
-[Docker release channels](../guides/DOCKER_GUIDE.md#release-channels) i #10317.
+**Docker Hub `latest` (potrebno pri svakom stabilnom SemVer objavljivanju):** `docker-publish` radni tok mora označiti** oboje** `X.Y.Z` i, kada se `should-promote-latest.sh` slaže ovo je najviša stabilna SemVer, `:latest` sa** isti digest** . Nakon posla: Hub `latest` digest jednak je novom SemVer digest i `last_updated` premješten. Ne ostavljajte `:latest` na starijoj verziji dok bilješke o izdanju govore o popravkama koje postoje samo na git-u. Sastavljanje brzih početaka koristite `:latest`; GitOps bi trebao nastaviti zakačiti `X.Y.Z`. Pogledajte [kanale izdanja Docker](../guides/DOCKER_GUIDE.md#release-channels) i #10317.
 
-## Hotfix Fast-Lane (label `hotfix`)
+**Organizacijsko spremište Docker Hub (`cheaperinference/omniroute`):** Docker Hub ne može premještati spremište između imenskih prostora, tako da `diegosouzapw/omniroute` čuva svoju povijest povlačenja i svako izdanje, a `mirror-org-dockerhub` posao `docker-publish` a kopira svaku objavljenu verziju (i `:latest` kada se promovira) iz `ghcr.io/cheaper-inference/omniroute` u spremište organizacije. Potrebne su `DOCKERHUB_ORG_USERNAME` / `DOCKERHUB_ORG_TOKEN` tajne; bez njih posao ostaje zelen sa upozorenjem "Docker Hub org ogledalo preskočeno" i drugi registri se objavljuju normalno. Da biste kasnije tamo objavili objavljenu verziju, pokrenite** Radnje → Preslikavanje Docker slike u Docker Hub org → Pokreni radni tok** sa `version=X.Y.Z` (i `promote_latest` za najvišu stabilnu verziju): kopira postojeće slike, bez rekonstrukcije.
 
-PR označen sa `hotfix` preskače tešku CI matricu (9-shard E2E, coverage ratchet, Quality-gate, quality-extended) i zadržava brze gate-ove sa visokim signalom: build, Unit shards, integration, vitest, lint/typecheck, docs-sync, `check:pack-artifact` i tarball boot-smoke (`check:pack-boot`). Cilj: zeleno u ≤15min umjesto ~33min.
+## Ubrzana traka za hitne ispravke (oznaka `hotfix`)
 
-**Ulazna polisa — svih četiri su obavezne (modelirano prema Chromium/VS Code/Node hitnim trakama):**
+PR označen s `hotfix` preskače opsežnu CI matricu (E2E s 9 dijelova, prag pokrivenosti,
+quality-gate, quality-extended) i zadržava brze provjere s visokim signalom: izgradnju,
+dijelove jediničnih testova, integracijske testove, vitest, lint/provjeru tipova, docs-sync, `check:pack-artifact`
+i provjeru pokretanja tarball paketa (`check:pack-boot`). Cilj: uspješan rezultat za ≤15 min umjesto ~33 min.
 
-1. **Ozbiljnost (Severity)**: produkcija je pokvarena — objavljeni artefakt puca pri pokretanju / sigurnosna ispravka / svaki korisnik verzije je pogođen. "Važno" nije isto što i "pokvareno".
-2. **Autoritet**: samo vlasnik repozitorija dodaje `hotfix` labelu. Labela JE odobrenje — nikada ne radite samostalno na kampanjskom PR-u.
-3. **Dokaz**: tijelo PR-a linkuje prethodno potpuno zeleno teško pokretanje (skup poslova koje preskočeni job-ovi bi ponovo validirali) plus test same ispravke koji je prvo pao, a zatim prošao.
-4. **Opseg (Scope)**: samo cherry-pick — minimalna ispravka, bez refaktoringa, bez dodatnih promjena.
+**Pravila za pristup — sva četiri uslova su obavezna (po uzoru na hitne trake projekata Chromium/VS Code/Node):**
 
-Preskočena površina coverage/ratchet-a ponovo se validira sljedećim punim pokretanjem na release grani (kontinuirano release-green) — ova traka preskače ČEKANJE, nikada validaciju. Diff-ovi koji sadrže samo testove (svi fajlovi pod `tests/`, nijedan pod `tests/e2e/`) automatski preskaču E2E matricu, bez ikakve labele.
+1. **Ozbiljnost**: produkcija ne radi — objavljeni artefakt se ruši pri pokretanju /
+   sigurnosna ispravka / pogođen je svaki korisnik izdanja. „Važno” ne znači „ne radi”.
+2. **Ovlaštenje**: samo vlasnik repozitorija primjenjuje oznaku `hotfix`. Oznaka JESTE
+   odobrenje — nikada je nemojte samostalno primjenjivati na PR kampanje.
+3. **Dokazi**: tijelo PR-a sadrži poveznicu na prethodno potpuno uspješno opsežno izvršavanje (skup testova koji bi
+   preskočeni poslovi ponovo validirali), kao i vlastiti test ispravke koji prvo ne prolazi, a zatim prolazi.
+4. **Opseg**: isključivo cherry-pick — minimalna ispravka, bez refaktorizacije i bez usputnih izmjena.
 
-## Detaljan Checklist
+Preskočena površina pokrivenosti/praga ponovo se validira pri sljedećem potpunom izvršavanju na
+grani izdanja (kontinuirano uspješno stanje izdanja) — traka preskače ČEKANJE, nikada validaciju.
+Izmjene koje obuhvataju samo testove (sve datoteke unutar `tests/`, nijedna unutar `tests/e2e/`) automatski preskaču E2E
+matricu, bez ikakve oznake.
 
-### Pre-release
+## Detaljna kontrolna lista
 
-- [ ] Svi PR-ovi namijenjeni ovom izdanju su merge-ovani u `release/vX.Y.0`
-- [ ] Svi otvoreni Linear/issue stavke za ovu verziju su zatvorene ili pomjerene na sljedeći milestone
-- [ ] CI je zelen na `release/vX.Y.0` grani
+### Prethodno izdanje
+
+- [ ] Svi PRs ciljani na ovo izdanje su spojeni u `release/vX.Y.0`
+- [ ] Sve otvorene Linear/issue stavke za ovu verziju su zatvorene ili prebačene na sljedeću prekretnicu
+- [ ] CI zelena na `release/vX.Y.0` grani
 - [ ] Nema `TODO(release)` markera u kodu: `grep -r "TODO(release)" src/ open-sse/`
-- [ ] Docker bazna slika je ažurirana (`node:24.15.0-trixie-slim`)
+- [ ] Docker osnovna slika ažurirana (trenutno `node:24.15.0-trixie-slim`)
 
-### Verzija & Changelog
+### Verzija & Dnevnik promjena
 
-- [ ] Pokreni `/version-bump-cc <patch|minor|major>` (Claude Code skill)
-- Povećava verziju u `package.json`, `electron/package.json`
-- Ponovo generiše `CHANGELOG.md` iz git commit-ova od zadnjeg taga
-- Ažurira README.md bedževe
-- [ ] Ručno pregledaj CHANGELOG.md i očisti poruke commit-ova ako je potrebno
-- [ ] Provjeri da li najnoviji semver sekcija u `CHANGELOG.md` odgovara verziji u `package.json`
-- [ ] Zadrži `## [Unreleased]` kao prvu sekciju changeloga za predstojeći rad
-- [ ] Ažuriraj `docs/openapi.yaml` → `info.version` mora odgovarati verziji u `package.json`
+- [ ] Pokreni `/version-bump-cc <patch|minor|major>` (Claude Code vještina)
+  - Izbočine `package.json`, `electron/package.json`
+  - Regenerira `CHANGELOG.md` iz git urezivanja od posljednje oznake
+  - Ažurira README.md značke
+- [ ] Ručno pregledajte CHANGELOG.md i očistite poruke urezivanja ako je potrebno
+- [ ] Osigurajte da je najnoviji odjeljak semver u `CHANGELOG.md` jednak `package.json` verziji
+- [ ] Zadržite `## [Unreleased]` kao prvu sekciju dnevnika promjena za predstojeći rad
+- [ ] Ažuriranje `docs/openapi.yaml` → `info.version` mora biti jednako `package.json` verziji
 
 ### Kvalitet koda
 
-- [ ] `npm run lint` — 0 grešaka (upozorenja su već postojala)
-- [ ] `npm run typecheck:core` — čisto
+- [ ] `npm run lint` — 0 grešaka (upozorenja već postoje)
+- [ ] `npm run typecheck:core` — clean
 - [ ] `npm run typecheck:noimplicit:core` — čisto (strogo)
-- [ ] `npm run check:cycles` — nema kružnih zavisnosti
-- [ ] `npm run check:any-budget:t11` — unutar budžeta
-- [ ] `npm run check:route-validation:t06` — čisto
-- [ ] `npm run check:node-runtime` — ispunjen minimalni podržani runtime (`>=22.22.2 <23`, `>=24.0.0 <27`, prema `SUPPORTED_NODE_RANGE` u `src/shared/utils/nodeRuntimeSupport.ts`; usklađeno sa `package.json` `engines`)
+- [ ] `npm run check:cycles:ratchet` — unutar zamrznutog `metrics.cycles` stropa (goli `check:cycles` izlazi 1 na bilo kojem ciklusu, #15281)
+- [ ] `npm run check:any-budget:t11` — u okviru budžeta
+- [ ] `npm run check:route-validation:t06` — clean
+- [ ] `npm run check:node-runtime` — podržani runtime floor met (`>=22.22.2 <23`, `>=24.0.0 <27`, po `SUPPORTED_NODE_RANGE` u `src/shared/utils/nodeRuntimeSupport.ts`; usklađeno sa `package.json` `engines`)
 
 ### Testiranje
 
-- [ ] `npm run test:unit` — prošlo
-- [ ] `npm run test:vitest` — prošlo (MCP server, autoCombo, cache)
-- [ ] `npm run test:coverage` — gate 60/60/60/60 zadovoljen (statements/lines/functions/branches)
-- [ ] `npm run test:integration` — prošlo (ako promjene dotiču DB / handlere)
-- [ ] `npm run test:combo:matrix` — prošlo (combo strategija matrica: dokazuje determinističke odluke o selekciji svih 19 javnih routing strategija; pokrenuti kada se dira combo routing, rezolucija strategije ili fallback logika)
-- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **opcionalno/ručno** (gated real-upstream smoke; koristi read-only DB snapshot sa VPS-a `root@192.168.0.15`; kontaktira stvarne provajdere, troši kredite; nikada se ne pokreće u CI; preskače čisto bez gate-a)
-- [ ] `npm run test:combo:live:vps` — **opcionalno/ručno** (Phase-3 VPS live smoke: 7 HTTP scenarija protiv live `.15` servera putem običnog Node ESM; zahtijeva `ssh root@192.168.0.15`; kreira/briše samo `__live_test__*` combo-e; kontaktira stvarne provajdere; nikada se ne pokreće u CI)
-- [ ] `npm run test:e2e` — prošlo (UI promjene)
-- [ ] `npm run test:protocols:e2e` — prošlo (MCP/A2A promjene)
-- [ ] `npm run test:ecosystem` — prošlo
+- [ ] `npm run test:unit` — pass
+- [ ] `npm run test:vitest` — pass (MCP server, autoCombo, cache)
+- [ ] `npm run test:coverage` — kapija 60/60/60/60 zadovoljan (statements/lines/functions/branches)
+- [ ] `npm run test:integration` — pass (ako se promijeni, dodirnite DB / rukovaoce)
+- [ ] `npm run test:combo:matrix` — pass (matrica kombinirane strategije: deterministički dokazuje odluke o odabiru svih 22 javne strategije usmjeravanja; pokreće se kada se dodirne kombinirano usmjeravanje, rezolucija strategije ili rezervna logika)
+- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` —**optional/manual** (zatvoreni pravi uzvodni dim; izvori DB snimak samo za čitanje iz VPS `root@192.168.0.15`; pogađa stvarne provajdere, košta kredite; nikad ne radi u CI; čisto preskače bez kapije)
+- [ ] `npm run test:combo:live:vps` —**optional/manual** (Phase-3 VPS live dim: 7 HTTP scenarija protiv živog `.15` servera preko običnog čvora ESM; zahtijeva `ssh root@192.168.0.15`; creates/deletes samo `__live_test__*` kombinacije; pogađa prave provajdere; nikad ne radi u CI)
+- [ ] `npm run test:e2e` — pass (UI promjene)
+- [ ] `npm run test:protocols:e2e` — pass (MCP/A2A promjene)
+- [ ] `npm run test:ecosystem` — pass
 
-### Hook-ovi (Husky validirani)
+### Udice (provjerene Huskyjem)
 
-Husky hook-ovi se nalaze u `.husky/` i pokreću se automatski prilikom git operacija.
+Husky kuke žive u `.husky/` i automatski se pokreću na git operacijama.
 
 - **pre-commit:** `npx lint-staged + node scripts/check/check-docs-sync.mjs + npm run check:any-budget:t11`
-- **pre-push:** brzi deterministički gate-ovi — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (aktivirano 2026-06-13). Namjerno isključuje `test:unit` (spor; pokriven CI `test-unit` job-om).
-- Pokreni `npm run test:unit` ručno prije push-ovanja release grana.
+- **pre-push:** brze determinističke kapije — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (aktivirano 13.06.2026). Namjerno isključuje `test:unit` (sporo; pokriveno CI `test-unit` poslom).
+  - Ručno pokrenite `npm run test:unit` prije guranja grana za otpuštanje.
 
-Ako hook ne uspije: popravi osnovni problem, nemoj zaobilaziti pomoću `--no-verify`.
+Ako kuka ne uspije: riješite osnovni problem, nemojte zaobići sa `--no-verify`.
 
-### Conventional Commits
+### Konvencionalne obaveze
 
-Svi commit-ovi namijenjeni izdanju moraju pratiti format `type(scope): subject`.
+Sva urezivanja vezana za izdanje moraju slijediti `type(scope): subject` format.
 
-**Validni tipovi:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `style`, `ci`
+**Važeće vrste:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `style`, `ci`
 
-**Validni opsezi (scopes):** `db`, `sse`, `oauth`, `dashboard`, `api`, `cli`, `docker`, `ci`, `mcp`, `a2a`, `memory`, `skills`, `cloud-agent`, `guardrails`, `compression`, `auto-combo`, `resilience`, `providers`, `executors`, `translator`, `domain`, `authz`
+**Važeći opseg:** `db`, `sse`, `oauth`, `dashboard`, `api`, `cli`, `docker` `authz` `ci`, `mcp`, `a2a`, `memory`, `skills`, `cloud-agent`, `guardrails`, `compression`, `auto-combo`, `resilience`, `providers`, `executors`, `translator`, `domain`
 
-Breaking promjene: dodaj `BREAKING CHANGE:` u footer ili `!` nakon opsega (npr. `feat(api)!: drop /v0`).
+Prelomne promjene: dodajte `BREAKING CHANGE:` podnožje ili `!` nakon opsega (npr. `feat(api)!: drop /v0`).
 
 ### Dokumentacija
 
-- [ ] `npm run check:docs-sync` prolazi (automatski pokreće pre-commit)
-- [ ] `npm run check:docs-all` prolazi (krovni test: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links)
-- [ ] `npm run check:env-doc-sync` izlazi sa 0 — ugovor o okruženju između koda ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` je netaknut
-- [ ] `npm run check:doc-links` izlazi sa 0 — nema pokvarenih internih markdown referenci nakon restrukturiranja
-- [ ] `docs/architecture/ARCHITECTURE.md` pregledan na račun odstupanja u skladištenju/runtime-u
-- [ ] `docs/guides/TROUBLESHOOTING.md` pregledan na račun odstupanja u env varijablama i operacijama
-- [ ] Ako je `.env.example` izmijenjen: `docs/reference/ENVIRONMENT.md` je ažuriran
-- [ ] Ako nova funkcionalnost ima UI: `docs/guides/USER_GUIDE.md` je spominje
-- [ ] Ako nova funkcionalnost ima API: `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` su ažurirani
-- [ ] Ako je nova funkcionalnost modul: postoji namjenski `docs/<MODULE>.md`
-- [ ] Ako postoji breaking change: `docs/guides/TROUBLESHOOTING.md` sadrži napomenu o migraciji
+- [ ] `npm run check:docs-sync` prolazi (automatsko pokretanje pre-urezivanja)
+- [ ] `npm run check:docs-all` prolazi (kišobran: docs-sync + docs-counts + env-doc-sync + zastarjele verzije + doc-links)
+- [ ] `npm run check:env-doc-sync` izlazi 0 — kod ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` env ugovor je netaknut
+- [ ] `npm run check:doc-links` izlazi 0 — nema prekinutih internih referenci smanjenja nakon restrukturiranja
+- [ ] `docs/architecture/ARCHITECTURE.md` recenzirana za storage/runtime drift
+- [ ] `docs/guides/TROUBLESHOOTING.md` pregledan za env var i operativni drift
+- [ ] Ako je `.env.example` promijenjen: `docs/reference/ENVIRONMENT.md` ažuriran
+- [ ] Ako nova karakteristika ima UI: `docs/guides/USER_GUIDE.md` to spominje
+- [ ] Ako nova funkcija ima API: `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` ažuriran
+- [ ] Ako je nova karakteristika modul: postoji namjenski `docs/<MODULE>.md`
+- [ ] Ako se promijeni promjena: `docs/guides/TROUBLESHOOTING.md` ima bilješku o migraciji
 
 ### i18n
 
-- [ ] `npm run i18n:check` izlazi sa 0 — stanje prevoda (`.i18n-state.json`) je usklađeno sa izvornom dokumentacijom (nema odstupanja izvora u strict modu; warn-mode savjet je prihvatljiv za zadnje izmjene dokumentacije, ali treba biti 0 prije tagiranja)
-- [ ] `npm run i18n:check-ui-coverage` izlazi sa 0 — svaki UI lokal je na ili iznad praga pokrivenosti od 80%
-- [ ] `npm run i18n:sync-ui:dry` prijavljuje 0 nedostajućih ključeva kroz svih 42 lokala
-- [ ] Ako su izvorne engleske dokumentacije izmijenjene, pokrenite `npm run i18n:run` (zahtijeva `OMNIROUTE_TRANSLATION_API_KEY` u `.env`) prije tagiranja
-- [ ] Doprinosi prevodima se mogu odgoditi za sljedeće izdanje ako su minorne (pratiti u CHANGELOG-u)
+- [ ] `npm run i18n:check` izlazi iz 0 — stanja prijevoda (`.i18n-state.json`) u sinkronizaciji s izvornim dokumentima (nema promijenjenih izvora u strogom načinu rada; upozorenje o načinu rada je prihvatljivo za doradu dokumenata u posljednjem trenutku, ali treba biti 0 prije označavanja)
+- [ ] `npm run i18n:check-ui-coverage` izlazi iz 0 — svake UI lokalizacije na ili iznad poda pokrivenosti od 80%.
+- [ ] `npm run i18n:sync-ui:dry` prijavljuje 0 nedostajućih ključeva u svih 66 ciljnih lokala (svaki lokalitet osim `en` izvora)
+- [ ] Ako su izvorni engleski dokumenti promijenjeni, pokrenite `npm run i18n:run` (zahtijeva `OMNIROUTE_TRANSLATION_API_KEY` u `.env`) prije označavanja
+- [ ] Prevodni doprinosi se mogu odgoditi na sljedeće izdanje ako su manji (zapis u CHANGELOG)
 
 ### Migracije baze podataka
 
-- [ ] Ako `src/lib/db/migrations/` ima nove datoteke:
+- [ ] Ako `src/lib/db/migrations/` ima nove fajlove:
   - [ ] Svaka migracija je idempotentna (`CREATE TABLE IF NOT EXISTS`, itd.)
-  - [ ] Migracije su obavijene transakcijama
-  - [ ] Ispravno numerisane (bez praznina u sekvenci)
-- [ ] Testirajte na svježoj instalaciji: obrišite `~/.omniroute/omniroute.db` i pokrenite `npm run dev`
-- [ ] Testirajte na postojećoj instalaciji: napravite backup baze, pokrenite migraciju, verifikujte šemu
-- [ ] WAL datoteke (`-wal`, `-shm`) su ispravno obrađene ako migracija ponovo piše tabele
+  - [ ] Migracije umotane u transakcije
+  - [ ] Pravilno numerisano (bez praznina u nizu)
+- [ ] Testirajte na novoj instalaciji: izbrišite `~/.omniroute/omniroute.db` i pokrenite `npm run dev`
+- [ ] Testirajte na postojećoj instalaciji: backup DB, pokrenite migraciju, provjerite shemu
+- [ ] WAL fajlovi (`-wal`, `-shm`) ispravno obrađeni ako migracija prepisuje tablice
 
-### Katalog provajdera (Zod-validirano)
+### Katalog dobavljača (potvrđen Zod)
 
-- [ ] `src/shared/constants/providers.ts` Zod šema je validna prilikom učitavanja
-  - [ ] Svi provajderi imaju zahtijevana polja (`id`, `label`, `kind`, itd.)
-  - [ ] `freeNote` je dostavljen za nove besplatne provajdere
-  - [ ] OAuth provajderi imaju registrovani `oauthConfig` u `src/lib/oauth/constants/oauth.ts`
-- [ ] Ako je dodan novi provajder: odgovarajući executor u `open-sse/executors/`
-- [ ] Ako nije u OpenAI formatu: translator u `open-sse/translator/`
+- [ ] `src/shared/constants/providers.ts` Zod shema je važeća u vrijeme učitavanja
+  - [ ] Svi provajderi imaju obavezna polja (`id`, `label`, `kind`, itd.)
+  - [ ] `freeNote` za nove besplatne provajdere
+  - [ ] OAuth provajderi imaju `oauthConfig` registrovan u `src/lib/oauth/constants/oauth.ts`
+- [ ] Ako je dodan novi provajder: odgovarajući izvršilac u `open-sse/executors/`
+- [ ] Ako format nije OpenAI: prevodilac u `open-sse/translator/`
 - [ ] Modeli registrovani u `open-sse/config/providerRegistry.ts`
-- [ ] Unit testovi u `tests/unit/` pokrivaju klasifikaciju i rutiranje provajdera
+- [ ] Jedinični testovi u `tests/unit/` pokrivanju provajdera klasifikacije i rutiranja
 
 ### Desktop (Electron)
 
-Ako je `electron/` izmijenjen:
+Ako se `electron/` promijenio:
 
 - [ ] `npm run electron:smoke:packaged` prolazi
-- [ ] Buildovi testirani za barem jedan od `:win`, `:mac`, `:linux`
-- [ ] Certifikati za potpisivanje koda nisu istekli (ako se potpisuje)
-- [ ] Verzija u `electron/package.json` se podudara sa root `package.json`
-- [ ] Pokazivač kanala za auto-update je ažuriran ako se izdaje u `stable`
+- [ ] Izgradnje su testirane za barem jednu od `:win`, `:mac`, `:linux`
+- [ ] Certifikati za potpisivanje koda nisu istekli (ako su potpisani)
+- [ ] `electron/package.json` verzija odgovara root `package.json`
+- [ ] Pokazivač kanala za automatsko ažuriranje je ažuriran ako se pusti na `stable`
 
 ### Build Layout
 
-Repozitorij koristi tri različita izlazna direktorija — nikada ih nemojte miješati:
+Repozitorijum koristi tri različita izlazna direktorija — ih nikada ne miješa:
 
-| Direktorij | Svrha                                                        | Praćeno?        |
-| ---------- | ------------------------------------------------------------ | --------------- |
-| `src/`     | Izvor aplikacije (TypeScript / TSX)                          | Da              |
-| `.build/`  | Build intermediari — `next build` izlaz (`distDir`)          | Ne (gitignored) |
-| `dist/`    | Shippable npm bundle — sastavljen putem `assembleStandalone` | Ne (gitignored) |
+| Imenik    | Svrha                                                                         | Pratili?        |
+| --------- | ----------------------------------------------------------------------------- | --------------- |
+| `src/`    | Izvor aplikacije (TypeScript / TSX)                                           | Da              |
+| `.build/` | Izgradite međuprodukte — `next build` output (`distDir`)                      | Ne (ignorirano) |
+| `dist/`   | npm paket — koji se može isporučiti sastavljen od strane `assembleStandalone` | Ne (ignorirano) |
 
-> **Napomena za operatora:** direktorij udaljene VPS slike ostaje `/usr/lib/node_modules/omniroute/app/`.
-> Samo je izlaz builda **unutar repozitorija** pomjeren (`app/` → `dist/`). Deploy skillovi rsync-uju
-> sadržaj `dist/` u udaljeni `app/` dir — nisu potrebne promjene putanje na VPS-u.
+> **Napomena operatera:** udaljeni VPS direktorij slika ostaje `/usr/lib/node_modules/omniroute/app/`. Samo** in-repo** build output premješten (`app/` → `dist/`). Vještine postavljanja rsync `dist/` sadržaja u udaljeni `app/` dir — nisu potrebne promjene VPS putanje.
 
-**Single-build tok:**
+**Jednostruki tok:**
 
 ```
 npm run build:release
-  └─ rm -rf .build dist          (čišćenje)
-  └─ next build → .build/next/   (intermediari)
-  └─ assembleStandalone          (kopira standalone + static + public + natives → dist/)
-  └─ piše dist/BUILD_SHA       (HEAD sentinel)
+  └─ rm -rf .build dist          (clean)
+  └─ next build → .build/next/   (intermediates)
+  └─ assembleStandalone          (copies standalone + static + public + natives → dist/)
+  └─ writes dist/BUILD_SHA       (HEAD sentinel)
 ```
 
-NE pokrećite `npm run build` a zatim zaseban `npm run build:cli` za deploy — koristite
-`npm run build:release` koji vrši čisti rebuild + sentinel u jednoj komandi.
+Pokrenite NOT `npm run build` nakon čega slijedi poseban `npm run build:cli` za implementaciju — koristite `npm run build:release` koji vrši čistu ponovnu izgradnju + sentinela u jednoj naredbi.
 
 ### Validacija artefakata
 
 - [ ] `npm run build:release` uspijeva i `dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] `npm run check:pack-artifact` je čist — nema `app.__qa_backup`, `scripts/scratch`, `package-lock.json`, ili drugih lokalnih ostataka
-- [ ] `dist/server.js` postoji nakon builda
+- [ ] `npm run check:pack-artifact` clean — bez `app.__qa_backup`, `scripts/scratch`, `package-lock.json` ili drugih lokalnih ostataka
+- [ ] `dist/server.js` postoji nakon izgradnje
+- [ ] Opcionalno lokalno upakovano vrijeme izvođenja dim: `npm run dev:candidate -- validate` nakon `npm run dev:candidate -- build` pokreće upakovani tarball na izolovanom `DATA_DIR` i provjerava `/api/health` + `/v1/models` (pogledajte [Zlatni put doprinosa](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop) )
 
-### Tagiranje i Release
+### Označavanje i objavljivanje
 
-- [ ] Pokrenite `/generate-release-cc` (Claude Code skill):
-  - Kreira tag `vX.Y.Z`
-  - Push-uje tag i granu
-  - Otvara GitHub Release sa changelog tijelom
-  - Prilaže Electron instalere (ako su buildovani)
+- [ ] Pokreni `/generate-release-cc` ( vještina Claude Code):
+  - Kreira oznaku `vX.Y.Z`
+  - Gura oznaku i grana
+  - Otvara GitHub izdanje sa tijelom dnevnika promjena
+  - Priključuje Electron instalatere (ako je izgrađen)
 - [ ] Ili ručno:
   ```bash
   git tag -a vX.Y.Z -m "Release vX.Y.Z"
@@ -268,138 +248,246 @@ NE pokrećite `npm run build` a zatim zaseban `npm run build:cli` za deploy — 
 
 ### Deploy
 
-Deploy skillovi koriste lagani rsync tok — bez `npm pack`, bez `npm i -g`:
+Vještine implementacije koriste lagani rsync tok — no `npm pack`, no `npm i -g`:
 
-- [ ] Koristite deploy skill koji odgovara cilju:
+- [ ] Koristite vještinu raspoređivanja koja odgovara cilju:
   - `/deploy-vps-local-cc` — lokalni VPS (192.168.0.15)
   - `/deploy-vps-akamai-cc` — Akamai VPS (69.164.221.35)
-  - `/deploy-vps-both-cc` — oba
-- [ ] Prije deploy-a, potvrdite da je `dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] Build mora biti pokrenut tamo gdje je `node_modules` stvaran (glavni checkout ili `npm ci`'d worktree — NE symlinked worktree)
-- [ ] Smoke test deployovane instance:
-  - Otvorite `/dashboard/health` → provjerite da li se string verzije podudara sa release-om
-  - Pokrenite `/v1/chat/completions` zahtjev prema poznatom provajderu
-  - Verifikujte da `/api/monitoring/health` vraća `CLOSED` circuit breakere
-  - Potvrdite da MCP transporti odgovaraju (`/mcp` HTTP, `/mcp-sse` SSE)
+  - `/deploy-vps-both-cc` — oboje
+- [ ] Prije postavljanja, potvrdite `dist/BUILD_SHA` == `git rev-parse --short HEAD`
+- [ ] Izgradnja se mora izvoditi tamo gdje je `node_modules` stvaran (glavni checkout ili `npm ci`'d worktree — NOT simbolično radno stablo)
+- [ ] Instanca za testiranje dima:
+  - Otvorite `/dashboard/health` → za provjeru verzije odgovara izdanju
+  - Pokrenite `/v1/chat/completions` zahtjev protiv poznatog provajdera
+  - Provjerite `/api/monitoring/health` vraća `CLOSED` prekidače
+  - Potvrdite odgovor MCP transporta (`/mcp` HTTP, `/mcp-sse` SSE)
 
-### Post-release
+### Nakon puštanja na slobodu
 
-- [ ] Pokreni `/capture-release-evidences-cc` (Claude Code skill)
-  - Snima WebP screenshotove/snimke novih funkcionalnosti
-  - Prilaže ih uz release notes / blog post
-- [ ] Ažuriraj GitHub Discussions / Discord sa objavom o izlaženju verzije
-- [ ] Otvori milestone za sljedeću verziju
-- [ ] Ako je kritično: zakači (pin) diskusiju ili objavi u `news.json` za in-app banner
+- [ ] Pokreni `/capture-release-evidences-cc` (Claude Code vještina)
+  - Snima WebP screenshots/recordings novih funkcija
+  - U prilogu bilješke o izdanju / post na blogu
+- [ ] Ažurirajte GitHub Discussions / Discord s najavom izdanja
+- [ ] Otvorite prekretnicu za sljedeću verziju
+- [ ] Ako je kritično: zakačite diskusiju ili objavite u `news.json` za baner u aplikaciji
 
-### Radar public-launch gate
+### Radarska kapija za javno lansiranje
 
-Radar obavijest je namjerno commitovana sa `active: false`. Aktivacija je zasebna
-promjena nakon što se za svaku stavku ispod prilože dokazi:
+Radarska objava je namjerno izvršena sa `active: false`. Aktivacija je posebna promjena nakon što se dokaže svaka stavka ispod:
 
-- [ ] Svi nagomilani (stacked) Radar PR-ovi su merge-ovani i release-tip CI je zelen
-- [ ] Deploy-uj i testiraj (smoke test) OSS Radar rute dok je `RADAR_ENABLED` i dalje isključen po defaultu
-- [ ] Testiraj `GET /planos`, `/termos`, `/privacidade`, i `/reembolso` na imenovanom Radar hostu
-- [ ] Zapiši identitet/kontakt/adresu operatora i pravni pregled odobren od strane vlasnika u privatnom servisu
-- [ ] Testiraj Stripe Checkout i potpisani webhook isključivo u test modu
-- [ ] Testiraj jednu isporuku enkriptovanog transakcijskog emaila sa odobrenim pošiljateljem/domenom
-- [ ] Dokaži restore backup-a i jedno nadzirano, budžetski ograničeno istraživačko pokretanje (research run)
-- [ ] Odobri BRL/PIX polisu pregleda prije prihvatanja dokaza o donacijama
-- [ ] Omogući javni Checkout tek nakon prethodnih koraka, zatim aktiviraj novi `news.json` ID
-- [ ] Provjeri da li Home banner koristi lokalizovani tekst i da li se novi ID ponovo pojavljuje nakon što je stari ID zatvoren
+- [ ] Svi naslagani Radar PRs su spojeni i vrh za otpuštanje CI je zelen
+- [ ] Postavite i dimite rute OSS radara sa `RADAR_ENABLED` i dalje isključenim prema zadanim postavkama
+- [ ] Smoke `GET /planos`, `/termos`, `/privacidade` i `/reembolso` na imenovanom Radar hostu
+- [ ] Operator evidencije identity/contact/address i pravni pregled odobren od vlasnika u privatnom servisu
+- [ ] Exercise Stripe Checkout i potpisani webhook samo u test modu
+- [ ] Vježbajte jednu šifrovanu isporuku transakcijske e-pošte s odobrenim sender/domain
+- [ ] Dokažite vraćanje sigurnosne kopije i jedno nadgledano istraživanje s ograničenim budžetom
+- [ ] Odobrite BRL/PIX politiku pregleda prije prihvatanja dokaza o donaciji
+- [ ] Omogućite javnu odjavu samo nakon prethodnih kapija, a zatim aktivirajte novi `news.json` ID
+- [ ] Provjerite da banner Home koristi lokaliziranu kopiju i da se novi ID ponovo pojavljuje nakon što se stariji ID odbaci
 
-## Embedded Services smoke (v3.8.4+)
+## Brza provjera ugrađenih servisa (v3.8.4+)
 
-Prije slanja bilo kojeg release-a koji uključuje izmjene u embedded servisima, provjerite:
+Prije objavljivanja bilo kojeg izdanja koje uključuje izmjene ugrađenih servisa, provjerite:
 
-### Fresh-DB boot (hvata kolizije migracija — dodano nakon v3.8.4 hotfix-a)
+### Pokretanje sa svježom bazom podataka (otkriva kolizije migracija — dodano nakon hitne ispravke v3.8.4)
 
-- [ ] `DATA_DIR=$(mktemp -d) npm start &` — sačekajte 10 s za boot
-- [ ] `curl -s http://127.0.0.1:20128/api/services/9router/status | jq '.tool'` vraća `"9router"` (NE 404, NE 500). Potvrđuje da je migracija `071_services.sql` primijenjena + red je seed-ovan.
+- [ ] `DATA_DIR=$(mktemp -d) npm start &` — pričekajte 10 s da se pokrene
+- [ ] `curl -s http://127.0.0.1:20128/api/services/9router/status | jq '.tool'` vraća `"9router"` (NIJE 404, NIJE 500). Potvrđuje da je migracija `071_services.sql` primijenjena i da je red inicijalno dodan.
 - [ ] `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(version_manager);" | grep -E "provider_expose|logs_buffer_path|last_sync_at"` vraća 3 reda.
-- [ ] `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(webhooks);" | grep -E "kind|metadata_encrypted"` vraća 2 reda (validira da je `070_webhooks_kind_metadata.sql` primijenjena).
+- [ ] `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(webhooks);" | grep -E "kind|metadata_encrypted"` vraća 2 reda (potvrđuje da je `070_webhooks_kind_metadata.sql` primijenjen).
 - [ ] `node --import tsx/esm --test tests/unit/db/no-migration-collisions.test.ts` prolazi — štiti od budućih kolizija.
 
 ### 9Router
 
 - [ ] `POST /api/services/9router/install` vraća 200 sa `installedVersion` za manje od 2 min
 - [ ] `POST /api/services/9router/start` vraća 200 i `state: "running"` za manje od 30 s
-- [ ] `GET /api/services/9router/status` izvještava `health: "healthy"`
-- [ ] `POST /v1/chat/completions` sa `"model": "9router/auto/..."` vraća 200 (end-to-end rutiranje kroz 9Router)
-- [ ] `GET /dashboard/providers/services/9router/embed/dashboard` renderuje 9Router native UI unutar proxy-ja (bez direktnog `127.0.0.1:port` iframe-a)
+- [ ] `GET /api/services/9router/status` prijavljuje `health: "healthy"`
+- [ ] `POST /v1/chat/completions` sa `"model": "9router/auto/..."` vraća 200 (usmjeravanje od početka do kraja kroz 9Router)
+- [ ] `GET /dashboard/providers/services/9router/embed/dashboard` prikazuje izvorni 9Router UI unutar proxyja (bez direktnog `127.0.0.1:port` iframea)
 - [ ] `POST /api/services/9router/rotate-key` vraća `{ keyRotated: true }` i servis se ponovo pokreće bez grešaka
 - [ ] `POST /api/services/9router/stop` vraća 200 i `state: "stopped"`
-- [ ] `GET /api/services/9router/logs?tail=50` vraća SSE stream sa `snapshot` eventom koji sadrži nedavne linije
-- [ ] Instalacija u okruženju bez `npm` u PATH-u vraća 500 sa ljubaznom porukom o grešci (bez stack-trace-a)
+- [ ] `GET /api/services/9router/logs?tail=50` vraća SSE tok sa `snapshot` događajem koji sadrži nedavne redove
+- [ ] Instalacija u okruženju bez `npm` u PATH-u vraća 500 s jasnom porukom o grešci (bez praćenja steka)
 
 ### CLIProxyAPI
 
 - [ ] `POST /api/services/cliproxy/install` vraća 200 za manje od 2 min
 - [ ] `POST /api/services/cliproxy/start` vraća 200 i `state: "running"` za manje od 30 s
-- [ ] `GET /api/services/cliproxy/status` izvještava `health: "healthy"`
+- [ ] `GET /api/services/cliproxy/status` prijavljuje `health: "healthy"`
 - [ ] `POST /api/services/cliproxy/stop` vraća 200 i `state: "stopped"`
-- [ ] `GET /api/services/cliproxy/logs?tail=50` vraća SSE stream
+- [ ] `GET /api/services/cliproxy/logs?tail=50` vraća SSE tok
 
-### Security regression
+### Sigurnosna regresija
 
 - [ ] `curl -H "X-Forwarded-For: 1.2.3.4" http://localhost:20128/api/services/9router/start` vraća `403 LOCAL_ONLY`
 - [ ] `curl -H "X-Forwarded-For: 1.2.3.4" http://localhost:20128/api/services/cliproxy/start` vraća `403 LOCAL_ONLY`
-- [ ] Odgovori na greške sa `/api/services/*` ne sadrže `err.stack` ili apsolutne putanje do datoteka
+- [ ] Odgovori o greškama iz `/api/services/*` ne sadrže `err.stack` niti apsolutne putanje datoteka
 
-## v3.8.0+ provjere
+## Provjere za v3.8.0+
 
-Prije slanja bilo kojeg v3.8.x release-a, provjerite ove dodatne stavke:
+Prije objavljivanja bilo kojeg izdanja v3.8.x, provjerite i sljedeće stavke:
 
-- [ ] `omniroute --tray` se pokreće na macOS-u (systray2 instaliran u `~/.omniroute/runtime/`)
-- [ ] `omniroute --tray` se pokreće na Linux-u (zahtijeva DISPLAY; ljubazna greška ako nije postavljen)
-- [ ] `omniroute --tray` se pokreće na Windows-u (PowerShell NotifyIcon, bez dodatnih binarnih datoteka)
-- [ ] `omniroute config tray enable` kreira unos za autostart; disable ga uklanja
-- [ ] `npm install -g omniroute@<this-version>` pokreće postinstall bez fatalnog izlaska
-- [ ] Putanja za update zadržava opcionalne zavisnosti: `omniroute update --apply` i auto-updater
-      pokreću `npm install -g … --include=optional` tako da `optionalDependencies` (better-sqlite3,
-      keytar, tls-client, i llmlingua SLM stack: `@atjsh/llmlingua-2@2.0.5`,
-      `js-tiktoken`) prežive update. Ultra `modelPath` SLM tier također zahtijeva
-      tinybert model, koji se automatski preuzima u `${DATA_DIR}/models/llmlingua` pri prvoj upotrebi. Postinstall
-      (`scripts/build/colocateOptionals.mjs`) zatim kolocira SLM opcionalni closure u
-      `dist/node_modules` tako da worker razriješi JEDNU `@huggingface/transformers` ^4.2.0
-      instancu — standalone trace bundle sadrži samo transformers, ne i dinamički-importovane
-      opcionalne zavisnosti, pa bi bez ovoga worker učitao llmlingua-2 protiv root-ovih transformers-a
-      i SLM tier bi tiho zakazao (fail-open).
-- [ ] `omniroute status` radi bez `.env` (CLI token putanja, samo loopback)
-- [ ] `curl http://localhost:20128/api/shutdown` vraća 401 (uvijek zaštićena ruta)
-- [ ] `curl -H "host: evil.com" http://localhost:20128/api/mcp/sse` vraća 401 (loopback zaštita)
-- [ ] SQLite runtime se razriješi kao `bundled` pri prvom pokretanju (bundled binarni fajl validan za platformu)
-- [ ] SQLite runtime se povlači na `runtime` kada je `node_modules/better-sqlite3` obrisan
-- [ ] Smart MCP filter kompresuje pravi `playwright-mcp browser_snapshot` output (≥50% redukcije)
-- [ ] Svih 10 `skills/omniroute*/SKILL.md` datoteka su javno dostupne putem raw GitHub URL-a
-- [ ] Onboarding wizard prikazuje "How It Works" tier tour korak pri novoj instalaciji
-- [ ] Home dashboard tier coverage widget prikazuje konfigurisane/aktivne brojeve
+- [ ] `omniroute --tray` pokreće se na macOS-u (systray2 instaliran u `~/.omniroute/runtime/`)
+- [ ] `omniroute --tray` pokreće se na Linuxu (zahtijeva DISPLAY; jasna greška ako nije postavljen)
+- [ ] `omniroute --tray` pokreće se na Windowsu (PowerShell NotifyIcon, bez dodatnih binarnih datoteka)
+- [ ] `omniroute config tray enable` kreira unos za automatsko pokretanje; onemogućavanje ga uklanja
+- [ ] `npm install -g omniroute@<this-version>` izvršava postinstall bez fatalnog prekida
+- [ ] Putanja ažuriranja zadržava opcionalne zavisnosti: `omniroute update --apply` i program za automatsko ažuriranje
+      pokreću `npm install -g … --include=optional` kako bi `optionalDependencies` (better-sqlite3,
+      keytar, tls-client i llmlingua SLM stek: `@atjsh/llmlingua-2@2.0.5`,
+      `js-tiktoken`) ostale sačuvane nakon ažuriranja. Ultra `modelPath` SLM nivo također zahtijeva
+      tinybert model, koji se pri prvoj upotrebi automatski preuzima u `${DATA_DIR}/models/llmlingua`. Postinstall
+      (`scripts/build/colocateOptionals.mjs`) zatim smješta opcionalno SLM stablo zavisnosti u
+      `dist/node_modules` kako bi worker koristio JEDNU instancu `@huggingface/transformers` ^4.2.0
+      — samostalni trace paket uključuje samo transformers, a ne dinamički uvezene
+      opcionalne zavisnosti, pa bi bez ovoga worker učitao llmlingua-2 uz transformers iz korijenskog direktorija
+      i SLM nivo bi neprimjetno prešao u otvoreni način rada.
+- [ ] `omniroute status` radi bez `.env` (putanja CLI tokena, samo povratna petlja)
+- [ ] `curl http://localhost:20128/api/shutdown` vraća 401 (ruta koja je uvijek zaštićena)
+- [ ] `curl -H "host: evil.com" http://localhost:20128/api/mcp/sse` vraća 401 (zaštita povratne petlje)
+- [ ] SQLite okruženje se pri prvom pokretanju razrješava na `bundled` (uključena binarna datoteka valjana je za platformu)
+- [ ] SQLite okruženje prelazi na `runtime` kada se `node_modules/better-sqlite3` izbriše
+- [ ] Pametni MCP filter komprimira stvarni `playwright-mcp browser_snapshot` izlaz (smanjenje ≥50%)
+- [ ] Svih 10 datoteka `skills/omniroute*/SKILL.md` javno je dostupno putem sirovog GitHub URL-a
+- [ ] Čarobnjak za početno postavljanje prikazuje korak obilaska nivoa "Kako radi" pri novom postavljanju
+- [ ] Widget pokrivenosti nivoa na početnoj kontrolnoj ploči prikazuje broj konfiguriranih/aktivnih nivoa
 
 ---
 
-## Povlačenje izmjena (Rollback)
+## Izdvajanje 3.9.0 LTS-a (uvježbano u 3.8.58)
 
-Ako verzija ima kritičan problem:
+Nakon v3.8.59 sljedeća verzija je 3.9.0, a njen vrh postaje osnova za dvije dugotrajne grane:
+`stable/v3` (v3 LTS linija, npm `latest`) i `develop` (v4, povećana na 4.0.0, npm
+`nightly`). Model grana/kanala, prosljeđivanje izmjena i oznake nalaze se u
+[RELEASE_STRATEGY.md](./RELEASE_STRATEGY.md); plan se nalazi u dokumentu [ROADMAP](../../ROADMAP.md) (faza 3). Izdvajanje se izvršava jednom;
+3.8.58 ga uvježbava od početka do kraja na forku, a 3.8.59 se zaključuje pomoću
+[GO/NO-GO kontrolne liste](./LTS_GO_NO_GO.md).
 
-1. `gh release edit vX.Y.Z --prerelease` (označava kao ne-najnoviju)
-2. `git tag -d vX.Y.Z && git push --delete origin vX.Y.Z` (samo ako korisnici još nisu usvojili verziju)
-3. Ili: hotfix na `release/vX.Y.0` → patch verzija `vX.Y.(Z+1)`
-4. Odmah obavijestite korisnike putem GitHub Discussions i Discorda
+### Probno pokretanje (samo za čitanje, sigurno u bilo kojem trenutku)
+
+```bash
+npm run release:dry-run-lts-cut                       # stvarno izdvajanje: 3.9.0 iz HEAD-a, prethodna oznaka v3.8.59
+npm run release:dry-run-lts-cut -- --from <3.9.0-tip> # fiksiraj izvorni commit
+```
+
+`scripts/release/dry-run-lts-cut.mjs` ne izvršava ništa: čita git i `gh` te ispisuje
+cijeli slijed — preduslove (izvor se može razriješiti, izvorni repozitorij ima potpunu historiju —
+plitki klon ne može poslati `stable/v3`, prijemna strana odbija paket kod prvog
+naknadno spojenog roditelja, stoga prvo izvršite izdvajanje iz potpunog klona ili
+`git fetch --unshallow origin` — prethodna oznaka postoji, `package.json` sadrži ciljnu
+verziju, otvoren je problem `release-freeze`, nema otvorenog problema
+`Release branch not green`
+na postojećoj grani izdanja — grana koja ne postoji prijavljuje `?` kao nepoznato, nikada
+kao zeleno — Mergify red `release` je konfigurisan (G11: `queue_rules`, `checks_timeout`,
+oznaka `queue`), skup pravila `release/*` i dalje blokira brisanje i prisilno slanje, a
+`stable/v3` i `develop` još ne postoje), dva koraka za grane, koji se okidači neaktivnih tokova rada
+i `if:` uslovi aktiviraju (a koji ostaju blokirani varijablom repozitorija ili
+fiksirani na kanonski repozitorij), očekivane dist-oznake (`latest` → 3.9.0, `next` i
+`nightly` prazne) i vraćanje na prethodno stanje. Izlazni kod `0` = `RESULT: READY`,
+`1` = blokirajući preduslov nije ispunjen (`✗`), `2` = greška upotrebe.
+`--advisory <id,...>` spušta nivo provjere na upozorenje (`!`) bez njenog skrivanja.
+
+Pokrenite probno pokretanje stvarnog izdvajanja dok je zamrzavanje izdanja 3.9.0 još aktivno — grane se
+kreiraju nakon oznake i prije nego što faza 12c ukine zamrzavanje.
+
+### Proba 3.8.58 (samo fork)
+
+```bash
+# 1. Probno pokretanje na trenutnom vrhu s parametrima probe
+npm run release:dry-run-lts-cut -- --target-version 3.8.58 --previous-tag v3.8.57 \
+  --advisory freeze,base-green
+
+# 2. Izvrši nad FORK udaljenim repozitorijem (origin ili bilo koji udaljeni repozitorij čiji je URL
+#    kanonski repozitorij se odbija; svaki korak traži potvrdu u terminalu)
+git remote add rehearsal https://github.com/<you>/OmniRoute.git
+node scripts/release/dry-run-lts-cut.mjs --execute --remote rehearsal \
+  --target-version 3.8.58 --previous-tag v3.8.57 --advisory freeze,base-green
+
+# 3. Isprobaj neaktivne tokove rada u forku (workflow_dispatch tamo gdje probno pokretanje
+#    prijavi fiksiranje na kanonski repozitorij), a zatim vrati prethodno stanje
+node scripts/release/dry-run-lts-cut.mjs --execute --rollback --remote rehearsal \
+  --target-version 3.8.58 --previous-tag v3.8.57 --advisory freeze,base-green
+```
+
+Commit povećanja verzije na grani develop izrađuje se pomoću git plumbing komandi (radno stablo se ne mijenja) i ažurira
+istih pet datoteka kao commit otvaranja ciklusa: `package.json`, `open-sse/package.json`,
+`electron/package.json`, `package-lock.json` i `docs/openapi.yaml`. Odjeljak `[4.0.0]`
+u CHANGELOG-u i njegove i18n kopije otvaraju se na grani `develop` nakon toga, prije njenog prvog
+PR-a. Skripta nikada ne mijenja npm dist-oznake — uvježbajte ih na privremenom paketu.
+
+### Artefakt za pregled PR-a (izgradite jednom, promovirajte iste bajtove)
+
+`.github/workflows/preview-artifact.yml` izrađuje jednu produkcijsku tarball arhivu iz vrha PR-a i
+provjerava upravo tu izgradnju (dio (a) zadatka #8084). Samo PR-ovi iz istog repozitorija; ništa se ne objavljuje.
+
+```bash
+gh workflow run preview-artifact.yml -f pr_number=<N>   # ili dodaj oznaku `preview-artifact`
+gh run download <run-id> --name preview-artifact-pr<N>-<sha7> --dir preview
+cd preview && sha256sum -c SHA256SUMS
+gh attestation verify omniroute-*.tgz --repo diegosouzapw/OmniRoute
+npm install -g ./omniroute-*.tgz                          # instalacija pregleda
+```
+
+Pokretanje izvršava `npm ci`, `npm run build:release`, `npm run check:pack-artifact`, pakuje
+tarball arhivu, pokreće `npm run check:pack-boot` (lažne tajne, privremeni direktorij podataka), ponovo je pakuje i
+ne uspijeva ako sažetak nije identičan, a zatim bilježi `artifact-identity.json` (SHA vrha, SHA baze,
+hash datoteke zaključavanja, platformu, arhitekturu, node ABI, alat za objedinjavanje, pravila izgradnje —
+`scripts/release/artifact-identity.mjs`) i potvrđuje tarball arhivu u zasebnom poslu. Promoviranje
+pregleda znači instaliranje te tarball arhive: nikada je nemojte ponovo izgrađivati iz izvornog koda.
+
+### Izdvajanje (3.9.0, nakon odluke GO)
+
+1. Odluka GO zabilježena je u [LTS_GO_NO_GO.md](./LTS_GO_NO_GO.md).
+2. `npm run release:dry-run-lts-cut -- --from v3.9.0` ispisuje `RESULT: READY`.
+3. Ručno kreirajte grane na `origin` pomoću komandi koje ispiše probno pokretanje —
+   skripta odbija slanje na `origin`. Da biste ponovo koristili pregledani develop commit, prvo pokrenite
+   probu s opcijom `--execute` na vrhu 3.9.0 prema svom forku; ona ispisuje oba SHA-a, a
+   isti commitovi mogu se poslati:
+
+   ```bash
+   git push origin <stable-sha>:refs/heads/stable/v3 <develop-sha>:refs/heads/develop
+   ```
+
+4. Zaštitite `stable/v3` i `develop` (skupovi pravila + red čekanja za spajanje) prije nego što se spoji prvi PR.
+5. Neaktivni radni tokovi uključuju se postojanjem grane: `forward-port.yml` (slanje na
+   `stable/v3`), `validate-stable-pr.yml` (PR-ovi prema `stable/v3`) i `nightly-v4-build.yml`
+   (izgradnje za `develop`). Prije puštanja u rad postavite repozitorijsku tajnu `secrets.FORWARD_PORT_TOKEN` (kako bi se CI pokretao za
+   PR-ove za prijenos unaprijed); noćno objavljivanje ostaje isključeno dok vlasnik ne postavi repozitorijsku
+   varijablu `vars.NIGHTLY_PUBLISH` na `true` i dok npm Trusted Publishing ne prihvati
+   `nightly-v4-build.yml`. Određivanje kanala vrši `scripts/release/dist-tag.mjs`, isti
+   razrješivač koji koristi `npm-publish.yml`.
+6. Provjerite kanale: `npm view omniroute dist-tags --json` prikazuje `latest` = 3.9.0 i nema
+   `next` / `nightly` dok se v4 ne objavi.
+7. Vraćanje na prethodno stanje, ako bude potrebno: `git push origin --delete refs/heads/stable/v3 refs/heads/develop`
+   i `npm dist-tag add omniroute@3.8.59 latest`.
+
+---
+
+## Vraćanje na prethodnu verziju
+
+Ako izdanje ima kritičan problem:
+
+1. `gh release edit vX.Y.Z --prerelease` (označava da nije najnovije)
+2. `git tag -d vX.Y.Z && git push --delete origin vX.Y.Z` (samo ako ga korisnici još nisu počeli koristiti)
+3. Ili: hitna ispravka na `release/vX.Y.0` → izdanje zakrpe `vX.Y.(Z+1)`
+4. Odmah obavijestite korisnike putem GitHub Discussionsa i Discorda
 
 ## Stroga pravila
 
-- Nikada ne radite commit direktno u `main`
-- Nikada ne koristite `git push --force` na `main` ili `release/*` grane
-- Nikada ne preskačite Husky hook-ove (`--no-verify`)
-- Nikada ne commit-ujte tajne, kredencijale ili `.env` datoteke
-- Pokrivenost (Coverage) mora ostati ≥60/60/60/60 (iskazi/linije/funkcije/grane)
-- Uvijek uključite ili ažurirajte testove kada mijenjate produkcijski kod u `src/`, `open-sse/`, `electron/` ili `bin/`
+- Nikada ne šaljite izmjene direktno na `main`
+- Nikada ne koristite `git push --force` za `main` ili grane `release/*`
+- Nikada ne preskačite Husky hookove (`--no-verify`)
+- Nikada ne šaljite tajne, pristupne podatke ili `.env` datoteke
+- Pokrivenost mora ostati ≥60/60/60/60 (naredbe/linije/funkcije/grane)
+- Prilikom izmjene produkcijskog koda u `src/`, `open-sse/`, `electron/` ili `bin/` uvijek uključite ili ažurirajte testove
 
-## Automatska provjera sinhronizacije
+## Automatizirana provjera sinhronizacije
 
-Pokrenite čuvar sinhronizacije dokumentacije lokalno prije otvaranja PR-a:
+Pokrenite lokalnu provjeru sinhronizacije dokumentacije prije otvaranja PR-a:
 
 ```bash
 npm run check:docs-sync
 ```
 
-CI također pokreće ovu provjeru u `.github/workflows/ci.yml` (lint job).
+CI također pokreće ovu provjeru u `.github/workflows/ci.yml` (lint zadatak).

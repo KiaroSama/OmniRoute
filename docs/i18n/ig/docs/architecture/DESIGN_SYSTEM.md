@@ -4,228 +4,263 @@
 
 ---
 
-> **Ọnọdụ:** ntụaka — etinyela nhazi-ọkọlọtọ a kọwara ebe a n'ọrụ **emejuputala ya** (usoro 1–6: akwụkwọ-mgbidi grid, primitives, ime ka agba ọnọdụ dị n'otu ebe, token mono, mb移 DataTable gaa na token, focus-ring → accent, primitives Checkbox/Textarea, `cn()` → tailwind-merge, grid na ihuenyo standalone ọ bụla, shell ọdịnaya 4K na-agbanwe nha, elu data-table na-adịghị ahụpụ ihe dị n'azụ). Akwụkwọ a bụ nkọwa canonical nke tokens imewe, components, na conventions nke dashboard; edobere nkewa usoro dị n'okpuru dịka ihe kpatara mkpebi ọ bụla.
-> **Oke:** dashboard OmniRoute (`src/`) na saịtị ahịa (`_mono_repo/omnirouteSite/`) na-eji **otu njirimara anya** — otu ndabere grid yiri akwụkwọ eserese (32px), otu tokens agba, na components ahaziri n'ọkọlọtọ.
->
-> Ihe ndị bara uru ndị na-elekọta ya kwesịrị ịma:
->
-> - Ụfọdụ ụkpụrụ hex hardcoded fọdụrụ bụ **ụma ka e mere ha otú ahụ** (console terminal na-adị ọchịchịrị mgbe niile, ReactFlow SVG strokes), ya mere a **GAGHỊ** ebugharị ha n'ime tokens n'ozuzu.
-> - Grid yiri ka ọ “ka ukwuu” na instance na-arụ ọrụ bụ build ochie, ọ bụghị code — nha grid bụ 32px, otu ihe ahụ dị na saịtị ahụ.
-> - Ụkpụrụ `--table-*` nke dark-theme bụ byte-for-byte otu ihe ahụ dị ka rgba hardcoded tupu migration; edoziiri light theme (ọ nwere bug nke mere ka ọ na-adị ọchịchịrị mgbe niile site na fallbacks `var()` ndị na-adịghị arụ ọrụ).
+> **Ọnọdụ:** e wuru dashboard ahụ n'elu **Keak CI UI Kit** (`@keak/cheaper-inference-ui-kit`), ma tinye ya
+> dị ka workspace `packages/ui-kit` (`@omniroute/ui-kit`; edobere snapshot nke upstream n'ime
+> `packages/ui-kit/UPSTREAM.md`, ebe `npm run check:ui-kit-snapshot` na-echekwa ya). Light bụ theme
+> ntụaka; mmasị ndabara bụ `system`. Palette ndabara bụ ọdịdị **Editions** nke kit ahụ
+> (agba akwụkwọ na-anọpụ iche ndị na-ekpo ọkụ na agba mgbakwunye ọla kọpa `#e5ac82`, `packages/ui-kit/src/ci-editions.css`); Settings →
+> Appearance → Color palette na-enye **Classic**, ya bụ token ndị bụ isi nke kit ahụ nwere agba mgbakwunye lime. Switzer bụ
+> naanị font family maka UI, ederede ngosi na ederede code (`--ci-font-ui`; `--ci-font-display` na
+> `--ci-font-mono` na-arụtụ aka na ya), kit ahụ n'onwe ya na-akwado ya (`packages/ui-kit/src/ci-fonts.css`,
+> nke `ci-tokens.css` na-ebubata). Script ndị Switzer na-enweghị na-eji font ndị ọzọ glyph n'otu n'otu (`src/app/globals.css`):
+> Inter maka Cyrillic, Greek na Vietnamese, ma naanị n'okpuru `html[dir="rtl"]`, Vazirmatn maka script Arabic.
+> Akara ngosi ọ bụla bụ glyph Lucide.
 
----
+## 1. Ebe ihe dị
 
-## 1. Ebumnuche
+- **Ngwá ọrụ.** `packages/ui-kit/src` bụ oyiri byte-for-byte nke upstream `src/` na commit e debere na
+  `packages/ui-kit/UPSTREAM.md` (nke na-edekwa ikike iji ikike ngwanrọ ahụ); `PATCHES.md` depụtara
+  patches mpaghara (ọ dịghị). A na-eji ya dị ka source, na-enweghị build: `next.config.mjs` na-eme
+  transpile ya, ebe `tsconfig.json` na-atụgharị `@omniroute/ui-kit` → `packages/ui-kit/src` na
+  `@omniroute/ui-kit/*` → `packages/ui-kit/src/*` (`vitest.config.ts` na `vitest.mcp.config.ts` nwekwara alias
+  ahụ). Bubata component kit site na subpath ya (`@omniroute/ui-kit/table`, `@omniroute/ui-kit/page-header`…), ọ bụghị
+  site na barrel nke `@omniroute/ui-kit`: barrel ahụ na-ebubata component niile (gụnyere date picker)
+  n'ime importer ọ bụla. Stylesheet kit na-abata site na `src/app/globals.css`
+  (`@import "../../packages/ui-kit/src/ci-styles.css"`, sheet zuru ezu: core `ci-ui.css` tinyere ezinụlọ pattern niile).
+- **Tokens.** `packages/ui-kit/src/ci-tokens.css` na-ekwupụta tokens `--ci-*`; `src/app/globals.css`
+  na-ejikọta ha na aha OmniRoute ochie (`--color-*`, `--radius-*`, `--font-sans`/`--font-mono`,
+  `--table-*`, `--orch-status-*`, `--color-fd-*`), ka reads `var(--color-*)` dị ugbu a na
+  Tailwind utilities wee gaa n'ihu na-arụ ọrụ. Koodu ọhụrụ na-eji Tailwind utilities (`bg-surface`, `text-text-muted`,
+  `border-border`, `text-success`, `bg-success-bg`, `bg-chart-1`…) ma ọ bụ classes kit — ọ dịghị mgbe a na-eji
+  uru hex (`tests/unit/design-kit-bridge.test.ts` na-amanye bridge ahụ). `text-primary` na-edozi gaa na
+  `--color-primary-ink` site na `--text-color-primary`, ya mere ederede primary na-anọgide na-agụpụta nke ọma,
+  ebe `bg-primary`/`border-primary` na-edobe elu accent: n'okpuru Editions ọ bụ kit
+  `--ci-color-accent-active` (deep copper `#99562f` na light, copper accent na dark); n'okpuru Classic,
+  lime-800 na light na lime accent na dark. Usoro chart na-eji
+  `--color-chart-1` … `--color-chart-8`, nke ọ bụla nwekwara `--color-chart-N-ink` nke dị mma maka ederede na
+  `--color-chart-N-subtle` chip tint na-enweghị nghọta, e kenyere ha n'usoro series kit (`ciChartSeriesOrder`).
+- **Themes.** `<html className="ci-theme">` (`src/app/layout.tsx`) na-etinye akwụkwọ ahụ n'ime theme kit.
+  Nhọrọ ahụ bụ `light`, `dark` ma ọ bụ `system` (`THEME_CONFIG.defaultTheme = "system"` na
+  `src/shared/constants/appConfig.ts`; `system` na-agbaso `prefers-color-scheme`). `applyTheme()` na
+  `src/store/themeStore.ts` (nke `THEME_BOOT_SCRIPT` na-emekọrịta, a na-etinye ya inline na
+  `src/app/layout.tsx`, ọ na-agba ọsọ tupu hydration) na-edobe `data-theme="dark"|"light"` ma na-agbanwe
+  class `.dark` na `<html>` n'otu oge. Dark token set nke kit na-adabere na `data-theme="dark"`
+  (`packages/ui-kit/src/ci-tokens.css`); dark overrides nke OmniRoute (`.dark` block dị na `globals.css`) na
+  legacy Tailwind `dark:` utilities na-adabere na class `.dark`. Enweghị accent color presets: accent na-abịa
+  mgbe niile site na kit, a na-atụfukwa preset e debere site na build ochie mgbe store na-ebu.
+- **Palettes.** Abụọ, ha abụọ sitere na kit (`src/shared/constants/appearancePalette.ts`): `editions`, nke bụ
+  ndabara, na `classic`. Editions bụ attribute `data-ci-appearance="editions"` nke kit na `<html>`, nke
+  `ci-editions.css` (nke `ci-ui.css` na-ebubata) na-ejikọta na `data-theme`; Classic bụ enweghị attribute ahụ.
+  Root layout na-eme server-render attribute ahụ, ya mere onye bịara na-enweghị ihe echekwara (ma ọ bụ na-enweghị JS)
+  na-enweta Editions n'elu surface niile — dashboard, login, `/status`, error pages, `/docs` na PWA. A na-echekwa
+  nhọrọ ahụ n'akụkụ theme n'otu `theme` store (`palette`, `setPalette()`, `applyPalette()` dị na
+  `src/store/themeStore.ts`) ma tinye ya tupu paint site na `THEME_BOOT_SCRIPT`
+  (`src/shared/utils/themeBootScript.ts`, nke a na-etinye inline na `<head>` nke layout), nke na-ewepụ attribute ahụ
+  naanị mgbe palette echekwara bụ `"classic"`; `src/app/global-error.tsx`, nke dị n'èzí root layout, na-etinye
+  ya site na store ahụ. Etinyela `data-ci-appearance` na element ọzọ ọ bụla: kit na-eji
+  `html:root:has([data-ci-appearance="editions"])` dakọrịta ya, ya mere otu descendant ga-agbanwe akwụkwọ ahụ dum.
+  Editions `data-ci-editions-variant="landing"` variant bụ maka ibe ahịa, ọ bụghị dashboard.
+  Browser chrome: server na-ewepụta ndabara, Editions, na `viewport.themeColor` (otu tag maka
+  `prefers-color-scheme` ọ bụla) na web manifest — `PWA_THEME_COLORS` dị na
+  `src/shared/constants/pwaThemeColors.ts`, otu mirror nke Editions `--ci-color-background`
+  (`#f3f1e9` / `#11120f`), nke `tests/unit/pwa-theme-colors.test.ts` kpọgidere na
+  `ci-editions.css`. `<meta name="theme-color">` dị ndụ na-esokwa palette na mode echekwara: `THEME_BOOT_SCRIPT`
+  na-edegharị tags ahụ tupu paint, actions nke theme store na-emekwa ya na mgbanwe ọ bụla
+  (`resolveThemeColor()` / `applyThemeColor()` dị na `src/shared/utils/themeColorMeta.ts`, tinyere
+  `CLASSIC_PAGE_BACKGROUND` nke a na-agụ site na `ciTokens` kit). Theme light/dark doro anya na-edobe tag ọ bụla
+  na mode ahụ; `system` na-edobe otu agba maka scheme ọ bụla. Manifest na-anọgide Editions: a na-ebudata ya otu ugboro
+  kwa install, na-enweghị preference ahụ. Monaco na-agụ agba ya site na probe (`monacoKitTheme.ts`);
+  n'okpuru Editions, ọgụgụ probe na-agbanwe root `data-theme` maka otu synchronous pass, n'ihi na kit na-edozi
+  Editions light/dark site na root.
+- **Components (adapters).** `src/shared/components/index.tsx` na-edobe API component OmniRoute (otu aha,
+  default exports na props), primitives dị n'azụ ya bụkwa adapters n'elu kit: forms
+  (`Button`, `Input`, `Textarea`, `Checkbox`, `Select`, `Toggle`, `Badge`, `Card`), overlays na feedback
+  (`Modal`/`ConfirmModal`, `Tooltip`/`InfoTooltip`, `NotificationToast`, `EmptyState`, `Loading`),
+  nhazi
+  (`Collapsible`, `CollapsibleSection`, `SegmentedControl`, `Breadcrumbs`, `Avatar`) na tables
+  (`DataTable`, `FilterBar`, `ColumnToggle`, `FilterPills`, `PresetSlider`). Adapter na-ebubata
+  kit component site na subpath ma na-map legacy props gaa na ya — dịka ọmụmaatụ `Button variant="primary"` bụ
+  button `default` nke kit (`--ci-button-primary-*`: inverse surface na light, accent tinyere
+  `--ci-color-accent-foreground` ink ya na dark), `danger` bụ `destructive`, `warning` bụkwa kit `warning`
+  button. `Badge` status variants bụ kit tones, `Select` nwere ụmụ `<option>` na-eme render kit
+  `NativeSelect`.
+  A na-ebubata adapters abụọ site na path, ọ bụghị site na index: `InteractiveTableRow`
+  (`src/shared/components/InteractiveTableRow.tsx`), kit `TableRow` nke na-anata `onActivate` na
+  `selected` ma na-aza Tab, Enter na Space, na `CodePreview`
+  (`src/shared/components/CodePreview.tsx`), code block kit nke a sụgharịrị copy labels ya.
+  `tests/unit/ui/adapters/*.test.tsx` na-akpọgide adapter ọ bụla.
+- **Shell.** `src/app/(dashboard)/layout.tsx` na-ewepụta `DashboardLayout`, nke na-ewepụta
+  `src/shared/components/layouts/DashboardShell.tsx`: kit `SidebarProvider` / `Sidebar` /
+  `SidebarInset` (`packages/ui-kit/src/sidebar.tsx`), tinyere mgbagha igodo OmniRoute dị na
+  `src/shared/components/Sidebar.tsx`. Njikọ “wụpụ gaa n’ọdịnaya” nke na-aga `#main-content` bụ ihe mbụ a pụrụ ilekwasị anya na ya. `src/shared/components/Header.tsx` nwere kit `SidebarTrigger` (naanị ihe na-agbanwe sidebar nke shell), Keak `ProductSwitcher` na onye na-emepe command palette; ọ na-egosi aha ụzọ ahụ naanị mgbe enweghị kit `PageHeader` (`.ci-page-header`) etinyere n’ime `#main-content`, ya mere ibe nwere `PageHeader` nke ya nwere otu `h1`. `src/shared/components/CommandPalette.tsx` bụ kit `Dialog`.
 
-Saịtị ahịa (`viral.omniroute.online`, `why.omniroute.online`, `omniroute.online`) na dashboard ngwaahịa kwesịrị ịdị ka **otu ngwaahịa**. Saịtị ahụ ebularị palette ya n'aka dashboard — ọbụna `css/tokens.css` ya na-ekwu _"Palette na-egosipụta nke dashboard OmniRoute (`src/app/globals.css`)"_. Ya mere, ha abụọ adịlarị ihe dịka ~80% n'otu n'ọkwa agba. Ihe ndị dashboard ka na-enweghị:
+- **Akara ngosi.** `<Icon name="material_name">` (`src/shared/components/Icon.tsx`) na-achọpụta aha ahụ (okwu Material Symbols nke screens na-eji) site na `ICON_MAP` (`src/shared/constants/iconMap.ts`) gaa na akara Lucide. Font na package Material Symbols adịghịzi: aha na-adịghị na map ahụ na-ewepụta akara nnọchi na-anọpụ iche (`data-icon-missing="true"`) ma na-edekọ ịdọ aka ná ntị na console n’èzí production. `npm run gen:icon-map` na-ebipụta aha ndị a na-eji nke na-adịghị na map ahụ
+  (`tests/unit/icon-map-coverage.test.ts` na-ada ma ọ bụrụ na aha ọ bụla enweghị akara Lucide;
+  `tests/unit/icon-map-object-values.test.ts` na-ekpuchi aha ndị echekwara n’ihe lookup objects);
+  `scripts/dev/codemod-material-icons.mjs <dir|file>... [--write]` na-agbanwe spans nkịtị
+  `<span className="material-symbols-outlined">` gaa na `<Icon>`.
 
-1. **Akwụkwọ-mgbidi grid yiri akwụkwọ eserese** nke saịtị ahụ na-eji na ibe ọ bụla.
-2. Ole na ole n'ime **tokens imewe a na-ekekọrịta** nke saịtị ahụ nwere ma dashboard enweghị (usoro radius, brand gradient, `surface-2`, font mono).
-3. **Ịdị n'otu n'ọkwa component** — ọtụtụ components dashboard na-agafe tokens theme ma jiri hex/rgba hardcoded.
+- **Akara ụlọ ọrụ.** `src/shared/components/OmniRouteLogo.tsx` na-ekechi kit: default export `OmniRouteLogo`
+  na-ewepụta `ProductIcon product="omniroute" variant="glyph"` (inline SVG, `basePath`-safe), ebe
+  `OmniRouteLockup` na-ewepụta `ProductLockup product="omniroute"` (aha a pụrụ ịnweta bụ "Keak OmniRoute") ma ọ bụ, maka ndị ọrụ white-label, `name`/`logoSrc` nke ha. Ebe ProductSwitcher na-aga dị na
+  `src/shared/constants/keakProducts.ts` (`KEAK_PRODUCT_LINKS`, `KEAK_ACTIVE_PRODUCT`). Screens kwụụrụ onwe ha — `src/app/login/page.tsx`, `src/app/status/page.tsx`, `src/app/maintenance/page.tsx`,
+  `src/app/offline/page.tsx`, `src/app/not-found.tsx` na `src/shared/components/ErrorPageScaffold.tsx`
+  — na-egosi lockup ahụ; `tests/unit/brand-pages-static.test.ts` na-echekwa nke a.
 
-Akwụkwọ a bụ nyocha na atụmatụ ahụ.
+## 2. Iwu
 
----
+1. Tokens, ọ bụghị literals. Ewezuga ndị a ka echekwara n’ebumnuche: terminal console nke na-adị ọchịchịrị mgbe niile na
+   `STATUS_HEX` (`src/shared/constants/statusColors.ts`), mirror hex a kpebisiri ike nke palette ọnọdụ kit
+   maka ndị na-akpọ ya chọrọ hex literal. Palette categorical abụghịzi ewezuga:
+   ha na-eji tokens chart asatọ nke kit (`--color-chart-1..8`, tinyere `-ink`/`-subtle`), n’usoro usoro kit,
+   site na `src/shared/utils/categoricalPalette.ts` na, maka atụmatụ routing,
+   `src/app/(dashboard)/dashboard/combos/strategyPalette.ts`; edges ReactFlow na canvas orchestration
+   na-agụ variables `--orch-status-*` nke maara theme (`src/shared/components/flow/edgeStyles.ts`).
+2. Egbula aka dezie `packages/ui-kit/src`: jiri `scripts/dev/sync-ui-kit.sh <commit>` mee sync; gate pre-commit
+   `npm run check:ui-kit-snapshot` (`.husky/pre-commit`) na-ada ma ọ bụrụ na byte ọ bụla dị iche na commit upstream
+   e tinyere akara (ọ na-amapụ ya na ịdọ aka ná ntị mgbe clone upstream,
+   `UI_KIT_CLONE` ma ọ bụ `_references/cheaper-inference-ui-kit`, adịghị). Mgbe kit enweghị ihe,
+   chọta ụzọ gburugburu ya n’adapter ma ọ bụ screen, ma rịọ upstream maka ya.
+3. Ndabara ederede kit bụ Bekee (`label = "Loading"`, `loadingLabel = "Loading table"`…) — nyefee
+   eriri atụgharịrị sitere na `useTranslations(...)` mgbe ọ bụla akụrụngwa kit na-egosipụta ederede.
+4. Tailwind utilities na-emeri klaasị akụrụngwa kit (kit na-ekwupụta
+   `@layer theme, base, components, utilities` ma iwu ya dị na `components`) — jiri utilities maka oghere
+   na nhazi layout, ọ bụghị iji gbanwee agba akụrụngwa kit. Typography bụ ewezuga:
+   `packages/ui-kit/src/ci-typography.css` ka a na-import n’èzí layer ọ bụla, ya mere iwu tag ya na-emeri
+   utilities. Klaasị weight, `tracking-*` na `leading-*` enweghị mmetụta na `h1`–`h6`, weight na
+   `tracking-*` enweghị mmetụta na cells tebụl, weight enweghịkwa mmetụta na buttons
+   (`tests/unit/dead-typography-classes.test.ts` na-ajụ ha n’ebe ndị ahụ); `font-mono` enweghị mmetụta na
+   `th`, `td`, `button`, `input` na `textarea`. Utilities size, colour na `uppercase` ka na-arụ ọrụ.
+5. Headings: `.ci-heading` maka aha peeji na ngalaba; `.ci-dashboard-display` naanị maka nnukwu ederede
+   display nke nwere oghere zuru ezu dịka koodu ọnọdụ peeji njehie. Ha abụọ na-eji Switzer.
+6. `tests/unit/dashboard-kit-sweep.test.ts` na-echekwa nnabata kit: enweghị Material ligature span n’okpuru
+   `src/app` ma ọ bụ `src/shared/components`; n’osisi dashboard (`src/app/(dashboard)` na
+   `src/shared/components`) enweghị raw `<select>`, `<textarea>` ma ọ bụ `<table>` na enweghị hand-rolled
+   `role="dialog"` n’èzí ewezuga ndị e depụtara (native branch nke `Select` adapter,
+   `RequestLoggerDetail`); raw `<button>` ma ọ bụ `<input>` ọ bụla nọ ebe ahụ chọrọ comment nwere
+   `kit-exception:` (tinyere ihe kpatara ya) nke na-akwụsị karịa ahịrị 3 tupu ya; palette hues na `dark:` variants
+   naanị n’ime faịlụ test ahụ depụtara.
+7. Tupu PR, nyochaa themes abụọ na viewport 390 px (screenshots); `tests/e2e/a11y.spec.ts` na-agba
+   axe.
+8. Utility colour ga-akpọrịrị token dị na `@theme` block nke `src/app/globals.css`: aha na-adịghị ebe ahụ
+   (`text-text`, `bg-bg-muted`, `text-danger`…) anaghị emepụta CSS, element ahụ ana-edobe colour o ketara
+   (`tests/unit/theme-color-classes.test.ts`). Enweghị klaasị `card`: jiri `Card` adapter
+   (`tests/unit/no-bare-card-class.test.ts`). Ederede dị na chart colour na-eji `text-chart-N-ink`;
+   `text-chart-N` bụ maka icons na strokes
+   (`tests/unit/chart-ink-for-text.test.ts`). A na-eji `color-mix` wuo colour translucent, ọ bụghị
+   site n’ịgbakwunye hex alpha na uru nwere ike ịbụ `var()`
+   (`tests/unit/color-alpha-concatenation.test.ts`).
+9. Tebụl: `Table` kit ọ bụla na-agafe `scrollLabel`, aha mpaghara scroll ya, na
+   `scrollbarLabel` mgbe ọ na-ese scrollbar na-adịgide adịgide
+   (`tests/unit/kit-tables-have-accessible-name.test.ts`). Ahịrị a pụrụ ịpị bụ `InteractiveTableRow`
+   nwere `onActivate`, ọ bụghị `<TableRow onClick>`
+   (`tests/unit/table-row-click-needs-keyboard.test.ts`). Tebụl dị n’ime card, ma ọ bụ n’ime box ọ bụla nwere
+   border, na-ewepụ frame nke ya site na `containerClassName="rounded-none border-0"`
+   (`tests/unit/datatable-not-framed-inside-card.test.ts`).
+10. Bar na-egosi amount bụ `Progress` nke kit, ma ọ bụ nwee `role="progressbar"` nke nwere aha na
+    value mgbe kit bar enweghị ike ise ya (`tests/unit/progress-bars-have-semantics.test.ts`). Menus,
+    popovers na tooltips sitere na kit (`Popover`, `SearchableSelect`, `Tooltip` adapter), ọ bụghị
+    panel edobere n’ọnọdụ zuru oke nke local state meghere
+    (`tests/unit/hand-positioned-overlays.test.ts`).
+11. Na `Input` adapter, `className` na-akpụzi wrapper field; klaasị e bu n’obi maka control na-abanye na
+    `inputClassName` (`tests/unit/input-adapter-classname-destination.test.ts`).
 
-## 2. Ụkpụrụ nduzi
+## 3. Ịgbakwunye ihuenyo
 
-- **Otu isi iyi eziokwu = `src/app/globals.css`.** Saịtị ahụ na-eṅomi dashboard, ọ bụghị dashboard na-eṅomi saịtị. Tokens ọhụrụ na-abata na `globals.css` mbụ.
-- **Jiri tokens, ejila literals.** Components na-eji semantic tokens (`bg-surface`, `text-primary`, `border-border`), ọ bụghị `#hex` raw.
-- **Ka ọ dị nro, ọ bụghị ka ọ na-eti mkpu.** Grid bụ akwụkwọ-mgbidi na-adịghị apụta ìhè nke nọ n'azụ ọdịnaya — ọ gaghị ebelata contrast ederede ma ọ bụ lụso UI ọgụ.
-- **Na-amata theme.** Ihe niile na-arụ ọrụ ma na `.dark` (ọdịdị pụrụ iche nke ngwaahịa ahụ) ma na light.
-- **Mwepụta akọwapụtara nke ọma.** Bupu grid + tokens mbụ (obere ihe ize ndụ, nnukwu nhụta), wee hichaa components n'usoro dị iche iche.
+1. Mepee peeji ahụ na kit `PageHeader` (`@omniroute/ui-kit/page-header`, `compact` n'ime dashboard) — aha, nkọwa na `actions`. Isi shell na-ewepụzi aha nke ya, a na-ezokwa ya n'okpuru 1024 px, ya mere route na-enweghị `PageHeader` enweghị aha na ekwentị
+   (`tests/unit/dashboard-page-header-coverage.test.ts`). Akụkụ ụzọ na-enweghị peeji nke ya na-abanye na `ROUTE_PREFIXES_WITHOUT_PAGE` dị na `src/shared/utils/breadcrumbTrail.ts`, ka crumb ya bụrụ ederede, ọ bụghị njikọ nwụrụ anwụ (`tests/unit/breadcrumb-trail-routes.test.ts`).
+2. Wuo njikwa site na `@/shared/components` (ndị adapters) ma jiri akụrụngwa kit site na subpath ebe adapter adịghị (`Table`/`TableScrollArea`/`DataTableShell`, `Field`, `Alert`, `Tabs`, `RadioGroup`, `Slider`…).
+3. Akara ngosi: `<Icon name="…" />`. Aha ọhụrụ na-abanye na `ICON_MAP` ya na akụrụngwa Lucide kwekọrọ n'ihe ọ pụtara; `npm run gen:icon-map` na-edepụta aha ndị ka na-efu.
+4. Agba: jiri semantic utilities (`text-success`, `bg-warning-bg`, `border-border`…) na `var(--color-chart-N)` maka usoro eserese; ejikwala uru hex, ma ọ bụ variants `dark:` ndị na-eme naanị ikwugharị otu agba.
+5. Ederede: eriri ederede ọ bụla, gụnyere labels ị na-enyefe kit components, sitere na `useTranslations`. Tinye igodo ọhụrụ naanị na `src/i18n/messages/en.json`; refresh nke release ga-ejupụta locales ndị ọzọ
+   (`tests/_helpers/localeParityMode.ts` na-akọwa ụdịdị abụọ ahụ). Nnwale na-ejikọta katalọgụ na-abụghị Bekee n'ezie na-ewu messages ya dịka runtime si eme, site na `deepMergeFallback` dị na `src/i18n/request.ts`, ya mere igodo ka dị naanị na Bekee na-alaghachi na fallback kama ịkpata njehie.
+6. Gbaa guards ndị a tupu PR: `tests/unit/dashboard-kit-sweep.test.ts`,
+   `tests/unit/icon-map-coverage.test.ts`, `tests/unit/icon-map-object-values.test.ts`,
+   `npm run check:dashboard-typecheck` (naanị check na-achọpụta import ugboro abụọ dị na `iconMap.ts`),
+   `npm run check:ui-icu`, guards ndị akpọrọ na iwu 4 na 8–11, yana ule nke ihuenyo ahụ n'onwe ya.
 
----
+## 4. Ịgbakwunye ma ọ bụ ịgbanwe adapter
 
-## 3. Ọnọdụ ugbu a — ihe ndị adịlarị n'otu na ihe ndị na-abụghị
+1. Debe API ọha nke `src/shared/components/index.tsx`: otu aha export ndị ahụ, default exports na props a nabatara. Kpagbue props ochie n'elu kit n'ime adapter (lee `Button.tsx`: `VARIANT_TO_KIT`, `SIZE_TO_KIT`).
+2. Bubata kit site na subpath (`@omniroute/ui-kit/<component>`).
+3. Ndochi maka oghere kit na-ebi n'ime adapter (ma ọ bụ na `globals.css` `@layer components` mgbe ndozi ahụ bụ style), ọ bụghị n'ime `packages/ui-kit/src`.
+4. Tinye ma ọ bụ melite `tests/unit/ui/adapters/<name>.test.tsx`. Maka adapter nwere ọtụtụ ndị na-akpọ ya, tụnyere markup e rụrụ tupu na mgbe mgbanwe ahụ gasịrị — mgbanwe padding ma ọ bụ wrapper na-agafe n'ihuenyo ọ bụla.
 
-### 3.1 Agba — adịlarị n'otu ✅
+## 5. Imelite ngwa ahụ
 
-Agba brand na surface ọ bụla adịlarị otu ihe na nke saịtị ahụ **site na ụkpụrụ ya** (naanị aha ha dị iche — dashboard na-etinye `--color-` n'ihu). Ekwenyere nke a na `src/app/globals.css:30-128`:
+`npm run check:ui-kit-upstream` tụlere ụdị nke etinyere na `packages/ui-kit/UPSTREAM.md` na mkpado `v*` kachasị ọhụrụ nke repo elu wee bipụta iwu mmekọrịta mgbe mwepụta pụtara.
 
-| Echiche                    | Token saịtị (`tokens.css`)                  | Token dashboard (`globals.css`) | Ndakọrịta           |
-| -------------------------- | ------------------------------------------- | ------------------------------- | ------------------- |
-| primary                    | `--primary #e54d5e`                         | `--color-primary #e54d5e`       | ✅                  |
-| primary-hover              | `--primary-hover #c93d4e`                   | `--color-primary-hover #c93d4e` | ✅                  |
-| accent                     | `--accent #6366f1`                          | `--color-accent #6366f1`        | ✅                  |
-| accent-2                   | `--accent-2 #8b5cf6`                        | `--color-accent-hover #8b5cf6`  | ✅ (agbanweela aha) |
-| accent-3                   | `--accent-3 #a855f7`                        | `--color-accent-light #a855f7`  | ✅ (agbanweela aha) |
-| success / warning / error  | `#22c55e / #f59e0b / #ef4444`               | otu ihe ahụ                     | ✅                  |
-| ọkụ okporo ụzọ             | `#ff5f56 / #ffbd2e / #27c93f`               | otu ihe ahụ                     | ✅                  |
-| dark bg / surface / border | `#0b0e14 / #161b22 / rgba(255,255,255,.08)` | otu ihe ahụ                     | ✅                  |
-| light bg / surface / text  | `#f9f9fb / #fff / #1a1a2e`                  | otu ihe ahụ                     | ✅                  |
+Usoro ọrụ `UI Kit upstream watch` kwa ụbọchị (`.github/workflows/ui-kit-upstream-watch.yml`) na-eme otu nlele ahụ. Mgbe ntụtụ dị n'azụ, `scripts/ci/ui-kit-sync-pr.sh` na-edobe otu PR mmekọrịta ghere oghe megide alaka `release/vX.Y.Z` kachasị elu, na ngalaba na-atụgharị `chore/ui-kit-sync-latest`. Ọ dịghị mgbe ọ na-ejikọta: ngwa ngwa ọ bụla ntọhapụ ka chọrọ nlele anya na VPS mpaghara. A na-ewughachi alaka ụlọ ọrụ ahụ mgbe ewepụtara ọhụrụ wee hapụ naanị ya ma ọ bụghị ya. Agaghị edegharị PR mepere emepe nke ejiri aka kwalie, yana PR maka ụdị nke onye na-echekwa mechiri ejikọtaghị ọnụ na-anọkwa na-emechi ruo mgbe ewepụtara ọhụrụ.
 
-**Mmechi:** enweghị migration agba a ga-eme. A na-ekekọrịtalarị njirimara ahụ; anyị na-_emecha_ ya, ọ bụghị iwughachi ya.
+Mgbe enweghị ike imeghe PR (ntọhapụ ebumnuche ahụ jụrụ oyi, PR emeela site n'aka, mechiri PR, ma ọ bụ enweghị akara PR edobere) usoro ọrụ na-eme ka otu okwu nsochi meghere nke na-ekwu ihe kpatara ya.
 
-### 3.2 Oghere ndị fọdụrụ — ihe dashboard na-enweghị
+Usoro a na-eji ụzọ abụọ eme ihe:
 
-| Oghere                       | Ihe saịtị nwere                                                                | Dashboard                                                             | Ihe a ga-eme                  |
-| ---------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------- | ----------------------------- |
-| **Akwụkwọ ahụaja grid**      | `body::before` graph-paper, `--grid-line`, `--grid-size 32px`, `--section-alt` | **✅ agbakwunyere (Phase 1)**                                         | **Part A**                    |
-| **Ọ̀tụ̀ radius**               | `--radius 14px`, `--radius-sm 9px`                                             | agbakwunyere `--radius 14px`; `-sm` + ntụgharị component ka na-echere | **Part B / Phase 2**          |
-| **Gradient nke brand**       | `--grad-brand 135deg primary→accent-3`                                         | **✅ agbakwunyere token (Phase 1)**; a ga-eji ya na Phase 2           | **Part B**                    |
-| **Surface dị n'ime**         | `--surface-2 #1c2230`                                                          | **✅ agbakwunyere (Phase 1)**                                         | **Part B**                    |
-| **Font mono**                | `--font-mono` (usoro ui-monospace)                                             | ka na-echere (Phase 4, ya na ndị na-eji ya)                           | **Part B**                    |
-| **`text-muted` (ọchịchịrị)** | `#8b8b9e`                                                                      | `#a1a1aa` (zinc-400)                                                  | mee ka ha kwekọọ — **Part B** |
+- `secrets.UI_KIT_READ_TOKEN`: akara naanị ọgụgụ maka repo elu nkeonwe. Mgbe usoro ọrụ enweghị ike ịgụ elu elu (enweghị akara, akara nke kwụsịrị ịrụ ọrụ, ma ọ bụ GitHub enweghị ike iru) ọsọ ahụ na-adịgide ndụ ndụ mana ọ na-ede ịdọ aka ná ntị ma na-eme ka otu okwu dị iche meghee, nke na-emechi onwe ya otu ugboro na-agba ọsọ nwere ike ịgụ elu ọzọ.
+- `secrets.UI_KIT_SYNC_PR_TOKEN`: akara mara mma na ebe nchekwa a nwere ọdịnaya yana arịrịọ dọpụta dee ohere. `GITHUB_TOKEN` ndabara enweghị ike ịmepụta PRs ebe a, na PR ọ meghere agaghị akpalite CI. Na-enweghị akara ngosi a, usoro ọrụ na-akpali alaka ụlọ ọrụ naanị.
 
-### 3.3 Usoro nhazi theme (ka anyị ghara imebi ihe ọ bụla)
+`scripts/dev/sync-ui-kit.sh <commit|latest> [clone]` na-eṅomi `src/` nke dị elu na ntinye ahụ (`latest` = mkpado `v*` ọhụrụ) n'ime `packages/ui-kit/src`, na-etinye mgbanwe otu ekwenyere (ọ na-ewepụ suffix `.js` site na mbubata ndị ikwu), ma debe ụdị ọrụ na `packages/ui-kit/package.json` na `package-lock.json` gaa na nke elu. Mgbe ahụ: nyochaa `git diff packages/ui-kit`, mee ihe ngosi anya na ndị na-enye, ntọala, combos, ojiji na njedebe na isiokwu abụọ ahụ, na-agba ọsọ `npm run check:ui-kit-snapshot` na `npm run test:vitest:ui`, ma mepee PR na elu mgbanwe mgbanwe.
 
-- **Tailwind v4, CSS-first** (enweghị `tailwind.config.*`). A kọwapụtara token n'ime `:root`/`.dark` ma mee ka utility nweta ha site na `@theme inline` (`globals.css:130-179`).
-- **Ọchịchịrị site na class `.dark`** dị na `<html>` (`@custom-variant dark` na `globals.css:22`), nke custom Zustand store (`src/store/themeStore.ts`) na-agbanwe, theme ndabara = `system` (`src/shared/constants/appConfig.ts:11`). Saịtị ahụ na-eji `html[data-theme="light"]` kama — **usoro ndị ahụ dị iche ma ha anaghị ezute onwe ha** (origin dị iche iche), ya mere enweghị esemokwu. Anyị ga-edobe usoro `.dark` nke dashboard.
-- **Runtime primary override** dị (`themeStore.ts:85-97`, preset dị na `COLOR_THEMES`) — ndị ọrụ nwere ike ịgbanwe `--color-primary`. Token ọhụrụ ọ bụla (gradient, wdg.) nke na-ezo aka na `--color-primary` ga-eketa override ndị ahụ n'efu. ✅
-- **Aha radius ndị Tailwind v4 debere:** `--radius-sm/md/lg/...` na-akwado utility `rounded-*`. Ịkọwapụta ha ọzọ ga-agbanwe `rounded-*` niile dị ugbu a ozugbo (dịka ọmụmaatụ, a na-eji `rounded-sm` n'ime faịlụ 12). Ya mere, e kpachaara anya yigharịa uru small-radius na ntụgharị component ruo Phase 2, ebe a ga-agbanwe ndị na-eji ha n'otu oge.
+## 6. Ihe osise README
 
----
+Ihe osise iri na abụọ ndị root `README.md` na-etinye (`docs/diagrams/*.svg`) bụ ngwa ọrụ a tinyere na
+onyonyo kwụ ọtọ, a naghị ese ha n’aka: faịlụ generator iri na atọ dị na `scripts/docs/gen-readme-*.mjs`
+(ihe osise iri na abụọ tinyere driver `gen-readme-diagrams.mjs`) na ule staleness iri na abụọ dị na
+`tests/unit/docs/readme-*-svg.test.ts`, otu maka ihe osise ọ bụla, nke ọ bụla na-atụnyere faịlụ e tinyere na
+ntọala byte site na byte na mmepụta generator ya (ọrụ `test-unit`).
 
-## 4. Akụkụ A — Ndabere grid akwụkwọ eserese (isi arịrịọ) — EMEJUPỤTALA (Nkeji 1)
+- **Tokens.** `scripts/docs/readme-diagram-theme.mjs` na-ebufe palette Editions (ọdịdị ndabara) site na
+  `packages/ui-kit/src/ci-editions.css` (nke `tests/unit/docs/readme-diagram-theme.test.ts` na-ejikọta ya na
+  faịlụ ahụ, ma na-enyochakwa WCAG AA maka agba ederede ọ bụla n’elu elu ọ bụla n’usoro abụọ ahụ; naanị ihe dị iche,
+  `warn` nke ìhè, bụ ngwa ịdọ aka ná ntị nke kit mere ka ọ gbaa ọchịchịrị 10% n’ihi na uru kit ahụ bụ 4.46:1
+  n’elu canvas) ma kọwaa ọrụ ederede n’ogo ụdị nke kit (`ci-tokens.css`): Switzer n’arọ kit ya (400/500/600,
+  display na 500) na tracking maka ihe niile, ewezuga ọrụ koodu (`.cmd`, `.term`, `.term-lg`, `.mono`, `.mono-sm`, `.mono-xs`),
+  ndị bụ IBM Plex Mono ma bụrụ naanị maka iwu, URL, identifiers na ihuenyo terminal.
+  Uru ìhè na-adị na `:root`, ebe uru ọchịchịrị dị n’azụ `prefers-color-scheme: dark`, n’ime faịlụ ahụ, ka ihe
+  onyonyo ọ bụla soro atụmatụ onye na-ele ya na GitHub.
+- **Fonts.** GitHub Markdown anaghị ebu CSS, camo proxy ahụ na-egbochikwa arịrịọ mpụga niile, ya mere ụdị kit
+  ga-eso faịlụ ahụ n’onwe ya. `scripts/docs/readme-outline.mjs`, nke bụ nzọụkwụ ikpeazụ nke generator ọ bụla,
+  na-eji HarfBuzz hazie ọrụ Switzer ma see ha dịka vector outlines (`<defs>` paths na `<use>`), ebe a na-eji
+  metrics nke ya ese akụ na akara geometric ndị Switzer enweghị. Outlines, ọ bụghị font etinyere n’ime faịlụ:
+  ikike Switzer (`packages/ui-kit/src/fonts/FFL.txt`) machibidoro ime subsetting na mgbanwe usoro na-enweghị
+  nkwenye ederede ma na-ekwe ka e see vector, ya mere etinyekwala Switzer `@font-face` ma ọ bụ `data:` URI ọzọ.
+  Font naanị fọdụrụ n’ime faịlụ bụ OFL IBM Plex Mono subset maka ihe ka bụ ederede koodu n’ezie
+  (`scripts/docs/readme-fonts.mjs`), nke e wuru site na mkpụrụedemede ndị ahụ; glyph ọ bụla ọ na-enweghị ike itinye
+  na-eme ka njehie pụta.
+- **Mepụta ọzọ.** `npm run docs:readme-diagrams` na-edegharị ihe osise iri na abụọ niile n’usoro README ma bipụta otu ahịrị
+  maka faịlụ ọ bụla tinyere nha ya. Enwere ike ịgba otu generator naanị ya (`node scripts/docs/gen-readme-<name>.mjs`;
+  `free-tier-budget` chọrọ `node --import tsx/esm` n’ihi na figures ya na-abịa site na live catalog loader dị na
+  `open-sse/config/freeModelCatalog.ts`; ihe mgbanwe catalog pụtara na CI dị na
+  `docs/architecture/QUALITY_GATES.md` → `docs-sync-strict`). Tinye generator na SVG ọnụ.
+  SVG ochie na-ada na release mode; na feature PR, `npm run check:generated-artifacts` na-enyocha naanị SVG nke PR ahụ gbanwere
+  (`docs/architecture/QUALITY_GATES.md` → "Generated files and derived baselines").
+- **Nkwenye.** `scripts/docs/readme-svg-shots.mjs <file.svg> <outdir>` na-ewepụta faịlụ dịka GitHub si eje ozi na ya
+  (tag `<img>`, `Content-Security-Policy` nke camo, `image/svg+xml`), na-ejide frame ìhè na ọchịchịrị ma kọọ arịrịọ
+  font mpụga ndị peeji ahụ mere (ga-abụrịrị 0).
+- **Ogo.** N’okpuru 200 KB maka faịlụ ọ bụla (ule staleness ọ bụla na-akwado ya); 500 KB bụ oke siri ike maka
+  onyonyo README ọ bụla (iwu validator nke SVG studio).
+- **Detuo ya n’enweghị mgbanwe, counts sitere na gate.** Rebrand ahụ gbanwere ụdị na palette, ọ bụghị okwu: generator
+  ọ bụla na-ebu copy nke ihe osise ya n’ime constant `*_COPY` (ma ọ bụ wuo ya site na live catalog), nke bụ ma ederede a na-ese
+  ma input nke nzọụkwụ outlining. Ọnụọgụ canonical na-adị n’ime nodes `<text>` (a naghị ahụ ha ozugbo e mechara outline,
+  `fill-opacity:0`), `check:docs-counts` na-agụ ha
+  (`scripts/check/check-docs-counts-sync.mjs`); ule staleness nke ihe osise ndị na-akwado reads na-agbakwa validators ya
+  n’elu faịlụ e mepụtara, ya mere figure ọ bụla si na koodu wezuga na-eme ka ule daa — dozie isi iyi gate na-agụ,
+  emela ka ị gbanwee nọmba dị na generator.
 
-### 4.1 Ihe ọ bụ
+## 7. Ndepụta ntụaka
 
-Usoro ziri ezi sitere na saịtị ahụ (`_mono_repo/omnirouteSite/css/base.css`): **pseudo-element kwụchiri nke na-ekpuchi viewport dum**, nke na-ese gradient ahịrị abụọ nke 1px, ma nọrọ na `z-index:-1` n'azụ ọdịnaya niile.
-
-```css
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
-  background-size: var(--grid-size) var(--grid-size);
-}
-```
-
-**Ihe mere nke a ji arụ ọrụ n'agbanyeghị na `body` nwere `background-color` na-adịghị ahụ ụzọ:** `::before` nwere `z-index:-1` na-ese _n'elu_ ndabere nke element ahụ n'onwe ya ma _n'okpuru_ ọdịnaya ya dị n'ime usoro nhazi. Ya mere, `--color-bg` bụ agba ntọala, a na-etinye grid ahụ n'elu ya, ngwa ahụ ana-apụta n'elu grid ahụ.
-
-### 4.2 Ihe nlereanya dịlarị na codebase
-
-`src/app/landing/page.tsx:16-26` **emejuputalarị otu grid a n'ibe ọ bụla** — mana o ji ahịrị **ọbara ọbara** (`#E54D5E`, opacity `0.06`) na **50px**, tinyere orb ndị a na-emegharị emegharị. Ya mere, egosila na usoro a na-arụ ọrụ na ngwaahịa ahụ; ọrụ a na-ebuli ya ka ọ bụrụ wallpaper **zuru ụwa ọnụ nke na-agbanwe dịka theme si dị**.
-
-### 4.3 Token ndị agbakwunyere (na `globals.css`)
-
-```css
-:root {
-  /* light — e buliri opacity grid site na 0.045 nke saịtị ahụ ka wallpaper ahụ
-     pụta ìhè n'ezie na dashboard jupụtara n'ihe (card/chrome na-ekpuchi ọtụtụ viewport) */
-  --grid-line: rgba(0, 0, 0, 0.07);
-  --grid-size: 32px;
-  --section-alt: rgba(0, 0, 0, 0.022);
-}
-.dark {
-  /* dark — e buliri ya site na 0.035 n'ihi otu ihe ahụ */
-  --grid-line: rgba(255, 255, 255, 0.06);
-  --section-alt: rgba(255, 255, 255, 0.018);
-}
-```
-
-### 4.4 Naanị ihe mgbochi — ewepụla ya
-
-Grid ahụ zuru ụwa ọnụ site na nhazi ya (ọ na-ekpuchi panel, `auth`/`login`, ibe njehie — route niile — n'otu oge). Naanị element **otu** zoro ya n'ime panel:
-
-- `src/shared/components/layouts/DashboardLayout.tsx` — wrapper mpụta na-ese `bg-bg` na-adịghị ahụ ụzọ. Ihe niile dị n'okpuru ya adịlarị transparent (`<main>`, scroll container, na `max-w-7xl` dị n'ime), ya mere **iwepụ `bg-bg`** na-eme ka grid nke body ahụ pụta site na mpaghara ọdịnaya (ọrụ `--color-bg` nke body ka bụ agba ntọala).
-
-  ```diff
-  - <div className="flex h-dvh min-h-0 w-full overflow-hidden bg-bg">
-  + <div className="flex h-dvh min-h-0 w-full overflow-hidden">
-  ```
-
-### 4.5 Mmekọrịta chrome (sidebar / header)
-
-- `Header` (`Header.tsx:207`, `bg-bg`) na `Sidebar` (`Sidebar.tsx:430`, `bg-sidebar`) ka na-abụ **ndị na-adịghị ahụ ụzọ** → grid ahụ na-apụta naanị na **mpaghara ọdịnaya**, ebe chrome siri ike gbara ya gburugburu. Nke a bụ ndabara dị jụụ, ma kwekọọ n'otú saịtị ahụ si ekewa chrome na canvas (mkpebi D3 = siri ike).
-
-### 4.6 Ibe login / auth / njehie
-
-Ndị a na-apụta ozugbo n'okpuru `<body>` (enweghị panel chrome), ya mere grid zuru ụwa ọnụ kwesịrị ịpụta n'azụ ha na-akpaghị aka. **Nkeji 5 — EMECHAALA:** wrapper ndị full-screen nọọrọ onwe ha bụ n'ezie ndị na-adịghị ahụ ụzọ (`min-h-screen … bg-bg`, ebe `bg-bg` bụ otu agba siri ike dị ka `<body>`), nke zoro grid ahụ na ihuenyo niile na-abụghị dashboard — ọ bụghị naanị login. Ugbu a, ha niile abụrụla transparent ka wallpaper a na-ekekọrịta nwee ike ịpụta: `login`, `forgot-password`, `callback`, `maintenance`, `offline`, `status`, `terms`, `privacy`, `onboarding`, na `ErrorPageScaffold` (na-ekpuchi `400`/`401`). Nke a mechiri **D4** (gbasapụrụ site na naanị login ruo na ihuenyo niile nọọrọ onwe ha). `tests/unit/design-grid-background.test.ts` na-echebe ya.
-
-### 4.7 Ibe landing
-
-`landing/page.tsx` na-edobe ndabere ya bara ụba nke a na-emegharị emegharị (orb + vignette) — splash mgbasa ozi pụrụ iche nke ya (mkpebi D5 = hapụ ya dịka ọ dị).
-
----
-
-## 5. Akụkụ B — Ijikọta token
-
-Phase 1 na-agbakwunye token njirimara ndị na-adịghị arụ ọrụ ma na-enweghị esemokwu (`--surface-2`/`--color-surface-2`, `--grad-brand`, `--radius`). Phase 2 na-ejikọta ọkwa radius na Tailwind ma na-atụgharị components ka ha jiri ya; Phase 4 na-agbakwunye `--font-mono` tinyere ndị na-eji ya.
-
-| Token                      | Ihe kpatara ya                                                                   | Phase                           |
-| -------------------------- | -------------------------------------------------------------------------------- | ------------------------------- |
-| `--radius` / `--radius-sm` | Otu ọkwa radius (14/9) kama ụkpụrụ 6/8/12 ndị e tinyere n’ụzọ ad-hoc             | 1 (uru) / 2 (jikọta + tụgharịa) |
-| `--grad-brand`             | Gradient nke brand maka CTA ndị bụ isi (uhie→violet), ka ọ dakọtara na saịtị ahụ | 1 (token) / 2 (Button)          |
-| `--surface-2`              | Panel ndị dị n’ime ibe ha / nkụnye isi table / ahịrị ndị e tinyere n’ime         | 1                               |
-| `--font-mono`              | Code blocks, terminal, ID, endpoints                                             | 4                               |
-| Dozie `--text-muted`       | Họrọ otu uru maka saịtị↔panel (`#a1a1aa` ka akwadoro)                            | 2                               |
-
-**D2 (text-muted):** saịtị `#8b8b9e` megide dashboard `#a1a1aa`. A na-atụ aro idowe **`#a1a1aa` nke dashboard** ma melite _saịtị_ ka ọ dakọtara. Nke a bụ mgbanwe ịchọ mma.
-
----
-
-## 6. Akụkụ C — Ịhazigharị component ka ha bụrụ otu ụkpụrụ (Phases 2–4)
-
-Components emere iche (enweghị shadcn/Radix), Tailwind v4, anabatala semantic tokens **n’ọtụtụ akụkụ** (faịlụ 195 na-ebubata shared barrel). Ọrụ fọdụrụ bụ iwepụ ụzọ ndị **na-agafe usoro ahụ**. Ebe ha dị: `src/shared/components/`.
-
-| #   | Ihe                                             | Faịlụ                                                                                                                    | Nsogbu → Ebumnuche                                                                                                                                                        | Phase |
-| --- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| C1  | **Ịhazigharị radius**                           | `Button.tsx:14-18`, `Card.tsx:39`, `Modal.tsx`, `Input.tsx`, `Select.tsx`                                                | ngwakọta 6/8/12px → `--radius`/`--radius-sm` (14/9)                                                                                                                       | 2     |
-| C2  | **Gradient Button + variant `accent`**          | `Button.tsx:5-12`                                                                                                        | nke bụ isi bụ uhie→uhie na-enweghị gradient; mee ka ọ dabara na `--grad-brand`; gbakwunye variant `accent` na-efu. Ihe dị ka ndị na-ebubata ya 195 — nke a kacha pụta ìhè | 2     |
-| C3  | **Tables**                                      | `DataTable.tsx:122-176`, `logTableStyles.ts`, `globals.css:405-414`                                                      | rgba e dere ozugbo n’ime koodu 100% + vars ndị na-adịghị adị; bugharịa gaa na tokens, kwụsị styles ndị na-ekwekọghị                                                       | 3     |
-| C4  | **Kpokọta agba status n’otu ebe**               | `flow/edgeStyles.ts`, `TokenHealthBadge.tsx`, `DegradationBadge.tsx`, `ProviderCascadeNode.tsx`, `Badge.tsx` + helpers 5 | mbipụta 6+ nke otu hex ahụ → otu module sitere na `--color-success/warning/error`                                                                                         | 3     |
-| C5  | **Border Card**                                 | `Card.tsx:39`                                                                                                            | `border-white/5` → brand `/8`                                                                                                                                             | 2     |
-| C6  | **Dozie focus ring ka ọ bụrụ otu** ✅ EMECHAALA | `globals.css` `--focus-ring` (accent) megide `ring-primary/30` nke form controls                                         | ejikọtala ha niile na **accent (violet)** ka ọ dakọtara na global ring ma kewapụ ya nke ọma na error ring uhie; error ka bụ uhie                                          | 4     |
-| C7  | **Gbakwunye `Checkbox` + `Textarea`**           | raw `<input>`/`<textarea>` nwere `accentColor:#6366f1` e dere inline                                                     | primitives ndị tokens na-achị                                                                                                                                             | 4     |
-| C8  | **Nnyocha hardcoded-hex niile**                 | `ConsoleLogViewer.tsx:240`, `ComboLiveStudio.tsx:306`, ntụpọ Modal, ihe dị ka faịlụ chart 14                             | literals → tokens                                                                                                                                                         | 4     |
-| C9  | **`cn()` → clsx + tailwind-merge**              | `src/shared/utils/cn.ts`                                                                                                 | classes na-emegiderịta onwe ha na-agbakọta; achọrọ ya maka overrides C1                                                                                                   | 2     |
-
-**Ndị dabara na brand ugbu a (tokens na-achị ha, naanị radius ka ha chọrọ):** `Badge`, `Toggle`, `SegmentedControl`, `Input`, `Select`.
-
----
-
-## 7. Atụmatụ mwepụta
-
-- **Nkeji 1 — Grid + token njirimara (PR A).** Grid dị na `globals.css` + token `--surface-2`/`--grad-brand`/`--radius`; akwụkwọ ahụaja `body::before`; wepụ ihe mgbochi `bg-bg`; ule nchedo static. Ihe ize ndụ dị ala, a pụkwara iweghachi ya n'otu commit.
-- **Nkeji 2 — Primitives (C1, C2, C5) — EMECHAALA na PR a.** Agbakwunyere semantic radius utilities `rounded-card` (14px) / `rounded-control` (9px) site na `@theme` (aha omenala, ya mere ndabara `rounded-sm/md/lg/xl` ka na-adị otu ha dị — enweghị mgbanwe ga-emetụta faịlụ 400); Card/Modal → 14px, Button/Input/Select → 9px; Button primary → `--grad-brand` (uhie→violet) + variant `accent` ọhụrụ; ókè Card → token `border-border` (0.08). **E yigharịrị:** `cn()`→tailwind-merge (C9) chọrọ deps ọhụrụ; a hapụrụ nyocha `rounded-lg` e tinyere n'ebe dịgasị iche (faịlụ 326) otu ọ dị ebe primitives na-eburu akụkụ ka ukwuu nke surface.
-- **Nkeji 3 — Agba status + tebụl (C3, C4) — EMECHAALA na PR a.** ✅ **C4** (`src/shared/constants/statusColors.ts` — `STATUS_HEX` bụ naanị isi mmalite; e duzigharịrị `flow/edgeStyles.ts` + `TokenHealthBadge`, kwekọrọ kpamkpam/otu hex ahụ). ✅ Token **`--font-mono`**. ✅ **C3 (DataTable)** — e jiri set token `--table-*` (`--table-header-bg/-row-zebra/-row-hover/-cell-border/-row-selected`) dochie inline rgba niile + fallback `var(--bg-table-header)` / `var(--text-secondary)` ndị na-adịghịzi arụ ọrụ; **dark values ha hà kpọmkwem rgba ochie e dere kpọmkwem** (dark bụ otu byte n'otu byte), ebe light values ha doziri light theme nke na-adịbu ọchịchịrị mgbe niile. Ókè header → `--color-border`, ederede secondary → `--color-text-muted`. **Achọrọ nyocha anya tupu merge.** (Ihe a na-emetụghị: `logTableStyles.ts` na iwu Ant `.ant-table` ochie — ọrụ dị iche, nke mkpa ya dị ala.)
-- **Nkeji 4 — Nhicha (C6, C7, C9 emechaala; C8 ka fọdụrụ).** ✅ **C9** `cn()` → `twMerge(clsx(...))` (agbakwunyere clsx + tailwind-merge dịka deps) — `className` nke caller na-eji ugbu a na-_edochi_ class primitive nke na-emegiderịta ya nke ọma kama ịchịkọta ha ọnụ. ✅ **C7** primitives `Checkbox` + `Textarea` ọhụrụ (token na-achịkwa ha, e si na barrel zipụta ha; ọ bụ mgbakwunye — enwere ike ịmalite iji ha dochie raw checkboxes 32 / raw textareas 41 nke nta nke nta). ✅ **C6** ime ka focus-ring kwekọọ — form controls (`Input`/`Select`/`Textarea`/`Toggle`/`Checkbox`) na-elekwasị anya ugbu a na ring **accent (violet)** ka ọ kwekọọ na global `--focus-ring` ma kwụsị ịdaba na red error ring; red error state agbanwebeghị. ⏳ **C8 hex-sweep ABỤGHỊ find/replace a na-eme n'amaghị ama** — ndị e gosipụtara na ha bụ _n'ebumnobi_ ma ga-anọrịrị: `ConsoleLogViewer.tsx:240` (terminal na-adị ọchịchịrị mgbe niile), popover `TokenHealthBadge`, strokes SVG nke ReactFlow. Bugharịa naanị hex ndị e bu n'obi ka ha soro theme gbanwee.
-
-Nkeji ọ bụla: `npm run lint` + `npm run typecheck:core` + nyocha anya.
-
----
-
-## 8. Mkpebi ndị ka ghe oghe (ndụmọdụ)
-
-- **D1 — Button primary:** debe uhie→uhie ka ọ bụ gbanwee gaa na **uhie→violet `--grad-brand`**? Ndụmọdụ: **uhie→violet** (Nkeji 2).
-- **D2 — Agba ahịrị grid:** **neutral** (ụdị saịtị) — ahọpụtara — kama brand-red. Nha **32px** (e belatara ya ihe dịka 30% site na 46px mbụ n'ihi nzaghachi onye nwe ya — cell 46px dị ka ha buru oke ibu na layout dashboard).
-- **D3 — Ike agba chrome:** sidebar/header **solid** — ahọpụtara.
-- **D4 — Grid auth/login:** ✅ **EMECHAALA (Nkeji 5)** — e wepụrụ opaque `bg-bg` na wrapper full-screen ọ bụla kwụụrụ onwe ya (ọ bụghị naanị login), ka grid wee pụta na screen niile. Lee §4.6.
-- **D5 — Landing page:** hapụ splash animation otu ọ dị. Ahọpụtara.
-- **D6 — Radius 14/9 n'ofe product:** Ndụmọdụ: ee (Nkeji 2).
-- **D7 — Nkeji 1 ga-ebu ụzọ pụta:** Ahọpụtara.
-- **D8 — Obosara layout (Nkeji 5):** e nwere oke `max-w-7xl` (1280px) na shell ọdịnaya dashboard, nke na-eme ka ọ nọrọ n'etiti ma hapụ oghere sara mbara n'akụkụ abụọ na monitor buru ibu. ✅ **EMECHAALA** — e buliri ya gaa na `max-w-[3840px]` na-agbanwe agbanwe (ezigbo 4K): ọdịnaya na-eso viewport ugbu a ruo ihe dịka 4K, ọ na-anọkwa n'etiti naanị mgbe ọ gafere ya (`DashboardLayout.tsx`). Peeji ndị e mere ka ha dị warara n'ebumnobi ka dị warara dịka e zubere (`ProviderOnboardingWizard` max-w-5xl, `Rtk`/`CavemanContextPageClient` max-w-6xl).
-- **D9 — Tebụl data opaque (Nkeji 6):** ebe mpaghara ọdịnaya dashboard bụzi transparent (ka akwụkwọ ahụaja grid wee si na ya pụta, Nkeji 5), tebụl data ndị container ha na-abụghị opaque surface na-ekwe ka grid si na even-rows ha ndị bụ transparent / zebra nwere alpha dị ala pụta. ✅ **EMECHAALA** — tebụl ọ bụla na-enweghị card na-etezi `bg-surface` (ma ọ bụ, maka primitive `<DataTable>`, `background: var(--color-surface)` na scroll container ya). Ndị e doziri: `DataTable` (primitive), `ProxyLogger`/`RequestLoggerV2` (tint `<Card>` ha `bg-black/5 dark:bg-black/20` na-emeri `bg-surface` nke Card site na tailwind-merge → ihe dịka 95% transparent), `BatchListTab`/`FilesListTab`/`CacheEntriesTab`/`ReasoningCacheTab`/`cache page`/`FreePoolTab`/`ModelMappingTable`/`HeaderTable`, tinyere "tebụl" CSS-grid abụọ dị na cache views (`bg-surface/35` → `bg-surface`). E nyochara tebụl ndị dịlarị n'ime `<Card>`/Modal ma gosi na ha bụ opaque, ya mere e kpachapụrụ anya hapụ ha otu ha dị (bg-surface n'ebe ahụ bụ no-op na-abaghị uru). Grid n'onwe ya achọghị **mgbanwe ọ bụla** — dashboard `body::before` bụ otu byte n'otu byte dịka nke saịtị (`--grid-size: 32px`); “grid buru ibu” ọ bụla a hụrụ na instance na-agba ọsọ bụ build ochie tupu `#4143` nke emelitebeghị, ọ bụghị code. `tests/unit/design-grid-background.test.ts` na-echekwa nke a (ngọngọ Nkeji 6).
-
----
-
-## 9. Ihe ndị esoghị na oke ọrụ / ihe ize ndụ
-
-- **Enweghị mgbanwe palette** — agba ndị ahụ adabaralarị; naanị ihe anyị na-eme bụ ịgbakwunye tokens ndị na-efu. Enweghị ihe ize ndụ ọ bụla nke ịgbanwe agba ngwaahịa ahụ.
-- **Enweghị mgbanwe theme-engine** — debe `.dark` + Zustand store.
-- **Mgbanwe radius (Phase 2) sara mbara** — ọ na-emetụta card/button/input niile; jiri anya nyochaa ihuenyo ndị nwere ọtụtụ ihe (tables, modals) tupu merge.
-- **Tables (C3)** nwere styling edere ozugbo kachasị ukwuu yana regression surface kachasị elu — kewapụ ha n'ime PR nke ha.
-
----
-
-## 10. Ndepụta ntụaka
-
-| Mpaghara                            | Path                                                                                                                 |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Tokens dashboard                    | `src/app/globals.css` (`:root`, `.dark`, `@theme inline`, `body`, `body::before`)                                    |
-| Store theme                         | `src/store/themeStore.ts`, `src/shared/components/ThemeProvider.tsx`, `src/shared/constants/appConfig.ts:9-11`       |
-| Shell panel (a tọhapụrụ grid ebe a) | `src/shared/components/layouts/DashboardLayout.tsx`                                                                  |
-| Chrome                              | `src/shared/components/Header.tsx:207`, `src/shared/components/Sidebar.tsx:430`                                      |
-| Ihe atụ grid e jirila mee ihe       | `src/app/landing/page.tsx:16-26`                                                                                     |
-| Primitives                          | `src/shared/components/{Button,Card,Input,Select,Badge,Modal,Toggle,SegmentedControl,Loading,Tooltip,DataTable}.tsx` |
-| Ebe agba status si abịa             | `flow/edgeStyles.ts`, `TokenHealthBadge.tsx`, `DegradationBadge.tsx`, `logTableStyles.ts`                            |
-| Util `cn`                           | `src/shared/utils/cn.ts`                                                                                             |
-| Nnwale nchedo Phase 1               | `tests/unit/design-grid-background.test.ts`                                                                          |
-| Ntụaka saịtị                        | `_mono_repo/omnirouteSite/css/tokens.css`, `css/base.css`                                                            |
+- `src/app/globals.css` — akwa njikọ token, mgbanwe `.dark`, ndọtị OmniRoute `@layer components`
+- `packages/ui-kit/UPSTREAM.md` — commit upstream e tinyere kpọmkwem na ikike ikikere; `packages/ui-kit/PATCHES.md`
+- `packages/ui-kit/src/ci-tokens.css`, `packages/ui-kit/src/ci-editions.css`, `packages/ui-kit/src/ci-ui.css`,
+  `packages/ui-kit/src/keak-brand.tsx`
+- `src/shared/components/index.tsx` na adapters ndị dị n’akụkụ ya; `src/shared/components/layouts/DashboardShell.tsx`,
+  `src/shared/components/Sidebar.tsx`, `src/shared/components/Header.tsx`, `src/shared/components/CommandPalette.tsx`
+- `src/shared/components/Icon.tsx`, `src/shared/constants/iconMap.ts`, `scripts/dev/gen-icon-map.mjs`,
+  `scripts/dev/codemod-material-icons.mjs`
+- `src/shared/components/OmniRouteLogo.tsx`, `src/shared/constants/keakProducts.ts`
+- `src/store/themeStore.ts`, `src/shared/utils/themeBootScript.ts`, `src/shared/constants/appearancePalette.ts`,
+  `src/shared/constants/pwaThemeColors.ts`, `src/shared/constants/appConfig.ts`,
+  `src/shared/constants/statusColors.ts`
+- `tests/unit/design-kit-bridge.test.ts`, `tests/unit/dashboard-kit-sweep.test.ts`,
+  `tests/unit/icon-map-coverage.test.ts`, `tests/unit/icon-map-object-values.test.ts`,
+  `tests/unit/brand-pages-static.test.ts`, `tests/unit/ui/adapters/*.test.tsx`

@@ -4,46 +4,45 @@
 
 ---
 
-Comparație obiectivă a funcționalităților cu rutere AI open-source populare.
+Comparație obiectivă a caracteristicilor față de routerele AI sursă deschisă populare.
 
-> **Metodologie**: Au fost auditate depozitele publice în T2 2026. Versiunile sunt cele indicate.
-> Trimiteți corecțiile prin PR — dorim ca aceste informații să fie corecte.
+> **Metodologie** : Repoziții publice auditate 2026-Q2. Versiunile enumerate. Trimiteți corecții prin PR — dorim ca acest lucru să fie corect.
 
-| Funcționalitate                                            |                  OmniRoute 3.8                  |     LiteLLM 1.x     | OpenRouter (SaaS) |   Portkey   |
-| ---------------------------------------------------------- | :---------------------------------------------: | :-----------------: | :---------------: | :---------: |
-| **Furnizori**                                              |                     **329**                     |        ~100         |        ~50        |     ~30     |
-| **Intrări în catalog gratuite/fără autentificare**         |                     **155**                     |         n/a         |   intermediere    |     n/a     |
-| **Poate fi găzduit local**                                 |                       ✅                        |         ✅          |        ❌         | ⚠ cu plată  |
-| **Intrări OAuth în catalog**                               |                     **23**                      |       parțial       |        ❌         |     ❌      |
-| **Combinații automate de fallback**                        |                **19 strategii**                 | bazat pe prioritate |  bazat pe nivel   |  ponderat   |
-| **Fuziune (panou paralel + sinteza arbitrului)**           |                       ✅                        |         ❌          |        ❌         |     ❌      |
-| **Fallback nivel 1/2/3 (abonament→ieftin→gratuit)**        |                     ✅ + UI                     |       manual        |        n/a        |   manual    |
-| **Comprimarea tokenurilor**                                | stivă cu 12 motoare (RTK + Caveman + LLMLingua) |       niciuna       |      niciuna      |   niciuna   |
-| **Generare multimodală (voce/muzică/video)**               |                       ✅                        |         ❌          |   intermediere    |     ❌      |
-| **Server MCP încorporat**                                  |        ✅ 110 instrumente, 33 de domenii        |         ❌          |        ❌         |     ❌      |
-| **Protocol A2A**                                           |                 ✅ 6 competențe                 |         ❌          |        ❌         |     ❌      |
-| **Memorie (FTS5 + vectorială)**                            |                       ✅                        |         ❌          |        ❌         |     ❌      |
-| **Măsuri de protecție (PII, injecție, viziune)**           |                       ✅                        |       parțial       |        ❌         | ✅ cu plată |
-| **Integrări cu agenți cloud**                              |           Codex, Cursor, Devin, Jules           |         ❌          |        ❌         |     ❌      |
-| **Disjunctor per furnizor**                                |        ✅ 3 stări, recuperare întârziată        |       de bază       |        ❌         |     ✅      |
-| **Mascarea amprentei TLS (JA3/JA4)**                       |                   ✅ wreq-js                    |         ❌          |        ❌         |     ❌      |
-| **Cadru de evaluare**                                      |                  ✅ încorporat                  |         ❌          |        ❌         | ⚠ cu plată  |
-| **Proxy MITM (interceptează Cursor/Antigravity)**          |                ✅ multiplatformă                |         ❌          |        ❌         |     ❌      |
-| **CLI cu pictogramă în bara de sistem (fără Electron)**    |                       ✅                        |         ❌          |        n/a        |     n/a     |
-| **Autentificare automată CLI prin ID-ul dispozitivului**   |                       ✅                        |         ❌          |        n/a        |     n/a     |
-| **Panou de control**                                       |                   Next.js 16                    |       de bază       |    proprietar     | proprietar  |
-| **i18n**                                                   |                 **42 de limbi**                 |         ❌          |        ❌         |      ⚠      |
-| **Competențe publice pentru agenți (SKILL.md)**            |                      ✅ 45                      |         ❌          |        ❌         |     ❌      |
-| **Suport pentru tuneluri (Cloudflared, Tailscale, Ngrok)** |                       ✅                        |         ❌          |        n/a        |     n/a     |
-| **Licență**                                                |                       MIT                       |         MIT         |    proprietară    | proprietară |
+| Caracteristică                                          |                  OmniRoute 3.8                  |     LiteLLM 1.x      | OpenRouter (SaaS) |   Portkey   |
+| ------------------------------------------------------- | :---------------------------------------------: | :------------------: | :---------------: | :---------: |
+| **Furnizorii**                                          |                     **329**                     |         ~100         |        ~50        |     ~30     |
+| **Free/no-auth intrări de catalog**                     |                     **155**                     |         n/a          |      trecere      |     n/a     |
+| **Auto-găzduit**                                        |                       ✅                        |          ✅          |        ❌         |  ⚠ plătit   |
+| **OAuth intrări de catalog**                            |                     **23**                      |       parţial        |        ❌         |     ❌      |
+| **Combo-uri de rezervă automată**                       |               **22 de strategii**               | bazate pe prioritate | bazat pe niveluri |  ponderat   |
+| **Fusion (sinteza arbitrului + în paralel)**            |                       ✅                        |          ❌          |        ❌         |     ❌      |
+| **Tier 1/2/3 fallback (abonament → ieftin → gratuit)**  |                     ✅ + UI                     |        manual        |        n/a        |   manual    |
+| **Compresie de jetoane**                                | Stivă cu 12 motoare (RTK + Caveman + LLMLingua) |      nici unul       |     nici unul     |  nici unul  |
+| **Generare multimodală (speech/music/video)**           |                       ✅                        |          ❌          |      trecere      |     ❌      |
+| **Server MCP încorporat**                               |             ✅ 110 scule, 33 lunete             |          ❌          |        ❌         |     ❌      |
+| **protocolul A2A**                                      |                 ✅ 6 aptitudini                 |          ❌          |        ❌         |     ❌      |
+| **Memorie (vector FTS5 + )**                            |                       ✅                        |          ❌          |        ❌         |     ❌      |
+| **Balustrade (PII, injecție, vedere)**                  |                       ✅                        |       parţial        |        ❌         |  ✅ plătit  |
+| **Integrarea agentilor cloud**                          |           Codex, Cursor, Devin, Jules           |          ❌          |        ❌         |     ❌      |
+| **Întrerupător pentru fiecare furnizor**                |          ✅ 3-stare, recuperare leneșă          |       de bază        |        ❌         |     ✅      |
+| **TLS fingerprint stealth (JA3/JA4)**                   |                   ✅ wreq-js                    |          ❌          |        ❌         |     ❌      |
+| **Cadru de evaluare**                                   |                  ✅ încorporat                  |          ❌          |        ❌         |  ⚠ plătit   |
+| **proxy MITM (interceptează Cursor/Antigravity)**       |                ✅ multiplatformă                |          ❌          |        ❌         |     ❌      |
+| **CLI cu bară de sistem (fără Electron)**               |                       ✅                        |          ❌          |        n/a        |     n/a     |
+| **CLI machine-ID auto-auth**                            |                       ✅                        |          ❌          |        n/a        |     n/a     |
+| **Bord**                                                |                   Next.js 16                    |       de bază        |    proprietate    | proprietate |
+| **i18n**                                                |              **67 de localități**               |          ❌          |        ❌         |      ⚠      |
+| **Abilități de agent public (SKILL.md)**                |                      ✅ 45                      |          ❌          |        ❌         |     ❌      |
+| **Suport pentru tunel (Cloudflared, Tailscale, Ngrok)** |                       ✅                        |          ❌          |        n/a        |     n/a     |
+| **Licenţă**                                             |                       MIT                       |         MIT          |    proprietate    | proprietate |
 
 ## Când să alegeți OmniRoute
 
-- Găzduiți local și doriți **acoperire maximă a furnizorilor** (329 de furnizori, 155 de intrări în catalog gratuite/fără autentificare)
-- Aveți nevoie de un **server MCP încorporat** (instrumente LLM, memorie și competențe expuse ca instrumente)
-- Aveți nevoie de **protocolul A2A** pentru fluxuri de lucru între agenți
-- Doriți **mascarea amprentei** (JA3/JA4) pentru a evita detectarea de către sistemele CAPTCHA din amonte
-- Aveți nevoie de **funcționalități pentru întreprinderi** (măsuri de protecție, evaluări, pistă de audit) fără o factură SaaS
+- Te auto-găzduiești și vrei** acoperire maximă a furnizorului** (394 de furnizori, 155 de intrări în catalog free/no-auth )
+- Ai nevoie de un** server MCP încorporat** ( instrumente LLM, memorie, abilități expuse ca instrumente)
+- Ai nevoie** protocolul A2A** pentru fluxurile de lucru de la agent la agent
+- Tu vrei** ascuns amprenta** (JA3/JA4) pentru a evita detectarea de către CAPTCHAs în amonte
+- Ai nevoie** caracteristicile întreprinderii** (paravane, evals, audit track) fără factură SaaS
 
 ## Când să alegeți LiteLLM
 

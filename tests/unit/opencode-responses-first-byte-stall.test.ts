@@ -6,7 +6,7 @@ import {
   resolveOpencodeTargetFormat,
 } from "../../open-sse/executors/opencode.ts";
 import type { ExecutorLog, ProviderCredentials } from "../../open-sse/executors/base.ts";
-import { resolveProxyForRequest } from "../../open-sse/utils/proxyFetch.ts";
+import { resolveProxyForRequest, runWithProxyContext } from "../../open-sse/utils/proxyFetch.ts";
 import { RESPONSES_FIRST_BYTE_TIMEOUT_CODE } from "../../open-sse/utils/firstByteWatchdog.ts";
 import { resetDbInstance } from "../../src/lib/db/core.ts";
 import {
@@ -145,7 +145,8 @@ describe("OpencodeExecutor Responses first-byte stall", () => {
     model: string,
     creds: ProviderCredentials,
     stream = true,
-    signal: AbortSignal | null = null
+    signal: AbortSignal | null = null,
+    spyLog: ExecutorLog = log
   ) {
     return exec.execute({
       model,
@@ -153,7 +154,7 @@ describe("OpencodeExecutor Responses first-byte stall", () => {
       stream,
       signal,
       credentials: creds,
-      log,
+      log: spyLog,
     }) as Promise<{ response: Response }>;
   }
 
@@ -174,11 +175,24 @@ describe("OpencodeExecutor Responses first-byte stall", () => {
   it("rotates past a silent Responses stream to a healthy account", { timeout: 5000 }, async () => {
     const exec = new OpencodeExecutor("opencode-zen");
     installFetch(["stall", "ok"]);
-    const result = await run(exec, RESPONSES_MODEL, proxiedCredentials(2));
+    const warns: string[] = [];
+    const spyLog: ExecutorLog = {
+      debug() {},
+      info() {},
+      warn(_tag, message) {
+        warns.push(String(message));
+      },
+      error() {},
+    };
+    const result = await run(exec, RESPONSES_MODEL, proxiedCredentials(2), true, null, spyLog);
     assert.equal(result.response.status, 200);
     assert.deepEqual(calls, [String(ports[0]), String(ports[1])]);
     assert.deepEqual(cooledDown(exec), [FPS[0]]);
     await result.response.body?.cancel();
+    assert.ok(
+      warns.some((l) => new RegExp(`\\(proxy 127\\.0\\.0\\.1:${ports[0]}\\)`).test(l)),
+      `stall warn must name the applied egress, got=${JSON.stringify(warns)}`
+    );
   });
 
   it(
@@ -302,9 +316,13 @@ describe("OpencodeExecutor Responses first-byte stall", () => {
     async () => {
       const exec = new OpencodeExecutor("opencode-zen");
       installFetch(["stall", "ok"]);
-      const result = await run(exec, RESPONSES_MODEL, proxylessCredentials(3));
+      // Accounts without their own proxy share the caller's egress. Pin that
+      // context so this assertion also holds when the runner has an env proxy.
+      const result = await runWithProxyContext(`http://127.0.0.1:${ports[2]}`, () =>
+        run(exec, RESPONSES_MODEL, proxylessCredentials(3))
+      );
       assert.equal(result.response.status, 200);
-      assert.deepEqual(calls, ["direct", "direct"]);
+      assert.deepEqual(calls, [String(ports[2]), String(ports[2])]);
       assert.equal(cooledDown(exec).length, 1, "only the stalled account is cooled down");
       await result.response.body?.cancel();
     }

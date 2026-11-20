@@ -4,268 +4,284 @@
 
 ---
 
-> **সর্বশেষ হালনাগাদ:** 2026-08-28 — v3.8.51
-> অটোমেশনের জন্য Claude Code স্কিল ব্যবহারকারী সরলীকৃত রিলিজ প্রবাহ।
+> **সর্বশেষ আপডেট:** 2026-08-28 — v3.8.51
+> অটোমেশনের জন্য Claude Code skills ব্যবহার করে রিলিজ প্রক্রিয়া আরও সরল করা হয়েছে।
 >
-> **রিলিজগুলোর মধ্যবর্তী সময়ে কিউ/ব্রাঞ্চ সবুজ রাখুন:** দেখুন [RELEASE_GREEN.md](./RELEASE_GREEN.md)
-> (`/green-prs` পরিবার + `npm run check:release-green` + `/babysit` + রাত্রিকালীন রান)। এটি নিয়মিতভাবে — এবং বিশেষ করে এই চেকলিস্টের **আগে** — চালালে রিলিজ PR শুরু থেকেই সবুজ থাকে।
+> **রিলিজগুলোর মধ্যে queue/branch সবুজ রাখুন:** দেখুন [RELEASE_GREEN.md](./RELEASE_GREEN.md)
+> (`/green-prs` family + `npm run check:release-green` + `/babysit` + nightly)। এটি নিয়মিতভাবে — এবং বিশেষ করে **এই checklist-এর আগে** — চালালে release PR সবুজ অবস্থায় শুরু হবে।
 
-## সংক্ষেপে
+## TL;DR
 
 ```bash
-# ১. ভার্সন বাড়ান + CHANGELOG তৈরি করুন (স্কিল)
+# 1. Version বাড়ান + CHANGELOG তৈরি করুন (skill)
 /version-bump-cc patch    # অথবা minor/major
 
-# ২. স্থানীয়ভাবে কোয়ালিটি গেট চালান
-npm run check              # lint + টেস্ট
-npm run test:coverage      # সম্পূর্ণ কভারেজ গেট (60/60/60/60)
+# 2. Locally quality gate চালান
+npm run check              # lint + tests
+npm run test:coverage      # সম্পূর্ণ coverage gate (60/60/60/60)
 
-# ৩. বিল্ড ও স্মোক টেস্ট
+# 3. Build ও smoke test
 npm run build
 npm run test:e2e           # ঐচ্ছিক, তবে সুপারিশকৃত
 
-# ৪. রিলিজ তৈরি করুন (স্কিল)
+# 4. Release তৈরি করুন (skill)
 /generate-release-cc
 
-# ৫. ডিপ্লয় করুন (স্কিল)
+# 5. Deploy করুন (skill)
 /deploy-vps-both-cc        # অথবা akamai-cc / local-cc
 
-# ৬. রিলিজের প্রমাণ সংগ্রহ করুন (স্কিল)
+# 6. Release-এর প্রমাণ সংগ্রহ করুন (skill)
 /capture-release-evidences-cc
 ```
 
-## npm Trusted Publishing (v3.8.51 থেকে ডিফল্ট) — অনুরোধে staged, fallback হিসেবে direct
+## npm Trusted Publishing (v3.8.51 থেকে default) — অনুরোধে staged, fallback হিসেবে direct
 
-`npm-publish.yml` ডিফল্টভাবে **npm Trusted Publishing (OIDC)**-এর মাধ্যমে প্রকাশ করে:
-`stage-npm` জবটি (github-hosted) ওই রানের জন্য GitHub-এর id-token বিনিময় করে একটি স্বল্পমেয়াদি npm
-credential নেয় — repository secrets-এ কোনো দীর্ঘমেয়াদি npm token থাকে না, কোনো 2FA prompt আসে না, এবং provenance সংযুক্ত থাকে।
-2FA এড়িয়ে যাওয়া token-গুলো অবসরে পাঠানো হচ্ছে বলে npm এখন এই bypass অনুমোদন করে;
-এটি WS1.3 নিশ্চয়তা বজায় রেখেই v3.8.48 পর্যন্ত প্রকল্পটিতে থাকা সম্পূর্ণ স্বয়ংক্রিয় প্রবাহ পুনরুদ্ধার করে
-(ফাঁস হওয়া token একা publish করতে পারে না — কারণ কোনো token-ই নেই)।
+`npm-publish.yml` ডিফল্টভাবে **npm Trusted Publishing (OIDC)**-এর মাধ্যমে publish করে:
+`stage-npm` job (github-hosted) সেই run-এর জন্য GitHub-এর id-token বিনিময় করে স্বল্পমেয়াদি npm
+credential সংগ্রহ করে — repository secrets-এ কোনো দীর্ঘমেয়াদি npm token থাকে না, 2FA prompt আসে না, এবং provenance সংযুক্ত থাকে।
+এটাই এখন npm sanctions-এর bypass, কারণ 2FA এড়িয়ে যায় এমন token অবসর নেওয়া হচ্ছে;
+এটি v3.8.48 পর্যন্ত project-এ থাকা সম্পূর্ণ স্বয়ংক্রিয় flow ফিরিয়ে আনে এবং
+WS1.3 guarantee বজায় রাখে (ফাঁস হওয়া token একা publish করতে পারে না — কোনো token-ই নেই)।
 
-**একবারের সেটআপ (owner):** npmjs.com → package `omniroute` → Settings → _Trusted
+**একবারের setup (owner):** npmjs.com → package `omniroute` → Settings → _Trusted
 Publisher_ → GitHub: owner `diegosouzapw`, repo `OmniRoute`, workflow `npm-publish.yml`
-(environment: none)। এটি তৈরি না হওয়া পর্যন্ত স্বয়ংক্রিয় ধাপটি `ENEEDAUTH` দিয়ে ব্যর্থ হবে:
+(environment: none)। এটি তৈরি না হওয়া পর্যন্ত automatic step `ENEEDAUTH`-এ ব্যর্থ হবে:
 `publish_mode=staged` (নিচে) অথবা `direct` দিয়ে পুনরায় dispatch করুন।
 
 ### Staged publishing (অনুরোধে — `publish_mode=staged`)
 
-npm-publish workflow আর সরাসরি publish করে না: এটি প্যাক করা tarball
-বুট করে (`check:pack-boot`) এবং তারপর `npm stage publish` চালায় — হুবহু সেই bytes-গুলো registry-তে রাখা হয়,
-কিন্তু owner অনুমোদন না করা পর্যন্ত সেগুলো **install করা যায় না**। মানব-নির্ভর 2FA gate-টি এখন প্রমাণ যাচাইয়ের
-আগে নয়, পরে সম্পন্ন হয়।
+npm-publish workflow আর সরাসরি publish করে না: এটি packed tarball
+(`check:pack-boot`) boot করে এবং এরপর `npm stage publish` চালায় — সঠিক bytes registry-তে
+park করা হয়, **owner অনুমোদন না করা পর্যন্ত install করা যায় না**। Human 2FA gate
+proof-এর আগে নয়, **পরে** সরানো হয়েছে।
 
-**Workflow সবুজ হওয়ার পর owner-এর প্রবাহ:**
+**Workflow সবুজ হওয়ার পর Owner flow:**
 
-1. `npm stage list omniroute` — stage id খুঁজুন (workflow summary-তেও দেখানো হয়)।
-2. Staged bytes যাচাই করুন (সুপারিশকৃত): `npm stage download <id>`, তারপর ডাউনলোড করা
-   tarball-টি একটি অস্থায়ী prefix-এ install করে বুট করুন (`npm run check:pack-boot` CI-তে
-   একই pack→install→boot সিদ্ধান্ত স্বয়ংক্রিয় করে)।
-3. `npm stage approve <id>` — 2FA prompt-টিই হলো publish। `npm stage reject <id>` বাতিল করে।
-4. Publish-পরবর্তী সুরক্ষা: publish-পরবর্তী verifier (v3.8.49 পরিকল্পনার WS1.4) একটি পরিষ্কার
-   container-এ public registry থেকে প্রকাশিত version install করে সেটি বুট করে।
+1. `npm stage list omniroute` — stage id খুঁজে নিন (workflow summary-তেও এটি দেখানো হয়)।
+2. Staged bytes যাচাই করুন (সুপারিশকৃত): `npm stage download <id>` চালান, এরপর
+   ডাউনলোড করা tarball একটি temp prefix-এ install করে boot করুন
+   (`npm run check:pack-boot` CI-তে একই pack→install→boot verdict স্বয়ংক্রিয়ভাবে চালায়)।
+3. `npm stage approve <id>` — 2FA prompt-ই publish। `npm stage reject <id>` discard করে।
+4. Post-publish net: post-publish verifier (v3.8.49 plan-এর WS1.4) একটি clean container-এ
+   public registry থেকে published version install করে এবং boot করে।
 
-**জরুরি fallback:** `publish_mode=direct`-সহ `workflow_dispatch` পুরোনো
-তাৎক্ষণিক `npm publish` পুনরুদ্ধার করে (শুধু staging নিজেই ঠিকমতো কাজ না করলে ব্যবহার করুন; কারণটি নথিভুক্ত করুন)।
+**Emergency fallback:** `workflow_dispatch`-এর মাধ্যমে `publish_mode=direct` দিলে
+পুরোনো immediate `npm publish` পুনরুদ্ধার হয় (শুধুমাত্র staging নিজেই সমস্যা করলে ব্যবহার করুন; কারণটি record করুন)।
 
-**একবারের hardening (owner, npmjs.com):** `omniroute`-এর Trusted Publisher-কে
-stage-only mode-এ কনফিগার করুন, যাতে ফাঁস হওয়া কোনো দীর্ঘমেয়াদি token কোথাও থেকে সরাসরি `npm publish`
-করতে না পারে — CI কেবল stage করতে পারে; শুধু owner-এর 2FA রিলিজ করতে পারে।
+**একবারের hardening (owner, npmjs.com):** `omniroute`-এর জন্য Trusted Publisher
+stage-only mode-এ configure করুন, যাতে ফাঁস হওয়া দীর্ঘমেয়াদি token কোথাও থেকে সরাসরি
+`npm publish` করতে না পারে — CI কেবল stage করতে পারে; শুধু owner-এর 2FA release করতে পারে।
 
-**ত্রুটিপূর্ণ artifact-এর playbook (অপরিবর্তিত):** ডিফল্ট তাৎক্ষণিক পদক্ষেপ হিসেবে
-`npm deprecate omniroute@<bad> "<reason> — use <fixed>"` ব্যবহার করুন (কয়েক মিনিট লাগে, প্রত্যাবর্তনযোগ্য);
-শুধু 72h/no-dependents সীমার মধ্যে `npm unpublish` ব্যবহার করুন এবং কখনোই প্রথম পদক্ষেপ হিসেবে নয়।
-Docker: কোনো version tag কখনো পুনর্লিখবেন না — rollback হলো `latest`-কে সর্বশেষ ভালো digest-এর দিকে পুনর্নির্দেশ করা।
+**Broken-artifact playbook (অপরিবর্তিত):** default reflex হিসেবে
+`npm deprecate omniroute@<bad> "<reason> — use <fixed>"` ব্যবহার করুন
+(কয়েক মিনিটে কার্যকর, reversible); `npm unpublish` কেবল 72h/no-dependents
+window-এর মধ্যে এবং কখনোই প্রথম পদক্ষেপ হিসেবে নয়। Docker: version tag কখনো rewrite করবেন না —
+rollback হলো `latest`-কে সর্বশেষ ভালো digest-এ repoint করা।
 
 **Docker Hub `latest` (প্রতিটি stable SemVer publish-এ আবশ্যক):**
-`docker-publish` workflow-কে অবশ্যই `X.Y.Z` এবং, যখন
-`should-promote-latest.sh` সম্মত হয় যে এটিই সর্বোচ্চ stable SemVer, একই **digest** দিয়ে `:latest`—
-**দুটোকেই** tag করতে হবে। Job-এর পরে: Hub-এর `latest` digest নতুন
-SemVer digest-এর সমান হবে এবং `last_updated` এগিয়ে যাবে। Release notes-এ এমন fix-এর কথা থাকা অবস্থায়
-`:latest`-কে পুরোনো build-এ রেখে দেবেন না, যদি ওই fix শুধু git-এ থাকে। Compose
-quickstart-গুলো `:latest` ব্যবহার করে; GitOps-এর `X.Y.Z` pin করাই চালিয়ে যাওয়া উচিত। দেখুন
-[Docker release channels](../guides/DOCKER_GUIDE.md#release-channels) এবং #10317।
+`docker-publish` workflow-কে **দুটিই** tag করতে হবে — `X.Y.Z` এবং,
+যখন `should-promote-latest.sh` সম্মত হয় যে এটি সর্বোচ্চ stable SemVer, তখন `:latest` —
+একই digest দিয়ে। Job-এর পরে: Hub `latest` digest নতুন SemVer digest-এর সমান হবে এবং
+`last_updated` পরিবর্তিত হবে। Git-এ থাকা release notes-এ এমন fixes-এর কথা বলা অবস্থায়
+`:latest`-কে পুরোনো build-এ রেখে দেবেন না, যা কেবল git-এ বিদ্যমান।
+Compose quickstarts-এ `:latest` ব্যবহার হয়; GitOps-এ `X.Y.Z` pin করা চালিয়ে যাওয়া উচিত।
+দেখুন [Docker release channels](../guides/DOCKER_GUIDE.md#release-channels) এবং #10317।
 
-## হটফিক্স ফাস্ট-লেন (`hotfix` লেবেল)
+**Docker Hub organization repository (`cheaperinference/omniroute`):** Docker Hub
+repository-কে namespace-গুলোর মধ্যে সরাতে পারে না, তাই `diegosouzapw/omniroute` তার pull history
+এবং প্রতিটি release ধরে রাখে, আর `docker-publish`-এর `mirror-org-dockerhub` job
+প্রতিটি released version (এবং promote করা হলে `:latest`) `ghcr.io/cheaper-inference/omniroute`
+থেকে organization repository-তে copy করে। এর জন্য `DOCKERHUB_ORG_USERNAME` /
+`DOCKERHUB_ORG_TOKEN` secrets প্রয়োজন; এগুলো না থাকলেও job
+"Docker Hub org mirror skipped" warning সহ green থাকে এবং অন্যান্য registry স্বাভাবিকভাবে publish করে।
+পরে কোনো released version publish করতে **Actions → Mirror Docker image to the Docker Hub org → Run
+workflow** চালান, যেখানে `version=X.Y.Z` (এবং সর্বোচ্চ stable version-এর জন্য
+`promote_latest`) দিন: এটি existing images copy করে, rebuild করে না।
 
-`hotfix` লেবেলযুক্ত একটি PR ভারী CI ম্যাট্রিক্স (9-shard E2E, coverage ratchet,
-quality-gate, quality-extended) এড়িয়ে যায় এবং দ্রুত, উচ্চ-সংকেতসম্পন্ন গেটগুলো বজায় রাখে: build,
+## হটফিক্স ফাস্ট-লেন (লেবেল `hotfix`)
+
+`hotfix` লেবেলযুক্ত PR ভারী CI ম্যাট্রিক্স (9-শার্ড E2E, coverage ratchet,
+quality-gate, quality-extended) এড়িয়ে দ্রুত, উচ্চ-সিগন্যাল গেটগুলো চালায়: build,
 unit shards, integration, vitest, lint/typecheck, docs-sync, `check:pack-artifact`
-এবং tarball boot-smoke (`check:pack-boot`)। লক্ষ্য: ~33min-এর পরিবর্তে ≤15min-এ সবুজ অবস্থা।
+এবং tarball boot-smoke (`check:pack-boot`)। লক্ষ্য: প্রায় 33 মিনিটের পরিবর্তে ≤15
+মিনিটে সবুজ ফলাফল।
 
-**প্রবেশনীতি — চারটিই আবশ্যক (Chromium/VS Code/Node-এর জরুরি লেন অনুসারে তৈরি):**
+**প্রবেশ নীতি — চারটিই আবশ্যক (Chromium/VS Code/Node-এর জরুরি লেনের আদলে):**
 
-1. **তীব্রতা**: production নষ্ট — প্রকাশিত কোনো artifact boot-এর সময় crash করে /
-   একটি security fix / release-এর প্রতিটি ব্যবহারকারী প্রভাবিত। "গুরুত্বপূর্ণ" মানেই "নষ্ট" নয়।
-2. **কর্তৃত্ব**: কেবল repository owner-ই `hotfix` লেবেল প্রয়োগ করেন। লেবেলটিই
-   অনুমোদন — campaign PR-এ এটি কখনো নিজে থেকে ব্যবহার করা যাবে না।
-3. **প্রমাণ**: PR body-তে পূর্ববর্তী সম্পূর্ণ-সবুজ heavy run-এর লিঙ্ক থাকে (যে suite-টি
-   বাদ দেওয়া job-গুলো পুনরায় যাচাই করত), সঙ্গে fix-টির নিজস্ব আগে-ব্যর্থ-তারপর-সফল test।
-4. **পরিধি**: শুধু cherry-pick — ন্যূনতম fix, কোনো refactor নয়, কোনো অতিরিক্ত পরিবর্তন নয়।
+1. **তীব্রতা**: প্রোডাকশন ভেঙে গেছে — প্রকাশিত artifact বুটের সময় ক্র্যাশ করে / একটি
+   নিরাপত্তা সংশোধন / রিলিজের প্রতিটি ব্যবহারকারী প্রভাবিত। "গুরুত্বপূর্ণ" মানেই
+   "ভেঙে গেছে" নয়।
+2. **কর্তৃত্ব**: শুধুমাত্র repository owner `hotfix` লেবেল প্রয়োগ করেন। লেবেলটিই
+   অনুমোদন — কোনো campaign PR-এ কখনো নিজে থেকে এটি ব্যবহার করা যাবে না।
+3. **প্রমাণ**: PR body-তে আগের সম্পূর্ণ-সবুজ heavy run-এর লিংক থাকতে হবে (যে suite
+   বাদ দেওয়া jobs পুনরায় যাচাই করত), পাশাপাশি সংশোধনটির নিজস্ব ব্যর্থ-তারপর-পাস
+   হওয়া test-এর লিংক থাকতে হবে।
+4. **পরিসর**: শুধু cherry-pick — ন্যূনতম সংশোধন, কোনো refactor নয়, কোনো
+   ride-along নয়।
 
-বাদ দেওয়া coverage/ratchet ক্ষেত্রটি release branch-এর পরবর্তী পূর্ণ run-এ
-পুনরায় যাচাই করা হয় (ধারাবাহিক release-green) — এই lane কেবল অপেক্ষা এড়ায়, যাচাইকরণ কখনো নয়।
-শুধু test-সংক্রান্ত diff (সব file `tests/`-এর অধীনে, একটিও `tests/e2e/`-এর অধীনে নয়) কোনো
-লেবেল ছাড়াই স্বয়ংক্রিয়ভাবে E2E matrix এড়িয়ে যায়।
+বাদ দেওয়া coverage/ratchet surface release branch-এর পরবর্তী full run-এ পুনরায়
+যাচাই করা হয় (continuous release-green) — এই লেনটি `WAITING` এড়ায়, validation
+নয়। শুধু tests-সংক্রান্ত diff ( `tests/`-এর অধীনে সব ফাইল, `tests/e2e/`-এর অধীনে
+কোনো ফাইল নয়) কোনো লেবেল ছাড়াই স্বয়ংক্রিয়ভাবে E2E ম্যাট্রিক্স এড়ায়।
 
 ## বিস্তারিত চেকলিস্ট
 
 ### রিলিজের আগে
 
-- [ ] এই release-এর জন্য লক্ষ্যকৃত সব PR `release/vX.Y.0`-তে merge করা হয়েছে
-- [ ] এই version-এর সব খোলা Linear/issue item বন্ধ করা হয়েছে অথবা পরবর্তী milestone-এ সরানো হয়েছে
+- [ ] এই রিলিজের জন্য নির্ধারিত সব PR `release/vX.Y.0`-এ মার্জ করা হয়েছে
+- [ ] এই সংস্করণের জন্য সব খোলা Linear/issue item বন্ধ করা হয়েছে অথবা পরবর্তী milestone-এ সরিয়ে দেওয়া হয়েছে
 - [ ] `release/vX.Y.0` branch-এ CI সবুজ
-- [ ] code-এ কোনো `TODO(release)` marker নেই: `grep -r "TODO(release)" src/ open-sse/`
-- [ ] Docker base image হালনাগাদ (বর্তমানে `node:24.15.0-trixie-slim`)
+- [ ] কোডে কোনো `TODO(release)` marker নেই: `grep -r "TODO(release)" src/ open-sse/`
+- [ ] Docker base image আপ-টু-ডেট (বর্তমানে `node:24.15.0-trixie-slim`)
 
-### Version ও Changelog
+### সংস্করণ ও চেঞ্জলগ
 
 - [ ] `/version-bump-cc <patch|minor|major>` চালান (Claude Code skill)
-  - `package.json`, `electron/package.json`-এর version bump করে
-  - সর্বশেষ tag-এর পরের git commit থেকে `CHANGELOG.md` পুনরায় তৈরি করে
-  - README.md badge হালনাগাদ করে
-- [ ] CHANGELOG.md ম্যানুয়ালি পর্যালোচনা করুন এবং প্রয়োজন হলে commit message পরিষ্কার করুন
-- [ ] নিশ্চিত করুন, `CHANGELOG.md`-এর সর্বশেষ semver section `package.json` version-এর সমান
-- [ ] আসন্ন কাজের জন্য `## [Unreleased]`-কে changelog-এর প্রথম section হিসেবে রাখুন
-- [ ] `docs/openapi.yaml` হালনাগাদ করুন → `info.version` অবশ্যই `package.json` version-এর সমান হতে হবে
+  - `package.json`, `electron/package.json`-এর সংস্করণ বাড়ায়
+  - শেষ tag-এর পর থেকে git commits থেকে `CHANGELOG.md` পুনরায় তৈরি করে
+  - README.md badges আপডেট করে
+- [ ] `CHANGELOG.md` ম্যানুয়ালি পর্যালোচনা করুন এবং প্রয়োজনে commit message পরিষ্কার করুন
+- [ ] `CHANGELOG.md`-এর সর্বশেষ semver section `package.json` সংস্করণের সমান কিনা নিশ্চিত করুন
+- [ ] আসন্ন কাজের জন্য `## [Unreleased]`-কে প্রথম changelog section হিসেবে রাখুন
+- [ ] `docs/openapi.yaml` → `info.version`-এর মান `package.json` সংস্করণের সমান হতে হবে
 
-### Code-এর গুণমান
+### কোডের গুণমান
 
-- [ ] `npm run lint` — 0টি error (warning-গুলো আগে থেকেই বিদ্যমান)
-- [ ] `npm run typecheck:core` — ত্রুটিমুক্ত
-- [ ] `npm run typecheck:noimplicit:core` — ত্রুটিমুক্ত (strict)
-- [ ] `npm run check:cycles` — কোনো circular dependency নেই
-- [ ] `npm run check:any-budget:t11` — budget-এর মধ্যে
-- [ ] `npm run check:route-validation:t06` — ত্রুটিমুক্ত
-- [ ] `npm run check:node-runtime` — সমর্থিত runtime-এর ন্যূনতম সীমা পূরণ হয়েছে (`>=22.22.2 <23`, `>=24.0.0 <27`, `src/shared/utils/nodeRuntimeSupport.ts`-এর `SUPPORTED_NODE_RANGE` অনুযায়ী; `package.json`-এর `engines`-এর সঙ্গে সামঞ্জস্যপূর্ণ)
+- [ ] `npm run lint` — 0 errors (warnings আগে থেকেই রয়েছে)
+- [ ] `npm run typecheck:core` — পরিষ্কার
+- [ ] `npm run typecheck:noimplicit:core` — পরিষ্কার (strict)
+- [ ] `npm run check:cycles:ratchet` — frozen `metrics.cycles` ceiling-এর মধ্যে থাকতে হবে (bare `check:cycles` যেকোনো cycle-এ 1 দিয়ে exit করে, #15281)
+- [ ] `npm run check:any-budget:t11` — budget-এর মধ্যে থাকতে হবে
+- [ ] `npm run check:route-validation:t06` — পরিষ্কার
+- [ ] `npm run check:node-runtime` — সমর্থিত runtime floor পূরণ হয়েছে (`>=22.22.2 <23`, `>=24.0.0 <27`, `src/shared/utils/nodeRuntimeSupport.ts`-এ থাকা `SUPPORTED_NODE_RANGE` অনুযায়ী; `package.json`-এর `engines`-এর সঙ্গে সামঞ্জস্যপূর্ণ)
 
-### Testing
+### টেস্টিং
 
-- [ ] `npm run test:unit` — সফল
-- [ ] `npm run test:vitest` — সফল (MCP server, autoCombo, cache)
-- [ ] `npm run test:coverage` — 60/60/60/60 gate পূরণ হয়েছে (statements/lines/functions/branches)
-- [ ] `npm run test:integration` — সফল (পরিবর্তনগুলো DB / handler স্পর্শ করলে)
-- [ ] `npm run test:combo:matrix` — সফল (combo strategy matrix: সর্বজনীন 19টি routing strategy-এর selection decision নির্ধারিতভাবে প্রমাণ করে; combo routing, strategy resolution বা fallback logic স্পর্শ করলে চালান)
-- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **ঐচ্ছিক/ম্যানুয়াল** (gate-নিয়ন্ত্রিত বাস্তব-upstream smoke; VPS `root@192.168.0.15` থেকে একটি read-only DB snapshot নেয়; বাস্তব provider-কে অনুরোধ পাঠায়, credit খরচ করে; CI-তে কখনো চলে না; gate না থাকলে পরিচ্ছন্নভাবে skip করে)
-- [ ] `npm run test:combo:live:vps` — **ঐচ্ছিক/ম্যানুয়াল** (পর্যায়-৩ VPS live smoke: plain Node ESM-এর মাধ্যমে live `.15` server-এর বিপরীতে 7টি HTTP scenario; `ssh root@192.168.0.15` প্রয়োজন; শুধু `__live_test__*` combo তৈরি/মুছে ফেলে; বাস্তব provider-কে অনুরোধ পাঠায়; CI-তে কখনো চলে না)
-- [ ] `npm run test:e2e` — সফল (UI পরিবর্তন)
-- [ ] `npm run test:protocols:e2e` — সফল (MCP/A2A পরিবর্তন)
-- [ ] `npm run test:ecosystem` — সফল
+- [ ] `npm run test:unit` — পাস
+- [ ] `npm run test:vitest` — পাস (MCP server, autoCombo, cache)
+- [ ] `npm run test:coverage` — gate 60/60/60/60 পূরণ হয়েছে (statements/lines/functions/branches)
+- [ ] `npm run test:integration` — পাস (পরিবর্তন DB / handlers-এ প্রভাব ফেললে)
+- [ ] `npm run test:combo:matrix` — পাস (combo strategy matrix: 22টি public routing strategy-র selection decision নির্ধারিতভাবে প্রমাণ করে; combo routing, strategy resolution, অথবা fallback logic-এ পরিবর্তন করলে চালান)
+- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **ঐচ্ছিক/ম্যানুয়াল** (gated real-upstream smoke; VPS `root@192.168.0.15` থেকে read-only DB snapshot সংগ্রহ করে; বাস্তব provider-এ অনুরোধ পাঠায়, credits খরচ হয়; CI-তে কখনো চলে না; gate ছাড়া পরিষ্কারভাবে skip করে)
+- [ ] `npm run test:combo:live:vps` — **ঐচ্ছিক/ম্যানুয়াল** (Phase-3 VPS live smoke: plain Node ESM-এর মাধ্যমে live `.15` server-এর বিরুদ্ধে 7টি HTTP scenario; `ssh root@192.168.0.15` প্রয়োজন; শুধু `__live_test__*` combo তৈরি/মুছে; বাস্তব provider-এ অনুরোধ পাঠায়; CI-তে কখনো চলে না)
+- [ ] `npm run test:e2e` — পাস (UI পরিবর্তন)
+- [ ] `npm run test:protocols:e2e` — পাস (MCP/A2A পরিবর্তন)
+- [ ] `npm run test:ecosystem` — পাস
 
-### Hook (Husky দ্বারা যাচাইকৃত)
+### Hooks (Husky যাচাইকৃত)
 
-Husky hook-গুলো `.husky/`-তে থাকে এবং git operation-এর সময় স্বয়ংক্রিয়ভাবে চলে।
+Husky hooks `.husky/`-এ থাকে এবং git operations-এর সময় স্বয়ংক্রিয়ভাবে চলে।
 
 - **pre-commit:** `npx lint-staged + node scripts/check/check-docs-sync.mjs + npm run check:any-budget:t11`
-- **pre-push:** দ্রুত নির্ধারিত gate — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (2026-06-13-এ সক্রিয় করা হয়েছে)। ইচ্ছাকৃতভাবে `test:unit` বাদ দেয় (ধীর; CI-এর `test-unit` job দ্বারা অন্তর্ভুক্ত)।
-  - release branch push করার আগে ম্যানুয়ালি `npm run test:unit` চালান।
+- **pre-push:** দ্রুত নির্ধারিত গেট — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (2026-06-13 থেকে সক্রিয়)। ইচ্ছাকৃতভাবে `test:unit` বাদ দেয় (ধীর; CI `test-unit` job-এ কভার করা হয়)।
+  - release branches push করার আগে ম্যানুয়ালি `npm run test:unit` চালান।
 
-কোনো hook ব্যর্থ হলে: অন্তর্নিহিত সমস্যাটি ঠিক করুন, `--no-verify` দিয়ে এড়িয়ে যাবেন না।
+কোনো hook ব্যর্থ হলে: মূল সমস্যাটি ঠিক করুন, `--no-verify` দিয়ে এড়িয়ে যাবেন না।
 
-### Conventional Commit
+### Conventional Commits
 
-release-এ অন্তর্ভুক্ত সব commit-কে অবশ্যই `type(scope): subject` format অনুসরণ করতে হবে।
+রিলিজ-সম্পর্কিত সব commit-কে `type(scope): subject` format অনুসরণ করতে হবে।
 
 **বৈধ type:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `style`, `ci`
 
 **বৈধ scope:** `db`, `sse`, `oauth`, `dashboard`, `api`, `cli`, `docker`, `ci`, `mcp`, `a2a`, `memory`, `skills`, `cloud-agent`, `guardrails`, `compression`, `auto-combo`, `resilience`, `providers`, `executors`, `translator`, `domain`, `authz`
 
-Breaking change: `BREAKING CHANGE:` footer অথবা scope-এর পরে `!` যোগ করুন (যেমন `feat(api)!: drop /v0`)।
+Breaking changes: `BREAKING CHANGE:` footer যোগ করুন অথবা scope-এর পরে `!` দিন (যেমন `feat(api)!: drop /v0`)।
 
-### Documentation
+### ডকুমেন্টেশন
 
-- [ ] `npm run check:docs-sync` সফল হয় (pre-commit দ্বারা স্বয়ংক্রিয়ভাবে চালানো হয়)
-- [ ] `npm run check:docs-all` সফল হয় (সমন্বিত: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links)
-- [ ] `npm run check:env-doc-sync` 0 দিয়ে প্রস্থান করে — কোড ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` env চুক্তি অক্ষুণ্ণ আছে
-- [ ] `npm run check:doc-links` 0 দিয়ে প্রস্থান করে — পুনর্গঠনের পর কোনো অভ্যন্তরীণ markdown রেফারেন্স ভাঙা নেই
-- [ ] স্টোরেজ/রানটাইমের বিচ্যুতির জন্য `docs/architecture/ARCHITECTURE.md` পর্যালোচনা করা হয়েছে
-- [ ] env var এবং অপারেশনাল বিচ্যুতির জন্য `docs/guides/TROUBLESHOOTING.md` পর্যালোচনা করা হয়েছে
-- [ ] যদি `.env.example` পরিবর্তিত হয়ে থাকে: `docs/reference/ENVIRONMENT.md` হালনাগাদ করা হয়েছে
-- [ ] নতুন ফিচারের UI থাকলে: `docs/guides/USER_GUIDE.md`-এ সেটি উল্লেখ করা হয়েছে
-- [ ] নতুন ফিচারের API থাকলে: `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` হালনাগাদ করা হয়েছে
-- [ ] নতুন ফিচারটি একটি মডিউল হলে: নিবেদিত `docs/<MODULE>.md` বিদ্যমান
-- [ ] এটি একটি breaking change হলে: `docs/guides/TROUBLESHOOTING.md`-এ migration নোট রয়েছে
+- [ ] `npm run check:docs-sync` পাস করে (pre-commit দ্বারা স্বয়ংক্রিয়ভাবে চালানো হয়)
+- [ ] `npm run check:docs-all` পাস করে (umbrella: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links)
+- [ ] `npm run check:env-doc-sync` 0 কোডে প্রস্থান করে — code ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` env contract অক্ষুণ্ণ
+- [ ] `npm run check:doc-links` 0 কোডে প্রস্থান করে — পুনর্গঠনের পরে কোনো ভাঙা অভ্যন্তরীণ markdown reference নেই
+- [ ] `docs/architecture/ARCHITECTURE.md` storage/runtime drift-এর জন্য পর্যালোচনা করা হয়েছে
+- [ ] `docs/guides/TROUBLESHOOTING.md` env var এবং operational drift-এর জন্য পর্যালোচনা করা হয়েছে
+- [ ] `.env.example` পরিবর্তিত হলে: `docs/reference/ENVIRONMENT.md` আপডেট করা হয়েছে
+- [ ] নতুন feature-এ UI থাকলে: `docs/guides/USER_GUIDE.md`-এ সেটির উল্লেখ আছে
+- [ ] নতুন feature-এ API থাকলে: `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` আপডেট করা হয়েছে
+- [ ] নতুন feature একটি module হলে: নির্দিষ্ট `docs/<MODULE>.md` বিদ্যমান
+- [ ] breaking change হলে: `docs/guides/TROUBLESHOOTING.md`-এ migration note আছে
 
 ### i18n
 
-- [ ] `npm run i18n:check` 0 দিয়ে প্রস্থান করে — অনুবাদের অবস্থা (`.i18n-state.json`) উৎস ডকুমেন্টেশনের সঙ্গে সিঙ্কে আছে (strict mode-এ কোনো বিচ্যুত উৎস নেই; শেষ মুহূর্তের ডকুমেন্টেশন সংশোধনের জন্য warn-mode পরামর্শ গ্রহণযোগ্য, তবে tagging-এর আগে এটি 0 হওয়া উচিত)
-- [ ] `npm run i18n:check-ui-coverage` 0 দিয়ে প্রস্থান করে — প্রতিটি UI locale 80% কভারেজের ন্যূনতম সীমায় বা তার ওপরে রয়েছে
-- [ ] `npm run i18n:sync-ui:dry` সব 42টি locale জুড়ে 0টি অনুপস্থিত key রিপোর্ট করে
-- [ ] উৎসের ইংরেজি ডকুমেন্টেশন পরিবর্তিত হলে, tagging-এর আগে `npm run i18n:run` চালান (`.env`-এ `OMNIROUTE_TRANSLATION_API_KEY` প্রয়োজন)
-- [ ] অনুবাদ-সংক্রান্ত অবদান ছোট হলে পরবর্তী release পর্যন্ত স্থগিত রাখা যেতে পারে (CHANGELOG-এ ট্র্যাক করুন)
+- [ ] `npm run i18n:check` 0 কোডে প্রস্থান করে — translation state (`.i18n-state.json`) source docs-এর সঙ্গে sync-এ আছে (strict mode-এ কোনো drifted source নেই; warn-mode advisory শেষ মুহূর্তের doc touch-up-এর জন্য গ্রহণযোগ্য, তবে tagging-এর আগে 0 হওয়া উচিত)
+- [ ] `npm run i18n:check-ui-coverage` 0 কোডে প্রস্থান করে — প্রতিটি UI locale 80% coverage floor-এ বা তার ওপরে
+- [ ] `npm run i18n:sync-ui:dry` 66টি target locale-এর সবকটিতে 0টি missing key রিপোর্ট করে (`en` source ছাড়া প্রতিটি locale)
+- [ ] source English docs পরিবর্তিত হলে, tagging-এর আগে `npm run i18n:run` চালান (`.env`-এ `OMNIROUTE_TRANSLATION_API_KEY` প্রয়োজন)
+- [ ] translation contributions minor হলে পরবর্তী release পর্যন্ত স্থগিত করা যেতে পারে (CHANGELOG-এ track করুন)
 
-### ডেটাবেস Migration
+### Database Migrations
 
-- [ ] `src/lib/db/migrations/`-এ নতুন ফাইল থাকলে:
+- [ ] `src/lib/db/migrations/`-এ নতুন file থাকলে:
   - [ ] প্রতিটি migration idempotent (`CREATE TABLE IF NOT EXISTS`, ইত্যাদি)
-  - [ ] Migration-গুলো transaction-এর মধ্যে রাখা হয়েছে
-  - [ ] সঠিকভাবে নম্বর দেওয়া হয়েছে (ক্রমে কোনো ফাঁক নেই)
-- [ ] নতুন ইনস্টলে পরীক্ষা করুন: `~/.omniroute/omniroute.db` মুছে দিয়ে `npm run dev` চালান
-- [ ] বিদ্যমান ইনস্টলে পরীক্ষা করুন: DB ব্যাকআপ নিন, migration চালান এবং schema যাচাই করুন
-- [ ] Migration-এ table পুনর্লিখন করা হলে WAL ফাইল (`-wal`, `-shm`) সঠিকভাবে পরিচালিত হয়েছে
+  - [ ] Migrations transactions-এর মধ্যে আবদ্ধ
+  - [ ] সঠিকভাবে numbered (sequence-এ কোনো gap নেই)
+- [ ] Fresh install-এ test করুন: `~/.omniroute/omniroute.db` মুছে `npm run dev` চালান
+- [ ] Existing install-এ test করুন: DB backup নিন, migration চালান, schema যাচাই করুন
+- [ ] Migration table rewrite করলে WAL file (`-wal`, `-shm`) সঠিকভাবে handle করা হয়েছে
 
-### Provider Catalog (Zod দ্বারা যাচাইকৃত)
+### Provider Catalog (Zod-validated)
 
-- [ ] লোডের সময় `src/shared/constants/providers.ts`-এর Zod schema বৈধ
-  - [ ] সব provider-এর প্রয়োজনীয় field (`id`, `label`, `kind`, ইত্যাদি) রয়েছে
-  - [ ] নতুন বিনামূল্যের provider-এর জন্য `freeNote` দেওয়া হয়েছে
-  - [ ] OAuth provider-গুলোর `oauthConfig`, `src/lib/oauth/constants/oauth.ts`-এ নিবন্ধিত
-- [ ] নতুন provider যোগ করা হলে: `open-sse/executors/`-এ সংশ্লিষ্ট executor রয়েছে
-- [ ] ফরম্যাটটি OpenAI-এর না হলে: `open-sse/translator/`-এ translator রয়েছে
-- [ ] Model-গুলো `open-sse/config/providerRegistry.ts`-এ নিবন্ধিত
-- [ ] `tests/unit/`-এর unit test-গুলো provider classification এবং routing কভার করে
+- [ ] `src/shared/constants/providers.ts` Zod schema load time-এ valid
+  - [ ] সব provider-এর required field আছে (`id`, `label`, `kind`, ইত্যাদি)
+  - [ ] নতুন free provider-এর জন্য `freeNote` দেওয়া হয়েছে
+  - [ ] OAuth provider-এর `oauthConfig` `src/lib/oauth/constants/oauth.ts`-এ registered
+- [ ] নতুন provider যোগ হলে: `open-sse/executors/`-এ corresponding executor
+- [ ] non-OpenAI format হলে: `open-sse/translator/`-এ translator
+- [ ] Models `open-sse/config/providerRegistry.ts`-এ registered
+- [ ] `tests/unit/`-এ unit test provider classification এবং routing কভার করে
 
-### ডেস্কটপ (Electron)
+### Desktop (Electron)
 
-যদি `electron/` পরিবর্তিত হয়ে থাকে:
+`electron/` পরিবর্তিত হলে:
 
-- [ ] `npm run electron:smoke:packaged` সফল হয়
-- [ ] `:win`, `:mac`, `:linux`-এর মধ্যে অন্তত একটির build পরীক্ষা করা হয়েছে
-- [ ] Code signing certificate-এর মেয়াদ শেষ হয়নি (signing করা হলে)
-- [ ] `electron/package.json`-এর version, root `package.json`-এর সঙ্গে মেলে
-- [ ] `stable`-এ release করা হলে auto-update channel pointer হালনাগাদ করা হয়েছে
+- [ ] `npm run electron:smoke:packaged` পাস করে
+- [ ] অন্তত একটি `:win`, `:mac`, `:linux`-এর জন্য build test করা হয়েছে
+- [ ] Code signing certs মেয়াদোত্তীর্ণ নয় (signing করলে)
+- [ ] `electron/package.json` version root `package.json`-এর সঙ্গে মিলে
+- [ ] `stable`-এ release করলে auto-update channel pointer আপডেট করা হয়েছে
 
-### Build বিন্যাস
+### Build Layout
 
-Repository-টি তিনটি স্বতন্ত্র output directory ব্যবহার করে — এগুলো কখনো গুলিয়ে ফেলবেন না:
+Repository-টি তিনটি পৃথক output directory ব্যবহার করে — এগুলো কখনো গুলিয়ে ফেলবেন না:
 
-| Directory | উদ্দেশ্য                                                     | ট্র্যাক করা হয়? |
-| --------- | ------------------------------------------------------------ | ---------------- |
-| `src/`    | Application source (TypeScript / TSX)                        | হ্যাঁ            |
-| `.build/` | Build-এর মধ্যবর্তী ফাইল — `next build` output (`distDir`)    | না (gitignored)  |
-| `dist/`   | বিতরণযোগ্য npm bundle — `assembleStandalone` দ্বারা প্রস্তুত | না (gitignored)  |
+| Directory | Purpose                                                      | Tracked?        |
+| --------- | ------------------------------------------------------------ | --------------- |
+| `src/`    | Application source (TypeScript / TSX)                        | Yes             |
+| `.build/` | Build intermediates — `next build` output (`distDir`)        | No (gitignored) |
+| `dist/`   | Shippable npm bundle — `assembleStandalone` দ্বারা assembled | No (gitignored) |
 
-> **অপারেটরের নোট:** remote VPS image directory এখনও `/usr/lib/node_modules/omniroute/app/`।
-> কেবল **repository-এর ভেতরের** build output সরানো হয়েছে (`app/` → `dist/`)। Deploy skill-গুলো
-> `dist/`-এর বিষয়বস্তু remote `app/` directory-তে rsync করে — VPS path-এ কোনো পরিবর্তন প্রয়োজন নেই।
+> **Operator note:** remote VPS image directory এখনও `/usr/lib/node_modules/omniroute/app/`।
+> শুধুমাত্র **in-repo** build output সরানো হয়েছে (`app/` → `dist/`)। Deploy skills
+> `dist/`-এর contents remote `app/` dir-এ rsync করে — কোনো VPS path পরিবর্তন প্রয়োজন নেই।
 
-**একক-build প্রবাহ:**
+**Single-build flow:**
 
 ```
 npm run build:release
-  └─ rm -rf .build dist          (পরিষ্কার)
-  └─ next build → .build/next/   (মধ্যবর্তী ফাইল)
-  └─ assembleStandalone          (standalone + static + public + natives → dist/-এ কপি করে)
-  └─ writes dist/BUILD_SHA       (HEAD sentinel লেখে)
+  └─ rm -rf .build dist          (clean)
+  └─ next build → .build/next/   (intermediates)
+  └─ assembleStandalone          (copies standalone + static + public + natives → dist/)
+  └─ writes dist/BUILD_SHA       (HEAD sentinel)
 ```
 
-Deploy-এর জন্য `npm run build` চালিয়ে পরে আলাদাভাবে `npm run build:cli` চালাবেন না — এর পরিবর্তে
-`npm run build:release` ব্যবহার করুন, যা একটি command-এই clean rebuild + sentinel সম্পন্ন করে।
+Deploy-এর জন্য `npm run build` চালিয়ে তার পরে আলাদা করে `npm run build:cli` চালাবেন না — `npm run build:release` ব্যবহার করুন, যা একটি command-এ clean rebuild + sentinel সম্পন্ন করে।
 
-### Artifact যাচাইকরণ
+### Artifact Validation
 
 - [ ] `npm run build:release` সফল হয় এবং `dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] `npm run check:pack-artifact` পরিষ্কার — কোনো `app.__qa_backup`, `scripts/scratch`, `package-lock.json` বা অন্য কোনো স্থানীয় অবশিষ্টাংশ নেই
-- [ ] Build-এর পর `dist/server.js` বিদ্যমান
+- [ ] `npm run check:pack-artifact` clean — কোনো `app.__qa_backup`, `scripts/scratch`, `package-lock.json`, বা অন্য কোনো local residue নেই
+- [ ] Build-এর পরে `dist/server.js` বিদ্যমান
+- [ ] Optional local packaged-runtime smoke: `npm run dev:candidate -- build` চালানোর পরে `npm run dev:candidate -- validate` isolated `DATA_DIR`-এ packed tarball boot করে এবং `/api/health` + `/v1/models` যাচাই করে (দেখুন [Contribution Golden Path](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop))
 
-### Tagging ও Release
+### Tagging & Release
 
 - [ ] `/generate-release-cc` (Claude Code skill) চালান:
-  - `vX.Y.Z` tag তৈরি করে
+  - Tag `vX.Y.Z` তৈরি করে
   - Tag এবং branch push করে
-  - Changelog body-সহ GitHub Release খোলে
-  - Electron installer সংযুক্ত করে (build করা থাকলে)
-- [ ] অথবা ম্যানুয়ালি:
+  - Changelog body সহ GitHub Release খোলে
+  - Electron installers সংযুক্ত করে (build করা হলে)
+- [ ] অথবা manually:
   ```bash
   git tag -a vX.Y.Z -m "Release vX.Y.Z"
   git push origin vX.Y.Z
@@ -274,110 +290,210 @@ Deploy-এর জন্য `npm run build` চালিয়ে পরে আ�
 
 ### Deploy
 
-Deploy skill-গুলো হালকা rsync প্রবাহ ব্যবহার করে — কোনো `npm pack` বা `npm i -g` নয়:
+Deploy skills light rsync flow ব্যবহার করে — `npm pack` নয়, `npm i -g` নয়:
 
-- [ ] Target-এর সঙ্গে মেলে এমন deploy skill ব্যবহার করুন:
-  - `/deploy-vps-local-cc` — local VPS (192.168.0.15)
+- [ ] লক্ষ্য অনুযায়ী মিলে যায় এমন ডিপ্লয় স্কিল ব্যবহার করুন:
+  - `/deploy-vps-local-cc` — স্থানীয় VPS (192.168.0.15)
   - `/deploy-vps-akamai-cc` — Akamai VPS (69.164.221.35)
   - `/deploy-vps-both-cc` — উভয়টি
-- [ ] Deploy করার আগে নিশ্চিত করুন `dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] যেখানে `node_modules` বাস্তব, সেখানেই build চালাতে হবে (মূল checkout অথবা `npm ci` চালানো worktree — symlink করা worktree নয়)
-- [ ] Deploy করা instance-এর smoke test করুন:
-  - `/dashboard/health` খুলুন → version string release-এর সঙ্গে মেলে কি না পরীক্ষা করুন
-  - পরিচিত একটি provider-এর বিপরীতে `/v1/chat/completions` request চালান
-  - যাচাই করুন যে `/api/monitoring/health`, `CLOSED` circuit breaker ফেরত দেয়
-  - MCP transport-গুলো সাড়া দেয় কি না নিশ্চিত করুন (`/mcp` HTTP, `/mcp-sse` SSE)
+- [ ] ডিপ্লয় করার আগে নিশ্চিত করুন যে `dist/BUILD_SHA` == `git rev-parse --short HEAD`
+- [ ] বিল্ড অবশ্যই এমন স্থানে চালাতে হবে যেখানে `node_modules` বাস্তব (মূল checkout অথবা `npm ci` চালানো worktree — symlink করা worktree নয়)
+- [ ] ডিপ্লয় করা ইনস্ট্যান্সে স্মোক টেস্ট করুন:
+  - `/dashboard/health` খুলুন → সংস্করণ স্ট্রিংটি রিলিজের সঙ্গে মিলে কিনা পরীক্ষা করুন
+  - পরিচিত কোনো provider-এর বিরুদ্ধে একটি `/v1/chat/completions` অনুরোধ চালান
+  - যাচাই করুন যে `/api/monitoring/health` `CLOSED` circuit breaker ফেরত দেয়
+  - নিশ্চিত করুন যে MCP transport-গুলো সাড়া দেয় (`/mcp` HTTP, `/mcp-sse` SSE)
 
-### Release-পরবর্তী
+### রিলিজ-পরবর্তী
 
 - [ ] `/capture-release-evidences-cc` চালান (Claude Code skill)
-  - নতুন ফিচারগুলোর WebP স্ক্রিনশট/রেকর্ডিং ধারণ করে
+  - নতুন ফিচারের WebP স্ক্রিনশট/রেকর্ডিং ধারণ করে
   - রিলিজ নোট / ব্লগ পোস্টে সংযুক্ত করে
 - [ ] রিলিজ ঘোষণাসহ GitHub Discussions / Discord আপডেট করুন
 - [ ] পরবর্তী সংস্করণের জন্য milestone খুলুন
-- [ ] গুরুত্বপূর্ণ হলে: আলোচনাটি pin করুন অথবা অ্যাপের অভ্যন্তরীণ ব্যানারের জন্য `news.json`-এ পোস্ট করুন
+- [ ] গুরুত্বপূর্ণ হলে: আলোচনা pin করুন অথবা ইন-অ্যাপ ব্যানারের জন্য `news.json`-এ পোস্ট করুন
 
-### Radar-এর সর্বজনীন লঞ্চ গেট
+### Radar-এর পাবলিক-লঞ্চ গেট
 
-Radar ঘোষণাটি ইচ্ছাকৃতভাবে `active: false` সহ commit করা হয়েছে। নিচের প্রতিটি আইটেমের প্রমাণ পাওয়ার পর আলাদা একটি পরিবর্তনের মাধ্যমে এটি সক্রিয় করতে হবে:
+Radar ঘোষণা ইচ্ছাকৃতভাবে `active: false` সহ কমিট করা হয়েছে। নিচের প্রতিটি আইটেমের প্রমাণ পাওয়ার পর activation একটি পৃথক পরিবর্তন হিসেবে করতে হবে:
 
-- [ ] সব stacked Radar PR merge করা হয়েছে এবং release-tip CI সবুজ রয়েছে
-- [ ] `RADAR_ENABLED` ডিফল্টভাবে বন্ধ রেখেই OSS Radar routes deploy ও smoke test করুন
-- [ ] নির্দিষ্ট Radar host-এ `GET /planos`, `/termos`, `/privacidade`, এবং `/reembolso` smoke test করুন
-- [ ] private service-এ operator-এর পরিচয়/যোগাযোগ/ঠিকানা এবং owner-অনুমোদিত আইনি পর্যালোচনা রেকর্ড করুন
-- [ ] শুধু test mode-এ Stripe Checkout এবং signed webhook পরীক্ষা করুন
-- [ ] অনুমোদিত sender/domain দিয়ে একটি encrypted transactional-email delivery পরীক্ষা করুন
-- [ ] backup restore এবং তত্ত্বাবধানে পরিচালিত, budget-capped একটি research run সফলভাবে প্রমাণ করুন
+- [ ] সব stacked Radar PR মার্জ করা হয়েছে এবং release-tip CI সবুজ
+- [ ] `RADAR_ENABLED` ডিফল্টভাবে এখনও বন্ধ রেখে OSS Radar route-গুলো ডিপ্লয় ও স্মোক টেস্ট করুন
+- [ ] নির্ধারিত Radar host-এ `GET /planos`, `/termos`, `/privacidade`, এবং `/reembolso` স্মোক টেস্ট করুন
+- [ ] private service-এ operator-এর পরিচয়/যোগাযোগ/ঠিকানা এবং owner-approved legal review রেকর্ড করুন
+- [ ] শুধুমাত্র test mode-এ Stripe Checkout এবং signed webhook পরীক্ষা করুন
+- [ ] অনুমোদিত sender/domain ব্যবহার করে একটি encrypted transactional-email delivery পরীক্ষা করুন
+- [ ] backup restore এবং একটি supervised, budget-capped research run-এর প্রমাণ দিন
 - [ ] donation evidence গ্রহণের আগে BRL/PIX review policy অনুমোদন করুন
-- [ ] আগের gate-গুলো সম্পন্ন হওয়ার পরেই public Checkout সক্রিয় করুন, তারপর নতুন `news.json` ID সক্রিয় করুন
-- [ ] যাচাই করুন যে Home banner স্থানীয়কৃত copy ব্যবহার করে এবং পুরোনো কোনো ID dismiss করার পর নতুন একটি ID আবার প্রদর্শিত হয়
+- [ ] আগের গেটগুলো সম্পন্ন হওয়ার পরেই public Checkout সক্রিয় করুন, তারপর নতুন `news.json` ID সক্রিয় করুন
+- [ ] যাচাই করুন যে Home banner-এ localized copy ব্যবহৃত হয়েছে এবং পুরোনো ID dismiss করার পর নতুন ID আবার প্রদর্শিত হয়।
 
-## এমবেডেড সার্ভিসেস স্মোক পরীক্ষা (v3.8.4+)
+## এম্বেডেড সার্ভিসের স্মোক টেস্ট (v3.8.4+)
 
-এম্বেডেড সার্ভিসে পরিবর্তন অন্তর্ভুক্ত রয়েছে—এমন কোনো রিলিজ প্রকাশের আগে যাচাই করুন:
+এম্বেডেড সার্ভিসে পরিবর্তন অন্তর্ভুক্ত এমন কোনো রিলিজ প্রকাশের আগে যাচাই করুন:
 
-### নতুন-DB বুট (মাইগ্রেশন সংঘর্ষ শনাক্ত করে — v3.8.4 হটফিক্সের পরে যোগ করা হয়েছে)
+### নতুন-DB বুট (মাইগ্রেশন সংঘর্ষ শনাক্ত করে — v3.8.4 হটফিক্সের পর যোগ করা হয়েছে)
 
-- [ ] `DATA_DIR=$(mktemp -d) npm start &` — বুটের জন্য 10 s অপেক্ষা করুন
-- [ ] `curl -s http://127.0.0.1:20128/api/services/9router/status | jq '.tool'` থেকে `"9router"` ফেরত আসে (404 নয়, 500-ও নয়)। এটি নিশ্চিত করে যে মাইগ্রেশন `071_services.sql` প্রয়োগ করা হয়েছে এবং সারিটি সিড করা হয়েছে।
-- [ ] `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(version_manager);" | grep -E "provider_expose|logs_buffer_path|last_sync_at"` থেকে 3টি সারি ফেরত আসে।
-- [ ] `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(webhooks);" | grep -E "kind|metadata_encrypted"` থেকে 2টি সারি ফেরত আসে (`070_webhooks_kind_metadata.sql` প্রয়োগ করা হয়েছে কি না যাচাই করে)।
-- [ ] `node --import tsx/esm --test tests/unit/db/no-migration-collisions.test.ts` সফল হয় — ভবিষ্যৎ সংঘর্ষ প্রতিরোধ করে।
+- [ ] `DATA_DIR=$(mktemp -d) npm start &` — বুটের জন্য ১০ সেকেন্ড অপেক্ষা করুন
+- [ ] `curl -s http://127.0.0.1:20128/api/services/9router/status | jq '.tool'` `"9router"` রিটার্ন করে (404 নয়, 500 নয়)। এটি নিশ্চিত করে যে `071_services.sql` মাইগ্রেশন প্রয়োগ হয়েছে এবং সারি সিড করা হয়েছে।
+- [ ] `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(version_manager);" | grep -E "provider_expose|logs_buffer_path|last_sync_at"` ৩টি সারি রিটার্ন করে।
+- [ ] `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(webhooks);" | grep -E "kind|metadata_encrypted"` ২টি সারি রিটার্ন করে (`070_webhooks_kind_metadata.sql` প্রয়োগ হয়েছে কি না যাচাই করে)।
+- [ ] `node --import tsx/esm --test tests/unit/db/no-migration-collisions.test.ts` সফল হয় — ভবিষ্যৎ সংঘর্ষের বিরুদ্ধে সুরক্ষা দেয়।
 
 ### 9Router
 
-- [ ] `POST /api/services/9router/install` 2 min-এর মধ্যে `installedVersion`-সহ 200 ফেরত দেয়
-- [ ] `POST /api/services/9router/start` 30 s-এর মধ্যে 200 এবং `state: "running"` ফেরত দেয়
-- [ ] `GET /api/services/9router/status` থেকে `health: "healthy"` রিপোর্ট করা হয়
-- [ ] `"model": "9router/auto/..."`-সহ `POST /v1/chat/completions` 200 ফেরত দেয় (9Router-এর মাধ্যমে এন্ড-টু-এন্ড রাউটিং)
+- [ ] `POST /api/services/9router/install` ২ মিনিটের মধ্যে `installedVersion` সহ 200 রিটার্ন করে
+- [ ] `POST /api/services/9router/start` ৩০ সেকেন্ডের মধ্যে 200 এবং `state: "running"` রিটার্ন করে
+- [ ] `GET /api/services/9router/status` `health: "healthy"` রিপোর্ট করে
+- [ ] `"model": "9router/auto/..."` সহ `POST /v1/chat/completions` 200 রিটার্ন করে (9Router-এর মাধ্যমে এন্ড-টু-এন্ড রাউটিং)
 - [ ] `GET /dashboard/providers/services/9router/embed/dashboard` প্রক্সির ভেতরে 9Router-এর নেটিভ UI রেন্ডার করে (সরাসরি `127.0.0.1:port` iframe নয়)
-- [ ] `POST /api/services/9router/rotate-key` থেকে `{ keyRotated: true }` ফেরত আসে এবং সার্ভিসটি ত্রুটিমুক্তভাবে পুনরায় চালু হয়
-- [ ] `POST /api/services/9router/stop` 200 এবং `state: "stopped"` ফেরত দেয়
-- [ ] `GET /api/services/9router/logs?tail=50` সাম্প্রতিক লাইনসমৃদ্ধ `snapshot` ইভেন্টসহ SSE স্ট্রিম ফেরত দেয়
-- [ ] PATH-এ `npm` নেই এমন পরিবেশে ইনস্টল করলে ব্যবহারবান্ধব (স্ট্যাক ট্রেসবিহীন) ত্রুটি বার্তাসহ 500 ফেরত আসে
+- [ ] `POST /api/services/9router/rotate-key` `{ keyRotated: true }` রিটার্ন করে এবং সার্ভিসটি পরিষ্কারভাবে পুনরায় চালু হয়
+- [ ] `POST /api/services/9router/stop` 200 এবং `state: "stopped"` রিটার্ন করে
+- [ ] `GET /api/services/9router/logs?tail=50` সাম্প্রতিক লাইনসহ `snapshot` ইভেন্টযুক্ত SSE স্ট্রিম রিটার্ন করে
+- [ ] PATH-এ `npm` না থাকা পরিবেশে ইনস্টল করলে 500 সহ বন্ধুসুলভ (স্ট্যাক-ট্রেসবিহীন) ত্রুটি বার্তা রিটার্ন করে
 
 ### CLIProxyAPI
 
-- [ ] `POST /api/services/cliproxy/install` 2 min-এর মধ্যে 200 ফেরত দেয়
-- [ ] `POST /api/services/cliproxy/start` 30 s-এর মধ্যে 200 এবং `state: "running"` ফেরত দেয়
-- [ ] `GET /api/services/cliproxy/status` থেকে `health: "healthy"` রিপোর্ট করা হয়
-- [ ] `POST /api/services/cliproxy/stop` 200 এবং `state: "stopped"` ফেরত দেয়
-- [ ] `GET /api/services/cliproxy/logs?tail=50` SSE স্ট্রিম ফেরত দেয়
+- [ ] `POST /api/services/cliproxy/install` ২ মিনিটের মধ্যে 200 রিটার্ন করে
+- [ ] `POST /api/services/cliproxy/start` ৩০ সেকেন্ডের মধ্যে 200 এবং `state: "running"` রিটার্ন করে
+- [ ] `GET /api/services/cliproxy/status` `health: "healthy"` রিপোর্ট করে
+- [ ] `POST /api/services/cliproxy/stop` 200 এবং `state: "stopped"` রিটার্ন করে
+- [ ] `GET /api/services/cliproxy/logs?tail=50` SSE স্ট্রিম রিটার্ন করে
 
 ### নিরাপত্তা রিগ্রেশন
 
-- [ ] `curl -H "X-Forwarded-For: 1.2.3.4" http://localhost:20128/api/services/9router/start` থেকে `403 LOCAL_ONLY` ফেরত আসে
-- [ ] `curl -H "X-Forwarded-For: 1.2.3.4" http://localhost:20128/api/services/cliproxy/start` থেকে `403 LOCAL_ONLY` ফেরত আসে
-- [ ] `/api/services/*` থেকে আসা ত্রুটি প্রতিক্রিয়ায় `err.stack` বা অ্যাবসলিউট ফাইল পাথ থাকে না
+- [ ] `curl -H "X-Forwarded-For: 1.2.3.4" http://localhost:20128/api/services/9router/start` `403 LOCAL_ONLY` রিটার্ন করে
+- [ ] `curl -H "X-Forwarded-For: 1.2.3.4" http://localhost:20128/api/services/cliproxy/start` `403 LOCAL_ONLY` রিটার্ন করে
+- [ ] `/api/services/*`-এর ত্রুটি-প্রতিক্রিয়ায় `err.stack` বা অ্যাবসলিউট ফাইল পাথ থাকে না
 
 ## v3.8.0+ যাচাই
 
-কোনো v3.8.x রিলিজ প্রকাশের আগে এই অতিরিক্ত বিষয়গুলো যাচাই করুন:
+যেকোনো v3.8.x রিলিজ প্রকাশের আগে এই অতিরিক্ত বিষয়গুলো যাচাই করুন:
 
-- [ ] `omniroute --tray` macOS-এ বুট হয় (`~/.omniroute/runtime/`-এ systray2 ইনস্টল করা থাকে)
-- [ ] `omniroute --tray` Linux-এ বুট হয় (DISPLAY আবশ্যক; সেট করা না থাকলে মার্জিতভাবে ত্রুটি দেখায়)
-- [ ] `omniroute --tray` Windows-এ বুট হয় (PowerShell NotifyIcon, কোনো অতিরিক্ত বাইনারি নয়)
-- [ ] `omniroute config tray enable` অটোস্টার্ট এন্ট্রি তৈরি করে; নিষ্ক্রিয় করলে সেটি সরিয়ে দেয়
-- [ ] `npm install -g omniroute@<this-version>` মারাত্মকভাবে প্রস্থান না করেই postinstall চালায়
-- [ ] আপডেট পাথ ঐচ্ছিক ডিপেন্ডেন্সিগুলো অক্ষুণ্ণ রাখে: `omniroute update --apply` এবং অটো-আপডেটার
+- [ ] `omniroute --tray` macOS-এ বুট হয় (`~/.omniroute/runtime/`-এ systray2 ইনস্টল করা আছে)
+- [ ] `omniroute --tray` Linux-এ বুট হয় (DISPLAY প্রয়োজন; সেট না থাকলে সুন্দরভাবে ত্রুটি দেখায়)
+- [ ] `omniroute --tray` Windows-এ বুট হয় (PowerShell NotifyIcon, অতিরিক্ত কোনো বাইনারি নয়)
+- [ ] `omniroute config tray enable` অটোস্টার্ট এন্ট্রি তৈরি করে; disable করলে তা সরিয়ে দেয়
+- [ ] `npm install -g omniroute@<this-version>` fatal exit ছাড়াই postinstall চালায়
+- [ ] আপডেটের পথ ঐচ্ছিক নির্ভরতা ধরে রাখে: `omniroute update --apply` এবং auto-updater
       `npm install -g … --include=optional` চালায়, যাতে `optionalDependencies` (better-sqlite3,
-      keytar, tls-client এবং llmlingua SLM স্ট্যাক: `@atjsh/llmlingua-2@2.0.5`,
-      `js-tiktoken`) আপডেটের পরেও অক্ষুণ্ণ থাকে। ultra `modelPath` SLM টিয়ারের জন্য tinybert
-      মডেলটিও প্রয়োজন, যা প্রথম ব্যবহারে স্বয়ংক্রিয়ভাবে `${DATA_DIR}/models/llmlingua`-তে ডাউনলোড
-      হয়। এরপর postinstall (`scripts/build/colocateOptionals.mjs`) SLM-এর ঐচ্ছিক ক্লোজারকে
-      `dist/node_modules`-এ একই স্থানে রাখে, যাতে ওয়ার্কারটি একটি মাত্র `@huggingface/transformers` ^4.2.0
-      ইনস্ট্যান্স রিজলভ করে — স্বতন্ত্র ট্রেস শুধু transformers বান্ডল করে, ডায়নামিকভাবে ইমপোর্ট করা
-      ঐচ্ছিকগুলো নয়; তাই এটি না থাকলে ওয়ার্কার root-এর transformers-এর বিপরীতে llmlingua-2 লোড করবে
-      এবং SLM টিয়ারটি কোনো বার্তা ছাড়াই fail-open করবে।
-- [ ] কোনো `.env` ছাড়াই `omniroute status` কাজ করে (CLI টোকেন পাথ, কেবল লুপব্যাক)
-- [ ] `curl http://localhost:20128/api/shutdown` থেকে 401 ফেরত আসে (সর্বদা-সুরক্ষিত রুট)
-- [ ] `curl -H "host: evil.com" http://localhost:20128/api/mcp/sse` থেকে 401 ফেরত আসে (লুপব্যাক গার্ড)
-- [ ] প্রথমবার চালানোর সময় SQLite রানটাইম `bundled`-এ রিজলভ হয় (বান্ডল করা বাইনারিটি প্ল্যাটফর্মের জন্য বৈধ)
-- [ ] `node_modules/better-sqlite3` মুছে ফেলা হলে SQLite রানটাইম `runtime`-এ ফলব্যাক করে
-- [ ] Smart MCP ফিল্টার প্রকৃত `playwright-mcp browser_snapshot` আউটপুট সংকুচিত করে (≥50% হ্রাস)
-- [ ] `skills/omniroute*/SKILL.md`-এর সব 10টি ফাইল raw GitHub URL-এর মাধ্যমে সর্বজনীনভাবে আনা যায়
-- [ ] নতুন সেটআপে অনবোর্ডিং উইজার্ড "How It Works" টিয়ার ট্যুর ধাপ দেখায়
-- [ ] হোম ড্যাশবোর্ডের টিয়ার কভারেজ উইজেট কনফিগার করা/সক্রিয় সংখ্যাগুলো দেখায়
+      keytar, tls-client, এবং llmlingua SLM stack: `@atjsh/llmlingua-2@2.0.5`,
+      `js-tiktoken`) আপডেটের পরেও টিকে থাকে। ultra `modelPath` SLM tier-এর জন্য
+      tinybert মডেলও প্রয়োজন, যা প্রথম ব্যবহারে `${DATA_DIR}/models/llmlingua`-এ স্বয়ংক্রিয়ভাবে ডাউনলোড হয়। Postinstall
+      (`scripts/build/colocateOptionals.mjs`) এরপর SLM optional closure-কে `dist/node_modules`-এ সহ-অবস্থান করায়, যাতে worker একটি মাত্র `@huggingface/transformers` ^4.2.0
+      instance resolve করে — standalone trace bundle-গুলো শুধু transformers বান্ডেল করে, dynamically-imported optionals নয়; তাই এটি না থাকলে worker root-এর transformers-এর বিরুদ্ধে llmlingua-2 লোড করবে এবং SLM tier নীরবে fail-open হবে।
+- [ ] কোনো `.env` ছাড়াই `omniroute status` কাজ করে (CLI token path, শুধু loopback)
+- [ ] `curl http://localhost:20128/api/shutdown` 401 রিটার্ন করে (সবসময়-সুরক্ষিত route)
+- [ ] `curl -H "host: evil.com" http://localhost:20128/api/mcp/sse` 401 রিটার্ন করে (loopback guard)
+- [ ] প্রথম রানেই SQLite runtime `bundled`-এ resolve হয় (প্ল্যাটফর্মের জন্য bundled binary বৈধ)
+- [ ] `node_modules/better-sqlite3` মুছে ফেললে SQLite runtime `runtime`-এ fallback করে
+- [ ] Smart MCP filter বাস্তব `playwright-mcp browser_snapshot` output কমপ্রেস করে (≥50% হ্রাস)
+- [ ] সব ১০টি `skills/omniroute*/SKILL.md` ফাইল raw GitHub URL-এর মাধ্যমে সর্বজনীনভাবে fetch করা যায়
+- [ ] নতুন সেটআপে onboarding wizard "How It Works" tier tour step দেখায়
+- [ ] Home dashboard tier coverage widget configured/active count দেখায়
+
+---
+
+## 3.9.0 LTS কাট (3.8.58-এ মহড়া করা হয়েছে)
+
+v3.8.59-এর পরবর্তী সংস্করণ হলো 3.9.0, এবং এর tip থেকে দুটি দীর্ঘস্থায়ী branch তৈরি হবে:
+`stable/v3` (v3 LTS line, npm `latest`) এবং `develop` (v4, 4.0.0-এ উন্নীত, npm
+`nightly`)। Branch/channel মডেল, forward-port এবং label-গুলো
+[RELEASE_STRATEGY.md](./RELEASE_STRATEGY.md)-এ রয়েছে; পরিকল্পনাটি [ROADMAP](../../ROADMAP.md)-এ
+(Phase 3)। কাটটি একবারই চলে;
+3.8.58 একটি fork-এ শুরু থেকে শেষ পর্যন্ত এর মহড়া করে, এবং 3.8.59
+[GO/NO-GO checklist](./LTS_GO_NO_GO.md) দিয়ে সমাপ্ত হয়।
+
+### Dry-run (শুধু-পঠন, যেকোনো সময় নিরাপদ)
+
+```bash
+npm run release:dry-run-lts-cut                       # প্রকৃত কাট: HEAD থেকে 3.9.0, আগের tag v3.8.59
+npm run release:dry-run-lts-cut -- --from <3.9.0-tip> # source commit নির্দিষ্ট করুন
+```
+
+`scripts/release/dry-run-lts-cut.mjs` কিছুই execute করে না: এটি git এবং `gh` পড়ে এবং
+সম্পূর্ণ sequence মুদ্রণ করে — precondition-গুলো (source resolve হয়, source repository-তে সম্পূর্ণ history আছে —
+একটি shallow clone `stable/v3` push করতে পারে না, receiving side প্রথম grafted parent-এই pack প্রত্যাখ্যান করে, তাই
+সম্পূর্ণ clone থেকে কাট করুন অথবা আগে `git fetch --unshallow origin` চালান — আগের
+tag বিদ্যমান, `package.json` target version-এ আছে, একটি `release-freeze` issue খোলা আছে, বিদ্যমান release branch-এ
+কোনো খোলা `Release branch not green` issue নেই
+— যে branch বিদ্যমান নয় সেটি `?` unknown হিসেবে রিপোর্ট করে, কখনো
+green নয় — Mergify `release` queue কনফিগার করা আছে (`queue_rules`, `checks_timeout`,
+label `queue`), `release/*` ruleset এখনও deletion এবং force-push আটকে রাখে, এবং
+`stable/v3` ও `develop` এখনও বিদ্যমান নয়), দুটি branch step, কোন dormant-workflow
+trigger এবং `if:` condition সত্য হবে (এবং কোনগুলো repository variable দ্বারা gated থাকবে অথবা
+canonical repository-তে pinned থাকবে), প্রত্যাশিত dist-tag (`latest` → 3.9.0, `next` এবং
+`nightly` খালি) এবং rollback। Exit `0` = `RESULT: READY`, `1` = একটি blocking precondition
+ব্যর্থ হয়েছে (`✗`), `2` = usage error। `--advisory <id,...>` কোনো check-কে warning (`!`)-এ
+নামিয়ে দেয়, কিন্তু সেটি আড়াল করে না।
+
+3.9.0 release freeze এখনও খোলা থাকতেই প্রকৃত cut-এর dry-run চালান — tag তৈরির
+পরে এবং Phase 12c freeze তুলে নেওয়ার আগে branch-গুলো তৈরি হয়।
+
+### 3.8.58 মহড়া (শুধু fork-এ)
+
+```bash
+# ১. মহড়ার parameter ব্যবহার করে বর্তমান tip-এ dry-run
+npm run release:dry-run-lts-cut -- --target-version 3.8.58 --previous-tag v3.8.57 \
+  --advisory freeze,base-green
+
+# ২. একটি FORK remote-এর বিরুদ্ধে execute করুন (origin, অথবা যার URL canonical
+#    repository, প্রত্যাখ্যাত হবে; প্রতিটি step terminal-এ confirmation চাইবে)
+git remote add rehearsal https://github.com/<you>/OmniRoute.git
+node scripts/release/dry-run-lts-cut.mjs --execute --remote rehearsal \
+  --target-version 3.8.58 --previous-tag v3.8.57 --advisory freeze,base-green
+
+# ৩. fork-এ dormant workflow-গুলো চালান (যেখানে dry-run canonical-repository pin
+#    রিপোর্ট করে সেখানে workflow_dispatch ব্যবহার করুন), তারপর rollback করুন
+node scripts/release/dry-run-lts-cut.mjs --execute --rollback --remote rehearsal \
+  --target-version 3.8.58 --previous-tag v3.8.57 --advisory freeze,base-green
+```
+
+develop bump commit-টি git plumbing ব্যবহার করে তৈরি হয় (কোনো working tree স্পর্শ করা হয় না) এবং
+cycle-open commit-এর মতো একই পাঁচটি file-এ bump করে: `package.json`, `open-sse/package.json`,
+`electron/package.json`, `package-lock.json` এবং `docs/openapi.yaml`। `[4.0.0]`
+CHANGELOG section এবং এর i18n mirror-গুলো পরে `develop`-এ খোলা হয়, এর প্রথম
+PR-এর আগে। Script কখনো npm dist-tag পরিবর্তন করে না — সেগুলো একটি scratch package-এ
+মহড়া করুন।
+
+### PR preview artifact (একবার build করুন, একই bytes promote করুন)
+
+`.github/workflows/preview-artifact.yml` একটি PR head থেকে একটি production tarball build করে এবং
+সেই exact build-টি validate করে (#8084 slice (a))। শুধু একই repository-র PR; কিছু publish করা হয় না।
+
+```bash
+gh workflow run preview-artifact.yml -f pr_number=<N>   # অথবা `preview-artifact` label যোগ করুন
+gh run download <run-id> --name preview-artifact-pr<N>-<sha7> --dir preview
+cd preview && sha256sum -c SHA256SUMS
+gh attestation verify omniroute-*.tgz --repo diegosouzapw/OmniRoute
+npm install -g ./omniroute-*.tgz                          # preview install
+```
+
+Run-টি `npm ci`, `npm run build:release`, `npm run check:pack-artifact` চালায়, tarball
+pack করে, `npm run check:pack-boot` চালায় (fake secret, ephemeral data dir), পুনরায়
+pack করে এবং digest অভিন্ন না হলে ব্যর্থ হয়, তারপর `artifact-identity.json` রেকর্ড করে (head SHA, base
+SHA, lockfile hash, platform, arch, node ABI, bundler, build policy —
+`scripts/release/artifact-identity.mjs`) এবং একটি পৃথক job-এ tarball attest করে। Preview promote করার
+অর্থ হলো সেই tarball install করা: source থেকে কখনো পুনরায় build করবেন না।
+
+### কাট (3.9.0, GO-এর পরে)
+
+1. [LTS_GO_NO_GO.md](./LTS_GO_NO_GO.md)-এ GO রেকর্ড করা হয়েছে।
+2. `npm run release:dry-run-lts-cut -- --from v3.9.0` `RESULT: READY` মুদ্রণ করে।
+3. dry-run যে command-গুলো মুদ্রণ করে, সেগুলো ব্যবহার করে `origin`-এ branch-গুলো হাতে তৈরি করুন —
+   script `origin`-এ push করতে অস্বীকার করে। পর্যালোচনা করা develop commit পুনর্ব্যবহার করতে, প্রথমে
+   আপনার fork-এর বিরুদ্ধে 3.9.0 tip-এ `--execute` rehearsal চালান; এটি উভয় SHA মুদ্রণ করে, এবং
+   একই commit-গুলো push করা যায়:
+
+   ```bash
+   git push origin <stable-sha>:refs/heads/stable/v3 <develop-sha>:refs/heads/develop
+   ```
+
+4. প্রথম PR আসার আগেই `stable/v3` এবং `develop` সুরক্ষিত করুন (রুলসেট + মার্জ কিউ)।
+5. নিষ্ক্রিয় ওয়ার্কফ্লোগুলি ব্রাঞ্চের অস্তিত্বের ভিত্তিতে সক্রিয় হয়: `forward-port.yml` (`stable/v3`-এ পুশ), `validate-stable-pr.yml` (`stable/v3`-এর জন্য PR) এবং `nightly-v4-build.yml` (`develop` বিল্ড করে)। গো-লাইভের আগে, রিপোজিটরি সিক্রেট `secrets.FORWARD_PORT_TOKEN` সেট করুন (যাতে CI forward-port PR-গুলিতে চলে); মালিক রিপোজিটরি ভেরিয়েবল `vars.NIGHTLY_PUBLISH`-কে `true` সেট না করা এবং npm Trusted Publishing `nightly-v4-build.yml` গ্রহণ না করা পর্যন্ত নাইটলি প্রকাশনা বন্ধ থাকবে। চ্যানেল নির্ধারণ করে `scripts/release/dist-tag.mjs`; `npm-publish.yml` একই রিজলভার ব্যবহার করে।
+6. চ্যানেলগুলি যাচাই করুন: `npm view omniroute dist-tags --json` দেখায় যে `latest` = 3.9.0 এবং v4 প্রকাশিত না হওয়া পর্যন্ত কোনো `next` / `nightly` নেই।
+7. প্রয়োজন হলে রোলব্যাক করুন: `git push origin --delete refs/heads/stable/v3 refs/heads/develop`
+   এবং `npm dist-tag add omniroute@3.8.59 latest`।
 
 ---
 
@@ -385,21 +501,21 @@ Radar ঘোষণাটি ইচ্ছাকৃতভাবে `active: false`
 
 রিলিজে গুরুতর সমস্যা থাকলে:
 
-1. `gh release edit vX.Y.Z --prerelease` (সর্বশেষ নয় হিসেবে চিহ্নিত করে)
-2. `git tag -d vX.Y.Z && git push --delete origin vX.Y.Z` (শুধু যদি ব্যবহারকারীরা এখনও এটি গ্রহণ না করে থাকেন)
+1. `gh release edit vX.Y.Z --prerelease` (এটিকে সর্বশেষ রিলিজ হিসেবে চিহ্নিত না করে)
+2. `git tag -d vX.Y.Z && git push --delete origin vX.Y.Z` (শুধুমাত্র ব্যবহারকারীরা এখনো গ্রহণ না করলে)
 3. অথবা: `release/vX.Y.0`-এ হটফিক্স → প্যাচ রিলিজ `vX.Y.(Z+1)`
-4. অবিলম্বে GitHub Discussions এবং Discord-এ জানান
+4. GitHub Discussions এবং Discord-এ অবিলম্বে জানাতে হবে
 
-## কঠোর নিয়মাবলি
+## কঠোর নিয়ম
 
 - কখনোই সরাসরি `main`-এ কমিট করবেন না
 - কখনোই `main` বা `release/*` ব্রাঞ্চে `git push --force` ব্যবহার করবেন না
-- কখনোই Husky হুক (`--no-verify`) এড়িয়ে যাবেন না
-- কখনোই সিক্রেট, ক্রেডেনশিয়াল বা `.env` ফাইল কমিট করবেন না
-- কভারেজ অবশ্যই ≥60/60/60/60 (স্টেটমেন্ট/লাইন/ফাংশন/ব্রাঞ্চ) থাকতে হবে
-- `src/`, `open-sse/`, `electron/` বা `bin/`-এর প্রোডাকশন কোড পরিবর্তন করার সময় সর্বদা টেস্ট অন্তর্ভুক্ত বা আপডেট করুন
+- কখনোই Husky হুক এড়িয়ে যাবেন না (`--no-verify`)
+- কখনোই সিক্রেট, শংসাপত্র বা `.env` ফাইল কমিট করবেন না
+- কভারেজ ≥60/60/60/60 (স্টেটমেন্ট/লাইন/ফাংশন/ব্রাঞ্চ) থাকতে হবে
+- `src/`, `open-sse/`, `electron/` বা `bin/`-এ প্রোডাকশন কোড পরিবর্তন করার সময় সর্বদা টেস্ট যোগ বা আপডেট করতে হবে
 
-## স্বয়ংক্রিয় সিঙ্ক যাচাই
+## স্বয়ংক্রিয় সিঙ্ক পরীক্ষা
 
 PR খোলার আগে স্থানীয়ভাবে ডকুমেন্টেশন সিঙ্ক গার্ড চালান:
 
@@ -407,4 +523,4 @@ PR খোলার আগে স্থানীয়ভাবে ডকুম�
 npm run check:docs-sync
 ```
 
-CI-ও `.github/workflows/ci.yml`-এ (lint জব) এই যাচাই চালায়।
+CI-ও `.github/workflows/ci.yml`-এর লিন্ট জবে এই পরীক্ষা চালায়।

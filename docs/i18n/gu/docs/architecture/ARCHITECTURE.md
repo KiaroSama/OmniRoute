@@ -8,79 +8,78 @@
 
 _છેલ્લે અપડેટ કરાયું: 2026-06-28_
 
-## કાર્યકારી સારાંશ
+## એક્ઝિક્યુટિવ સારાંશ
 
-OmniRoute એ Next.js પર બનાવાયેલ સ્થાનિક AI રૂટિંગ ગેટવે અને ડેશબોર્ડ છે.
-તે એક જ OpenAI-સુસંગત એન્ડપોઇન્ટ (`/v1/*`) પ્રદાન કરે છે અને અનુવાદ, ફૉલબૅક, ટોકન રિફ્રેશ તથા વપરાશ ટ્રેકિંગ સાથે ટ્રાફિકને અનેક અપસ્ટ્રીમ પ્રદાતાઓમાં રૂટ કરે છે.
+OmniRoute એ Next.js પર બનેલ સ્થાનિક AI રૂટીંગ ગેટવે અને ડેશબોર્ડ છે. તે એકલ OpenAI- સુસંગત એન્ડપોઇન્ટ (`/v1/*`) પ્રદાન કરે છે અને અનુવાદ, ફોલબેક, ટોકન રિફ્રેશ અને વપરાશ ટ્રેકિંગ સાથે બહુવિધ અપસ્ટ્રીમ પ્રદાતાઓ પર ટ્રાફિકને રૂટ કરે છે.
 
 મુખ્ય ક્ષમતાઓ:
 
-- CLI/ટૂલ્સ માટે OpenAI-સુસંગત API સપાટી (355 પ્રદાતાઓ, 108 એક્ઝિક્યુટર્સ)
-- પ્રદાતા ફોર્મેટ્સ વચ્ચે વિનંતી/પ્રતિસાદનું રૂપાંતરણ
-- મોડેલ કોમ્બો ફૉલબૅક (મલ્ટિ-મોડેલ ક્રમ)
-- `compositeTiers` દ્વારા રનટાઇમ ક્રમ સાથે સંરચિત કોમ્બો પગલાં (`provider + model + connection`)
-- એકાઉન્ટ-સ્તરીય ફૉલબૅક (દરેક પ્રદાતા માટે બહુવિધ એકાઉન્ટ)
-- મુખ્ય ચેટ પાથમાં ક્વોટા પૂર્વ-ચકાસણી અને ક્વોટા-સજાગ P2C એકાઉન્ટ પસંદગી
-- OAuth + API-key પ્રદાતા કનેક્શન વ્યવસ્થાપન (22 OAuth પ્રદાતા મોડ્યુલ)
-- `/v1/embeddings` દ્વારા એમ્બેડિંગ જનરેશન (18 પ્રદાતાઓ)
-- `/v1/images/generations` દ્વારા ઇમેજ જનરેશન (10+ પ્રદાતાઓ, 20+ મોડેલો)
-- `/v1/audio/transcriptions` દ્વારા ઑડિયો ટ્રાન્સક્રિપ્શન (18 પ્રદાતાઓ)
+- CLI/tools માટે OpenAI- સુસંગત API સપાટી (394 પ્રદાતાઓ, 159 એક્ઝિક્યુટર મોડ્યુલ્સ)
+- પ્રદાતા ફોર્મેટમાંRequest/response અનુવાદ
+- મૉડલ કૉમ્બો ફૉલબૅક (મલ્ટિ-મોડલ સિક્વન્સ)
+- `compositeTiers` દ્વારા રનટાઈમ ઓર્ડર સાથે સંરચિત કોમ્બો સ્ટેપ્સ (`provider + model + connection`)
+- એકાઉન્ટ-લેવલ ફૉલબેક (પ્રદાતા દીઠ મલ્ટિ-એકાઉન્ટ)
+- મુખ્ય ચેટ પાથમાં ક્વોટા પ્રીફ્લાઇટ અને ક્વોટા-અવેર P2C એકાઉન્ટ પસંદગી
+- OAuth + API-કી પ્રદાતા કનેક્શન મેનેજમેન્ટ (27 OAuth પ્રદાતા મોડ્યુલ્સ)
+- `/v1/embeddings` (18 પ્રદાતાઓ) દ્વારા જનરેશન એમ્બેડ કરવું
+- `/v1/images/generations` દ્વારા છબી બનાવવી (10 + પ્રદાતાઓ, 20 + મોડલ)
+- `/v1/audio/transcriptions` દ્વારા ઓડિયો ટ્રાન્સક્રિપ્શન (18 પ્રદાતાઓ)
 - `/v1/audio/speech` દ્વારા ટેક્સ્ટ-ટુ-સ્પીચ (24 બિલ્ટ-ઇન પ્રદાતાઓ)
 - `/v1/videos/generations` દ્વારા વિડિયો જનરેશન (ComfyUI + SD WebUI)
-- `/v1/music/generations` દ્વારા સંગીત જનરેશન (ComfyUI)
-- `/v1/search` દ્વારા વેબ શોધ (20 પ્રદાતાઓ)
-- `/v1/moderations` દ્વારા મોડરેશન
-- `/v1/rerank` દ્વારા પુનઃક્રમનિર્ધારણ
-- રીઝનિંગ મોડેલો માટે થિંક ટૅગ પાર્સિંગ (`<think>...</think>`)
-- કડક OpenAI SDK સુસંગતતા માટે પ્રતિસાદ શુદ્ધીકરણ
-- ક્રોસ-પ્રદાતા સુસંગતતા માટે ભૂમિકા સામાન્યીકરણ (developer→system, system→user)
-- સંરચિત આઉટપુટ રૂપાંતરણ (json_schema → Gemini responseSchema)
-- પ્રદાતાઓ, કીઓ, ઉપનામો, કોમ્બો, સેટિંગ્સ અને કિંમતો માટે સ્થાનિક સાતત્યપૂર્ણ સંગ્રહ (122 DB મોડ્યુલ)
-- વપરાશ/ખર્ચ ટ્રેકિંગ અને વિનંતી લૉગિંગ
-- મલ્ટિ-ડિવાઇસ/સ્ટેટ સિંક માટે વૈકલ્પિક ક્લાઉડ સિંક
-- API ઍક્સેસ નિયંત્રણ માટે IP મંજૂરીસૂચિ/અવરોધસૂચિ
-- થિંકિંગ બજેટ વ્યવસ્થાપન (પાસથ્રૂ/ઑટો/કસ્ટમ/અનુકૂલનશીલ)
-- વૈશ્વિક સિસ્ટમ પ્રોમ્પ્ટ ઇન્જેક્શન
-- સેશન ટ્રેકિંગ અને ફિંગરપ્રિન્ટિંગ
-- પ્રદાતા-વિશિષ્ટ પ્રોફાઇલ્સ સાથે પ્રતિ-એકાઉન્ટ ઉન્નત રેટ લિમિટિંગ
-- પ્રદાતા સ્થિતિસ્થાપકતા માટે સર્કિટ બ્રેકર પેટર્ન
-- મ્યુટેક્સ લૉકિંગ સાથે ઍન્ટિ-થન્ડરિંગ હર્ડ સુરક્ષા
-- સિગ્નેચર-આધારિત વિનંતી ડિડુપ્લિકેશન કૅશ
-- ડોમેન સ્તર: ખર્ચ નિયમો, ફૉલબૅક નીતિ, લૉકઆઉટ નીતિ
-- કૉન્ટેક્સ્ટ રિલે: એકાઉન્ટ રોટેશન સાતત્ય માટે સેશન હેન્ડઑફ સારાંશો
-- ડોમેન સ્ટેટ સાતત્યપૂર્ણ સંગ્રહ (ફૉલબૅક, બજેટ, લૉકઆઉટ અને સર્કિટ બ્રેકર્સ માટે SQLite રાઇટ-થ્રૂ કૅશ)
-- કેન્દ્રીકૃત વિનંતી મૂલ્યાંકન માટે નીતિ એન્જિન (લૉકઆઉટ → બજેટ → ફૉલબૅક)
-- p50/p95/p99 લેટન્સી એકત્રીકરણ સાથે વિનંતી ટેલિમેટ્રી
-- `combo_execution_key` / `combo_step_id` દ્વારા કોમ્બો ટાર્ગેટ ટેલિમેટ્રી અને ઐતિહાસિક કોમ્બો ટાર્ગેટ હેલ્થ
-- એન્ડ-ટુ-એન્ડ ટ્રેસિંગ માટે કોરિલેશન ID (X-Request-Id)
-- પ્રતિ API key ઑપ્ટ-આઉટ સાથે અનુપાલન ઑડિટ લૉગિંગ
-- LLM ગુણવત્તા ખાતરી માટે મૂલ્યાંકન ફ્રેમવર્ક
-- રિયલ-ટાઇમ પ્રદાતા સર્કિટ બ્રેકર સ્થિતિ સાથે હેલ્થ ડેશબોર્ડ
-- 3 ટ્રાન્સપોર્ટ (stdio/SSE/Streamable HTTP) સાથે MCP Server (110 ટૂલ્સ)
-- કૌશલ્યો અને ટાસ્ક લાઇફસાઇકલ સાથે A2A Server (JSON-RPC 2.0 + SSE)
-- મેમરી સિસ્ટમ (એક્સટ્રેક્શન, ઇન્જેક્શન, રિટ્રીવલ, સારાંશીકરણ)
-- કૌશલ્ય સિસ્ટમ (રજિસ્ટ્રી, એક્ઝિક્યુટર, સૅન્ડબૉક્સ, બિલ્ટ-ઇન કૌશલ્યો)
-- સર્ટિફિકેટ વ્યવસ્થાપન અને DNS હેન્ડલિંગ સાથે MITM પ્રોક્સી
-- પ્રોમ્પ્ટ ઇન્જેક્શન ગાર્ડ મિડલવેર
-- Caveman, RTK, સ્ટૅક્ડ પાઇપલાઇન્સ, કમ્પ્રેશન કોમ્બો, ભાષા પૅક્સ અને ઍનલિટિક્સ સાથે પ્રોમ્પ્ટ કમ્પ્રેશન પાઇપલાઇન
-- ACP (Agent Communication Protocol) રજિસ્ટ્રી
-- મોડ્યુલર OAuth પ્રદાતાઓ (`src/lib/oauth/providers/` હેઠળ 22 વ્યક્તિગત મોડ્યુલ)
-- અનઇન્સ્ટૉલ/સંપૂર્ણ-અનઇન્સ્ટૉલ સ્ક્રિપ્ટ્સ
+- `/v1/music/generations` (ComfyUI) દ્વારા સંગીત જનરેશન
+- `/v1/search` (20 પ્રદાતાઓ) દ્વારા વેબ શોધ
+- `/v1/moderations` દ્વારા મધ્યસ્થતા
+- `/v1/rerank` દ્વારા પુનઃક્રમાંકન
+- તર્કના નમૂનાઓ માટે ટેગ પાર્સિંગ (`<think>...</think>`) વિશે વિચારો
+- કડક OpenAI SDK સુસંગતતા માટે પ્રતિભાવ સેનિટાઇઝેશન
+- ક્રોસ-પ્રોવાઇડર સુસંગતતા માટે રોલ નોર્મલાઇઝેશન (ડેવલપર → સિસ્ટમ, સિસ્ટમ → વપરાશકર્તા)
+- સ્ટ્રક્ચર્ડ આઉટપુટ કન્વર્ઝન (json_schema → Gemini responseSchema)
+- પ્રદાતાઓ, કી, ઉપનામો, કોમ્બોઝ, સેટિંગ્સ, કિંમતો (122 DB મોડ્યુલ્સ) માટે સ્થાનિક દ્રઢતા
+- Usage/cost ટ્રેકિંગ અને વિનંતી લોગીંગ
+- multi-device/state સમન્વયન માટે વૈકલ્પિક ક્લાઉડ સિંક
+- API એક્સેસ કંટ્રોલ માટેIP allowlist/blocklist
+- થિંકિંગ બજેટ મેનેજમેન્ટ (passthrough/auto/custom/adaptive)
+- વૈશ્વિક સિસ્ટમ પ્રોમ્પ્ટ ઈન્જેક્શન
+- સત્ર ટ્રેકિંગ અને ફિંગરપ્રિંટિંગ
+- પ્રદાતા-વિશિષ્ટ પ્રોફાઇલ્સ સાથે મર્યાદિત પ્રતિ-એકાઉન્ટ ઉન્નત દર
+- પ્રદાતાની સ્થિતિસ્થાપકતા માટે સર્કિટ બ્રેકર પેટર્ન
+- મ્યુટેક્સ લોકીંગ સાથે એન્ટી થન્ડરીંગ હર્ડ પ્રોટેક્શન
+- હસ્તાક્ષર-આધારિત વિનંતી ડિડુપ્લિકેશન કેશ
+- ડોમેન સ્તર: ખર્ચ નિયમો, ફોલબેક નીતિ, લોકઆઉટ નીતિ
+- સંદર્ભ રિલે: એકાઉન્ટ રોટેશન સાતત્ય માટે સત્ર હેન્ડઓફ સારાંશ
+- ડોમેન સ્ટેટ પર્સિસ્ટન્સ (ફોલબેક, બજેટ, લોકઆઉટ, સર્કિટ બ્રેકર્સ માટેSQLite રાઈટ-થ્રુ કેશ)
+- કેન્દ્રિય વિનંતી મૂલ્યાંકન માટે નીતિ એન્જિન (લોકઆઉટ → બજેટ → ફોલબેક)
+- p50/p95/p99 લેટન્સી એકત્રીકરણ સાથે ટેલિમેટ્રીની વિનંતી કરો
+- `combo_execution_key` / `combo_step_id` દ્વારા કોમ્બો લક્ષ્ય ટેલિમેટ્રી અને ઐતિહાસિક કોમ્બો લક્ષ્ય આરોગ્ય
+- એન્ડ-ટુ-એન્ડ ટ્રેસિંગ માટે સહસંબંધ ID (X-Request-Id).
+- API કી દીઠ નાપસંદ સાથે અનુપાલન ઓડિટ લોગીંગ
+- LLM ગુણવત્તા ખાતરી માટે Eval માળખું
+- રીઅલ-ટાઇમ પ્રદાતા સર્કિટ બ્રેકર સ્થિતિ સાથે આરોગ્ય ડેશબોર્ડ
+- MCP સર્વર (110 સાધનો) 3 પરિવહન સાથે (stdio/SSE/Streamable HTTP)
+- A2A સર્વર (JSON-RPC 2.0 + SSE) કુશળતા અને કાર્ય જીવનચક્ર સાથે
+- મેમરી સિસ્ટમ (નિષ્કર્ષણ, ઇન્જેક્શન, પુનઃપ્રાપ્તિ, સારાંશ)
+- સ્કિલ્સ સિસ્ટમ (રજિસ્ટ્રી, એક્ઝિક્યુટર, સેન્ડબોક્સ, બિલ્ટ-ઇન સ્કીલ્સ)
+- પ્રમાણપત્ર વ્યવસ્થાપન અને DNS હેન્ડલિંગ સાથેMITM પ્રોક્સી
+- પ્રોમ્પ્ટ ઈન્જેક્શન ગાર્ડ મિડલવેર
+- કેવમેન, RTK, સ્ટેક્ડ પાઇપલાઇન્સ, કમ્પ્રેશન કોમ્બોઝ, લેંગ્વેજ પેક અને એનાલિટિક્સ સાથે પ્રોમ્પ્ટ કમ્પ્રેશન પાઇપલાઇન
+- ACP (એજન્ટ કોમ્યુનિકેશન પ્રોટોકોલ) રજિસ્ટ્રી
+- મોડ્યુલર OAuth પ્રદાતાઓ ( `src/lib/oauth/providers/` હેઠળ 22 વ્યક્તિગત મોડ્યુલો)
+- Uninstall/full-uninstall સ્ક્રિપ્ટો
 - OAuth પર્યાવરણ સમારકામ ક્રિયા
-- OpenAI-સુસંગત WS ક્લાયન્ટ્સ માટે WebSocket બ્રિજ (`/v1/ws`)
-- સિંક ટોકન વ્યવસ્થાપન (જારી/રદ કરવું, ETag-વર્ઝનવાળું કૉન્ફિગ બંડલ ડાઉનલોડ)
-- GLM Thinking (`glmt`) પ્રથમ-વર્ગનું પ્રદાતા પ્રીસેટ
-- હાઇબ્રિડ ટોકન ગણતરી (અંદાજિત ફૉલબૅક સાથે પ્રદાતા-પક્ષીય `/messages/count_tokens`)
-- મોડેલ ઉપનામ ઑટો-સીડિંગ (સ્ટાર્ટઅપ સમયે 30+ ક્રોસ-પ્રોક્સી ડાયલેક્ટ સામાન્યીકરણ)
-- SSRF ગાર્ડ, ખાનગી URL અવરોધન અને કૉન્ફિગર કરી શકાય તેવા પુનઃપ્રયાસ સાથે સુરક્ષિત આઉટબાઉન્ડ ફેચ
-- કૉન્ફિગર કરી શકાય તેવા `requestRetry` અને `maxRetryIntervalSec` સાથે કૂલડાઉન-સજાગ ચેટ પુનઃપ્રયાસો
-- સ્ટાર્ટઅપ સમયે Zod સાથે રનટાઇમ પર્યાવરણ માન્યીકરણ
-- પેજિનેશન, પ્રદાતા CRUD ઇવેન્ટ્સ અને SSRF-અવરોધિત માન્યીકરણ લૉગિંગ સાથે અનુપાલન ઑડિટ v2
+- ઓપનએઆઈ-સુસંગત WS ક્લાયન્ટ્સ માટેWebSocket બ્રિજ (`/v1/ws`)
+- સમન્વયન ટોકન મેનેજમેન્ટ (issue/revoke, ETag-સંસ્કરણવાળા રૂપરેખા બંડલ ડાઉનલોડ)
+- GLM થિંકિંગ (`glmt`) પ્રથમ-વર્ગ પ્રદાતા પ્રીસેટ
+- હાઇબ્રિડ ટોકન ગણતરી (અંદાજ ફોલબેક સાથે પ્રદાતા-બાજુ `/messages/count_tokens` )
+- મોડલ ઉર્ફે ઓટો-સીડીંગ (સ્ટાર્ટઅપ સમયે 30 + ક્રોસ-પ્રોક્સી બોલી નોર્મલાઇઝેશન)
+- SSRF ગાર્ડ, ખાનગી URL બ્લોકિંગ અને રૂપરેખાંકિત પુનઃપ્રયાસ સાથે સુરક્ષિત આઉટબાઉન્ડ મેળવો
+- કૂલડાઉન-જાગૃત ચેટ રૂપરેખાંકિત `requestRetry` અને `maxRetryIntervalSec` સાથે ફરીથી પ્રયાસ કરે છે
+- સ્ટાર્ટઅપ પર Zod સાથે રનટાઇમ પર્યાવરણ માન્યતા
+- પૃષ્ઠ ક્રમાંકન, પ્રદાતા CRUD ઇવેન્ટ્સ અને SSRF- અવરોધિત માન્યતા લોગિંગ સાથે અનુપાલન ઓડિટ v2
 
-પ્રાથમિક રનટાઇમ મોડેલ:
+પ્રાથમિક રનટાઇમ મોડલ:
 
-- `src/app/api/*` હેઠળના Next.js ઍપ રૂટ્સ ડેશબોર્ડ API અને સુસંગતતા API બંને અમલમાં મૂકે છે
-- `src/sse/*` + `open-sse/*` માં રહેલું શેર કરેલ SSE/રૂટિંગ કોર પ્રદાતા એક્ઝિક્યુશન, રૂપાંતરણ, સ્ટ્રીમિંગ, ફૉલબૅક અને વપરાશ સંભાળે છે
+- `src/app/api/*` હેઠળ Next.js એપ રૂટ ડેશબોર્ડ APIs અને સુસંગતતા APIs બંનેનો અમલ કરે છે
+- `src/sse/*` + `open-sse/*` માં વહેંચાયેલ SSE/routing કોર પ્રદાતા અમલીકરણ, અનુવાદ, સ્ટ્રીમિંગ, ફોલબેક અને ઉપયોગને સંભાળે છે
 
 ## સંદર્ભ આકૃતિઓ
 
@@ -114,43 +113,50 @@ v3.8.0 પ્લેટફોર્મ માટેના પ્રમાણભ�
 - સ્થાનિક પ્રક્રિયાની બહારનું પ્રદાતા SLA/કંટ્રોલ પ્લેન
 - બાહ્ય CLI બાઇનરીઓ પોતે (Claude CLI, Codex CLI, વગેરે)
 
-## ડૅશબોર્ડ સપાટી (વર્તમાન)
+## ડેશબોર્ડ સપાટી (વર્તમાન)
 
 `src/app/(dashboard)/dashboard/` હેઠળનાં મુખ્ય પૃષ્ઠો:
 
 - `/dashboard` — ઝડપી શરૂઆત + પ્રદાતા અવલોકન
-- `/dashboard/endpoint` — એન્ડપોઇન્ટ પ્રોક્સી + MCP + A2A + API એન્ડપોઇન્ટ ટૅબ્સ
+- `/dashboard/endpoint` — એન્ડપોઇન્ટ પ્રૉક્સી + MCP + A2A + API એન્ડપોઇન્ટ ટૅબ્સ
 - `/dashboard/providers` — પ્રદાતા કનેક્શન્સ અને ઓળખપત્રો
-- `/dashboard/combos` — કોમ્બો વ્યૂહરચનાઓ, ટેમ્પ્લેટ્સ, પગલા-આધારિત બિલ્ડર, મોડેલ રાઉટિંગ નિયમો, મેન્યુઅલ રીતે સ્થાયી કરેલો ક્રમ
-- `/dashboard/auto-combo` — Auto Combo Engine: સ્કોરિંગ વેઇટ્સ, મોડ પૅક્સ, વર્ચ્યુઅલ ફેક્ટરી પ્રીસેટ્સ, ટેલિમેટ્રી
+- `/dashboard/combos` — કોમ્બો વ્યૂહરચનાઓ, ટેમ્પ્લેટ્સ, પગલાં-આધારિત બિલ્ડર, મૉડલ રાઉટિંગ નિયમો, મૅન્યુઅલી સાચવેલો ક્રમ
+- `/dashboard/auto-combo` — ઑટો કોમ્બો એન્જિન: સ્કોરિંગ વેઇટ્સ, મોડ પૅક્સ, વર્ચ્યુઅલ ફૅક્ટરી પ્રીસેટ્સ, ટેલિમેટ્રી
 - `/dashboard/costs` — ખર્ચ એકત્રીકરણ અને કિંમત દૃશ્યતા
 - `/dashboard/analytics` — વપરાશ વિશ્લેષણ, મૂલ્યાંકનો, કોમ્બો લક્ષ્યની સ્થિતિ
 - `/dashboard/limits` — ક્વોટા/દર નિયંત્રણો
-- `/dashboard/cli-tools` — CLI ઑનબોર્ડિંગ, રનટાઇમ શોધ, કૉન્ફિગરેશન જનરેશન
+- `/dashboard/cli-tools` — CLI ઑનબોર્ડિંગ, રનટાઇમ શોધ, કૉન્ફિગ જનરેશન
 - `/dashboard/agents` — શોધાયેલા ACP એજન્ટ્સ + કસ્ટમ એજન્ટ નોંધણી
 - `/dashboard/cloud-agents` — ક્લાઉડ-હોસ્ટેડ એજન્ટ કાર્યો (Codex Cloud, Devin, Jules) અને કાર્ય જીવનચક્ર
-- `/dashboard/skills` — A2A કૌશલ્ય રજિસ્ટ્રી, સૅન્ડબૉક્સ એક્ઝિક્યુશન, બિલ્ટ-ઇન કૌશલ્ય કૅટલૉગ
-- `/dashboard/memory` — સ્થાયી સંવાદાત્મક મેમરીનું નિરીક્ષણ અને પુનઃપ્રાપ્તિ
-- `/dashboard/webhooks` — આઉટબાઉન્ડ વેબહૂક સબ્સ્ક્રિપ્શન્સ, સિક્રેટ રોટેશન, પુનઃપ્રયાસના આંકડા
-- `/dashboard/batch` — બૅચ જોબ સબમિશન અને પ્રગતિ
-- `/dashboard/cache` — રીડ-થ્રૂ અને રીઝનિંગ કૅશના આંકડા, ઇવિક્શન નિયંત્રણો
-- `/dashboard/playground` — કોઈપણ કૉન્ફિગર કરેલા કોમ્બો/મોડેલ સામે ઇન્ટરેક્ટિવ ચૅટ પ્લેગ્રાઉન્ડ
-- `/dashboard/changelog` — ઇન-ઍપ ચેન્જલૉગ વ્યૂઅર (`CHANGELOG.md` રેન્ડર કરે છે)
-- `/dashboard/system` — રનટાઇમ નિદાન, વર્ઝન માહિતી, પર્યાવરણ માન્યતા સપાટી
-- `/dashboard/onboarding` — નવા ઇન્સ્ટોલેશન્સ માટે પ્રથમ-રન સેટઅપ વિઝાર્ડ
-- `/dashboard/media` — છબી/વિડિયો/સંગીત પ્લેગ્રાઉન્ડ
+- `/dashboard/skills` — A2A સ્કિલ રજિસ્ટ્રી, સૅન્ડબૉક્સ એક્ઝિક્યુશન, બિલ્ટ-ઇન સ્કિલ કૅટલૉગ
+- `/dashboard/memory` — કાયમી વાર્તાલાપ મેમરીનું નિરીક્ષણ અને પુનઃપ્રાપ્તિ
+- `/dashboard/webhooks` — આઉટબાઉન્ડ વેબહૂક સબ્સ્ક્રિપ્શન્સ, સિક્રેટ રોટેશન, પુનઃપ્રયાસનાં આંકડા
+- `/dashboard/batch` — બૅચ જૉબ સબમિશન અને પ્રગતિ
+- `/dashboard/cache` — રીડ-થ્રૂ અને રીઝનિંગ કૅશનાં આંકડા, ઇવિક્શન નિયંત્રણો
+- `/dashboard/playground` — કૉન્ફિગર કરેલા કોઈપણ કોમ્બો/મૉડલ સામે ઇન્ટરેક્ટિવ ચૅટ પ્લેગ્રાઉન્ડ
+- `/dashboard/changelog` — ઍપની અંદરનો ચેન્જલૉગ વ્યૂઅર (`CHANGELOG.md` રેન્ડર કરે છે)
+- `/dashboard/system` — રનટાઇમ ડાયગ્નોસ્ટિક્સ, વર્ઝન માહિતી, એન્વાયર્નમેન્ટ માન્યતા સપાટી
+- `/dashboard/onboarding` — નવા ઇન્સ્ટૉલેશન્સ માટે પ્રથમ-રન સેટઅપ વિઝાર્ડ
+- `/dashboard/media` — ઇમેજ/વિડિયો/મ્યુઝિક પ્લેગ્રાઉન્ડ
 - `/dashboard/search-tools` — શોધ પ્રદાતાનું પરીક્ષણ અને ઇતિહાસ
-- `/dashboard/health` — અપટાઇમ, સર્કિટ બ્રેકર્સ, દર મર્યાદાઓ, ક્વોટા-મૉનિટર કરેલા સેશન્સ
-- `/dashboard/logs` — વિનંતી/પ્રોક્સી/ઑડિટ/કન્સોલ લૉગ્સ
-- `/dashboard/settings` — સિસ્ટમ સેટિંગ્સ ટૅબ્સ (સામાન્ય, રાઉટિંગ, કોમ્બો ડિફૉલ્ટ્સ, વગેરે)
+- `/dashboard/health` — અપટાઇમ, સર્કિટ બ્રેકર્સ, દર મર્યાદાઓ, ક્વોટા-મૉનિટર કરેલાં સેશન્સ
+- `/dashboard/logs` — રિક્વેસ્ટ/પ્રૉક્સી/ઑડિટ/કન્સોલ લૉગ્સ
+- `/dashboard/settings` — સિસ્ટમ સેટિંગ્સ ટૅબ્સ (સામાન્ય, રાઉટિંગ, કોમ્બો ડિફૉલ્ટ્સ વગેરે)
 - `/dashboard/context/caveman` — Caveman કમ્પ્રેશન નિયમો, ભાષા પૅક્સ, પૂર્વાવલોકન અને આઉટપુટ મોડ
-- `/dashboard/context/rtk` — RTK કમાન્ડ-આઉટપુટ ફિલ્ટર્સ, પૂર્વાવલોકન અને રનટાઇમ સલામતી સેટિંગ્સ
-- `/dashboard/context/combos` — રાઉટિંગ કોમ્બોને સોંપેલી નામવાળી કમ્પ્રેશન પાઇપલાઇન્સ
-- `/dashboard/translator` — ટ્રાન્સલેટર નિરીક્ષણ અને વિનંતી ફૉર્મેટ રૂપાંતરણનું પૂર્વાવલોકન
+- `/dashboard/context/rtk` — RTK કમાન્ડ-આઉટપુટ ફિલ્ટર્સ, પૂર્વાવલોકન અને રનટાઇમ સુરક્ષા સેટિંગ્સ
+- `/dashboard/context/combos` — રાઉટિંગ કોમ્બોઝને સોંપેલી નામિત કમ્પ્રેશન પાઇપલાઇન્સ
+- `/dashboard/translator` — અનુવાદકનું નિરીક્ષણ અને રિક્વેસ્ટ ફૉર્મેટ રૂપાંતરણનું પૂર્વાવલોકન
 - `/dashboard/audit` — પેજિનેશન અને સંરચિત મેટાડેટા સાથેનો અનુપાલન ઑડિટ લૉગ બ્રાઉઝર
-- `/dashboard/usage` — `usage_history` સાથે જોડાયેલો પ્રતિ-વિનંતી વપરાશ બ્રાઉઝર
+- `/dashboard/usage` — `usage_history` સાથે જોડાયેલો પ્રતિ-રિક્વેસ્ટ વપરાશ બ્રાઉઝર
 - `/dashboard/compression` — કમ્પ્રેશન વિશ્લેષણ, આંકડા અને પાઇપલાઇન સોંપણી
-- `/dashboard/api-manager` — API કી જીવનચક્ર અને મોડેલ પરવાનગીઓ
+- `/dashboard/api-manager` — API કી જીવનચક્ર અને મૉડલ પરવાનગીઓ
+
+UI સ્તર: દરેક પૃષ્ઠ એક જ શેલની અંદર રેન્ડર થાય છે — `src/app/(dashboard)/layout.tsx` →
+`src/shared/components/layouts/DashboardLayout.tsx` → `DashboardShell.tsx` (કિટનાં
+`SidebarProvider`/`SidebarInset`, OmniRouteનાં `Sidebar.tsx` અને `Header.tsx`). પૃષ્ઠો તેમના
+બિલ્ડિંગ બ્લૉક્સ `@/shared/components`માંથી (`packages/ui-kit`માં વેન્ડર કરેલી Keak CI UI Kit પરના ઍડૅપ્ટર્સ) અથવા કિટના કમ્પોનન્ટ સબપાથ્સ (`@omniroute/ui-kit/table`, `…/page-header`)માંથી અને
+આઇકન્સ `<Icon>` (`ICON_MAP` → Lucide) દ્વારા ઇમ્પોર્ટ કરે છે. થીમ (ડિફૉલ્ટ રૂપે `system`, લાઇટ/ડાર્ક) અને ટોકન્સ
+`src/app/globals.css`માંના બ્રિજ દ્વારા કિટમાંથી આવે છે. વિગતો: `docs/architecture/DESIGN_SYSTEM.md`.
 
 ## ઉચ્ચ-સ્તરીય સિસ્ટમ સંદર્ભ
 
@@ -260,70 +266,70 @@ flowchart LR
 
 ## 2) SSE + અનુવાદ કોર
 
-મુખ્ય ફ્લો મોડ્યુલો:
+મુખ્ય પ્રવાહ મોડ્યુલો:
 
-- એન્ટ્રી: `src/sse/handlers/chat.ts`
+- પ્રવેશ: `src/sse/handlers/chat.ts`
 - કોર ઓર્કેસ્ટ્રેશન: `open-sse/handlers/chatCore.ts`
-- પ્રોવાઇડર એક્ઝિક્યુશન એડેપ્ટર્સ: `open-sse/executors/*`
-- ફોર્મેટ ડિટેક્શન/પ્રોવાઇડર કન્ફિગરેશન: `open-sse/services/provider.ts`
-- મોડેલ પાર્સ/રિઝોલ્વ: `src/sse/services/model.ts`, `open-sse/services/model.ts`
-- એકાઉન્ટ ફૉલબૅક લોજિક: `open-sse/services/accountFallback.ts`
+- પ્રદાતા એક્ઝેક્યુશન એડેપ્ટર્સ: `open-sse/executors/*`
+- ફોર્મેટ detection/provider રૂપરેખા: `open-sse/services/provider.ts`
+- મોડલ parse/resolve: `src/sse/services/model.ts`, `open-sse/services/model.ts`
+- એકાઉન્ટ ફોલબેક લોજિક: `open-sse/services/accountFallback.ts`
 - અનુવાદ રજિસ્ટ્રી: `open-sse/translator/index.ts`
 - સ્ટ્રીમ ટ્રાન્સફોર્મેશન્સ: `open-sse/utils/stream.ts`, `open-sse/utils/streamHandler.ts`
-- ઉપયોગ એક્સટ્રેક્શન/નોર્મલાઇઝેશન: `open-sse/utils/usageTracking.ts`
-- થિંક ટૅગ પાર્સર: `open-sse/utils/thinkTagParser.ts`
-- એમ્બેડિંગ હૅન્ડલર: `open-sse/handlers/embeddings.ts`
-- એમ્બેડિંગ પ્રોવાઇડર રજિસ્ટ્રી: `open-sse/config/embeddingRegistry.ts`
-- ઇમેજ જનરેશન હૅન્ડલર: `open-sse/handlers/imageGeneration.ts`
-- ઇમેજ પ્રોવાઇડર રજિસ્ટ્રી: `open-sse/config/imageRegistry.ts`
-- રિસ્પોન્સ સેનિટાઇઝેશન: `open-sse/handlers/responseSanitizer.ts`
-- રોલ નોર્મલાઇઝેશન: `open-sse/services/roleNormalizer.ts`
+- ઉપયોગ extraction/normalization: `open-sse/utils/usageTracking.ts`
+- ટેગ પાર્સર વિચારો: `open-sse/utils/thinkTagParser.ts`
+- એમ્બેડિંગ હેન્ડલર: `open-sse/handlers/embeddings.ts`
+- એમ્બેડિંગ પ્રદાતા રજિસ્ટ્રી: `open-sse/config/embeddingRegistry.ts`
+- છબી જનરેશન હેન્ડલર: `open-sse/handlers/imageGeneration.ts`
+- છબી પ્રદાતા રજિસ્ટ્રી: `open-sse/config/imageRegistry.ts`
+- પ્રતિભાવ સેનિટાઇઝેશન: `open-sse/handlers/responseSanitizer.ts`
+- ભૂમિકા સામાન્યકરણ: `open-sse/services/roleNormalizer.ts`
 
-સર્વિસિસ (બિઝનેસ લોજિક):
+સેવાઓ (વ્યાપાર તર્ક):
 
-- એકાઉન્ટ પસંદગી/સ્કોરિંગ: `open-sse/services/accountSelector.ts`
-- કૉન્ટેક્સ્ટ લાઇફસાઇકલ મેનેજમેન્ટ: `open-sse/services/contextManager.ts`
+- એકાઉન્ટ selection/scoring: `open-sse/services/accountSelector.ts`
+- સંદર્ભ જીવનચક્ર વ્યવસ્થાપન: `open-sse/services/contextManager.ts`
 - IP ફિલ્ટર અમલીકરણ: `open-sse/services/ipFilter.ts`
-- સેશન ટ્રૅકિંગ: `open-sse/services/sessionManager.ts`
-- રિક્વેસ્ટ ડિડુપ્લિકેશન: `open-sse/services/signatureCache.ts`
-- સિસ્ટમ પ્રોમ્પ્ટ ઇન્જેક્શન: `open-sse/services/systemPrompt.ts`
-- થિંકિંગ બજેટ મેનેજમેન્ટ: `open-sse/services/thinkingBudget.ts`
-- વાઇલ્ડકાર્ડ મોડેલ રાઉટિંગ: `open-sse/services/wildcardRouter.ts`
-- રેટ લિમિટ મેનેજમેન્ટ: `open-sse/services/rateLimitManager.ts`
+- સત્ર ટ્રેકિંગ: `open-sse/services/sessionManager.ts`
+- ડુપ્લિકેશનની વિનંતી કરો: `open-sse/services/signatureCache.ts`
+- સિસ્ટમ પ્રોમ્પ્ટ ઈન્જેક્શન: `open-sse/services/systemPrompt.ts`
+- બજેટ મેનેજમેન્ટ વિશે વિચારવું: `open-sse/services/thinkingBudget.ts`
+- વાઇલ્ડકાર્ડ મોડલ રૂટીંગ: `open-sse/services/wildcardRouter.ts`
+- દર મર્યાદા વ્યવસ્થાપન: `open-sse/services/rateLimitManager.ts`
 - સર્કિટ બ્રેકર: `src/shared/utils/circuitBreaker.ts`
-- કૉન્ટેક્સ્ટ હૅન્ડઑફ: `open-sse/services/contextHandoff.ts` — કૉન્ટેક્સ્ટ-રિલે વ્યૂહરચના માટે હૅન્ડઑફ સારાંશ જનરેશન અને ઇન્જેક્શન
-- કમ્પ્રેશન: `open-sse/services/compression/*` — પ્રોવાઇડર અનુવાદ પહેલાં સક્રિય કમ્પ્રેશન;
-  તેમાં Caveman નિયમો, RTK ફિલ્ટર્સ, સ્ટૅક્ડ પાઇપલાઇન્સ, કમ્પ્રેશન કૉમ્બોઝ, આંકડાઓ અને વૅલિડેશન સામેલ છે
-- Codex ક્વોટા ફેચર: `open-sse/services/codexQuotaFetcher.ts` — કૉન્ટેક્સ્ટ-રિલે હૅન્ડઑફના નિર્ણયો માટે Codex ક્વોટા મેળવે છે
-- કૂલડાઉન-અવેર રિટ્રાય: `src/sse/services/cooldownAwareRetry.ts` — કન્ફિગર કરી શકાય તેવા `requestRetry` / `maxRetryIntervalSec` સાથે પ્રતિ-મોડેલ કૂલડાઉન રિટ્રાય
-- સુરક્ષિત આઉટબાઉન્ડ ફેચ: `src/shared/network/safeOutboundFetch.ts` — SSRF ગાર્ડ, ખાનગી URL બ્લૉકિંગ, રિટ્રાય અને ટાઇમઆઉટ સાથે સુરક્ષિત પ્રોવાઇડર/મોડેલ ફેચ
-- આઉટબાઉન્ડ URL ગાર્ડ: `src/shared/network/outboundUrlGuard.ts` — ખાનગી/localhost CIDR રેન્જ સામે પ્રોવાઇડર URLs ને વૅલિડેટ કરે છે
-- પ્રોવાઇડર રિક્વેસ્ટ ડિફૉલ્ટ્સ: `open-sse/services/providerRequestDefaults.ts` — પ્રોવાઇડર-સ્તરના `maxTokens`, `temperature`, `thinkingBudgetTokens` ડિફૉલ્ટ્સ
-- GLM પ્રોવાઇડર કૉન્સ્ટન્ટ્સ: `open-sse/config/glmProvider.ts` — શેર કરેલા GLM મોડેલ્સ, ક્વોટા URLs, GLMT ટાઇમઆઉટ/ડિફૉલ્ટ્સ
-- Antigravity અપસ્ટ્રીમ: `open-sse/config/antigravityUpstream.ts` — બેઝ URL અને ડિસ્કવરી પાથ કૉન્સ્ટન્ટ્સ
-- Codex ક્લાયન્ટ કૉન્સ્ટન્ટ્સ: `open-sse/config/codexClient.ts` — વર્ઝનવાળા યુઝર-એજન્ટ અને ક્લાયન્ટ-વર્ઝન મૂલ્યો
-- મોડેલ એલિયસ સીડ: `src/lib/modelAliasSeed.ts` — સ્ટાર્ટઅપ વખતે 30+ ક્રોસ-પ્રૉક્સી ડાયલેક્ટ એલિયસ સીડ કરે છે
+- સંદર્ભ હેન્ડઓફ: `open-sse/services/contextHandoff.ts` — હેન્ડઓફ સારાંશ જનરેશન અને સંદર્ભ-રિલે વ્યૂહરચના માટે ઇન્જેક્શન
+- કમ્પ્રેશન: પ્રદાતા અનુવાદ પહેલાં `open-sse/services/compression/*` — પ્રોએક્ટિવ કમ્પ્રેશન; કેવમેન નિયમો, RTK ફિલ્ટર્સ, સ્ટેક્ડ પાઇપલાઇન્સ, કમ્પ્રેશન કોમ્બોઝ, આંકડા અને માન્યતાનો સમાવેશ થાય છે
+- Codex ક્વોટા ફેચર: `open-sse/services/codexQuotaFetcher.ts` — સંદર્ભ-રિલે હેન્ડઓફ નિર્ણયો માટે Codex ક્વોટા મેળવે છે
+- કૂલડાઉન-જાગૃત પુનઃપ્રયાસ: `src/sse/services/cooldownAwareRetry.ts` — પ્રતિ-મોડલ કૂલડાઉન રૂપરેખાંકિત `requestRetry` / `maxRetryIntervalSec` સાથે ફરી પ્રયાસો
+- સલામત આઉટબાઉન્ડ આનયન: SSRF ગાર્ડ સાથે `src/shared/network/safeOutboundFetch.ts` — રક્ષિત provider/model આનયન, ખાનગી-URL અવરોધિત કરવું, ફરીથી પ્રયાસ કરો અને સમયસમાપ્તિ
+- આઉટબાઉન્ડ URL ગાર્ડ: `src/shared/network/outboundUrlGuard.ts` — હોસ્ટ પ્રદાતા URLs પર તપાસ કરે છે; `src/shared/network/outboundUrlGuardPolicy.ts` `OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS`, `OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS` અને તેમના ડેશબોર્ડ ટૉગલમાંથી મોડ પસંદ કરે છે (જુઓ `docs/reference/ENVIRONMENT.md`)
+- પ્રદાતા વિનંતી ડિફોલ્ટ્સ: `open-sse/services/providerRequestDefaults.ts` — પ્રદાતા-સ્તર `maxTokens`, `temperature`, `thinkingBudgetTokens` ડિફોલ્ટ્સ
+- GLM પ્રદાતા સ્થિરાંકો: `open-sse/config/glmProvider.ts` — શેર કરેલ GLM મોડલ્સ, ક્વોટા URLs, GLMT timeout/defaults
+- Antigravity અપસ્ટ્રીમ: `open-sse/config/antigravityUpstream.ts` — આધાર URL અને શોધ પાથ સ્થિરાંકો
+- Codex ક્લાયન્ટ સ્થિરાંકો: `open-sse/config/codexClient.ts` — સંસ્કરણવાળા વપરાશકર્તા-એજન્ટ અને ક્લાયંટ-સંસ્કરણ મૂલ્યો
+- મોડેલ ઉપનામ બીજ: સ્ટાર્ટઅપ પર `src/lib/modelAliasSeed.ts` — બીજ 30 + ક્રોસ-પ્રોક્સી બોલી ઉપનામો
 
-ડોમેન લેયર મોડ્યુલો:
+ડોમેન લેયર મોડ્યુલ્સ:
 
-- ખર્ચના નિયમો/બજેટ્સ: `src/domain/costRules.ts`
-- ફૉલબૅક નીતિ: `src/domain/fallbackPolicy.ts`
-- કૉમ્બો રિઝોલ્વર: `src/domain/comboResolver.ts`
-- લૉકઆઉટ નીતિ: `src/domain/lockoutPolicy.ts`
-- નીતિ એન્જિન: `src/domain/policyEngine.ts` — કેન્દ્રીકૃત લૉકઆઉટ → બજેટ → ફૉલબૅક મૂલ્યાંકન
-- એરર કોડ્સ કૅટલૉગ: `src/shared/constants/errorCodes.ts`
-- રિક્વેસ્ટ ID: `src/shared/utils/requestId.ts`
-- ફેચ ટાઇમઆઉટ: `src/shared/utils/fetchTimeout.ts`
-- રિક્વેસ્ટ ટેલિમેટ્રી: `src/shared/utils/requestTelemetry.ts`
-- કમ્પ્લાયન્સ/ઑડિટ: `src/lib/compliance/index.ts`
-- ઇવૅલ રનર: `src/lib/evals/evalRunner.ts`
-- ડોમેન સ્ટેટ પર્સિસ્ટન્સ: `src/lib/db/domainState.ts` — ફૉલબૅક ચેઇન્સ, બજેટ્સ, ખર્ચ ઇતિહાસ, લૉકઆઉટ સ્ટેટ અને સર્કિટ બ્રેકર્સ માટે SQLite CRUD
+- કિંમત rules/budgets: `src/domain/costRules.ts`
+- ફોલબેક પોલિસી: `src/domain/fallbackPolicy.ts`
+- અનામત કોમ્બો-રીઝોલ્યુશન કોન્ટ્રાક્ટ: `src/domain/comboResolver.ts`; લાઇવ રૂટીંગ `open-sse/services/combo.ts` ઉપયોગ કરે છે
+- લોકઆઉટ નીતિ: `src/domain/lockoutPolicy.ts`
+- આરક્ષિત નીતિ-મૂલ્યાંકન કરાર: `src/domain/policyEngine.ts`; વિનંતી પાથ `src/shared/utils/apiKeyPolicy.ts` દ્વારા API-કી નીતિને લાગુ કરે છે અને `src/sse/handlers/chat/resolvedModelPolicy.ts` દ્વારા ઉકેલાયેલ-લક્ષ્ય અધિકૃતતા
+- ભૂલ કોડ સૂચિ: `src/shared/constants/errorCodes.ts`
+- વિનંતી ID: `src/shared/utils/requestId.ts`
+- આનયન સમયસમાપ્તિ: `src/shared/utils/fetchTimeout.ts`
+- ટેલિમેટ્રીની વિનંતી કરો: `src/shared/utils/requestTelemetry.ts`
+- Compliance/audit: `src/lib/compliance/index.ts`
+- Eval દોડવીર: `src/lib/evals/evalRunner.ts`
+- ડોમેન સ્ટેટ પર્સિસ્ટન્સ: ફોલબેક ચેઇન્સ, બજેટ્સ, કોસ્ટ હિસ્ટ્રી, લોકઆઉટ સ્ટેટ, સર્કિટ બ્રેકર્સ માટે `src/lib/db/domainState.ts` — SQLite CRUD
 
-OAuth પ્રોવાઇડર મોડ્યુલો (`src/lib/oauth/providers/` હેઠળ 22 અલગ ફાઇલો):
+OAuth પ્રદાતા મોડ્યુલ્સ ( `src/lib/oauth/providers/` હેઠળ 27 વ્યક્તિગત ફાઇલો):
 
 - રજિસ્ટ્રી ઇન્ડેક્સ: `src/lib/oauth/providers/index.ts`
-- વ્યક્તિગત પ્રોવાઇડર્સ: `agy.ts`, `antigravity.ts`, `claude.ts`, `cline.ts`, `codebuddy-cn.ts`, `codex.ts`, `cursor.ts`, `devin-desktop.ts`, `ghe-copilot.ts`, `github.ts`, `gitlab-duo.ts`, `grok-cli-oauth.ts`, `grok-cli.ts`, `kilocode.ts`, `kimi-coding.ts`, `kiro.ts`, `openference.ts`, `qoder.ts`, `trae.ts`, `xai-oauth.ts`, `zed-hosted.ts`, `zed.ts`
-- પાતળું રૅપર: `src/lib/oauth/providers.ts` — વ્યક્તિગત મોડ્યુલોમાંથી ફરીથી એક્સપોર્ટ કરે છે
+- વ્યક્તિગત પ્રદાતાઓ: `agy.ts`, `antigravity.ts`, `claude.ts`, `cline.ts`, `codebuddy-cn.ts`, `codebuddy-intl.ts`, `codex.ts` `workbuddy.ts` `cursor.ts`, `devin-desktop.ts`, `ghe-copilot.ts`, `github.ts`, `gitlab-duo.ts`, `grok-cli-oauth.ts`, `grok-cli.ts` `zed.ts` `kilocode.ts`, `kimi-coding.ts`, `kiro.ts`, `muse-code.ts`, `openference.ts`, `qoder.ts`, `trae.ts`, `xai-oauth.ts`, `zed-hosted.ts`
+- વહેંચાયેલ સહાયકો: `codebuddyDeviceAuth.ts` (CodeBuddy CN/intl ઉપકરણ પ્રવાહ), `museCodeDeviceResponse.ts`
+- પાતળું રેપર: `src/lib/oauth/providers.ts` — વ્યક્તિગત મોડ્યુલોમાંથી ફરીથી નિકાસ કરે છે
 
 ## 5) એમ્બેડેડ સેવાઓ (v3.8.4)
 
@@ -350,166 +356,126 @@ OmniRoute સ્થાનિક રીતે ચાલતી AI ટૂલ પ્
 
 ## મુખ્ય સબસિસ્ટમ્સ (v3.8.0)
 
-### A. Auto Combo એન્જિન
+### A. ઓટો કોમ્બો એન્જિન
 
-Auto Combo સ્થિર combo વ્યાખ્યા પર આધાર રાખવાને બદલે, રિક્વેસ્ટ સમયે રૂટિંગ લક્ષ્યોને ગતિશીલ રીતે સ્કોર કરે છે અને પસંદ કરે છે.
-તે `auto/*` મૉડલ પ્રીફિક્સ પરિવારને કાર્યરત કરે છે.
+સ્વતઃ કોમ્બો સ્થિર કોમ્બો વ્યાખ્યા પર આધાર રાખવાને બદલે, વિનંતીના સમયે રૂટીંગ લક્ષ્યોને ગતિશીલ રીતે સ્કોર કરે છે અને પસંદ કરે છે. તે `auto/*` મોડેલ ઉપસર્ગ કુટુંબને શક્તિ આપે છે.
 
-- એન્જિન એન્ટ્રી: `open-sse/services/autoCombo/` (`autoComboEngine.ts`,
-  `scoringEngine.ts`, `virtualFactory.ts`, `modePacks.ts`)
-- રિઝૉલ્વર: `src/domain/comboResolver.ts` (`auto/` પ્રીફિક્સની સ્વચાલિત ઓળખ)
-- ડૅશબોર્ડ: `/dashboard/auto-combo`
+- એન્જિન એન્ટ્રી: `open-sse/services/autoCombo/` (`autoComboEngine.ts`, `scoringEngine.ts`, `virtualFactory.ts`, `modePacks.ts`)
+- લાઇવ કોમ્બો એન્ટ્રી: `open-sse/services/combo.ts` (`handleComboChat`, `resolveComboTargets`), `src/sse/handlers/chat.ts` દ્વારા કહેવાય છે
+- ડેશબોર્ડ: `/dashboard/auto-combo`
 - ટેલિમેટ્રી: `auto_combo_decisions` SQLite ટેબલ
 
 મુખ્ય ક્ષમતાઓ:
 
-- **19 રૂટિંગ વ્યૂહરચનાઓ** (પ્રાથમિકતા, વેઇટેડ, પહેલાં-ભરો, રાઉન્ડ-રોબિન, P2C, રૅન્ડમ,
-  સૌથી-ઓછું-વપરાયેલ, ખર્ચ-ઑપ્ટિમાઇઝ્ડ, રીસેટ-અવેર, રીસેટ-વિન્ડો, હેડરૂમ, સ્ટ્રિક્ટ-રૅન્ડમ,
-  **auto**, lkgp, કોન્ટેક્સ્ટ-ઑપ્ટિમાઇઝ્ડ, કોન્ટેક્સ્ટ-રિલે, **fusion**, ઉપરાંત ફૉલબૅક પાથ) —
-  auto એ v3.8.0માં ઉમેરાયેલ મુખ્ય સુવિધા છે; `fusion` (પૅનલ ફૅન-આઉટ + જજ સિન્થેસિસ,
-  `open-sse/services/fusion.ts`) v3.8.36માં નવું છે.
-- **16-પરિબળ સ્કોરિંગ**: ક્વોટા, હેલ્થ, ઇન્વર્સ ખર્ચ, ઇન્વર્સ લેટન્સી, ટાસ્ક ફિટ અને
-  અન્ય દસ. પરિબળો અને તેમના ડિફૉલ્ટ વેઇટ્સનું પ્રમાણભૂત ટેબલ
-  [`docs/routing/AUTO-COMBO.md`](../routing/AUTO-COMBO.md)માં છે — તેને અહીં ફરી લખવાથી
-  તે જૂનું પડી શકે એવું બીજું સ્થાન ઊભું થશે.
-- **વર્ચ્યુઅલ ફૅક્ટરી** જ્યારે કોઈ મેળ ખાતું નામિત combo અસ્તિત્વમાં ન હોય ત્યારે
-  અલ્પજીવી combos સાકાર કરે છે અને હેલ્ધી સક્રિય પ્રોવાઇડર કનેક્શન્સમાંથી ઉમેદવારો મેળવે છે.
-- **Auto પ્રીફિક્સ**: `auto/coding`, `auto/cheap`, `auto/fast`, `auto/offline`,
-  `auto/smart`, `auto/lkgp` — દરેકને ટ્યુન કરેલી વેઇટ પ્રોફાઇલનો આધાર છે.
-- **6 મોડ પૅક્સ**: `ship-fast`, `cost-saver`, `quality-first`, `offline-friendly`,
-  `reliability-first` અને `chaos-mode` — ડૅશબોર્ડમાંથી કૉલ કરી શકાય તેવી પૂર્વનિર્ધારિત વેઇટ
-  કૉન્ફિગરેશન્સ. (ઉપરના `auto/*` પ્રીફિક્સ સાથે તેને ગૂંચવશો નહીં, કારણ કે તે
-  રિક્વેસ્ટ-સમયના વેરિઅન્ટ્સ છે.)
+- **22 રૂટીંગ વ્યૂહરચના** (પ્રાયોરિટી, વેઇટેડ, ફિલ-ફર્સ્ટ, રાઉન્ડ-રોબિન, P2C, રેન્ડમ, ઓછામાં ઓછું-વપરાતું, ખર્ચ-ઓપ્ટિમાઇઝ, રીસેટ-અવેર, રીસેટ-વિન્ડો, એક્સપાયરી-ફર્સ્ટ, હેડરૂમ, ક્વોટા-વેઇટેડ, કડક-રેન્ડમ** ઓટો** , lkgp, સંદર્ભ-ઑપ્ટિમાઇઝ, કૅશ-ઑપ્ટિમાઇઝ, સંદર્ભ-રિલે,** ફ્યુઝન** , પાઇપલાઇન, jev) — auto એ v3.8.0 માં હેડલાઇન ઉમેરો છે; `fusion` (પેનલ ફેન-આઉટ + જજ સિન્થેસિસ, `open-sse/services/fusion.ts`) v3.8.36 માં નવું છે.
+- **16-પરિબળ સ્કોરિંગ** : ક્વોટા, આરોગ્ય, વ્યસ્ત ખર્ચ, વ્યસ્ત વિલંબ, કાર્ય ફિટ અને વધુ દસ. પરિબળોનું પ્રમાણભૂત કોષ્ટક અને તેમના ડિફોલ્ટ વજન [`docs/routing/AUTO-COMBO.md`](../routing/AUTO-COMBO.md) — માં રહે છે તેને અહીં પુનઃસ્થાપિત કરવાથી તેને વાસી થવા માટે બીજું સ્થાન મળશે.
+- **વર્ચ્યુઅલ ફેક્ટરી** જ્યારે કોઈ મેળ ખાતું નામનું કોમ્બો અસ્તિત્વમાં ન હોય ત્યારે ક્ષણિક કોમ્બોઝને સાકાર કરે છે, તંદુરસ્ત સક્રિય પ્રદાતા જોડાણોમાંથી ઉમેદવારોને સોર્સિંગ કરે છે.
+- **સ્વતઃ ઉપસર્ગ** : `auto/coding`, `auto/cheap`, `auto/fast`, `auto/offline`, `auto/smart`, `auto/lkgp` — દરેક ટ્યુન કરેલ વજન પ્રોફાઇલ દ્વારા સમર્થિત છે.
+- **6 મોડ પેક** : `ship-fast`, `cost-saver`, `quality-first`, `offline-friendly`, `reliability-first` અને `chaos-mode` — પ્રીસેટ વજન ગોઠવણીઓ ડેશબોર્ડથી કૉલ કરી શકાય છે. (ઉપરના `auto/*` ઉપસર્ગો સાથે મૂંઝવણમાં ન આવવા જોઈએ, જે વિનંતી-સમયના પ્રકારો છે.)
 
-સંપૂર્ણ અલ્ગોરિધમિક વિગતો (પરિબળોના ફૉર્મ્યુલા, વેઇટ ટ્યુનિંગ) માટે,
-[`docs/routing/AUTO-COMBO.md`](../routing/AUTO-COMBO.md) જુઓ.
+સંપૂર્ણ અલ્ગોરિધમિક વિગત માટે (પરિબળ સૂત્રો, વજન ટ્યુનિંગ), [`docs/routing/AUTO-COMBO.md`](../routing/AUTO-COMBO.md) જુઓ.
 
-### B. Cloud Agents
+### B. ક્લાઉડ એજન્ટ્સ
 
-Cloud Agents તૃતીય-પક્ષની હોસ્ટેડ કોડ-એજન્ટ પ્લૅટફૉર્મ્સ (Codex Cloud, Devin,
-Jules)ને એકસમાન DB-સમર્થિત ટાસ્ક લાઇફસાઇકલ પાછળ રૅપ કરે છે. ટાસ્ક બનાવવાના/તપાસવાના
-તમામ એન્ડપોઇન્ટ્સ માટે મેનેજમેન્ટ ઑથેન્ટિકેશન જરૂરી છે.
+ક્લાઉડ એજન્ટ્સ તૃતીય-પક્ષ હોસ્ટ કરેલા કોડ-એજન્ટ પ્લેટફોર્મ્સ (Codex Cloud, Devin, Jules) ને એક સમાન DB- સમર્થિત કાર્ય જીવનચક્ર પાછળ લપેટી લે છે. બધા કાર્ય creation/inspection એન્ડપોઇન્ટ્સને મેનેજમેન્ટ પ્રમાણીકરણની જરૂર છે.
 
-- મૉડ્યુલ રૂટ: `src/lib/cloudAgent/` (`baseAgent.ts`, `registry.ts`, `api.ts`,
-  `types.ts`, `db.ts`, ઉપરાંત `agents/` હેઠળની દરેક એજન્ટ માટેની સબડિરેક્ટરીઝ)
-- દરેક એજન્ટ માટેના અમલીકરણો: `agents/codex/`, `agents/devin/`, `agents/jules/`
-- જાહેર એન્ડપોઇન્ટ્સ: `/api/v1/agents/tasks/*` (સૂચિ/બનાવો/મેળવો/રદ કરો)
-- મેનેજમેન્ટ એન્ડપોઇન્ટ્સ: `/api/cloud/*` (પ્રોવિઝનિંગ, સ્થિતિ, બૅચ)
-- ડૅશબોર્ડ: `/dashboard/cloud-agents`
-- સ્ટોરેજ: `cloud_agent_tasks` ટેબલ
+- મોડ્યુલ રૂટ: `src/lib/cloudAgent/` (`baseAgent.ts`, `registry.ts`, `api.ts`, `types.ts`, `db.ts`, વત્તા `agents/` હેઠળ એજન્ટ દીઠ સબડિરેક્ટરીઝ )
+- પ્રતિ-એજન્ટ અમલીકરણો: `agents/codex/`, `agents/devin/`, `agents/jules/`
+- જાહેર અંતિમ બિંદુઓ: `/api/v1/agents/tasks/*` (list/create/get/cancel)
+- મેનેજમેન્ટ એન્ડપોઇન્ટ્સ: `/api/cloud/*` (જોગવાઈ, સ્થિતિ, બેચ)
+- ડેશબોર્ડ: `/dashboard/cloud-agents`
+- સંગ્રહ: `cloud_agent_tasks` ટેબલ
 
-દરેક એજન્ટ માટેના પ્રોવિઝનિંગ અને OAuthની વિશિષ્ટ વિગતો માટે,
-[`docs/frameworks/CLOUD_AGENT.md`](../frameworks/CLOUD_AGENT.md) જુઓ.
+પ્રતિ-એજન્ટ જોગવાઈ અને OAuth વિશિષ્ટતાઓ માટે, [`docs/frameworks/CLOUD_AGENT.md`](../frameworks/CLOUD_AGENT.md) જુઓ.
 
-### C. Guardrails
+### C. ગાર્ડરેલ્સ
 
-guardrails મૉડ્યુલ એક હૉટ-રીલોડ કરી શકાય એવું મિડલવેર સ્તર છે, જે PII, પ્રૉમ્પ્ટ ઇન્જેક્શન અને
-અસુરક્ષિત વિઝન કન્ટેન્ટ માટે રિક્વેસ્ટ્સ અને રિસ્પોન્સિસનું નિરીક્ષણ કરે છે. ઉલ્લંઘનો
-HTTP **503** તથા સ્ટ્રક્ચર્ડ એરર કોડ સાથે રિક્વેસ્ટને તરત અટકાવે છે, જેથી
-ડાઉનસ્ટ્રીમ કૉલર્સ ફરી પ્રયાસ કરી શકે અથવા અલગ શાખા પસંદ કરી શકે.
+ગાર્ડરેલ્સ મોડ્યુલ એ હોટ-રીલોડ કરી શકાય તેવું મિડલવેર લેયર છે જે PII, પ્રોમ્પ્ટ ઇન્જેક્શન અને અસુરક્ષિત દ્રષ્ટિ સામગ્રી માટેની વિનંતીઓ અને પ્રતિસાદોનું નિરીક્ષણ કરે છે. ઉલ્લંઘનો HTTP સાથે વિનંતીને શોર્ટ-સર્કિટ કરે છે** 503** વત્તા સ્ટ્રક્ચર્ડ એરર કોડ, ડાઉનસ્ટ્રીમ કૉલર્સને ફરીથી પ્રયાસ કરવા અથવા શાખા કરવાની મંજૂરી આપે છે.
 
-- મૉડ્યુલ રૂટ: `src/lib/guardrails/` (`base.ts`, `registry.ts`, `piiMasker.ts`,
-  `promptInjection.ts`, `visionBridge.ts`, `visionBridgeHelpers.ts`)
-- હૉટ રીલોડ: registry કૉન્ફિગરેશન ફેરફારો પર નજર રાખે છે અને ચેઇનને તેની જગ્યાએ જ ફરીથી બનાવે છે
-- જોડાણ બિંદુઓ: ચૅટ હૅન્ડલર એન્ટ્રી, ઇમેજ જનરેશન હૅન્ડલર, રિસ્પોન્સ સૅનિટાઇઝર
-- HTTP કરાર: ઉલ્લંઘનો `error.code = "GUARDRAIL_VIOLATION"` સાથે `503` તરીકે પ્રસ્તુત થાય છે
+- મોડ્યુલ રુટ: `src/lib/guardrails/` (`base.ts`, `registry.ts`, `piiMasker.ts`, `promptInjection.ts`, `visionBridge.ts`, `visionBridgeHelpers.ts`)
+- હોટ રીલોડ: રજિસ્ટ્રી રૂપરેખા ફેરફારો માટે જુએ છે અને સ્થાને સાંકળને ફરીથી બનાવે છે
+- વાયર-ઇન પોઈન્ટ્સ: ચેટ હેન્ડલર એન્ટ્રી, ઈમેજ જનરેશન હેન્ડલર, રિસ્પોન્સ સેનિટાઈઝર
+- HTTP કરાર: `error.code = "GUARDRAIL_VIOLATION"` સાથે `503` તરીકે ઉલ્લંઘન સપાટી
 
-રૂલસેટ લખવા અને થ્રેશોલ્ડ ટ્યુનિંગ માટે,
-[`docs/security/GUARDRAILS.md`](../security/GUARDRAILS.md) જુઓ.
+રૂલ્સસેટ ઓથરિંગ અને થ્રેશોલ્ડ ટ્યુનિંગ માટે, [`docs/security/GUARDRAILS.md`](../security/GUARDRAILS.md) જુઓ.
 
-### D. ડોમેઇન સ્તર
+### D. ડોમેન લેયર
 
-`src/domain/` નેમસ્પેસ નીતિગત નિર્ણયોનું કેન્દ્રીકરણ કરે છે, જેથી રૂટ હૅન્ડલર્સને
-લૉકઆઉટ/બજેટ/ફૉલબૅક લૉજિક જાતે એસેમ્બલ ન કરવું પડે.
+`src/domain/` નેમસ્પેસમાં ડોમેન સેવાઓ અને આરક્ષિત મૂલ્યાંકન કરારો શામેલ છે. દરેક વિનંતી માટે તે એક ફરજિયાત પોલિસી એન્ટ્રી પોઈન્ટ નથી.
 
-- પૉલિસી એન્જિન: `src/domain/policyEngine.ts` — અમલીકરણ-પૂર્વ મૂલ્યાંકન માટેનું
-  એકમાત્ર એન્ટ્રી પોઇન્ટ (લૉકઆઉટ → બજેટ → ફૉલબૅક ક્રમ)
-- ખર્ચના નિયમો: `src/domain/costRules.ts`
-- ફૉલબૅક નીતિ: `src/domain/fallbackPolicy.ts`
-- લૉકઆઉટ નીતિ: `src/domain/lockoutPolicy.ts`
-- ટૅગ-આધારિત રૂટિંગ: `src/domain/tagRouter.ts`
-- combo રિઝૉલ્વર: `src/domain/comboResolver.ts` — combo નામો, auto/\*
-  પ્રીફિક્સ અને વાઇલ્ડકાર્ડ મૉડલ લક્ષ્યોને નક્કર એક્ઝિક્યુશન પ્લાન્સમાં રિઝૉલ્વ કરે છે
-- કનેક્શન/મૉડલ રૂલ જોઇનર: `src/domain/connectionModelRules.ts`
-- મૉડલ ઉપલબ્ધતાના સ્નૅપશૉટ્સ: `src/domain/modelAvailability.ts`
-- પ્રોવાઇડર સમાપ્તિ ટ્રૅકિંગ: `src/domain/providerExpiration.ts`
-- ક્વોટા કૅશ: `src/domain/quotaCache.ts`
-- ડિગ્રેડેશન સ્થિતિ: `src/domain/degradation.ts`
-- કૉન્ફિગરેશન ઑડિટ: `src/domain/configAudit.ts`
-- OmniRoute રિસ્પોન્સ મેટાડેટા બિલ્ડર: `src/domain/omnirouteResponseMeta.ts`
-- મૂલ્યાંકન સબસિસ્ટમ: `src/domain/assessment/` — આવર્તક મૂલ્યાંકન જૉબ્સ
+લાઇવ ચેટ પાથ `src/shared/utils/apiKeyPolicy.ts` થી `enforceApiKeyPolicy()` કૉલ કરે છે; ઉકેલાયેલ મોડેલો અને કોમ્બો સભ્યોની અધિકૃતતા `src/sse/handlers/chat/resolvedModelPolicy.ts` માં લાગુ કરવામાં આવે છે. `src/app/api/v1/chat/completions/route.ts` માં સ્વ-હોસ્ટેડ એન્ટ્રી પણ રવાનગી પહેલાં API-કી નીતિને લાગુ કરે છે. કોમ્બો રીઝોલ્યુશન `open-sse/services/combo.ts` દ્વારા ચાલે છે.
 
-### E. ઑથોરાઇઝેશન પાઇપલાઇન
+`src/domain/policyEngine.ts`, `src/domain/comboResolver.ts` અને `src/lib/container.ts` એ ચકાસાયેલ કરાર રહે છે, તે વિનંતી પાથની વાયરિંગ નહીં. કન્ટેનર પોલિસી એન્જિનની નોંધણી કરે છે, પરંતુ નિરીક્ષણ કરેલ ઉત્પાદન વિનંતી પાથ તેને ઉકેલતું નથી. એકલા તે કોન્ટ્રાક્ટને બદલવાથી લાઇવ ચેટ પોલિસી અથવા કોમ્બો રૂટીંગ બદલાતી નથી; તેમને કનેક્ટ કરવા અથવા દૂર કરવા માટે એક અલગ ડિઝાઇન નિર્ણયની જરૂર છે.
 
-અધિકૃતતા પાઇપલાઇન દરેક આવતી વિનંતીનું વર્ગીકરણ કરે છે અને તેને મોકલતાં પહેલાં
-યોગ્ય નીતિ શૃંખલા લાગુ કરે છે.
+- આરક્ષિત પોલિસી એન્જિન: `src/domain/policyEngine.ts` — લોકઆઉટ → બજેટ → ફોલબેક મૂલ્યાંકન
+- ખર્ચ નિયમો: `src/domain/costRules.ts`
+- ફોલબેક પોલિસી: `src/domain/fallbackPolicy.ts`
+- લોકઆઉટ નીતિ: `src/domain/lockoutPolicy.ts`
+- ટેગ-આધારિત રૂટીંગ: `src/domain/tagRouter.ts`
+- અનામત કોમ્બો રિઝોલ્વર: `src/domain/comboResolver.ts` — સ્ટેન્ડઅલોન સિલેક્શન કોન્ટ્રાક્ટ; લાઇવ કોમ્બો રૂટીંગ `open-sse/services/combo.ts` માં લાગુ કરવામાં આવે છે
+- Connection/model નિયમ જોડનાર: `src/domain/connectionModelRules.ts`
+- મોડલ ઉપલબ્ધતા સ્નેપશોટ: `src/domain/modelAvailability.ts`
+- પ્રદાતા સમાપ્તિ ટ્રેકિંગ: `src/domain/providerExpiration.ts`
+- ક્વોટા કેશ: `src/domain/quotaCache.ts`. પ્રદાતાઓ ક્વોટા વિન્ડો ઉમેરે છે અને દૂર કરે છે (કેટલીક યોજનાઓ માટેOpenAI એ 5-કલાકની Codex વિન્ડો છોડી દીધી હતી), તેથી પ્રદાતાના એડેપ્ટરને સંપૂર્ણ તરીકે વાંચતા ઉપયોગ (`quotasComplete`, `src/lib/usage/usageReading.ts` જુઓ ) એ એકાઉન્ટનો સંપૂર્ણ વિન્ડો સેટ છે: જે વિન્ડો અગાઉ જાણીતી છે પરંતુ તેમાંથી ગેરહાજર છે તે નિવૃત્ત છે, કેશમાં, રિહાઈડ્રેન્ડ એપમાં રેકોર્ડ Claude, સતત Codex ક્વોટા સ્થિતિમાં અને `quota_snapshots` ની સંતૃપ્તિ બકેટ્સમાં. આંશિક પુરાવા (પ્રતિસાદ હેડરો, વાસી નકલો) ફક્ત તે જે વિન્ડો વહન કરે છે તેને અપડેટ કરે છે.
+- અધોગતિ સ્થિતિ: `src/domain/degradation.ts`
+- રૂપરેખાંકન ઓડિટ: `src/domain/configAudit.ts`
+- OmniRoute પ્રતિભાવ મેટાડેટા બિલ્ડર: `src/domain/omnirouteResponseMeta.ts`
+- આકારણી સબસિસ્ટમ: `src/domain/assessment/` — સામયિક મૂલ્યાંકન નોકરીઓ
 
-- પાઇપલાઇન પ્રવેશ: `src/server/authz/pipeline.ts`
-- વિનંતી વર્ગીકરણકર્તા: `src/server/authz/classify.ts` — જાહેર
-  સુસંગતતા રૂટ્સને વ્યવસ્થાપન રૂટ્સથી અલગ પાડે છે
-- જાહેર રૂટ સૂચિ: `src/shared/constants/publicApiRoutes.ts`
-- નીતિઓ: `src/server/authz/policies/` — સંયોજ્ય પ્રેડિકેટ્સ
-  (`requireApiKey`, `requireManagement`, `requireFreshAuth`, વગેરે)
+### E. અધિકૃતતા પાઇપલાઇન
+
+અધિકૃતતા પાઇપલાઇન દરેક ઇનકમિંગ વિનંતીને વર્ગીકૃત કરે છે અને ડિસ્પેચ પહેલાં યોગ્ય પોલિસી ચેઇન લાગુ કરે છે.
+
+- પાઇપલાઇન એન્ટ્રી: `src/server/authz/pipeline.ts`
+- વર્ગીકરણની વિનંતી કરો: `src/server/authz/classify.ts` — જાહેર સુસંગતતા માર્ગોને મેનેજમેન્ટ રૂટ્સથી અલગ પાડે છે
+- જાહેર માર્ગ યાદી: `src/shared/constants/publicApiRoutes.ts`
+- નીતિઓ: `src/server/authz/policies/` — કમ્પોઝેબલ પ્રિડિકેટ્સ (`requireApiKey`, `requireManagement`, `requireFreshAuth`, વગેરે.)
 - હેડર ઉપયોગિતાઓ: `src/server/authz/headers.ts`
-- એસર્શન સહાયક: `src/server/authz/assertAuth.ts`
+- નિવેદન સહાયક: `src/server/authz/assertAuth.ts`
 - વિનંતી સંદર્ભ: `src/server/authz/context.ts`
 
-જાહેર અને વ્યવસ્થાપન રૂટ્સ વચ્ચે કડક સીમા છે: એજન્ટ/કૂલડાઉન APIs અને
-પ્રદાતામાં થતા ફેરફારો માટે વ્યવસ્થાપન પ્રમાણીકરણ આવશ્યક છે (ન હોય તો HTTP 401).
+સાર્વજનિક વિ મેનેજમેન્ટ રૂટ એ સખત સીમા છે: agent/cooldown APIs અને પ્રદાતા પરિવર્તન માટે મેનેજમેન્ટ ઓથની જરૂર છે (HTTP 401 જો ખૂટે છે).
 
-રૂટ વર્ગીકરણના સંપૂર્ણ નિયમો માટે,
-[`docs/architecture/AUTHZ_GUIDE.md`](./AUTHZ_GUIDE.md) જુઓ.
+સંપૂર્ણ રૂટ વર્ગીકરણ નિયમો માટે, [`docs/architecture/AUTHZ_GUIDE.md`](./AUTHZ_GUIDE.md) જુઓ.
 
-### F. વર્કફ્લો FSM અને કાર્ય-જાગૃત રાઉટર
+### F. વર્કફ્લો FSM અને ટાસ્ક-અવેર રાઉટર
 
-શોધાયેલા વર્કફ્લો તબક્કા (આયોજન, અમલીકરણ,
-સમીક્ષા) અને પૃષ્ઠભૂમિ-કાર્ય અનુકૂળતાના આધારે ટ્રાફિક દોરવા માટે કોમ્બો પસંદગીની ઉપર સ્તરિત
-ફાઇનાઇટ-સ્ટેટ-મશીન સંચાલિત રાઉટર.
+શોધાયેલ વર્કફ્લો સ્ટેજ (પ્લાનિંગ, એક્ઝિક્યુશન, રિવ્યુ) અને બેકગ્રાઉન્ડ-ટાસ્ક એફિનિટીના આધારે ડાયરેક્ટ ટ્રાફિક માટે કૉમ્બો સિલેક્શન ઉપર લેયર કરેલું મર્યાદિત-રાજ્ય-મશીન સંચાલિત રાઉટર.
 
 - વર્કફ્લો FSM: `open-sse/services/workflowFSM.ts`
-- કાર્ય-જાગૃત રાઉટર: `open-sse/services/taskAwareRouter.ts`
-- પૃષ્ઠભૂમિ કાર્ય શોધક: `open-sse/services/backgroundTaskDetector.ts`
-- ઉદ્દેશ વર્ગીકરણકર્તા: `open-sse/services/intentClassifier.ts`
+- ટાસ્ક-અવેર રાઉટર: `open-sse/services/taskAwareRouter.ts`
+- પૃષ્ઠભૂમિ કાર્ય ડિટેક્ટર: `open-sse/services/backgroundTaskDetector.ts`
+- ઉદ્દેશ વર્ગીકૃત: `open-sse/services/intentClassifier.ts`
 
-FSM ટ્રાન્ઝિશન્સ Auto Comboના સ્કોરિંગમાં ઇનપુટ આપે છે, જે પૃષ્ઠભૂમિ/સ્વચાલન કાર્યો માટે
-ઓછી કિંમતનાં મોડલ્સ તરફ અને ઇન્ટરેક્ટિવ આયોજન/સમીક્ષા ટર્ન્સ માટે વધુ સક્ષમ
-મોડલ્સ તરફ ઝુકાવ આપે છે.
+FSM સંક્રમણો ઓટો કોમ્બોના સ્કોરિંગમાં ફીડ કરે છે, background/automation કાર્યો માટે સસ્તા મોડલ્સ તરફ અને ઇન્ટરેક્ટિવ planning/review વળાંકો માટે મજબૂત મોડલ્સ તરફ પક્ષપાત કરે છે.
 
-### G. પ્રદાતા-વિશિષ્ટ સ્થિતિસ્થાપકતા
+### જી. પ્રદાતા-વિશિષ્ટ સ્થિતિસ્થાપકતા
 
-કેટલાક પ્રદાતાઓ સમર્પિત સ્થિતિસ્થાપકતા અને સ્ટેલ્થ મોડ્યુલ્સ પ્રદાન કરે છે, જે
-વૈશ્વિક સર્કિટ બ્રેકર / કનેક્શન કૂલડાઉન / મોડલ લોકઆઉટ સ્તરોનો લાભ લે છે:
+કેટલાક પ્રદાતાઓ સમર્પિત સ્થિતિસ્થાપકતા અને સ્ટીલ્થ મોડ્યુલો મોકલે છે જે વૈશ્વિક સર્કિટ બ્રેકર / કનેક્શન કૂલડાઉન / મોડલ લોકઆઉટ સ્તરો પર પિગી-બેક કરે છે:
 
-- Antigravity 429 એન્જિન: `open-sse/services/antigravity429Engine.ts` (ઓળખને
-  ફેરવતું રહે છે, પ્રતિસાદ હેડર્સ સાફ કરે છે, અને
-  `antigravityCredits.ts`, `antigravityHeaderScrub.ts`, `antigravityHeaders.ts`,
-  `antigravityIdentity.ts`, `antigravityVersion.ts` મારફતે ક્રેડિટ્સ/વર્ઝન ટ્રેકિંગ ચલાવે છે)
+- Antigravity 429 એન્જિન: `open-sse/services/antigravity429Engine.ts` (ઓળખ ફેરવે છે, સ્ક્રબ્સ રિસ્પોન્સ હેડરો, `antigravityCredits.ts`, `antigravityHeaderScrub.ts`, `antigravityHeaders.ts`, `antigravityIdentity.ts`, `antigravityVersion.ts` દ્વારા credits/version ટ્રેકિંગ ચલાવે છે)
+- Antigravity 429 ગાર્ડ: `open-sse/services/antigravity429Guard.ts` (તમામ યજમાનો પર અપસ્ટ્રીમ 429s નું પ્રતિ-વિનંતી બજેટ, `ANTIGRAVITY_MAX_429_ATTEMPTS`; નકારેલ બોડીના સમાન પુનઃ મોકલવાનો સ્થાનિક રીતે જવાબ આપવામાં આવે છે; `src/sse/handlers/chat.ts` આવી વિનંતીને કૂલડાઉન-જાગૃત પુનઃપ્રયાસ દ્વારા પુનઃપ્રારંભ કરતું નથી)
 - ModelScope ક્વોટા નીતિ: `open-sse/services/modelscopePolicy.ts`
-- Claude Code CCH (સુસંગતતા ચેનલ હેન્ડશેક): `open-sse/services/claudeCodeCCH.ts`,
-  તેમજ `claudeCodeCompatible.ts`, `claudeCodeConstraints.ts`, `claudeCodeExtraRemap.ts`,
-  `claudeCodeToolRemapper.ts`
-- Claude Code ફિંગરપ્રિન્ટ આકારણ: `open-sse/services/claudeCodeFingerprint.ts`
-- Claude Code ઓબ્ફસ્કેશન: `open-sse/services/claudeCodeObfuscation.ts`
+- Claude કોડ CCH (સુસંગતતા ચેનલ હેન્ડશેક): `open-sse/services/claudeCodeCCH.ts`, વત્તા `claudeCodeCompatible.ts`, `claudeCodeConstraints.ts`, `claudeCodeExtraRemap.ts`, `claudeCodeToolRemapper.ts`
+- Claude કોડ ફિંગરપ્રિન્ટ શેપિંગ: `open-sse/services/claudeCodeFingerprint.ts`
+- Claude કોડ અસ્પષ્ટતા: `open-sse/services/claudeCodeObfuscation.ts`
 
-સંપૂર્ણ સ્ટેલ્થ પ્લેબુક અને સંચાલન માર્ગદર્શન માટે,
-`docs/security/STEALTH_GUIDE.md` જુઓ (git; `/docs`માં કમ્પાઇલ કરેલ નથી).
+સંપૂર્ણ સ્ટીલ્થ પ્લેબુક અને ઓપરેશનલ માર્ગદર્શન માટે, `docs/security/STEALTH_GUIDE.md` (git; `/docs` માં સંકલિત નથી) જુઓ.
 
-### H. વેબહુક્સ, રીઝનિંગ કૅશ, રીડ કૅશ
+### H. Webhooks, Reasoning Cache, Read Cache
 
-- **વેબહુક્સ** — પ્રદાતા/એકાઉન્ટ/કાર્ય ઇવેન્ટ્સ માટે આઉટબાઉન્ડ ડિસ્પેચ.
+- **વેબહુક્સ** provider/account/task ઇવેન્ટ્સ માટે — આઉટબાઉન્ડ રવાનગી.
   - ડિસ્પેચર: `src/lib/webhookDispatcher.ts`
-  - સંગ્રહ: `webhooks` SQLite ટેબલ (`src/lib/db/webhooks.ts` મારફતે)
-  - ડૅશબોર્ડ: `/dashboard/webhooks` (સબ્સ્ક્રિપ્શન્સ, સિક્રેટ્સ, પુનઃપ્રયાસ ઇતિહાસ)
-  - ઇવેન્ટ વર્ગીકરણ અને પુનઃપ્રયાસ સિમેન્ટિક્સ માટે, [`docs/frameworks/WEBHOOKS.md`](../frameworks/WEBHOOKS.md) જુઓ.
-- **રીઝનિંગ કૅશ** — થિંકિંગ ટોકન્સ ઉત્સર્જિત કરતા પ્રદાતાઓ (Claude, GLMT, વગેરે) માટે
-  ફરી ચલાવી શકાય તેવા રીઝનિંગ બ્લોક્સ, જેથી સળંગ ટર્ન્સમાં ફરી વિચારવાનું ટાળી શકાય.
+  - સંગ્રહ: `webhooks` SQLite ટેબલ ( `src/lib/db/webhooks.ts` દ્વારા)
+  - ડેશબોર્ડ: `/dashboard/webhooks` (સબ્સ્ક્રિપ્શન્સ, રહસ્યો, ફરી પ્રયાસ ઇતિહાસ)
+  - ઘટના વર્ગીકરણ અને અર્થશાસ્ત્રનો ફરીથી પ્રયાસ કરવા માટે, [`docs/frameworks/WEBHOOKS.md`](../frameworks/WEBHOOKS.md) જુઓ.
+- **રિઝનિંગ કેશ** પ્રદાતાઓ માટે — રિપ્લે કરી શકાય તેવા તર્ક બ્લોક્સ કે જે થિંકિંગ ટોકન્સ (Claude, GLMT, વગેરે) બહાર કાઢે છે જેથી સળંગ વળાંકો ફરીથી વિચારવાનું છોડી શકે.
   - DB સ્તર: `src/lib/db/reasoningCache.ts`
   - સેવા સ્તર: `open-sse/services/reasoningCache.ts`
   - રિપ્લે સિમેન્ટિક્સ માટે, [`docs/routing/REASONING_REPLAY.md`](../routing/REASONING_REPLAY.md) જુઓ.
-- **રીડ કૅશ** — સિગ્નેચર દ્વારા કી કરાયેલ અલ્પજીવી પ્રતિસાદ કૅશ, જેનો ઉપયોગ
-  ખામીયુક્ત અપસ્ટ્રીમ SDKs તરફથી આવતા સમાન પુનઃપ્રયાસોને એકત્રિત કરવા માટે થાય છે.
+- **કેશ વાંચો** — અલ્પજીવી પ્રતિસાદ કેશ હસ્તાક્ષર દ્વારા કી કરવામાં આવે છે અને તૂટેલા અપસ્ટ્રીમ SDKs માંથી સમાન પુનઃપ્રયાસોને તોડી પાડવા માટે વપરાય છે.
   - DB સ્તર: `src/lib/db/readCache.ts`
-  - આંકડા એન્ડપોઇન્ટ: `GET /api/cache/stats`, ડૅશબોર્ડ `/dashboard/cache` પર
+  - આંકડા અંતિમ બિંદુ: `GET /api/cache/stats`, ડેશબોર્ડ અને `/dashboard/cache`
 
 ## 3) પર્સિસ્ટન્સ લેયર
 
@@ -533,16 +499,17 @@ FSM ટ્રાન્ઝિશન્સ Auto Comboના સ્કોરિં�
 - ટેબલો (`src/lib/db/core.ts`માં બનાવેલ): `domain_fallback_chains`, `domain_budgets`, `domain_cost_history`, `domain_lockout_state`, `domain_circuit_breakers`
 - રાઇટ-થ્રૂ કૅશ પેટર્ન: રનટાઇમ દરમિયાન ઇન-મેમરી Maps અધિકૃત હોય છે; ફેરફારો SQLiteમાં સિંક્રોનસ રીતે લખાય છે; કોલ્ડ સ્ટાર્ટ પર DBમાંથી સ્ટેટ પુનઃસ્થાપિત થાય છે
 
-## 4) ઑથ + સુરક્ષા સપાટીઓ
+## 4) Auth + સુરક્ષા સપાટીઓ
 
-- ડેશબોર્ડ કુકી ઑથ: `src/proxy.ts`, `src/app/api/auth/login/route.ts`
-- API કી જનરેશન/વેરિફિકેશન: `src/shared/utils/apiKey.ts`
-- પ્રોવાઇડર સિક્રેટ્સ `providerConnections` એન્ટ્રીઓમાં સંગ્રહિત થાય છે
-- `open-sse/utils/proxyFetch.ts` (env vars) અને `open-sse/utils/networkProxy.ts` (પ્રતિ-પ્રોવાઇડર અથવા વૈશ્વિક રીતે ગોઠવી શકાય તેવું) દ્વારા આઉટબાઉન્ડ પ્રોક્સી સપોર્ટ
-- SSRF / આઉટબાઉન્ડ URL ગાર્ડ: `src/shared/network/outboundUrlGuard.ts` — તમામ પ્રોવાઇડર કૉલ્સ માટે ખાનગી/લૂપબૅક/લિંક-લોકલ રેન્જને બ્લૉક કરે છે
-- રનટાઇમ env વેલિડેશન: `src/lib/env/runtimeEnv.ts` — તમામ એન્વાયર્નમેન્ટ વેરિએબલ્સ માટે Zod સ્કીમા, જે સ્ટાર્ટઅપ ભૂલો/ચેતવણીઓ તરીકે દર્શાવવામાં આવે છે
-- સિંક ટોકન્સ: `src/lib/db/syncTokens.ts` — કૉન્ફિગ બંડલ ડાઉનલોડ એન્ડપોઇન્ટ્સ માટે સ્કોપ્ડ ટોકન્સ; `sync_tokens` SQLite ટેબલ દ્વારા સમર્થિત (માઇગ્રેશન `024_create_sync_tokens.sql`)
-- WebSocket હેન્ડશેક ઑથ: `src/lib/ws/handshake.ts` — API કી અથવા સેશન કુકી દ્વારા WS અપગ્રેડ વિનંતીઓને માન્ય કરે છે
+- ડૅશબોર્ડ કૂકી પ્રમાણીકરણ: `src/proxy.ts`, `src/app/api/auth/login/route.ts`
+- API કી જનરેશન/ચકાસણી: `src/shared/utils/apiKey.ts`
+- પ્રદાતાનાં સિક્રેટ્સ `providerConnections` એન્ટ્રીઓમાં સંગ્રહિત રહે છે
+- `open-sse/utils/proxyFetch.ts` (પર્યાવરણ વેરિએબલ્સ) અને `open-sse/utils/networkProxy.ts` (પ્રતિ-પ્રદાતા અથવા વૈશ્વિક સ્તરે રૂપરેખાંકિત કરી શકાય તેવું) દ્વારા આઉટબાઉન્ડ પ્રોક્સી સપોર્ટ
+- SSRF / આઉટબાઉન્ડ URL સુરક્ષા: `src/shared/network/outboundUrlGuard.ts` — પ્રદાતા કૉલ્સ અને વેબહૂક લક્ષ્યો પર હોસ્ટની ચકાસણી; મોડ `src/shared/network/outboundUrlGuardPolicy.ts`માંથી આવે છે (`docs/reference/ENVIRONMENT.md`માં ફ્લૅગ્સ)
+- રનટાઇમ પર્યાવરણ ચકાસણી: `src/lib/env/runtimeEnv.ts` — તમામ પર્યાવરણ વેરિએબલ્સ માટે Zod સ્કીમા, જે સ્ટાર્ટઅપ ભૂલો/ચેતવણીઓ તરીકે દર્શાવવામાં આવે છે
+- સિંક ટોકન્સ: `src/lib/db/syncTokens.ts` — કૉન્ફિગ બંડલ ડાઉનલોડ એન્ડપોઇન્ટ્સ માટે સ્કોપ કરેલા ટોકન્સ; `sync_tokens` SQLite કોષ્ટક દ્વારા સમર્થિત (માઇગ્રેશન `024_create_sync_tokens.sql`)
+- WebSocket હેન્ડશેક પ્રમાણીકરણ: `src/lib/ws/handshake.ts` — API કી અથવા સેશન કૂકી દ્વારા WS અપગ્રેડ વિનંતીઓની ચકાસણી કરે છે
+- લાઇવ ડૅશબોર્ડ WebSocket પ્રમાણીકરણ: `src/server/ws/liveServer.ts` — સાઇડકાર (પોર્ટ `LIVE_WS_PORT`) ડૅશબોર્ડ સેશન કૂકી અથવા મેનેજમેન્ટ સ્કોપ (`manage`/`admin`) ધરાવતી Bearer API કી સ્વીકારે છે; માત્ર ઇન્ફરન્સ માટેની કીઓ નકારવામાં આવે છે. તેનો આંતરિક `POST /__omniroute_event` પ્રકાશક એન્ડપોઇન્ટ માત્ર ત્યારે જ લૂપબૅક પીઅર્સ સ્વીકારે છે જ્યારે કોઈ પ્રોક્સી-હોપ હેડર (`x-forwarded-*`, `x-real-ip`, `forwarded`, `via`) હાજર ન હોય
 
 ## 5) ક્લાઉડ સિંક
 
@@ -551,51 +518,51 @@ FSM ટ્રાન્ઝિશન્સ Auto Comboના સ્કોરિં�
 - સમયાંતરે ચાલતું કાર્ય: `src/shared/services/modelSyncScheduler.ts`
 - કંટ્રોલ રૂટ: `src/app/api/sync/cloud/route.ts`
 
-## વિનંતીનું જીવનચક્ર (`/v1/chat/completions`)
+## વિનંતી જીવનચક્ર (`/v1/chat/completions`)
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Client as CLI/SDK Client
+    participant Client as CLI/SDK ક્લાયન્ટ
     participant Route as /api/v1/chat/completions
     participant Chat as src/sse/handlers/chat
     participant Core as open-sse/handlers/chatCore
-    participant Model as Model Resolver
-    participant Auth as Credential Selector
-    participant Exec as Provider Executor
-    participant Prov as Upstream Provider
-    participant Stream as Stream Translator
+    participant Model as મોડેલ રિઝોલ્વર
+    participant Auth as ઓળખપત્ર પસંદગીકાર
+    participant Exec as પ્રદાતા એક્ઝિક્યુટર
+    participant Prov as અપસ્ટ્રીમ પ્રદાતા
+    participant Stream as સ્ટ્રીમ અનુવાદક
     participant Usage as usageDb
 
     Client->>Route: POST /v1/chat/completions
     Route->>Chat: handleChat(request)
-    Chat->>Model: parse/resolve model or combo
+    Chat->>Model: મોડેલ અથવા કોમ્બોનું પાર્સિંગ/રિઝોલ્વિંગ
 
-    alt Combo model
-        Chat->>Chat: iterate combo models (handleComboChat)
+    alt કોમ્બો મોડેલ
+        Chat->>Chat: કોમ્બો મોડેલો પર પુનરાવર્તન (handleComboChat)
     end
 
     Chat->>Auth: getProviderCredentials(provider)
-    Auth-->>Chat: active account + tokens/api key
+    Auth-->>Chat: સક્રિય એકાઉન્ટ + ટોકન્સ/api કી
 
     Chat->>Core: handleChatCore(body, modelInfo, credentials)
-    Core->>Core: detect source format
-    Core->>Core: translate request to target format
+    Core->>Core: સ્રોત ફોર્મેટ શોધવું
+    Core->>Core: વિનંતીનું લક્ષ્ય ફોર્મેટમાં રૂપાંતર કરવું
     Core->>Exec: execute(provider, transformedBody)
-    Exec->>Prov: upstream API call
-    Prov-->>Exec: SSE/JSON response
-    Exec-->>Core: response + metadata
+    Exec->>Prov: અપસ્ટ્રીમ API કૉલ
+    Prov-->>Exec: SSE/JSON પ્રતિસાદ
+    Exec-->>Core: પ્રતિસાદ + મેટાડેટા
 
     alt 401/403
         Core->>Exec: refreshCredentials()
-        Exec-->>Core: updated tokens
-        Core->>Exec: retry request
+        Exec-->>Core: અપડેટ કરેલા ટોકન્સ
+        Core->>Exec: વિનંતીનો ફરી પ્રયાસ કરવો
     end
 
-    Core->>Stream: translate/normalize stream to client format
-    Stream-->>Client: SSE chunks / JSON response
+    Core->>Stream: સ્ટ્રીમનું ક્લાયન્ટ ફોર્મેટમાં રૂપાંતર/સામાન્યીકરણ
+    Stream-->>Client: SSE ચંક્સ / JSON પ્રતિસાદ
 
-    Stream->>Usage: extract usage + persist history/log
+    Stream->>Usage: વપરાશ કાઢવો + ઇતિહાસ/લૉગ સંગ્રહિત કરવો
 ```
 
 ## કોમ્બો + એકાઉન્ટ ફૉલબૅક પ્રવાહ
@@ -893,41 +860,47 @@ flowchart LR
 - `src/lib/db/*`: ચોક્કસ મોડ્યુલ્સને સીધા ઇમ્પોર્ટ કરો — કોઈ બેરલ નહીં (જૂનું `localDb.ts` રિ-એક્સપોર્ટ સ્તર દૂર કરવામાં આવ્યું હતું)
 - `src/lib/usageDb.ts`: SQLite ટેબલો પર આધારિત ઉપયોગ ઇતિહાસ/કૉલ લૉગ્સ ફસાડ
 
-## પ્રોવાઇડર એક્ઝિક્યુટર કવરેજ (સ્ટ્રેટેજી પેટર્ન)
+## પ્રદાતા એક્ઝિક્યુટર કવરેજ (સ્ટ્રેટેજી પેટર્ન)
 
-દરેક પ્રોવાઇડર પાસે `BaseExecutor` (`open-sse/executors/base.ts` માં) ને વિસ્તૃત કરતું વિશિષ્ટ એક્ઝિક્યુટર હોય છે, જે URL બનાવવું, હેડર રચના, એક્સ્પોનેન્શિયલ બેકઑફ સાથે પુનઃપ્રયાસ, ક્રેડેન્શિયલ રિફ્રેશ હુક્સ અને `execute()` ઑર્કેસ્ટ્રેશન મેથડ પ્રદાન કરે છે.
+દરેક પ્રદાતા પાસે `BaseExecutor` ( `open-sse/executors/base.ts` માં) વિસ્તરતો વિશિષ્ટ એક્ઝિક્યુટર હોય છે, જે URL બિલ્ડિંગ, હેડર બાંધકામ, ઘાતાંકીય બેકઓફ સાથે ફરીથી પ્રયાસ, ઓળખપત્ર રિફ્રેશ હુક્સ અને `execute()` ઓર્કેસ્ટ્રેશન પદ્ધતિ પ્રદાન કરે છે.
 
-| એક્ઝિક્યુટર               | પ્રદાતા(ઓ)                                                                                                                                                   | વિશેષ સંચાલન                                                             |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
-| `DefaultExecutor`         | OpenAI, Claude, Gemini, Qwen, OpenRouter, GLM, Kimi, MiniMax, DeepSeek, Groq, xAI, Mistral, Perplexity, Together, Fireworks, Cerebras, Cohere, NVIDIA, વગેરે | દરેક પ્રદાતા માટે ડાયનેમિક URL/હેડર રૂપરેખાંકન                           |
-| `AntigravityExecutor`     | Google Antigravity                                                                                                                                           | કસ્ટમ પ્રોજેક્ટ/સેશન ID, Retry-After પાર્સિંગ, 429 અસ્પષ્ટીકરણ           |
-| `AzureOpenAIExecutor`     | Azure OpenAI                                                                                                                                                 | ડિપ્લોયમેન્ટ-આધારિત રૂટિંગ, api-version ક્વેરીનું અમલીકરણ                |
-| `BlackboxWebExecutor`     | Blackbox AI (વેબ-મોડ)                                                                                                                                        | TLS ફિંગરપ્રિન્ટ અનુકરણ સાથે વેબ-સેશન રિવર્સ                             |
-| `ClaudeIdentityExecutor`  | Claude.ai (CCH પાથ)                                                                                                                                          | કન્સ્ટ્રેઇન્ટ + ટૂલ-રીમેપ પાઇપલાઇન, ફિંગરપ્રિન્ટ શેપિંગ                  |
-| `CliProxyApiExecutor`     | CLIProxyAPI-સુસંગત પ્રદાતાઓ                                                                                                                                  | કસ્ટમ પ્રમાણીકરણ અને પ્રોટોકૉલ સંચાલન                                    |
-| `CloudflareAiExecutor`    | Cloudflare Workers AI                                                                                                                                        | એકાઉન્ટ ID ઇન્જેક્શન, Neurons-આધારિત વપરાશ ટ્રેકિંગ                      |
-| `CodexExecutor`           | OpenAI Codex                                                                                                                                                 | સિસ્ટમ સૂચનાઓ ઇન્જેક્ટ કરે છે, રીઝનિંગ એફર્ટ ફરજિયાત કરે છે              |
-| `ChatGptWebCodexExecutor` | ChatGPT Web (Codex)                                                                                                                                          | થ્રેડ/ટર્ન પિનિંગ સાથે બ્રાઉઝર-સેશન Responses API બ્રિજ                  |
-| `CommandCodeExecutor`     | Command Code                                                                                                                                                 | OAuth + દરેક સેશન દીઠ હેડર રોટેશન                                        |
-| `CursorExecutor`          | Cursor IDE                                                                                                                                                   | ConnectRPC પ્રોટોકૉલ, Protobuf એન્કોડિંગ, ચેકસમ દ્વારા રિક્વેસ્ટ સાઇનિંગ |
-| `DevinCliExecutor`        | Devin CLI                                                                                                                                                    | ક્લાઉડ એજન્ટ મોડ્યુલ દ્વારા Devin ટાસ્ક લાઇફસાઇકલ બ્રિજિંગ               |
-| `GithubExecutor`          | GitHub Copilot                                                                                                                                               | Copilot ટોકન રિફ્રેશ, VSCodeનું અનુકરણ કરતા હેડર્સ                       |
-| `GitlabExecutor`          | GitLab Duo                                                                                                                                                   | GitLab OAuth + પ્રોજેક્ટ-સ્કોપ્ડ રૂટિંગ                                  |
-| `GlmExecutor`             | Z.AI GLM (`glmt` પ્રીસેટ સહિત)                                                                                                                               | થિંકિંગ-બજેટ જાગૃત, GLMT પ્રીસેટ કોન્સ્ટન્ટ્સ                            |
-| `GrokWebExecutor`         | xAI Grok વેબ                                                                                                                                                 | વેબ-સેશન રિવર્સ, મોડ પસંદગી (થિંક/સ્ટાન્ડર્ડ)                            |
-| `KieExecutor`             | KIE                                                                                                                                                          | રોટેટિંગ સેશન એન્કર્સ સાથે કસ્ટમ ટોકન ઇશ્યુઅન્સ                          |
-| `KiroExecutor`            | AWS CodeWhisperer/Kiro                                                                                                                                       | AWS EventStream બાઇનરી ફોર્મેટ → SSE રૂપાંતરણ                            |
-| `MuseSparkWebExecutor`    | Muse Spark (વેબ)                                                                                                                                             | ઇમેજ-મેસેજ બ્રિજિંગ સાથે વેબ-સેશન રિવર્સ                                 |
-| `NlpCloudExecutor`        | NLP Cloud                                                                                                                                                    | પ્રદાતા-વિશિષ્ટ રિક્વેસ્ટ બોડીનું માળખું                                 |
-| `OpenCodeExecutor`        | OpenCode                                                                                                                                                     | AI SDK-સુસંગત પ્રદાતા સેટઅપ                                              |
-| `PerplexityWebExecutor`   | Perplexity વેબ                                                                                                                                               | ચેટ ચાલુ રાખવા માટે વેબ-સેશન રિવર્સ                                      |
-| `PetalsExecutor`          | Petals વિતરિત ઇન્ફરન્સ                                                                                                                                       | વિકેન્દ્રિત સ્વૉર્મ રૂટિંગ                                               |
-| `PollinationsExecutor`    | Pollinations AI                                                                                                                                              | API કીની જરૂર નથી, રેટ-લિમિટેડ રિક્વેસ્ટ્સ                               |
-| `QoderExecutor`           | Qoder AI                                                                                                                                                     | PAT અને OAuth સપોર્ટ, મલ્ટિ-મોડલ ફ્રી ટિયર                               |
-| `VertexExecutor`          | Google Vertex AI                                                                                                                                             | સર્વિસ એકાઉન્ટ પ્રમાણીકરણ, પ્રદેશ-આધારિત એન્ડપોઇન્ટ્સ                    |
-| `DevinDesktopExecutor`    | Devin Desktop                                                                                                                                                | ઇમ્પોર્ટ કરેલી API કી + Connect-protobuf ચેટ સ્ટ્રીમિંગ                  |
+| વહીવટકર્તા                | પ્રદાતા(ઓ)                                                                                                                                               | ખાસ હેન્ડલિંગ                                                            |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `DefaultExecutor`         | OpenAI, Claude, Gemini, Qwen, OpenRouter, GLM, Kimi, MiniMax, DeepSeek, Groq, xAI, Mistral, મૂંઝવણ, Together, Fireworks, Cerebras, Cohere, NVIDIA વગેરે. | પ્રદાતા દીઠ ડાયનેમિક URL/header રૂપરેખા                                  |
+| `AntigravityExecutor`     | Google Antigravity                                                                                                                                       | કસ્ટમ project/session IDs, પુનઃપ્રયાસ કરો-પર્સિંગ પછી, 429 અસ્પષ્ટતા     |
+| `AzureOpenAIExecutor`     | એઝ્યુર OpenAI                                                                                                                                            | જમાવટ-આધારિત રૂટીંગ, api-સંસ્કરણ ક્વેરી અમલીકરણ                          |
+| `BlackboxWebExecutor`     | બ્લેકબોક્સ AI (વેબ-મોડ)                                                                                                                                  | TLS ફિંગરપ્રિન્ટ ઇમ્યુલેશન સાથે વેબ-સેશન રિવર્સ                          |
+| `ClaudeIdentityExecutor`  | Claude.ai (CCH પાથ)                                                                                                                                      | નિયંત્રણ + ટૂલ-રીમેપ પાઇપલાઇન્સ, ફિંગરપ્રિન્ટ શેપિંગ                     |
+| `CliProxyApiExecutor`     | CLIProxyAPI-સુસંગત પ્રદાતાઓ                                                                                                                              | કસ્ટમ ઓથ અને પ્રોટોકોલ હેન્ડલિંગ                                         |
+| `CloudflareAiExecutor`    | Cloudflare કામદારો AI                                                                                                                                    | એકાઉન્ટ ID ઈન્જેક્શન, ન્યુરોન્સ-આધારિત ઉપયોગ ટ્રેકિંગ                    |
+| `CodexExecutor`           | OpenAI Codex                                                                                                                                             | સિસ્ટમ સૂચનાઓ ઇન્જેક્ટ કરે છે, તર્કના પ્રયત્નોને દબાણ કરે છે             |
+| `ChatGptWebCodexExecutor` | ChatGPT વેબ (Codex)                                                                                                                                      | બ્રાઉઝર-સેશન API બ્રિજને thread/turn પિનિંગ સાથે પ્રતિસાદ આપે છે         |
+| `CommandCodeExecutor`     | આદેશ કોડ                                                                                                                                                 | OAuth + પ્રતિ-સત્ર હેડર રોટેશન                                           |
+| `CursorExecutor`          | Cursor IDE                                                                                                                                               | ConnectRPC પ્રોટોકોલ, પ્રોટોબફ એન્કોડિંગ, ચેકસમ દ્વારા સહી કરવાની વિનંતી |
+| `DevinCliExecutor`        | Devin CLI                                                                                                                                                | ક્લાઉડ એજન્ટ મોડ્યુલ દ્વારાDevin ટાસ્ક લાઇફસાઇકલ બ્રિજિંગ                |
+| `GithubExecutor`          | GitHub Copilot                                                                                                                                           | Copilot ટોકન રીફ્રેશ, VSCode-ની નકલ કરતા હેડરો                           |
+| `GitlabExecutor`          | GitLab ડ્યુઓ                                                                                                                                             | GitLab OAuth + પ્રોજેક્ટ-સ્કોપ્ડ રૂટીંગ                                  |
+| `GlmExecutor`             | Z.AI GLM ( `glmt` પ્રીસેટ સહિત)                                                                                                                          | વિચારસરણી-બજેટ વાકેફ, GLMT પ્રીસેટ સ્થિરાંકો                             |
+| `GrokWebExecutor`         | xAI Grok વેબ                                                                                                                                             | વેબ-સેશન રિવર્સ, મોડ સિલેક્શન (think/standard)                           |
+| `KieExecutor`             | KIE                                                                                                                                                      | ફરતા સત્ર એન્કર સાથે કસ્ટમ ટોકન ઇશ્યુ                                    |
+| `KiroExecutor`            | AWS CodeWhisperer/Kiro                                                                                                                                   | AWS EventStream બાઈનરી ફોર્મેટ → SSE રૂપાંતરણ                            |
+| `MuseSparkWebExecutor`    | મ્યુઝ સ્પાર્ક (વેબ)                                                                                                                                      | ઇમેજ-મેસેજ બ્રિજિંગ સાથે વેબ-સેશન રિવર્સ                                 |
+| `NlpCloudExecutor`        | NLP વાદળ                                                                                                                                                 | પ્રદાતા-વિશિષ્ટ વિનંતી શરીરના આકાર                                       |
+| `OpenCodeExecutor`        | OpenCode                                                                                                                                                 | AI SDK સુસંગત પ્રદાતા સેટઅપ                                              |
+| `PerplexityWebExecutor`   | મૂંઝવણ વેબ                                                                                                                                               | ચેટ ચાલુ રાખવા માટે વેબ-સત્ર રિવર્સ                                      |
+| `PetalsExecutor`          | પેટલ્સ વિતરિત અનુમાન                                                                                                                                     | વિકેન્દ્રિત સ્વોર્મ રૂટીંગ                                               |
+| `PollinationsExecutor`    | પરાગનયન AI                                                                                                                                               | કોઈ API કી જરૂરી નથી, દર-મર્યાદિત વિનંતીઓ                                |
+| `QoderExecutor`           | Qoder AI                                                                                                                                                 | PAT અને OAuth સપોર્ટ, મલ્ટિ-મોડલ ફ્રી ટાયર                               |
+| `VertexExecutor`          | Google શિરોબિંદુ AI                                                                                                                                      | સેવા એકાઉન્ટ પ્રમાણીકરણ, પ્રદેશ-આધારિત અંતિમ બિંદુઓ                      |
+| `DevinDesktopExecutor`    | Devin ડેસ્કટોપ                                                                                                                                           | આયાત કરેલ API કી + કનેક્ટ-પ્રોટોબફ ચેટ સ્ટ્રીમિંગ                        |
 
-અન્ય તમામ પ્રદાતાઓ (કસ્ટમ સુસંગત નોડ્સ સહિત) `DefaultExecutor` નો ઉપયોગ કરે છે.
+અન્ય તમામ પ્રદાતાઓ (કસ્ટમ સુસંગત નોડ્સ સહિત) `DefaultExecutor` ઉપયોગ કરે છે.
+
+### ઓટોમેટેડ પ્રોબ્સ અને વેબ-સેશન એકાઉન્ટ્સ
+
+મોડલ ટેસ્ટ, ટેસ્ટ ઓલ, કોમ્બો ટેસ્ટ અને એસેસમેન્ટ વાસ્તવિક ચેટ વિનંતીઓ મોકલે છે. વેબ-સત્ર પ્રદાતા સાઇન-ઇન કરેલ વપરાશકર્તા તરીકે કાર્ય કરે છે, તેથી તે દરેક વિનંતીઓ તે એકાઉન્ટ પર વાતચીત તરીકે સાચવવામાં આવશે; સ્વયંસંચાલિત ચકાસણીઓ કે જેણે આવી વાતચીત છોડી દીધી છે તેને એકાઉન્ટ સસ્પેન્ડ કરવામાં આવ્યું છે (#14780). ચેટ પાઈપલાઈન તેથી દરેક લક્ષ્યને નકારી કાઢે છે જે ઓટોમેટેડ પ્રોબ પહોંચે છે જેના પ્રદાતા વેબ-સત્ર ઓળખપત્ર લે છે, એકવાર લક્ષ્યના પ્રદાતાનું નિરાકરણ થઈ જાય અને ઓળખપત્ર પસંદ કરવામાં આવે તે પહેલાં (`src/lib/providers/chatProbePolicy.ts`). ઇનકાર એ `error.code` `chat_probe_not_isolated` સાથે `422` છે, અને ચકાસણી દોડવીરો તેને સ્કીપ તરીકે જાણ કરે છે, નિષ્ફળતા તરીકે નહીં.
+
+એક એક્ઝિક્યુટર જે દરેક ચેટને પ્રદાતાના પોતાના નો-હિસ્ટ્રી મોડમાં ચલાવે છે તે તેને `ChatProbeIsolatingExecutor` (`open-sse/executors/chatProbeIsolation.ts`) સાથે જાહેર કરે છે; પછી તે પ્રદાતાની તપાસને મંજૂરી આપવામાં આવે છે. ChatGPT વેબ `temporary-chat` જાહેર કરે છે. ટેસ્ટ સાથે તેની મિકેનિઝમ પર ઘોષણા પિન કરો, જેથી દાવો તે કોડથી વધુ જીવી ન શકે જે તેને સાચો બનાવે છે.
 
 ## પ્રદાતા સુસંગતતા મેટ્રિક્સ
 
@@ -1093,9 +1066,9 @@ flowchart LR
 
 ## 6) SSRF / આઉટબાઉન્ડ URL ગાર્ડ
 
-- `src/shared/network/outboundUrlGuard.ts` તમામ પ્રાઇવેટ/લૂપબૅક/લિંક-લોકલ લક્ષ્ય URLs ને પ્રદાતા એક્ઝિક્યુટર્સ સુધી પહોંચે તે પહેલાં બ્લૉક કરે છે
-- પ્રદાતા મોડેલ ડિસ્કવરી અને વૅલિડેશન રૂટ્સ `src/shared/network/safeOutboundFetch.ts` નો ઉપયોગ કરે છે, જે દરેક આઉટબાઉન્ડ વિનંતી પહેલાં ગાર્ડ લાગુ કરે છે
-- ગાર્ડ ભૂલો HTTP 422 સાથે `URL_GUARD_BLOCKED` તરીકે દર્શાવવામાં આવે છે અને `providerAudit.ts` મારફતે કમ્પ્લાયન્સ ઑડિટ ટ્રેઇલમાં લૉગ થાય છે
+- `BaseExecutor.assertOutboundUrlAllowed` (`open-sse/executors/base.ts`) `BaseExecutor.execute()` દ્વારા મોકલવામાં આવેલી ચેટ વિનંતીઓ પર `src/shared/network/outboundUrlGuard.ts` લાગુ કરે છે. પબ્લિક-ઓન્લી મોડમાં (ખાનગી ફ્લેગ ઓફ સાથે`OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS=false` ) તે ખાનગી અને લૂપબેક હોસ્ટ અને 169.254.0.0/16 ને બ્લોક કરે છે; દરેક અન્ય મોડમાં તે ક્લાઉડ-મેટાડેટા હોસ્ટને બ્લોક કરે છે. તે કોઈપણ DNS લુકઅપ પહેલાં, યજમાનનામ અથવા IP શાબ્દિક લખેલા તરીકે તપાસે છે. બિલ્ટ-ઇન સ્થાનિક પ્રદાતાઓ તેને છોડી દે છે.
+- પ્રદાતા મોડેલ શોધ અને માન્યતા માર્ગો `src/shared/network/safeOutboundFetch.ts` ઉપયોગ કરે છે જે દરેક આઉટબાઉન્ડ વિનંતી પહેલાં રક્ષકને લાગુ કરે છે
+- HTTP 503 સાથે `URL_GUARD_BLOCKED` તરીકે ગાર્ડ ભૂલો સપાટી પર આવે છે (`getSafeOutboundFetchErrorStatus`; મોડલ-ડિસ્કવરી રૂટ 400 પરત કરે છે), અને માન્યતા દરમિયાન અસલી SSRF બ્લોક્સ ઓડિટ ટ્રેઇલમાં `provider.validation.ssrf_blocked` ઇવેન્ટ્સ તરીકે લૉગ થાય છે
 
 ## અવલોકનક્ષમતા અને ઑપરેશનલ સિગ્નલ્સ
 

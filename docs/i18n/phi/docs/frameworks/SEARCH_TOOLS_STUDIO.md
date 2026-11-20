@@ -34,38 +34,38 @@ Studio na may tatlong tab, na pinag-iisa ang paghahanap sa web, pag-scrape sa we
 
 ---
 
-## Mga Tab
+## Mga tab
 
-### Tab na Search
+### Tab ng Paghahanap
 
-Pinapalawak nito ang kasalukuyang `SearchForm` + `ResultsPanel` + `RerankPanel` bilang isang tab:
+Binabago ang umiiral na `SearchForm` + `ResultsPanel` + `RerankPanel` sa isang tab:
 
-- Query → mga resulta (pamagat, URL, snippet, relevance score).
+- I-query ang mga resulta → (pamagat, URL, snippet, marka ng kaugnayan).
 - Metadata ng provider sa Config pane (gastos, quota, status).
-- Seksyon ng rerank: pumili ng rerank model, muling ayusin ang mga resulta, ipakita ang `positionDelta`.
-- Empty state na may CTA kapag walang naka-configure na search provider.
-- History ng paghahanap sa pamamagitan ng `SearchHistory.tsx`.
-- Tumatawag sa `POST /v1/search` (kasalukuyang endpoint, walang pagbabago).
+- Seksyon ng rerank: pumili ng modelo ng rerank, muling ayusin ang mga resulta, ipakita `positionDelta`.
+- Walang laman ang estado na may CTA kapag walang search provider ang na-configure.
+- Kasaysayan ng paghahanap sa pamamagitan ng `SearchHistory.tsx`.
+- Tumatawag sa `POST /v1/search` (umiiral na endpoint, walang pagbabago).
 
-### Tab na Scrape
+### Scrape Tab
 
-Bagong tab para sa pag-extract ng content mula sa isang URL sa pamamagitan ng `POST /v1/web/fetch` (ginawa sa plan 05):
+Bagong tab para sa pagkuha ng nilalaman mula sa isang URL sa pamamagitan ng `POST /v1/web/fetch` (ginawa sa plano 05):
 
-- Input: URL + toggle para sa buong page + selector ng format (markdown / text / HTML).
-- I-submit → i-fetch → i-render ang `ScrapeResult.tsx`.
-- Nagre-render ang `ScrapeResult` ng preview na markdown + toggle para sa raw.
-- Limitasyon: kung ang response body ay higit sa **256 KB**, ipapakita ng UI ang `(pinaikli, tingnan ang raw)` at bubuksan ang raw sa isang Monaco modal (D21).
-- Panel ng metadata: provider (firecrawl/jina-reader/tavily-search/tinyfish/nimble-search/anysearch-search), latency, gastos, laki ng response, bilang ng mga link.
-- Ginagamit ang `useScrapeFetch.ts` hook.
+- Input: URL + full-page toggle + format selector (markdown / text / HTML).
+- Isumite → fetch → render `ScrapeResult.tsx`.
+- `ScrapeResult` ay nag-render ng markdown na preview + raw toggle.
+- Cap: kung tugon katawan >** 256 KB** , ipinapakita ng UI `(truncated, view raw)` at nagbubukas ng hilaw sa isang Monaco modal (D21).
+- Panel ng metadata: provider (firecrawl/jina-reader/tavily-search/tinyfish/nimble-search/anysearch-search/parallel-search/keenable-search), latency, gastos, laki ng tugon, bilang ng mga link.
+- Gumagamit `useScrapeFetch.ts` hook.
 
-### Tab na Compare
+### Ihambing ang Tab
 
-Pinapatakbo ang parehong query/URL sa hanggang **4 na provider nang sabay-sabay** (D22):
+Tumatakbo sa parehong query/URL hanggang sa** 4 na provider na magkatulad** (D22):
 
-- Magkatabing column para sa bawat provider.
-- Mga sukatan: latency, gastos, bilang ng resulta, laki ng response.
-- Pagkalkula ng overlap ng URL para sa paghahanap (bilang ng magkakaparehong URL kumpara sa paunang resulta).
-- Tumatawag sa `POST /v1/search` (paghahanap) o `POST /v1/web/fetch` (pag-scrape) para sa bawat provider.
+- Magkatabing column sa bawat provider.
+- Mga sukatan: latency, gastos, bilang ng resulta, laki ng tugon.
+- URL overlap na pagkalkula para sa paghahanap (bilang ng ibinahaging URLs vs paunang resulta).
+- Tumatawag sa `POST /v1/search` (paghahanap) o `POST /v1/web/fetch` (scrape) bawat provider.
 
 ---
 
@@ -100,13 +100,13 @@ Pinapatakbo ang parehong query/URL sa hanggang **4 na provider nang sabay-sabay*
 
 ## Catalog ng Provider
 
-Inilalantad ng `ProviderCatalog.tsx` ang kumpletong listahan ng provider mula sa `GET /api/search/providers`
-(pinalawak sa F4 upang isama ang mga fetch provider):
+Inilalantad `ProviderCatalog.tsx` ang buong listahan ng provider mula sa `GET /api/search/providers` (pinalawak sa F4 para isama ang mga provider ng pagkuha):
 
-| `kind` | `"search"` (20 provider) o `"fetch"` (firecrawl, jina-reader, tavily-search, tinyfish, nimble-search, anysearch-search) |
+| `kind` | `"search"` (24 provider) o `"fetch"` (firecrawl, jina-reader, tavily-search, tinyfish, nimble-search, anysearch-search, parallel-search, keenable-search) |
 
-Ang status ay **tinutukoy sa oras ng request** sa pamamagitan ng pagsusuri kung may mga credential at kung
-ang lahat ng key ay kasalukuyang nasa cooldown.
+Ang katayuan ay** nakuha sa oras ng kahilingan** sa pamamagitan ng pagsuri kung may mga kredensyal at kung ang lahat ng mga susi ay kasalukuyang nasa cooldown.
+
+`codex-search` (Codex Web Search) ay walang sariling susi: ginagamit nitong muli ang isang konektadong Codex (ChatGPT) na account, kaya ang bawat paghahanap ay gumugugol ng ChatGPT subscription quota at tumatagal ng humigit-kumulang 10–40 s. Tumatakbo ito kapag pinangalanan ito ng isang kahilingan; Ang awtomatikong pagpili ay nangangailangan ng `CODEX_SEARCH_AUTO_FALLBACK_ENABLED` feature flag (naka-off bilang default).
 
 ---
 
@@ -120,16 +120,16 @@ Ang placeholder ng API key ay palaging `$OMNIROUTE_API_KEY` (D11, ibinabahagi sa
 
 ## Mga Pagbabago sa Backend
 
-Isang pagbabago lamang sa backend ang kinailangan para sa feature na ito:
+Isang backend na pagbabago lang ang kailangan para sa feature na ito:
 
-### Pinalawak na `GET /api/search/providers`
+### Extended `GET /api/search/providers`
 
-Pinalawak ang `src/app/api/search/providers/route.ts` upang:
+pinalawig ang `src/app/api/search/providers/route.ts` sa:
 
-- Isama ang lahat ng 6 na fetch provider (`firecrawl`, `jina-reader`, `tavily-search`, `tinyfish`, `nimble-search`, `anysearch-search`) sa array.
-- Magdagdag ng `kind: "search" | "fetch"` sa bawat item.
-- Magdagdag ng `status: "configured" | "missing" | "rate_limited"` na tinutukoy mula sa live na estado ng credential.
-- Panatilihin ang backward compatibility — hindi binago ang mga kasalukuyang field (`id`, `name`, atbp.).
+- Isama ang bawat provider ng pagkuha (`firecrawl`, `jina-reader`, `tavily-search`, `tinyfish`, `nimble-search`, `anysearch-search`, `parallel-search`, `keenable-search`) sa array.
+- Magdagdag `kind: "search" | "fetch"` sa bawat item.
+- Magdagdag `status: "configured" | "missing" | "rate_limited"` na nagmula sa live na estado ng kredensyal.
+- Panatilihin ang backward compatibility — umiiral na mga field (`id`, `name`, atbp.) na hindi nagbabago.
 
 ---
 

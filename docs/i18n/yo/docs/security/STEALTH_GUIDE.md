@@ -16,60 +16,60 @@ OmniRoute ń ṣọ̀kan pẹ̀lú àwọn olùpèsè tí àwọn ẹ̀rọ etí
 
 ---
 
-## Ipele Ìdánimọ̀ Ìtẹ̀sí-ọwọ́ TLS
+## Ìpele Ìdánimọ̀ Ìtẹ́wọ́gbà TLS
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-Àwọn session `wreq-js` aláìsọ̀rọ̀dájú ni a ń ṣẹ̀dá ní ọ̀lẹ̀ọ̀lẹ̀ fún scope account kọ̀ọ̀kan àti proxy tí a ti yanjú. Àwọn pool `TlsClient` jákèjádò process náà ń gba session tó pọ̀ jù 128 lọ, tí wọ́n ń ṣe àfarawé **Chrome 124 lórí macOS** fún àwọn upstream lẹ́yìn Cloudflare. `TlsClient.fetch()` máa ń dá iṣẹ́ dúró pátápátá nígbà tí native runtime kò sí; ẹni tó pè é lè yan fallback ní kedere níta wrapper yìí.
+Àwọn session `wreq-js` tí ó wà pẹ́ títí ni a ń ṣẹ̀dá ní ọ̀nà ọ̀lẹ fún ìwọ̀n account kọ̀ọ̀kan àti proxy tí a ti yanjú. `TlsClient` tó kan gbogbo process náà kó session tí ó pọ̀ jù 128 jọ, tí wọ́n ń ṣe bíi **Chrome 124 lórí macOS** fún àwọn upstream tó wà lẹ́yìn Cloudflare. `TlsClient.fetch()` máa ń kọ̀ láìṣí ọ̀nà mìíràn nígbà tí native runtime kò bá sí; olùpè kan lè yan fallback ní kedere níta wrapper yìí.
 
-- Profile session: `browser: "chrome_124", os: "macos"`
-- Ìtòsíṣáájú ìyànjú proxy: `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (pẹ̀lú àwọn ẹ̀yà lẹ́tà kékeré náà)
-- Àkókò ìdádúró: `TLS_CLIENT_TIMEOUT_MS` (ń jogún láti `FETCH_TIMEOUT_MS`, àìyípadà 600000)
+- Àwòrán session: `browser: "chrome_124", os: "macos"`
+- Ìṣètò proxy (gẹ́gẹ́ bí ààyò): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (àwọn ẹ̀dà lower-case pẹ̀lú)
+- Àkókò ìdádúró: `TLS_CLIENT_TIMEOUT_MS` (jogún láti `FETCH_TIMEOUT_MS`, àìyípadà 600000)
 - Response `wreq-js` bá fetch mu (`headers`, `text()`, `json()`, `clone()`, `body`).
-- Aṣọ́nà byte àkọ́kọ́ (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): `TlsClient.fetch()`
-  máa ń yanjú ní kété tí àwọn header upstream bá dé, nítorí náà `TLS_CLIENT_TIMEOUT_MS` nìkan kò lè fi ààlà sí
-  body tí kò mú byte àkọ́kọ́ jáde láéláé. `guardTlsFirstByte()` ń fi `read()` àkọ́kọ́ ti body ṣe ìdíje
-  pẹ̀lú `TLS_FIRST_BYTE_WATCHDOG_MS` (àìyípadà `10000`, `0` máa ń pa á); body tó dára kò ní
-  fojú kan, nígbà tí body tó dúró máa ń fagilé reader wreq, yóò sì jẹ́ kí ọgbọ́n fallback TLS tó wà tẹ́lẹ̀
-  nínú `proxyFetch` tẹ̀ síwájú sí dispatcher direct/proxy (ìbéèrè tí kò léwu láti tún ṣeré, fún àpẹẹrẹ
-  POST tó ní body, ṣì máa ju àṣìṣe síta dípò kí a tún un gbìyànjú láìjẹ́kí ẹnikẹ́ni mọ̀).
+- Ẹ̀rọ ìṣọ́ byte àkọ́kọ́ (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): `TlsClient.fetch()`
+  máa ń yanjú lẹ́sẹ̀kẹsẹ̀ tí àwọn header upstream bá dé, nítorí náà `TLS_CLIENT_TIMEOUT_MS` nìkan kò lè fi ààlà sí
+  body tí kò fi byte àkọ́kọ́ jáde láéláé. `guardTlsFirstByte()` ń mú kí `read()` àkọ́kọ́ body náà dije
+  pẹ̀lú `TLS_FIRST_BYTE_WATCHDOG_MS` (àìyípadà `10000`, `0` máa pa á); kò ní ipa lórí body tó ń ṣiṣẹ́ dáadáa,
+  ṣùgbọ́n body tó dúró máa fagilé reader wreq, yóò sì jẹ́ kí ìlànà fallback TLS tó ti wà nínú `proxyFetch`
+  tẹ̀ síwájú sí dispatcher direct/proxy (ìbéèrè tí kò léwu láti tún ṣe, bí àpẹẹrẹ
+  POST tó ní body, ṣì máa ju error dípò kí a tún gbìyànjú rẹ̀ láìsọ).
 
-### Transport olùpèsè web-cookie — wreq-js 3.2.0
+### Ọ̀nà ìgbérawọlé olùpèsè web-cookie — wreq-js 3.2.0
 
-`open-sse/services/tlsClientBase.ts` ni adapter àjọpín fún àwọn transport web-cookie àkànṣe márùn-ún
-ní ìsàlẹ̀. Wrapper olùpèsè kékeré kọ̀ọ̀kan ń yan profile browser/OS kan. Adapter náà
-ń lo loader runtime wreq kan ṣoṣo àti pool transport nínú `open-sse/utils/tlsClient.ts`, tí a fi
+`open-sse/services/tlsClientBase.ts` ni adapter tí àwọn ọ̀nà ìgbérawọlé web-cookie àkànṣe márùn-ún
+tó wà ní ìsàlẹ̀ ń lò pọ̀. Wrapper kékeré olùpèsè kọ̀ọ̀kan máa ń yan àwòrán browser/OS. Adapter náà
+ń lo loader runtime wreq kan ṣoṣo àti pool ìgbérawọlé tó wà nínú `open-sse/utils/tlsClient.ts`, tí a fi
 profile + OS + proxy tí a yanjú ṣe key, nígbà tí gbogbo ìbéèrè ń lo `cookieMode: "ephemeral"`. Nítorí náà,
-àwọn account àti ìbéèrè ń ṣàjọpín àwọn connection ipele-transport, ṣùgbọ́n wọn kì í ṣàjọpín session wreq tàbí cookie jar láéláé.
+àwọn account àti ìbéèrè ń pín àwọn connection ìpele ìgbérawọlé, ṣùgbọ́n wọn kì í pín session wreq tàbí cookie jar láéláé.
 
-| Olùpèsè    | Profile       | OS tí a ń ṣe àfarawé | Ìlànà EOF stream                   |
-| ---------- | ------------- | -------------------- | ---------------------------------- |
-| Claude     | `chrome_146`  | Linux                | fi `[DONE]` kún un                 |
-| Perplexity | `firefox_148` | macOS                | fi `event: end_of_stream` kún un   |
-| Grok       | `chrome_146`  | Linux                | yọ `[DONE]` kúrò                   |
-| Notion     | `chrome_146`  | Windows              | fi `[DONE]` kún un                 |
-| LMArena    | `chrome_146`  | Windows              | kò sí sentinel; pa á ní native EOF |
+| Olùpèsè    | Àwòrán        | OS tí a fara wé | Ìlànà EOF fún stream               |
+| ---------- | ------------- | --------------- | ---------------------------------- |
+| Claude     | `chrome_146`  | Linux           | fi `[DONE]` kún un                 |
+| Perplexity | `firefox_151` | macOS           | fi `event: end_of_stream` kún un   |
+| Grok       | `chrome_146`  | Linux           | yọ `[DONE]` kúrò                   |
+| Notion     | `chrome_146`  | Windows         | fi `[DONE]` kún un                 |
+| LMArena    | `chrome_146`  | Windows         | kò sí sentinel; pa á ní native EOF |
 
-- Streaming ń lo `ReadableStream` response native náà tààrà; a kò ṣẹ̀dá fáìlì ìgbà díẹ̀ tàbí sidecar.
-- A máa ń ṣàyẹ̀wò tó byte àkọ́kọ́ 256 kí a tó fi stream hàn. Àwọn olùpèsè SSE máa ń fi àwọn àṣìṣe
-  tí kì í ṣe SSE pamọ́ sínú buffer; Grok/LMArena máa ń yí àwọn ìpèníjà Cloudflare sí `403` àti àwọn interstitial HTML sí `502`.
-- Ìdádúró ìbéèrè native ṣì wà lábẹ́ deadline líle JS tó péye. Dídì iṣẹ́ máa ń sọ
-  transport profile/OS/proxy tó kan nìkan di asán, yóò sì pa á kí ìbéèrè tó kàn tó tún un ṣẹ̀dá.
-- Ìtòsíṣáájú ìyànjú proxy jẹ́ `proxyUrl` ti ìpè kọ̀ọ̀kan → context account/dashboard tó jẹ́ ti ìbéèrè →
-  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (pẹ̀lú àwọn ẹ̀yà lẹ́tà kékeré). Àwọn àṣìṣe ìyànjú máa ń
-  dá iṣẹ́ dúró pátápátá dípò jíjẹ́ kí connection direct tú jáde. LMArena mọ̀ọ́mọ̀ ń ṣe ìyànjú sí `arena.ai`.
-- `byteResponse` ń dá URL `data:` tó ní content type padà láìba UTF-8 jẹ́.
-- Àwọn àṣìṣe ni `TlsClientUnavailableError` (package/addon kò sí), `TlsClientHangError`
-  (deadline ti kọjá), àti `WreqTransportCapacityError` (kóòdù àṣìṣe agbára session àjọpín)
-  nígbà tí gbogbo slot profile/OS/proxy oníwọ̀n 128 bá ń ṣiṣẹ́ tàbí tí wọ́n ń pa.
+- Streaming ń gba `ReadableStream` native response náà tààrà; a kò ṣẹ̀dá temp file tàbí sidecar.
+- A máa ṣàyẹ̀wò tó byte àkọ́kọ́ 256 kí a tó fi stream hàn. Àwọn olùpèsè SSE máa ń fi àwọn error tí kì í ṣe SSE
+  pamọ́ sínú buffer; Grok/LMArena máa ń sọ àwọn ìpèníjà Cloudflare di `403` àti àwọn HTML interstitial di `502`.
+- Absolute JS hard deadline ṣì yí timeout ìbéèrè native ká. Hang máa sọ
+  ìgbérawọlé profile/OS/proxy tí ọ̀ràn náà kàn nìkan di aláìṣe, yóò sì pa á kí ìbéèrè tó tẹ̀ lé e tó tún ṣẹ̀dá rẹ̀.
+- Ààyò ìṣètò proxy jẹ́ `proxyUrl` ti ìpè kọ̀ọ̀kan → àyíká account/dashboard tó jẹ́ ti ìbéèrè →
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (pẹ̀lú àwọn ẹ̀dà lowercase). Àwọn error ìṣètò máa ń kọ̀ láìṣí ọ̀nà mìíràn
+  dípò jíjẹ́ kí direct connection yọ jáde. LMArena mọ̀ọ́mọ̀ ń ṣe ìṣètò lòdì sí `arena.ai`.
+- `byteResponse` máa ń dá URL `data:` tó ní content type padà láìba UTF-8 jẹ́.
+- Àwọn error ni `TlsClientUnavailableError` (package/addon kò sí), `TlsClientHangError`
+  (deadline ti kọjá), àti `WreqTransportCapacityError` (kóòdù error agbára session tí a pín)
+  nígbà tí gbogbo slot profile/OS/proxy 128 tí a ní ààlà sí bá ń ṣiṣẹ́ tàbí ń pa.
 
-Session `TlsClient` gbogbogbò lókè ṣì jẹ́ àkànṣe fún ipò cookie aláìsọ̀rọ̀dájú tó dá lórí browser.
-Ọ̀nà méjèèjì ń tún loader module wreq tí a cache kan náà àti hook ìgbésí-ayé process lò; àwọn pool wọn ṣì
-yàtọ̀ nítorí pé ìgbà ìyè cookie wọn yàtọ̀ ní ìmọ̀ọ́mọ̀.
+Session `TlsClient` gbogbogbò tó wà lókè ṣì jẹ́ àkànṣe fún ipò cookie tí browser ń gbé lẹ́yìn, tí ó sì wà pẹ́ títí.
+Ọ̀nà méjèèjì tún ń lo loader module wreq kan ṣoṣo tí a ti fi sínú cache àti hook lifecycle process; àwọn pool wọn
+ṣì yàtọ̀ nítorí pé a mọ̀ọ́mọ̀ ṣe àwọn àkókò ìwàláàyè cookie wọn ní ọ̀nà tó yàtọ̀.
 
-Package tí a pin mọ́ ẹya pàtó ń ṣe àtìlẹ́yìn fún àwọn profile náà, ṣùgbọ́n ìtẹ́wọ́gbà WAF gidi lè yí padà láìdá
-lórí àwọn ìdánwò contract abẹ́nú. Ṣàyẹ̀wò àwọn àyípadà fingerprint lórí account gidi tí a fún ní àṣẹ ní kedere
-kí o tó sọ pé ó bá browser upstream dọ́gba.
+Package tí a pin mọ́ version kan náà ṣe àtìlẹ́yìn fún àwọn profile wọ̀nyí, ṣùgbọ́n ìtẹ́wọ́gbà WAF gidi lè yí padà láìdá
+lórí àwọn contract test abẹ́lé. Ṣàyẹ̀wò àwọn ìyípadà fingerprint pẹ̀lú live account tí a fún ní àṣẹ ní kedere
+kí o tó sọ pé ó bá upstream browser dọ́gba.
 
 ---
 
@@ -118,7 +118,7 @@ A lò ó sí: àwọn ìdípọ̀ `system`, gbogbo `messages[].content`, àti `t
 
 Fún àwọn relay Anthropic ti ẹni-kẹta tí wọ́n gba ìrìn-àjò “Claude Code gidi” nìkan:
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"` ní àìyípadà
@@ -135,41 +135,63 @@ Fún àwọn relay Anthropic ti ẹni-kẹta tí wọ́n gba ìrìn-àjò “Cla
 
 ---
 
-## Ìfarapamọ́ Antigravity
+## Antigravity Lilọ ni ifura
 
-Àwọn ìbéèrè Antigravity máa ń pa ọ̀rọ̀ olùpè mọ́ báìtì-fún-báìtì. OmniRoute kì í fi àwọn àkíyèsí aláìní ìbú sínú àwọn prompt tàbí tún orúkọ àwọn irinṣẹ́ ṣe/fi irinṣẹ́ kún wọn láti fara wé oníbàárà IDE kan.
+awọn ibeere Antigravity ṣe itọju ọrọ olupe baiti-fun-baiti. OmniRoute ko fi ohun kikọ silẹ-iwọn odo sinu awọn itọsi tabi awọn irinṣẹ rename/inject lati ṣafarawe alabara IDE kan.
 
 ### `antigravityHeaderScrub.ts`
 
-Ó máa ń yọ àwọn àmì Stainless SDK (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) kúrò kí ó tó darí ìbéèrè náà síwájú.
+Awọn ami ami SDK Alagbara (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) ṣaaju gbigbe siwaju.
 
-### ⚠️ Ewu: `ANTIGRAVITY_CREDITS=always` (ibi tí ìfòfindè àkọọ́lẹ̀ ti wọ́pọ̀)
+### Ewu ⚠️ : `ANTIGRAVITY_CREDITS=always` (awọn aaye gbigbona ti gbesele akọọlẹ)
 
-`ANTIGRAVITY_CREDITS=always` (tí `open-sse/executors/antigravity.ts` ń lò) máa ń darí **gbogbo** ìbéèrè gba Antigravity AI Credit Overages (kírẹ́díìtì Google tí a sanwó fún) dípò jíjẹ́ kí quota ipele-ọ̀fẹ́ Google dí àwọn nǹkan dúró. A ṣàkọsílẹ̀ èyí gẹ́gẹ́ bí ẹ̀ya kan, ṣùgbọ́n ó jẹ́ **ìròyìn ìrúfin ToS kan ṣoṣo tó wọ́pọ̀ jù lọ tí a ń rí** — a ti fòfin de ọ̀pọ̀ àkọọ́lẹ̀ Google Ultra pẹ̀lú `403 / "service disabled for ToS violation" / insufficient_quota` lẹ́yìn tí wọ́n ṣiṣẹ́ fún wákàtí díẹ̀ pẹ̀lú `=always`.
+`ANTIGRAVITY_CREDITS=always` (ti o jẹ nipasẹ `open-sse/executors/antigravity.ts`) awọn ipa-ọna** gbogbo** ìbéèrè nipasẹ Antigravity AI Kirẹditi Overages (sanwo Google kirediti) dipo ti jijeki Google's free-ọfẹ kotu ẹnu ibode. Eyi jẹ akọsilẹ bi ẹya, ṣugbọn o jẹ** awọn nikan wọpọ ToS- ṣẹ Iroyin a wo** — ọpọ awọn akọọlẹ Google Ultra ti ni idinamọ pẹlu `403 / "service disabled for ToS violation" / insufficient_quota` lẹhin ṣiṣe fun awọn wakati diẹ pẹlu `=always`.
 
-Ìmúṣẹ upstream wà ní **ẹ̀gbẹ́ Google**, kì í ṣe ohun tí OmniRoute lè dènà. Orúkọ env var àti àwọn àkọsílẹ̀ tó wà tẹ́lẹ̀ mú kí ó dà bí ìṣàkóso tí kò léwu láti tàn; ṣùgbọ́n kò rí bẹ́ẹ̀.
+Imudani ti oke wa ni titan** ẹgbẹ Google** , kii ṣe ohunkohun ti OmniRoute le ṣe idiwọ. Orukọ env var ati awọn docs ti o wa tẹlẹ jẹ ki o dun bi bọtini ailewu lati yi pada; kii ṣe bẹ.
 
-**Ìdí tí èyí fi ń fa ìṣàwárí ìlòkulò lọ́nà tó le ju lílo ipele-ọ̀fẹ́-nìkan lọ:**
+**Kini idi ti eyi fa wiwa ilokulo diẹ sii ni ibinu ju lilo ipele-ọfẹ lọ:**
 
-- Ìnáwó aládàáṣiṣẹ́ tó ń bá a lọ lórí àkọọ́lẹ̀ Google kan ṣoṣo máa ń fa àmì tó yàtọ̀ sí lílu-quota-ìpele-ọ̀fẹ́-tí-ó-sì-dúró.
-- Àwọn overage kírẹ́díìtì kò ní òpin oṣuwọn, nítorí náà oníbàárà tí a ṣètò ní àìtọ́ lè ná ọ̀pọ̀ ọgọ́rùn-ún USD láàárín ìṣẹ́jú díẹ̀, kí ó sì dà bí àtúntà kọ́kọ́rọ́ API tàbí ìrìn-àjò bot.
-- Ọ̀pọ̀ aṣàmúlò OmniRoute tí wọ́n ń lo àwọn kírẹ́díìtì overage ní àkókò kan náà láti IP ìta kan náà máa ń mú àmì náà le sí i.
+- Awọn inawo adaṣe adaṣe iduroṣinṣin lori awọn asia akọọlẹ Google ẹyọkan ti o yatọ ju ipele-ọfẹ deba ipin ati awọn iduro.
+- Awọn iwọn kirẹditi ko ni orule oṣuwọn, nitorinaa alabara ti ko ni atunto le sun nipasẹ ọpọlọpọ awọn ọgọrun USD ni awọn iṣẹju ati dabi atunlo bọtini API tabi ijabọ bot.
+- Ọpọ awọn olumulo OmniRoute lilu awọn kirediti overage ni afiwe lati inu IP ita kanna ti o ṣajọpọ ifihan agbara naa.
 
-**Ìlànà tí a ṣeduro:**
+**Iduro ti a ṣeduro:**
 
-1. Jẹ́ kí àìyípadà `ANTIGRAVITY_CREDITS=off` wà bí olùdarí kò bá gba ewu kírẹ́díìtì tí a sanwó fún àti ìmúṣẹ lórí àkọọ́lẹ̀ ní kedere. `retry` máa ń kọ́kọ́ fi ìbéèrè deede ránṣẹ́, ó sì máa ń fi kírẹ́díìtì kún un ní ẹ̀ẹ̀kan péré lẹ́yìn quota 429 tó yẹ; `always` máa ń fi kírẹ́díìtì kún ìbéèrè àkọ́kọ́.
-2. **Pín ẹrù káàkiri àwọn olùpèsè nípasẹ̀ Auto-Combo** (`model: "auto"` tàbí `kr/glm/etc`-combo) dípò fífi ẹrù kún àkọọ́lẹ̀ Antigravity kan ṣoṣo dé òpin.
-3. **Ṣètò àwọn òpin RPM fún àsopọ̀ kọ̀ọ̀kan** ní ojú-ìwé àtúnṣe olùpèsè Antigravity (Dashboard → Providers → Antigravity → àsopọ̀ → òpin oṣuwọn). 30–60 RPM jẹ́ òpin òkè tó ṣeé dáàbò bo fún lílo tó ń bá a lọ.
-4. **Lo nẹ́tíwọ́ọ̀kì upstream tó dúró ṣinṣin, tí olùdarí ń ṣàkóso** kí o sì yẹra fún pípín àkọọ́lẹ̀ kan láàárín àwọn aṣàmúlò tàbí ẹrù iṣẹ́ tí kò ní ìbáṣepọ̀.
-5. **Tí a bá fòfin de ọ́**: fi ẹ̀bẹ̀ ránṣẹ́ nípasẹ̀ `support.google.com` → “Restore Workspace/Account access” pẹ̀lú ara ìdáhùn `quota_exceeded` / `service disabled` gangan tí Google fi ránṣẹ́. Kò sí ìdánilójú pé a ó mú un padà.
+1. Jeki `ANTIGRAVITY_CREDITS=off` aiyipada ayafi ti oniṣẹ gba ni gbangba-kirẹditi isanwo ati eewu imuṣiṣẹ akọọlẹ. `retry` firanṣẹ ibeere deede ni akọkọ ati ki o fun awọn kirẹditi ni pupọ julọ ni ẹẹkan lẹhin ipin ti o yẹ 429; `always` injects kirediti lori akọkọ ìbéèrè.
+2. **Tan fifuye kọja awọn olupese nipasẹ Auto-Combo** (`model: "auto"` tabi `kr/glm/etc` -combo) dipo ti saturating kan nikan Antigravity iroyin.
+3. **Ṣeto fun-asopọmọra RPM ifilelẹ** ninu oju-iwe satunkọ olupese Antigravity (Dasibodu → Awọn olupese → Antigravity → asopọ → opin oṣuwọn). 30–60 RPM jẹ agbeja oke fun lilo idaduro.
+4. **Lo iduroṣinṣin, nẹtiwọọki oke ti oniṣẹ iṣakoso** ati yago fun pinpin akọọlẹ kan kọja awọn olumulo ti ko ni ibatan tabi awọn ẹru iṣẹ.
+5. **Ti o ba ti gbesele** : afilọ nipasẹ `support.google.com` → "Mu pada Workspace/Account wiwọle" pẹlu awọn gangan `quota_exceeded` / `service disabled` esi body Google rán. Atunṣe ko ni iṣeduro.
 
-Ìtọ́kasí environment ṣàkọsílẹ̀ àwọn ipa tí ìpo kírẹ́díìtì kọ̀ọ̀kan ní lórí àkọọ́lẹ̀ àti ìnáwó.
+Itọkasi ayika ṣe iwe akọọlẹ naa ati inawo awọn ipa ti ipo kirẹditi kọọkan.
 
-Àwọn ibi ìfọwọ́kan:
+#### Ko nikan `=always`: Antigravity OAuth afisona ni apapọ
 
-- `open-sse/executors/antigravity.ts` — ń ka `process.env.ANTIGRAVITY_CREDITS`
-- `src/lib/oauth/providers/antigravity.ts` — ìṣètò credential
-- Ìròyìn ìṣẹ̀lẹ̀ àkọ́kọ́: Ìjíròrò [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
+Awọn idaduro ko ni opin si awọn iwọn kirẹditi. Awọn ijabọ ni Oṣu kọkanla ọdun 2026 (#19223, #19266) ṣapejuwe ọpọlọpọ awọn akọọlẹ Google ti daduro lakoko lilọ nipasẹ awọn olupese `antigravity` ati `agy` (Antigravity CLI), pẹlu:
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+Awọn olupese mejeeji jẹri pẹlu akoko Antigravity ọja OAuth, eyiti o jẹ ọran akiyesi eewu dasibodu (“Olupese yii nlo ọja osise rẹ session/OAuth, eyiti ko fun ni aṣẹ fun lilo proxy/router ”) kilo nipa ṣaaju ki o to ṣafikun asopọ. Ko si ọkan ninu awọn iṣeduro ti o wa loke ti o jẹ ki lilo naa fun ni aṣẹ; wọn nikan dinku iye ijabọ ti akọọlẹ kan gbejade.
+
+**Awọn atọkun API ti a fun ni aṣẹ fun awọn awoṣe Gemini.** Google nfunni ni iraye si eto si Gemini nipasẹ APIs rẹ, eyiti OmniRoute ṣe atilẹyin bi awọn olupese API-bọtini lasan:
+
+| ID olupese | Orukọ Dasibodu            | Ijẹrisi                                                                       |
+| ---------- | ------------------------- | ----------------------------------------------------------------------------- |
+| `gemini`   | Gemini (Google AI Studio) | bọtini Gemini API lati ile isise Google AI (ipele ọfẹ wa)                     |
+| `vertex`   | Vertex AI                 | Iwe akọọlẹ iṣẹ JSON, ami wiwọle OAuth tabi bọtini API Vertex Express (Gemini) |
+
+Awọn olupese wọnyi lo awọn ọran Google awọn iwe-ẹri fun iraye si API, ko dabi igba ọja Antigravity. Wọn ko ṣe gbogbo lilo ni ifaramọ tabi yọkuro ewu ti imuse: ọkọọkan ni ijọba nipasẹ awọn ofin tirẹ, eyiti oniṣẹ ni lati ṣayẹwo fun imuṣiṣẹ wọn. Fun apẹẹrẹ, Awọn [ofin Iṣẹ Afikun Gemini API](https://ai.google.dev/gemini-api/terms) gba Awọn iṣẹ isanwo laaye nigbati awọn alabara API ba wa fun awọn olumulo ni Agbegbe Economic European, Switzerland tabi United Kingdom, ati pe akoonu ti a firanṣẹ si Awọn iṣẹ Aisanwo le ṣee lo lati mu ilọsiwaju awọn ọja Google. Vertex AI ṣubu labẹ awọn ọrọ awọsanma Google dipo ( [Awọn ofin Pataki Iṣẹ](https://cloud.google.com/terms/service-terms) ). Ifowoleri ati awọn idiyele tẹle awọn ofin API wọnyẹn ju ṣiṣe alabapin Antigravity lọ.
+
+Awọn oniṣẹ ti o fẹ yago fun awọn idaduro Antigravity ti a ṣalaye loke yẹ ki o da ọna gbigbe Gemini nipasẹ ọkan ninu awọn olupese wọnyi dipo `antigravity` / `agy`, lẹhin ṣiṣe ayẹwo pe lilo wọn baamu awọn ofin olupese.
+
+Awọn aaye ifọwọkan:
+
+- `open-sse/executors/antigravity.ts` — `process.env.ANTIGRAVITY_CREDITS`
+- `src/lib/oauth/providers/antigravity.ts` — ẹrí Plumbing
+- Iroyin iṣẹlẹ atilẹba: ijiroro [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
 
@@ -238,19 +260,18 @@ Gbogbo àwọn endpoint MITM nílò ìfàṣẹsí ìṣàkóso (`requireCliTool
 
 ---
 
-## Àwọn Ìyípadà User-Agent — àwọn àyípadà àyíká (`.env.example` abala 12)
+## Olumulo-Aṣoju Yipadanu — env vars (apakan `.env.example` 12)
 
-| Àyípadà                  | Àìpéye                                                          |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| Ayípadà             | Aiyipada                                      |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-`open-sse/executors/base.ts::buildHeaders()` ń lò wọ́n nípasẹ̀ ìṣàwárí alágbára. **Ṣe àfikún ẹ̀yà wọn nígbà tí àwọn olùpèsè bá ṣe ìtújáde àwọn ẹ̀yà CLI tuntun** — àwọn ọ̀rọ̀ UA tí ó ti pẹ́ máa ń bẹ̀rẹ̀ sí í jẹ́ kí a kọ̀ wọ́n gẹ́gẹ́ bí àwọn oníbàárà tí ó ti di àtijọ́.
+Je nipasẹ `open-sse/executors/base.ts::buildHeaders()` nipasẹ wiwa ìmúdàgba.** Kọlu iwọnyi nigbati awọn olupese ba tu awọn ẹya CLI tuntun silẹ** — stale UA awọn gbolohun ọrọ bẹrẹ nini kọ bi awọn onibara igba atijọ.
 
 ## Àwọn Yíyí Ìpo Ìbámu CLI (`.env.example` abala 13)
 

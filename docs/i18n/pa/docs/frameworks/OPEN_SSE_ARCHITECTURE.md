@@ -26,34 +26,34 @@
 
 ---
 
-## ਸਿਖਰਲੇ ਪੱਧਰ ਦੀ ਬਣਤਰ
+## ਸਿਖਰ-ਪੱਧਰੀ ਸੰਰਚਨਾ
 
 ```
 open-sse/
-├── index.ts              # ਜਨਤਕ ਐਂਟਰੀ ਪੁਆਇੰਟ
+├── index.ts              # ਜਨਤਕ ਪ੍ਰਵੇਸ਼ ਬਿੰਦੂ
 ├── types.d.ts            # ਜਨਤਕ ਟਾਈਪ ਐਕਸਪੋਰਟ
 ├── package.json          # @omniroute/open-sse
-├── config/               # ਪ੍ਰਦਾਤਾ ਸੰਰਚਨਾਵਾਂ, ਸਥਿਰਾਂਕ, ਰਜਿਸਟਰੀਆਂ
-├── executors/            # ਪ੍ਰਤੀ-ਪ੍ਰਦਾਤਾ HTTP ਐਗਜ਼ਿਕਿਊਟਰ (67 + base.ts/index.ts)
-├── handlers/             # ਬੇਨਤੀ ਹੈਂਡਲਰ (chatCore, responses, ਆਦਿ)
+├── config/               # ਪ੍ਰੋਵਾਈਡਰ ਕੌਂਫਿਗਰੇਸ਼ਨ, ਕਾਂਸਟੈਂਟ ਅਤੇ ਰਜਿਸਟਰੀਆਂ
+├── executors/            # ਹਰ ਪ੍ਰੋਵਾਈਡਰ ਲਈ HTTP ਐਗਜ਼ਿਕਿਊਟਰ (150 ਮੋਡੀਊਲ + base.ts/index.ts)
+├── handlers/             # ਬੇਨਤੀ ਹੈਂਡਲਰ (chatCore, responses ਆਦਿ)
 ├── lib/                  # ਅੰਦਰੂਨੀ ਯੂਟਿਲਿਟੀਆਂ
 ├── mcp-server/           # Model Context Protocol ਸਰਵਰ
-├── services/             # ~298 ਸੇਵਾ ਮੋਡੀਊਲ
+├── services/             # ~298 ਸਰਵਿਸ ਮੋਡੀਊਲ
 ├── transformer/          # Responses API ਫਾਰਮੈਟ ਟ੍ਰਾਂਸਫਾਰਮਰ
 ├── translator/           # ਫਾਰਮੈਟ ਅਨੁਵਾਦ (OpenAI ↔ Claude ↔ Gemini)
-└── utils/                # ਸਾਂਝੀਆਂ ਯੂਟਿਲਿਟੀਆਂ (ਲੌਗਿੰਗ, ਗਲਤੀ, ਸਟ੍ਰੀਮ, ਆਦਿ)
+└── utils/                # ਸਾਂਝੀਆਂ ਯੂਟਿਲਿਟੀਆਂ (ਲੌਗਿੰਗ, ਗਲਤੀ, ਸਟ੍ਰੀਮ ਆਦਿ)
 ```
 
-### ਮੋਡੀਊਲ ਗਿਣਤੀਆਂ
+### ਮੋਡੀਊਲਾਂ ਦੀ ਗਿਣਤੀ
 
-| ਡਾਇਰੈਕਟਰੀ | ਫਾਈਲਾਂ | ਉਦੇਸ਼ |
-| `executors/` | 167 | ਪ੍ਰਤੀ-ਪ੍ਰਦਾਤਾ HTTP ਐਗਜ਼ਿਕਿਊਟਰ (DefaultExecutor ਫੈਕਟਰੀ ਰਾਹੀਂ ਏਕੀਕ੍ਰਿਤ) |
-| `handlers/` | 157 | ਬੇਨਤੀ ਐਂਟਰੀ ਪੁਆਇੰਟ (chatCore, responses, embeddings) |
-| `services/` | ~536 | ਰਾਊਟਿੰਗ, ਕੈਸ਼ਿੰਗ, ਰੇਟ ਸੀਮਿਤ ਕਰਨਾ, ਰਿਫ੍ਰੈਸ਼, ਆਦਿ |
+| ਡਾਇਰੈਕਟਰੀ | ਫ਼ਾਈਲਾਂ | ਉਦੇਸ਼ |
+| `executors/` | 167 | ਹਰ ਪ੍ਰੋਵਾਈਡਰ ਲਈ HTTP ਐਗਜ਼ਿਕਿਊਟਰ (DefaultExecutor ਫੈਕਟਰੀ ਰਾਹੀਂ ਏਕੀਕ੍ਰਿਤ) |
+| `handlers/` | 157 | ਬੇਨਤੀ ਪ੍ਰਵੇਸ਼ ਬਿੰਦੂ (chatCore, responses, embeddings) |
+| `services/` | ~536 | ਰੂਟਿੰਗ, ਕੈਸ਼ਿੰਗ, ਦਰ ਸੀਮਿਤ ਕਰਨਾ, ਰਿਫ੍ਰੈਸ਼ ਆਦਿ |
 | `translator/` | 56 | ਫਾਰਮੈਟ ਰੂਪਾਂਤਰਨ (OpenAI ↔ Claude ↔ Gemini) |
 | `mcp-server/` | 44 | MCP ਟੂਲ ਅਤੇ ਟ੍ਰਾਂਸਪੋਰਟ |
-| `utils/` | ~108 | ਵੱਖ-ਵੱਖ ਹਿੱਸਿਆਂ ਲਈ ਸਾਂਝੀਆਂ ਯੂਟਿਲਿਟੀਆਂ (ਲੌਗਿੰਗ, ਗਲਤੀ, ਸਟ੍ਰੀਮ) |
-| `config/` | ~339 | ਪ੍ਰਦਾਤਾ ਸੰਰਚਨਾਵਾਂ, ਸਥਿਰਾਂਕ, ਰਜਿਸਟਰੀਆਂ |
+| `utils/` | ~108 | ਵੱਖ-ਵੱਖ ਹਿੱਸਿਆਂ ਵਿੱਚ ਵਰਤੀਆਂ ਜਾਣ ਵਾਲੀਆਂ ਯੂਟਿਲਿਟੀਆਂ (ਲੌਗਿੰਗ, ਗਲਤੀ, ਸਟ੍ਰੀਮ) |
+| `config/` | ~339 | ਪ੍ਰੋਵਾਈਡਰ ਕੌਂਫਿਗਰੇਸ਼ਨ, ਕਾਂਸਟੈਂਟ ਅਤੇ ਰਜਿਸਟਰੀਆਂ |
 
 ---
 
@@ -165,30 +165,30 @@ needsTranslation(source, target): boolean
 
 ---
 
-## ਮੁੱਖ ਫ਼ਾਈਲਾਂ ਦੀ ਡੂੰਘੀ ਸਮੀਖਿਆ
+## ਕੁੰਜੀ ਫਾਈਲਾਂ ਡੀਪ-ਡਾਇਵ
 
 ### chatCore.ts (5977 ਲਾਈਨਾਂ)
 
-**ਮੁੱਖ ਬੇਨਤੀ ਹੈਂਡਲਰ**। ਇਸਦੇ ਆਕਾਰ ਦੇ ਬਾਵਜੂਦ, ਇਸਦੀ ਬਣਤਰ ਸਪਸ਼ਟ ਹੈ:
+ਦ** ਮੁੱਖ ਬੇਨਤੀ ਹੈਂਡਲਰ** . ਇਸਦੇ ਆਕਾਰ ਦੇ ਬਾਵਜੂਦ, ਇਸਦਾ ਇੱਕ ਸਪਸ਼ਟ ਬਣਤਰ ਹੈ:
 
 ```ts
-// chatCore.ts ਦੀ ਛਦਮ-ਬਣਤਰ
+// Pseudo-structure of chatCore.ts
 export async function handleChat(request: NextRequest) {
-  // 1. ਪ੍ਰਮਾਣੀਕਰਨ + CORS
+  // 1. Auth + CORS
   await authenticateRequest(request);
   applyCorsHeaders(response);
 
-  // 2. ਬਾਡੀ ਦੀ ਪ੍ਰਮਾਣਿਕਤਾ ਜਾਂਚ
+  // 2. Body validation
   const body = await parseRequestBody(request);
 
-  // 3. ਫਾਰਮੈਟ ਦੀ ਪਛਾਣ + ਰੂਪਾਂਤਰਨ
+  // 3. Format detection + translation
   const sourceFormat = detectFormat(request);
   const targetFormat = getTargetFormat(providerId);
   if (needsTranslation(sourceFormat, targetFormat)) {
     body = translateRequest(body, sourceFormat, targetFormat);
   }
 
-  // 4. ਕੰਬੋ ਰੂਟਿੰਗ
+  // 4. Combo routing
   const targets = await resolveComboTargets(comboId, body);
   for (const target of targets) {
     try {
@@ -196,20 +196,20 @@ export async function handleChat(request: NextRequest) {
       await recordUsage(result);
       return result;
     } catch (err) {
-      // ਅਗਲੇ ਟਾਰਗੇਟ ਵੱਲ ਜਾਰੀ ਰੱਖੋ
+      // Continue to next target
     }
   }
 
-  // 5. ਐਮਰਜੈਂਸੀ ਫ਼ਾਲਬੈਕ
+  // 5. Emergency fallback
   return await emergencyFallback(body);
 }
 ```
 
-ਇੱਕ ਵਿਸ਼ਾਲ ਫੰਕਸ਼ਨ ਹੋਣ ਦੇ ਬਾਵਜੂਦ, ਇਹ **ਟਿੱਪਣੀਆਂ ਵਾਲੇ ਭਾਗਾਂ** ਵਿੱਚ ਵਿਵਸਥਿਤ ਹੈ ਜੋ 5-ਪੜਾਅ ਵਾਲੀ ਪਾਈਪਲਾਈਨ ਨਾਲ ਮੇਲ ਖਾਂਦੇ ਹਨ।
+ਇੱਕ ਵਿਸ਼ਾਲ ਫੰਕਸ਼ਨ ਹੋਣ ਦੇ ਬਾਵਜੂਦ, ਇਸਨੂੰ ਇਸ ਵਿੱਚ ਸੰਗਠਿਤ ਕੀਤਾ ਗਿਆ ਹੈ** ਟਿੱਪਣੀ ਕੀਤੇ ਭਾਗ** 5-ਪੜਾਅ ਦੀ ਪਾਈਪਲਾਈਨ ਦਾ ਨਕਸ਼ਾ।
 
 ### combo.ts (4456 LOC)
 
-ਉਹ **ਰੂਟਿੰਗ ਇੰਜਣ** ਜੋ ਇੱਕ ਕੰਬੋ ਨੂੰ ਕ੍ਰਮਬੱਧ ਟਾਰਗੇਟਾਂ ਵਿੱਚ ਹੱਲ ਕਰਦਾ ਹੈ।
+ਦ** ਰੂਟਿੰਗ ਇੰਜਣ** ਜੋ ਆਰਡਰ ਕੀਤੇ ਟੀਚਿਆਂ ਲਈ ਇੱਕ ਕੰਬੋ ਨੂੰ ਹੱਲ ਕਰਦਾ ਹੈ।
 
 ```ts
 // services/combo.ts
@@ -226,46 +226,51 @@ export async function handleComboChat(body, comboId): Promise<ChatResult> {
 }
 ```
 
-**19 ਰੂਟਿੰਗ ਰਣਨੀਤੀਆਂ** ਦਾ ਸਮਰਥਨ ਕਰਦਾ ਹੈ (`src/shared/constants/routingStrategies.ts` ਵੇਖੋ):
+ਸਪੋਰਟ ਕਰਦਾ ਹੈ** 22 ਰੂਟਿੰਗ ਰਣਨੀਤੀਆਂ** ( `src/shared/constants/routingStrategies.ts` ਦੇਖੋ):
 
-| ਰਣਨੀਤੀ              | ਵਿਹਾਰ                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------ |
-| `priority`          | ਪਹਿਲੇ ਟਾਰਗੇਟ ਨੂੰ ਤਰਜੀਹ ਦੇਣ ਵਾਲੀ ਕ੍ਰਮਬੱਧ ਸੂਚੀ                                         |
-| `weighted`          | ਹਰ ਟਾਰਗੇਟ ਦੇ ਭਾਰ ਅਨੁਸਾਰ ਸੰਭਾਵਨਾਤਮਕ ਚੋਣ                                               |
-| `round-robin`       | ਟਾਰਗੇਟਾਂ ਵਿੱਚ ਕ੍ਰਮਵਾਰ ਚੱਕਰ ਲਗਾਉਣਾ                                                    |
-| `context-relay`     | ਟਾਰਗੇਟਾਂ ਵਿਚਕਾਰ ਸੰਦਰਭ ਅੱਗੇ ਸੌਂਪਣਾ                                                    |
-| `fill-first`        | ਅਗਲੇ ਟਾਰਗੇਟ ਵੱਲ ਜਾਣ ਤੋਂ ਪਹਿਲਾਂ ਕੋਟਾ ਭਰਨਾ                                             |
-| `p2c`               | ਦੋ ਵਿਕਲਪਾਂ ਦੀ ਸਮਰੱਥਾ                                                                 |
-| `random`            | ਇਕਸਾਰ ਬੇਤਰਤੀਬ ਚੋਣ                                                                    |
-| `least-used`        | ਸਭ ਤੋਂ ਘੱਟ ਹਾਲੀਆ ਵਰਤੋਂ ਵਾਲੇ ਨੂੰ ਚੁਣਨਾ                                                |
-| `cost-optimized`    | ਸਭ ਤੋਂ ਸਸਤਾ ਸਿਹਤਮੰਦ ਟਾਰਗੇਟ ਪਹਿਲਾਂ                                                    |
-| `reset-aware`       | ਪ੍ਰਦਾਤਾ ਦੀਆਂ ਰੀਸੈੱਟ ਵਿੰਡੋਜ਼ ਤੋਂ ਜਾਣੂ                                                 |
-| `reset-window`      | ਰੀਸੈੱਟ ਵਿੰਡੋ-ਅਧਾਰਿਤ ਰੂਟਿੰਗ                                                           |
-| `headroom`          | ਸਭ ਤੋਂ ਵੱਧ ਬਾਕੀ ਕੋਟਾ ਸਮਰੱਥਾ ਵਾਲਾ ਪਹਿਲਾਂ                                              |
-| `strict-random`     | ਅਸਲ ਵਿੱਚ ਇਕਸਾਰ (ਕੋਈ ਗੁਣਵੱਤਾ ਭਾਰ ਨਹੀਂ)                                                |
-| `auto`              | 16-ਕਾਰਕ ਸਕੋਰਿੰਗ ਵਰਤਣਾ (`autoCombo/`)                                                 |
-| `lkgp`              | ਆਖਰੀ ਜਾਣਿਆ ਚੰਗਾ ਪ੍ਰਦਾਤਾ ਪਹਿਲਾਂ                                                       |
-| `context-optimized` | ਲੰਬੇ-ਸੰਦਰਭ ਵਾਲੀਆਂ ਬੇਨਤੀਆਂ ਲਈ ਸਭ ਤੋਂ ਵਧੀਆ                                             |
-| `fusion`            | ਸਮਾਂਤਰ ਰੂਪ ਵਿੱਚ ਇੱਕ ਪੈਨਲ ਨੂੰ ਬੇਨਤੀ ਭੇਜਣਾ, ਫਿਰ ਜੱਜ ਰਾਹੀਂ ਸੰਸ਼ਲੇਸ਼ਣ ਕਰਨਾ (`fusion.ts`) |
+| ਰਣਨੀਤੀ              | ਵਿਵਹਾਰ                                                                                       |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| `priority`          | ਪਹਿਲੀ-ਨਿਸ਼ਾਨਾ ਕ੍ਰਮਬੱਧ ਸੂਚੀ                                                                   |
+| `weighted`          | ਪ੍ਰਤੀ-ਨਿਸ਼ਾਨਾ ਭਾਰ ਦੁਆਰਾ ਸੰਭਾਵਿਤ                                                              |
+| `round-robin`       | ਕ੍ਰਮ ਵਿੱਚ ਟੀਚੇ ਦੁਆਰਾ ਚੱਕਰ                                                                    |
+| `context-relay`     | ਟੀਚਿਆਂ ਵਿੱਚ ਪ੍ਰਸੰਗ ਨੂੰ ਬੰਦ ਕਰੋ                                                               |
+| `fill-first`        | ਅੱਗੇ ਜਾਣ ਤੋਂ ਪਹਿਲਾਂ ਕੋਟਾ ਭਰੋ                                                                 |
+| `p2c`               | ਦੋ ਵਿਕਲਪਾਂ ਦੀ ਸ਼ਕਤੀ                                                                          |
+| `random`            | ਯੂਨੀਫਾਰਮ ਬੇਤਰਤੀਬ                                                                             |
+| `least-used`        | ਸਭ ਤੋਂ ਘੱਟ ਹਾਲੀਆ ਵਰਤੋਂ ਵਾਲਾ ਇੱਕ ਚੁਣੋ                                                         |
+| `cost-optimized`    | ਸਸਤਾ ਤੰਦਰੁਸਤ ਟੀਚਾ ਪਹਿਲਾਂ                                                                     |
+| `reset-aware`       | ਪ੍ਰਦਾਤਾ ਰੀਸੈਟ ਵਿੰਡੋਜ਼ ਬਾਰੇ ਜਾਣੂ                                                              |
+| `reset-window`      | ਵਿੰਡੋ-ਅਧਾਰਿਤ ਰੂਟਿੰਗ ਰੀਸੈਟ ਕਰੋ                                                                |
+| `expiry-first`      | ਉਸ ਖਾਤੇ ਨੂੰ ਖਰਚ ਕਰੋ ਜਿਸਦਾ ਕੋਟਾ ਪਹਿਲਾਂ ਅਣਵਰਤੇ ਖਤਮ ਹੋ ਜਾਵੇਗਾ                                   |
+| `headroom`          | ਸਭ ਤੋਂ ਪਹਿਲਾਂ ਬਾਕੀ ਬਚਿਆ ਕੋਟਾ ਹੈੱਡਰੂਮ                                                         |
+| `quota-weighted`    | ਥੱਕੇ ਖਾਤੇ ਛੱਡੋ, ਫਿਰ ਬਚੇ ਹੋਏ ਕੋਟਾ ÷ ਇਨ-ਫਲਾਈਟ ਲੋਡ ਦੁਆਰਾ ਖਿੱਚੋ                                  |
+| `strict-random`     | ਸੱਚਮੁੱਚ ਇਕਸਾਰ (ਕੋਈ ਗੁਣਵੱਤਾ ਭਾਰ ਨਹੀਂ)                                                         |
+| `auto`              | 16-ਫੈਕਟਰ ਸਕੋਰਿੰਗ (`autoCombo/`) ਦੀ ਵਰਤੋਂ ਕਰੋ                                                 |
+| `lkgp`              | ਆਖਰੀ ਜਾਣਿਆ ਚੰਗਾ ਪ੍ਰਦਾਤਾ ਪਹਿਲਾਂ                                                               |
+| `context-optimized` | ਲੰਬੇ-ਸੰਦਰਭ ਬੇਨਤੀਆਂ ਲਈ ਸਭ ਤੋਂ ਵਧੀਆ                                                            |
+| `cache-optimized`   | ਹਰੇਕ ਮੁੜ ਵਰਤੋਂ ਯੋਗ ਪ੍ਰੋਂਪਟ ਪ੍ਰੀਫਿਕਸ ਨੂੰ ਉਸੇ ਖਾਤੇ ਵਿੱਚ ਪਿੰਨ ਕਰੋ (ਪ੍ਰੋਂਪਟ-ਕੈਸ਼ ਹਿੱਟ)           |
+| `fusion`            | ਪੈਰਲਲ ਵਿੱਚ ਇੱਕ ਪੈਨਲ ਵੱਲ ਪ੍ਰਸ਼ੰਸਕ ਕਰੋ, ਫਿਰ ਜੱਜ (`fusion.ts`) ਦੁਆਰਾ ਸੰਸ਼ਲੇਸ਼ਣ ਕਰੋ              |
+| `pipeline`          | ਚੇਨ ਸਟੈਪਸ — ਹਰੇਕ ਟੀਚੇ ਦਾ ਆਉਟਪੁੱਟ ਅਗਲੇ ਨੂੰ ਫੀਡ ਕਰਦਾ ਹੈ                                        |
+| `jev`               | ਔਪਟ-ਇਨ: TypeSafe Jev ਮੰਨਦਾ ਹੈ ਕਿ ਕਿਹੜੀਆਂ ਦਰਜਾਬੰਦੀ ਵਾਲੀਆਂ ਐਂਟਰੀਆਂ ਚੱਲਦੀਆਂ ਹਨ; ਹੋਰ ਤੁਹਾਡਾ ਆਰਡਰ |
 
 ### base.ts (1170 LOC)
 
-ਉਹ **ਐਬਸਟ੍ਰੈਕਟ ਐਗਜ਼ੀਕਿਊਟਰ** ਜਿਸਨੂੰ ਸਾਰੇ 107 ਐਗਜ਼ੀਕਿਊਟਰ ਵਧਾਉਂਦੇ ਹਨ। ਇਸ ਵਿੱਚ ਸ਼ਾਮਲ ਹਨ:
+ਦ** ਐਬਸਟਰੈਕਟ ਐਗਜ਼ੀਕਿਊਟਰ** ਜੋ ਕਿ ਹਰੇਕ ਐਗਜ਼ੀਕਿਊਟਰ ਕਲਾਸ (ਸਿੱਧੇ ਜਾਂ `DefaultExecutor` ਅਤੇ ਹੋਰ ਉਪ-ਕਲਾਸਾਂ ਰਾਹੀਂ) ਵਧਾਉਂਦਾ ਹੈ। ਇਸ ਵਿੱਚ ਸ਼ਾਮਲ ਹਨ:
 
-- `buildUrl()` — ਮੂਲ URL ਨਿਰਮਾਣ (ਸਬਕਲਾਸਾਂ ਕਸਟਮ ਵਿਹਾਰ ਲਈ ਇਸਨੂੰ ਓਵਰਰਾਈਡ ਕਰਦੀਆਂ ਹਨ)
-- `buildHeaders()` — ਮੂਲ ਹੈਡਰ (ਪ੍ਰਮਾਣੀਕਰਨ, ਸਮੱਗਰੀ-ਕਿਸਮ)
-- `transformRequest()` — ਮੂਲ ਰੂਪ ਵਿੱਚ ਬਿਨਾਂ ਬਦਲਾਅ ਅੱਗੇ ਭੇਜਣਾ
-- `execute()` — ਮੁੜ-ਕੋਸ਼ਿਸ਼/ਬੈਕਆਫ਼/ਬ੍ਰੇਕਰ ਵਾਲਾ ਮੁੱਖ HTTP ਲੂਪ
+- `buildUrl()` — ਡਿਫੌਲਟ URL ਨਿਰਮਾਣ (ਕਸਟਮ ਲਈ ਉਪ-ਕਲਾਸ ਓਵਰਰਾਈਡ)
+- `buildHeaders()` — ਡਿਫੌਲਟ ਸਿਰਲੇਖ (ਪ੍ਰਮਾਣਿਕਤਾ, ਸਮੱਗਰੀ-ਕਿਸਮ)
+- ਮੂਲ ਰੂਪ ਵਿੱਚ `transformRequest()` — ਪਾਸ-ਥਰੂ
+- `execute()` — retry/backoff/breaker ਨਾਲ ਮੁੱਖ HTTP ਲੂਪ
 
 ```ts
 // open-sse/executors/default.ts
 export class DefaultExecutor extends BaseExecutor {
-  // ਸਾਰੇ OpenAI/Anthropic-ਅਨੁਕੂਲ ਪ੍ਰਦਾਤਿਆਂ ਨੂੰ ਸੰਭਾਲਦਾ ਹੈ
-  // ਪ੍ਰਦਾਤਾ ਸੰਰਚਨਾਵਾਂ (URL, ਪ੍ਰਮਾਣੀਕਰਨ, ਹੈਡਰ) ਰਜਿਸਟਰ ਕਰਦੇ ਹਨ, ਪਰ ਐਗਜ਼ੀਕਿਊਟਰ ਤਰਕ ਸਾਂਝਾ ਕਰਦੇ ਹਨ
+  // Handles all OpenAI/Anthropic-compatible providers
+  // Providers register configurations (URL, auth, headers) but share executor logic
 }
 ```
 
-ਪ੍ਰਦਾਤਾ-ਵਿਸ਼ੇਸ਼ ਵਿਹਾਰ (ਪ੍ਰਮਾਣੀਕਰਨ ਹੈਡਰ, ਬੇਸ URL, ਵਰਜਨ ਹੈਡਰ) ਨੂੰ ਵੱਖਰੀਆਂ ਐਗਜ਼ੀਕਿਊਟਰ ਕਲਾਸਾਂ ਦੀ ਬਜਾਏ ਪ੍ਰਦਾਤਾ ਰਜਿਸਟਰੀ ਰਾਹੀਂ ਸੰਰਚਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ।
+ਪ੍ਰਦਾਤਾ-ਵਿਸ਼ੇਸ਼ ਵਿਵਹਾਰ (ਪ੍ਰਮਾਣਕ ਸਿਰਲੇਖ, ਅਧਾਰ URL, ਸੰਸਕਰਣ ਸਿਰਲੇਖ) ਪ੍ਰਦਾਤਾ ਰਜਿਸਟਰੀ ਦੁਆਰਾ ਕੌਂਫਿਗਰ ਕੀਤਾ ਜਾਂਦਾ ਹੈ, ਨਾ ਕਿ ਵੱਖਰੀ ਐਗਜ਼ੀਕਿਊਟਰ ਕਲਾਸਾਂ।
 
 ````
 
@@ -273,88 +278,88 @@ export class DefaultExecutor extends BaseExecutor {
 
 ## ਸੇਵਾਵਾਂ (117 ਮੋਡੀਊਲ)
 
-ਸੇਵਾਵਾਂ **ਕੇਂਦਰਿਤ, ਇੱਕੋ-ਉਦੇਸ਼ ਵਾਲੇ ਮੋਡੀਊਲ** ਹਨ ਜਿਨ੍ਹਾਂ ਨੂੰ ਹੈਂਡਲਰ ਜੋੜ ਕੇ ਵਰਤਦੇ ਹਨ। ਮੁੱਖ ਸ਼੍ਰੇਣੀਆਂ:
+ਸੇਵਾਵਾਂ ਹਨ** ਕੇਂਦਰਿਤ, ਸਿੰਗਲ-ਉਦੇਸ਼ ਮੋਡੀਊਲ** ਜੋ ਹੈਂਡਲਰ ਕੰਪੋਜ਼ ਕਰਦੇ ਹਨ। ਵੱਡੀਆਂ ਸ਼੍ਰੇਣੀਆਂ:
 
-### ਰੂਟਿੰਗ ਅਤੇ ਕੌਂਬੋ
+### ਰੂਟਿੰਗ ਅਤੇ ਕੰਬੋ
 
-- `combo.ts` — ਕੌਂਬੋ-ਰੂਟ ਕੀਤੀਆਂ ਬੇਨਤੀਆਂ ਲਈ ਪ੍ਰਵੇਸ਼ ਬਿੰਦੂ
-- `services/autoCombo/` — 16-ਕਾਰਕ ਸਕੋਰਿੰਗ, 8 ਆਟੋ ਰੂਟਿੰਗ ਰਣਨੀਤੀਆਂ
-- `wildcardRouter.ts` — ਵਾਈਲਡਕਾਰਡ ਰੂਟਾਂ (`gpt-*`) ਨਾਲ ਮਿਲਾਨ ਕਰਦਾ ਹੈ
-- `modelFamilyFallback.ts` — T5 ਪਰਿਵਾਰ-ਅੰਦਰੂਨੀ ਫਾਲਬੈਕ
+- ਕੰਬੋ-ਰੂਟ ਕੀਤੀਆਂ ਬੇਨਤੀਆਂ ਲਈ `combo.ts` — ਐਂਟਰੀ ਪੁਆਇੰਟ
+- `services/autoCombo/` — 16-ਫੈਕਟਰ ਸਕੋਰਿੰਗ, 8 ਆਟੋ ਰੂਟਿੰਗ ਰਣਨੀਤੀਆਂ
+- `wildcardRouter.ts` — ਵਾਈਲਡ ਕਾਰਡ ਰੂਟਾਂ ਨਾਲ ਮੇਲ ਖਾਂਦਾ ਹੈ (`gpt-*`)
+- `modelFamilyFallback.ts` — T5 ਇੰਟਰਾ-ਫੈਮਿਲੀ ਫਾਲਬੈਕ
 
-### ਦਰ ਸੀਮਾਬੰਦੀ ਅਤੇ ਕੋਟਾ
+### ਦਰ ਸੀਮਾ ਅਤੇ ਕੋਟਾ
 
-- `rateLimitManager.ts` — ਹਰੇਕ ਕੁੰਜੀ+ਪ੍ਰਦਾਤਾ ਲਈ ਟੋਕਨ ਬਕੇਟ
-- `usage.ts` — ਵਰਤੋਂ ਦੀ ਰਿਕਾਰਡਿੰਗ
+- `rateLimitManager.ts` — ਟੋਕਨ ਬਾਲਟੀ ਪ੍ਰਤੀ ਕੁੰਜੀ+ ਪ੍ਰਦਾਤਾ
+- `usage.ts` — ਵਰਤੋਂ ਰਿਕਾਰਡਿੰਗ
 - `quotaCache.ts` — ਇਨ-ਮੈਮੋਰੀ ਕੋਟਾ ਸਨੈਪਸ਼ਾਟ
 
 ### ਖਾਤਾ ਅਤੇ ਟੋਕਨ
 
-- `tokenRefresh.ts` — 401 ਉੱਤੇ OAuth ਰਿਫ੍ਰੈਸ਼
-- `accountFallback.ts` — ਵਿਕਲਪਕ ਖਾਤੇ ਉੱਤੇ ਸਵਿੱਚ ਕਰਦਾ ਹੈ
-- `sessionManager.ts` — ਮਲਟੀ-ਟਰਨ ਸੈਸ਼ਨ ਸਥਿਤੀ
+- 401 'ਤੇ`tokenRefresh.ts` — OAuth ਰਿਫ੍ਰੈਸ਼ ਕਰੋ
+- `accountFallback.ts` — ਬਦਲਵੇਂ ਖਾਤੇ 'ਤੇ ਜਾਓ
+- `sessionManager.ts` — ਮਲਟੀ-ਟਰਨ ਸੈਸ਼ਨ ਸਟੇਟ
 
-### ਬੁੱਧੀਮੱਤਾ
+### ਬੁੱਧੀ
 
-- `intentClassifier.ts` — ਬੇਨਤੀ ਦੇ ਉਦੇਸ਼ ਦਾ ਵਰਗੀਕਰਨ ਕਰਦਾ ਹੈ
-- `taskAwareRouter.ts` — ਕਾਰਜ ਦੀ ਕਿਸਮ ਅਨੁਸਾਰ ਰੂਟ ਕਰਦਾ ਹੈ
-- `thinkingBudget.ts` — ਸੋਚਣ ਵਾਲੇ ਟੋਕਨ ਨਿਰਧਾਰਤ ਕਰਦਾ ਹੈ
-- `contextManager.ts` — ਰੂਟਿੰਗ ਸੰਦਰਭ ਸ਼ਾਮਲ ਕਰਦਾ ਹੈ
+- `intentClassifier.ts` — ਵਰਗੀਕਰਨ ਬੇਨਤੀ ਇਰਾਦੇ
+- ਕੰਮ ਦੀ ਕਿਸਮ ਦੁਆਰਾ`taskAwareRouter.ts` — ਰੂਟ
+- `thinkingBudget.ts` — ਸੋਚ ਟੋਕਨ ਅਲਾਟ ਕਰੋ
+- `contextManager.ts` — inject ਰੂਟਿੰਗ ਸੰਦਰਭ
 
-### ਲਚੀਲਾਪਣ
+### ਲਚਕੀਲਾਪਨ
 
-- `resilience.ts` — ਮੁੜ-ਕੋਸ਼ਿਸ਼, ਬੈਕਆਫ਼ ਅਤੇ ਬ੍ਰੇਕਰ ਆਰਕੈਸਟ੍ਰੇਸ਼ਨ
-- `emergencyFallback.ts` — ਅੰਤਿਮ-ਉਪਾਅ ਫਾਲਬੈਕ
-- `modelDeprecation.ts` — ਉੱਤਰਾਧਿਕਾਰੀ ਮਾਡਲਾਂ ਵੱਲ ਆਟੋ-ਰੂਟ ਕਰਦਾ ਹੈ
+- `resilience.ts` — ਮੁੜ ਕੋਸ਼ਿਸ਼, ਬੈਕਆਫ, ਬ੍ਰੇਕਰ ਆਰਕੈਸਟ੍ਰੇਸ਼ਨ
+- `emergencyFallback.ts` — ਆਖਰੀ-ਸਹਾਰਾ ਫਾਲਬੈਕ
+- `modelDeprecation.ts` — ਉਤਰਾਧਿਕਾਰੀ ਮਾਡਲਾਂ ਲਈ ਆਟੋ-ਰੂਟ
 
-### ਸਥਿਤੀ
+### ਰਾਜ
 
-- `signatureCache.ts` — ਬੇਨਤੀ ਸਿਗਨੇਚਰ ਦੇ ਆਧਾਰ ਉੱਤੇ ਡੁਪਲੀਕੇਟ ਹਟਾਉਂਦਾ ਹੈ
+- ਬੇਨਤੀ ਦਸਤਖਤ ਦੁਆਰਾ`signatureCache.ts` — dedup
 - `volumeDetector.ts` — ਲੋਡ ਸ਼ੈਡਿੰਗ
 - `contextHandoff.ts` — ਸੈਸ਼ਨ ਸੀਰੀਅਲਾਈਜ਼ੇਸ਼ਨ
 
-### ਕੰਪ੍ਰੈਸ਼ਨ
+### ਕੰਪਰੈਸ਼ਨ
 
-- `compression/` (ਉਪ-ਡਾਇਰੈਕਟਰੀ) — ਪੂਰੀ ਕੰਪ੍ਰੈਸ਼ਨ ਪਾਈਪਲਾਈਨ
-- ਇੰਜਣਾਂ, ਨਿਯਮ ਪੈਕਾਂ ਅਤੇ ਅਡੈਪਟਰਾਂ ਨੂੰ ਕਵਰ ਕਰਨ ਵਾਲੀਆਂ 39 ਫ਼ਾਈਲਾਂ
+- `compression/` (ਸਬ-ਡਾਇਰੈਕਟਰੀ) — ਪੂਰੀ ਕੰਪਰੈਸ਼ਨ ਪਾਈਪਲਾਈਨ
+- ਇੰਜਣ, ਨਿਯਮ ਪੈਕ, ਅਡਾਪਟਰ ਨੂੰ ਕਵਰ ਕਰਨ ਵਾਲੀਆਂ 39 ਫਾਈਲਾਂ
 
 ### ਹੁਨਰ
 
-- ([SKILLS.md](./SKILLS.md) ਵਿੱਚ ਕਵਰ ਕੀਤਾ ਗਿਆ ਹੈ)
+- ( [SKILLS.md](./SKILLS.md) ਵਿੱਚ ਕਵਰ ਕੀਤਾ)
 
 ### ਮੈਮੋਰੀ
 
-- ([MEMORY.md](./MEMORY.md) ਵਿੱਚ ਕਵਰ ਕੀਤਾ ਗਿਆ ਹੈ)
+- ( [MEMORY.md](./MEMORY.md) ਵਿੱਚ ਕਵਰ ਕੀਤਾ)
 
 ---
 
-## ਐਗਜ਼ੀਕਿਊਟਰ (75+ ਫ਼ਾਈਲਾਂ)
+## ਐਗਜ਼ੀਕਿਊਟਰ (150 ਮੋਡੀਊਲ)
 
-ਹਰੇਕ ਪ੍ਰਦਾਤਾ ਲਈ ਇੱਕ ਫ਼ਾਈਲ। ਇਹ ਸਾਰੇ `BaseExecutor` ਨੂੰ ਐਕਸਟੈਂਡ ਕਰਦੇ ਹਨ ਅਤੇ ਸਿਰਫ਼ ਵੱਖਰੇ ਵਿਹਾਰ ਨੂੰ ਓਵਰਰਾਈਡ ਕਰਦੇ ਹਨ।
+ਪ੍ਰਤੀ ਪ੍ਰਦਾਤਾ ਜਿਆਦਾਤਰ ਇੱਕ ਫਾਈਲ। ਐਗਜ਼ੀਕਿਊਟਰ ਕਲਾਸਾਂ ਸਾਰੀਆਂ `BaseExecutor` ਵਧਾਉਂਦੀਆਂ ਹਨ ਅਤੇ ਜੋ ਵੱਖਰਾ ਹੈ ਉਸ ਨੂੰ ਓਵਰਰਾਈਡ ਕਰਦੀਆਂ ਹਨ; ਦੂਜੇ ਮੋਡੀਊਲ ਪ੍ਰਤੀ-ਪ੍ਰਦਾਤਾ ਸਹਾਇਕ ਹਨ (ਟੂਲ ਸਕੀਮਾ, fetch/TTS ਅਡਾਪਟਰ, ਕੁਇਰਕ ਹੈਂਡਲਰ)।
 
 ### ਆਮ ਪੈਟਰਨ
 
-ਪ੍ਰਦਾਤਾਵਾਂ ਨੂੰ `getExecutor(providerId)` ਰਾਹੀਂ ਰਿਜ਼ਾਲਵ ਕੀਤਾ ਜਾਂਦਾ ਹੈ, ਜੋ ਸੰਰਚਿਤ ਐਗਜ਼ੀਕਿਊਟਰ ਵਾਪਸ ਕਰਦਾ ਹੈ। OpenAI/Anthropic-ਅਨੁਕੂਲ ਪ੍ਰਦਾਤਾ `DefaultExecutor` (`executors/default.ts`) ਦੀ ਵਰਤੋਂ ਕਰਦੇ ਹਨ। ਪ੍ਰਦਾਤਾ-ਵਿਸ਼ੇਸ਼ ਵਿਹਾਰ (ਬੇਸ URL, ਪ੍ਰਮਾਣੀਕਰਨ ਹੈਡਰ, API ਵਰਜਨ) ਨੂੰ `open-sse/config/providers/` ਵਿੱਚ ਸੰਰਚਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ, ਜਦਕਿ ਬੇਨਤੀ ਬਾਡੀ ਰੂਪਾਂਤਰਣ `open-sse/translator/` ਵਿੱਚ ਸੰਭਾਲੇ ਜਾਂਦੇ ਹਨ।
+ਪ੍ਰਦਾਤਾਵਾਂ ਨੂੰ `getExecutor(providerId)` ਰਾਹੀਂ ਹੱਲ ਕੀਤਾ ਜਾਂਦਾ ਹੈ, ਜੋ ਕਿ ਕੌਂਫਿਗਰ ਕੀਤੇ ਐਗਜ਼ੀਕਿਊਟਰ ਨੂੰ ਵਾਪਸ ਕਰਦਾ ਹੈ। OpenAI/Anthropic-compatible ਪ੍ਰਦਾਤਾ `DefaultExecutor` (`executors/default.ts`) ਦੀ ਵਰਤੋਂ ਕਰਦੇ ਹਨ। ਪ੍ਰਦਾਤਾ-ਵਿਸ਼ੇਸ਼ ਵਿਵਹਾਰ (ਬੇਸ URL, auth ਸਿਰਲੇਖ, API ਸੰਸਕਰਣ) ਨੂੰ `open-sse/config/providers/` ਵਿੱਚ ਸੰਰਚਿਤ ਕੀਤਾ ਗਿਆ ਹੈ, ਜਦੋਂ ਕਿ ਬੇਨਤੀ ਬਾਡੀ ਪਰਿਵਰਤਨ ਨੂੰ `open-sse/translator/` ਵਿੱਚ ਸੰਭਾਲਿਆ ਜਾਂਦਾ ਹੈ।
 
-**ਕਸਟਮ URL** ਪ੍ਰਦਾਤਾ ਸੰਰਚਨਾ ਰਾਹੀਂ ਸੈੱਟ ਕੀਤਾ ਜਾਂਦਾ ਹੈ:
+**ਕਸਟਮ URL** ਪ੍ਰਦਾਤਾ ਸੰਰਚਨਾ ਦੁਆਰਾ ਸੈੱਟ ਕੀਤਾ ਗਿਆ ਹੈ:
 
 ```ts
-// open-sse/config/providers/ ਵਿੱਚ ਪ੍ਰਦਾਤਾ ਸੰਰਚਨਾ
+// Provider config in open-sse/config/providers/
 export default {
   id: "together",
   baseURL: "https://api.together.xyz/v1/chat/completions",
 }
 ````
 
-**ਕਸਟਮ ਪ੍ਰਮਾਣੀਕਰਨ** ਨੂੰ ਪ੍ਰਦਾਤਾ ਰਜਿਸਟਰੀ ਦੀ ਪ੍ਰਮਾਣੀਕਰਨ ਸੰਰਚਨਾ (API ਕੁੰਜੀ, OAuth, ਹੈਡਰ ਪ੍ਰੋਫ਼ਾਈਲਾਂ) ਰਾਹੀਂ ਸੰਭਾਲਿਆ ਜਾਂਦਾ ਹੈ।
+**ਕਸਟਮ ਪ੍ਰਮਾਣਿਕਤਾ** ਪ੍ਰਦਾਤਾ ਰਜਿਸਟਰੀ ਦੀ ਪ੍ਰਮਾਣਿਕਤਾ ਸੰਰਚਨਾ (API ਕੁੰਜੀ, OAuth, ਸਿਰਲੇਖ ਪ੍ਰੋਫਾਈਲਾਂ) ਦੁਆਰਾ ਸੰਭਾਲਿਆ ਜਾਂਦਾ ਹੈ।
 
-**ਕਸਟਮ ਬੇਨਤੀ ਬਾਡੀ** ਰੂਪਾਂਤਰਣ (ਉਦਾਹਰਨ ਵਜੋਂ, Anthropic ਵੱਲੋਂ `system` ਨੂੰ `messages` ਤੋਂ ਵੱਖ ਕਰਨਾ) ਹਰੇਕ ਪ੍ਰਦਾਤਾ ਲਈ `open-sse/translator/` ਵਿੱਚ ਰਜਿਸਟਰ ਕੀਤੇ ਜਾਂਦੇ ਹਨ।
+**ਕਸਟਮ ਬੇਨਤੀ ਬਾਡੀ** ਪਰਿਵਰਤਨ (ਉਦਾਹਰਨ ਲਈ, Anthropic `system` `messages` ਵੱਖ ਕਰਨਾ) `open-sse/translator/` ਵਿੱਚ ਪ੍ਰਤੀ-ਪ੍ਰਦਾਤਾ ਰਜਿਸਟਰਡ ਹਨ।
 
 ````
 
-### ਐਗਜ਼ੀਕਿਊਟਰ ਫੈਕਟਰੀ
+### The Executor Factory
 
-`executors/index.ts`, `getExecutor(providerId)` ਨੂੰ ਐਕਸਪੋਰਟ ਕਰਦੀ ਹੈ:
+`executors/index.ts` exports `getExecutor(providerId)`:
 
 ```ts
 import { getExecutor } from "@omniroute/open-sse/executors";
@@ -366,7 +371,7 @@ const result = await executor.execute({
 });
 ````
 
-ਰਿਜ਼ੋਲਿਊਸ਼ਨ `ExecutorRegistry` (`executors/registry.ts`) ਰਾਹੀਂ ਹੁੰਦਾ ਹੈ: ਹਰੇਕ ਵਿਸ਼ੇਸ਼ ਐਗਜ਼ੀਕਿਊਟਰ ਨੂੰ `executors/index.ts` ਦੀ ਬਿਲਟ-ਇਨ ਸਾਰਣੀ ਵਿੱਚ ਘੋਸ਼ਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਅਤੇ ਮੋਡੀਊਲ ਲੋਡ ਹੋਣ ਸਮੇਂ `registerExecutor(alias, instance)` ਰਾਹੀਂ ਰਜਿਸਟਰ ਕੀਤਾ ਜਾਂਦਾ ਹੈ; `getExecutor()` ਰਜਿਸਟਰੀ ਦੀ ਜਾਂਚ ਕਰਦਾ ਹੈ ਅਤੇ ਵਿਸ਼ੇਸ਼ ਐਂਟਰੀ ਤੋਂ ਬਿਨਾਂ ਕਿਸੇ ਵੀ ਪ੍ਰਦਾਤਾ ਲਈ ਮੈਮੋਇਜ਼ਡ `DefaultExecutor` ਉੱਤੇ ਫਾਲਬੈਕ ਕਰਦਾ ਹੈ। ਪੂਰੀ ਉਪਨਾਮ → ਐਗਜ਼ੀਕਿਊਟਰ ਮੈਪਿੰਗ ਨੂੰ ਗੋਲਡਨ ਟੈਸਟ `tests/unit/executor-map-golden.test.ts` ਦੁਆਰਾ ਦਰਸਾਇਆ ਗਿਆ ਹੈ।
+ਰੈਜ਼ੋਲਿਊਸ਼ਨ `ExecutorRegistry` (`executors/registry.ts`): ਹਰੇਕ ਵਿਸ਼ੇਸ਼ ਐਗਜ਼ੀਕਿਊਟਰ ਨੂੰ `executors/index.ts` ਦੇ ਬਿਲਟ-ਇਨ ਟੇਬਲ ਵਿੱਚ ਘੋਸ਼ਿਤ ਕੀਤਾ ਜਾਂਦਾ ਹੈ ਅਤੇ ਮੋਡੀਊਲ ਲੋਡ 'ਤੇ `registerExecutor(alias, instance)` ਦੁਆਰਾ ਰਜਿਸਟਰ ਕੀਤਾ ਜਾਂਦਾ ਹੈ; `getExecutor()` ਰਜਿਸਟਰੀ ਨਾਲ ਸਲਾਹ-ਮਸ਼ਵਰਾ ਕਰਦਾ ਹੈ ਅਤੇ ਬਿਨਾਂ ਕਿਸੇ ਵਿਸ਼ੇਸ਼ ਇੰਦਰਾਜ਼ ਦੇ ਕਿਸੇ ਵੀ ਪ੍ਰਦਾਤਾ ਲਈ ਯਾਦ ਕੀਤੇ `DefaultExecutor` 'ਤੇ ਵਾਪਸ ਆਉਂਦਾ ਹੈ। ਪੂਰਾ ਉਰਫ → ਐਗਜ਼ੀਕਿਊਟਰ ਮੈਪਿੰਗ ਗੋਲਡਨ ਟੈਸਟ `tests/unit/executor-map-golden.test.ts` ਦੁਆਰਾ ਦਰਸਾਈ ਗਈ ਹੈ।
 
 ---
 
@@ -479,17 +484,17 @@ createResponsesApiTransformStream(): TransformStream
 
 ---
 
-## ਕੌਂਫਿਗਰੇਸ਼ਨ
+## ਸੰਰਚਨਾ
 
-`open-sse/config/` ਵਿੱਚ ਕੌਂਫਿਗਰੇਸ਼ਨ ਪਰਤ ਹੁੰਦੀ ਹੈ:
+`open-sse/config/` ਸੰਰਚਨਾ ਪਰਤ ਰੱਖਦਾ ਹੈ:
 
-| ਫਾਈਲ                           | ਉਦੇਸ਼                                     |
+| ਫਾਈਲ                           | ਮਕਸਦ                                      |
 | ------------------------------ | ----------------------------------------- |
-| `providerRegistry.ts`          | 352-ਪ੍ਰਦਾਤਾ ਕੈਟਾਲੌਗ ਉੱਤੇ ਚੈਟ-ਮਾਡਲ ਰਜਿਸਟਰੀ |
+| `providerRegistry.ts`          | 394-ਪ੍ਰਦਾਤਾ ਕੈਟਾਲਾਗ ਉੱਤੇ ਚੈਟ-ਮਾਡਲ ਰਜਿਸਟਰੀ |
 | `providerModels.ts`            | ਮਾਡਲ ਉਪਨਾਮ, ਫਾਰਮੈਟ ਮੈਪਿੰਗ                 |
-| `constants.ts`                 | ਟਾਈਮਆਉਟ, ਸੀਮਾਵਾਂ, ਸਥਿਤੀ ਕੋਡ               |
-| `defaultThinkingSignature.ts`  | ਪੂਰਵ-ਨਿਰਧਾਰਤ Claude ਸੋਚ ਦਸਤਖ਼ਤ            |
-| `modelStrip.ts` (ਸੇਵਾਵਾਂ ਵਿੱਚ) | ਪ੍ਰਤੀ-ਪ੍ਰਦਾਤਾ ਫੀਲਡ ਹਟਾਉਣਾ                 |
+| `constants.ts`                 | ਸਮਾਂ ਸਮਾਪਤੀ, ਸੀਮਾਵਾਂ, ਸਥਿਤੀ ਕੋਡ           |
+| `defaultThinkingSignature.ts`  | ਡਿਫੌਲਟ Claude ਸੋਚ ਦਸਤਖਤ                   |
+| `modelStrip.ts` (ਸੇਵਾਵਾਂ ਵਿੱਚ) | ਪ੍ਰਤੀ-ਪ੍ਰਦਾਤਾ ਖੇਤਰ ਸਟ੍ਰਿਪਿੰਗ              |
 
 ### ਪ੍ਰਦਾਤਾ ਰਜਿਸਟਰੀ ਸਕੀਮਾ
 
@@ -506,7 +511,7 @@ interface ProviderConfig {
 }
 ```
 
-ਮੌਡਿਊਲ ਲੋਡ ਹੋਣ ਵੇਲੇ Zod ਪ੍ਰਮਾਣੀਕਰਨ ਇਹ ਯਕੀਨੀ ਬਣਾਉਂਦਾ ਹੈ ਕਿ ਸਾਰੀਆਂ ਪ੍ਰਦਾਤਾ ਕੌਂਫਿਗਾਂ ਵੈਧ ਹਨ।
+ਮੋਡੀਊਲ ਲੋਡ 'ਤੇZod ਪ੍ਰਮਾਣਿਕਤਾ ਇਹ ਯਕੀਨੀ ਬਣਾਉਂਦਾ ਹੈ ਕਿ ਸਾਰੀਆਂ ਪ੍ਰਦਾਤਾ ਸੰਰਚਨਾਵਾਂ ਵੈਧ ਹਨ।
 
 ---
 

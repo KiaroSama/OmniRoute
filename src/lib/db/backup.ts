@@ -13,6 +13,8 @@ import {
   DB_BACKUPS_DIR,
   DATA_DIR,
 } from "./core";
+import { listBackupIds, resolveBackupFile, verifyContentAddressedSnapshot } from "./backupPaths";
+import { chmodQuiet, DB_SECRET_DIR_MODE, DB_SECRET_FILE_MODE } from "./filePermissions";
 import { resetAllDbModuleState } from "./stateReset";
 import {
   DB_BACKUP_SETTINGS_NAMESPACE,
@@ -64,12 +66,10 @@ function getBackupDir() {
 }
 
 function listBackupFilesNewestFirst(backupDir: string) {
-  return fs
-    .readdirSync(backupDir)
-    .filter((filename) => filename.startsWith("db_") && filename.endsWith(".sqlite"))
+  return listBackupIds(backupDir)
     .flatMap((filename) => {
       try {
-        return [{ filename, stat: fs.statSync(path.join(backupDir, filename)) }];
+        return [{ filename, stat: fs.statSync(resolveBackupFile(backupDir, filename)) }];
       } catch {
         // A concurrent retention pass may remove an entry after readdir.
         return [];
@@ -180,6 +180,123 @@ export function isAutoBackupDisabledBySetting(): boolean {
   }
 }
 
+export type AutoBackupFrequency = "never" | "daily" | "weekly" | "monthly";
+
+function coerceFrequency(value: unknown): AutoBackupFrequency | null {
+  if (typeof value === "string") {
+    const v = value.trim().toLowerCase();
+    if (v === "never" || v === "daily" || v === "weekly" || v === "monthly") {
+      return v;
+    }
+  }
+  return null;
+}
+
+/**
+ * #15550: resolve the persisted `backup.autoBackupFrequency` dashboard setting.
+ * Mirrors the precedence used by `databaseSettings.getUserDatabaseSettings()`
+ * while reading `key_value` rows directly to avoid a circular dependency with
+ * `databaseSettings.ts`.
+ */
+export function getAutoBackupFrequencySetting(): AutoBackupFrequency | null {
+  try {
+    const db = getDbInstance();
+    const rows = db
+      .prepare("SELECT namespace, key, value FROM key_value WHERE namespace IN (?, ?)")
+      .all("settings", "databaseSettings") as Array<{
+      namespace: string;
+      key: string;
+      value: string;
+    }>;
+
+    let fromSettingsNested: AutoBackupFrequency | null = null;
+    let fromSettingsBackup: AutoBackupFrequency | null = null;
+    let fromDbFlat: AutoBackupFrequency | null = null;
+    let fromDbNested: AutoBackupFrequency | null = null;
+
+    for (const row of rows) {
+      const parsed = parseStoredJson(row.value);
+
+      if (row.namespace === "settings") {
+        if (row.key === "databaseSettings" && isPlainObject(parsed)) {
+          const backup = (parsed as Record<string, unknown>).backup;
+          if (isPlainObject(backup)) {
+            const f = coerceFrequency((backup as Record<string, unknown>).autoBackupFrequency);
+            if (f !== null) fromSettingsNested = f;
+          }
+        } else if (row.key === "backup" && isPlainObject(parsed)) {
+          const f = coerceFrequency((parsed as Record<string, unknown>).autoBackupFrequency);
+          if (f !== null) fromSettingsBackup = f;
+        }
+      } else if (row.namespace === "databaseSettings") {
+        if (row.key === "autoBackupFrequency") {
+          const f = coerceFrequency(parsed);
+          if (f !== null) fromDbFlat = f;
+        } else if (row.key === "backup.autoBackupFrequency") {
+          const f = coerceFrequency(parsed);
+          if (f !== null) fromDbNested = f;
+        }
+      }
+    }
+
+    let frequency: AutoBackupFrequency | null = null;
+    for (const candidate of [fromSettingsNested, fromSettingsBackup, fromDbFlat, fromDbNested]) {
+      if (candidate !== null) frequency = candidate;
+    }
+
+    return frequency;
+  } catch {
+    return null;
+  }
+}
+
+export function getAutoBackupFrequencyIntervalMs(
+  frequency: AutoBackupFrequency | null
+): number | null {
+  // Explicit "never" is the only value that disables automatic backups.
+  // An absent setting keeps the pre-#15550 hourly throttle instead of
+  // treating unset as off.
+  if (frequency === "never") return null;
+  if (!frequency) return BACKUP_THROTTLE_MS;
+  switch (frequency) {
+    case "daily":
+      return 24 * 60 * 60 * 1000;
+    case "weekly":
+      return 7 * 24 * 60 * 60 * 1000;
+    case "monthly":
+      return 30 * 24 * 60 * 60 * 1000;
+    default:
+      return BACKUP_THROTTLE_MS;
+  }
+}
+
+/**
+ * #15550: determine whether an automatic backup is due based on configured frequency
+ * and the persistent timestamp (mtime) of the newest valid backup on disk.
+ */
+export function isAutoBackupDueByFrequency(options?: {
+  backupDir?: string;
+  now?: number;
+}): boolean {
+  const frequency = getAutoBackupFrequencySetting();
+  const intervalMs = getAutoBackupFrequencyIntervalMs(frequency);
+  if (intervalMs === null) return false;
+
+  const backupDir = options?.backupDir ?? getBackupDir();
+  if (!fs.existsSync(backupDir)) return true;
+
+  const now = options?.now ?? Date.now();
+  const entries = listBackupFilesNewestFirst(backupDir);
+
+  for (const { stat } of entries) {
+    if (stat.size >= 4096) {
+      return now - stat.mtimeMs >= intervalMs;
+    }
+  }
+
+  return true;
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -196,9 +313,10 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function unlinkFileWithRetry(
-  filePath: string,
-  options?: { maxAttempts?: number; retryableCodes?: string[]; baseDelayMs?: number }
+async function retryOnBusy(
+  op: () => void,
+  options?: { maxAttempts?: number; retryableCodes?: string[]; baseDelayMs?: number },
+  ignoreMissing = true
 ) {
   const maxAttempts = Math.max(1, options?.maxAttempts ?? 10);
   const retryableCodes = new Set(options?.retryableCodes ?? ["EBUSY", "EPERM"]);
@@ -206,12 +324,12 @@ export async function unlinkFileWithRetry(
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      op();
       return;
     } catch (err: unknown) {
       const code =
         err && typeof err === "object" && "code" in err ? (err as NodeJS.ErrnoException).code : "";
-      if (code === "ENOENT") return;
+      if (ignoreMissing && code === "ENOENT") return;
       if (retryableCodes.has(String(code)) && attempt < maxAttempts - 1) {
         await sleep(baseDelayMs * (attempt + 1));
       } else {
@@ -221,82 +339,134 @@ export async function unlinkFileWithRetry(
   }
 }
 
+export async function unlinkFileWithRetry(
+  filePath: string,
+  options?: { maxAttempts?: number; retryableCodes?: string[]; baseDelayMs?: number }
+) {
+  await retryOnBusy(() => {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  }, options);
+}
+
+async function renameFileWithRetry(from: string, to: string) {
+  // A missing source is a real failure here, unlike a missing file to delete.
+  await retryOnBusy(() => fs.renameSync(from, to), undefined, false);
+}
+
 // ──────────────── Backup ────────────────
+
+type BackupPlan = { backupFile: string; size: number };
+
+/**
+ * Run the gates for `reason`; return where to write the snapshot, or null to skip it.
+ * A `mandatory` snapshot (manual, pre-restore, or an awaited safety copy before a
+ * destructive operation) skips the routine gates: auto-backup toggle, env switch, hourly
+ * throttle, frequency and shrink guard.
+ */
+function planBackup(reason: string, mandatory: boolean): BackupPlan | null {
+  if (isBuildPhase || isCloud) return null;
+  if (!SQLITE_FILE || !fs.existsSync(SQLITE_FILE)) return null;
+  if (!mandatory && isSqliteAutoBackupDisabled()) return null;
+  // #5871: honor the persisted `backup.autoBackupEnabled` dashboard toggle. Only
+  // mandatory backups bypass this gate; automatic + pre-write safety
+  // snapshots must stop firing once the operator disables auto-backup in the UI.
+  if (!mandatory && isAutoBackupDisabledBySetting()) return null;
+
+  const stat = fs.statSync(SQLITE_FILE);
+  if (stat.size < 4096) {
+    console.warn(`[DB] Backup SKIPPED — DB too small (${stat.size}B)`);
+    return null;
+  }
+
+  // Throttle
+  const now = Date.now();
+  if (!mandatory && now - _lastBackupAt < BACKUP_THROTTLE_MS) return null;
+
+  // #15550: honor the persisted `backup.autoBackupFrequency` setting against the
+  // newest valid backup on disk.
+  if (!mandatory && !isAutoBackupDueByFrequency({ backupDir: getBackupDir(), now })) return null;
+
+  _lastBackupAt = now;
+
+  const backupDir = getBackupDir();
+  if (!fs.existsSync(backupDir))
+    fs.mkdirSync(backupDir, { recursive: true, mode: DB_SECRET_DIR_MODE });
+
+  if (!mandatory) {
+    // Shrink detection is useful for automatic safety backups, but it should
+    // never block an explicit operator action like manual backup or pre-restore.
+    // Only timestamp-named automatic/manual backups are shrink baselines. The
+    // content-addressed migration snapshots are restore points, not periodic size
+    // samples; excluding them also keeps this lookup to names only with a single stat
+    // even in legacy directories containing tens of thousands of timestamp backups.
+    const existingBackups = fs
+      .readdirSync(backupDir)
+      .filter((filename) => /^db_\d{4}-.*\.sqlite$/.test(filename))
+      .sort();
+    if (existingBackups.length > 0) {
+      const latestBackup = existingBackups.at(-1)!;
+      try {
+        const latestStat = fs.statSync(path.join(backupDir, latestBackup));
+        if (latestStat.size > 4096 && stat.size < latestStat.size * 0.5) {
+          console.warn(`[DB] Backup SKIPPED — DB shrank from ${latestStat.size}B to ${stat.size}B`);
+          return null;
+        }
+      } catch (error: unknown) {
+        if ((error as NodeJS.ErrnoException | null)?.code !== "ENOENT") throw error;
+      }
+    }
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  return { backupFile: path.join(backupDir, `db_${timestamp}_${reason}.sqlite`), size: stat.size };
+}
+
+function finishBackup({ backupFile, size }: BackupPlan) {
+  chmodQuiet(backupFile, DB_SECRET_FILE_MODE);
+  console.log(`[DB] Backup created: ${backupFile} (${size} bytes)`);
+  cleanupDbBackups();
+}
 
 export function backupDbFile(reason = "auto") {
   try {
-    if (isBuildPhase || isCloud) return null;
-    if (!SQLITE_FILE || !fs.existsSync(SQLITE_FILE)) return null;
-    if (reason !== "manual" && isSqliteAutoBackupDisabled()) return null;
-    // #5871: honor the persisted `backup.autoBackupEnabled` dashboard toggle. Only
-    // manual and pre-restore backups bypass this gate; automatic + pre-write safety
-    // snapshots must stop firing once the operator disables auto-backup in the UI.
-    if (reason !== "manual" && reason !== "pre-restore" && isAutoBackupDisabledBySetting())
-      return null;
-
-    const stat = fs.statSync(SQLITE_FILE);
-    if (stat.size < 4096) {
-      console.warn(`[DB] Backup SKIPPED — DB too small (${stat.size}B)`);
-      return null;
-    }
-
-    // Throttle
-    const now = Date.now();
-    if (reason !== "manual" && reason !== "pre-restore" && now - _lastBackupAt < BACKUP_THROTTLE_MS)
-      return null;
-    _lastBackupAt = now;
-
-    const backupDir = getBackupDir();
-    if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
-
-    if (reason !== "manual" && reason !== "pre-restore") {
-      // Shrink detection is useful for automatic safety backups, but it should
-      // never block an explicit operator action like manual backup or pre-restore.
-      // Only timestamp-named automatic/manual backups are shrink baselines. The
-      // content-addressed migration snapshots are restore points, not periodic size
-      // samples; excluding them also keeps this lookup to names only with a single stat
-      // even in legacy directories containing tens of thousands of timestamp backups.
-      const existingBackups = fs
-        .readdirSync(backupDir)
-        .filter((filename) => /^db_\d{4}-.*\.sqlite$/.test(filename))
-        .sort();
-      if (existingBackups.length > 0) {
-        const latestBackup = existingBackups.at(-1)!;
-        try {
-          const latestStat = fs.statSync(path.join(backupDir, latestBackup));
-          if (latestStat.size > 4096 && stat.size < latestStat.size * 0.5) {
-            console.warn(
-              `[DB] Backup SKIPPED — DB shrank from ${latestStat.size}B to ${stat.size}B`
-            );
-            return null;
-          }
-        } catch (error: unknown) {
-          if ((error as NodeJS.ErrnoException | null)?.code !== "ENOENT") throw error;
-        }
-      }
-    }
-
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const backupFile = path.join(backupDir, `db_${timestamp}_${reason}.sqlite`);
+    const plan = planBackup(reason, reason === "manual" || reason === "pre-restore");
+    if (!plan) return null;
 
     // Use native SQLite backup API for consistency
-    const db = getDbInstance();
-    db.backup(backupFile)
-      .then(() => {
-        console.log(`[DB] Backup created: ${backupFile} (${stat.size} bytes)`);
-        cleanupDbBackups();
-      })
+    getDbInstance()
+      .backup(plan.backupFile)
+      .then(() => finishBackup(plan))
       .catch((err: unknown) => {
         const message = err instanceof Error ? err.message : String(err);
         console.error("[DB] Backup failed:", message);
       });
 
-    return { filename: path.basename(backupFile), size: stat.size };
+    return { filename: path.basename(plan.backupFile), size: plan.size };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[DB] Backup failed:", message);
     return null;
   }
+}
+
+/**
+ * Like `backupDbFile`, but resolves only after the snapshot is complete and REJECTS if
+ * it fails. Await it before a destructive write (database import, a settings or combo
+ * change that promises rollback): the fire-and-forget form returns before the copy is
+ * done, so a following `resetDbInstance()` or write races it and a failure is only
+ * logged. `mandatory: true` skips the routine gates, so a destructive import keeps its
+ * safety copy even when routine backups are off. Resolves null when a gate skips the
+ * snapshot (nothing was written).
+ */
+export async function backupDbFileAwaited(
+  reason = "pre-write",
+  options?: { mandatory?: boolean }
+): Promise<{ filename: string; size: number } | null> {
+  const plan = planBackup(reason, options?.mandatory === true);
+  if (!plan) return null;
+  await getDbInstance().backup(plan.backupFile);
+  finishBackup(plan);
+  return { filename: path.basename(plan.backupFile), size: plan.size };
 }
 
 // ──────────────── List Backups ────────────────
@@ -310,7 +480,7 @@ export async function listDbBackups() {
 
     const { tryOpenSync } = await import("@/lib/db/adapters/driverFactory");
     return entries.map(({ filename, stat }) => {
-      const filePath = path.join(backupDir, filename);
+      const filePath = resolveBackupFile(backupDir, filename);
       const match = filename.match(/^db_(.+?)_([^.]+)\.sqlite$/);
       const reason = match ? match[2] : "unknown";
 
@@ -360,7 +530,7 @@ export async function restoreDbBackup(backupId: string) {
     throw new Error("Invalid backup ID");
   }
 
-  const backupPath = path.resolve(backupDir, backupId);
+  const backupPath = path.resolve(resolveBackupFile(backupDir, backupId));
   // Prevent path traversal: resolved path must stay within backupDir
   if (
     !backupPath.startsWith(path.resolve(backupDir) + path.sep) &&
@@ -372,6 +542,9 @@ export async function restoreDbBackup(backupId: string) {
   if (!fs.existsSync(backupPath)) {
     throw new Error(`Backup not found: ${backupId}`);
   }
+
+  // A content-addressed snapshot must still hash to the SHA-256 in its id.
+  verifyContentAddressedSnapshot(backupId, backupPath);
 
   // Validate backup integrity
   try {
@@ -395,23 +568,60 @@ export async function restoreDbBackup(backupId: string) {
     throw new Error(`Backup file is corrupt: ${message}`);
   }
 
-  // Force pre-restore backup (bypass throttle) and await so the DB is not closed while backup runs
-  if (!isSqliteAutoBackupDisabled()) {
-    _lastBackupAt = 0;
-    const backupDirForPre = getBackupDir();
-    if (SQLITE_FILE && fs.existsSync(SQLITE_FILE)) {
-      const stat = fs.statSync(SQLITE_FILE);
-      if (stat.size >= 4096) {
-        if (!fs.existsSync(backupDirForPre)) fs.mkdirSync(backupDirForPre, { recursive: true });
-        const preBackupPath = path.join(
-          backupDirForPre,
-          `db_${new Date().toISOString().replace(/[:.]/g, "-")}_pre-restore.sqlite`
-        );
+  // Force pre-restore backup (bypass throttle) and await so the DB is not closed while backup runs.
+  // This copy is mandatory, not routine: DISABLE_SQLITE_AUTO_BACKUP and the dashboard toggle
+  // switch off routine backups only, and must not remove the restore safety net.
+  _lastBackupAt = 0;
+  const backupDirForPre = getBackupDir();
+  if (SQLITE_FILE && fs.existsSync(SQLITE_FILE)) {
+    const stat = fs.statSync(SQLITE_FILE);
+    if (stat.size >= 4096) {
+      if (!fs.existsSync(backupDirForPre))
+        fs.mkdirSync(backupDirForPre, { recursive: true, mode: DB_SECRET_DIR_MODE });
+      const preBackupPath = path.join(
+        backupDirForPre,
+        `db_${new Date().toISOString().replace(/[:.]/g, "-")}_pre-restore.sqlite`
+      );
+      try {
         const dbForBackup = getDbInstance();
         await dbForBackup.backup(preBackupPath);
-        _lastBackupAt = Date.now();
+      } catch (e: unknown) {
+        // The restore stops here, before any live data is touched. Say which step failed.
+        const message = e instanceof Error ? e.message : String(e);
+        throw new Error(`Pre-restore safety backup failed: ${message}`, { cause: e });
       }
+      chmodQuiet(preBackupPath, DB_SECRET_FILE_MODE);
+      _lastBackupAt = Date.now();
     }
+  }
+
+  const sqliteFile = SQLITE_FILE;
+  if (!sqliteFile) {
+    throw new Error("SQLITE_FILE is unavailable in local backup restore");
+  }
+
+  // Stage the copy next to the live file BEFORE touching it: a full disk or a short copy then
+  // fails here, with the live database still open and intact. Same directory, so the final
+  // rename never crosses a filesystem.
+  const stagedFile = `${sqliteFile}.restore-${process.pid}.tmp`;
+  try {
+    fs.copyFileSync(backupPath, stagedFile);
+    const stagedSize = fs.statSync(stagedFile).size;
+    const sourceSize = fs.statSync(backupPath).size;
+    if (stagedSize !== sourceSize) {
+      throw new Error(
+        `Restore copy is incomplete: expected ${sourceSize} bytes, got ${stagedSize}`
+      );
+    }
+    const fd = fs.openSync(stagedFile, "r+");
+    try {
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch (error) {
+    fs.rmSync(stagedFile, { force: true });
+    throw error;
   }
 
   // Close and reset current connection
@@ -420,29 +630,22 @@ export async function restoreDbBackup(backupId: string) {
   // Clear all cached prepared statements and other state bound to the old connection
   resetAllDbModuleState();
 
-  const sqliteFile = SQLITE_FILE;
-  if (!sqliteFile) {
-    throw new Error("SQLITE_FILE is unavailable in local backup restore");
-  }
-
   // On Windows, the file handle may be released asynchronously after close; give it a moment.
   await sleep(500);
 
-  // Remove main file and WAL sidecars to avoid stale frame replay after restore.
-  // Retry unlink on EBUSY/EPERM (Windows may hold the handle briefly).
-  const sqliteFilesToReplace = [
-    sqliteFile,
-    `${sqliteFile}-wal`,
-    `${sqliteFile}-shm`,
-    `${sqliteFile}-journal`,
-  ];
-  for (const filePath of sqliteFilesToReplace) {
-    if (!filePath) continue;
-    await unlinkFileWithRetry(filePath);
+  try {
+    // Remove WAL sidecars to avoid stale frame replay after restore. The main file is NOT
+    // removed: the rename below replaces it in one step, so a crash or failure leaves either
+    // the old database or the new one, never none. Retry on EBUSY/EPERM (Windows may hold
+    // the handle briefly).
+    for (const filePath of [`${sqliteFile}-wal`, `${sqliteFile}-shm`, `${sqliteFile}-journal`]) {
+      await unlinkFileWithRetry(filePath);
+    }
+    await renameFileWithRetry(stagedFile, sqliteFile);
+  } catch (error) {
+    fs.rmSync(stagedFile, { force: true });
+    throw error;
   }
-
-  // Copy backup over current DB
-  fs.copyFileSync(backupPath, sqliteFile);
 
   // Reopen
   const db = getDbInstance();
@@ -590,4 +793,46 @@ export function countImportedRows(): {
   const comboCount = (db.prepare("SELECT COUNT(*) as cnt FROM combos").get() as any)?.cnt || 0;
   const keyCount = (db.prepare("SELECT COUNT(*) as cnt FROM api_keys").get() as any)?.cnt || 0;
   return { connCount, nodeCount, comboCount, keyCount };
+}
+
+type ReadonlyAdapterLike = {
+  prepare: (sql: string) => { get: () => unknown };
+};
+
+function countTableFromAdapter(adapter: ReadonlyAdapterLike, table: string): number {
+  return (adapter.prepare(`SELECT COUNT(*) as cnt FROM ${table}`).get() as CountRow)?.cnt || 0;
+}
+
+/**
+ * Summarizes an **already-opened** candidate database (not the live one) for the import
+ * dry run: the row counts a real import would load, plus the newest applied migration
+ * version (`null` when the backup predates migration tracking). Callers must have
+ * validated that the four required tables exist first.
+ */
+export function summarizeImportCandidate(
+  adapter: ReadonlyAdapterLike,
+  tableNames: string[]
+): {
+  connCount: number;
+  nodeCount: number;
+  comboCount: number;
+  keyCount: number;
+  schemaVersion: string | null;
+} {
+  let schemaVersion: string | null = null;
+  if (tableNames.includes("_omniroute_migrations")) {
+    const row = adapter
+      .prepare(
+        "SELECT version FROM _omniroute_migrations ORDER BY CAST(version AS INTEGER) DESC, version DESC LIMIT 1"
+      )
+      .get() as { version?: string } | undefined;
+    schemaVersion = row?.version ?? null;
+  }
+  return {
+    connCount: countTableFromAdapter(adapter, "provider_connections"),
+    nodeCount: countTableFromAdapter(adapter, "provider_nodes"),
+    comboCount: countTableFromAdapter(adapter, "combos"),
+    keyCount: countTableFromAdapter(adapter, "api_keys"),
+    schemaVersion,
+  };
 }

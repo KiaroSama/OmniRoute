@@ -20,36 +20,59 @@ OmniRoute は、非公式クライアントを能動的にフィンガープリ�
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js（Chrome 124）
 
-永続的な `wreq-js` セッションは、アカウントスコープと解決済みプロキシの組み合わせごとに遅延作成されます。プロセス全体で共有される `TlsClient` は、Cloudflare の背後にあるアップストリーム向けに **macOS 上の Chrome 124** を偽装するセッションを最大 128 個プールします。ネイティブランタイムが利用できない場合、`TlsClient.fetch()` はフェイルクローズします。呼び出し元は、このラッパーの外部でフォールバックを明示的に選択できます。
+永続的な `wreq-js` セッションは、アカウントスコープと解決済みプロキシごとに遅延作成されます。
+プロセス全体の `TlsClient` は、Cloudflare の背後にあるアップストリーム向けに **macOS 上の Chrome 124** を偽装するセッションを最大 128 個プールします。
+ネイティブランタイムが利用できない場合、`TlsClient.fetch()` はフェイルクローズします。呼び出し元は、このラッパーの外部でフォールバックを明示的に選択できます。
 
 - セッションプロファイル: `browser: "chrome_124", os: "macos"`
 - プロキシ解決（優先順）: `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY`（小文字も対象）
-- タイムアウト: `TLS_CLIENT_TIMEOUT_MS`（`FETCH_TIMEOUT_MS` を継承、デフォルトは 600000）
-- `wreq-js` の Response は fetch と互換性があります（`headers`、`text()`、`json()`、`clone()`、`body`）。
-- 最初のバイトのウォッチドッグ（`open-sse/utils/tlsFirstByteWatchdog.ts`、#12656）: `TlsClient.fetch()` はアップストリームのヘッダーが到着するとすぐに解決されるため、`TLS_CLIENT_TIMEOUT_MS` だけでは最初のバイトを一切返さないボディを制限できません。`guardTlsFirstByte()` は、ボディの最初の `read()` と `TLS_FIRST_BYTE_WATCHDOG_MS`（デフォルトは `10000`、`0` で無効）の完了を競合させます。正常なボディには影響しませんが、停止したボディでは wreq リーダーをキャンセルし、`proxyFetch` の既存の TLS フォールバックロジックによって直接／プロキシディスパッチャーへフォールスルーできるようにします（ボディ付き POST など、再実行が安全ではないリクエストについては、サイレントに再試行せず、引き続き例外をスローします）。
+- タイムアウト: `TLS_CLIENT_TIMEOUT_MS`（`FETCH_TIMEOUT_MS` から継承、デフォルトは 600000）
+- `wreq-js` の Response は fetch 互換です（`headers`、`text()`、`json()`、`clone()`、`body`）。
+- 最初のバイトのウォッチドッグ（`open-sse/utils/tlsFirstByteWatchdog.ts`、#12656）: `TlsClient.fetch()` は
+  アップストリームのヘッダーが到着するとすぐに解決されるため、`TLS_CLIENT_TIMEOUT_MS` だけでは、
+  最初のバイトをまったく返さないボディを制限できません。`guardTlsFirstByte()` はボディの最初の `read()` と
+  `TLS_FIRST_BYTE_WATCHDOG_MS`（デフォルトは `10000`、`0` で無効化）を競合させます。正常なボディには
+  影響しませんが、停止したボディでは wreq リーダーをキャンセルし、`proxyFetch` の既存の
+  TLS フォールバックロジックが直接／プロキシディスパッチャーへフォールスルーできるようにします（たとえば、
+  ボディを持つ POST のようなリプレイセーフでないリクエストは、暗黙的に再試行される代わりに引き続き例外をスローします）。
 
 ### Web Cookie プロバイダートランスポート — wreq-js 3.2.0
 
-`open-sse/services/tlsClientBase.ts` は、以下に示す 5 つの専用 Web Cookie トランスポートで共有されるアダプターです。各プロバイダーの薄いラッパーが、ブラウザー／OS プロファイルを選択します。このアダプターは、`open-sse/utils/tlsClient.ts` 内の単一の wreq ランタイムローダーとトランスポートプールを使用し、プロファイル + OS + 解決済みプロキシをキーとします。一方、各リクエストでは `cookieMode: "ephemeral"` を使用します。そのため、アカウントとリクエストはトランスポートレベルの接続を共有しますが、wreq セッションや Cookie jar を共有することはありません。
+`open-sse/services/tlsClientBase.ts` は、以下の 5 つの専用
+Web Cookie トランスポートで共有されるアダプターです。各軽量プロバイダーラッパーがブラウザー／OS プロファイルを選択します。このアダプターは、
+`open-sse/utils/tlsClient.ts` 内の単一の wreq ランタイムローダーとトランスポートプールを使用し、
+プロファイル + OS + 解決済みプロキシをキーとします。一方、すべてのリクエストは `cookieMode: "ephemeral"` を使用します。そのため、
+アカウントとリクエストはトランスポートレベルの接続を共有しますが、wreq セッションや Cookie jar は一切共有しません。
 
-| プロバイダー | プロファイル  | エミュレートする OS | ストリーム EOF ポリシー                 |
-| ------------ | ------------- | ------------------- | --------------------------------------- |
-| Claude       | `chrome_146`  | Linux               | `[DONE]` を含める                       |
-| Perplexity   | `firefox_148` | macOS               | `event: end_of_stream` を含める         |
-| Grok         | `chrome_146`  | Linux               | `[DONE]` を除外                         |
-| Notion       | `chrome_146`  | Windows             | `[DONE]` を含める                       |
-| LMArena      | `chrome_146`  | Windows             | センチネルなし。ネイティブ EOF で閉じる |
+| プロバイダー | プロファイル  | エミュレートする OS | ストリーム EOF ポリシー                   |
+| ------------ | ------------- | ------------------- | ----------------------------------------- |
+| Claude       | `chrome_146`  | Linux               | `[DONE]` を含める                         |
+| Perplexity   | `firefox_151` | macOS               | `event: end_of_stream` を含める           |
+| Grok         | `chrome_146`  | Linux               | `[DONE]` を除外                           |
+| Notion       | `chrome_146`  | Windows             | `[DONE]` を含める                         |
+| LMArena      | `chrome_146`  | Windows             | センチネルなし。ネイティブ EOF でクローズ |
 
-- ストリーミングでは、ネイティブレスポンスの `ReadableStream` を直接消費します。一時ファイルやサイドカーは作成されません。
-- ストリームを公開する前に、先頭の最大 256 バイトが検査されます。SSE プロバイダーでは SSE ではないエラーをバッファリングします。Grok/LMArena は、Cloudflare チャレンジを `403` に、HTML 中間ページを `502` にマッピングします。
-- ネイティブリクエストのタイムアウトは、絶対時間に基づく JS のハードデッドラインで引き続きラップされます。ハングが発生すると、影響を受けたプロファイル／OS／プロキシのトランスポートのみが無効化およびクローズされ、次のリクエスト時に再作成されます。
-- プロキシ解決の優先順は、呼び出しごとの `proxyUrl` → リクエストスコープのアカウント／ダッシュボードコンテキスト → `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY`（小文字のバリアントを含む）です。解決エラー時には、直接接続が漏れることなくフェイルクローズします。LMArena は意図的に `arena.ai` を基準として解決します。
-- `byteResponse` は、UTF-8 破損なしで Content-Type が指定された `data:` URL を返します。
-- エラーは、`TlsClientUnavailableError`（パッケージ／アドオンが利用不可）、`TlsClientHangError`（デッドライン超過）、および 128 個に制限されたプロファイル／OS／プロキシスロットがすべて使用中またはクローズ中の場合の `WreqTransportCapacityError`（共有セッション容量エラーコード）です。
+- ストリーミングはネイティブレスポンスの `ReadableStream` を直接消費します。一時ファイルやサイドカーは
+  作成されません。
+- ストリームを公開する前に、先頭から最大 256 バイトが検査されます。SSE プロバイダーは SSE ではない
+  エラーをバッファリングします。Grok/LMArena は Cloudflare チャレンジを `403` に、HTML インタースティシャルを `502` にマッピングします。
+- ネイティブリクエストのタイムアウトは、引き続き絶対的な JS ハードデッドラインでラップされます。ハングが発生すると、
+  影響を受けたプロファイル／OS／プロキシのトランスポートのみが無効化されて閉じられ、次のリクエスト時に再作成されます。
+- プロキシ解決の優先順位は、呼び出しごとの `proxyUrl` → リクエストスコープのアカウント／ダッシュボードコンテキスト →
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY`（小文字のバリアントを含む）です。解決エラーは、
+  直接接続が漏洩するのを防ぐためフェイルクローズします。LMArena は意図的に `arena.ai` に対して解決します。
+- `byteResponse` は、UTF-8 の破損なしで Content-Type が指定された `data:` URL を返します。
+- エラーは、`TlsClientUnavailableError`（パッケージ／アドオンが利用不可）、`TlsClientHangError`
+  （デッドライン超過）、および 128 個に制限されたプロファイル／OS／プロキシスロットがすべて使用中またはクローズ中の場合の
+  `WreqTransportCapacityError`（共有セッション容量エラーコード）です。
 
-上記の汎用 `TlsClient` セッションは、ブラウザーに保持される永続的な Cookie 状態に引き続き特化しています。両方の経路は、キャッシュされた単一の wreq モジュールローダーとプロセスライフサイクルフックを再利用します。ただし、Cookie の有効期間が意図的に異なるため、それぞれのプールは分離されています。
+上記の汎用 `TlsClient` セッションは、ブラウザーにより維持される永続的な Cookie 状態専用のままです。
+両方のパスは、キャッシュされた単一の wreq モジュールローダーとプロセスライフサイクルフックを再利用しますが、Cookie の有効期間が
+意図的に異なるため、それぞれのプールは分離されたままです。
 
-これらのプロファイルは固定されたパッケージでサポートされていますが、実際の WAF による受け入れ可否は、ローカルのコントラクトテストとは無関係に変化する可能性があります。アップストリームブラウザーとの同等性を主張する前に、明示的に使用許可を得た実アカウントに対してフィンガープリントの変更を検証してください。
+これらのプロファイルは固定されたパッケージでサポートされていますが、実際の WAF による受け入れ可否は、
+ローカルのコントラクトテストとは無関係に変化する可能性があります。アップストリームブラウザーとの同等性を主張する前に、
+明示的に許可された実アカウントを使用してフィンガープリントの変更を検証してください。
 
 ---
 
@@ -98,7 +121,7 @@ aider, continue.dev, copilot, avante, codecompanion
 
 「本物の Claude Code」トラフィックのみを受け入れるサードパーティー製 Anthropic リレー向け:
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - デフォルトでは `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"`
@@ -115,41 +138,63 @@ aider, continue.dev, copilot, avante, codecompanion
 
 ---
 
-## Antigravity ステルス
+## Antigravityステルス
 
-Antigravity リクエストは、呼び出し元のテキストをバイト単位でそのまま保持します。OmniRoute は、IDE クライアントを模倣する目的でプロンプトにゼロ幅文字を挿入したり、ツールの名前変更や注入を行ったりしません。
+Antigravityリクエストは、呼び出し元のテキストをバイト単位で保持します。 OmniRoute 、 IDEクライアントを模倣するためにプロンプトまたはrename/injectツールにゼロ幅文字を挿入しません。
 
 ### `antigravityHeaderScrub.ts`
 
-転送前に Stainless SDK マーカー（`x-stainless-lang`、`x-stainless-package-version`、`x-stainless-os`、`x-stainless-arch`、`x-stainless-runtime`、`x-stainless-runtime-version`、`x-stainless-timeout`、`x-stainless-retry-count`、`x-stainless-helper-method`）を削除します。
+転送前にステンレスSDKマーカー (`x-stainless-lang`、 `x-stainless-package-version`、 `x-stainless-os`、 `x-stainless-arch`、 `x-stainless-runtime`、 `x-stainless-runtime-version`、 `x-stainless-timeout`、 `x-stainless-retry-count`、 `x-stainless-helper-method`) を除去します。
 
-### ⚠️ リスク: `ANTIGRAVITY_CREDITS=always`（アカウント停止が多発する要注意箇所）
+### ⚠️リスク: `ANTIGRAVITY_CREDITS=always` (アカウント禁止ホット スポット)
 
-`ANTIGRAVITY_CREDITS=always`（`open-sse/executors/antigravity.ts` が使用）は、Google の無料枠クォータによる制限を受ける代わりに、**すべての**リクエストを Antigravity AI Credit Overages（有料の Google クレジット）経由でルーティングします。これは機能として文書化されていますが、**私たちが確認している中で最も一般的な ToS 違反報告の原因です**。複数の Google Ultra アカウントが `=always` で数時間実行した後、`403 / "service disabled for ToS violation" / insufficient_quota` により停止されています。
+`ANTIGRAVITY_CREDITS=always` ( `open-sse/executors/antigravity.ts`によって消費される) ルート**毎**Googleの無料枠クォータによって処理を制御するのではなく、 Antigravity AIクレジット超過 (有料のGoogleクレジット) を介してリクエストします。これは機能として文書化されていますが、**私たちが目にする最も一般的な ToS 違反レポート**—複数のGoogle Ultra アカウントは、 `=always`で数時間実行した後、 `403 / "service disabled for ToS violation" / insufficient_quota`で禁止されました。
 
-上流での取り締まりは **Google 側**で行われるものであり、OmniRoute が防止できるものではありません。環境変数名と既存のドキュメントからは、安全に切り替えられる設定のように見えますが、実際にはそうではありません。
+アップストリームの強制がオンになっています**Google側**、 OmniRoute阻止できるものは何もありません。環境変数名と既存のドキュメントを見ると、ノブを安全に切り替えることができるように思えます。そうではありません。
 
-**無料枠のみの使用よりも積極的に不正利用検出の対象となる理由:**
+**これが無料枠のみの使用よりも積極的に不正行為の検出を行う理由:**
 
-- 単一の Google アカウントで自動化された継続的な支出が発生すると、無料枠を使い切って停止する場合とは異なる形でフラグが立ちます。
-- クレジット超過にはレート上限がないため、設定ミスのあるクライアントが数分で数百 USD を消費し、API キーの転売やボットトラフィックのように見える可能性があります。
-- 同じ外部 IP から複数の OmniRoute ユーザーが並行して超過クレジットを使用すると、そのシグナルがさらに強まります。
+- 単一のGoogleアカウントでの継続的な自動支出は、無料枠のヒットクォータ アンド ストップとは異なるフラグを立てます。
+- クレジット超過にはレートの上限がないため、設定を誤ったクライアントは数分で数百のUSDを使い果たし、API キーの再販またはボット トラフィックのように見える可能性があります。
+- 複数のOmniRouteユーザーが同じ外部IPから並行して超過クレジットに達すると、信号が複雑になります。
 
-**推奨される運用方針:**
+**推奨姿勢：**
 
-1. オペレーターが有料クレジットとアカウント取り締まりのリスクを明示的に受け入れない限り、デフォルトの `ANTIGRAVITY_CREDITS=off` を維持してください。`retry` は最初に通常のリクエストを送信し、対象となるクォータの 429 が返された場合に限り、最大 1 回クレジットを注入します。`always` は最初のリクエストからクレジットを注入します。
-2. 単一の Antigravity アカウントに負荷を集中させるのではなく、**Auto-Combo を介してプロバイダー間に負荷を分散してください**（`model: "auto"` または `kr/glm/etc`-combo）。
-3. Antigravity プロバイダーの編集ページ（Dashboard → Providers → Antigravity → connection → rate limit）で、**接続ごとの RPM 制限を設定してください**。継続的な使用では 30～60 RPM が妥当な上限です。
-4. **オペレーターが管理する安定した上流ネットワークを使用し**、無関係なユーザーやワークロード間で 1 つのアカウントを共有しないでください。
-5. **停止された場合**: `support.google.com` →「Restore Workspace/Account access」から、Google が送信した正確な `quota_exceeded` / `service disabled` レスポンス本文を添えて異議申し立てを行ってください。復旧は保証されません。
+1. オペレータが有料クレジットとアカウント強制のリスクを明示的に受け入れる場合を除き、デフォルトの`ANTIGRAVITY_CREDITS=off`維持します。 `retry`最初に通常のリクエストを送信し、適格なクォータ 429 の後に最大 1 回クレジットを注入します。 `always`最初のリクエストでクレジットを挿入します。
+2. **自動コンボを介してプロバイダー間で負荷を分散します。** (`model: "auto"`または`kr/glm/etc` -combo) 単一のAntigravityアカウントを飽和させる代わりに。
+3. **接続ごとのRPM制限を設定する**Antigravityプロバイダーの編集ページ (ダッシュボード→プロバイダー→ Antigravity →接続→レート制限)。 30 ～ 60 RPMが、継続的な使用に対する防御可能な上限です。
+4. **安定したオペレータ制御の上流ネットワーキングを使用する**また、無関係なユーザーやワークロード間で 1 つのアカウントを共有することは避けてください。
+5. **禁止されている場合**: Google送信した正確な`quota_exceeded` / `service disabled`応答本文を使用して、 `support.google.com` → 「 Workspace/Accountアクセスを復元」経由でアピールします。復元は保証されません。
 
-環境変数リファレンスには、各クレジットモードがアカウントと支出に与える影響が記載されています。
+環境リファレンスには、各クレジット モードのアカウントと支出への影響が文書化されています。
 
-関連箇所:
+#### `=always`: Antigravity OAuthルーティング全般だけではありません
 
-- `open-sse/executors/antigravity.ts` — `process.env.ANTIGRAVITY_CREDITS` を読み込み
-- `src/lib/oauth/providers/antigravity.ts` — 認証情報の受け渡し
-- 元のインシデント報告: Discussion [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
+停止はクレジット超過に限定されません。 2026 年 11 月のレポート (#19223、 #19266) では、 `antigravity`および`agy` (Antigravity CLI) プロバイダーを介したルーティング中に一時停止されたいくつかのGoogleアカウントについて説明しています。
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+どちらのプロバイダーも、 Antigravity製品OAuthセッションで認証します。これは、接続が追加される前に、ダッシュボードのリスク通知 (「このプロバイダーは、 proxy/router使用が許可されていない公式製品session/OAuth使用しています」) で警告される場合です。上記の推奨事項のいずれも、その使用を許可するものではありません。 1 つのアカウントが運ぶトラフィック量を減らすだけです。
+
+**Geminiモデル用の承認されたAPIインターフェイス。** Google 、 APIsを介してGeminiへのプログラムによるアクセスを提供します。 OmniRouteこれを通常の API キー プロバイダーとしてサポートします。
+
+| プロバイダーID | ダッシュボード名           | 資格情報                                                                                 |
+| -------------- | -------------------------- | ---------------------------------------------------------------------------------------- |
+| `gemini`       | Gemini (Google AIスタジオ) | Google AI Studio のGemini APIキー (無料利用枠あり)                                       |
+| `vertex`       | 頂点AI                     | サービス アカウントJSON、 OAuthアクセス トークン、または Vertex Express APIキー (Gemini) |
+
+これらのプロバイダーは、 Antigravity製品セッションとは異なり、 APIアクセスに資格情報Google発行を使用します。これらは、すべての使用法を準拠させたり、施行のリスクを排除したりするものではありません。それぞれの使用法には独自の条件が適用され、運用者はその使用条件を確認する必要があります。たとえば、 [Gemini API追加利用規約で](https://ai.google.dev/gemini-api/terms)は、 APIクライアントが欧州経済領域、スイス、または英国のユーザーに利用可能になっている場合、有料サービスのみが許可されており、無料サービスに送信されたコンテンツはGoogleの製品を改善するために使用される場合があります。 Vertex AI 、代わりにGoogle Cloud 規約 ([サービス固有の規約](https://cloud.google.com/terms/service-terms)) に該当します。価格と割り当ては、 Antigravityサブスクリプションではなく、 API条件に従います。
+
+上記のAntigravity一時停止を回避したい事業者は、その使用がプロバイダーの条件に適合していることを確認した後、 `antigravity` / `agy`の代わりにこれらのプロバイダーのいずれかを介してGeminiトラフィックをルーティングする必要があります。
+
+タッチポイント:
+
+- `open-sse/executors/antigravity.ts` —は`process.env.ANTIGRAVITY_CREDITS`を読み取ります
+- `src/lib/oauth/providers/antigravity.ts` —資格情報の配管
+- 元のインシデント レポート: ディスカッション[#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
 
@@ -218,19 +263,18 @@ interface CliFingerprint {
 
 ---
 
-## User-Agent のオーバーライド — 環境変数（`.env.example` セクション 12）
+## ユーザーエージェントによる—環境変数のオーバーライド (`.env.example`セクション 12)
 
-| 変数                     | デフォルト値                                                    |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| 変数                | デフォルト                                    |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-`open-sse/executors/base.ts::buildHeaders()` によって動的ルックアップを介して使用されます。**プロバイダーが新しい CLI バージョンをリリースした際は、これらを更新してください** — 古い UA 文字列は、旧式のクライアントとして拒否されるようになります。
+動的検索を介して`open-sse/executors/base.ts::buildHeaders()`によって消費されます。**プロバイダーが新しいCLIバージョンをリリースするときにこれらをバンプします**—古いUA文字列は、古いクライアントとして拒否され始めます。
 
 ## CLI 互換モードの切り替え（`.env.example` セクション 13）
 

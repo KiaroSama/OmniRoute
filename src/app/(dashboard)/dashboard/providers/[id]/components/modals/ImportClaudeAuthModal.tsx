@@ -1,8 +1,20 @@
 "use client";
+
+import Icon from "@/shared/components/Icon";
 import { useState } from "react";
 import { useNotificationStore } from "@/store/notificationStore";
 import { useTranslations } from "next-intl";
-import { Button, Modal } from "@/shared/components";
+import { Field } from "@omniroute/ui-kit/field";
+import {
+  Button,
+  Checkbox,
+  Input,
+  Modal,
+  SegmentedControl,
+  SegmentedPanel,
+  SegmentedTabs,
+  Textarea,
+} from "@/shared/components";
 interface ImportClaudeAuthModalProps {
   onClose: () => void;
   onSuccess: () => void;
@@ -367,128 +379,131 @@ export function ImportClaudeAuthModal({ onClose, onSuccess }: ImportClaudeAuthMo
     <Modal isOpen onClose={onClose} title={modalTitle}>
       <div className="flex flex-col gap-4">
         {/* Top tabs */}
-        <div className="flex gap-1 border-b border-border pb-0">
-          {(["single", "bulk"] as ClaudeImportTopTab[]).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setTopTab(tab)}
-              className={`px-3 py-1.5 text-sm rounded-t-md transition-colors ${
-                topTab === tab
-                  ? "bg-primary/10 text-primary border-b-2 border-primary"
-                  : "text-text-muted hover:text-text-primary"
-              }`}
-            >
-              {tabLabels[tab]}
-            </button>
-          ))}
-        </div>
+        <SegmentedTabs
+          value={topTab}
+          onChange={(next) => setTopTab(next as ClaudeImportTopTab)}
+          className="gap-4"
+        >
+          <SegmentedControl
+            semantics="tabs"
+            size="sm"
+            options={(["single", "bulk"] as ClaudeImportTopTab[]).map((tab) => ({
+              value: tab,
+              label: tabLabels[tab],
+            }))}
+          />
 
-        {topTab === "single" && (
-          <div className="flex flex-col gap-3">
+          <SegmentedPanel value="single" className="flex flex-col gap-3">
             {/* Sub-tabs */}
-            <div className="flex gap-1">
-              {(["upload", "paste"] as const).map((sub) => (
-                <button
-                  key={sub}
-                  onClick={() => setSingleSubTab(sub)}
-                  className={`px-2 py-1 text-xs rounded transition-colors ${
-                    singleSubTab === sub
-                      ? "bg-bg-subtle text-text-primary"
-                      : "text-text-muted hover:text-text-primary"
-                  }`}
+            <SegmentedTabs
+              value={singleSubTab}
+              onChange={(next) => setSingleSubTab(next as "upload" | "paste")}
+              className="gap-3"
+            >
+              <SegmentedControl
+                semantics="tabs"
+                size="sm"
+                options={[
+                  {
+                    value: "upload",
+                    label:
+                      typeof t.has === "function" && t.has("claudeImportTabUpload")
+                        ? t("claudeImportTabUpload")
+                        : "Upload file",
+                  },
+                  {
+                    value: "paste",
+                    label:
+                      typeof t.has === "function" && t.has("claudeImportTabPaste")
+                        ? t("claudeImportTabPaste")
+                        : "Paste JSON",
+                  },
+                ]}
+              />
+              <SegmentedPanel value="upload">
+                <div>
+                  <Input
+                    label={
+                      typeof t.has === "function" && t.has("claudeImportFileLabel")
+                        ? t("claudeImportFileLabel")
+                        : "Choose .credentials.json"
+                    }
+                    type="file"
+                    accept=".json"
+                    onChange={handleSingleFileChange}
+                    inputClassName="cursor-pointer py-1 file:mr-3 file:rounded file:border-0 file:bg-bg-subtle file:px-3 file:py-1 file:text-sm file:font-medium file:text-text-main"
+                  />
+                  {singleJson && previewClaudeJson(singleJson).valid && (
+                    <p className="mt-1 text-xs text-success">
+                      {t("providerDetailValidClaudeCredentialsFile")}
+                    </p>
+                  )}
+                  {singleJson && !previewClaudeJson(singleJson).valid && (
+                    <p className="mt-1 text-xs text-error">
+                      {typeof t.has === "function" && t.has("claudeImportInvalidShape")
+                        ? t("claudeImportInvalidShape")
+                        : "The file is not a valid .credentials.json"}
+                    </p>
+                  )}
+                </div>
+              </SegmentedPanel>
+              <SegmentedPanel value="paste">
+                <Field
+                  htmlFor="claude-import-single-paste"
+                  label={
+                    typeof t.has === "function" && t.has("claudeImportPasteLabel")
+                      ? t("claudeImportPasteLabel")
+                      : "Paste the JSON content"
+                  }
                 >
-                  {sub === "upload"
-                    ? typeof t.has === "function" && t.has("claudeImportTabUpload")
-                      ? t("claudeImportTabUpload")
-                      : "Upload file"
-                    : typeof t.has === "function" && t.has("claudeImportTabPaste")
-                      ? t("claudeImportTabPaste")
-                      : "Paste JSON"}
-                </button>
-              ))}
-            </div>
-            {singleSubTab === "upload" ? (
+                  <Textarea
+                    id="claude-import-single-paste"
+                    value={singlePasteText}
+                    onChange={(e) => setSinglePasteText(e.target.value)}
+                    rows={6}
+                    className="font-mono text-xs"
+                    placeholder='{ "claudeAiOauth": { ... } }'
+                  />
+                </Field>
+              </SegmentedPanel>
+            </SegmentedTabs>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div>
-                <label className="block text-xs text-text-muted mb-1">
-                  {typeof t.has === "function" && t.has("claudeImportFileLabel")
-                    ? t("claudeImportFileLabel")
-                    : "Choose .credentials.json"}
-                </label>
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleSingleFileChange}
-                  className="block w-full text-sm"
-                />
-                {singleJson && previewClaudeJson(singleJson).valid && (
-                  <p className="mt-1 text-xs text-emerald-500">
-                    {t("providerDetailValidClaudeCredentialsFile")}
-                  </p>
-                )}
-                {singleJson && !previewClaudeJson(singleJson).valid && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {typeof t.has === "function" && t.has("claudeImportInvalidShape")
-                      ? t("claudeImportInvalidShape")
-                      : "The file is not a valid .credentials.json"}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div>
-                <label className="block text-xs text-text-muted mb-1">
-                  {typeof t.has === "function" && t.has("claudeImportPasteLabel")
-                    ? t("claudeImportPasteLabel")
-                    : "Paste the JSON content"}
-                </label>
-                <textarea
-                  value={singlePasteText}
-                  onChange={(e) => setSinglePasteText(e.target.value)}
-                  rows={6}
-                  className="w-full rounded border border-border bg-bg-subtle px-2 py-1.5 text-xs font-mono text-text-main"
-                  placeholder='{ "claudeAiOauth": { ... } }'
-                />
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-xs text-text-muted mb-1">
-                  {typeof t.has === "function" && t.has("claudeImportEmailLabel")
-                    ? t("claudeImportEmailLabel")
-                    : "Account email"}
-                </label>
-                <input
+                <Input
+                  label={
+                    typeof t.has === "function" && t.has("claudeImportEmailLabel")
+                      ? t("claudeImportEmailLabel")
+                      : "Account email"
+                  }
                   type="email"
                   value={singleEmail}
                   onChange={(e) => setSingleEmail(e.target.value)}
                   placeholder="auto-detected"
-                  className="w-full rounded border border-border bg-bg-subtle px-2 py-1.5 text-xs text-text-main"
                 />
               </div>
               <div>
-                <label className="block text-xs text-text-muted mb-1">
-                  {typeof t.has === "function" && t.has("claudeImportNameLabel")
-                    ? t("claudeImportNameLabel")
-                    : "Connection name (optional)"}
-                </label>
-                <input
+                <Input
+                  label={
+                    typeof t.has === "function" && t.has("claudeImportNameLabel")
+                      ? t("claudeImportNameLabel")
+                      : "Connection name (optional)"
+                  }
                   type="text"
                   value={singleName}
                   onChange={(e) => setSingleName(e.target.value)}
                   placeholder={t("providerDetailMyClaudeAccountPlaceholder")}
-                  className="w-full rounded border border-border bg-bg-subtle px-2 py-1.5 text-xs text-text-main"
                 />
               </div>
             </div>
-            <label className="flex items-center gap-2 text-xs text-text-muted">
-              <input
-                type="checkbox"
-                checked={overwriteExisting}
-                onChange={(e) => setOverwriteExisting(e.target.checked)}
-              />
-              {typeof t.has === "function" && t.has("claudeImportOverwriteLabel")
-                ? t("claudeImportOverwriteLabel")
-                : "Replace existing connection if account already exists"}
-            </label>
+            <Checkbox
+              label={
+                typeof t.has === "function" && t.has("claudeImportOverwriteLabel")
+                  ? t("claudeImportOverwriteLabel")
+                  : "Replace existing connection if account already exists"
+              }
+              checked={overwriteExisting}
+              onChange={(e) => setOverwriteExisting(e.target.checked)}
+            />
             <Button
               loading={submitting}
               onClick={handleSingleSubmit}
@@ -498,107 +513,118 @@ export function ImportClaudeAuthModal({ onClose, onSuccess }: ImportClaudeAuthMo
                 ? t("claudeImportSubmit")
                 : "Import"}
             </Button>
-          </div>
-        )}
+          </SegmentedPanel>
 
-        {topTab === "bulk" && (
-          <div className="flex flex-col gap-3">
+          <SegmentedPanel value="bulk" className="flex flex-col gap-3">
             {/* Sub-mode tabs */}
-            <div className="flex gap-1">
-              {(["upload", "paste", "zip"] as ClaudeBulkSubMode[]).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => {
-                    setBulkSubMode(mode);
-                    setBulkEntries([]);
-                  }}
-                  className={`px-2 py-1 text-xs rounded transition-colors ${
-                    bulkSubMode === mode
-                      ? "bg-bg-subtle text-text-primary"
-                      : "text-text-muted hover:text-text-primary"
-                  }`}
-                >
-                  {mode === "upload"
-                    ? typeof t.has === "function" && t.has("claudeImportBulkModeUpload")
-                      ? t("claudeImportBulkModeUpload")
-                      : "Upload files"
-                    : mode === "paste"
-                      ? typeof t.has === "function" && t.has("claudeImportBulkModePaste")
+            <SegmentedTabs
+              value={bulkSubMode}
+              onChange={(next) => {
+                setBulkSubMode(next as ClaudeBulkSubMode);
+                setBulkEntries([]);
+              }}
+              className="gap-3"
+            >
+              <SegmentedControl
+                semantics="tabs"
+                size="sm"
+                options={(["upload", "paste", "zip"] as ClaudeBulkSubMode[]).map((mode) => ({
+                  value: mode,
+                  label:
+                    mode === "upload"
+                      ? typeof t.has === "function" && t.has("claudeImportBulkModeUpload")
+                        ? t("claudeImportBulkModeUpload")
+                        : "Upload files"
+                      : mode === "paste"
+                        ? typeof t.has === "function" && t.has("claudeImportBulkModePaste")
+                          ? t("claudeImportBulkModePaste")
+                          : "Paste JSON array"
+                        : typeof t.has === "function" && t.has("claudeImportBulkModeZip")
+                          ? t("claudeImportBulkModeZip")
+                          : "Upload ZIP",
+                }))}
+              />
+
+              <SegmentedPanel value="upload">
+                <div>
+                  <p className="text-xs text-text-muted mb-1">
+                    {typeof t.has === "function" && t.has("claudeImportBulkUploadHint")
+                      ? t("claudeImportBulkUploadHint")
+                      : "Drop or pick up to 50 .credentials.json files (256KB each, 10MB total)."}
+                  </p>
+                  <Input
+                    type="file"
+                    accept=".json"
+                    multiple
+                    aria-label={
+                      typeof t.has === "function" && t.has("claudeImportBulkModeUpload")
+                        ? t("claudeImportBulkModeUpload")
+                        : "Upload files"
+                    }
+                    onChange={handleBulkFilesChange}
+                    inputClassName="cursor-pointer py-1 file:mr-3 file:rounded file:border-0 file:bg-bg-subtle file:px-3 file:py-1 file:text-sm file:font-medium file:text-text-main"
+                  />
+                </div>
+              </SegmentedPanel>
+              <SegmentedPanel value="paste">
+                <div>
+                  <p className="text-xs text-text-muted mb-1">
+                    {typeof t.has === "function" && t.has("claudeImportBulkPasteHint")
+                      ? t("claudeImportBulkPasteHint")
+                      : "Paste an array of objects: [{ json, name?, email? }, ...]"}
+                  </p>
+                  <Textarea
+                    value={bulkPasteText}
+                    onChange={(e) => handleBulkPasteChange(e.target.value)}
+                    rows={6}
+                    aria-label={
+                      typeof t.has === "function" && t.has("claudeImportBulkModePaste")
                         ? t("claudeImportBulkModePaste")
                         : "Paste JSON array"
-                      : typeof t.has === "function" && t.has("claudeImportBulkModeZip")
-                        ? t("claudeImportBulkModeZip")
-                        : "Upload ZIP"}
-                </button>
-              ))}
-            </div>
-
-            {bulkSubMode === "upload" && (
-              <div>
-                <p className="text-xs text-text-muted mb-1">
-                  {typeof t.has === "function" && t.has("claudeImportBulkUploadHint")
-                    ? t("claudeImportBulkUploadHint")
-                    : "Drop or pick up to 50 .credentials.json files (256KB each, 10MB total)."}
-                </p>
-                <input
-                  type="file"
-                  accept=".json"
-                  multiple
-                  onChange={handleBulkFilesChange}
-                  className="block w-full text-sm"
-                />
-              </div>
-            )}
-            {bulkSubMode === "paste" && (
-              <div>
-                <p className="text-xs text-text-muted mb-1">
-                  {typeof t.has === "function" && t.has("claudeImportBulkPasteHint")
-                    ? t("claudeImportBulkPasteHint")
-                    : "Paste an array of objects: [{ json, name?, email? }, ...]"}
-                </p>
-                <textarea
-                  value={bulkPasteText}
-                  onChange={(e) => handleBulkPasteChange(e.target.value)}
-                  rows={6}
-                  className="w-full rounded border border-border bg-bg-subtle px-2 py-1.5 text-xs font-mono text-text-main"
-                  placeholder="[{ ... }, { ... }]"
-                />
-              </div>
-            )}
-            {bulkSubMode === "zip" && (
-              <div>
-                <p className="text-xs text-text-muted mb-1">
-                  {typeof t.has === "function" && t.has("claudeImportBulkZipHint")
-                    ? t("claudeImportBulkZipHint")
-                    : "ZIP containing .json entries. Max 50 entries, 10MB unpacked."}
-                </p>
-                {zipExtracting ? (
-                  <p className="text-xs text-primary animate-pulse">
-                    {typeof t.has === "function" && t.has("claudeImportBulkZipExtracting")
-                      ? t("claudeImportBulkZipExtracting")
-                      : "Extracting ZIP…"}
-                  </p>
-                ) : (
-                  <input
-                    type="file"
-                    accept=".zip"
-                    onChange={handleZipUpload}
-                    className="block w-full text-sm"
+                    }
+                    className="font-mono text-xs"
+                    placeholder="[{ ... }, { ... }]"
                   />
-                )}
-              </div>
-            )}
+                </div>
+              </SegmentedPanel>
+              <SegmentedPanel value="zip">
+                <div>
+                  <p className="text-xs text-text-muted mb-1">
+                    {typeof t.has === "function" && t.has("claudeImportBulkZipHint")
+                      ? t("claudeImportBulkZipHint")
+                      : "ZIP containing .json entries. Max 50 entries, 10MB unpacked."}
+                  </p>
+                  {zipExtracting ? (
+                    <p className="text-xs text-text-muted animate-pulse">
+                      {typeof t.has === "function" && t.has("claudeImportBulkZipExtracting")
+                        ? t("claudeImportBulkZipExtracting")
+                        : "Extracting ZIP…"}
+                    </p>
+                  ) : (
+                    <Input
+                      type="file"
+                      accept=".zip"
+                      aria-label={
+                        typeof t.has === "function" && t.has("claudeImportBulkModeZip")
+                          ? t("claudeImportBulkModeZip")
+                          : "Upload ZIP"
+                      }
+                      onChange={handleZipUpload}
+                      inputClassName="cursor-pointer py-1 file:mr-3 file:rounded file:border-0 file:bg-bg-subtle file:px-3 file:py-1 file:text-sm file:font-medium file:text-text-main"
+                    />
+                  )}
+                </div>
+              </SegmentedPanel>
+            </SegmentedTabs>
 
             {bulkEntries.length > 0 && (
               <div className="rounded border border-border bg-bg-subtle px-2 py-1.5 max-h-36 overflow-y-auto">
                 {bulkEntries.map((e, i) => (
                   <div
                     key={i}
-                    className={`text-xs py-0.5 flex items-center gap-1 ${e.parseError ? "text-red-500" : "text-text-main"}`}
+                    className={`text-xs py-0.5 flex items-center gap-1 ${e.parseError ? "text-error" : "text-text-main"}`}
                   >
-                    <span className="material-symbols-outlined text-[12px]">
-                      {e.parseError ? "error" : "check_circle"}
-                    </span>
+                    <Icon name={e.parseError ? "error" : "check_circle"} size={12} />
                     {e.name}
                     {e.email ? ` (${e.email})` : ""}
                     {e.parseError ? ` — ${e.parseError}` : ""}
@@ -607,16 +633,15 @@ export function ImportClaudeAuthModal({ onClose, onSuccess }: ImportClaudeAuthMo
               </div>
             )}
 
-            <label className="flex items-center gap-2 text-xs text-text-muted">
-              <input
-                type="checkbox"
-                checked={overwriteExisting}
-                onChange={(e) => setOverwriteExisting(e.target.checked)}
-              />
-              {typeof t.has === "function" && t.has("claudeImportOverwriteLabel")
-                ? t("claudeImportOverwriteLabel")
-                : "Replace existing connection if account already exists"}
-            </label>
+            <Checkbox
+              label={
+                typeof t.has === "function" && t.has("claudeImportOverwriteLabel")
+                  ? t("claudeImportOverwriteLabel")
+                  : "Replace existing connection if account already exists"
+              }
+              checked={overwriteExisting}
+              onChange={(e) => setOverwriteExisting(e.target.checked)}
+            />
 
             {bulkResult && (
               <div className="rounded bg-bg-subtle px-2 py-1.5 text-xs">
@@ -625,9 +650,9 @@ export function ImportClaudeAuthModal({ onClose, onSuccess }: ImportClaudeAuthMo
               </div>
             )}
             {bulkErrors.length > 0 && (
-              <div className="rounded border border-red-500/30 bg-red-500/5 px-2 py-1.5 max-h-28 overflow-y-auto">
+              <div className="rounded border border-error/30 bg-error/5 px-2 py-1.5 max-h-28 overflow-y-auto">
                 {bulkErrors.map((e) => (
-                  <div key={e.index} className="text-xs text-red-500 py-0.5">
+                  <div key={e.index} className="text-xs text-error py-0.5">
                     {e.name}: {e.message}
                   </div>
                 ))}
@@ -643,8 +668,8 @@ export function ImportClaudeAuthModal({ onClose, onSuccess }: ImportClaudeAuthMo
                 ? t("claudeImportBulkSubmit")
                 : "Import all"}
             </Button>
-          </div>
-        )}
+          </SegmentedPanel>
+        </SegmentedTabs>
       </div>
     </Modal>
   );
@@ -701,29 +726,26 @@ export function ApplyClaudeAuthModal({
       <div className="flex flex-col gap-4">
         <div>
           <div className="text-xs uppercase text-text-muted mb-1">{targetLabel}</div>
-          <code className="block rounded bg-sidebar px-2 py-1.5 text-xs font-mono text-text-main">
+          <code className="block rounded bg-bg-subtle px-2 py-1.5 text-xs font-mono text-text-main">
             ~/.claude/.credentials.json
           </code>
           <p className="mt-1 text-xs text-text-muted">{t("providerDetailPathAutoDetected")}</p>
         </div>
         <div>
           <div className="text-xs uppercase text-text-muted mb-1">{backupLabel}</div>
-          <code className="block rounded bg-sidebar px-2 py-1.5 text-xs font-mono text-text-main">
+          <code className="block rounded bg-bg-subtle px-2 py-1.5 text-xs font-mono text-text-main">
             {"~/.claude/credentials-{timestamp}.bak"}
           </code>
         </div>
-        <div className="rounded bg-sky-500/10 border border-sky-500/20 px-3 py-2 text-xs text-sky-400">
+        <div className="rounded bg-info/10 border border-info/20 px-3 py-2 text-xs text-info">
           {mcpHint}
         </div>
         <p className="text-sm text-text-muted">{warning}</p>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={confirmed}
-            onChange={(e) => setConfirmed(e.target.checked)}
-          />
-          {confirmText}
-        </label>
+        <Checkbox
+          label={confirmText}
+          checked={confirmed}
+          onChange={(e) => setConfirmed(e.target.checked)}
+        />
         <div className="flex justify-end gap-2">
           <Button variant="secondary" onClick={onClose} disabled={inProgress}>
             Cancel

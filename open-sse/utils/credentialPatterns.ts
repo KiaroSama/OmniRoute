@@ -24,6 +24,10 @@ export const CREDENTIAL_PATTERNS: CredentialPattern[] = [
   // look-alike costs nothing; one that under-redacts leaks a credential.
   { name: "groq", regex: /\bgsk_[A-Za-z0-9]{20,}/g, replacement: "[REDACTED:groq]" },
   { name: "xai", regex: /\bxai-[A-Za-z0-9]{20,}/g, replacement: "[REDACTED:xai]" },
+  // Same family: house access tokens (`oma_live_` + base64url, 43 chars in
+  // production) had no entry either. `{20,}` spares the short placeholders
+  // quoted in setup guides (`oma_live_xxx`) and short test fixtures.
+  { name: "oma_live", regex: /\boma_live_[A-Za-z0-9_-]{20,}/g, replacement: "[REDACTED:oma]" },
   // {20,} rather than the exact {35} of a standard 39-char Google API key. #12506 added
   // this pattern with the exact length; #12620 landed the anti-drift test that asserts
   // /\bAIza[A-Za-z0-9_-]{20,}/ must not survive. Anything shorter or longer than 39 was
@@ -68,8 +72,11 @@ export const CREDENTIAL_PATTERNS: CredentialPattern[] = [
   { name: "mailgun", regex: /key-[a-f0-9]{32}/g, replacement: "[REDACTED:mailgun]" },
   {
     name: "private_key",
+    // The body may not contain "-----", so a scan from one BEGIN stops at the next
+    // marker instead of running to the end of the text: linear even for a body of
+    // repeated BEGIN headers with no END. A real PEM body never contains "-----".
     regex:
-      /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/g,
+      /-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----(?:[^-]|-(?!----))*-----END (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----/g,
     replacement: "[REDACTED:private_key]",
   },
   {

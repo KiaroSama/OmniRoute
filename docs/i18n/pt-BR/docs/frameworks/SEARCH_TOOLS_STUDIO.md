@@ -34,38 +34,38 @@ O Search Tools Studio transforma `/dashboard/search-tools`, antes uma área bás
 
 ---
 
-## Abas
+## Guias
 
-### Aba de pesquisa
+### Guia Pesquisar
 
-Transforma os componentes existentes `SearchForm` + `ResultsPanel` + `RerankPanel` em uma aba:
+Evolui o `SearchForm` + `ResultsPanel` + `RerankPanel` existente em uma guia:
 
-- Consulta → resultados (título, URL, trecho, pontuação de relevância).
-- Metadados do provedor no painel de Configuração (custo, cota, status).
-- Seção de rerank: selecione um modelo de rerank, reordene os resultados e exiba `positionDelta`.
-- Estado vazio com CTA quando nenhum provedor de pesquisa estiver configurado.
-- Histórico de pesquisas por meio de `SearchHistory.tsx`.
+- Consulte os resultados → (título, URL, snippet, pontuação de relevância).
+- Metadados do provedor no painel Configuração (custo, cota, status).
+- Seção de reclassificação: escolha um modelo de reclassificação, reordene os resultados, mostre `positionDelta`.
+- Estado vazio com CTA quando nenhum provedor de pesquisa está configurado.
+- Histórico de pesquisa via `SearchHistory.tsx`.
 - Chama `POST /v1/search` (endpoint existente, sem alterações).
 
-### Aba de extração
+### Guia Raspar
 
-Nova aba para extrair conteúdo de uma URL por meio de `POST /v1/web/fetch` (criado no plano 05):
+Nova aba para extração de conteúdo de um URL via `POST /v1/web/fetch` (criada no plano 05):
 
-- Entrada: URL + opção de página completa + seletor de formato (markdown / texto / HTML).
-- Enviar → buscar → renderizar `ScrapeResult.tsx`.
-- `ScrapeResult` renderiza uma prévia em markdown + opção para exibir o conteúdo bruto.
-- Limite: se o corpo da resposta for maior que **256 KB**, a interface exibirá `(truncado, ver conteúdo bruto)` e abrirá o conteúdo bruto em um modal do Monaco (D21).
-- Painel de metadados: provedor (firecrawl/jina-reader/tavily-search/tinyfish/nimble-search/anysearch-search), latência, custo, tamanho da resposta e número de links.
-- Usa o hook `useScrapeFetch.ts`.
+- Entrada: seletor de formato URL + de alternância de página inteira + (markdown / text / HTML).
+- Envie → fetch → render `ScrapeResult.tsx`.
+- `ScrapeResult` renderiza visualização de marcação + alternância bruta.
+- Limite: se o corpo da resposta >** 256 KB** , UI mostra `(truncated, view raw)` e abre raw em um modal Monaco (D21).
+- Painel de metadados: provedor (firecrawl/jina-reader/tavily-search/tinyfish/nimble-search/anysearch-search/parallel-search/keenable-search), latência, custo, tamanho da resposta, contagem de links.
+- Usa gancho `useScrapeFetch.ts`.
 
-### Aba de comparação
+### Guia Comparar
 
-Executa a mesma consulta/URL em até **4 provedores em paralelo** (D22):
+Executa o mesmo query/URL até** 4 provedores em paralelo** (D22):
 
-- Colunas lado a lado para cada provedor.
-- Métricas: latência, custo, quantidade de resultados e tamanho da resposta.
-- Cálculo da sobreposição de URLs na pesquisa (número de URLs compartilhadas em relação ao resultado inicial).
-- Chama `POST /v1/search` (pesquisa) ou `POST /v1/web/fetch` (extração) para cada provedor.
+- Colunas lado a lado por provedor.
+- Métricas: latência, custo, contagem de resultados, tamanho da resposta.
+- cálculo de sobreposição URL para pesquisa (número de URLs compartilhados versus resultado inicial).
+- Chama `POST /v1/search` (pesquisar) ou `POST /v1/web/fetch` (raspar) por provedor.
 
 ---
 
@@ -100,13 +100,13 @@ Executa a mesma consulta/URL em até **4 provedores em paralelo** (D22):
 
 ## Catálogo de Provedores
 
-`ProviderCatalog.tsx` expõe a lista completa de provedores de `GET /api/search/providers`
-(estendida em F4 para incluir provedores de obtenção):
+`ProviderCatalog.tsx` expõe a lista completa de provedores do `GET /api/search/providers` (estendido em F4 para incluir provedores de busca):
 
-| `kind` | `"search"` (20 provedores) ou `"fetch"` (firecrawl, jina-reader, tavily-search, tinyfish, nimble-search, anysearch-search) |
+| `kind` | `"search"` (24 provedores) ou `"fetch"` (firecrawl, jina-reader, tavily-search, tinyfish, nimble-search, anysearch-search, paralela-search, afiado-search) |
 
-O status é **derivado no momento da requisição**, verificando se as credenciais existem e se
-todas as chaves estão atualmente em período de espera.
+O estado é** derivado no momento da solicitação** verificando se existem credenciais e se todas as chaves estão atualmente em espera.
+
+`codex-search` (Codex Web Search) não possui chave própria: ele reutiliza uma conta Codex (ChatGPT) conectada, portanto, cada pesquisa gasta a cota de assinatura ChatGPT e leva cerca de 10 a 40 s. Ele é executado quando uma solicitação o nomeia; a seleção automática precisa do sinalizador de recurso `CODEX_SEARCH_AUTO_FALLBACK_ENABLED` (desativado por padrão).
 
 ---
 
@@ -118,18 +118,18 @@ O placeholder da chave de API é sempre `$OMNIROUTE_API_KEY` (D11, compartilhado
 
 ---
 
-## Alterações no Backend
+## Mudanças de back-end
 
-Apenas uma alteração no backend foi necessária para este recurso:
+Apenas uma alteração de back-end foi necessária para este recurso:
 
-### `GET /api/search/providers` Estendido
+### `GET /api/search/providers` estendido
 
 `src/app/api/search/providers/route.ts` foi estendido para:
 
-- Incluir todos os 6 provedores de obtenção (`firecrawl`, `jina-reader`, `tavily-search`, `tinyfish`, `nimble-search`, `anysearch-search`) no array.
-- Adicionar `kind: "search" | "fetch"` a cada item.
-- Adicionar `status: "configured" | "missing" | "rate_limited"` derivado do estado atual das credenciais.
-- Manter a compatibilidade com versões anteriores — campos existentes (`id`, `name`, etc.) inalterados.
+- Inclua todos os provedores de busca (`firecrawl`, `jina-reader`, `tavily-search`, `tinyfish`, `nimble-search`, `anysearch-search`, `parallel-search`, `keenable-search`) na matriz.
+- Adicione `kind: "search" | "fetch"` a cada item.
+- Adicione `status: "configured" | "missing" | "rate_limited"` derivado do estado da credencial ativa.
+- Mantenha a compatibilidade com versões anteriores dos campos — existentes (`id`, `name`, etc.) inalterados.
 
 ---
 

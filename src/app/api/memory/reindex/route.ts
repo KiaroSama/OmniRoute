@@ -3,11 +3,29 @@ import { requireManagementAuth } from "@/lib/api/requireManagementAuth";
 import { validateBody, isValidationFailure } from "@/shared/validation/helpers";
 import { MemoryReindexSchema } from "@/shared/schemas/memory";
 import { runReindexBatch, getReindexPending } from "@/lib/memory/reindex";
-import { markAllMemoriesNeedReindex } from "@/lib/db/memoryVec";
+import { createReindexDrainController } from "@/lib/memory/reindexDrain";
+import { markAllMemoriesNeedReindex, isMemoryVecIndexMissing } from "@/lib/db/memoryVec";
 import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error.ts";
 import { logger } from "@omniroute/open-sse/utils/logger.ts";
 
 const log = logger("MEMORY_REINDEX_ROUTE");
+
+const reindexDrain = createReindexDrainController({
+  runBatch: runReindexBatch,
+  getPending: getReindexPending,
+  onComplete: (result) => {
+    if (result.reason === "drained") {
+      log.info("memory.reindex.background.complete", { ...result });
+    } else {
+      log.warn("memory.reindex.background.paused", { ...result });
+    }
+  },
+  onError: (err: unknown) => {
+    log.error("memory.reindex.background.fail", {
+      error: sanitizeErrorMessage(err instanceof Error ? err.message : String(err)),
+    });
+  },
+});
 
 export async function POST(request: Request) {
   const authError = await requireManagementAuth(request);
@@ -31,22 +49,19 @@ export async function POST(request: Request) {
   const { force } = validation.data;
 
   try {
-    if (force) {
-      markAllMemoriesNeedReindex();
-    }
-
+    // Queue resets must be guarded by the same single-flight lock as the
+    // worker. Otherwise POST {force:true} while running reflags already
+    // processed rows even though start() correctly refuses a second worker.
+    // Keep the pending count in the response and preserve the empty-queue
+    // {started:true} behavior for an idle worker.
+    // Memories that exist while vec_memories does not (saved before an
+    // embedding source was configured) are never flagged needs_reindex, so a
+    // plain reindex would drain 0 rows. The dashboard button always sends
+    // force:false, so rebuild in that case too.
+    const rebuild = force || isMemoryVecIndexMissing();
+    const started = reindexDrain.start(rebuild ? markAllMemoriesNeedReindex : undefined);
     const pending = getReindexPending();
-
-    // Dispatch batch in background — do NOT await (returns immediate response).
-    setImmediate(() => {
-      runReindexBatch(100).catch((err: unknown) => {
-        log.error("memory.reindex.background.fail", {
-          error: sanitizeErrorMessage(err instanceof Error ? err.message : String(err)),
-        });
-      });
-    });
-
-    return NextResponse.json({ started: true, pending });
+    return NextResponse.json({ started, pending });
   } catch (err: unknown) {
     const message = sanitizeErrorMessage(err instanceof Error ? err.message : String(err));
     return NextResponse.json({ error: { message } }, { status: 500 });

@@ -34,38 +34,38 @@ Studio mai shafuka uku wanda ya haɗa binciken yanar gizo, samo bayanai daga yan
 
 ---
 
-## Shafuka
+## Tabs
 
-### Shafin Bincike
+### Bincika Tab
 
-Yana haɓaka `SearchForm` + `ResultsPanel` + `RerankPanel` da suke akwai zuwa wani shafi:
+Yana canza `SearchForm` + `ResultsPanel` + `RerankPanel` zuwa cikin shafin:
 
-- Tambaya → sakamako (take, URL, taƙaitaccen bayani, makin dacewa).
-- Bayanan mai samar da sabis a sashen Saituna (farashi, iyaka, matsayi).
-- Sashen sake jeri: zaɓi samfurin sake jeri, sake tsara sakamakon, nuna `positionDelta`.
-- Yanayin babu komai tare da CTA idan ba a saita masu samar da bincike ba.
-- Tarihin bincike ta hanyar `SearchHistory.tsx`.
-- Yana kiran `POST /v1/search` (endpoint ɗin da ke akwai, babu sauye-sauye).
+- Sakamako → na tambaya ( take, URL, snippet, makin dacewa).
+- metadata na mai ba da labari a cikin Kunshin Kanfigare (farashi, keɓaɓɓu, matsayi).
+- Sashe na sakewa: zaɓi samfurin sakewa, sake tsara sakamakon, nuna `positionDelta`.
+- Babu komai tare da CTA lokacin da ba a saita masu samar da bincike ba.
+- Bincika tarihin ta hanyar `SearchHistory.tsx`.
+- Kiran `POST /v1/search` (wanda ya kasance ƙarshen ƙarshen, babu canje-canje).
 
-### Shafin Samo Bayanai
+### Shafi Tab
 
-Sabon shafi don ciro abun ciki daga URL ta hanyar `POST /v1/web/fetch` (wanda aka ƙirƙira a tsari na 05):
+Sabuwar shafin don fitar da abun ciki daga URL ta hanyar `POST /v1/web/fetch` (wanda aka ƙirƙira a cikin shirin 05):
 
-- Shigarwa: URL + maɓallin cikakken shafi + mai zaɓar tsari (markdown / rubutu / HTML).
-- Aika → samo → nuna `ScrapeResult.tsx`.
-- `ScrapeResult` yana nuna samfotin markdown + maɓallin duba ɗanyen bayani.
-- Iyaka: idan jikin amsa ya wuce **256 KB**, UI zai nuna `(an datse, duba ɗanyen bayani)` sannan ya buɗe ɗanyen bayanin a cikin modal na Monaco (D21).
-- Sashen metadata: mai samarwa (firecrawl/jina-reader/tavily-search/tinyfish/nimble-search/anysearch-search), jinkiri, farashi, girman amsa, yawan hanyoyin haɗi.
-- Yana amfani da hook na `useScrapeFetch.ts`.
+- Shigarwa: URL + cikakken shafi mai jujjuya tsarin zaɓen tsarin + (markdown / rubutu / HTML).
+- Ƙaddamar da → kawo → sa `ScrapeResult.tsx`.
+- `ScrapeResult` yana sanya samfotin samfoti na alama + danyen juyawa.
+- Tafi: idan amsa jiki >** 256 KB** , UI yana nuna `(truncated, view raw)` kuma yana buɗe danye a cikin tsarin Monaco (D21).
+- Ƙungiyar metadata: mai bayarwa (firecrawl/jina-reader/tavily-search/tinyfish/nimble-search/anysearch-search/parallel-search/keenable-search), jinkiri, farashi, girman amsa, ƙidayar hanyoyin haɗin gwiwa.
+- Yana amfani da ƙugiya `useScrapeFetch.ts`.
 
-### Shafin Kwatantawa
+### Kwatanta Tab
 
-Yana gudanar da tambaya/URL iri ɗaya a tsakanin masu samarwa har zuwa **4 a lokaci guda** (D22):
+Gudun query/URL iri ɗaya har zuwa** 4 masu samarwa a layi daya** (D22):
 
-- Ginshiƙai gefe-da-gefe ga kowane mai samarwa.
-- Ma'aunai: jinkiri, farashi, yawan sakamako, girman amsa.
-- Lissafin daidaituwar URL don bincike (yawan URL ɗin da aka yi tarayya da su idan aka kwatanta da sakamakon farko).
-- Yana kiran `POST /v1/search` (bincike) ko `POST /v1/web/fetch` (samo bayanai) ga kowane mai samarwa.
+- ginshiƙan gefe-gefe ga kowane mai bayarwa.
+- Ma'auni: latency, farashi, ƙidayar sakamako, girman amsa.
+- lissafin URL zoba don bincike (yawan rabon URLs vs sakamakon farko).
+- Kiran `POST /v1/search` (bincike) ko `POST /v1/web/fetch` (scrape) kowane mai bayarwa.
 
 ---
 
@@ -98,15 +98,15 @@ Yana gudanar da tambaya/URL iri ɗaya a tsakanin masu samarwa har zuwa **4 a lok
 
 ---
 
-## Kundin Masu Samarwa
+## Kataloji mai bayarwa
 
-`ProviderCatalog.tsx` yana bayyana cikakken jerin masu samarwa daga `GET /api/search/providers`
-(an faɗaɗa shi a F4 don haɗa masu samar da fetch):
+`ProviderCatalog.tsx` yana fallasa cikakken jerin masu bada sabis daga `GET /api/search/providers` (wanda aka shimfida a cikin F4 don haɗa da masu samarwa):
 
-| `kind` | `"search"` (masu samarwa 20) ko `"fetch"` (firecrawl, jina-reader, tavily-search, tinyfish, nimble-search, anysearch-search) |
+| `kind` | `"search"` (masu samar da 24) ko `"fetch"` (firecrawl, jina-reader, tavily-search, tinyfish, nimble-search, anysearch-search, parallel-search, Keenable-Search) |
 
-Ana **ƙayyade matsayin a lokacin buƙata** ta hanyar bincika ko bayanan shaida suna nan da kuma ko
-duk maɓallan suna cikin lokacin cooldown a halin yanzu.
+Matsayin shine** samu a lokacin bukata** ta hanyar duba ko akwai takaddun shaida da ko duk maɓallan suna cikin sanyi a halin yanzu.
+
+`codex-search` ( Binciken Yanar Gizo Codex ) ba shi da maɓalli na kansa: yana sake amfani da asusun Codex (ChatGPT) da aka haɗa, don haka kowane bincike yana kashe adadin kuɗin kuɗin ChatGPT kuma yana ɗaukar kusan 10-40 s. Yana gudana lokacin da buƙatun sunansa; Zaɓin atomatik yana buƙatar alamar fasalin `CODEX_SEARCH_AUTO_FALLBACK_ENABLED` (kashe ta tsohuwa).
 
 ---
 
@@ -118,18 +118,18 @@ Wurin riƙe maɓallin API koyaushe shi ne `$OMNIROUTE_API_KEY` (D11, ana rabawa 
 
 ---
 
-## Sauye-sauyen Backend
+## Canje-canje na Baya
 
-Sauyi ɗaya kawai na backend aka buƙata don wannan fasalin:
+Canjin baya ɗaya kawai ake buƙata don wannan fasalin:
 
-### Faɗaɗɗen `GET /api/search/providers`
+### Fadada `GET /api/search/providers`
 
-An faɗaɗa `src/app/api/search/providers/route.ts` don:
+`src/app/api/search/providers/route.ts` aka kara zuwa:
 
-- Haɗa dukkan masu samar da fetch guda 6 (`firecrawl`, `jina-reader`, `tavily-search`, `tinyfish`, `nimble-search`, `anysearch-search`) a cikin array.
-- Ƙara `kind: "search" | "fetch"` ga kowane item.
-- Ƙara `status: "configured" | "missing" | "rate_limited"` wanda aka samo daga yanayin bayanan shaida na kai tsaye.
-- Ci gaba da dacewa da tsohon tsari — filayen da ake da su (`id`, `name`, da sauransu) ba su canza ba.
+- Haɗa kowane mai kawowa (`firecrawl`, `jina-reader`, `tavily-search`, `tinyfish`, `nimble-search`, `anysearch-search`, `parallel-search`, `keenable-search`) a cikin jeri.
+- Ƙara `kind: "search" | "fetch"` zuwa kowane abu.
+- Ƙara `status: "configured" | "missing" | "rate_limited"` da aka samo daga yanayin shaidar rayuwa.
+- Kiyaye dacewa a baya — filayen da ake dasu (`id`, `name`, da sauransu) basu canzawa.
 
 ---
 

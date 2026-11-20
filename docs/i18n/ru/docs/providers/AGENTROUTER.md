@@ -68,7 +68,7 @@ docker run -d --name omniroute \
   -p 20128:20128 \
   -v omniroute-data:/app/data \
   -e ENABLE_CC_COMPATIBLE_PROVIDER=true \
-  diegosouzapw/omniroute:latest
+  cheaperinference/omniroute:latest
 ```
 
 После перезапуска на панели управления появится пункт **Добавить совместимый с Claude Code**
@@ -128,7 +128,7 @@ curl -X POST http://localhost:20128/v1/chat/completions \
 | Заголовок                                                             | Значение                                                                                                                     |
 | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | `Authorization`                                                       | `Bearer <api-key>`                                                                                                           |
-| `User-Agent`                                                          | `claude-cli/2.1.258 (external, sdk-cli)`                                                                                     |
+| `User-Agent`                                                          | `claude-cli/2.1.280 (external, sdk-cli)`                                                                                     |
 | `anthropic-version`                                                   | `2023-06-01`                                                                                                                 |
 | `anthropic-beta`                                                      | `claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24`                                                     |
 | Переключатель бета-функции redact-thinking для отдельного подключения | Добавляет `redact-thinking-2026-02-12` для вышестоящих сервисов, которым явно требуются потоки рассуждений с редактированием |

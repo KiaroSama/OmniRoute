@@ -1,3 +1,4 @@
+import { pluginRegistration } from "./pluginRegistration";
 /**
  * Plugin manager — lifecycle management for plugins.
  *
@@ -12,6 +13,7 @@ import { join, dirname, resolve, sep } from "path";
 import { randomUUID } from "crypto";
 import { logger } from "../../../open-sse/utils/logger.ts";
 import { getDefaultPluginDir, scanPluginDir } from "./scanner";
+import { getPluginSourcesDir, resolvePluginInstallSource } from "./installSource";
 import { loadPlugin, type LoadedPlugin } from "./loader";
 import { registerHook, unregisterHooks, emitHook, type HookHandler, type Plugin } from "./hooks";
 import {
@@ -120,6 +122,21 @@ class PluginManager {
     return PluginManager.instance;
   }
 
+  /** Directory that caller-supplied local install paths must live in. */
+  getSourcesDir(): string {
+    return getPluginSourcesDir(this.pluginDir);
+  }
+
+  /**
+   * Install from a caller-supplied local path (POST /api/plugins). The path must
+   * resolve inside {@link getSourcesDir}; see ./installSource for the checks.
+   * Throws PluginInstallSourceError when the path is refused.
+   */
+  async installFromLocalSource(requestedPath: string): Promise<PluginRow> {
+    const source = await resolvePluginInstallSource(requestedPath, this.getSourcesDir());
+    return this.install(source);
+  }
+
   /**
    * Install a plugin from a source directory.
    * Copies to a staging dir first, validates manifest.main containment, then
@@ -204,32 +221,7 @@ class PluginManager {
     }
 
     // Register in DB (destDir is now in place)
-    const row = insertPlugin({
-      id: randomUUID(),
-      name,
-      version: manifest.version,
-      description: manifest.description,
-      author: manifest.author,
-      license: manifest.license,
-      main: manifest.main,
-      source: manifest.source,
-      tags: manifest.tags,
-      manifest: manifest as unknown as Record<string, unknown>,
-      configSchema: manifest.configSchema as unknown as Record<string, unknown>,
-      hooks: [
-        manifest.hooks.onRequest && "onRequest",
-        manifest.hooks.onResponse && "onResponse",
-        manifest.hooks.onError && "onError",
-        manifest.hooks.onInstall && "onInstall",
-        manifest.hooks.onActivate && "onActivate",
-        manifest.hooks.onDeactivate && "onDeactivate",
-        manifest.hooks.onUninstall && "onUninstall",
-        manifest.hooks.onStreamComplete && "onStreamComplete",
-      ].filter(Boolean) as string[],
-      permissions: manifest.requires.permissions,
-      pluginDir: destDir,
-      enabled: manifest.enabledByDefault,
-    });
+    const row = insertPlugin(pluginRegistration(manifest, name, destDir, randomUUID()));
 
     log.info("manager.installed", { name, version: manifest.version });
 
@@ -335,32 +327,7 @@ class PluginManager {
       throw err;
     }
 
-    const row = insertPlugin({
-      id: randomUUID(),
-      name,
-      version: manifest.version,
-      description: manifest.description,
-      author: manifest.author,
-      license: manifest.license,
-      main: manifest.main,
-      source: manifest.source,
-      tags: manifest.tags,
-      manifest: manifest as unknown as Record<string, unknown>,
-      configSchema: manifest.configSchema as unknown as Record<string, unknown>,
-      hooks: [
-        manifest.hooks.onRequest && "onRequest",
-        manifest.hooks.onResponse && "onResponse",
-        manifest.hooks.onError && "onError",
-        manifest.hooks.onInstall && "onInstall",
-        manifest.hooks.onActivate && "onActivate",
-        manifest.hooks.onDeactivate && "onDeactivate",
-        manifest.hooks.onUninstall && "onUninstall",
-        manifest.hooks.onStreamComplete && "onStreamComplete",
-      ].filter(Boolean) as string[],
-      permissions: manifest.requires.permissions,
-      pluginDir: destDir,
-      enabled: manifest.enabledByDefault,
-    });
+    const row = insertPlugin(pluginRegistration(manifest, name, destDir, randomUUID()));
 
     log.info("manager.upgraded", { name, version: manifest.version });
 

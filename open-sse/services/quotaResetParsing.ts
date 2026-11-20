@@ -1,12 +1,12 @@
 import { looksLikeQuotaExhausted } from "../../src/shared/utils/classify429";
+
+// Re-exported so open-sse callers (accountFallback/concurrencyLimit429.ts) reach the
+// concurrency-429 classifier through this module's existing src/ import instead of adding
+// a new open-sse → src boundary edge (check:boundary:ratchet).
+export { looksLikeConcurrencyLimit } from "../../src/shared/utils/classify429";
 import { getProviderCategory, getRegistryEntry } from "../config/providerRegistry.ts";
 
-const ZAI_PATTERNS = [
-  /\[1308\]/,
-  /\[1310\]/,
-  /\bz\.ai\b/i,
-  /\bbigmodel\.cn\b/i,
-];
+const ZAI_PATTERNS = [/\[1308\]/, /\[1310\]/, /\bz\.ai\b/i, /\bbigmodel\.cn\b/i];
 
 /**
  * Resolves the timezone offset for naive (zone-less) reset timestamps (Issue #14479).
@@ -14,10 +14,7 @@ const ZAI_PATTERNS = [
  * uses "+08:00"; otherwise defaults to "Z" (UTC).
  * Explicit timezone offsets passed directly or configured per provider take precedence.
  */
-export function resolveNaiveResetZone(
-  msg: string,
-  providerOrZone?: string | null
-): string {
+export function resolveNaiveResetZone(msg: string, providerOrZone?: string | null): string {
   if (providerOrZone && /^(?:Z|[+-]\d{2}:?\d{2})$/i.test(providerOrZone)) {
     return providerOrZone.toUpperCase();
   }
@@ -91,6 +88,21 @@ export function parseDayGranularityResetMs(
 }
 
 /**
+ * `Date.parse` rolls an impossible day over (2026-11-31 becomes 2026-12-01), so a
+ * malformed reset date would still yield a long wait. Accept only real calendar dates
+ * (#20281 review): an ISO reset can bypass the operator's maxCooldownMs cap.
+ */
+function isCalendarDate(stamp: string): boolean {
+  const [year, month, day] = stamp.slice(0, 10).split("-").map(Number);
+  const probe = new Date(Date.UTC(year, month - 1, day));
+  return (
+    probe.getUTCFullYear() === year &&
+    probe.getUTCMonth() === month - 1 &&
+    probe.getUTCDate() === day
+  );
+}
+
+/**
  * Z.AI (GLM) reports an exhausted weekly/monthly cap with a FULL absolute
  * datetime rather than a countdown:
  *
@@ -121,13 +133,10 @@ export function parseIsoDateTimeResetMs(
     );
   if (!match) return null;
   const stamp = match[1].replace(/[Tt ]/, "T");
+  if (!isCalendarDate(stamp)) return null;
   // Normalize "+0200" to "+02:00": the bare-offset form is not part of the ES Date.parse grammar.
-  const rawZone = match[2]
-    ? match[2].toUpperCase()
-    : resolveNaiveResetZone(msg, providerOrZone);
-  const zone = /^[+-]\d{4}$/.test(rawZone)
-    ? `${rawZone.slice(0, 3)}:${rawZone.slice(3)}`
-    : rawZone;
+  const rawZone = match[2] ? match[2].toUpperCase() : resolveNaiveResetZone(msg, providerOrZone);
+  const zone = /^[+-]\d{4}$/.test(rawZone) ? `${rawZone.slice(0, 3)}:${rawZone.slice(3)}` : rawZone;
   const resetMs = Date.parse(`${stamp}${zone}`);
   if (!Number.isFinite(resetMs)) return null;
   const waitMs = resetMs - nowMs;
@@ -148,24 +157,14 @@ export function parseMonthDayResetMs(
   nowMs: number = Date.now()
 ): number | null {
   const match =
-    /reset(?:s)?\s+at\s+(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?\s*(?:UTC|Z)?/i.exec(
-      msg
-    );
+    /reset(?:s)?\s+at\s+(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?\s*(?:UTC|Z)?/i.exec(msg);
   if (!match) return null;
   const month = Number.parseInt(match[1], 10);
   const day = Number.parseInt(match[2], 10);
   const hour = Number.parseInt(match[3], 10);
   const minute = Number.parseInt(match[4], 10);
   const second = match[5] ? Number.parseInt(match[5], 10) : 0;
-  if (
-    month < 1 ||
-    month > 12 ||
-    day < 1 ||
-    day > 31 ||
-    hour > 23 ||
-    minute > 59 ||
-    second > 59
-  ) {
+  if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 59) {
     return null;
   }
   const now = new Date(nowMs);

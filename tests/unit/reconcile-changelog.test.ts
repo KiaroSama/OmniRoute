@@ -14,10 +14,11 @@ const {
   versionSectionRange,
   otherSectionsText,
   rankAuthors,
+  renderSection,
   reconcile,
 } = mod;
 
-const REPO = "diegosouzapw/OmniRoute";
+const REPO = "cheaper-inference/OmniRoute";
 const link = (n: number) => `[#${n}](https://github.com/${REPO}/pull/${n})`;
 
 test("primaryRefs: /pull links and the LAST #N count, incidental mentions do not", () => {
@@ -136,14 +137,96 @@ test("computeCoverage: own PR must be a primary ref; incidental mention leaves t
     "- **fix(ui):** direct push (direct commit `f0f0f0f0f0`)",
   ];
   const { uncovered } = computeCoverage(rows, bullets, {
-    closingPrs: new Set([12000]), // PR 12000 closes issue 7000, which is cited
     skipHashes: new Set(["eeeeeeeee"]),
   });
   assert.deepEqual(
     uncovered.map((r) => r.hash),
-    ["aaaaaaaaa1"],
-    "only the incidentally-mentioned PR is uncovered"
+    ["aaaaaaaaa1", "ddddddddd4"],
+    "the incidentally-mentioned PR and the PR whose bullet only cites its closed issue are uncovered"
   );
+});
+
+test("reconcile: a bullet citing the ISSUE a PR closes does not cover that PR (v3.8.52 lesson)", () => {
+  // Nine external PRs (#15113 #15415 #15423 #15703 #15754 #15772 #16091 #16269 #16445) lost their
+  // own bullet in the v3.8.52 reconciliation because another bullet mentioned the issue they closed.
+  const changelog = `# Changelog
+
+## [Unreleased]
+
+## [3.8.52] — TBD
+
+### ✨ New Features
+
+### 🐛 Bug Fixes
+
+- **fix(auth):** maintainer bullet that mentions the issue in passing (see #15700) (#16000)
+- **fix(ui):** contributor bullet with its own PR as primary ref (#15754)
+
+### 📝 Maintenance
+
+---
+
+## [3.8.51] — 2026-09-30
+
+---
+`;
+  const row = (hash: string, pr: number, subject: string, authorName: string) => ({
+    hash,
+    date: "2026-10-01",
+    authorName,
+    authorEmail: `${authorName}@x`,
+    subject,
+    refs: [pr],
+    pr,
+    coauthors: [],
+  });
+  const rows = [
+    row("aaaaaaaaa1aaaa", 16000, "fix(auth): maintainer thing (#16000)", "diegosouzapw"),
+    row(
+      "bbbbbbbbb2bbbb",
+      15703,
+      "fix(models): closes an issue cited elsewhere (#15703)",
+      "lacijowo"
+    ),
+    row("ccccccccc3cccc", 15754, "fix(ui): already has its own bullet (#15754)", "timootten"),
+  ];
+  const pr = (number: number, login: string, closes: number[] = []) => ({
+    number,
+    title: `pr ${number}`,
+    author: { login },
+    body: "",
+    closingIssuesReferences: closes.map((n) => ({ number: n })),
+  });
+  const prs = [
+    pr(16000, "diegosouzapw"),
+    pr(15703, "lacijowo", [15700]), // closes #15700, which the maintainer bullet cites
+    pr(15754, "timootten", [15750]),
+  ];
+  const { changelog: next, report } = reconcile({
+    changelog,
+    version: "3.8.52",
+    repo: REPO,
+    rows,
+    prs,
+    fragments: [],
+    today: "2026-10-18",
+    baseTip: "0000000",
+    headTip: "1111111",
+  });
+  const section = next.slice(next.indexOf("## [3.8.52]"), next.indexOf("## [3.8.51]"));
+  assert.ok(
+    section.includes(
+      `- **fix(models):** closes an issue cited elsewhere (${link(15703)}) — thanks @lacijowo`
+    ),
+    `#15703 must get its own bullet — citing its closed issue #15700 is not coverage:\n${section}`
+  );
+  assert.equal(
+    (section.match(/#15754/g) || []).length,
+    1,
+    "#15754 is covered by its own primary ref — no second bullet"
+  );
+  assert.equal(report.generated.fixes, 1);
+  assert.equal(report.uncovered, 1);
 });
 
 test("versionSectionRange / otherSectionsText isolate exactly one version block", () => {
@@ -191,6 +274,62 @@ test("rankAuthors: consolidates display-name drift by PR login, excludes bots", 
   assert.deepEqual(top[0], ["Webman (@jonlwheat2-gif)", 3]);
   assert.deepEqual(top[1], ["solo", 1]);
   assert.equal("dependabot[bot]" in counts, false);
+});
+
+// merge-ff (omni-queue) keeps every contributor commit; a squash leaves one per PR.
+const queueRow = (pr: number, authorName: string, prAuthor: string) => ({
+  authorName,
+  prAuthor,
+  queue: { pr, author: prAuthor, title: `t${pr}`, mergeSha: "m", subjectPr: null },
+});
+
+test("rankAuthors: a PR landed by omni-queue counts once, however many commits it brought", () => {
+  const rows = [
+    queueRow(34, "Alice", "alice"),
+    queueRow(34, "Alice", "alice"),
+    queueRow(34, "Alice", "alice"),
+    { authorName: "Bob", prAuthor: "bob" },
+    { authorName: "Bob", prAuthor: "bob" },
+    { authorName: "Bob", prAuthor: "bob" },
+    queueRow(35, "Alice", "alice"),
+  ];
+  const { top, counts } = rankAuthors(rows);
+  assert.deepEqual(top[0], ["Bob (@bob)", 3], "three squash commits");
+  assert.deepEqual(top[1], ["Alice (@alice)", 2], "two queue PRs, four commits");
+  assert.equal(counts.alice, 2);
+});
+
+test("renderSection: commits in the cycle count a queue PR once and name the queue PRs", () => {
+  const base = {
+    version: "9.9.9",
+    today: "2026-11-14",
+    baseTip: "aaa",
+    headTip: "bbb",
+    all: { features: [], fixes: [], maintenance: [] },
+    prNumbers: new Set<number>(),
+  };
+  const squashRows = [
+    { authorName: "Bob", prAuthor: "bob" },
+    { authorName: "Bob", prAuthor: "bob" },
+  ];
+  const plain = renderSection({ ...base, rows: squashRows, ranking: rankAuthors(squashRows) });
+  assert.match(plain, /\| 📝 Commits in the cycle \| \*\*2\*\* \|/);
+  assert.doesNotMatch(plain, /omni-queue/, "squash-only cycles render exactly as before");
+
+  const rows = [
+    ...squashRows,
+    queueRow(34, "Alice", "alice"),
+    queueRow(34, "Alice", "alice"),
+    queueRow(34, "Alice", "alice"),
+  ];
+  const out = renderSection({ ...base, rows, ranking: rankAuthors(rows) });
+  assert.match(out, /5 non-merge commits/, "the scope line stays literal");
+  assert.match(
+    out,
+    /\| 📝 Commits in the cycle \(a PR landed by omni-queue counts once\) \| \*\*3\*\* \|/
+  );
+  assert.match(out, /\| 🚦 Pull requests landed by omni-queue \| \*\*1\*\* \|/);
+  assert.match(out, /A PR landed by omni-queue counts as one commit\./);
 });
 
 test("reconcile: folds fragments under the version section, credits by fragment origin, drops shipped twins, generates the rest", () => {
@@ -428,4 +567,247 @@ test("reconcile: folds fragments under the version section, credits by fragment 
     1,
     "12457's own commit is covered by the pre-existing multi-line bullet; only 11434 is generated"
   );
+});
+
+test("reconcile: omni-queue merge-ff rows collapse into ONE bullet per PR, titled and credited from the merge", () => {
+  // merge-ff keeps every contributor commit; readCommits tags them with `queue` (history-map).
+  const changelog = `# Changelog
+
+## [Unreleased]
+
+## [3.8.55] — TBD
+
+### ✨ New Features
+
+### 🐛 Bug Fixes
+
+### 📝 Maintenance
+
+---
+
+## [3.8.54] — 2026-11-10
+
+---
+`;
+  const q = {
+    pr: 19001,
+    author: "alice",
+    title: "feat(queue): new thing",
+    mergeSha: "m".repeat(40),
+  };
+  const row = (hash: string, date: string, subject: string, extra = {}) => ({
+    hash,
+    date,
+    authorName: "Alice C",
+    authorEmail: "a@x",
+    subject,
+    refs: [],
+    pr: null as number | null,
+    prAuthor: null,
+    coauthors: [],
+    ...extra,
+  });
+  const rows = [
+    row("aaaaaaaaa1", "2026-11-02", "fix typo", { pr: 19001, queue: q }),
+    row("bbbbbbbbb2", "2026-11-01", "wip: start", { pr: 19001, queue: q }),
+    row("ccccccccc3", "2026-11-03", "fix(x): squashed (#19002)", { pr: 19002, refs: [19002] }),
+  ];
+  const prs = [
+    { number: 19002, title: "x", author: { login: "bob" }, body: "", closingIssuesReferences: [] },
+  ];
+  const { changelog: next, report } = reconcile({
+    changelog,
+    version: "3.8.55",
+    repo: REPO,
+    rows,
+    prs,
+    fragments: [],
+    today: "2026-11-13",
+    baseTip: "0000000",
+    headTip: "1111111",
+  });
+  const section = next.slice(next.indexOf("## [3.8.55]"), next.indexOf("## [3.8.54]"));
+  assert.ok(
+    section.includes(`- **feat(queue):** new thing (${link(19001)}) — thanks @alice`),
+    section
+  );
+  assert.equal((section.match(/pull\/19001\)/g) || []).length, 1, "two commits, one bullet");
+  assert.doesNotMatch(section, /fix typo|wip: start/);
+  assert.ok(section.includes(`- **fix(x):** squashed (${link(19002)}) — thanks @bob`));
+  assert.equal(report.generated.features, 1);
+  assert.equal(report.generated.fixes, 1);
+  assert.equal(rows[0].prAuthor, "alice", "gh data lacks the PR → trailer author");
+  assert.equal(rows[2].prAuthor, "bob");
+});
+
+// ── merge-ff attribution (CodeRabbit #20166 m11/m12/m13) ──
+const MERGE_FF_CHANGELOG = `# Changelog
+
+## [Unreleased]
+
+## [3.8.55] — TBD
+
+### ✨ New Features
+
+### 🐛 Bug Fixes
+
+### 📝 Maintenance
+
+---
+
+## [3.8.54] — 2026-11-10
+
+---
+`;
+const mergeFfRow = (hash: string, date: string, subject: string, extra = {}) => ({
+  hash,
+  date,
+  authorName: "Alice C",
+  authorEmail: "a@x",
+  subject,
+  refs: [] as number[],
+  pr: null as number | null,
+  prAuthor: null,
+  coauthors: [] as string[],
+  ...extra,
+});
+const ghPr = (number: number, login: string, extra = {}) => ({
+  number,
+  title: "x",
+  author: { login },
+  body: "",
+  closingIssuesReferences: [],
+  ...extra,
+});
+function mergeFfSection(opts: Record<string, unknown>) {
+  const { changelog: next, report } = reconcile({
+    changelog: MERGE_FF_CHANGELOG,
+    version: "3.8.55",
+    repo: REPO,
+    fragments: [],
+    today: "2026-11-13",
+    baseTip: "0000000",
+    headTip: "1111111",
+    ...opts,
+  });
+  return { section: next.slice(next.indexOf("## [3.8.55]"), next.indexOf("## [3.8.54]")), report };
+}
+
+test("reconcile: a collapsed queue PR is bot or human by its PR author, not its first commit", () => {
+  const q = { pr: 34, author: "alice", title: "feat(b): batch feature", mergeSha: "m".repeat(40) };
+  const rows = [
+    mergeFfRow("aaaaaaaaa1", "2026-11-01", "chore: bot autofix", {
+      authorName: "dependabot[bot]",
+      pr: 34,
+      queue: q,
+    }),
+    mergeFfRow("bbbbbbbbb2", "2026-11-02", "feat(b): real work", { pr: 34, queue: q }),
+  ];
+  const { section, report } = mergeFfSection({ rows, prs: [ghPr(34, "alice")] });
+  assert.ok(
+    section.includes(`- **feat(b):** batch feature (${link(34)}) — thanks @alice`),
+    section
+  );
+  assert.doesNotMatch(section, /Dependabot bumps/);
+  assert.equal(report.depsRolled, 0);
+
+  // a queue PR opened by Dependabot still goes to the deps rollup, even with a human commit first
+  const qb = { pr: 35, author: "app/dependabot", title: "deps: bump x", mergeSha: "n".repeat(40) };
+  const rows2 = [
+    mergeFfRow("ccccccccc3", "2026-11-01", "deps: bump x", { pr: 35, queue: qb }),
+    mergeFfRow("ddddddddd4", "2026-11-02", "deps: bump x again", {
+      authorName: "dependabot[bot]",
+      pr: 35,
+      queue: qb,
+    }),
+  ];
+  const { section: s2, report: r2 } = mergeFfSection({ rows: rows2, prs: [] });
+  assert.match(s2, /- \*\*deps:\*\* 1 Dependabot bumps — bump x \(\[#35\]/);
+  assert.equal(r2.depsRolled, 1);
+});
+
+test("reconcile: a queue fragment without gh metadata keeps the queue PR link and author", () => {
+  const q = { pr: 34, author: "alice", title: "feat(b): batch feature", mergeSha: "m".repeat(40) };
+  const rows = [
+    mergeFfRow("aaaaaaaaa1bbbb", "2026-11-01", "feat(b): add fragment", { pr: 34, queue: q }),
+  ];
+  const fragments = [
+    {
+      path: "changelog.d/features/x.md",
+      section: "features",
+      text: "- **feat(b):** fragment text",
+      originHash: "aaaaaaaaa",
+      originPr: 34,
+      prefixPr: null,
+      originSubjectPr: null,
+      originQueueAuthor: "alice",
+    },
+  ];
+  const { section, report } = mergeFfSection({ rows, prs: [], fragments });
+  assert.ok(
+    section.includes(`- **feat(b):** fragment text (${link(34)}) — thanks @alice`),
+    section
+  );
+  assert.equal((section.match(/pull\/34\)/g) || []).length, 1, "fragment covers the row");
+  assert.equal(report.generated.features, 0);
+
+  // gh metadata, when present, still wins over the queue trailer
+  const { section: s2 } = mergeFfSection({ rows, prs: [ghPr(34, "alicia")], fragments });
+  assert.ok(s2.includes(`- **feat(b):** fragment text (${link(34)}) — thanks @alicia`), s2);
+});
+
+test("collectExtraPrs: fetches foreign-squash subjects, keeping only MERGED PRs", () => {
+  const { collectExtraPrs } = mod;
+  const q = { pr: 34, author: "alice", title: "feat(b): batch feature", mergeSha: "m".repeat(40) };
+  const mkRows = () => [
+    mergeFfRow("aaaaaaaaa1", "2026-11-01", "fix(o): other PR squash (#500)", {
+      pr: 34,
+      queue: { ...q, subjectPr: 500 },
+    }),
+    mergeFfRow("bbbbbbbbb2", "2026-11-02", "feat(b): real work", {
+      pr: 34,
+      queue: { ...q, subjectPr: null },
+    }),
+  ];
+  const fragments = [{ originPr: 34, originSubjectPr: 600 }];
+  const calls: number[] = [];
+  const db: Record<number, unknown> = {
+    500: ghPr(500, "carol", { state: "MERGED", mergedAt: "2026-11-01T00:00:00Z" }),
+    600: ghPr(600, "dave", { state: "OPEN", mergedAt: null }),
+  };
+  const fetchPr = (n: number) => {
+    calls.push(n);
+    return db[n] ?? null;
+  };
+  const rows = mkRows();
+  const prs = [ghPr(34, "alice")];
+  const extraPrs = collectExtraPrs({
+    rows,
+    fragments,
+    known: new Set([34]),
+    fetchPr,
+  });
+  assert.deepEqual([...calls].sort(), [500, 600], "subject PRs are looked up");
+  assert.deepEqual([...extraPrs.keys()], [500], "an OPEN PR is not a foreign squash");
+
+  const { section } = mergeFfSection({ rows, prs, extraPrs });
+  assert.equal(rows[0].pr, 500);
+  assert.equal(rows[0].prAuthor, "carol");
+  assert.match(section, /other PR squash \(\[#500\]\([^)]*\)\) — thanks @carol/);
+
+  // the subject is not a merged PR → the row stays on the queue PR
+  db[500] = ghPr(500, "carol", { state: "CLOSED", mergedAt: null });
+  const rows2 = mkRows();
+  const extra2 = collectExtraPrs({ rows: rows2, fragments, known: new Set([34]), fetchPr });
+  assert.equal(extra2.size, 0);
+  mergeFfSection({ rows: rows2, prs, extraPrs: extra2 });
+  assert.equal(rows2[0].pr, 34);
+
+  // plain row PRs absent from the merged list are still fetched unconditionally
+  calls.length = 0;
+  const rows3 = [mergeFfRow("eeeeeeeee5", "2026-11-03", "fix: x (#77)", { pr: 77 })];
+  db[77] = ghPr(77, "erin", { state: "OPEN" });
+  const extra3 = collectExtraPrs({ rows: rows3, fragments: [], known: new Set(), fetchPr });
+  assert.deepEqual(calls, [77]);
+  assert.deepEqual([...extra3.keys()], [77]);
 });

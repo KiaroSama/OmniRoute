@@ -12,7 +12,7 @@
  */
 
 import crypto from "crypto";
-import { outputContractOf } from "@/lib/semanticCache";
+import { canonicalJson, outputContractOf, SEMANTIC_CACHE_KEY_SCHEMA } from "@/lib/semanticCache";
 import {
   type SemanticCacheConfig,
   type SemanticCacheType,
@@ -28,6 +28,8 @@ import {
   type EmbeddingGenerator,
 } from "./embeddingClient.ts";
 import { synthesizeOpenAiSseFromJson } from "../../utils/jsonToSse.ts";
+import { conversationSignatureFields } from "../../utils/conversationSignatureFields.ts";
+import { isCompleteTextProjection } from "./semanticProjection";
 
 export interface CacheLookupParams {
   body: Record<string, unknown> & {
@@ -90,6 +92,54 @@ function getHeader(headers: unknown, name: string): string | null {
   return null;
 }
 
+type ToolCallCarrier = {
+  choices?: Array<{ message?: Record<string, unknown>; delta?: Record<string, unknown> } | null>;
+  content?: Array<{ type?: unknown } | null>;
+  output?: Array<{ type?: unknown } | null>;
+  candidates?: Array<{
+    content?: { parts?: Array<{ functionCall?: unknown } | null> } | null;
+  } | null>;
+  type?: unknown;
+  content_block?: { type?: unknown } | null;
+  item?: { type?: unknown } | null;
+};
+
+function isToolItem(item: { type?: unknown } | null | undefined): boolean {
+  return item?.type === "function_call" || item?.type === "custom_tool_call";
+}
+
+/** Gemini `functionCall` parts, Claude `tool_use` start event, Responses item events. */
+function carriesStreamOrGeminiToolCall(r: ToolCallCarrier): boolean {
+  const fromCandidates = (Array.isArray(r.candidates) ? r.candidates : []).some((c) =>
+    (Array.isArray(c?.content?.parts) ? c.content.parts : []).some((p) => !!p?.functionCall)
+  );
+  const fromClaudeEvent = r.type === "content_block_start" && r.content_block?.type === "tool_use";
+  const fromResponsesEvent =
+    (r.type === "response.output_item.added" || r.type === "response.output_item.done") &&
+    isToolItem(r.item);
+  return fromCandidates || fromClaudeEvent || fromResponsesEvent;
+}
+
+/**
+ * True when a response (or one stream chunk) carries client-visible tool calls: OpenAI
+ * `tool_calls` / `function_call`, Claude `tool_use` (block or stream start event), Gemini
+ * `functionCall` parts, Responses `function_call` items (body or stream item event).
+ * Replaying one from cache would hand back a stale argument list.
+ */
+function carriesToolCalls(response: unknown): boolean {
+  const r = response as ToolCallCarrier | null;
+  if (!r || typeof r !== "object") return false;
+  const fromChoices = (Array.isArray(r.choices) ? r.choices : []).some((c) => {
+    const m = c?.message ?? c?.delta;
+    return (Array.isArray(m?.tool_calls) && m.tool_calls.length > 0) || !!m?.function_call;
+  });
+  const fromBlocks = (Array.isArray(r.content) ? r.content : []).some(
+    (b) => b?.type === "tool_use"
+  );
+  const fromOutput = (Array.isArray(r.output) ? r.output : []).some(isToolItem);
+  return fromChoices || fromBlocks || fromOutput || carriesStreamOrGeminiToolCall(r);
+}
+
 function stringifyValue(val: unknown): string {
   if (typeof val === "string") return val;
   try {
@@ -115,6 +165,7 @@ function normalizeMessagesForHash(conversation: unknown): Array<{ role: string; 
     return {
       role,
       content: stringifyValue(record.content),
+      ...conversationSignatureFields(record),
     };
   });
 }
@@ -141,15 +192,20 @@ export function generateDirectHash(
   // request. Mirrors the #12307 fix already applied to the legacy signature path.
   outputContract?: unknown
 ): string {
-  const payload = JSON.stringify({
-    model: scoping?.cacheByModel !== false ? model : "*",
-    provider: scoping?.cacheByProvider ? scoping.provider || "*" : "*",
-    cacheKey: scoping?.cacheKey || undefined,
-    messages: normalizeMessagesForHash(conversation),
-    temperature,
-    top_p: topP,
-    outputContract: outputContract ?? undefined,
-  });
+  const payload = canonicalJson(
+    JSON.parse(
+      JSON.stringify({
+        schema: SEMANTIC_CACHE_KEY_SCHEMA,
+        model: scoping?.cacheByModel !== false ? model : "*",
+        provider: scoping?.cacheByProvider ? scoping.provider || "*" : "*",
+        cacheKey: scoping?.cacheKey || undefined,
+        messages: normalizeMessagesForHash(conversation),
+        temperature,
+        top_p: topP,
+        outputContract: outputContract ?? undefined,
+      })
+    )
+  );
 
   const digest = crypto.createHash("sha256").update(payload).digest("hex");
   return scoping?.apiKeyId ? `${scoping.apiKeyId}.${digest}` : digest;
@@ -246,11 +302,13 @@ export class SemanticCacheManager {
       getHeader(params.headers, "x-omniroute-cache-type") || "both"
     ).toLowerCase() as SemanticCacheType;
 
+    // The header may only tighten matching: a lower value would let any caller probe the
+    // nearest cached entry, so the configured threshold is a floor.
     const thresholdHeader = getHeader(params.headers, "x-omniroute-cache-threshold");
-    const threshold =
-      thresholdHeader !== null && Number.isFinite(Number(thresholdHeader))
-        ? Math.max(0, Math.min(1, Number(thresholdHeader)))
-        : this.config.similarityThreshold;
+    const requested = thresholdHeader !== null ? Number(thresholdHeader) : NaN;
+    const threshold = Number.isFinite(requested)
+      ? Math.max(this.config.similarityThreshold, Math.min(1, requested))
+      : this.config.similarityThreshold;
 
     const conv = params.body.messages ?? params.body.input;
     const temp = typeof params.body.temperature === "number" ? params.body.temperature : 0;
@@ -289,7 +347,16 @@ export class SemanticCacheManager {
     }
 
     // ── Layer 2: Semantic Vector Similarity Lookup ──
-    if (cacheTypeHeader === "direct" || !this.embeddingGenerator) {
+    if (
+      cacheTypeHeader === "direct" ||
+      !this.embeddingGenerator ||
+      outputContractOf(params.body) ||
+      !isCompleteTextProjection(
+        conv,
+        this.config.conversationHistoryDepth,
+        this.config.excludeSystemPrompt
+      )
+    ) {
       return { hit: false };
     }
 
@@ -331,7 +398,11 @@ export class SemanticCacheManager {
         threshold,
         1
       );
-      if (nearest.length > 0 && nearest[0].similarity >= threshold) {
+      if (
+        nearest.length > 0 &&
+        nearest[0].similarity >= threshold &&
+        nearest[0].entry.semanticProjectionVersion === 1
+      ) {
         return {
           hit: true,
           type: "semantic",
@@ -355,6 +426,8 @@ export class SemanticCacheManager {
     if (noStore && noStore.toLowerCase() === "true") return;
 
     if (this.isBypassed(params.headers, params.body)) return;
+
+    if (carriesToolCalls(params.response) || params.streamChunks?.some(carriesToolCalls)) return;
 
     const cacheKey = getHeader(params.headers, "x-omniroute-cache-key");
     const conv = params.body.messages ?? params.body.input;
@@ -397,7 +470,16 @@ export class SemanticCacheManager {
     }
 
     let embedding: number[] | undefined;
-    if (this.embeddingGenerator && promptText) {
+    if (
+      this.embeddingGenerator &&
+      promptText &&
+      !outputContractOf(params.body) &&
+      isCompleteTextProjection(
+        conv,
+        this.config.conversationHistoryDepth,
+        this.config.excludeSystemPrompt
+      )
+    ) {
       const embedResult = await generateEmbeddingWithTimeout(promptText, this.embeddingGenerator, {
         model: this.config.embeddingModel,
         provider: this.config.embeddingProvider,
@@ -414,6 +496,7 @@ export class SemanticCacheManager {
       hash: directHash,
       signature: params.signature || undefined,
       embedding,
+      semanticProjectionVersion: embedding ? 1 : undefined,
       promptText,
       model: params.model,
       provider: params.provider,

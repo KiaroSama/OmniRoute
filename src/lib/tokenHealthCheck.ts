@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Proactive Token Health Check Scheduler
  *
@@ -19,16 +18,16 @@ import {
 import { getCachedProviderConnectionById } from "@/lib/db/readCache";
 import { getSettings } from "@/lib/db/settings";
 import { resolveGuardedProxyConfig } from "@/lib/tokenHealthCheckProxyGuard";
-import {
-  getAccessToken,
-  getDeprecationNotice,
-  supportsTokenRefresh,
-  isUnrecoverableRefreshError,
-  refreshCopilotToken,
-} from "@omniroute/open-sse/services/tokenRefresh.ts";
+import * as tokenRefresh from "@omniroute/open-sse/services/tokenRefresh.ts";
+import { ROTATION_LOCK_GROUP } from "@omniroute/open-sse/services/refreshSerializer.ts";
+import { isTransientRefreshError } from "@omniroute/open-sse/services/tokenRefresh/transientError.ts";
+import { readStoredVerificationUrl } from "@omniroute/open-sse/services/antigravityVerification.ts";
 import { pickMaskedDisplayValue } from "@/shared/utils/maskEmail";
 import { isAutomatedTestProcess } from "@/shared/utils/testProcess";
-import { refreshGithubCopilotSubTokenIfNeeded } from "@/lib/tokenHealthCheckCopilot";
+import {
+  probeGitHubAccessToken,
+  refreshGithubCopilotSubTokenIfNeeded,
+} from "@/lib/tokenHealthCheckCopilot";
 import { checkCursorConnectionIfNeeded } from "@/lib/tokenHealthCheckCursor";
 import { checkKimiWebConnectionIfNeeded } from "@/lib/tokenHealthCheckKimi";
 import {
@@ -46,22 +45,12 @@ const TICK_MS = 60 * 1000; // sweep interval: every 60 seconds (restored — #77
 const DEFAULT_BATCH_SIZE = 20;
 const DEFAULT_HEALTH_CHECK_INTERVAL_MIN = 60; // default per-connection interval
 const EXPIRED_RETRY_MAX = 3; // max retry attempts for expired connections before giving up
-const ROTATING_REFRESH_PROVIDERS = new Set([
-  "codex",
-  "openai",
-  "kimi-coding",
-  "cline",
-  "kiro",
-  "amazon-q",
-  "gitlab-duo",
-  "claude",
-  "openference",
-]);
+// Derived from the rotation-lane map so the two lists cannot drift apart.
+const ROTATING_REFRESH_PROVIDERS = new Set(Object.keys(ROTATION_LOCK_GROUP));
 
 export function shouldNullRefreshTokenAfterUnrecoverable(provider: unknown): boolean {
   const id = String(provider || "").toLowerCase();
-  if (id === "claude") return false;
-  return ROTATING_REFRESH_PROVIDERS.has(id);
+  return ROTATING_REFRESH_PROVIDERS.has(id) && !preservesRefreshTokenOnUnrecoverable(id);
 }
 
 const EXPIRED_RETRY_BACKOFF_MIN = 5; // backoff between expired retries (minutes)
@@ -130,6 +119,29 @@ function getExpiredRetryCount(conn: any): number {
 
 function getExpiredRetryAt(conn: any): string | null {
   return conn?.providerSpecificData?.expiredRetry?.at ?? conn?.expiredRetryAt ?? null;
+}
+
+interface RefreshCircuit {
+  streak: number;
+  // Absent on a circuit written by an older version, and absent in the failure
+  // path until the backoff window is computed from the streak.
+  until?: string;
+  lastFailAt?: string;
+}
+
+// `providerSpecificData` is an untyped bag, so anything read out of it starts as
+// unknown. Checking the two fields the backoff maths needs keeps a malformed
+// circuit from turning into NaN inside the scheduler.
+function getRefreshCircuit(psd: Record<string, unknown>): RefreshCircuit | null {
+  const raw = psd.refreshCircuit;
+  if (typeof raw !== "object" || raw === null) return null;
+  const circuit = raw as Partial<RefreshCircuit>;
+  if (typeof circuit.streak !== "number") return null;
+  return {
+    streak: circuit.streak,
+    until: typeof circuit.until === "string" ? circuit.until : undefined,
+    lastFailAt: circuit.lastFailAt,
+  };
 }
 
 function getPsd(conn: any): Record<string, unknown> {
@@ -212,7 +224,7 @@ export function buildRefreshFailureUpdate(
   // exponential backoff window so the next sweep skips this connection instead
   // of retrying every 60s. Cleared by a successful refresh (clearRefreshCircuit).
   const psd = getPsd(conn);
-  const prevStreak = psd.refreshCircuit?.streak ?? 0;
+  const prevStreak = getRefreshCircuit(psd)?.streak ?? 0;
   const streak = prevStreak + 1;
 
   const updatedPsd = {
@@ -256,7 +268,7 @@ export function buildTransientRefreshRetryUpdate(conn: any, now: string) {
   // Preserve existing streak from any prior permanent failures so a transient
   // error does not reset the exponential backoff ladder.
   const psd = getPsd(conn);
-  const existingCircuit = psd.refreshCircuit;
+  const existingCircuit = getRefreshCircuit(psd);
   const existingStreak = existingCircuit?.streak ?? 0;
   const parsedExistingUntil = existingCircuit?.until
     ? new Date(existingCircuit.until).getTime()
@@ -429,7 +441,12 @@ export function clearHealthCheckLogCache() {
 
 declare global {
   var __omnirouteTokenHC:
-    | { initialized: boolean; interval: ReturnType<typeof setInterval> | null; sweeping: boolean }
+    | {
+        initialized: boolean;
+        interval: ReturnType<typeof setInterval> | null;
+        initTimeout: ReturnType<typeof setTimeout> | null;
+        sweeping: boolean;
+      }
     | undefined;
 }
 function getHCState() {
@@ -554,7 +571,30 @@ export async function sweep(): Promise<number> {
 /**
  * Check a single connection and refresh if due.
  */
-export async function checkConnection(conn) {
+export async function getRefreshRecoveryUpdate(connectionId: string) {
+  // Refresh proves credentials work, not that inference quota has recovered. Read
+  // after the network call: an inference request may have set a cooldown meanwhile.
+  const current = await getProviderConnectionById(connectionId);
+  const rateLimitedUntil = current?.rateLimitedUntil;
+  if (typeof rateLimitedUntil === "string" && Date.parse(rateLimitedUntil) > Date.now()) {
+    return {};
+  }
+  // Nor that the account passed Google's "verify your account" check: while the
+  // verification link is stored the 403 VALIDATION_REQUIRED block is still in force.
+  if (readStoredVerificationUrl(current?.providerSpecificData)) {
+    return {};
+  }
+  return {
+    testStatus: "active",
+    lastError: null,
+    lastErrorAt: null,
+    lastErrorType: null,
+    lastErrorSource: null,
+    errorCode: null,
+  };
+}
+
+export async function checkConnection(conn: any) {
   if (!conn?.id) return;
 
   const latestConnection = (await getCachedProviderConnectionById(conn.id)) || conn;
@@ -570,6 +610,10 @@ export async function checkConnection(conn) {
   // Determine interval (0 = disabled)
   const intervalMin = conn.healthCheckInterval ?? DEFAULT_HEALTH_CHECK_INTERVAL_MIN;
   if (intervalMin <= 0) return;
+  if (tokenRefresh.isPassiveCodex(conn.provider)) {
+    await tokenRefresh.getAccessToken(conn.provider, { ...conn, connectionId: conn.id }, null);
+    return;
+  }
   if (!conn.isActive) {
     // #P0: allow expired connections with retry budget remaining to pass
     // through so transient OAuth failures can self-heal instead of being
@@ -625,7 +669,7 @@ export async function checkConnection(conn) {
   // Placed AFTER the terminal-status guard above, which makes this idempotent for free:
   // once marked "expired" the connection is skipped on every later sweep, so this writes
   // exactly once instead of rewriting the same reason each cycle.
-  const deprecation = getDeprecationNotice(String(conn.provider || ""));
+  const deprecation = tokenRefresh.getDeprecationNotice(String(conn.provider || ""));
   if (deprecation) {
     const now = new Date().toISOString();
     await updateProviderConnection(conn.id, {
@@ -731,12 +775,23 @@ export async function checkConnection(conn) {
         },
       };
 
-      const copilotResult = await refreshCopilotToken(
-        conn.accessToken,
-        healthCheckLog,
-        proxyConfig,
-        getCopilotTokenBaseUrl(conn)
-      );
+      // Rotate the Copilot sub-token only when it needs renewal or when an
+      // expired connection needs a recovery probe. A healthy sub-token still
+      // gets a cheap GitHub /user probe so a revoked access token demotes.
+      const shouldProbeCopilot = copilotAboutToExpire || conn.testStatus === "expired";
+
+      const copilotResult = shouldProbeCopilot
+        ? await tokenRefresh.refreshCopilotToken(
+            conn.accessToken,
+            healthCheckLog,
+            proxyConfig,
+            getCopilotTokenBaseUrl(conn)
+          )
+        : await probeGitHubAccessToken({
+            accessToken: conn.accessToken,
+            apiBaseUrl: getCopilotTokenBaseUrl(conn),
+            proxyConfig,
+          });
       if (copilotResult?.status === 401) {
         await updateProviderConnection(conn.id, {
           testStatus: "expired",
@@ -749,7 +804,12 @@ export async function checkConnection(conn) {
         });
         return;
       }
-      if (copilotResult?.token && copilotAboutToExpire) {
+      if (
+        copilotResult &&
+        "token" in copilotResult &&
+        copilotResult.token &&
+        copilotAboutToExpire
+      ) {
         refreshedProviderSpecificData = {
           ...providerSpecificData,
           copilotToken: copilotResult.token,
@@ -833,7 +893,7 @@ export async function checkConnection(conn) {
     // Anthropic's own /api/oauth/usage rate-limits well below that.
     const refreshCapableNeedsReauth = shouldMarkRefreshCapableExpired(
       conn,
-      supportsTokenRefresh(conn.provider)
+      tokenRefresh.supportsTokenRefresh(conn.provider)
     );
     if (refreshCapableNeedsReauth) {
       const now = new Date().toISOString();
@@ -874,7 +934,7 @@ export async function checkConnection(conn) {
     );
   }
 
-  if (!supportsTokenRefresh(conn.provider)) {
+  if (!tokenRefresh.supportsTokenRefresh(conn.provider)) {
     const now = new Date().toISOString();
     await updateProviderConnection(conn.id, { lastHealthCheckAt: now });
     log(
@@ -891,7 +951,8 @@ export async function checkConnection(conn) {
   // cadence while the access token is still valid for days.
   const tokenExpiresAt = getEffectiveTokenExpiryMs(conn);
   const hasKnownExpiry = tokenExpiresAt > 0;
-  const isAboutToExpire = hasKnownExpiry && tokenExpiresAt - Date.now() < TOKEN_EXPIRY_BUFFER;
+  const refreshLeadMs = conn.provider === "chatgpt" ? 60_000 : TOKEN_EXPIRY_BUFFER;
+  const isAboutToExpire = hasKnownExpiry && tokenExpiresAt - Date.now() < refreshLeadMs;
 
   // ROTATING_REFRESH_PROVIDERS — providers whose refresh_tokens are SINGLE-USE
   // (each refresh consumes the old one and returns a new one). For these, refreshing
@@ -953,16 +1014,18 @@ export async function checkConnection(conn) {
   type RefreshResultShape = {
     accessToken?: string;
     refreshToken?: string;
-    expiresAt?: string;
+    expiresAt?: string | null;
     expiresIn?: number;
     providerSpecificData?: Record<string, unknown>;
+    error?: string;
+    code?: string;
   };
   type ConnectionUpdate = Parameters<typeof updateProviderConnection>[1];
 
   let persistedResult: RefreshResultShape | null = null;
   let result: RefreshResultShape | null;
   try {
-    result = await getAccessToken(
+    result = await tokenRefresh.getAccessToken(
       conn.provider,
       credentials,
       healthCheckLog,
@@ -972,12 +1035,7 @@ export async function checkConnection(conn) {
         const updateData: ConnectionUpdate = {
           accessToken: refreshResult.accessToken,
           lastHealthCheckAt: now,
-          testStatus: "active",
-          lastError: null,
-          lastErrorAt: null,
-          lastErrorType: null,
-          lastErrorSource: null,
-          errorCode: null,
+          ...(await getRefreshRecoveryUpdate(conn.id)),
           expiredRetryCount: null,
           expiredRetryAt: null,
         };
@@ -991,6 +1049,9 @@ export async function checkConnection(conn) {
           const expiresAt = new Date(Date.now() + refreshResult.expiresIn * 1000).toISOString();
           updateData.expiresAt = expiresAt;
           updateData.tokenExpiresAt = expiresAt;
+        } else if (refreshResult.accessToken && refreshResult.expiresAt === null) {
+          updateData.expiresAt = null;
+          updateData.tokenExpiresAt = null;
         }
         // Merge new providerSpecificData and ALWAYS clear the refresh circuit
         // breaker streak on a successful refresh.
@@ -1030,25 +1091,7 @@ export async function checkConnection(conn) {
     }
     // Classify: only network/timeout errors are transient. Programming errors
     // and DB failures fall through to the exponential backoff path.
-    const errObj = typeof err === "object" && err !== null ? err : {};
-    const errName = err instanceof Error ? err.name : String(errObj.name ?? "");
-    const errMsg = err instanceof Error ? err.message : String(err);
-    const errCode = String(errObj.code ?? "");
-    // Also check err.cause for wrapped fetch errors.
-    const errCause = errObj.cause instanceof Error ? errObj.cause.message : "";
-    const errCauseCode = String(errObj.cause?.code ?? "");
-    const combinedMsg = `${errMsg} ${errCause}`;
-    const combinedCode = `${errCode} ${errCauseCode}`;
-    const isTransientNetworkError =
-      errName === "AbortError" ||
-      errName === "TimeoutError" ||
-      /ETIMEDOUT|ECONNREFUSED|ECONNRESET|ECONNABORTED|EPIPE|EHOSTUNREACH|ENETUNREACH|ENOTCONN|ENOTFOUND|EAI_AGAIN|ERR_NETWORK|ERR_SOCKET|ERR_CONNECTION|socket hang up|fetch failed/i.test(
-        combinedMsg
-      ) ||
-      /ETIMEDOUT|ECONNREFUSED|ECONNRESET|ECONNABORTED|EPIPE|EHOSTUNREACH|ENETUNREACH|ENOTCONN|ENOTFOUND|EAI_AGAIN|ERR_NETWORK|ERR_SOCKET|ERR_CONNECTION/i.test(
-        combinedCode
-      );
-    if (isTransientNetworkError) {
+    if (isTransientRefreshError(err)) {
       const transientNow = new Date().toISOString();
       const updateData = buildTransientRefreshRetryUpdate(conn, transientNow);
       try {
@@ -1089,7 +1132,10 @@ export async function checkConnection(conn) {
   // OpenAI Codex uses rotating one-time-use refresh tokens.
   // Once used, the old token is permanently invalidated.
   // Retrying will never succeed → deactivate and stop the loop.
-  if (isUnrecoverableRefreshError(result)) {
+  if (tokenRefresh.isUnrecoverableRefreshError(result)) {
+    // The core gate compiles with strict null checks; the guard above already
+    // established that result carries a failure, so name it once.
+    const failure = result as { error?: string; code?: string };
     const currentConnection = await getProviderConnectionById(conn.id);
     const credentialsChangedSinceSweep =
       !!currentConnection &&
@@ -1113,21 +1159,21 @@ export async function checkConnection(conn) {
       await updateProviderConnection(conn.id, {
         lastHealthCheckAt: now,
         testStatus: "active",
-        lastError: `Health check refresh failed (${result.error}). Re-authenticate before the current access token expires.`,
+        lastError: `Health check refresh failed (${failure.error}). Re-authenticate before the current access token expires.`,
         lastErrorAt: now,
-        lastErrorType: result.error,
+        lastErrorType: failure.error,
         lastErrorSource: "oauth",
-        errorCode: result.error,
+        errorCode: failure.error,
       });
       logWarn(
-        `${LOG_PREFIX} ! ${conn.provider}/${getConnectionLogLabel(conn)} refresh token is invalid (${result.error}), but the current access token is still valid; keeping connection active`
+        `${LOG_PREFIX} ! ${conn.provider}/${getConnectionLogLabel(conn)} refresh token is invalid (${failure.error}), but the current access token is still valid; keeping connection active`
       );
       return;
     }
 
     const expiredRetryCount = getExpiredRetryCount(conn) + 1;
     const isRetryBudgetExhausted = expiredRetryCount >= EXPIRED_RETRY_MAX;
-    const errorLabel = result.code || result.error;
+    const errorLabel = failure.code || failure.error;
     const psd = getPsd(conn);
 
     await updateProviderConnection(conn.id, {
@@ -1137,7 +1183,7 @@ export async function checkConnection(conn) {
         ? `Refresh token consumed (${errorLabel}). Please re-authenticate this account.`
         : `Refresh token rejected (${errorLabel}). Please re-authenticate this account.`,
       lastErrorAt: now,
-      lastErrorType: result.error,
+      lastErrorType: failure.error,
       lastErrorSource: "oauth",
       errorCode: errorLabel,
       providerSpecificData: withExpiredRetry(psd, expiredRetryCount, now),
@@ -1174,12 +1220,7 @@ export async function checkConnection(conn) {
       const updateData: any = {
         accessToken: result.accessToken,
         lastHealthCheckAt: now,
-        testStatus: "active",
-        lastError: null,
-        lastErrorAt: null,
-        lastErrorType: null,
-        lastErrorSource: null,
-        errorCode: null,
+        ...(await getRefreshRecoveryUpdate(conn.id)),
         expiredRetryCount: null,
         expiredRetryAt: null,
       };
@@ -1195,6 +1236,9 @@ export async function checkConnection(conn) {
         const expiresAt = new Date(Date.now() + result.expiresIn * 1000).toISOString();
         updateData.expiresAt = expiresAt;
         updateData.tokenExpiresAt = expiresAt;
+      } else if (result.expiresAt === null) {
+        updateData.expiresAt = null;
+        updateData.tokenExpiresAt = null;
       }
 
       if (result.providerSpecificData) {

@@ -9,14 +9,25 @@
  *  - handleImportModels, handleCompatibleImportWithProgress, handleToggleAutoSync
  *  - canImportModels (derived), isAutoSyncEnabled (derived)
  *
+ * Every import of a connection's models runs through
+ * `POST /api/providers/[id]/sync-models` (`runModelSync`), the writer the
+ * scheduled sync uses; only a no-auth provider without a connection stores its
+ * listing as imported custom rows from here.
+ *
  * Cycle-safe: imports only from leaf modules and React.
  * No import from ProviderDetailPageClient.
  */
 
 import React, { useState } from "react";
+import { settleBoundedSyncRequests } from "@/lib/providerModels/immediateSyncBatch";
 import { extractApiErrorMessage } from "@/shared/http/apiErrorMessage";
 import { providerText, type ProviderMessageTranslator } from "../providerPageHelpers";
-import { extractImportWarning } from "./modelImportWarning";
+import {
+  classifyModelImport,
+  classifyModelSync,
+  phaseOfModelSync,
+  resolveNoNewModelsPhase,
+} from "./modelImportWarning";
 
 interface NotifyStore {
   success: (message: string, title?: string) => number;
@@ -30,11 +41,15 @@ interface NotifyStore {
 export interface ImportProgress {
   current: number;
   total: number;
-  phase: "idle" | "fetching" | "importing" | "done" | "error";
+  phase: "idle" | "fetching" | "importing" | "done" | "warning" | "error";
   status: string;
   logs: string[];
   error: string;
   importedCount: number;
+  /** The discovery fell back to the built-in catalog — the dialog says so. */
+  degraded?: boolean;
+  /** The reason of the fallback, when the server published one. */
+  degradedCause?: string;
 }
 
 export interface UseModelImportHandlersParams {
@@ -72,6 +87,18 @@ export interface UseModelImportHandlersReturn {
   handleCompatibleImportWithProgress: (connectionId: string) => Promise<void>;
   handleToggleAutoSync: () => Promise<void>;
   handleToggleAutoFetchModels: () => Promise<void>;
+}
+
+/** Only successfully enabled connections need an immediate upstream discovery. */
+function newlyEnabledAutoSyncIds(
+  connections: UseModelImportHandlersParams["connections"],
+  results: PromiseSettledResult<Response>[]
+): string[] {
+  return connections.flatMap((connection, index) => {
+    const result = results[index];
+    if (connection.providerSpecificData?.autoSync === true || !connection.id) return [];
+    return result?.status === "fulfilled" && result.value.ok ? [connection.id] : [];
+  });
 }
 
 // ──── hook ───────────────────────────────────────────────────────────────────
@@ -124,7 +151,20 @@ export function useModelImportHandlers({
     if (importingModels) return;
     const activeConnection = connections.find((conn) => conn.isActive !== false);
     if (!activeConnection && !isFreeNoAuth) return;
-    const importTargetId = activeConnection?.id ?? providerId;
+    if (activeConnection?.id) {
+      // A connection's catalog is the scheduled sync's to keep: write it through
+      // the same route, so the next sync does not undo the import.
+      setImportingModels(true);
+      try {
+        await runModelSync(activeConnection.id, "import");
+      } finally {
+        setImportingModels(false);
+      }
+      return;
+    }
+    // A no-auth provider used without a connection has no synced catalog and no
+    // scheduled sync: its listed models are stored as imported custom rows.
+    const importTargetId = providerId;
 
     setImportingModels(true);
     setShowImportModal(true);
@@ -154,30 +194,51 @@ export function useModelImportHandlers({
       // Discovery persists its result even when no new models need importing.
       // Refresh the active listing so removals take effect without a page reload.
       await fetchProviderModelMeta();
-      const importWarning = extractImportWarning(data);
-      if (fetchedModels.length === 0) {
-        setImportProgress((prev) => ({
-          ...prev,
-          phase: "done",
-          status: t("noModelsFound"),
-          logs: [t("noModelsReturnedFromEndpoint")],
-        }));
-        return;
-      }
-
       const existingIds = new Set([
         ...(modelMeta.customModels || []).map((m: any) => m.id),
         ...models.map((m: any) => m.id),
       ]);
-      const newModels = fetchedModels.filter(
-        (model: any) => !existingIds.has(model.id || model.name || model.model)
-      );
-
-      if (newModels.length === 0) {
+      const classification = classifyModelImport({
+        modelsData: data,
+        fetchedModels,
+        isKnownModel: (id) => existingIds.has(id),
+      });
+      const importWarning = classification.warning;
+      const degradedCause = classification.cause;
+      const degraded = classification.degraded;
+      // B-03 (#15159): when discovery fell back to a local/cache catalog the
+      // headline must not read as an authoritative "nothing to import". The
+      // banner at the top of the dialog now says so — with the reason — and the
+      // server's own text moves down to the log, where the per-provider nuance
+      // belongs. Only keys that already exist in all 66 locales are used; no new
+      // translation is introduced.
+      if (classification.outcome === "no-models") {
         setImportProgress((prev) => ({
           ...prev,
-          phase: "done",
+          phase: resolveNoNewModelsPhase(importWarning, degraded),
+          status: t("noModelsFound"),
+          degraded,
+          ...(degradedCause ? { degradedCause } : {}),
+          logs: [
+            ...(degraded && importWarning ? [importWarning] : []),
+            t("noModelsReturnedFromEndpoint"),
+          ],
+        }));
+        return;
+      }
+
+      const newModels = classification.newModels;
+
+      if (classification.outcome === "nothing-new") {
+        // #15069: a degraded (local-catalog fallback) result is a terminal "warning", not a
+        // success — the live provider API was never actually consulted.
+        const noNewModelsPhase = resolveNoNewModelsPhase(importWarning, degraded);
+        setImportProgress((prev) => ({
+          ...prev,
+          phase: noNewModelsPhase,
           status: t("allModelsAlreadyImported") || "All models already imported",
+          degraded,
+          ...(degradedCause ? { degradedCause } : {}),
           logs: [
             ...(importWarning ? [importWarning] : []),
             t("noNewModelsToImport") || "No new models to import",
@@ -195,6 +256,8 @@ export function useModelImportHandlers({
         total: newModels.length,
         current: 0,
         status: t("importingModelsProgress", { current: 0, total: newModels.length }),
+        degraded,
+        ...(degradedCause ? { degradedCause } : {}),
         logs: [
           ...(importWarning ? [importWarning] : []),
           t("foundModelsStartingImport", { count: newModels.length }),
@@ -211,7 +274,9 @@ export function useModelImportHandlers({
       const failures: string[] = [];
       for (let i = 0; i < newModels.length; i++) {
         const model = newModels[i];
-        const modelId = model.id || model.name || model.model;
+        const rawId = model.id || model.name || model.model;
+        // Same coercion classifyModelImport uses for the "already imported" check.
+        const modelId = typeof rawId === "string" ? rawId : String(rawId ?? "");
         if (!modelId) continue;
         const parts = modelId.split("/");
         const baseAlias = parts[parts.length - 1];
@@ -235,6 +300,12 @@ export function useModelImportHandlers({
             ...(Array.isArray(model.supportedEndpoints)
               ? { supportedEndpoints: model.supportedEndpoints }
               : {}),
+            ...(typeof model.endpointCapabilitySource === "string"
+              ? { endpointCapabilitySource: model.endpointCapabilitySource }
+              : {}),
+            ...(typeof model.supportsVision === "boolean"
+              ? { supportsVision: model.supportsVision }
+              : {}),
             ...(typeof model.dimensions === "number" && model.dimensions > 0
               ? { dimensions: model.dimensions }
               : {}),
@@ -242,8 +313,15 @@ export function useModelImportHandlers({
               ? { supportedInputTypes: model.supportedInputTypes }
               : {}),
             ...(typeof model.modelType === "string" ? { modelType: model.modelType } : {}),
-            ...(typeof model.inputTokenLimit === "number" && model.inputTokenLimit > 0
+            ...(typeof model.inputTokenLimit === "number" &&
+            Number.isInteger(model.inputTokenLimit) &&
+            model.inputTokenLimit > 0
               ? { max_input_tokens: model.inputTokenLimit }
+              : {}),
+            ...(typeof model.outputTokenLimit === "number" &&
+            Number.isInteger(model.outputTokenLimit) &&
+            model.outputTokenLimit > 0
+              ? { max_output_tokens: model.outputTokenLimit }
               : {}),
             ...(typeof model.targetFormat === "string" ? { targetFormat: model.targetFormat } : {}),
           }),
@@ -300,8 +378,9 @@ export function useModelImportHandlers({
         importedCount,
       }));
 
-      if (importedCount > 0 && failures.length > 0) {
-        // A reload would wipe the failure lines before they can be read.
+      if (importedCount > 0 && (failures.length > 0 || degraded)) {
+        // A reload would wipe the failure lines before they can be read, and it
+        // would erase the degraded notice too: the list is refreshed in place.
         await fetchProviderModelMeta();
       } else if (importedCount > 0) {
         setTimeout(() => {
@@ -321,10 +400,13 @@ export function useModelImportHandlers({
     }
   };
 
-  const handleCompatibleImportWithProgress = async (
-    connectionId: string,
-    mode: "import" | "sync" = "import"
-  ) => {
+  /**
+   * Import (`mode: "import"`) or re-sync a connection's models through
+   * `POST /api/providers/[id]/sync-models` — the writer the scheduled sync uses,
+   * so an import is never undone by the next sync and every import policy
+   * (free-only, curated lists, degraded refusal, media-only rows) applies.
+   */
+  const runModelSync = async (connectionId: string, mode: "import" | "sync" = "import") => {
     setShowImportModal(true);
     setImportProgress({
       current: 0,
@@ -337,8 +419,6 @@ export function useModelImportHandlers({
     });
 
     try {
-      // mode "import" merges/appends; "sync" replaces the available list (used when
-      // re-syncing after toggling "import only free models").
       const syncUrl =
         mode === "sync"
           ? `/api/providers/${connectionId}/sync-models`
@@ -347,82 +427,84 @@ export function useModelImportHandlers({
         method: "POST",
         signal: AbortSignal.timeout(60_000),
       });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || t("failedImportModels"));
-      }
-      await fetchProviderModelMeta();
-      await fetchAliases();
+      const data = await response.json().catch(() => null);
+      const outcome = classifyModelSync(response.ok, response.status, data);
 
-      if (data.freeFilterEmpty) {
+      if (outcome.kind === "failed") {
+        setImportProgress((prev) => ({
+          ...prev,
+          phase: phaseOfModelSync(outcome),
+          status: t("importFailed"),
+          error: outcome.error,
+        }));
+        return;
+      }
+
+      // B-03 (#15159) / #15069: discovery fell back to a stale catalog, which the
+      // sync refuses to store. The dialog ends in "warning" with the reason — never
+      // in a success — and the page does not reload under the operator.
+      if (outcome.kind === "degraded") {
+        setImportProgress((prev) => ({
+          ...prev,
+          phase: phaseOfModelSync(outcome),
+          status: t("noNewModelsAdded"),
+          degraded: true,
+          ...(outcome.cause ? { degradedCause: outcome.cause } : {}),
+          logs: outcome.warning ? [outcome.warning] : [],
+        }));
+        return;
+      }
+
+      await fetchProviderModelMeta();
+
+      if (outcome.kind === "free-filter-empty") {
+        await fetchAliases();
         setImportProgress((prev) => ({
           ...prev,
           phase: "done",
           status: t("noFreeModelsFound"),
           logs: [t("noFreeModelsFound")],
-          total: 0,
-          current: 0,
-          importedCount: 0,
         }));
         return;
       }
 
-      const importedModels = Array.isArray(data.importedModels) ? data.importedModels : [];
-      const importedCount =
-        typeof data.importedCount === "number" ? data.importedCount : importedModels.length;
-      const changedCount =
-        typeof data.importedChanges?.total === "number"
-          ? data.importedChanges.total
-          : importedCount;
-      const totalChangedCount =
-        changedCount +
-        (typeof data.customModelChanges?.total === "number" ? data.customModelChanges.total : 0);
-
-      if (importedModels.length === 0) {
-        setImportProgress((prev) => ({
-          ...prev,
-          phase: "done",
-          status:
-            importedCount > 0
-              ? t("importSuccessCount", { count: importedCount })
-              : t("noNewModelsAdded"),
-          logs: [
-            importedCount > 0
-              ? t("importDoneCount", { count: importedCount })
-              : t("noNewModelsAdded"),
-          ],
-          importedCount,
-        }));
-        if (totalChangedCount > 0) {
-          setTimeout(() => {
-            window.location.reload();
-          }, 2000);
-        }
-        return;
+      const added = outcome.addedModelIds;
+      const removed = outcome.kind === "synced" ? outcome.removedModelIds : [];
+      // A model the import adds keeps its bare-id alias, as the per-model import did.
+      // Two added ids can share a last segment (`a/foo`, `b/foo`): the first one
+      // keeps the alias, and the import never overwrites one it just set.
+      const claimedAliases = new Set(Object.keys(modelAliases));
+      for (const modelId of added) {
+        const baseAlias = modelId.split("/").pop() || modelId;
+        if (claimedAliases.has(baseAlias)) continue;
+        claimedAliases.add(baseAlias);
+        await handleSetAlias(modelId, baseAlias, providerStorageAlias);
       }
+      await fetchAliases();
 
+      const status =
+        added.length > 0
+          ? t("importSuccessCount", { count: added.length })
+          : outcome.kind === "no-listing"
+            ? t("providerPublishesNoModelList")
+            : t("allModelsAlreadyImported");
       setImportProgress((prev) => ({
         ...prev,
         phase: "done",
-        total: importedModels.length,
-        current: importedModels.length,
-        status:
-          importedCount > 0
-            ? t("importSuccessCount", { count: importedCount })
-            : t("noNewModelsAdded"),
+        total: added.length,
+        current: added.length,
+        importedCount: added.length,
+        status,
         logs: [
-          t("foundModelsStartingImport", { count: importedModels.length }),
-          ...importedModels.map((model: any) =>
-            t("importingModelById", { modelId: model.id || model.name || model.model })
-          ),
-          importedCount > 0
-            ? t("importDoneCount", { count: importedCount })
-            : t("noNewModelsAdded"),
+          ...(outcome.kind === "no-listing" && outcome.warning ? [outcome.warning] : []),
+          ...added.map((modelId) => t("importingModelById", { modelId })),
+          ...(removed.length > 0 ? [t("modelsNoLongerListed", { count: removed.length })] : []),
+          ...removed.map((modelId) => `− ${modelId}`),
+          added.length > 0 ? t("importDoneCount", { count: added.length }) : t("noNewModelsAdded"),
         ],
-        importedCount,
       }));
 
-      if (totalChangedCount > 0) {
+      if (added.length > 0 || removed.length > 0) {
         setTimeout(() => {
           window.location.reload();
         }, 2000);
@@ -437,6 +519,8 @@ export function useModelImportHandlers({
       }));
     }
   };
+
+  const handleCompatibleImportWithProgress = runModelSync;
 
   const handleToggleAutoSync = async () => {
     if (togglingAutoSync) return;
@@ -460,16 +544,37 @@ export function useModelImportHandlers({
           })
         )
       );
+      // Only newly enabled connections need an immediate sync; existing
+      // enabled accounts remain on their scheduler cadence.
+      const syncIds = newValue ? newlyEnabledAutoSyncIds(activeWithId, results) : [];
+      // A provider may have many accounts sharing one upstream/IP. Fan out
+      // the setting writes as before, but cap *live* discovery calls at two
+      // to avoid a burst that can trigger shared upstream rate limits.
+      const syncResults = await settleBoundedSyncRequests(syncIds, async (id) => {
+        const response = await fetch(`/api/providers/${id}/sync-models`, {
+          method: "POST",
+          signal: AbortSignal.timeout(60_000),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      });
       await fetchConnections();
+      if (syncIds.length > 0) await fetchProviderModelMeta();
+      const syncFailed = syncResults.some((r) => r.status === "rejected");
       const fulfilled = results.filter((r) => r.status === "fulfilled" && r.value.ok).length;
-      if (fulfilled === results.length) {
+      if (fulfilled === results.length && !syncFailed) {
         notify[newValue ? "success" : "info"](
           newValue ? t("autoSyncEnabled") : t("autoSyncDisabled")
         );
       } else if (fulfilled === 0) {
         notify.error(t("autoSyncToggleFailed"));
       } else {
-        notify.warning(t("autoSyncPartialFailure"));
+        notify.warning(
+          t(
+            syncFailed && fulfilled === results.length
+              ? "autoSyncImmediatePartialFailure"
+              : "autoSyncPartialFailure"
+          )
+        );
       }
     } catch (error) {
       console.error("Error toggling auto-sync:", error);

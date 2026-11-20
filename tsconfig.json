@@ -20,7 +20,9 @@
       "@/*": ["./src/*"],
       "@omniroute/open-sse": ["./open-sse"],
       "@omniroute/open-sse/*": ["./open-sse/*"],
-      "@omniroute/browser-pool": ["./packages/browser-pool/src"]
+      "@omniroute/browser-pool": ["./packages/browser-pool/src"],
+      "@omniroute/ui-kit": ["./packages/ui-kit/src"],
+      "@omniroute/ui-kit/*": ["./packages/ui-kit/src/*"]
     },
     "plugins": [
       {
@@ -60,10 +62,13 @@
     "_ideia",
     "_mono_repo",
     "_references",
+    "_artifacts",
+    "_cache",
+    "_trash",
     ".opencode",
     ".scratch",
     ".agents",
     ".slim",
-    "packages"
+    "packages/browser-pool"
   ]
 }

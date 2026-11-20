@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
+import Icon from "@/shared/components/Icon";
 import { Card } from "@/shared/components";
 
 interface DiversityProviderStat {
@@ -60,17 +61,17 @@ export default function DiversityScoreCard() {
 
   const scorePercentage = Math.round((data.score || 0) * 100);
 
-  let riskColor = "text-green-500";
-  let gaugeColor = "bg-green-500";
+  let riskColor = "text-success";
+  let gaugeColor = "bg-success";
   let riskLabel = t("diversityHealthy");
 
   if (scorePercentage < 40) {
-    riskColor = "text-red-500";
-    gaugeColor = "bg-red-500";
+    riskColor = "text-error";
+    gaugeColor = "bg-error";
     riskLabel = t("diversityRiskHigh");
   } else if (scorePercentage < 70) {
-    riskColor = "text-amber-500";
-    gaugeColor = "bg-amber-500";
+    riskColor = "text-warning";
+    gaugeColor = "bg-warning";
     riskLabel = t("diversityRiskModerate");
   }
 
@@ -83,8 +84,8 @@ export default function DiversityScoreCard() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-[20px] text-primary">pie_chart</span>
-          <h3 className="font-semibold text-text-main">{t("diversityScoreTitle")}</h3>
+          <Icon name="pie_chart" size={20} className="text-primary" />
+          <h3 className="text-text-main">{t("diversityScoreTitle")}</h3>
           <span className="text-xs text-text-muted hidden sm:inline">
             — {t("diversityScoreDesc")}
           </span>
@@ -99,10 +100,10 @@ export default function DiversityScoreCard() {
           <span
             className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${
               scorePercentage < 40
-                ? "bg-red-500/10 text-red-500"
+                ? "bg-error/10 text-error"
                 : scorePercentage < 70
-                  ? "bg-amber-500/10 text-amber-500"
-                  : "bg-green-500/10 text-green-500"
+                  ? "bg-warning/10 text-warning"
+                  : "bg-success/10 text-success"
             }`}
           >
             {t("diversityShannonEntropy")}
@@ -169,7 +170,14 @@ export default function DiversityScoreCard() {
                       {Math.round(stat.share * 100)}%
                     </span>
                   </div>
-                  <div className="h-1.5 rounded-full bg-surface/50 overflow-hidden">
+                  <div
+                    role="progressbar"
+                    aria-label={provider}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(stat.share * 100)}
+                    className="h-1.5 rounded-full bg-surface/50 overflow-hidden"
+                  >
                     <div
                       className={`h-full rounded-full ${gaugeColor}`}
                       style={{ width: `${Math.round(stat.share * 100)}%` }}

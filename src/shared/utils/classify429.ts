@@ -49,6 +49,11 @@ const QUOTA_PATTERNS: ReadonlyArray<RegExp> = [
   /out of credits/i,
   /hard.?limit/i,
   /plan.*limit/i,
+  // LiteLLM spent key: "Budget has been exceeded! Key=..., Max budget: ...". A bare
+  // "Rate limit exceeded" has no "budget" and stays a rate limit. OmniRoute's own refusal
+  // ("Daily budget exceeded: $x / $y", "Budget limit exceeded") must not match: it is a local
+  // 429, not an upstream quota signal.
+  /budget has been (?:exceeded|exhausted)|budget (?:is )?exhausted/i,
 
   // Antigravity / Cloud Code quota exhaustion ("Individual quota reached.
   // Contact your administrator to enable overages. Resets in 164h27m24s.").
@@ -133,6 +138,11 @@ const QUOTA_PATTERNS: ReadonlyArray<RegExp> = [
   /使用上限/,
   /限额将在/,
   /已达?到.*上限/,
+  // GLM/z.ai out of credit (code 1113): "余额不足或无可用资源包,请充值。" — a
+  // long-period signal, so apikey-category 429s keep their credits classification.
+  /\[1113\]/,
+  /余额不足/,
+  /无可用资源包/,
 
   // Kimi/Moonshot: "您的账户额度已用尽，请充值后重试。"
   /额度已用尽/,
@@ -197,6 +207,42 @@ export function looksLikeQuotaExhausted(body: unknown): boolean {
 }
 
 /**
+ * Concurrency-limit wording in 429 bodies ("too many concurrent requests").
+ * The account is healthy — it is just busy with other in-flight requests —
+ * so the right reaction is to fail over to a sibling connection, not to climb
+ * the exponential backoff ladder. Every pattern is a fixed phrase with bounded
+ * alternations only (no `.*`), per the ReDoS rule.
+ */
+const CONCURRENCY_PATTERNS: ReadonlyArray<RegExp> = [
+  /too many (?:concurrent|simultaneous|parallel) (?:requests?|connections?|sessions?|calls?)/i,
+  /concurrent (?:requests?|connections?|sessions?) limit/i,
+  /concurrency limit/i,
+  /max(?:imum)? concurrency/i,
+  /parallel requests? limit/i,
+  /simultaneous requests? limit/i,
+  /high concurrency usage/i,
+  // GLM/z.ai code 1302: "您当前使用该API的并发数过高，请降低并发…"
+  /并发数?过高/,
+];
+
+/**
+ * Returns true if a 429 body reports a CONCURRENCY limit (contention on a
+ * healthy account). An explicit quota body always wins: a body that matches
+ * any quota pattern is never treated as concurrency.
+ *
+ * Deliberately NOT a `FailureKind`: the circuit breaker's per-kind cooldowns
+ * key on `classify429`, and that contract stays unchanged (a concurrency 429
+ * still reads `rate_limit` there). Only the connection-cooldown path consumes
+ * this signal (open-sse/services/accountFallback.ts).
+ */
+export function looksLikeConcurrencyLimit(body: unknown): boolean {
+  const text = bodyToText(body);
+  if (!text) return false;
+  if (!CONCURRENCY_PATTERNS.some((pat) => pat.test(text))) return false;
+  return !looksLikeQuotaExhausted(text);
+}
+
+/**
  * A declared upstream retry window at or beyond this is treated as
  * long-period exhaustion. One hour mirrors the circuit breaker's
  * `quota_exhausted` cooldown bucket (`cooldownByKind`, wired in
@@ -228,9 +274,36 @@ const TERMINAL_QUOTA_PATTERNS: ReadonlyArray<RegExp> = [
   /insufficient balance/i,
 ];
 
+const INSUFFICIENT_QUOTA_CODE = /insufficient.*quota/i;
+const MINUTE_WORDS = /\bper[\s-]?min(?:ute)?s?\b|\/\s*min(?:ute)?\b|\b[RT]PM\b/i;
+// A longer window, or words for a spent balance, mean real exhaustion. "credit" and
+// "balance" carry no \b so INSUFFICIENT_G1_CREDITS_BALANCE still counts.
+const LONGER_WINDOW_WORDS =
+  /\b(?:hour(?:ly)?|(?:to)?day|daily|week(?:ly)?|month(?:ly)?|[RT]P[DH])s?\b/i;
+const SPENT_BALANCE_WORDS = /balance|credit|billing|recharge|top[\s-]?up|\bfunds?\b|payment/i;
+
+/**
+ * A 429 that reuses the `insufficient_quota` code but names a per-minute limit
+ * (and no longer window, no spent balance) is a throttle, not out-of-credit.
+ * OpenAI's real out-of-credit text names no rate, so it stays quota.
+ */
+function isMinuteThrottleOnQuotaCode(text: string): boolean {
+  return (
+    INSUFFICIENT_QUOTA_CODE.test(text) &&
+    MINUTE_WORDS.test(text) &&
+    !LONGER_WINDOW_WORDS.test(text) &&
+    !SPENT_BALANCE_WORDS.test(text)
+  );
+}
+
+// Mirror of retryAfterJson's COMPOUND_DURATION_RE ("151h58m18.015s", "2h7m",
+// "45m3s") — anchored and bounded (ReDoS rule); see parseDelaySeconds below.
+const COMPOUND_DURATION_RE =
+  /^(?:(\d{1,9})h(\d{1,9})m(?:(\d{1,9}(?:\.\d{1,12})?)s)?|(\d{1,9})h(\d{1,9}(?:\.\d{1,12})?)s|(\d{1,9})m(\d{1,9}(?:\.\d{1,12})?)s)$/i;
+
 /**
  * Parse an upstream delay string ("38s", "26.66s", "1500ms", "2m", "1h",
- * or a bare number of seconds) into seconds.
+ * compound Go-style "2h7m23s", or a bare number of seconds) into seconds.
  *
  * Deliberately mirrors `parseDelayString` in
  * open-sse/services/retryAfterJson.ts (#7940) rather than importing it:
@@ -249,6 +322,13 @@ function parseDelaySeconds(value: unknown): number | null {
   if (min) return Number.parseFloat(min[1]) * 60;
   const hr = /^(\d+(?:\.\d+)?)\s*h$/i.exec(str);
   if (hr) return Number.parseFloat(hr[1]) * 3600;
+  const compound = COMPOUND_DURATION_RE.exec(str);
+  if (compound) {
+    const hours = Number(compound[1] ?? compound[4] ?? 0);
+    const minutes = Number(compound[2] ?? compound[6] ?? 0);
+    const seconds = Number.parseFloat(compound[3] ?? compound[5] ?? compound[7] ?? "0");
+    return hours * 3600 + minutes * 60 + seconds;
+  }
   const bare = Number.parseFloat(str);
   return Number.isFinite(bare) ? bare : null;
 }
@@ -311,6 +391,8 @@ function upstreamRetryDelaySeconds(body: unknown): number | null {
  * Decision order:
  * 1. status !== 429 → `"transient"` (don't pretend to know more than
  *    the caller does about non-429 failures).
+ * 1b. a 429 that reuses `insufficient_quota` but names a per-minute limit,
+ *    with no longer window and no spent-balance words → `"rate_limit"`.
  * 2. body carries a terminal credits/billing signal → `"quota_exhausted"`
  *    regardless of any retry hint: those do not clear on a timer.
  * 3. body declares a sub-hour retry window → `"rate_limit"` even when
@@ -332,6 +414,7 @@ export function classify429(response: {
 }): FailureKind {
   if (response.status < 400) return "transient";
   const text = bodyToText(response.body);
+  if (response.status === 429 && isMinuteThrottleOnQuotaCode(text)) return "rate_limit";
   if (text && TERMINAL_QUOTA_PATTERNS.some((pat) => pat.test(text))) {
     return "quota_exhausted";
   }

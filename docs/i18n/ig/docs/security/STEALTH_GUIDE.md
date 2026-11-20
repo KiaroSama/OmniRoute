@@ -16,64 +16,64 @@ Njirimara nzuzo dị ka OmniRoute wee nwee ike ịrụ ọrụ dịka oyi akwa n
 
 ---
 
-## Oyi akwa Nchọpụta Njirimara TLS
+## Oyi akwa Nchọpụta Akara TLS
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-A na-emepụta nnọkọ `wreq-js` na-adịgide adịgide nwayọọ nwayọọ maka mpaghara akaụntụ ọ bụla na proxy edoziri. Ọdọ
-`TlsClient` nke usoro niile na-edobe nnọkọ ruru 128 kachasị, ndị na-eme ka hà bụ **Chrome 124 na macOS** maka
-ọrụ dị n’elu nọ n’azụ Cloudflare. `TlsClient.fetch()` na-akwụsị n’enweghị mgbagha mgbe gburugburu oge-arụ ọrụ nke sistemụ
-adịghị; onye na-akpọ ya nwere ike ịhọrọ ụzọ ndabere n’èzí ihe mkpuchi a n'ụzọ doro anya.
+A na-emepụta nnọkọ `wreq-js` na-adịgide adịgide n'ụzọ umengwụ maka oke akaụntụ ọ bụla na proxy a kpebiri. Ọdọ nnọkọ `TlsClient` nke usoro niile nwere nnọkọ kachasị 128, ndị na-eme onwe ha ka **Chrome 124 na macOS** maka upstream ndị dị n’azụ Cloudflare. `TlsClient.fetch()` na-akwụsị n’enweghị njikọ mgbe native runtime adịghị; onye na-akpọ ya nwere ike ịhọrọ fallback n’ụzọ doro anya n’èzí wrapper a.
 
 - Profaịlụ nnọkọ: `browser: "chrome_124", os: "macos"`
-- Nhazi proxy (usoro mkpa): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (gụnyekwara mkpụrụedemede nta)
-- Oge nchere: `TLS_CLIENT_TIMEOUT_MS` (na-eketa site na `FETCH_TIMEOUT_MS`, ndabara bụ 600000)
+- Mkpebi proxy (usoro mkpa): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (gụnyere ndị e dere na mkpụrụedemede nta)
+- Oge nkwụsị: `TLS_CLIENT_TIMEOUT_MS` (na-eketa site na `FETCH_TIMEOUT_MS`, ndabara bụ 600000)
 - Response nke `wreq-js` dakọtara na fetch (`headers`, `text()`, `json()`, `clone()`, `body`).
-- Onye nche baịtị mbụ (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): `TlsClient.fetch()`
-  na-edozi ozugbo nkụnye ndị isi nke ọrụ dị n’elu rutere, ya mere naanị `TLS_CLIENT_TIMEOUT_MS` enweghị ike ịkpa oke
-  ahụ nke na-adịghị ewepụta baịtị mbụ. `guardTlsFirstByte()` na-eme ka `read()` mbụ nke ahụ na
-  `TLS_FIRST_BYTE_WATCHDOG_MS` (ndabara bụ `10000`, `0` na-agbanyụ ya) gbaa ọsọ; ọ dịghị emetụta ahụ dị mma,
-  ebe ahụ kwụsịrị akwụsị na-akagbu onye na-agụ wreq ma kwe ka mgbagha ndabere TLS dị ugbu a nke `proxyFetch`
-  gafere gaa na onye na-ekesa direct/proxy (arịrịọ na-adịghị mma maka ịkpọgharịa, dịka ọmụmaatụ,
-  POST nwere ahụ, ka ga-atụpụ njehie kama ịnwale ya ọzọ na nzuzo).
+- Onye nche byte mbụ (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): `TlsClient.fetch()`
+  na-emecha ozugbo headers upstream rutere, ya mere naanị `TLS_CLIENT_TIMEOUT_MS` enweghị ike ịkpa oke
+  na body nke na-adịghị ewepụta byte mbụ ma ọlị. `guardTlsFirstByte()` na-eme ka `read()` mbụ nke body
+  na `TLS_FIRST_BYTE_WATCHDOG_MS` (ndabara `10000`, `0` na-agbanyụ ya) gbaa ọsọ megide ibe ha; body
+  dị mma anaghị emetụta, ebe body kwụsịrị akwụsị na-akagbu onye na-agụ wreq ma kwe ka mgbagha
+  TLS-fallback dị ugbu a nke `proxyFetch` gafere gaa na onye na-ekesa direct/proxy (arịrịọ na-adịghị
+  mma maka ịkpọgharị, dịka POST nwere body, ka ga-atụpụ njehie kama ịnwale ya ọzọ na nzuzo).
 
-### Ụgbọ njem onye na-eweta kuki webụ — wreq-js 3.2.0
+### Mbupu onye na-eweta web-cookie — wreq-js 3.2.0
 
-`open-sse/services/tlsClientBase.ts` bụ ihe nkwụnye a na-ekekọrịta maka ụgbọ njem kuki webụ ise pụrụ iche
-dị n’okpuru. Ihe mkpuchi dị mfe nke onye na-eweta ọrụ ọ bụla na-ahọrọ profaịlụ ihe nchọgharị/OS. Ihe nkwụnye ahụ
-na-eji otu onye na-ebunye oge-arụ ọrụ wreq na ọdọ ụgbọ njem dị na `open-sse/utils/tlsClient.ts`, nke
-profaịlụ + OS + proxy edoziri na-eji dị ka igodo, ebe arịrịọ ọ bụla na-eji `cookieMode: "ephemeral"`. N’ihi ya, akaụntụ na
-arịrịọ na-ekekọrịta njikọ n’ogo ụgbọ njem, mana ha anaghị ekekọrịta nnọkọ wreq ma ọ bụ ite kuki.
+`open-sse/services/tlsClientBase.ts` bụ adapter a na-ekekọrịta maka mbupu web-cookie pụrụ iche ise
+dị n’okpuru. Wrapper dị gịrịgịrị nke onye na-eweta ọ bụla na-ahọrọ profaịlụ browser/OS. Adapter ahụ
+na-eji otu loader runtime wreq na ọdọ mbupu dị na `open-sse/utils/tlsClient.ts`, nke profaịlụ + OS +
+proxy a kpebiri ji bụrụ key, ebe arịrịọ ọ bụla na-eji `cookieMode: "ephemeral"`. N’ihi ya, akaụntụ
+na arịrịọ na-ekekọrịta njikọ ndị dị n’ọkwa mbupu, mana ha anaghị ekekọrịta nnọkọ wreq ma ọ bụ ebe
+nchekwa cookie.
 
-| Onye na-eweta ọrụ | Profaịlụ      | OS e ṅomiri | Iwu EOF nke iyi                                  |
-| ----------------- | ------------- | ----------- | ------------------------------------------------ |
-| Claude            | `chrome_146`  | Linux       | tinye `[DONE]`                                   |
-| Perplexity        | `firefox_148` | macOS       | tinye `event: end_of_stream`                     |
-| Grok              | `chrome_146`  | Linux       | ewepụ `[DONE]`                                   |
-| Notion            | `chrome_146`  | Windows     | tinye `[DONE]`                                   |
-| LMArena           | `chrome_146`  | Windows     | enweghị akara njedebe; mechie na EOF nke sistemụ |
+| Onye na-eweta | Profaịlụ      | OS e ṅomiri | Iwu Stream EOF                         |
+| ------------- | ------------- | ----------- | -------------------------------------- |
+| Claude        | `chrome_146`  | Linux       | tinye `[DONE]`                         |
+| Perplexity    | `firefox_151` | macOS       | tinye `event: end_of_stream`           |
+| Grok          | `chrome_146`  | Linux       | ewepụ `[DONE]`                         |
+| Notion        | `chrome_146`  | Windows     | tinye `[DONE]`                         |
+| LMArena       | `chrome_146`  | Windows     | enweghị sentinel; mechie na native EOF |
 
-- Mgbasa iyi na-eji `ReadableStream` nke nzaghachi sistemụ ozugbo; a naghị emepụta faịlụ nwa oge ma ọ bụ ọrụ
-  enyemaka.
-- A na-enyocha ihe ruru baịtị mbụ 256 tupu e gosi iyi. Ndị na-eweta SSE na-edobe njehie na-abụghị SSE
-  na nchekwa; Grok/LMArena na-atụgharị ihe ịma aka Cloudflare gaa na `403` na ibe HTML etiti gaa na `502`.
-- Oge nchere arịrịọ nke sistemụ ka nọ n’okpuru njedebe siri ike zuru oke nke JS. Ịkwụsị ọrụ na-eme ka
-  naanị ụgbọ njem profaịlụ/OS/proxy metụtara ghara ịdị irè ma mechie tupu arịrịọ na-esote emepụta ya ọzọ.
-- Usoro mkpa nhazi proxy bụ `proxyUrl` nke oku ọ bụla → ọnọdụ akaụntụ/dashboard metụtara arịrịọ →
-  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (gụnyere ụdị mkpụrụedemede nta). Njehie nhazi na-akwụsị n’enweghị mgbagha
-  kama ikwe ka njikọ kpọmkwem zoro ezo pụọ. LMArena kpachapụrụ anya na-edozi megide `arena.ai`.
-- `byteResponse` na-eweghachi URL `data:` nwere ụdị ọdịnaya ziri ezi na-enweghị mmebi UTF-8.
-- Njehie ndị ahụ bụ `TlsClientUnavailableError` (ngwugwu/mgbakwunye adịghị), `TlsClientHangError`
-  (agafela njedebe oge), na `WreqTransportCapacityError` (koodu njehie ikike nnọkọ a na-ekekọrịta)
+- Streaming na-eji native response `ReadableStream` ozugbo; anaghị emepụta faịlụ nwa oge ma ọ bụ
+  sidecar.
+- A na-enyocha ihe ruru byte mbụ 256 tupu e kpughee stream. Ndị na-eweta SSE na-echekwa njehie
+  na-abụghị SSE na buffer; Grok/LMArena na-atụgharị ihe ịma aka Cloudflare ka ọ bụrụ `403` na
+  ibe HTML etiti ka ọ bụrụ `502`.
+- Oke oge native request ka absolute JS hard deadline kpuchiri. Ịkwụsị ọrụ na-emebi ma mechie
+  naanị mbupu profaịlụ/OS/proxy emetụtara tupu arịrịọ na-esote emepụta ya ọzọ.
+- Usoro mkpa mkpebi proxy bụ `proxyUrl` nke oku ọ bụla → ọnọdụ akaụntụ/dashboard nke arịrịọ ahụ →
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (gụnyere ụdị ndị e dere na mkpụrụedemede nta). Njehie
+  mkpebi na-eme ka usoro kwụsị n’enweghị njikọ kama ikwe ka njikọ kpọmkwem gbapụ. LMArena
+  na-ama ụma eme mkpebi megide `arena.ai`.
+- `byteResponse` na-eweghachi URL `data:` nwere content type ziri ezi n’enweghị mmebi UTF-8.
+- Njehie ndị ahụ bụ `TlsClientUnavailableError` (package/addon adịghị), `TlsClientHangError`
+  (agafere deadline), na `WreqTransportCapacityError` (koodu njehie ike nnọkọ a na-ekekọrịta)
   mgbe oghere profaịlụ/OS/proxy niile 128 nwere oke nọ n’ọrụ ma ọ bụ na-emechi.
 
-Nnọkọ `TlsClient` izugbe dị n’elu ka bụ nke ahaziri maka ọnọdụ kuki na-adịgide adịgide nke ihe nchọgharị
-na-akwado. Ụzọ abụọ ahụ na-eji otu onye na-ebunye modul wreq echekwara na ihe njikọ okirikiri ndụ usoro; ọdọ ha ka dị
-iche n’ihi na e kpachapụrụ anya mee ka oge ndụ kuki ha dị iche.
+Nnọkọ `TlsClient` izugbe dị n’elu ka bụ nke a haziri kpọmkwem maka ọnọdụ cookie na-adịgide adịgide
+nke browser na-akwado. Ụzọ abụọ ahụ na-eji otu loader modul wreq echekwara na cache na lifecycle
+hook nke usoro ahụ; ọdọ ha ka dị iche n’ihi na a kpachapụrụ anya mee ka oge ndụ cookie ha dị iche.
 
-Ngwugwu etinyere n’otu ụdị na-akwado profaịlụ ndị ahụ, mana nnabata WAF n’ezie nwere ike ịgbanwe n’adabereghị
-na ule nkwekọrịta mpaghara. Nyochaa mgbanwe njirimara megide akaụntụ dị ndụ e nyere ikike n'ụzọ doro anya
-tupu ikwu na ọ dakọtara na ihe nchọgharị nke ọrụ dị n’elu.
+Package a kpọgidere na-akwado profaịlụ ndị ahụ, mana nnabata WAF n’ezi ọnọdụ nwere ike ịgbanwe
+n’adabereghị na ule nkwekọrịta mpaghara. Nyochaa mgbanwe fingerprint site na akaụntụ live e nyere
+ikike n’ụzọ doro anya tupu ikwu na ọ dakọtara na browser upstream.
 
 ---
 
@@ -122,7 +122,7 @@ A na-etinye ya na: ngọngọ `system`, `messages[].content` niile, yana `tools[
 
 Maka relay Anthropic nke ndị ọzọ nke na-anabata naanị okporoụzọ data "ezigbo Claude Code":
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"` na ndabara
@@ -139,41 +139,63 @@ Modulu ibe ya dị n’otu ngwugwu ahụ:
 
 ---
 
-## Nzuzo Antigravity
+## Antigravity Stealth
 
-Arịrịọ Antigravity na-echekwa ederede onye kpọrọ ya byte-for-byte. OmniRoute anaghị etinye mkpụrụedemede zero-width n’ime prompts ma ọ bụ gbanwee aha/tinye ngwaọrụ iji ṅomie klayenti IDE.
+Arịrịọ Antigravity chekwaa ederede onye ọkpụkpọ byte-maka-byte. OmniRoute anaghị etinye mkpụrụedemede efu n'ime mkpali ma ọ bụ ngwaọrụ rename/inject iji ṅomie onye ahịa IDE.
 
 ### `antigravityHeaderScrub.ts`
 
-Na-ewepụ akara Stainless SDK (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) tupu ibugharị arịrịọ ahụ.
+Ihe nrịbama SDK igwe anaghị agba nchara (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) tupu ebuga ya.
 
-### ⚠️ Ihe egwu: `ANTIGRAVITY_CREDITS=always` (ebe mmachibido akaụntụ na-emekarị)
+### ihe ize ndụ ⚠️ : `ANTIGRAVITY_CREDITS=always` (ebe dị ọkụ machibido akaụntụ)
 
-`ANTIGRAVITY_CREDITS=always` (nke `open-sse/executors/antigravity.ts` na-eji) na-ebufe arịrịọ **niile** site na Antigravity AI Credit Overages (kredịtị Google a na-akwụ ụgwọ) kama ikwe ka oke free-tier nke Google gbochie ihe. Edekọrọ nke a dịka atụmatụ, mana ọ bụ **otu akụkọ mmebi ToS kacha emekarị anyị na-ahụ** — amachibidola ọtụtụ akaụntụ Google Ultra site na `403 / "service disabled for ToS violation" / insufficient_quota` mgbe ha jiri `=always` rụọ ọrụ ruo awa ole na ole.
+`ANTIGRAVITY_CREDITS=always` (consumed by `open-sse/executors/antigravity.ts`) routes **every** request through Antigravity AI Credit Overages (paid Google credits) instead of letting Google's free-tier quota gate things. This is documented as a feature, but it is **the single most common ToS-violation report we see** — multiple Google Ultra accounts have been banned with `403 / "service disabled for ToS violation" / insufficient_quota` after running for a few hours with `=always`.
 
-Mmanye upstream dị **n’akụkụ Google**, ọ bụghị ihe OmniRoute nwere ike igbochi. Aha env var na dọkụmentị ndị dị ugbu a na-eme ka ọ dị ka ntọala dị nchebe ịgbanwe; ọ bụghị.
+Mmanye nke dị n'elu agbanyere** akụkụ Google** , ọ bụghị ihe ọ bụla OmniRoute nwere ike igbochi. Aha env var na akwụkwọ ndị dị adị na-eme ka ọ dị ka mkpịsị nchekwa dị mma iji tụgharịa; ọ bụghị.
 
-**Ihe mere nke a ji akpalite nchọpụta mmegbu karịa ojiji free-tier naanị:**
+**Ihe kpatara nke a ji adọta nchọpụta mmetọ nke ukwuu karịa iji naanị ọkwa efu:**
 
-- Mmefu akpaaka na-aga n’ihu n’otu akaụntụ Google na-ebute akara dị iche karịa free-tier nke ruru oke wee kwụsị.
-- Overage kredịtị enweghị oke ọsọ, ya mere klayenti ahaziri n’ụzọ na-ezighị ezi nwere ike imefu ọtụtụ narị USD n’ime nkeji ole na ole ma yie ireghachi API-key ma ọ bụ okporoụzọ data bot.
-- Mgbe ọtụtụ ndị ọrụ OmniRoute na-eji overage kredịtị n’otu oge site n’otu IP mpụga ahụ, ọ na-eme ka akara ahụ sie ike.
+- Emefu akpaaka na-adịgide adịgide na ọkọlọtọ akaụntụ Google dị iche karịa ọkwa hits-oke-na-nkwụsị n'efu.
+- Overages kredit enweghị ọnụego elu ụlọ, yabụ onye ahịa na-ahazi ezighi ezi nwere ike ịgba ọkụ n'ime narị USD n'ime nkeji wee yie ka ire ere API-igodo ma ọ bụ okporo ụzọ bot.
+- Ọtụtụ ndị ọrụ OmniRoute na-akụ kredit overage n'otu n'otu site na otu mpụta IP na-eme ka mgbama ahụ.
 
-**Ọnọdụ a tụrụ aro:**
+**Ndokwa akwadoro:**
 
-1. Debe ndabara `ANTIGRAVITY_CREDITS=off` belụsọ ma onye na-ahụ maka sistemụ anabata kpọmkwem ihe egwu kredịtị a na-akwụ ụgwọ na mmanye akaụntụ. `retry` na-ebu ụzọ zipụ arịrịọ nkịtị ma tinye kredịtị naanị otu ugboro kachasị mgbe quota 429 tozuru oke; `always` na-etinye kredịtị n’arịrịọ mbụ.
-2. **Kesaa ibu n’etiti ndị na-eweta site na Auto-Combo** (`model: "auto"` ma ọ bụ combo `kr/glm/etc`) kama imeju otu akaụntụ Antigravity ruo oke.
-3. **Tọọ oke RPM maka njikọ ọ bụla** na ibe ndezi nke onye na-eweta Antigravity (Dashboard → Providers → Antigravity → connection → rate limit). 30–60 RPM bụ oke elu a pụrụ ịgbachitere maka ojiji na-aga n’ihu.
-4. **Jiri netwọkụ upstream kwụsiri ike nke onye na-ahụ maka sistemụ na-achịkwa** ma zere ịkekọrịta otu akaụntụ n’etiti ndị ọrụ ma ọ bụ ibu ọrụ na-enweghị njikọ.
-5. **Ọ bụrụ na amachibidoro gị**: tinye arịrịọ mkpesa site na `support.google.com` → "Restore Workspace/Account access" tinyere body nzaghachi `quota_exceeded` / `service disabled` ahụ Google zitere kpọmkwem. E nweghị nkwa na a ga-eweghachi ya.
+1. Debe `ANTIGRAVITY_CREDITS=off` ndabara belụsọ ma onye ọrụ na-anabata nke ọma kredit akwụ ụgwọ yana ihe egwu mmanye akaụntụ. `retry` na-ebu ụzọ ziga arịrịọ nkịtị wee tinye kredit kacha otu ugboro mgbe oke ruru 429; `always` na-agbanye kredit na arịrịọ mbụ.
+2. **Gbasaa ibu n'ofe ndị na-eweta site na Auto-Combo** (`model: "auto"` ma ọ bụ `kr/glm/etc` -combo) kama imeju otu akaụntụ Antigravity.
+3. **Tọọ oke njikọ RPM kwa otu** na ibe edezi Antigravity onye na-eweta (Dashboard → Ndị na-enye → Antigravity → njikọ → ọnụego oke). 30–60 RPM bụ oke mgbachitere elu maka ijigide ya.
+4. **Jiri ịkparịta ụka n'igwe kwụsiri ike, nke onye ọrụ na-achịkwa** ma zere ịkekọrịta otu akaụntụ n'ofe ndị ọrụ ma ọ bụ ibu ọrụ enweghị njikọ.
+5. **Ọ bụrụ na amachibidoro ya** : mkpesa site na `support.google.com` → "Weghachite ohere Workspace/Account " na `quota_exceeded` / `service disabled` nzaghachi Google ziri ezi. Ekwenyeghị nkwa mweghachi.
 
-Ntụaka environment na-akọwa mmetụta ụdị kredịtị ọ bụla nwere n’akaụntụ na mmefu.
+Ihe ndekọ gburugburu ebe obibi na-edekọ akaụntụ ahụ wee na-emefu mmetụta nke ọnọdụ kredit ọ bụla.
 
-Ebe ndị metụtara ya:
+#### Ọbụghị naanị `=always`: Antigravity OAuth routing n'ozuzu
+
+Nkwụsị ahụ ejedebeghị na oke kredit. Akụkọ dị na Nọvemba 2026 (#19223, #19266) kọwara ọtụtụ akaụntụ Google kwụsịtụrụ ka ha na-ebugharị `antigravity` na `agy` (Antigravity CLI), ndị na-eweta:
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+Ndị na-enye ọrụ abụọ ahụ na-akwado na nnọkọ Antigravity ngwaahịa OAuth, nke bụ ihe ngosi ihe egwu nke dashboard ("Onye na-eweta ọrụ a na-eji ngwaahịa gọọmentị gị session/OAuth, nke enyeghị ikike maka iji proxy/router ") dọrọ aka ná ntị tupu agbakwunyere njikọ. Ọ nweghị ndụmọdụ ndị dị n'elu nyere ikike ka ojiji ahụ; ha na-ebelata ego ole otu akaụntụ na-ebu.
+
+**Oghere API ikike maka ụdị Gemini.** Google na-enye ohere mmemme na Gemini site na APIs ya, nke OmniRoute na-akwado dị ka ndị na-eweta igodo API nkịtị:
+
+| Id onye na-eweta | Aha dashboard             | nzere                                                                         |
+| ---------------- | ------------------------- | ----------------------------------------------------------------------------- |
+| `gemini`         | Gemini (Google AI Studio) | igodo Gemini API sitere na Google AI Studio (ọkwa efu dị)                     |
+| `vertex`         | Vertex AI                 | Akaụntụ ọrụ JSON, ohere ohere OAuth ma ọ bụ Vertex Express igodo API (Gemini) |
+
+Ndị na-enye ndị a na-eji okwu Google nzere maka ịnweta API, n'adịghị ka oge ngwaahịa Antigravity. Ha anaghị eme ka ojiji ọ bụla kwadoro ma ọ bụ wepụ ihe ize ndụ nke mmanye: onye ọ bụla na-achịkwa ya site na usoro nke ya, nke onye ọrụ ahụ ga-enyocha maka ntinye ha. Dịka ọmụmaatụ, [usoro ọrụ Gemini API](https://ai.google.dev/gemini-api/terms) na-enye ohere naanị ọrụ akwụ ụgwọ mgbe ndị ahịa API nwetara ndị ọrụ na European Economic Area, Switzerland ma ọ bụ United Kingdom, yana ọdịnaya ezigara na Ọrụ akwụghị ụgwọ nwere ike iji kwalite ngwaahịa Google. Vertex AI dara n'okpuru usoro igwe ojii Google kama ( [Usoro akọwapụtara ọrụ](https://cloud.google.com/terms/service-terms) ). Ọnụ ahịa na oke na-eso usoro API ndị ahụ kama ịdenye aha Antigravity.
+
+Ndị na-arụ ọrụ chọrọ ịzenarị nkwusioru Antigravity akọwara n'elu kwesịrị ibu ụzọ Gemini okporo ụzọ site n'otu n'ime ndị na-enye ndị a kama `antigravity` / `agy`, mgbe ha nyochachara na ojiji ha dabara n'usoro onye na-eweta ya.
+
+Isi ihe emetụ aka:
 
 - `open-sse/executors/antigravity.ts` — na-agụ `process.env.ANTIGRAVITY_CREDITS`
-- `src/lib/oauth/providers/antigravity.ts` — njikọ kredenshial
-- Akụkọ mbụ banyere ihe merenụ: Mkparịta ụka [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
+- `src/lib/oauth/providers/antigravity.ts` — nzere plumbing
+- Akụkọ mbụ merenụ: Mkparịta ụka [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
 
@@ -240,19 +262,18 @@ Aha faịlụ cert: `omniroute-mitm.crt`. A na-eji `getCertFingerprint()` tụny
 
 Endpoint MITM niile chọrọ nyocha ikike njikwa (`requireCliToolsAuth`). A na-edobe okwuntughe sudo na cache n'ime scope nke modulu (ọ bụghị `globalThis` ma ọlị), a na-ehichapụkwa ya na `stopMitm()`.
 
-## Ndochi User-Agent — mgbanwe env (ngalaba 12 nke `.env.example`)
+## Onye nnọchi anya onye ọrụ wepụrụ — env vars (`.env.example` ngalaba 12)
 
-| Mgbanwe                  | Ndabara                                                         |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| Na-agbanwe agbanwe  | Ọdabara                                       |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-`open-sse/executors/base.ts::buildHeaders()` na-eji ha site na nchọgharị dinamiki. **Bulie ụdị ndị a mgbe ndị na-eweta ọrụ wepụtara ụdị CLI ọhụrụ** — a na-amalite ịjụ eriri UA ndị merela ochie dịka klayenti ndị ochie.
+Eji `open-sse/executors/base.ts::buildHeaders()` eri ya site na nchọcha ike.** Kpochapụ ndị a mgbe ndị na-eweta ha wepụtara ụdị CLI ọhụrụ** eriri — stale UA na-amalite ịjụ dị ka ndị ahịa emechiela.
 
 ## Ihe Mgbanwe Ọnọdụ Ndakọrịta CLI (`.env.example` ngalaba 13)
 

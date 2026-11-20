@@ -1,12 +1,16 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
+import { PageHeader } from "@omniroute/ui-kit/page-header";
+import Badge from "@/shared/components/Badge";
+import EmptyState from "@/shared/components/EmptyState";
 import { AI_PROVIDERS } from "@/shared/constants/providers";
 import { resolveProviderServiceKinds } from "@omniroute/open-sse/config/mediaServiceKinds.ts";
 import type { MediaKind } from "../components/mediaKinds";
 import { MEDIA_KINDS } from "../components/mediaKinds";
 import MediaProviderKindNav from "../components/MediaProviderKindNav";
 import ProviderIcon from "@/shared/components/ProviderIcon";
+import { flowColorAlpha } from "@/shared/components/flow/edgeStyles";
 
 interface PageProps {
   params: Promise<{ kind: string }>;
@@ -28,6 +32,7 @@ export default async function MediaProviderKindPage({ params }: PageProps) {
 
   const validKind = kind as MediaKind;
   const t = await getTranslations("media");
+  const tc = await getTranslations("common");
 
   // Filter providers that support this kind. Membership is the union of the
   // explicitly declared serviceKinds and the media kinds derived from the
@@ -43,18 +48,12 @@ export default async function MediaProviderKindPage({ params }: PageProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold">{kindLabel}</h1>
-        <p className="text-sm text-text-muted">{t("noProviders")}</p>
-      </div>
+      <PageHeader compact title={kindLabel} description={t("noProviders")} />
 
       <MediaProviderKindNav activeKind={validKind} />
 
       {matchingProviders.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 gap-3 border border-dashed border-border rounded-xl text-text-muted">
-          <span className="material-symbols-outlined text-[32px]">category</span>
-          <p className="text-sm">{t("noProviders")}</p>
-        </div>
+        <EmptyState icon="category" title={t("noProviders")} />
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {matchingProviders.map((provider) => {
@@ -71,20 +70,20 @@ export default async function MediaProviderKindPage({ params }: PageProps) {
                 href={`/dashboard/media-providers/${validKind}/${p.id}`}
                 className="group"
               >
-                <div className="rounded-xl border border-border bg-bg-card p-3 hover:bg-black/5 dark:hover:bg-white/5 hover:border-primary/40 transition-colors cursor-pointer h-full flex flex-col gap-2">
+                <div className="rounded-xl border border-border bg-surface p-3 hover:bg-bg-subtle hover:border-primary/40 transition-colors cursor-pointer h-full flex flex-col gap-2">
                   <div className="flex items-center gap-2">
                     <div
                       className="size-7 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: `${p.color ?? "#64748b"}15` }}
+                      style={{ backgroundColor: flowColorAlpha(p.color ?? "#64748b", 8) }}
                     >
                       <ProviderIcon providerId={p.id} size={20} type="color" />
                     </div>
                     <span className="text-sm font-medium truncate">{p.name}</span>
                   </div>
                   {p.hasFree && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-500/10 border border-green-500/20 text-green-600 dark:text-green-400 w-fit">
-                      Free
-                    </span>
+                    <Badge variant="success" size="sm" className="w-fit">
+                      {tc("free")}
+                    </Badge>
                   )}
                 </div>
               </Link>

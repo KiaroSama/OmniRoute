@@ -2,6 +2,10 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { Popover, PopoverContent, PopoverTrigger } from "@omniroute/ui-kit/popover";
+import Button from "@/shared/components/Button";
+import Icon from "@/shared/components/Icon";
+import { cn } from "@/shared/utils/cn";
 import type { SessionInfo } from "../../hooks/useSessionRecorder";
 
 interface SessionPickerProps {
@@ -11,6 +15,11 @@ interface SessionPickerProps {
   onDelete: (id: string) => void;
 }
 
+/**
+ * The session list is the kit Popover (body portal, collision-aware placement, Escape and
+ * outside press to close, focus back on the trigger). It stays a popover and not a menu because
+ * each row holds two controls: the session itself and its delete button.
+ */
 export function SessionPicker({ sessions, selectedId, onSelect, onDelete }: SessionPickerProps) {
   const t = useTranslations("trafficInspector");
   const [open, setOpen] = useState(false);
@@ -18,72 +27,71 @@ export function SessionPicker({ sessions, selectedId, onSelect, onDelete }: Sess
   const selected = sessions.find((s) => s.id === selectedId);
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1 rounded border border-border bg-bg-subtle px-2 py-1 text-xs text-text-main hover:bg-surface focus-ring"
-      >
-        <span className="material-symbols-outlined text-[14px]" aria-hidden="true">
-          folder_open
-        </span>
-        {selected
-          ? (selected.name ?? t("sessionName", { id: selected.id.slice(0, 6) }))
-          : t("sessions")}
-        <span className="material-symbols-outlined text-[12px] ml-1" aria-hidden="true">
-          {open ? "expand_less" : "expand_more"}
-        </span>
-      </button>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Icon name="folder_open" size={14} />
+          {selected
+            ? (selected.name ?? t("sessionName", { id: selected.id.slice(0, 6) }))
+            : t("sessions")}
+          <Icon name={open ? "expand_less" : "expand_more"} size={12} />
+        </Button>
+      </PopoverTrigger>
 
-      {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 min-w-[200px] rounded-lg border border-border bg-surface shadow-lg py-1">
-          <button
-            type="button"
-            onClick={() => {
-              onSelect(undefined);
-              setOpen(false);
-            }}
-            className="w-full text-left px-3 py-1.5 text-xs text-text-muted hover:bg-bg-subtle focus-ring"
-          >
-            {t("allTraffic")}
-          </button>
-          {sessions.length === 0 && (
-            <p className="px-3 py-2 text-xs text-text-muted italic">{t("noSessionsYet")}</p>
-          )}
-          {sessions.map((s) => (
-            <div key={s.id} className="flex items-center group">
-              <button
-                type="button"
-                onClick={() => {
-                  onSelect(s.id);
-                  setOpen(false);
-                }}
-                className={`flex-1 text-left px-3 py-1.5 text-xs hover:bg-bg-subtle focus-ring ${
-                  selectedId === s.id ? "text-blue-400 font-medium" : "text-text-main"
-                }`}
-              >
-                {s.name ?? t("sessionName", { id: s.id.slice(0, 6) })}
-                <span className="text-text-muted ml-1">
-                  ({t("requestCountShort", { count: s.requestCount })})
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onDelete(s.id);
-                  if (selectedId === s.id) onSelect(undefined);
-                }}
-                className="px-2 text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 focus-ring rounded"
-                aria-label={t("deleteSession")}
-              >
-                <span className="material-symbols-outlined text-[14px]" aria-hidden="true">
-                  delete
-                </span>
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+      <PopoverContent
+        aria-label={t("sessions")}
+        sideOffset={4}
+        className="w-auto min-w-[220px] px-0 py-1"
+      >
+        <Button
+          variant="ghost"
+          size="sm"
+          fullWidth
+          className="justify-start rounded-none text-text-muted"
+          onClick={() => {
+            onSelect(undefined);
+            setOpen(false);
+          }}
+        >
+          {t("allTraffic")}
+        </Button>
+        {sessions.length === 0 && (
+          <p className="px-3 py-2 text-xs text-text-muted italic">{t("noSessionsYet")}</p>
+        )}
+        {sessions.map((s) => (
+          <div key={s.id} className="flex items-center group">
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-current={selectedId === s.id ? "true" : undefined}
+              className={cn(
+                "min-w-0 flex-1 justify-start rounded-none",
+                selectedId === s.id ? "text-text-main" : "text-text-main"
+              )}
+              onClick={() => {
+                onSelect(s.id);
+                setOpen(false);
+              }}
+            >
+              {s.name ?? t("sessionName", { id: s.id.slice(0, 6) })}
+              <span className="text-text-muted ml-1">
+                ({t("requestCountShort", { count: s.requestCount })})
+              </span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              icon="delete"
+              className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+              onClick={() => {
+                onDelete(s.id);
+                if (selectedId === s.id) onSelect(undefined);
+              }}
+              aria-label={t("deleteSession")}
+            />
+          </div>
+        ))}
+      </PopoverContent>
+    </Popover>
   );
 }

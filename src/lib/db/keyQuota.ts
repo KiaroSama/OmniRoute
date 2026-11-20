@@ -58,6 +58,8 @@ export type KeyQuotaDimension = "tpm" | "rpm";
 
 /** 2-bucket sliding window over a 60s fixed window. */
 export const KEY_QUOTA_WINDOW_MS = 60_000;
+/** Most stale minute rows one counter write deletes; later writes drain the rest. */
+const STALE_COUNTER_DELETE_LIMIT = 1000;
 
 /** dimension_key fragment for the counters table. */
 const DIMENSION_TPM = "key-quota:tpm";
@@ -154,6 +156,8 @@ export function upsertKeyQuotaLimits(
        monthly_amount_usd = excluded.monthly_amount_usd,
        updated_at = excluded.updated_at`
   ).run(apiKeyId, tpm, rpm, monthly);
+  // Saving the quota is an operator action: a month closed by unpriced usage starts over.
+  deleteUnpricedQuotaMonthStart(apiKeyId);
 
   return { apiKeyId, tpmLimit: tpm, rpmLimit: rpm, monthlyAmountUsd: monthly };
 }
@@ -163,6 +167,41 @@ export function clearKeyQuotaLimits(apiKeyId: string): void {
   const db = getDbInstance();
   db.prepare("DELETE FROM api_key_quota_limits WHERE api_key_id = ?").run(apiKeyId);
   db.prepare("DELETE FROM api_key_quota_counters WHERE api_key_id = ?").run(apiKeyId);
+  deleteUnpricedQuotaMonthStart(apiKeyId);
+}
+
+// ---------------------------------------------------------------------------
+// Unpriced usage marker
+// ---------------------------------------------------------------------------
+
+/**
+ * The calendar month in which a key used a metered model it could not price (no
+ * pricing row and no provider-reported cost). That usage never reaches the
+ * ledger the monthly cap sums, so it is recorded here, in `key_value`, and needs
+ * no schema change.
+ */
+const UNPRICED_QUOTA_NAMESPACE = "keyQuotaUnpricedUsage";
+
+/** Start (UTC ms) of the month that recorded unpriced usage for a key, or null. */
+export function loadUnpricedQuotaMonthStart(apiKeyId: string): number | null {
+  if (!apiKeyId) return null;
+  const row = getDbInstance()
+    .prepare("SELECT value FROM key_value WHERE namespace = ? AND key = ?")
+    .get(UNPRICED_QUOTA_NAMESPACE, apiKeyId);
+  const monthStart = toNumber(asRecord(row).value, 0);
+  return monthStart > 0 ? monthStart : null;
+}
+
+export function saveUnpricedQuotaMonthStart(apiKeyId: string, monthStartMs: number): void {
+  getDbInstance()
+    .prepare("INSERT OR REPLACE INTO key_value (namespace, key, value) VALUES (?, ?, ?)")
+    .run(UNPRICED_QUOTA_NAMESPACE, apiKeyId, String(monthStartMs));
+}
+
+export function deleteUnpricedQuotaMonthStart(apiKeyId: string): void {
+  getDbInstance()
+    .prepare("DELETE FROM key_value WHERE namespace = ? AND key = ?")
+    .run(UNPRICED_QUOTA_NAMESPACE, apiKeyId);
 }
 
 // ---------------------------------------------------------------------------
@@ -218,6 +257,16 @@ export function incrementKeyQuotaCounter(
        consumed = consumed + excluded.consumed,
        updated_at = excluded.updated_at`
   ).run(apiKeyId, dimensionKey, bucket, delta, nowMs);
+  // Reads use the current and the previous bucket only; older rows never count again. Normal use
+  // leaves one stale row per minute. A capped delete keeps one request from stalling on an old
+  // backlog; later writes drain the rest.
+  db.prepare(
+    `DELETE FROM api_key_quota_counters WHERE rowid IN (
+       SELECT rowid FROM api_key_quota_counters
+       WHERE api_key_id = ? AND dimension_key = ? AND bucket_index < ?
+       LIMIT ?
+     )`
+  ).run(apiKeyId, dimensionKey, bucket - 1, STALE_COUNTER_DELETE_LIMIT);
 }
 
 /**
@@ -268,17 +317,31 @@ function getLedgerMonthTotal(apiKeyId: string, nowMs: number): number {
 /**
  * Full enforcement-ready status for a key: limits, current usage, and per
  * dimension exceeded flags.
+ * Enforcement-only reads skip unlimited dimensions and report their counters
+ * as zero. Dashboard callers retain full usage reads by default.
  */
 export function getKeyQuotaStatus(
   apiKeyId: string,
-  deps: { now?: () => number; monthTotalUsd?: number } = {}
+  deps: { now?: () => number; monthTotalUsd?: number; enforcementOnly?: boolean } = {}
 ): KeyQuotaStatus {
   const limits = getKeyQuotaLimits(apiKeyId);
-  const counters = getKeyQuotaCounters(apiKeyId, deps);
+  const nowMs = (deps.now ?? Date.now)();
+  const counters = deps.enforcementOnly
+    ? {
+        tpmUsed:
+          limits.tpmLimit !== null ? effectiveWindowCount(apiKeyId, DIMENSION_TPM, nowMs) : 0,
+        rpmUsed:
+          limits.rpmLimit !== null ? effectiveWindowCount(apiKeyId, DIMENSION_RPM, nowMs) : 0,
+        monthlyAmountUsd:
+          limits.monthlyAmountUsd !== null
+            ? deps.monthTotalUsd !== undefined
+              ? deps.monthTotalUsd
+              : getLedgerMonthTotal(apiKeyId, nowMs)
+            : 0,
+      }
+    : getKeyQuotaCounters(apiKeyId, { ...deps, now: () => nowMs });
   const enabled =
     limits.tpmLimit !== null || limits.rpmLimit !== null || limits.monthlyAmountUsd !== null;
-
-  const nowMs = (deps.now ?? Date.now)();
 
   return {
     enabled,

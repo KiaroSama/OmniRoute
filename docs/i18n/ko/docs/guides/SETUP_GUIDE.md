@@ -20,14 +20,16 @@
 
 ## 설치 방법
 
-### npm (권장)
+### npm(권장)
 
 ```bash
 npm install -g omniroute
 omniroute
 ```
 
-대시보드는 `http://localhost:20128`에서 열리며 API 기본 URL은 `http://localhost:20128/v1`입니다.
+대시보드는 `http://localhost:20128` 및 API 기본 URL 에서 열립니다. `http://localhost:20128/v1`.
+
+> **npm 사용자:** npm이 설치 스크립트가 차단되었음을 경고하는 경우(예: `omniroute`, `better-sqlite3`) [— npm install-scripts 차단 문제 해결을](./TROUBLESHOOTING.md#npm-install-scripts-blocked-warning-global-install) 참조하세요.
 
 ### pnpm
 
@@ -36,77 +38,77 @@ pnpm add -g omniroute@latest --allow-build=better-sqlite3 --allow-build=@swc/cor
 omniroute
 ```
 
-> **pnpm 사용자:** `better-sqlite3` 및 `@swc/core`의 네이티브 빌드 스크립트를 활성화하려면 `--allow-build` 플래그가 필요합니다. pnpm v11의 전역 설치에서는 `pnpm approve-builds -g` 명령이 지원되지 않습니다.
+> **pnpm 사용자:** `better-sqlite3` 및 `@swc/core` 에 대한 기본 빌드 스크립트를 활성화하려면 `--allow-build` 플래그가 필요합니다. pnpm v11의 전역 설치에는 `pnpm approve-builds -g` 명령이 지원되지 않습니다.
 
-### Arch Linux (AUR)
+### 아치 Linux (AUR)
 
 ```bash
 yay -S omniroute-bin
 systemctl --user enable --now omniroute.service
 ```
 
-[AUR 패키지](https://aur.archlinux.org/packages/omniroute-bin)는 OmniRoute를 설치하고 systemd 사용자 서비스를 제공합니다.
+[AUR 패키지는](https://aur.archlinux.org/packages/omniroute-bin) OmniRoute 설치하고 시스템 사용자 서비스를 제공합니다.
 
-### 소스에서 설치
+### 소스에서
 
 ```bash
 npm install
 PORT=20128 DASHBOARD_PORT=20129 NEXT_PUBLIC_BASE_URL=http://localhost:20129 npm run dev
 ```
 
-> **Windows 참고:** 기본적으로 OmniRoute는 기존 `%USERPROFILE%\.omniroute` 디렉터리가 없을 때 `%APPDATA%\omniroute`를 사용합니다. 다른 데이터 디렉터리 위치를 선택하려면 `DATA_DIR`을 설정하세요.
+> **Windows 참고:** 기본적으로 OmniRoute 레거시 `%USERPROFILE%\.omniroute` 디렉토리가 없을 때 `%APPDATA%\omniroute` 사용합니다. 다른 데이터 디렉토리 위치를 선택하려면 `DATA_DIR` 설정하십시오.
 
-> **참고:** `npm install`은 처음 실행할 때 `.env.example`에서 `.env`를 자동으로 생성합니다. 이후 설치에서는 기존 `.env`를 덮어쓰지 않으므로 사용자 지정 설정이 유지됩니다. 다시 초기화하려면 재실행하기 전에 `.env`를 삭제하세요.
+> **메모:** `npm install` 처음 실행 시 `.env.example` 에서 `.env` 자동 생성합니다. 후속 설치에서는 기존 `.env` 덮어쓰지 않으므로 사용자 정의가 유지됩니다. 다시 시드하려면 다시 실행하기 전에 `.env` 삭제하세요.
 
 ### Docker
 
-Compose 프로필과 Caddy HTTPS를 포함한 전체 Docker 설정은 [Docker 가이드](./DOCKER_GUIDE.md)를 참조하세요.
+Compose 프로필 및 Caddy HTTPS 포함한 전체 Docker 설정에 대해서는 [Docker 가이드를](./DOCKER_GUIDE.md) 참조하세요.
 
-### 데스크톱 앱 (Electron)
+### 데스크톱 앱(Electron)
 
-OmniRoute는 Electron 41 + electron-builder 26.10을 기반으로 구축된 데스크톱 래퍼를 제공합니다. 사용 가능한 스크립트는 다음과 같습니다(워크스페이스 루트).
+OmniRoute Electron 41 + electronic-builder 26.10을 기반으로 구축된 데스크탑 래퍼를 제공합니다. 사용 가능한 스크립트(작업공간 루트):
 
 ```bash
-npm run electron:dev          # 핫 리로드를 사용하여 데스크톱 실행
-npm run electron:build        # 현재 OS용 빌드(자동 감지)
-npm run electron:build:win    # Windows 설치 프로그램(NSIS + 포터블)
-npm run electron:build:mac    # macOS(dmg + zip, arm64+x64)
-npm run electron:build:linux  # Linux(AppImage + deb + rpm)
-npm run electron:smoke:packaged  # 패키징된 빌드 스모크 테스트
+npm run electron:dev          # Run desktop with hot-reload
+npm run electron:build        # Build for current OS (auto-detected)
+npm run electron:build:win    # Windows installer (NSIS + portable)
+npm run electron:build:mac    # macOS (dmg + zip, arm64+x64)
+npm run electron:build:linux  # Linux (AppImage + deb + rpm)
+npm run electron:smoke:packaged  # Smoke-test packaged build
 ```
 
-데스크톱 설치 프로그램 릴리스는 GitHub Releases에 첨부됩니다. 서명, IPC 브리지, 배포판 등 Electron에 대한 전체 상세 설명은 [`ELECTRON_GUIDE.md`](./ELECTRON_GUIDE.md)를 참조하세요. _(추후 단계에서 작성됨)_.
+데스크탑 설치 프로그램의 릴리스는 GitHub 릴리스에 첨부되어 있습니다. 전체 Electron 심층 분석(서명, IPC 브리지, 배포판)은 [`ELECTRON_GUIDE.md`](./ELECTRON_GUIDE.md) _(criado em fase Posterior)_를 참조하세요.
 
-### 헤드리스 서버 (CI/자동화)
+### 헤드리스 서버(CI/automation)
 
-무인 설정(Docker, Kubernetes, CI)의 경우 다음을 사용하세요.
+무인 설정(Docker, Kubernetes, CI)의 경우 다음을 사용합니다.
 
 ```bash
 omniroute setup --non-interactive
 omniroute providers test-batch
 ```
 
-환경 변수(`INITIAL_PASSWORD`, `OMNIROUTE_WS_BRIDGE_SECRET` 등)와 함께 사용하면 OmniRoute 인스턴스를 완전히 스크립트 방식으로 실행할 수 있습니다.
+env vars(`INITIAL_PASSWORD`, `OMNIROUTE_WS_BRIDGE_SECRET` 등)와 결합하면 OmniRoute 인스턴스를 완전히 스크립트 가능하게 만들 수 있습니다.
 
 ### CLI 옵션
 
-| 명령                    | 설명                                                          |
-| ----------------------- | ------------------------------------------------------------- |
-| `omniroute`             | 서버 시작(`PORT=20128`, 동일한 포트에서 API 및 대시보드 제공) |
-| `omniroute setup`       | 비밀번호 및 첫 번째 제공자를 위한 안내식 CLI 온보딩           |
-| `omniroute doctor`      | 서버를 시작하지 않고 로컬 상태 검사 실행                      |
-| `omniroute providers`   | CLI에서 제공자 검색, 목록 조회, 검증 및 테스트                |
-| `omniroute config`      | CLI 도구 구성 — 구성 목록 조회, 가져오기, 설정 및 검증        |
-| `omniroute status`      | 오프라인 상태 대시보드 — 버전, DB, 도구, 구성                 |
-| `omniroute logs`        | API의 사용 로그 스트리밍(`--follow` 지원)                     |
-| `omniroute update`      | OmniRoute 업데이트 확인 또는 적용                             |
-| `omniroute provider`    | 제공자 연결 관리 — 추가, 목록 조회, 제거, 테스트, 기본값 설정 |
-| `omniroute --port 3000` | 표준/API 포트를 3000으로 설정                                 |
-| `omniroute --mcp`       | MCP 서버 시작(stdio 전송 방식)                                |
-| `omniroute --no-open`   | 브라우저를 자동으로 열지 않음                                 |
-| `omniroute --help`      | 도움말 표시                                                   |
+| 명령                    | 설명                                                   |
+| ----------------------- | ------------------------------------------------------ |
+| `omniroute`             | 서버 시작(동일 포트의 `PORT=20128`, API 및 대시보드)   |
+| `omniroute setup`       | 비밀번호 및 첫 번째 공급자에 대한 CLI 온보딩 안내      |
+| `omniroute doctor`      | 서버를 시작하지 않고 로컬 상태 확인 실행               |
+| `omniroute providers`   | CLI 에서 공급자 검색, 나열, 검증 및 테스트             |
+| `omniroute config`      | CLI 도구 구성 — 목록, 구성 가져오기, 설정, 유효성 검사 |
+| `omniroute status`      | 오프라인 상태 대시보드 — 버전, DB, 도구, 구성          |
+| `omniroute logs`        | API 의 스트림 사용 로그( `--follow` 지원)              |
+| `omniroute update`      | OmniRoute 업데이트 확인 또는 적용                      |
+| `omniroute provider`    | 공급자 연결 관리 — 추가, 나열, 제거, 테스트, 기본값    |
+| `omniroute --port 3000` | canonical/API 포트를 3000으로 설정                     |
+| `omniroute --mcp`       | MCP 서버 시작(stdio 전송)                              |
+| `omniroute --no-open`   | 브라우저를 자동으로 열지 않음                          |
+| `omniroute --help`      | 도움말 표시                                            |
 
-헤드리스 설정은 플래그 또는 환경 변수를 사용해 스크립트로 작성할 수 있습니다.
+헤드리스 설정은 플래그 또는 환경 변수를 사용하여 스크립팅할 수 있습니다.
 
 ```bash
 omniroute setup --non-interactive --password "$OMNIROUTE_PASSWORD"
@@ -122,7 +124,7 @@ omniroute doctor --json
 omniroute doctor --no-liveness
 ```
 
-대시보드를 열지 않고 SSH 또는 스크립트에서 제공자를 관리합니다.
+대시보드를 열지 않고도 SSH 또는 스크립트에서 공급자를 관리합니다.
 
 ```bash
 omniroute providers available
@@ -138,9 +140,9 @@ omniroute providers validate
 
 ## CLI 도구 구성
 
-### 1) 제공업체 연결 및 API 키 생성
+### 1) 공급자 연결 및 API 키 생성
 
-1. Dashboard → `Providers`를 열고 하나 이상의 제공업체를 연결합니다(OAuth 또는 API 키).
+1. Dashboard → `Providers`를 열고 하나 이상의 공급자를 연결합니다(OAuth 또는 API 키).
 2. Dashboard → `Endpoints`를 열고 API 키를 생성합니다.
 3. (선택 사항) Dashboard → `Combos`를 열고 폴백 체인을 설정합니다.
 
@@ -149,10 +151,10 @@ omniroute providers validate
 ```txt
 기본 URL: http://localhost:20128/v1
 API 키:   [Endpoint 페이지에서 복사]
-모델:     if/qwen3.8-max-preview (또는 임의의 제공업체/모델 접두사)
+모델:     if/qwen3.8-max-preview (또는 임의의 공급자/모델 접두사)
 ```
 
-편집기에서 `Authorization: Bearer ...`를 전송할 수 없는 경우에는 토큰이 포함된 호환성 기본 URL을 대신 사용합니다.
+편집기에서 `Authorization: Bearer ...`를 전송할 수 없다면 토큰이 포함된 호환성 기본 URL을 대신 사용하세요.
 
 ```txt
 기본 URL: http://localhost:20128/api/v1/vscode/YOUR_KEY/
@@ -161,12 +163,12 @@ API 키:   [Endpoint 페이지에서 복사]
 Ollama 태그 URL: http://localhost:20128/api/v1/vscode/YOUR_KEY/api/tags
 ```
 
-Claude Code, Codex CLI, Cursor, Cline, OpenClaw, OpenCode 및 OpenAI 호환 SDK에서 작동합니다.
+Claude Code, Codex CLI, Cursor, Cline, OpenClaw, OpenCode 및 OpenAI 호환 SDK와 함께 사용할 수 있습니다.
 
-#### `setup-*`로 자동 구성
+#### `setup-*`으로 자동 구성
 
 기본 URL과 키를 직접 붙여 넣는 대신, OmniRoute가 실시간 모델 카탈로그를 바탕으로 각 도구의
-자체 구성을 작성하도록 할 수 있습니다. 도구별로 하나의 명령을 사용합니다.
+구성을 작성하도록 할 수 있습니다. 도구마다 하나의 명령을 사용합니다.
 
 ```bash
 omniroute setup-codex        # ~/.codex/<name>.config.toml 프로필
@@ -175,62 +177,67 @@ omniroute setup-opencode     # ~/.config/opencode/opencode.json (OpenAI 호환)
 omniroute setup-cline        # Cline CLI + VS Code 확장 프로그램 설정
 omniroute setup-kilo         # Kilo Code
 omniroute setup-continue     # ~/.continue/config.yaml (Continue / cn)
-omniroute setup-cursor       # Cursor의 앱 내 설정 절차 출력
+omniroute setup-cursor       # Cursor의 앱 내 단계를 출력
 omniroute setup-roo          # Roo Code 가져오기 + autoImport 포인터
 omniroute setup-crush        # ~/.config/crush/crush.json
+omniroute setup-zed          # ~/.config/zed/settings.json (openai_compatible)
 omniroute setup-goose        # ~/.config/goose/config.yaml
 omniroute setup-aider        # ~/.aider.conf.yml
 omniroute setup-qwen         # ~/.qwen/settings.json + ~/.qwen/.env
 ```
 
-각 명령은 **원격** OmniRoute에 로컬 도구를 연결하도록 구성하는 `--remote <url> --api-key <key>`와
-미리보기를 위한 `--dry-run`을 지원합니다. 올바른 환경 변수를 주입하면서 구성 파일을 전혀 작성하지 않고 CLI를 실행하려면
-범용 실행 명령인 `omniroute run <target>`(claude, codex, aider, goose, opencode, qwen, gemini)을 사용합니다.
-기존 도구별 실행 명령인 `omniroute launch`(Claude Code)와
+각 명령은 로컬 도구가 **원격** OmniRoute를 사용하도록 구성하는 `--remote <url> --api-key <key>`와 구성을 미리 확인하기 위한 `--dry-run`을 지원합니다. 올바른
+환경 변수를 주입하여 구성 파일을 전혀 작성하지 않고 CLI를 실행하려면 범용 실행 명령인
+`omniroute run <target>`(claude, codex, aider, goose, opencode, qwen, gemini)을 사용하세요.
+기존의 도구별 실행 명령인 `omniroute launch`(Claude Code)와
 `omniroute launch-codex`(Codex)도 계속 사용할 수 있습니다.
 
-전체 표(각 명령이 작성하는 항목, 모든 플래그, 로컬과 원격의 차이, 기본 URL의
+전체 표(각 명령이 작성하는 내용, 모든 플래그, 로컬 및 원격, 기본 URL
 `/v1` 규칙)는 **[CLI 통합](./CLI-INTEGRATIONS.md)**을 참조하세요.
 
-도구별 상세 구성(Claude Code, Codex CLI, Cursor, Cline, OpenClaw, Kilo Code, Copilot 등)은 전용 **[CLI 도구 가이드](../reference/CLI-TOOLS.md)**를 참조하세요.
+도구별 세부 구성(Claude Code, Codex CLI, Cursor, Cline, OpenClaw, Kilo Code, Copilot 등)은 전용 **[CLI 도구 가이드](../reference/CLI-TOOLS.md)**를 참조하세요.
 
 ---
 
 ## 프로토콜 설정(MCP + A2A)
 
-### MCP 설정(Model Context Protocol)
+### MCP 설정(모델 컨텍스트 프로토콜)
 
-stdio 모드에서 MCP 전송을 시작합니다.
+stdio 모드에서 MCP 전송을 시작합니다:
 
 ```bash
 omniroute --mcp
 ```
 
-권장 검증 절차:
+권장되는 검증 흐름:
 
 ```bash
-# 1. MCP 서버 시작
+# 1. Start MCP server
 omniroute --mcp
 
-# 2. MCP 클라이언트에서 다음을 호출:
-omniroute_get_health        # 시스템 상태를 반환해야 함
-omniroute_list_combos       # 활성 콤보를 반환해야 함
+# 2. From your MCP client, call:
+omniroute_get_health        # Should return system health
+omniroute_list_combos       # Should return active combos
 
-# 3. 또는 전체 E2E 제품군 실행:
+# 3. Or run the full E2E suite:
 npm run test:protocols:e2e
 ```
 
 #### MCP 클라이언트 구성
 
-**Claude Code:**
+**Claude 코드:**
+
+Claude 코드는 `omniroute --mcp` (stdio)가 시작되지 않는 HTTP 통해 연결됩니다. HTTP 전송은 기본적으로 꺼져 있습니다. 먼저 실행 중인 서버에서 활성화하세요. 대시보드 로그인이 활성화되면 자격 증명이 없는 요청은 `401` 가져오므로 `mcp:connect` (또는 `manage`)를 보유하는 API 키를 전달하세요. `manage`/`admin` 없는 키에도 각 도구의 범위가 필요합니다( [MCP 서버 → MCP 도구 범위](../frameworks/MCP-SERVER.md#mcp-tool-scopes) 참조).
 
 ```bash
-claude mcp add-server omniroute --type http --url http://localhost:20128/api/mcp/stream
+omniroute mcp enable --transport streamable-http
+claude mcp add --transport http omniroute http://localhost:20128/api/mcp/stream \
+  --header "Authorization: Bearer your-key"
 ```
 
 **Cursor / Cline:**
 
-MCP 설정에 다음을 추가합니다.
+MCP 설정에 추가합니다(발신자가 주체를 갖도록 키를 사용하여 stdio).
 
 ```json
 {
@@ -238,23 +245,30 @@ MCP 설정에 다음을 추가합니다.
     "omniroute": {
       "command": "omniroute",
       "args": ["--mcp"],
-      "env": {}
+      "env": {
+        "OMNIROUTE_API_KEY": "your-key",
+        "OMNIROUTE_BASE_URL": "http://localhost:20128"
+      }
     }
   }
 }
 ```
 
-**전체 MCP 문서:** [MCP 서버 README](../../open-sse/mcp-server/README.md) — 도구 110개, IDE 구성, Python/TS/Go 클라이언트.
+또는 `mcpTransport` `streamable-http` 인 경우( `/dashboard/mcp` 또는 `omniroute mcp enable --transport streamable-http` 사용하여 설정) 클라이언트의 원격 MCP 서버 항목을 `http://localhost:20128/api/mcp/stream` 로 지정합니다.
 
-### A2A 설정(Agent-to-Agent Protocol)
+키는 `Authorization: Bearer <api-key>` 로 이동합니다(원격 호스트에 대한 [MCP 서버 → 원격 액세스](../frameworks/MCP-SERVER.md#remote-access-manage-scope-bypass) 참조, 원격 키에는 `mcp:connect` 와 해당 read/write 범위가 필요함).
 
-Agent Card를 확인합니다.
+**전체 MCP 문서:** [MCP 서버 README](../../open-sse/mcp-server/README.md) — 110 도구, IDE 구성, Python/TS/Go 클라이언트. 압축 CCR/dedup 도구에 대한 운영자 참조(마커, 전제 조건, 도구별 범위, 검색 페이지 매김, 진단): [압축 엔진 → 전제 조건 / 운영자 가이드](../compression/COMPRESSION_ENGINES.md#prerequisites--operator-guide-ccr--session-dedup).
+
+### A2A 설정(에이전트 간 프로토콜)
+
+에이전트 카드를 확인합니다.
 
 ```bash
 curl http://localhost:20128/.well-known/agent.json
 ```
 
-작업을 전송합니다.
+작업 보내기:
 
 ```bash
 curl -X POST http://localhost:20128/a2a \
@@ -262,7 +276,7 @@ curl -X POST http://localhost:20128/a2a \
   -d '{"jsonrpc":"2.0","id":"quickstart","method":"message/send","params":{"skill":"quota-management","messages":[{"role":"user","content":"Give me a short quota summary."}]}}'
 ```
 
-**전체 A2A 문서:** [A2A 서버 README](../../src/lib/a2a/README.md) — JSON-RPC 2.0, 스킬, 스트리밍, 작업 수명 주기.
+**전체 A2A 문서:** [A2A 서버 README](../../src/lib/a2a/README.md) — JSON-RPC 2.0, 기술, 스트리밍, 작업 수명주기.
 
 ---
 
@@ -321,23 +335,23 @@ PORT=20128 DASHBOARD_PORT=20129 omniroute
 
 ---
 
-## Void Linux (xbps-src) 템플릿
+## 무효 Linux (xbps-src) 템플릿
 
-Void Linux 사용자는 `xbps-src`를 사용하여 네이티브 패키지를 빌드할 수 있습니다. 이 블록을 `srcpkgs/omniroute/template`로 저장하세요.
+Void Linux 사용자의 경우 `xbps-src` 사용하여 기본 패키지를 빌드할 수 있습니다. 이 블록을 `srcpkgs/omniroute/template` 로 저장하십시오.
 
 ```bash
-# 'omniroute'용 템플릿 파일
+# Template file for 'omniroute'
 pkgname=omniroute
 version=3.8.0
 revision=1
 hostmakedepends="nodejs python3 make"
 depends="openssl"
-short_desc="여러 LLM 제공자를 위한 스마트 라우팅 기능을 갖춘 범용 AI 게이트웨이"
+short_desc="Universal AI gateway with smart routing for multiple LLM providers"
 maintainer="zenobit <zenobit@disroot.org>"
 license="MIT"
 homepage="https://github.com/diegosouzapw/OmniRoute"
 distfiles="https://github.com/diegosouzapw/OmniRoute/archive/refs/tags/v${version}.tar.gz"
-# 각 릴리스마다 다음 명령으로 체크섬을 다시 생성하세요:
+# Regenerate the checksum for each release with:
 #   curl -L -o /tmp/omniroute.tar.gz "https://github.com/diegosouzapw/OmniRoute/archive/refs/tags/v${version}.tar.gz" && sha256sum /tmp/omniroute.tar.gz
 checksum=PLACEHOLDER_REGENERATE_PER_RELEASE
 system_accounts="_omniroute"

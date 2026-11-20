@@ -57,29 +57,19 @@ Voor OpenRouter-verbindingen kan per verbinding een `preset` worden opgeslagen o
 
 ---
 
-## 🎨 Combinaties
+## 🎨 combo's
 
-Maak modelrouteringscombinaties met 19 openbare strategieën: priority, weighted, round-robin, context-relay, fill-first, p2c (power-of-two choices), random, least-used, cost-optimized, reset-aware, reset-window, headroom, strict-random, auto, lkgp (last-known-good-provider), context-optimized, cache-optimized, **fusion** (verdeel verzoeken parallel over een panel van modellen en laat vervolgens één antwoord samenstellen door een beoordelend model) en **pipeline**. Elke combinatie koppelt meerdere modellen aan elkaar met automatische fallback en bevat snelstartsjablonen en gereedheidscontroles.
+Maak modelrouteringscombinaties met 22 openbare strategieën: prioriteit, gewogen, round-robin, context-relay, eerst vullen, p2c (macht van twee keuzes), willekeurig, minst gebruikt, kostengeoptimaliseerd, reset-bewust, reset-venster, vervaldatum eerst, vrije ruimte, quota-gewogen, strikt willekeurig, automatisch, lkgp (laatst bekende goede provider), context-geoptimaliseerd, cache-geoptimaliseerd,** fusie** (uitwaaieren naar een panel van parallelle modellen, en vervolgens één antwoord synthetiseren via een rechter),** pijpleiding** , En** jev** (een opt-in TypeSafe Jev-toelating via uw gerangschikte lijst). Elke combo koppelt meerdere modellen met automatische fallback en bevat snelle sjablonen en gereedheidscontroles.
 
-Recente verbeteringen aan combinaties:
+Recente combo-verbeteringen:
 
-- **Gestructureerde combinatiebouwer** — maak elke stap door een provider, model en exact account/verbinding te selecteren
-- **Ondersteuning voor herhaalde providers** — hergebruik dezelfde provider meerdere keren binnen één combinatie, zolang de tuple `(provider, model, connection)` uniek is
-- **Status van combinatiedoelen** — analyses en statusoverzichten maken nu onderscheid tussen afzonderlijke doelen/stappen binnen combinaties, in plaats van alles samen te voegen tot modelstrings
-- **Samengestelde laagvolgorde** — `defaultTier -> fallbackTier` beïnvloedt nu de uitvoerings-/fallbackvolgorde tijdens runtime voor combinatiestappen op het hoogste niveau
-- **Systeempromptsjablonen** — `system_message` van een combinatie ondersteunt server-side
-  placeholders voor `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` en `{{FINGERPRINT}}`,
-  die vlak vóór verzending worden ingevuld op basis van het daadwerkelijk gekozen routeringsdoel.
-  Alleen toegestane placeholders worden verwerkt en dit gebeurt niet recursief; onbekende placeholders blijven letterlijk staan; lege waarden
-  worden als leeg ingevuld; systeemprompts van clients worden nooit herschreven. `{{FINGERPRINT}}`
-  wordt alleen omgezet voor gratis providers op basis van fingerprints met een vastgezette of
-  automatisch geroteerde fingerprint — elders wordt deze als leeg ingevuld (bijvoorbeeld bij
-  verbindingen met één fingerprint en providers zonder fp). De uitbreiding geldt voor de
-  standaardverzendingslus, round-robin en vastgezette contextcachesessies;
-  fusion, chaos, pipeline en nested-execute-strategieën ondersteunen het uitbreiden van
-  placeholders nog niet.
+- **Gestructureerde combo-bouwer** — maakt elke stap door provider, model en exacte account/connection te selecteren
+- **Herhaalde ondersteuning door providers** — hergebruikt dezelfde provider vele malen in één combo, zolang de `(provider, model, connection)` tuple uniek is
+- **Combinatiedoelgezondheid** — -analyse- en gezondheidsoppervlakken onderscheiden nu individuele combo targets/steps in plaats van alles in modelstrings samen te vouwen
+- **Samengestelde laagbestelling** — `defaultTier -> fallbackTier` beïnvloedt nu de runtime execution/fallback volgorde voor combo-stappen op het hoogste niveau
+- **Sjablonen voor systeemprompts** — combo `system_message` ondersteunt server-side `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` en `{{FINGERPRINT}}` tijdelijke aanduidingen, uitgebreid vanaf het feitelijk gerouteerde doel vlak voor verzending. Staat op de toelatingslijst en is niet-recursief; onbekende tijdelijke aanduidingen blijven letterlijk; lege waarden breiden uit naar leeg; clientsysteemprompts worden nooit herschreven. `{{FINGERPRINT}}` werkt alleen voor gratis providers op basis van vingerafdrukken met een vastgezette of automatisch geroteerde vingerafdruk. — breidt zich uit om elders te worden leeggemaakt (bijvoorbeeld verbindingen met één vingerafdruk, niet-FP-providers). De uitbreiding omvat de standaard dispatch-loop-, round-robin- en vastgezette context-cache-sessies; fusie-, chaos-, pijplijn- en geneste-uitvoerstrategieën breiden de tijdelijke aanduidingen nog niet uit.
 
-![Combinatiedashboard](../screenshots/02-combos.png)
+![Combos Dashboard](../screenshots/02-combos.png)
 
 ---
 
@@ -200,22 +190,22 @@ De e-mailadressen van OAuth-accounts worden standaard gemaskeerd (bijvoorbeeld `
 
 ---
 
-## 👁️ Schakelaar voor modelzichtbaarheid _(v3.5.6+)_
+## 👁️ Modelzichtbaarheid wisselen _(v3.5.6 +)_
 
-De modellenlijst op de providerpagina bevat nu:
+De modellijst van de providerpagina bevat nu:
 
-- **Zoek-/filterbalk in realtime** — Vind snel specifieke modellen
-- **Zichtbaarheidsschakelaar per model** (👁-pictogram) — Verborgen modellen worden grijs weergegeven en uitgesloten van de `/v1/models`-catalogus
-- **Badge met aantal actieve modellen** (`N/M actief`) — Toont in één oogopslag hoeveel modellen zijn ingeschakeld ten opzichte van het totaal
+- **Realtime search/filter balk** — Vind snel specifieke modellen
+- **Zichtbaarheid per model schakelen** (👁 pictogram) — Verborgen modellen worden grijs weergegeven en uitgesloten van de `/v1/models` -catalogus
+- **Actieve telling-badge** (`N/M active`) — Toont in één oogopslag hoeveel modellen zijn ingeschakeld versus het totaal
 
 ---
 
-## 🔧 OAuth-omgevingsvariabelen herstellen _(v3.6.1+)_
+## 🔧 OAuth Env Reparatie _(v3.6.1 +)_
 
-Actie „Omgevingsvariabelen herstellen” met één klik voor OAuth-providers, waarmee ontbrekende omgevingsvariabelen worden hersteld en een defecte authenticatiestatus wordt gerepareerd. Beschikbaar via `Dashboard → Providers → [OAuth-provider] → Omgevingsvariabelen herstellen`. Detecteert en herstelt automatisch:
+Actie "Repareer env" met één klik voor OAuth providers die ontbrekende omgevingsvariabelen herstelt en een verbroken auth-status repareert. Bereikbaar vanaf `Dashboard → Providers → [OAuth Provider] → Repair env`. Detecteert en repareert automatisch:
 
-- Ontbrekende OAuth-clientreferenties
-- Beschadigde vermeldingen in het omgevingsbestand
+- Ontbrekende OAuth -clientreferenties
+- Beschadigde env-bestandsvermeldingen
 - Opschoning van back-uppaden
 
 ---
@@ -298,13 +288,13 @@ Belangrijkste gedragingen:
 
 ## 🔑 Synchronisatietokens en configuratiebundel _(v3.6.6+)_
 
-Toegang vanaf meerdere apparaten en toegang voor externe operators is nu mogelijk via **afgebakende synchronisatietokens**:
+Toegang vanaf meerdere apparaten en toegang voor externe operators is nu mogelijk via **synchronisatietokens met een beperkt bereik**:
 
-- **`POST /api/sync/tokens`** — Geef een nieuw synchronisatietoken uit (afgebakend, met optionele vervaldatum)
+- **`POST /api/sync/tokens`** — Geef een nieuw synchronisatietoken uit (met een beperkt bereik en optionele vervaldatum)
 - **`DELETE /api/sync/tokens/:id`** — Trek een token in
-- **`GET /api/sync/bundle`** — Download een geversioneerde, met ETag geïndexeerde JSON-snapshot van alle niet-gevoelige instellingen (wachtwoorden gemaskeerd)
+- **`GET /api/sync/bundle`** — Download een geversioneerde, door een ETag geïdentificeerde JSON-snapshot van de configuratie (uitsluitend geverifieerd met een synchronisatietoken). Authenticatie-instellingen, zoals het dashboardwachtwoord, worden verwijderd, maar providerreferenties en API-sleutels worden wel opgenomen. Behandel het bestand daarom als een geheim
 
-De configuratiebundel wordt opgebouwd door `src/lib/sync/bundle.ts`. Clients vergelijken de `ETag`-responsheader om wijzigingen te detecteren zonder de volledige payload opnieuw te downloaden.
+De configuratiebundel wordt opgebouwd door `src/lib/sync/bundle.ts`. Clients vergelijken de `ETag`-responseheader om wijzigingen te detecteren zonder de volledige inhoud opnieuw te downloaden. Via de CLI slaat `omniroute sync bundle <outPath> --token <syncToken>` (of `OMNIROUTE_SYNC_TOKEN`) de bundel op in een bestand dat alleen toegankelijk is voor de eigenaar.
 
 ---
 
@@ -316,14 +306,14 @@ De configuratiebundel wordt opgebouwd door `src/lib/sync/bundle.ts`. Clients ver
 
 ---
 
-## 🛡️ Veilig uitgaand ophalen en SSRF-beveiliging _(v3.6.6+)_
+## 🛡️ Veilig uitgaand ophalen & SSRF-beveiliging _(v3.6.6+)_
 
-Alle providervalidatie- en modeldetectieaanroepen verlopen nu via een tweelaagse beveiliging voor uitgaand verkeer:
+Alle aanroepen voor providervalidatie en modeldetectie verlopen nu via een tweelaagse beveiliging voor uitgaand verkeer:
 
-1. **URL-beveiliging** (`src/shared/network/outboundUrlGuard.ts`) — Blokkeert privé-, loopback- en link-local-IP-bereiken voordat de socket wordt geopend.
-2. **Veilige fetch-wrapper** (`src/shared/network/safeOutboundFetch.ts`) — Past de URL-beveiliging toe, normaliseert time-outs en probeert tijdelijke fouten opnieuw met exponentiële back-off.
+1. **URL-beveiliging** (`src/shared/network/outboundUrlGuard.ts`) — Controleert eerst de doelhostnaam of het IP-adres zoals dit letterlijk is opgegeven; in de modus voor uitsluitend openbare adressen zet de wrapper voor veilig ophalen ook de naam om en weigert deze privé-IP-adressen. Standaard blokkeert deze beveiliging cloudmetadata-eindpunten: heel 169.254.0.0/16 plus de bekende metadatahostnamen; `OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS=false` blokkeert ook privé- en loopbackhosts; `OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS=true` (of de verouderde instelling `OUTBOUND_SSRF_GUARD_ENABLED=false`) schakelt de controles uit. Een waarde die via een schakelaar in het dashboard van een vlag is opgeslagen, heeft voorrang op de bijbehorende variabele, en ingebouwde lokale providers slaan de beveiliging tijdens sleutelvalidatie over. Zie `docs/reference/ENVIRONMENT.md`.
+2. **Wrapper voor veilig ophalen** (`src/shared/network/safeOutboundFetch.ts`) — Past de URL-beveiliging toe, normaliseert time-outs en probeert tijdelijke fouten opnieuw met exponentiële back-off.
 
-Schendingen van de beveiligingsregels worden weergegeven als HTTP 422 (`URL_GUARD_BLOCKED`) en via `providerAudit.ts` naar het compliance-auditlogboek geschreven.
+Beveiligingsovertredingen worden weergegeven als `URL_GUARD_BLOCKED` — HTTP 503 via `getSafeOutboundFetchErrorStatus` (400 op de route voor modeldetectie) — en daadwerkelijke SSRF-blokkeringen tijdens validatie worden als `provider.validation.ssrf_blocked`-gebeurtenissen naar het auditlogboek geschreven.
 
 ---
 

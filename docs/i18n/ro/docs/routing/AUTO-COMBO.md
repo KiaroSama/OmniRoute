@@ -127,6 +127,27 @@ Evaluarea automată selectează cel mai bun furnizor/model pentru fiecare cerere
 | `src/sse/handlers/chat.ts`                                | Integrare: scurtcircuitarea prefixului auto                          |
 | `src/shared/constants/providers.ts`                       | Intrarea de sistem `SYSTEM_PROVIDERS.auto`                           |
 
+## Preferințele contului pentru combinațiile automate salvate
+
+Editorul automat inteligent oferă opțional** Preferințele contului** secțiune. Fiecare conexiune poate fi Preferată, Normală (implicit), Rezervată sau Exclusă. Conexiunile multiple pot partaja un nivel. Selectează automat în primul nivel eligibil, păstrându-și comportamentul scoring/router acolo; încercările eșuate revin la conturile concrete rămase, de preferat înaintea normalului înainte de rezervă. Conexiunile excluse nu sunt niciodată folosite de acest combo.
+
+Setarea este stocată ca `config.accountPreferences`, tastată de conexiunea ID:
+
+```json
+{
+  "accountPreferences": {
+    "connection-a": "preferred",
+    "connection-b": "preferred",
+    "connection-c": "reserve",
+    "connection-d": "excluded"
+  }
+}
+```
+
+O hartă omise sau goală păstrează ruta existentă. Preferințele nu permit conexiunile dezactivate, nu acordă acces la cheia API, nu restabilește candidații blocați de cote sau nu ocolesc verificările bugetare. Fiecare încercare este limitată la conexiunea sa concretă, astfel încât back-ul de rezervă a contului nu poate sări trepte în spatele routerului combo. Afinitatea de sesiune existentă poate păstra un cont eligibil; excluderea contului legat de un turn nativ se oprește care se rotesc în loc să schimbe în tăcere conturile.
+
+Preferințele configurate folosesc calea automată conștientă de cont: comenzile rapide nelegate de context-cache, smart-pipeline, haos și umbră nu sunt trimise. Acoperirea speculativă este dezactivată pentru aceste solicitări, astfel încât conturile de rezervă nu pot concura cu cele preferate. Alte strategii combinate nu interpretează această setare. Schimbarea unei combinații de la Auto păstrează preferințele salvate pentru o comutare ulterioară înapoi.
+
 ## Nume de combo-uri care corespund unui ID real de model
 
 Un combo al cărui `name` este identic cu un ID simplu de model (de exemplu, un combo numit
@@ -186,34 +207,38 @@ Două capcane frecvente:
 
 Consultați [#7992](https://github.com/diegosouzapw/OmniRoute/issues/7992) și [#7111](https://github.com/diegosouzapw/OmniRoute/issues/7111) pentru confuzia inițială documentată aici.
 
-## Cum funcționează (combinații automate persistente)
+## Cum funcționează (combo-uri automate persistente)
 
-Motorul Auto-Combo selectează dinamic cel mai bun furnizor/model pentru fiecare solicitare, utilizând o **funcție de evaluare cu 16 factori** (definită în `open-sse/services/autoCombo/scoring.ts` → `DEFAULT_WEIGHTS`). Suma ponderilor implicite este `1.0`; ponderile personalizate sunt renormalizate de `normalizeScoringWeights()`. Doi dintre cei șaisprezece factori — `cacheAffinity` și `resetWindowAffinity` — au o pondere implicită de `0`; `reliability` are `0` în `DEFAULT_WEIGHTS`, dar `0.03` în pachetele generice și `0.04` în `reliability-first`, iar `quality` are `0.02` în pachete (`0.03` în `quality-first`): aceștia sunt totuși calculați pentru fiecare candidat, iar `cacheAffinity` controlează deduplicarea cache-ului de prompturi în afara scorului, astfel încât factorii cu valoare implicită zero pur și simplu nu contribuie implicit, în timp ce pachetele îi utilizează.
+Motorul Auto-Combo selectează dinamic cel mai bun provider/model pentru fiecare solicitare folosind a** Funcția de punctare cu 16 factori** (definit în `open-sse/services/autoCombo/scoring.ts` → `DEFAULT_WEIGHTS`). Suma ponderilor implicite este `1.0`; Greutățile personalizate sunt renormalizate prin `normalizeScoringWeights()`. Două dintre cele șaisprezece — `cacheAffinity` și `resetWindowAffinity` — poartă o pondere implicită de `0`; `reliability` poartă `0` în `DEFAULT_WEIGHTS`, dar `0.03` în pachete generice și `0.04` în `reliability-first`, iar `quality` poartă `0.02` în pachete (`0.03` în `quality-first`): acestea sunt încă calculate pentru fiecare candidat, iar `cacheAffinity` porți deduplicarea prompt-cache în afara scorului, astfel încât pachetele pur și simplu nu votează implicit.
 
-![Evaluarea Auto-Combo cu 16 factori](../diagrams/exported/auto-combo-scoring.svg)
+![Auto-Combo 16-factor scoring](../diagrams/exported/auto-combo-scoring.svg)
 
-> Sursă: [diagrams/auto-combo-scoring.mmd](../diagrams/auto-combo-scoring.mmd) (regenerați prin `npm run docs:render-diagrams`). Numele fișierului este istoric; sursa și diagrama randată prezintă toți cei 16 factori declarați în `DEFAULT_WEIGHTS`.
+> Sursa: [diagrams/auto-combo-scoring.mmd](../diagrams/auto-combo-scoring.mmd) (regenerare prin `npm run docs:render-diagrams`). Numele fișierului este istoric; sursa și diagrama redată arată toți cei 16 factori declarați în `DEFAULT_WEIGHTS`.
 
-| Factor                | Pondere implicită | Descriere                                                                                                                                                                                                                                                            |
-| :-------------------- | :---------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `quota`               | 0.1429            | Cotă rămasă / marjă disponibilă până la limita de rată [0..1]                                                                                                                                                                                                        |
-| `health`              | 0.1605            | Scor de sănătate de la întrerupătorul de circuit (CLOSED=1.0, HALF_OPEN=0.5, OPEN=0.0)                                                                                                                                                                               |
-| `costInv`             | 0.1429            | Cost **combinat** invers (60% prețul tokenurilor de intrare + 40% prețul tokenurilor de ieșire, normalizat) — mai ieftin = scor mai mare                                                                                                                             |
-| `latencyInv`          | 0.1143            | Latență p95 inversă normalizată la grup — mai rapid = scor mai mare                                                                                                                                                                                                  |
-| `taskFit`             | 0.0762            | Potrivire cu tipul sarcinii (programare, revizuire, planificare, analiză, depanare, documentație)                                                                                                                                                                    |
-| `stability`           | 0.0476            | Stabilitate bazată pe varianța abaterii standard a latenței — un candidat al cărui timp de răspuns fluctuează obține un scor mai mic                                                                                                                                 |
-| `tierPriority`        | 0.0476            | Prioritatea nivelului contului — Ultra=1.0, Pro=0.67, Standard=0.33, Free=0.0                                                                                                                                                                                        |
-| `tierAffinity`        | 0.0476            | Afinitatea dintre nivelul candidatului și nivelul recomandat de manifest                                                                                                                                                                                             |
-| `specificityMatch`    | 0.0476            | Potrivirea dintre specificitatea solicitării (indiciul din manifest) și nivelul modelului                                                                                                                                                                            |
-| `contextAffinity`     | 0.0476            | Afinitatea dintre necesarul de fereastră de context al solicitării și fereastra de context a modelului                                                                                                                                                               |
-| `sessionAvailability` | 0.0476            | Disponibilitatea sesiunii OAuth a conexiunii candidate pentru această sesiune (`getOAuthSessionAvailability()`; conexiunile non-OAuth primesc scorul 1.0)                                                                                                            |
-| `connectionDensity`   | 0.0476            | Distribuie sarcina între conexiunile aceluiași furnizor (anti-concentrare)                                                                                                                                                                                           |
-| `cacheAffinity`       | 0.00              | Afinitate bazată pe hash rendezvous față de conexiunea cu cea mai mare probabilitate de a deține deja prefixul cache-ului de prompturi al acestei solicitări (`open-sse/services/combo/promptCacheAffinity.ts`); dezactivată implicit (#8008)                        |
-| `resetWindowAffinity` | 0.00              | Favorizează conexiunile a căror fereastră de resetare a cotei este avantajoasă (dezactivată implicit)                                                                                                                                                                |
-| `quality`             | 0.03              | Semnal privind calitatea rezultatului, bazat pe feedback de la instrumentul de urmărire a calității evenimentelor de rutare; candidații fără observații primesc valoarea neutră 0.5                                                                                  |
-| `reliability`         | 0.00              | Proporția observată de reușite, `1 - failureRate`, din istoricul de utilizare pe 24h, cu un prag minim de zece eșantioane (în caz contrar, se folosesc metrici în timp real); candidații fără observații sunt considerați ca având valoarea 1.0. Dezactivat implicit |
+| Factor                | Greutate implicită | Descriere                                                                                                                                                                                                                       |
+| :-------------------- | :----------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `quota`               | 0.1429             | Cotă rămasă/limită de rate [0..1]                                                                                                                                                                                               |
+| `health`              | 0.1605             | Scorul de sănătate de la întrerupător (CLOSED= 1,0, HALF_OPEN= 0,5, OPEN= 0,0)                                                                                                                                                  |
+| `costInv`             | 0.1429             | Invers** amestecate** cost (60% intrare + 40% preț jeton de ieșire, normalizat) — mai ieftin = scor mai mare                                                                                                                    |
+| `latencyInv`          | 0.1143             | Latența inversă p95 s-a normalizat pentru a pune în comun — mai rapid = scor mai mare                                                                                                                                           |
+| `taskFit`             | 0.0762             | Fitness-tip de sarcină (codificare, revizuire, planificare, analiză, depanare, documente)                                                                                                                                       |
+| `stability`           | 0.0476             | Stabilitate bazată pe varianță de la abaterea standard a latenței — un candidat al cărui timp de răspuns variază scoruri mai mici                                                                                               |
+| `tierPriority`        | 0.0476             | Prioritate la nivelul contului — Ultra = 1.0, Pro = 0.67, Standard = 0.33, Free = 0.0                                                                                                                                           |
+| `tierAffinity`        | 0.0476             | Afinitate între nivelul candidatului și nivelul recomandat de manifest                                                                                                                                                          |
+| `specificityMatch`    | 0.0476             | Potrivire între specificul cererii (hint manifest) și nivelul modelului                                                                                                                                                         |
+| `contextAffinity`     | 0.0476             | Afinitate între nevoia de fereastră de context a cererii și fereastra de context a modelului                                                                                                                                    |
+| `sessionAvailability` | 0.0476             | Disponibilitatea sesiunii OAuth a conexiunii candidate pentru această sesiune (`getOAuthSessionAvailability()`; conexiunile non-OAuth scor 1,0)                                                                                 |
+| `connectionDensity`   | 0.0476             | Împrăștie sarcina între conexiunile aceluiași furnizor (anti-concentrare)                                                                                                                                                       |
+| `cacheAffinity`       | 0.00               | Afinitatea hash de întâlnire față de conexiunea este cel mai probabil să dețină deja prefixul prompt-cache al acestei solicitări (`open-sse/services/combo/promptCacheAffinity.ts`); dezactivat implicit (#8008)                |
+| `resetWindowAffinity` | 0.00               | Prejudecăți față de conexiunile a căror fereastră de resetare a cotei este favorabilă (dezactivată implicit)                                                                                                                    |
+| `quality`             | 0.03               | Semnal de calitate de ieșire bazat pe feedback de la instrumentul de urmărire a calității evenimentului de rutare; candidații fără observații primesc un 0,5 neutru                                                             |
+| `reliability`         | 0.00               | Cota de succes observată, `1 - failureRate`, din 24 de ore de istoric de utilizare în spatele unui nivel de zece eșantioane (valori în timp real în caz contrar); candidații fără observații citesc ca 1.0. Dezactivat implicit |
 
-**Sumă:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0`, așa cum este declarat în `DEFAULT_WEIGHTS`; ponderile configurate de utilizator sunt renormalizate într-o distribuție de `normalizeScoringWeights()` înainte de calcularea scorului.
+Instrumentul de urmărire `quality` din memorie (`open-sse/services/routing/quality.ts`) este gol după o repornire la rece, astfel încât fiecare candidat obține un `0.5` neutru până când primele observații aterizează.
+
+> **Cotă imposibil de citit (#15347).** Când un furnizor are o cotă de preluare, dar nu returnează nimic care poate fi citit (preluare eșuată, acreditări lipsă, utilizare numai pentru mesaje sau un instantaneu incorect, fără `windows` analizabil și fără `percentUsed` finit, inclusiv `percentUsed: null`), candidatul obține scoruri `0` pe `autoStrategy.ts` `quota` și scorul final este înmulțit cu `UNREADABLE_QUOTA_SOFT_DEPRIORITIZE_FACTOR` model soft-penalty ca penalizare pentru starea conexiunii. O citire de utilizare eșuată este o dovadă despre telemetrie, nu despre furnizor, așa că se clasează strict sub orice citire reală, inclusiv una confirmată 100%-used, dar nu este niciodată blocată sau evacuată. Un furnizor fără plafon raportează `unlimited: true` și punctează ca cotă completă; un furnizor fără cotă de preluare înregistrată nu are deloc sursă de telemetrie și păstrează valoarea implicită a `100`.
+
+**Sumă:** `0.1429 + 0.1605 + 0.1429 + 0.1143 + 0.0762 + (7 × 0.0476) + 0.00 + 0.00 + 0.03 + 0.00 = 1.0` așa cum este declarat în `DEFAULT_WEIGHTS`; Greutățile configurate de utilizator sunt renormalizate într-o distribuție prin `normalizeScoringWeights()` înainte de scor.
 
 ## Pachete de moduri
 
@@ -277,60 +302,67 @@ rezolvate alimentează intrările existente `config.modePack` / `config.budgetCa
 
 ## Toate strategiile de rutare
 
-Motorul de combinații OmniRoute acceptă **19 strategii de rutare** (declarate în `src/shared/constants/routingStrategies.ts` → `ROUTING_STRATEGY_VALUES`). Motorul Auto Combo propriu-zis este disponibil prin strategia `auto`; celelalte sunt disponibile pentru combinațiile persistate.
+Suportă motorul combo al lui OmniRoute** 22 de strategii de rutare** (declarat în `src/shared/constants/routingStrategies.ts` → `ROUTING_STRATEGY_VALUES`). Motorul Auto Combo în sine este expus în cadrul strategiei `auto` ; celelalte sunt disponibile pentru combo-uri persistente.
 
-| Strategie           | Descriere                                                                                                                                                                                                                                                   |
-| :------------------ | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `priority`          | Listă ordonată după prima țintă, cu prioritate explicită                                                                                                                                                                                                    |
-| `weighted`          | Selecție aleatorie ponderată în funcție de ponderea fiecărei ținte                                                                                                                                                                                          |
-| `round-robin`       | Parcurge ciclic țintele în ordine (în loturi; consultați mai jos)                                                                                                                                                                                           |
-| `context-relay`     | Transferă contextul între ținte (conversații lungi)                                                                                                                                                                                                         |
-| `fill-first`        | Umple cota fiecărei ținte înainte de a trece la următoarea                                                                                                                                                                                                  |
-| `p2c`               | Echilibrare aleatorie a încărcării prin alegerea dintre 2 opțiuni                                                                                                                                                                                           |
-| `random`            | Selecție aleatorie uniformă                                                                                                                                                                                                                                 |
-| `least-used`        | Alege ținta cu cea mai mică încărcare curentă                                                                                                                                                                                                               |
-| `cost-optimized`    | Minimizează costul în $ per solicitare pe baza prețurilor din catalog                                                                                                                                                                                       |
-| `reset-aware` ⭐    | Prioritizează în funcție de momentul resetării cotei — intervalele scurte de resetare sunt clasate mai sus                                                                                                                                                  |
-| `reset-window`      | Preferă țintele a căror fereastră de cotă se resetează cel mai curând                                                                                                                                                                                       |
-| `headroom`          | Alege ținta cu cea mai mare marjă de cotă rămasă                                                                                                                                                                                                            |
-| `strict-random`     | Selecție aleatorie fără deduplicarea repetărilor                                                                                                                                                                                                            |
-| `auto`              | Utilizează punctajul Auto Combo (16 factori) — **recomandat**                                                                                                                                                                                               |
-| `lkgp`              | Ultima cale funcțională cunoscută (fixează ultimul furnizor care a răspuns cu succes, apoi revine la reguli în caz de eșec)                                                                                                                                 |
-| `context-optimized` | Alege ținta care se potrivește cel mai bine dimensiunii contextului curent                                                                                                                                                                                  |
-| `cache-optimized`   | Reordonează țintele după afinitatea cu memoria cache a promptului — conexiunea cu cea mai mare probabilitate de a deține deja prefixul stocat în cache al acestei solicitări este încercată prima (`open-sse/services/combo/promptCacheAffinity.ts`, #8008) |
-| `fusion` 🧬         | Trimite solicitarea în paralel către un grup de modele, apoi sintetizează un singur răspuns prin intermediul unui arbitru (consultați mai jos)                                                                                                              |
-| `pipeline`          | Rulează țintele secvențial, transmițând rezultatul fiecărui pas ca intrare pentru pasul următor; este returnat numai răspunsul final (#6396)                                                                                                                |
+| Strategie           | Descriere                                                                                                                                                                                                                                                                    |
+| :------------------ | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `priority`          | Lista ordonată pentru prima țintă cu prioritate explicită                                                                                                                                                                                                                    |
+| `weighted`          | Ponderată aleatoriu în funcție de greutatea țintă                                                                                                                                                                                                                            |
+| `round-robin`       | Parcurgeți ținte în ordine (grupate; vezi mai jos)                                                                                                                                                                                                                           |
+| `context-relay`     | Transmite contextul între ținte (conversații lungi)                                                                                                                                                                                                                          |
+| `fill-first`        | Completați cota fiecărei ținte înainte de a trece la următoarea                                                                                                                                                                                                              |
+| `p2c`               | Power-of-2-choices echilibrare aleatorie a sarcinii                                                                                                                                                                                                                          |
+| `random`            | Selecție aleatorie uniformă                                                                                                                                                                                                                                                  |
+| `least-used`        | Alegeți ținta cu cea mai mică sarcină curentă                                                                                                                                                                                                                                |
+| `cost-optimized`    | Reduceți la minimum $ per cerere, dat fiind prețul de catalog                                                                                                                                                                                                                |
+| `reset-aware` ⭐    | Prioritizează în funcție de timpul de resetare al cotei — ferestrele scurte de resetare au clasat mai sus                                                                                                                                                                    |
+| `reset-window`      | Preferați ținte a căror fereastră de cotă se resetează cel mai curând                                                                                                                                                                                                        |
+| `expiry-first`      | Cheltuiește contul a cărui cotă ar expira altfel nefolosit mai întâi — cel mai mare rămas cu cel mai apropiat termen de resetare este primul                                                                                                                                 |
+| `headroom`          | Alegeți ținta cu cel mai mare spațiu de cotă rămas                                                                                                                                                                                                                           |
+| `quota-weighted`    | Omiteți conturile epuizate, apoi alegeți dintre restul proporțional cu cota rămasă împărțită la încărcarea în zbor; conversațiile existente rămân fixate                                                                                                                     |
+| `strict-random`     | Aleatoriu fără deduplicarea repetărilor                                                                                                                                                                                                                                      |
+| `auto`              | Utilizați scorul Combo automat (16 factori) —** recomandat**                                                                                                                                                                                                                 |
+| `lkgp`              | Ultima cale cunoscută (fixează ultimul furnizor de succes, apoi revine la reguli)                                                                                                                                                                                            |
+| `context-optimized` | Alegeți ținta care se potrivește cel mai bine pentru dimensiunea contextului actual                                                                                                                                                                                          |
+| `cache-optimized`   | Reordonați țintele după afinitatea prompt-cache — este încercată mai întâi conexiunea cel mai probabil să dețină prefixul din cache al acestei solicitări (`open-sse/services/combo/promptCacheAffinity.ts`, #8008)                                                          |
+| `fusion` 🧬         | Distribuiți pe un grup de modele în paralel, apoi sintetizați un răspuns prin intermediul unui judecător (vezi mai jos)                                                                                                                                                      |
+| `pipeline`          | Rulați ținte secvențial, conectând rezultatul fiecărui pas în intrarea pasului următor; este returnat doar răspunsul final (#6396)                                                                                                                                           |
+| `jev`               | Lista de preferințe clasate de utilizator; TypeSafe Jev admite ce intrări rulează pentru această solicitare. Câștigătorul în primul rând, alte ținte admise păstrează ordinea utilizatorilor. Este deschis pentru comanda utilizatorului când Jev este indisponibil (#15276) |
 
 ⭐ = Nou în v3.8.0 · 🧬 = Nou în v3.8.36
 
-### Semantica strategiei `weighted`
+### semantica `weighted`
 
-`weighted` reprezintă o **extragere aleatorie proporțională pentru fiecare solicitare**
-(`open-sse/services/combo/targetSorters.ts` → `selectWeightedTarget`), nu un mecanism de egalizare:
+`weighted` este a** extragere aleatorie proporțională per cerere** (`open-sse/services/combo/targetSorters.ts` → `selectWeightedTarget`), nu un egalizator:
 
-- Pentru fiecare solicitare este extras **un** pas cu probabilitatea `weight / totalWeight`; pașii rămași
-  sunt ordonați descrescător după pondere, formând lanțul alternativ pentru solicitarea respectivă.
-- Un pas a cărui pondere este `0` (sau lipsește) nu este **niciodată extras** atât timp cât orice alt pas are o
-  pondere > 0 — acesta poate servi doar ca alternativă după ce pasul extras eșuează. Selecția devine uniformă numai atunci când **toate**
-  ponderile sunt 0.
-- Pașii ale căror ținte sunt toate indisponibile — disjunctorul furnizorului este `OPEN`, conexiunea
-  se află în perioada de așteptare, modelul este blocat — sunt eliminați din extragere înainte ca aceasta să aibă loc
-  (`open-sse/services/combo/targetResolution.ts`), astfel încât un singur pas funcțional poate fi selectat temporar
-  pentru fiecare solicitare.
-- `stickyWeightedLimit` (configurația combinației, valoarea implicită `1` = dezactivat) fixează pasul extras pentru acel număr de
-  reușite consecutive înainte de o nouă extragere.
+- Fiecare cerere retrage** unul** pas cu probabilitate `weight / totalWeight`; pașii rămași sunt ordonați în funcție de greutatea descendentă ca lanț de rezervă pentru cererea respectivă.
+- Un pas a cărui greutate este `0` (sau lipsește) este** niciodată desenat** în timp ce orice alt pas are o pondere > 0 — acesta poate servi doar ca alternativă după ce pasul desenat eșuează. Doar când** toate** ponderile sunt 0, selecția devine uniformă.
+- Pașii ale căror ținte sunt toate indisponibile — provider circuit breaker `OPEN`, cooldown connection, model lockout — sunt eliminați din extragere înainte de a se întâmpla (`open-sse/services/combo/targetResolution.ts`), astfel încât un singur pas sănătos poate câștiga temporar fiecare cerere.
+- `stickyWeightedLimit` (configurație combo, `1` = implicit dezactivat) fixează pasul desenat pentru atâtea succese consecutive înainte de re-desenare.
 
-Pentru o rotație strictă, utilizați `round-robin`; ponderile egale cu `weighted` asigură un echilibru statistic — nu
-strict.
+Pentru rotație strictă utilizați `round-robin`; ponderi egale pe `weighted` dau — statistic nu echilibru — strict.
 
-### Modul pipeline agentic
+### Mod pipeline agentic
 
-O combinație `pipeline` în doi pași poate activa rutarea planificator/executor prin
-`config.agenticOrchestration.enabled`. Prima țintă se ocupă de planificare și de răspunsurile finale;
-a doua țintă emite apeluri de instrumente native pentru client. OmniRoute detectează continuările
-cu rezultate ale instrumentelor din protocolul cererii, întreabă planificatorul dacă este necesară
-încă o rundă de instrumente și stabilește dinamic executorul sau planificatorul drept pasul final
-orientat către client.
+Un combo `pipeline` cu cel puțin două modele poate opta pentru rutarea planner/executor cu `config.agenticOrchestration.enabled`. Prima țintă deține planificarea și răspunsurile finale; a doua țintă emite apeluri de instrumente native client. OmniRoute detectează continuarea rezultatelor sculei din protocolul de solicitare, întreabă planificatorul dacă este nevoie de o altă rundă de scule și face ca executantul sau planificatorul să fie în mod dinamic pasul final orientat spre client.
+
+Opțional, `config.agenticOrchestration.contextCompaction` aplică un buget de sarcină utilă separat înainte de fiecare expediere a planificatorului sau executorului. Activați-l în mod explicit:
+
+```json
+{
+  "enabled": true,
+  "defaultMaxChars": 400000,
+  "targetRatio": 0.72,
+  "toolResultMaxChars": 24000,
+  "modelMaxChars": { "provider/planner": 175000, "provider/executor": 300000 }
+}
+```
+
+Acestea sunt bugete de caractere JSON serializate selectate de operator, nu ferestre de context simbol sau limite garantate în amonte. Modelul exact IDs înlocuiește valoarea implicită. Deasupra pragului, compactarea elimină definițiile identice ale sculelor, decupează dovezile de scule supradimensionate cu un rezumat și elimină grupurile vechi de istoric complet către raportul țintă. Acesta păstrează instrucțiunile system/developer, cea mai recentă solicitare a utilizatorului, ultima rundă de instrumente, inclusiv calls/results paralel și instrucțiunea de rutare principală a lui Gemini. Instrucțiunile de nivel superior și setările instrumentului sunt păstrate. Un marcator de omisiune înregistrează istoricul eliminat; aceasta este o tăiere deterministă, nu un rezumat semantic. Dacă contextul fixat depășește în continuare bugetul, cererea returnează 413 înainte de a contacta modelul. Cu compactarea dezactivată sau sub prag, cererea trece neschimbată.
+
+În continuarea rezultatelor instrumentului, OmniRoute oprește și execuția atunci când două runde finalizate consecutive repetă aceleași apeluri de instrumente cu rezultate neschimbate sau când fiecare rezultat marcat în mod explicit din două runde consecutive a eșuat. Rezultatele modificate permit apeluri repetate (de exemplu, sondaje). Paza se resetează la o nouă solicitare a utilizatorului, grupează apelurile paralele într-o singură rundă și acceptă Anthropic, Terminări de chat, Răspunsuri și istoricul Gemini. Planificatorul primește motivul și deține răspunsul final chiar dacă solicită o altă rundă de instrumente.
+
+Modelele suplimentare după a doua țintă sunt comandate de copii de siguranță ale executorului. Un răspuns HTTP eșuat sau o excepție de transport înaintează către următorul executant, purtând aceeași decizie a planificatorului și instrumente native, dar propriul pas al executorului prompt și conexiunea rezolvată. Primul răspuns de succes este returnat neschimbat, inclusiv SSE streaming; eșecurile după începerea cu succes a unui flux nu pot fi reîncercate aici. Dacă toți executanții eșuează, ultimul eșec este returnat. Clientul anulează oprirea expedierii.
 
 ```json
 {
@@ -342,39 +374,17 @@ orientat către client.
 }
 ```
 
-Executorul poate emite mai multe apeluri independente într-un singur răspuns. Apelurile dependente
-sunt gestionate în rundele ulterioare de rezultate ale instrumentelor clientului, planificatorul
-revizuind fiecare rezultat. Valoarea implicită pentru `maxToolRounds` este `8`, iar aceasta acceptă
-valori între `1` și `32`; odată ce limita este atinsă, planificatorul trebuie să genereze cel mai bun
-răspuns final disponibil. Deciziile interne ale planificatorului sunt stocate în memoria tampon, iar
-răspunsul selectat pentru client păstrează preferința inițială privind transmiterea în flux.
+Executorul poate emite mai multe apeluri independente într-un singur răspuns. Apelurile dependente sunt gestionate în rândurile ulterioare ale instrumentului clientului, planificatorul revizuind fiecare rezultat. `maxToolRounds` este implicit `8` și acceptă `1`–`32`; odată ajuns, planificatorul trebuie să producă cel mai bun răspuns final disponibil. Deciziile planificatorului intern sunt tamponate, în timp ce răspunsul selectat orientat către client păstrează preferința de streaming inițială.
 
-### Loturi persistente `round-robin` și extinderea conturilor
+### `round-robin` sticky lot și extinderea contului
 
-Round-robin funcționează în loturi, nu cu o cerere per pas:
+Round-robin este grupat, nu o singură cerere pe pas:
 
-- `stickyRoundRobinLimit` (configurația combinației, apoi `comboStickyRoundRobinLimit`, apoi
-  `settings.stickyRoundRobinLimit`, valoare implicită **3**) păstrează aceeași țintă pentru acest
-  număr de reușite consecutive înainte de rotație. Setați suprascrierea combinației la `1` pentru
-  rotația la fiecare cerere. Editorul de combinații afișează valoarea efectivă și nivelul din care
-  provine.
-- `connectionAwareExpansion` (configurația combinației, apoi setările, valoare implicită **false**)
-  extinde fiecare pas la nivel de furnizor în ținte per cont înainte de rotație. Strategiile din
-  grupul B (priority, weighted, round-robin, random, p2c, least-used, cost-optimized, lkgp,
-  fill-first, strict-random, context-optimized, cache-optimized, context-relay, fusion,
-  pipeline) păstrează o vizualizare la nivel de furnizor până la activarea acestei opțiuni.
-  Editorul de combinații oferă opțiunile moștenire / activat / dezactivat; moștenirea utilizează
-  valoarea implicită globală (dezactivat).
-- Rutarea în funcție de localitatea cache-ului promptului (`promptCacheAffinityEnabled`, valoare
-  implicită **true**) reordonează conexiunile fixate, astfel încât cheile de cache corespondente
-  să rămână într-un singur cont. Aceasta are prioritate față de rotația round-robin și ponderată
-  între pașii fixați per cont. Dezactivați-o din Settings → Combo defaults dacă aveți nevoie de
-  rotație strictă. Nu există nicio suprascriere per combinație.
+- `stickyRoundRobinLimit` (configurație combo, apoi `comboStickyRoundRobinLimit`, apoi `settings.stickyRoundRobinLimit`, implicit** 3** ) păstrează aceeași țintă pentru atâtea succese consecutive înainte de rotație. Setați suprascrierea combo la `1` pentru rotația cu o singură cerere. Editorul combo arată valoarea efectivă și din ce strat provine.
+- `connectionAwareExpansion` (configurație combinată, apoi setări, implicit** fals** ) extinde fiecare pas la nivel de furnizor în obiective pentru fiecare cont înainte de rotație. Strategiile de grup B (prioritate, ponderate, round-robin, aleatoriu, p2c, cele mai puțin utilizate, optimizate în funcție de cost, lkgp, complet-first, strict aleatoriu, optimizate pentru context, optimizate pentru cache, context-releu, fuziune, pipeline, jev) păstrează o vizualizare la nivel de furnizor până când aceasta este activată. Editorul combo expune moștenire / activare / dezactivare; moștenire utilizează valoarea implicită globală (dezactivată).
+- Rutarea localității prompt-cache (`promptCacheAffinityEnabled`, implicit** adevărat** ) reordonează conexiunile fixate, astfel încât cheile cache corespunzătoare rămân într-un singur cont. Are prioritate față de rotația round-robin și ponderată între pași fixați pentru fiecare cont. Dezactivați-l din Setări → Combo implicite dacă aveți nevoie de rotație strictă. Nu există o modificare per combo.
 
-Pentru rotația între mai multe conturi pe un singur model, preferați **un singur pas cu cont dinamic**
-(`connectionId` gol, întregul grup) cu limita de persistență `1`, nu trei valori `connectionId`
-fixate. Pașii fixați împreună cu afinitatea ajung să utilizeze același cont chiar și în timp ce
-contorul RR avansează.
+Pentru rotația cu mai multe conturi pe un singur model, preferați** un singur pas de cont dinamic** ( `connectionId` gol, bazin întreg) cu limită lipicioasă `1`, nu trei `connectionId` fixate. Pașii fixați plus afinitatea se prăbușesc în același cont chiar și în timp ce contorul RR avansează.
 
 ## Strategia Fusion
 
@@ -478,13 +488,13 @@ Aceasta înseamnă că **adăugarea unui furnizor nou cu `auto/*` activat extind
 
 ## API
 
-**Nu există niciun endpoint dedicat `POST /api/combos/auto`** — Auto-Combo este utilizat în două moduri:
+**Nu există un endpoint dedicat `POST /api/combos/auto`** — Auto-Combo este utilizat în două moduri:
 
-1. **Fără configurare (recomandat):** Trimiteți orice solicitare de completare a conversației cu `model: "auto"` sau `model: "auto/<variant>"`. Fabrica virtuală construiește combinația pentru fiecare solicitare — fără persistență și fără apeluri API suplimentare.
+1. **Fără configurare (recomandat):** Trimiteți orice cerere de finalizare a conversației cu `model: "auto"` sau `model: "auto/<variant>"`. Fabrica virtuală construiește combinația pentru fiecare cerere — nu sunt necesare persistență sau apeluri API.
 
-2. **Combinație persistentă cu `strategy: "auto"`:** Creați o combinație obișnuită prin `POST /api/combos` și setați `strategy: "auto"`, împreună cu `config.auto.weights` / `config.auto.candidatePool`. Este utilizat același motor de evaluare; combinația este stocată în `combos` și poate fi reutilizată prin ID.
+2. **Combinație persistentă cu `strategy: "auto"`:** Creați o combinație obișnuită prin `POST /api/combos` și setați `strategy: "auto"`, împreună cu `config.auto.weights` / `config.auto.candidatePool`. Este utilizat același motor de evaluare; combinația este stocată în `combos` și poate fi reutilizată după ID.
 
-Pentru descoperire, `GET /api/combos/auto` listează fiecare variantă împreună cu grupul său de candidați rezolvat, plus `context_length` / `max_output_tokens` — valorile MAXIME dintre ferestrele grupului de candidați. Clienții (de exemplu, pluginul opencode) trebuie să publice aceste valori în loc de `0`: un context zero dezactivează complet compactarea automată din opencode, permițând sesiunilor să crească până când eliminarea istoricului de către gateway distruge contextul. Publicarea valorii MAXIME este sigură deoarece prefiltrarea contextului Auto-Combo direcționează solicitările supradimensionate către candidați cu ferestre mari.
+Pentru descoperire, `GET /api/combos/auto` listează fiecare variantă împreună cu grupul său de candidați rezolvat și cu `context_length` / `max_output_tokens` — valoarea MAXIMĂ dintre ferestrele grupului de candidați. Clienții (de exemplu, pluginul opencode) trebuie să publice aceste valori în loc de `0`: un context zero dezactivează complet compactarea automată din opencode, permițând sesiunilor să crească până când eliminarea istoricului de către gateway distruge contextul. Este sigur să fie publicată valoarea MAXIMĂ, deoarece prefiltrul de context al combinației automate direcționează cererile supradimensionate către candidați cu ferestre mari.
 
 ```bash
 # Utilizare fără configurare (fără crearea unei combinații)
@@ -501,31 +511,33 @@ curl -X POST http://localhost:20128/api/combos \
 
 ### Strategii ale routerului automat
 
-Combinațiile persistente cu `strategy: "auto"` pot seta `config.routerStrategy` (sau vechea opțiune
+Combinațiile persistente cu `strategy: "auto"` pot seta `config.routerStrategy` (sau opțiunea veche
 `config.auto.routerStrategy`) la una dintre următoarele valori:
 
 - `rules` — evaluare ponderată implicită
-- `score` — selectează cel mai mare scor ponderat configurat. În cazul scorurilor perfect egale, se păstrează ordinea configurată
-  a candidaților; opțiunea existentă `explorationRate` eșantionează din întregul grup clasificat.
+- `score` — selectează cel mai mare scor ponderat configurat. Egalitățile exacte păstrează ordinea configurată
+  a candidaților; parametrul existent `explorationRate` eșantionează din întregul grup clasificat.
 - `cost` / `eco` — cel mai ieftin furnizor funcțional
 - `latency` / `fast` — cea mai mică latență p95, cu penalizare pentru fiabilitate
-- `sla-aware` / `sla` — preferă candidații care îndeplinesc obiectivele SLO privind latența p95, rata de eroare și, opțional,
-  costurile
-- `lkgp` — ultimul furnizor cunoscut ca fiind funcțional are prioritate
+- `sla-aware` / `sla` — preferă candidații care îndeplinesc SLO-urile privind latența p95, rata de eroare și, opțional,
+  costul
+- `lkgp` — mai întâi, ultimul furnizor cunoscut ca fiind funcțional
+- `nadir` — solicită API-ului de decizie [Nadir](https://getnadir.com) să stabilească modelul din grup de care are
+  nevoie promptul; necesită activare explicită și revine la `rules` în caz de eroare
 
 ### Strategiile routerului în detaliu
 
-Motorul Auto-Combo expune 6 implementări **RouterStrategy** interschimbabile, pe care
-le puteți schimba prin `config.routerStrategy` (sau vechea opțiune `config.auto.routerStrategy`).
-Fiecare strategie alege un furnizor din grupul de candidați, pe baza unui `RoutingContext`
-(tipul sarcinii, indicii privind instrumentele/viziunea, estimarea numărului de tokenuri, politica SLA opțională și
-ultimul furnizor cunoscut ca fiind funcțional, opțional).
+Motorul de combinații automate oferă 7 implementări **RouterStrategy** interschimbabile prin
+`config.routerStrategy` (sau opțiunea veche `config.auto.routerStrategy`).
+Fiecare strategie selectează un furnizor din grupul de candidați, pe baza unui `RoutingContext`
+(tipul sarcinii, indicii privind instrumentele/viziunea, estimarea tokenurilor, politica SLA opțională, ultimul
+furnizor cunoscut ca fiind funcțional, opțional).
 
-#### 1. `rules` (implicit) — evaluare ponderată pe baza a 16 factori
+#### 1. `rules` (implicit) — evaluare ponderată cu 16 factori
 
-Încapsulează motorul de evaluare existent. Filtrează candidații al căror întrerupător de circuit
-este în starea `OPEN`, apoi rulează `scorePool()` cu tipul curent al sarcinii și `getTaskFitness()`,
-alegând furnizorul cu cel mai mare scor.
+Încapsulează motorul de evaluare existent. Filtrează candidații cu disjunctorul în starea `OPEN`,
+apoi execută `scorePool()` cu tipul curent al sarcinii și `getTaskFitness()`,
+selectând furnizorul cu cel mai mare scor.
 
 ```ts
 class RulesStrategyImpl implements RouterStrategy {
@@ -545,7 +557,7 @@ class RulesStrategyImpl implements RouterStrategy {
 }
 ```
 
-**Când se utilizează**: Implicit. Utilizați această strategie atunci când doriți un compromis echilibrat între toate semnalele.
+**Când se utilizează**: Implicit. Utilizați-o atunci când doriți un compromis echilibrat între toate semnalele.
 
 **Alias**: `rules` (fără alias)
 
@@ -553,8 +565,8 @@ class RulesStrategyImpl implements RouterStrategy {
 
 #### 2. `cost` / `eco` — cel mai ieftin furnizor funcțional
 
-Sortează grupul de candidați după `costPer1MTokens` (în ordine crescătoare) și îl alege pe cel mai ieftin.
-Filtrează mai întâi candidații aflați în starea `OPEN`.
+Sortează grupul de candidați după `costPer1MTokens` (crescător) și îl selectează pe cel mai ieftin.
+Filtrează mai întâi candidații cu starea `OPEN`.
 
 ```ts
 class CostStrategyImpl implements RouterStrategy {
@@ -577,8 +589,8 @@ class CostStrategyImpl implements RouterStrategy {
 
 #### 3. `latency` / `fast` — cea mai mică latență p95, cu penalizare pentru fiabilitate
 
-Sortează după `p95LatencyMs + (errorRate * 1000)`. Penalizarea ratei de eroare asigură că furnizorii
-nesiguri sunt clasați mai jos, chiar dacă latența lor nominală este redusă.
+Sortează după `p95LatencyMs + (errorRate * 1000)`. Penalizarea ratei de eroare asigură
+clasarea mai slabă a furnizorilor nefiabili, chiar dacă latența lor nominală este redusă.
 
 ```ts
 class LatencyStrategyImpl implements RouterStrategy {
@@ -595,16 +607,16 @@ class LatencyStrategyImpl implements RouterStrategy {
 }
 ```
 
-**Când se utilizează**: Sarcini de lucru sensibile la latență, precum chatul în timp real, completarea automată sau
+**Când se utilizează**: Sarcini sensibile la latență, precum conversațiile în timp real, completarea automată sau
 asistenții interactivi pentru programare.
 
 **Aliasuri**: `latency`, `fast`
 
 ---
 
-#### 4. `sla-aware` / `sla` — conformitatea cu SLO-urile de latență/eroare/cost
+#### 4. `sla-aware` / `sla` — conformitate cu SLO-urile privind latența/erorile/costurile
 
-Acordă fiecărui candidat un scor în funcție de cât de bine respectă politica SLO configurată:
+Evaluează fiecare candidat în funcție de cât de bine respectă politica SLO configurată:
 
 | Factor              | Pondere | Formulă                                           |
 | ------------------- | ------- | ------------------------------------------------- |
@@ -612,11 +624,11 @@ Acordă fiecărui candidat un scor în funcție de cât de bine respectă politi
 | Scor de eroare      | 35%     | `threshold / max(value, ε)`                       |
 | Scor de sănătate    | 15%     | `1.0` (CLOSED) / `0.5` (HALF_OPEN) / `0.0` (OPEN) |
 | Scor de cost        | 10%     | `threshold / max(value, ε)` sau invers normalizat |
-| Scor de stabilitate | 5%      | abaterea standard a latenței, invers normalizată  |
+| Scor de stabilitate | 5%      | abaterea standard normalizată invers a latenței   |
 
-Când `hardConstraints: true`, candidații sunt sortați în primul rând după **scorul de încălcare**
-(cu cât depășesc orice SLO), apoi după scorul compus. În caz contrar, se utilizează doar
-scorul compus.
+Când `hardConstraints: true`, candidații sunt sortați în principal după **scorul de încălcare**
+(cu cât depășesc orice SLO), apoi după scorul compozit. În caz contrar, se folosește doar
+scorul compozit.
 
 ```ts
 class SLAStrategyImpl implements RouterStrategy {
@@ -625,12 +637,12 @@ class SLAStrategyImpl implements RouterStrategy {
     "Selects the provider most likely to satisfy latency, error-rate, and cost SLOs";
 
   select(pool, context) {
-    // ... acordă fiecărui candidat un scor în raport cu politica: { targetP95Ms, maxErrorRate, maxCostPer1MTokens, hardConstraints }
+    // ... punctează fiecare candidat în raport cu politica: { targetP95Ms, maxErrorRate, maxCostPer1MTokens, hardConstraints }
   }
 }
 ```
 
-**Câmpuri SLA** (configurate în configurația combo):
+**Câmpuri SLA** (setate în configurația combinației):
 
 ```json
 {
@@ -645,16 +657,16 @@ class SLAStrategyImpl implements RouterStrategy {
 }
 ```
 
-**Când se utilizează**: Sarcini de lucru de producție cu bugete stricte pentru latență, rată de eroare sau cost.
+**Când se utilizează**: Sarcini de lucru de producție cu bugete stricte pentru latență, rată de eroare sau costuri.
 
 **Aliasuri**: `sla-aware`, `sla`
 
 ---
 
-#### 5. `lkgp` — ultimul furnizor cunoscut ca fiind bun este încercat primul
+#### 5. `lkgp` — ultimul furnizor cunoscut ca fiind funcțional este încercat primul
 
-Încearcă mai întâi **ultimul furnizor cunoscut ca fiind bun** (dacă este setat), apoi revine la
-strategia `rules`. Util pentru persistența sesiunii — același furnizor gestionează
+Încearcă mai întâi **ultimul furnizor cunoscut ca fiind funcțional** (dacă este setat), apoi revine la
+strategia `rules`. Este utilă pentru afinitatea sesiunii — același furnizor gestionează
 solicitările ulterioare dintr-o conversație.
 
 ```ts
@@ -676,7 +688,7 @@ class LKGPStrategyImpl implements RouterStrategy {
       }
     }
 
-    // Revine la strategia rules
+    // Revenire la strategia rules
     return getStrategy("rules").select(pool, context);
   }
 }
@@ -689,9 +701,57 @@ solicitările ulterioare (de exemplu, pentru memorare în cache, continuitatea c
 
 ---
 
-### Strategii personalizate pentru router
+#### 6. `nadir` — alegerea modelului în funcție de prompt prin Nadir
 
-Vă puteți înregistra propria implementare `RouterStrategy` prin intermediul API-ului public:
+Fiecare strategie de mai sus clasifică candidații pe baza propriei telemetrii; niciuna dintre ele nu citește
+solicitarea. `nadir` trimite ultimul mesaj al utilizatorului, împreună cu ID-urile modelelor din grup, către
+API-ul decizional al [Nadir](https://getnadir.com) (`POST /v1/bucket`) și direcționează solicitarea către modelul
+pe care Nadir îl selectează din acel meniu (`simple` → cel mai ieftin model capabil, `complex` → modelul
+de frontieră). Conexiunea care deservește modelul respectiv este în continuare aleasă de `rules`, astfel încât cota,
+starea de sănătate și costul continuă să determine contul utilizat.
+
+```json
+{
+  "strategy": "auto",
+  "config": {
+    "routerStrategy": "nadir",
+    "nadir": {
+      "apiKey": "ndr_...",
+      "baseUrl": "https://api.getnadir.com",
+      "timeoutMs": 2000
+    }
+  }
+}
+```
+
+`OMNIROUTE_NADIR_API_KEY` și `OMNIROUTE_NADIR_BASE_URL` sunt valorile de rezervă din mediul de execuție pentru cele două
+șiruri. `baseUrl` este necesar doar pentru o instanță Nadir găzduită local (un `/v1` final este acceptat).
+Apelurile fără cheie ajung la nivelul anonim Nadir, care are o limită de rată per IP. Cu o cheie
+([creați una](https://app.getnadir.com/dashboard/api-keys)), fiecare decizie este
+înregistrată în panoul dvs. Nadir. Configurare și verificare complete:
+[getnadir.com/docs/gateway-omniroute](https://getnadir.com/docs/gateway-omniroute/).
+
+Ce părăsește sistemul: textul ultimului mesaj al utilizatorului (primele 16.000 de caractere), ID-urile
+modelelor candidate și o etichetă de canal `source: "omniroute"`. Nu sunt trimise promptul de sistem, istoricul, instrumentele sau
+antetele.
+
+Comportamentul în caz de eroare este de tip fail-open: un timeout (implicit 2000 ms), un răspuns non-2xx, o gazdă
+inaccesibilă, un răspuns incorect format sau o selecție din afara grupului determină utilizarea deciziei `rules`,
+iar motivul primește prefixul `NadirStrategy: fallback (…)`. După un apel eșuat,
+strategia omite rețeaua timp de 30 s, astfel încât o întrerupere generează un singur timeout la fiecare 30 s, în loc de
+unul pentru fiecare solicitare. Evenimentele de rutare raportează `strategy: "nadir"` numai când Nadir a făcut efectiv
+alegerea.
+
+**Când se utilizează**: trafic cu niveluri mixte de dificultate într-un grup care acoperă mai multe niveluri de modele (un model mic, unul
+mediu și unul de frontieră), când doriți să reduceți costul utilizării permanente a modelului de frontieră.
+
+**Alias**: `nadir` (fără alias)
+
+---
+
+### Strategii personalizate de rutare
+
+Puteți înregistra propria implementare `RouterStrategy` prin intermediul API-ului public:
 
 ```ts
 import {
@@ -704,7 +764,7 @@ class MyCustomStrategy implements RouterStrategy {
   readonly description = "My custom routing strategy";
 
   select(pool, context) {
-    // Logica dumneavoastră de rutare aici
+    // Logica dvs. de rutare aici
     return {
       provider: pool[0].provider,
       model: pool[0].model,
@@ -732,17 +792,18 @@ Apoi utilizați-o:
 
 ---
 
-### Ghid de selectare a strategiei routerului
+### Ghid pentru selectarea strategiei de rutare
 
-| Caz de utilizare       | Strategie   | Motiv                                          |
-| ---------------------- | ----------- | ---------------------------------------------- |
-| Sarcină echilibrată    | `rules`     | Implicită — ia în considerare toți factorii    |
-| Minimizarea costului   | `cost`      | Alege întotdeauna cea mai ieftină opțiune      |
-| Minimizarea latenței   | `latency`   | Alege cel mai rapid furnizor de încredere      |
-| SLO-uri stricte        | `sla-aware` | Filtrează după pragurile p95/de eroare/de cost |
-| Chat cu mai multe ture | `lkgp`      | Persistența sesiunii                           |
+| Caz de utilizare            | Strategie   | Motiv                                         |
+| --------------------------- | ----------- | --------------------------------------------- |
+| Volum de lucru echilibrat   | `rules`     | Implicită — ia în considerare toți factorii   |
+| Minimizarea costurilor      | `cost`      | Alege întotdeauna cea mai ieftină opțiune     |
+| Minimizarea latenței        | `latency`   | Alege cel mai rapid furnizor fiabil           |
+| SLO-uri stricte             | `sla-aware` | Filtrează după pragurile p95/eroare/cost      |
+| Chat cu mai multe schimburi | `lkgp`      | Persistența sesiunii                          |
+| Dificultate variabilă       | `nadir`     | Alege nivelul modelului pentru fiecare prompt |
 
-Câmpuri compatibile cu SLA:
+Câmpuri pentru strategia compatibilă cu SLA:
 
 ```json
 {
@@ -794,39 +855,39 @@ Consultați [`docs/guides/TIERS.md`](../guides/TIERS.md) pentru definițiile niv
 
 ## Testare și acoperire
 
-### Matrice deterministă a deciziilor de rutare (`npm run test:combo:matrix`)
+### Matrice de decizie de rutare deterministă (`npm run test:combo:matrix`)
 
-`tests/integration/combo-matrix/*.test.ts` demonstrează **decizia** de rutare a tuturor celor 19 strategii publice, de la un capăt la altul, prin conducta reală de combinație, cu un upstream simulat. Acoperirea include:
+`tests/integration/combo-matrix/*.test.ts` demonstrează rutarea** decizie** a strategiilor publice pe care le acoperă end-to-end prin conducta combo reală cu un amonte batjocorit. Acoperirea include:
 
-- Toate cele 19 strategii `ROUTING_STRATEGY_VALUES` (ordonate, ponderate, cost, context, fuziune, …).
-- `quota-share` (internă) de la un capăt la altul: echitate DRR + reducerea priorității la saturație prin punctul real de integrare `selectQuotaShareTarget` (`registerQuotaFetcher` / `setLKGP` / `__setHeadroomSaturationFetcherForTests`).
-- Acoperirea transferului universal `context-relay` pentru fiecare număr de ținte.
+- Toate cele 21 de strategii `ROUTING_STRATEGY_VALUES` (ordonate, ponderate, cost, context, fuziune, …).
+- `quota-share` (intern) end-to-end: DRR fairness + saturație deprioritizare prin cusătura `selectQuotaShareTarget` reală (`registerQuotaFetcher` / `setLKGP` / `__setHeadroomSaturationFetcherForTests`).
+- Acoperire universală `context-relay` pentru fiecare număr țintă.
 
-Această suită rulează în CI (jobul `test:integration`) cu `--test-concurrency=1` și `--test-force-exit`, astfel încât este deterministă și nu necesită credențiale reale.
+Această suită rulează în CI (`test:integration` job) cu `--test-concurrency=1` și `--test-force-exit`, deci este deterministă și nu necesită acreditări live.
 
-### Teste smoke reale condiționate (NU sunt în CI — furnizori reali)
+### Fum viu închis (NOT în CI — furnizori reali)
 
-| Comandă                                | Ce face                                                                                                   |
-| :------------------------------------- | :-------------------------------------------------------------------------------------------------------- |
-| `npm run test:combo:live`              | Rutare reală în proces cu `RUN_COMBO_LIVE=1`; creează un instantaneu al unei baze de date OmniRoute reale |
-| `npm run test:combo:live:vps`          | Apeluri HTTP către un server OmniRoute real (setați `COMBO_LIVE_BASE_URL`)                                |
-| `npm run test:combo:live:vps:failover` | La fel, cu scenarii deliberate de comutare în caz de eroare                                               |
+| Comanda                                | Ce face                                                                           |
+| :------------------------------------- | :-------------------------------------------------------------------------------- |
+| `npm run test:combo:live`              | Rutare reală în proces cu `RUN_COMBO_LIVE=1`; instantanee un OmniRoute DB         |
+| `npm run test:combo:live:vps`          | apeluri HTTP împotriva unui server OmniRoute live (setează `COMBO_LIVE_BASE_URL`) |
+| `npm run test:combo:live:vps:failover` | La fel, cu scenariile de failover intenționate                                    |
 
-Aceste teste smoke verifică traseul real de comunicație (combinație → furnizor → finalizare). Ele sunt excluse intenționat din CI deoarece necesită credențiale reale și acces la VPS.
+Aceste teste de fum exercită calea reală a firului (combo → provider → finalisation). Sunt excluși în mod intenționat din CI, deoarece necesită acreditări live și acces VPS.
 
 ---
 
 ## Fișiere
 
-| Fișier                                                    | Scop                                                                                                  |
-| :-------------------------------------------------------- | :---------------------------------------------------------------------------------------------------- |
-| `open-sse/services/autoCombo/scoring.ts`                  | Funcție de punctare cu 16 factori, `DEFAULT_WEIGHTS`, normalizarea pool-ului                          |
-| `open-sse/services/autoCombo/taskFitness.ts`              | Tabel de corespondență pentru compatibilitatea model × sarcină                                        |
-| `open-sse/services/autoCombo/engine.ts`                   | Logica de selecție, bandit, plafon bugetar                                                            |
-| `open-sse/services/autoCombo/selfHealing.ts`              | Excludere, probe, mod pentru incidente                                                                |
-| `open-sse/services/autoCombo/modePacks.ts`                | 6 profiluri de ponderi (livrare rapidă, economisire, calitate prioritară, offline, fiabilitate, haos) |
-| `open-sse/services/autoCombo/autoPrefix.ts`               | Parser pentru prefixul `auto/` + 6 variante                                                           |
-| `open-sse/services/autoCombo/virtualFactory.ts`           | Construiește în memorie `AutoComboConfig` din conexiunile active                                      |
-| `open-sse/services/autoCombo/providerRegistryAccessor.ts` | Hook de testare pentru simularea registrului de furnizori                                             |
-| `src/shared/constants/routingStrategies.ts`               | `ROUTING_STRATEGY_VALUES` (19 strategii)                                                              |
-| `src/sse/handlers/chat.ts`                                | Integrare: scurtcircuit pentru prefixul auto                                                          |
+| Fişier                                                    | Scop                                                                                                                                        |
+| :-------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------ |
+| `open-sse/services/autoCombo/scoring.ts`                  | Funcția de notare cu 16 factori, `DEFAULT_WEIGHTS`, normă de grup                                                                           |
+| `open-sse/services/autoCombo/taskFitness.ts`              | Căutare de fitness model × task                                                                                                             |
+| `open-sse/services/autoCombo/engine.ts`                   | Logica de selecție, bandit, plafon bugetar                                                                                                  |
+| `open-sse/services/autoCombo/selfHealing.ts`              | Excluderea, sondele, modul incident                                                                                                         |
+| `open-sse/services/autoCombo/modePacks.ts`                | 6 profiluri de greutate (navigare rapidă, economisire a costurilor, calitate mai întâi, prietenos offline, fiabilitate mai întâi, mod haos) |
+| `open-sse/services/autoCombo/autoPrefix.ts`               | `auto/` prefix parser + 6 variante                                                                                                          |
+| `open-sse/services/autoCombo/virtualFactory.ts`           | Construiește `AutoComboConfig` în memorie din conexiuni live                                                                                |
+| `open-sse/services/autoCombo/providerRegistryAccessor.ts` | Cârlig de testare pentru batjocorirea registrului furnizorului                                                                              |
+| `src/shared/constants/routingStrategies.ts`               | `ROUTING_STRATEGY_VALUES` (22 de strategii)                                                                                                 |
+| `src/sse/handlers/chat.ts`                                | Integrare: scurtcircuit auto-prefix                                                                                                         |

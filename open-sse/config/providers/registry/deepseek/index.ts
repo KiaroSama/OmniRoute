@@ -9,6 +9,10 @@ export const deepseekProvider: RegistryEntry = {
   authType: "apikey",
   defaultContextLength: 1_000_000,
   authHeader: "bearer",
+  // #20260: DeepSeek's thinking-mode models (deepseek-reasoner, deepseek-flash) 400 with
+  // "The `reasoning_content` in the thinking mode must be passed back to the API" when a prior
+  // assistant turn (such as a tool_use-only turn from /v1/messages) lacks reasoning_content.
+  requiresReasoningContentEcho: true,
   alternateFormats: [
     {
       format: "openai-responses",
@@ -42,15 +46,19 @@ export const deepseekProvider: RegistryEntry = {
       supportsReasoning: true,
       supportedThinkingEfforts: ["none", "low", "high", "max"],
       toolCalling: true,
+      // Flash reads images on the official API; v4-pro stays text-only.
+      supportsVision: true,
     },
     {
       id: "deepseek-flash",
       name: "DeepSeek V4.1 Flash",
+      aliases: ["deepseek-v4.1-flash", "deepseek-4.1-flash", "deepseek-v4-1-flash"],
       contextLength: 1_000_000,
       maxOutputTokens: 384_000,
       supportsReasoning: true,
       supportedThinkingEfforts: ["none", "low", "high", "max"],
       toolCalling: true,
+      supportsVision: true,
     },
   ],
 };

@@ -33,12 +33,12 @@ open-sse/
 ├── index.ts              # נקודת כניסה ציבורית
 ├── types.d.ts            # ייצואי טיפוסים ציבוריים
 ├── package.json          # @omniroute/open-sse
-├── config/               # תצורות ספקים, קבועים ורישומים
-├── executors/            # רכיבי ביצוע HTTP לכל ספק (67 + base.ts/index.ts)
+├── config/               # תצורות ספקים, קבועים ורשומות
+├── executors/            # מבצעי HTTP לכל ספק (150 מודולים + base.ts/index.ts)
 ├── handlers/             # מטפלי בקשות (chatCore, responses וכו')
 ├── lib/                  # כלי עזר פנימיים
 ├── mcp-server/           # שרת Model Context Protocol
-├── services/             # כ-298 מודולי שירות
+├── services/             # כ־298 מודולי שירות
 ├── transformer/          # ממיר פורמט של Responses API
 ├── translator/           # תרגום פורמטים (OpenAI ↔ Claude ↔ Gemini)
 └── utils/                # כלי עזר משותפים (רישום, שגיאות, הזרמה וכו')
@@ -46,14 +46,14 @@ open-sse/
 
 ### מספר המודולים
 
-| ספרייה | קבצים | מטרה |
-| `executors/` | 167 | רכיבי ביצוע HTTP לכל ספק (מאוחדים באמצעות המפעל DefaultExecutor) |
+| תיקייה | קבצים | מטרה |
+| `executors/` | 167 | מבצעי HTTP לכל ספק (מאוחדים באמצעות מפעל DefaultExecutor) |
 | `handlers/` | 157 | נקודות כניסה לבקשות (chatCore, responses, embeddings) |
-| `services/` | ~536 | ניתוב, שמירה במטמון, הגבלת קצב, רענון וכו' |
+| `services/` | ~536 | ניתוב, אחסון במטמון, הגבלת קצב, רענון וכו' |
 | `translator/` | 56 | המרת פורמטים (OpenAI ↔ Claude ↔ Gemini) |
-| `mcp-server/` | 44 | כלי MCP ואמצעי תעבורה |
+| `mcp-server/` | 44 | כלי MCP ותעבורות |
 | `utils/` | ~108 | כלי עזר רוחביים (רישום, שגיאות, הזרמה) |
-| `config/` | ~339 | תצורות ספקים, קבועים ורישומים |
+| `config/` | ~339 | תצורות ספקים, קבועים ורשומות |
 
 ---
 
@@ -165,30 +165,30 @@ needsTranslation(source, target): boolean
 
 ---
 
-## צלילה לעומק בקבצים מרכזיים
+## קבצי מפתח לעומק
 
 ### chatCore.ts (5977 שורות)
 
-**מטפל הבקשות הראשי**. למרות גודלו, יש לו מבנה ברור:
+ה** מטפל הבקשות העיקרי** . למרות גודלו, יש לו מבנה ברור:
 
 ```ts
-// מבנה פסאודו של chatCore.ts
+// Pseudo-structure of chatCore.ts
 export async function handleChat(request: NextRequest) {
-  // 1. אימות + CORS
+  // 1. Auth + CORS
   await authenticateRequest(request);
   applyCorsHeaders(response);
 
-  // 2. אימות גוף הבקשה
+  // 2. Body validation
   const body = await parseRequestBody(request);
 
-  // 3. זיהוי פורמט + תרגום
+  // 3. Format detection + translation
   const sourceFormat = detectFormat(request);
   const targetFormat = getTargetFormat(providerId);
   if (needsTranslation(sourceFormat, targetFormat)) {
     body = translateRequest(body, sourceFormat, targetFormat);
   }
 
-  // 4. ניתוב קומבו
+  // 4. Combo routing
   const targets = await resolveComboTargets(comboId, body);
   for (const target of targets) {
     try {
@@ -196,20 +196,20 @@ export async function handleChat(request: NextRequest) {
       await recordUsage(result);
       return result;
     } catch (err) {
-      // המשך ליעד הבא
+      // Continue to next target
     }
   }
 
-  // 5. חלופת חירום
+  // 5. Emergency fallback
   return await emergencyFallback(body);
 }
 ```
 
-למרות שמדובר בפונקציה ענקית אחת, היא מאורגנת ב**מקטעים עם הערות** התואמים לצינור העיבוד בן 5 השלבים.
+למרות היותה פונקציה ענקית אחת, היא מאורגנת לתוך** קטעי הערות** המפה לצינור בן 5 השלבים.
 
 ### combo.ts (4456 LOC)
 
-**מנוע הניתוב** שפותר קומבו לרשימת יעדים מסודרת.
+ה** מנוע ניתוב** זה פותר שילוב למטרות מסודרות.
 
 ```ts
 // services/combo.ts
@@ -226,46 +226,51 @@ export async function handleComboChat(body, comboId): Promise<ChatResult> {
 }
 ```
 
-תומך ב־**19 אסטרטגיות ניתוב** (ראו `src/shared/constants/routingStrategies.ts`):
+תומך** 22 אסטרטגיות ניתוב** (ראה `src/shared/constants/routingStrategies.ts`):
 
-| אסטרטגיה            | התנהגות                                                         |
-| ------------------- | --------------------------------------------------------------- |
-| `priority`          | רשימה מסודרת שבה היעד הראשון מקבל עדיפות                        |
-| `weighted`          | בחירה הסתברותית לפי המשקל של כל יעד                             |
-| `round-robin`       | מעבר מחזורי בין היעדים לפי הסדר                                 |
-| `context-relay`     | העברת ההקשר בין יעדים                                           |
-| `fill-first`        | מילוי המכסה לפני מעבר ליעד הבא                                  |
-| `p2c`               | כוחן של שתי בחירות                                              |
-| `random`            | בחירה אקראית אחידה                                              |
-| `least-used`        | בחירת היעד עם מספר השימושים האחרונים הנמוך ביותר                |
-| `cost-optimized`    | היעד התקין הזול ביותר ראשון                                     |
-| `reset-aware`       | התחשבות בחלונות האיפוס של הספק                                  |
-| `reset-window`      | ניתוב המבוסס על חלון האיפוס                                     |
-| `headroom`          | היעד עם מרווח המכסה הנותר הגדול ביותר ראשון                     |
-| `strict-random`     | אחידות אמיתית (ללא שקלול איכות)                                 |
-| `auto`              | שימוש בניקוד המבוסס על 16 גורמים (`autoCombo/`)                 |
-| `lkgp`              | הספק התקין האחרון הידוע ראשון                                   |
-| `context-optimized` | האפשרות הטובה ביותר לבקשות בעלות הקשר ארוך                      |
-| `fusion`            | פיצול במקביל לפאנל, ולאחר מכן סינתזה באמצעות שופט (`fusion.ts`) |
+| אִסטרָטֶגִיָה       | הִתְנַהֲגוּת                                                               |
+| ------------------- | -------------------------------------------------------------------------- |
+| `priority`          | רשימה מסודרת של יעד ראשון                                                  |
+| `weighted`          | הסתברותי לפי משקל לכל יעד                                                  |
+| `round-robin`       | עברו על המטרות לפי הסדר                                                    |
+| `context-relay`     | העברת הקשר בין יעדים                                                       |
+| `fill-first`        | מלא את המכסה לפני המעבר לשלב הבא                                           |
+| `p2c`               | כוח של שתי אפשרויות                                                        |
+| `random`            | אקראי אחיד                                                                 |
+| `least-used`        | בחר את זה עם הכי פחות שימושים אחרונים                                      |
+| `cost-optimized`    | היעד הבריא הזול ביותר קודם                                                 |
+| `reset-aware`       | מודע לחלונות איפוס ספק                                                     |
+| `reset-window`      | אפס ניתוב מבוסס חלונות                                                     |
+| `expiry-first`      | הוצא תחילה את החשבון שהמכסה שלו תפוג ללא שימוש                             |
+| `headroom`          | מרבית המכסה שנותרה תחילה                                                   |
+| `quota-weighted`    | דלג על חשבונות מותשים, ואז צייר לפי מכסה שנותרה ÷ עומס בטיסה               |
+| `strict-random`     | אחיד באמת (ללא שקלול איכות)                                                |
+| `auto`              | השתמש בניקוד של 16 גורמים (`autoCombo/`)                                   |
+| `lkgp`              | הספק הטוב האחרון הידוע ראשון                                               |
+| `context-optimized` | הטוב ביותר עבור בקשות ארוכות הקשר                                          |
+| `cache-optimized`   | הצמד כל קידומת הנחיה ניתנת לשימוש חוזר לאותו חשבון (התאמות של פקודה מטמון) |
+| `fusion`            | מאוורר לפאנל במקביל, ולאחר מכן סינתזה באמצעות שופט (`fusion.ts`)           |
+| `pipeline`          | שלבי שרשרת — הפלט של כל מטרה מזין את הבא                                   |
+| `jev`               | הצטרפות: TypeSafe Jev מודה אילו ערכים מדורגים רצים; אחרת ההזמנה שלך        |
 
 ### base.ts (1170 LOC)
 
-**המבצע המופשט** שכל 107 המבצעים יורשים ממנו. הוא מכיל:
+ה** מבצע מופשט** שכל מחלקה executor משתרעת (ישירות או דרך `DefaultExecutor` ותתי מחלקות אחרות). יֵשׁ בּוֹ:
 
-- `buildUrl()` — בניית URL כברירת מחדל (מחלקות משנה דורסות זאת לצורך התאמה אישית)
-- `buildHeaders()` — כותרות ברירת מחדל (אימות, סוג תוכן)
-- `transformRequest()` — העברה ללא שינוי כברירת מחדל
-- `execute()` — לולאת ה־HTTP הראשית עם ניסיון חוזר/השהיה הדרגתית/מפסק
+- `buildUrl()` — בניית URL ברירת מחדל (תת-מחלקות עוקפות עבור מותאם אישית)
+- `buildHeaders()` — כותרות ברירת מחדל (הסמכה, סוג תוכן)
+- העברת `transformRequest()` — כברירת מחדל
+- `execute()` — לולאת HTTP הראשית עם retry/backoff/breaker
 
 ```ts
 // open-sse/executors/default.ts
 export class DefaultExecutor extends BaseExecutor {
-  // מטפל בכל הספקים התואמים ל־OpenAI/Anthropic
-  // ספקים רושמים תצורות (URL, אימות, כותרות), אך חולקים את לוגיקת המבצע
+  // Handles all OpenAI/Anthropic-compatible providers
+  // Providers register configurations (URL, auth, headers) but share executor logic
 }
 ```
 
-התנהגות ייחודית לספק (כותרות אימות, כתובת URL בסיסית, כותרות גרסה) מוגדרת באמצעות מרשם הספקים, ולא באמצעות מחלקות מבצע נפרדות.
+התנהגות ספציפית לספק (כותרות אישור, base URL, כותרות גרסה) מוגדרת דרך רישום הספקים, לא מחלקות ביצוע נפרדות.
 
 ````
 
@@ -273,88 +278,88 @@ export class DefaultExecutor extends BaseExecutor {
 
 ## שירותים (117 מודולים)
 
-שירותים הם **מודולים ממוקדים בעלי מטרה יחידה** שמטפלים מרכיבים יחד. הקטגוריות העיקריות:
+שירותים הם** מודולים ממוקדים, חד-תכליתיים** שמטפלים מרכיבים. הקטגוריות הגדולות:
 
 ### ניתוב ושילוב
 
-- `combo.ts` — נקודת כניסה לבקשות המנותבות באמצעות שילוב
-- `services/autoCombo/` — ניקוד לפי 16 גורמים, 8 אסטרטגיות ניתוב אוטומטיות
-- `wildcardRouter.ts` — התאמת נתיבים עם תווים כלליים (`gpt-*`)
-- `modelFamilyFallback.ts` — מעבר גיבוי בתוך משפחת T5
+- נקודת כניסה `combo.ts` — עבור בקשות מנותבות משולבות
+- `services/autoCombo/` — ניקוד 16 גורמים, 8 אסטרטגיות ניתוב אוטומטי
+- `wildcardRouter.ts` — תואם מסלולי תווים כלליים (`gpt-*`)
+- `modelFamilyFallback.ts` — T5 fallback תוך משפחתי
 
-### הגבלת קצב ומכסות
+### הגבלת תעריפים ומכסה
 
-- `rateLimitManager.ts` — דלי אסימונים לכל מפתח+ספק
-- `usage.ts` — רישום שימוש
-- `quotaCache.ts` — תמונות מצב של מכסות בזיכרון
+- `rateLimitManager.ts` — דלי אסימונים לכל ספק + מפתח
+- הקלטת שימוש `usage.ts` —
+- תמונת מצב של מכסת `quotaCache.ts` — בזיכרון
 
-### חשבונות ואסימונים
+### חשבון ואסימון
 
-- `tokenRefresh.ts` — רענון OAuth בעת 401
-- `accountFallback.ts` — מעבר לחשבון חלופי
-- `sessionManager.ts` — מצב הפעלה מרובת תורות
+- רענון `tokenRefresh.ts` — OAuth ב-401
+- `accountFallback.ts` — לעבור לחשבון חלופי
+- `sessionManager.ts` — מצב הפעלה מרובה פניות
 
-### תבונה
+### מוֹדִיעִין
 
-- `intentClassifier.ts` — סיווג כוונת הבקשה
-- `taskAwareRouter.ts` — ניתוב לפי סוג משימה
-- `thinkingBudget.ts` — הקצאת אסימוני חשיבה
+- `intentClassifier.ts` — לסווג כוונת בקשה
+- מסלול `taskAwareRouter.ts` — לפי סוג משימה
+- `thinkingBudget.ts` — להקצות אסימוני חשיבה
 - `contextManager.ts` — הזרקת הקשר ניתוב
 
-### עמידות
+### כּוֹשֵׁר הִתאוֹשְׁשׁוּת
 
-- `resilience.ts` — תזמור ניסיונות חוזרים, השהיה הדרגתית ומפסק מעגל
-- `emergencyFallback.ts` — מעבר גיבוי כמוצא אחרון
-- `modelDeprecation.ts` — ניתוב אוטומטי למודלים יורשים
+- ניסיון חוזר `resilience.ts` —, גיבוי, תזמור מפסק
+- `emergencyFallback.ts` — מפלגה אחרונה
+- `modelDeprecation.ts` — מסלול אוטומטי לדגמים ממשיכים
 
-### מצב
+### מְדִינָה
 
-- `signatureCache.ts` — מניעת כפילויות לפי חתימת בקשה
-- `volumeDetector.ts` — הפחתת עומס
-- `contextHandoff.ts` — סריאליזציה של הפעלה
+- `signatureCache.ts` — dedup לפי חתימת בקשה
+- `volumeDetector.ts` — הפחת עומסים
+- סידור הפעלה של `contextHandoff.ts` —
 
-### דחיסה
+### דְחִיסָה
 
-- `compression/` (תיקיית משנה) — צינור עיבוד מלא לדחיסה
-- 39 קבצים המכסים מנועים, חבילות כללים ומתאמים
+- `compression/` (ספריית משנה) צינור דחיסה מלא —
+- 39 קבצים המכסים מנועים, חבילות כללים, מתאמים
 
 ### מיומנויות
 
-- (מתואר ב-[SKILLS.md](./SKILLS.md))
+- (מכוסה ב- [SKILLS.md](./SKILLS.md) )
 
-### זיכרון
+### זֵכֶר
 
-- (מתואר ב-[MEMORY.md](./MEMORY.md))
+- (מכוסה ב- [MEMORY.md](./MEMORY.md) )
 
 ---
 
-## מבצעים (75+ קבצים)
+## מבצעים (150 מודולים)
 
-קובץ אחד לכל ספק. כולם מרחיבים את `BaseExecutor` ודורסים את מה ששונה.
+לרוב קובץ אחד לכל ספק. כיתות המבצעים כולן מרחיבות `BaseExecutor` ומחליפות את מה ששונה; המודולים האחרים הם עוזרים לכל ספק (סכימות כלים, מתאמי fetch/TTS, מטפלי מוזרויות).
 
-### תבניות נפוצות
+### דפוסים נפוצים
 
-ספקים מזוהים באמצעות `getExecutor(providerId)`, שמחזירה את המבצע שהוגדר. ספקים תואמי OpenAI/Anthropic משתמשים ב-`DefaultExecutor` (`executors/default.ts`). התנהגות ייחודית לספק (כתובת URL בסיסית, כותרות אימות, גרסת API) מוגדרת ב-`open-sse/config/providers/`, ואילו התמרות גוף הבקשה מטופלות ב-`open-sse/translator/`.
+ספקים נפתרים באמצעות `getExecutor(providerId)`, אשר מחזיר את ה-executor המוגדר. ספקי OpenAI/Anthropic-compatible משתמשים `DefaultExecutor` (`executors/default.ts`). התנהגות ספציפית לספק (base URL, auth header, API גרסת) מוגדרת ב- `open-sse/config/providers/`, בעוד שהשינויים בגוף הבקשה מטופלים ב- `open-sse/translator/`.
 
-**כתובת URL מותאמת אישית** מוגדרת באמצעות תצורת הספק:
+**URL מותאם אישית** מוגדר באמצעות תצורת ספק:
 
 ```ts
-// תצורת ספק ב-open-sse/config/providers/
+// Provider config in open-sse/config/providers/
 export default {
   id: "together",
   baseURL: "https://api.together.xyz/v1/chat/completions",
 }
 ````
 
-**אימות מותאם אישית** מטופל באמצעות תצורת האימות של מרשם הספקים (מפתח API,‏ OAuth, פרופילי כותרות).
+**אישור מותאם אישית** מטופל באמצעות תצורת האישור של רישום הספקים (מפתח API, OAuth, פרופילי כותרת).
 
-התמרות **מותאמות אישית של גוף הבקשה** (לדוגמה, ההפרדה של Anthropic בין `system` לבין `messages`) נרשמות לכל ספק ב-`open-sse/translator/`.
+**גוף בקשה מותאם אישית** טרנספורמציות (למשל, Anthropic המפרידות בין `system` ל- `messages`) נרשמות לכל ספק ב- `open-sse/translator/`.
 
 ````
 
-### מפעל המבצעים
+### The Executor Factory
 
-`executors/index.ts` מייצא את `getExecutor(providerId)`:
+`executors/index.ts` exports `getExecutor(providerId)`:
 
 ```ts
 import { getExecutor } from "@omniroute/open-sse/executors";
@@ -366,7 +371,7 @@ const result = await executor.execute({
 });
 ````
 
-הזיהוי עובר דרך `ExecutorRegistry` (`executors/registry.ts`): כל מבצע ייעודי מוצהר בטבלה המובנית של `executors/index.ts` ונרשם באמצעות `registerExecutor(alias, instance)` בעת טעינת המודול; `getExecutor()` פונה למרשם, ואם אין רשומה ייעודית לספק, חוזרת ל-`DefaultExecutor` שנשמר במטמון. מיפוי הכינוי המלא → מבצע מאופיין באמצעות בדיקת הזהב `tests/unit/executor-map-golden.test.ts`.
+הרזולוציה עוברת דרך `ExecutorRegistry` (`executors/registry.ts`): כל מבצע מיוחד מוצהר בטבלה המובנית של `executors/index.ts` ונרשם באמצעות `registerExecutor(alias, instance)` בעומס המודול; `getExecutor()` מתייעץ עם הרישום ונופל בחזרה ל- `DefaultExecutor` ממוזכר עבור כל ספק ללא ערך מיוחד. מיפוי הביצוע המלא → מאופיין במבחן הזהב `tests/unit/executor-map-golden.test.ts`.
 
 ---
 
@@ -479,19 +484,19 @@ createResponsesApiTransformStream(): TransformStream
 
 ---
 
-## תצורה
+## תְצוּרָה
 
-`open-sse/config/` מכילה את שכבת התצורה:
+`open-sse/config/` מחזיקה את שכבת התצורה:
 
-| קובץ                          | מטרה                                       |
-| ----------------------------- | ------------------------------------------ |
-| `providerRegistry.ts`         | מרשם מודלי צ'אט מעל קטלוג הכולל 352 ספקים  |
-| `providerModels.ts`           | כינויים למודלים, מיפוי פורמטים             |
-| `constants.ts`                | זמני קצוב, מגבלות, קודי מצב                |
-| `defaultThinkingSignature.ts` | חתימת החשיבה המוגדרת כברירת מחדל של Claude |
-| `modelStrip.ts` (בשירותים)    | הסרת שדות לפי ספק                          |
+| קוֹבֶץ                        | מַטָרָה                            |
+| ----------------------------- | ---------------------------------- |
+| `providerRegistry.ts`         | רישום מודל צ'אט על קטלוג 394 ספקים |
+| `providerModels.ts`           | כינויים של מודלים, מיפוי פורמטים   |
+| `constants.ts`                | פסק זמן, מגבלות, קודי סטטוס        |
+| `defaultThinkingSignature.ts` | חתימת חשיבה Claude ברירת מחדל      |
+| `modelStrip.ts` (בשירותים)    | הפשטת שדה לפי ספק                  |
 
-### סכימת מרשם הספקים
+### סכימת רישום ספקים
 
 ```ts
 interface ProviderConfig {
@@ -506,7 +511,7 @@ interface ProviderConfig {
 }
 ```
 
-אימות Zod בעת טעינת המודול מבטיח שכל תצורות הספקים תקינות.
+אימות Zod בעת טעינת המודול מבטיח שכל תצורות הספק חוקיות.
 
 ---
 

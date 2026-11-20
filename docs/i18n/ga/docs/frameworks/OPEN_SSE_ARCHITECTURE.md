@@ -30,29 +30,29 @@ Is **spás oibre neamhspleách** é `open-sse/` i monorepo OmniRoute ar roinnt c
 
 ```
 open-sse/
-├── index.ts              # Pointe iontrála poiblí
+├── index.ts              # Pointe iontrála phoiblí
 ├── types.d.ts            # Easpórtálacha cineálacha poiblí
 ├── package.json          # @omniroute/open-sse
 ├── config/               # Cumraíochtaí soláthraithe, tairisigh, clárlanna
-├── executors/            # Seiceadóirí HTTP de réir soláthraí (67 + base.ts/index.ts)
-├── handlers/             # Láimhseálaithe iarratas (chatCore, responses, srl.)
-├── lib/                  # Fóntais inmheánacha
-├── mcp-server/           # Freastalaí Model Context Protocol
+├── executors/            # Feidhmitheoirí HTTP de réir soláthraí (150 modúl + base.ts/index.ts)
+├── handlers/             # Láimhseálaithe iarratais (chatCore, responses, srl.)
+├── lib/                  # Uirlisí inmheánacha
+├── mcp-server/           # Freastalaí Phrótacal Comhthéacs na Samhla
 ├── services/             # ~298 modúl seirbhíse
-├── transformer/          # Trasfhoirmeoir formáide Responses API
+├── transformer/          # Claochladán formáide Responses API
 ├── translator/           # Aistriú formáide (OpenAI ↔ Claude ↔ Gemini)
-└── utils/                # Fóntais chomhroinnte (logáil, earráid, sruth, srl.)
+└── utils/                # Uirlisí comhroinnte (logáil, earráidí, sruthanna, srl.)
 ```
 
 ### Líon na Modúl
 
 | Comhadlann | Comhaid | Cuspóir |
-| `executors/` | 167 | Seiceadóirí HTTP de réir soláthraí (aontaithe trí mhonarcha DefaultExecutor) |
-| `handlers/` | 157 | Pointí iontrála iarratas (chatCore, responses, embeddings) |
+| `executors/` | 167 | Feidhmitheoirí HTTP de réir soláthraí (aontaithe trí mhonarcha DefaultExecutor) |
+| `handlers/` | 157 | Pointí iontrála iarratais (chatCore, responses, embeddings) |
 | `services/` | ~536 | Ródú, taisceadh, teorannú ráta, athnuachan, srl. |
 | `translator/` | 56 | Tiontú formáide (OpenAI ↔ Claude ↔ Gemini) |
-| `mcp-server/` | 44 | Uirlisí agus córais iompair MCP |
-| `utils/` | ~108 | Fóntais leathana (logáil, earráid, sruth) |
+| `mcp-server/` | 44 | Uirlisí agus iompar MCP |
+| `utils/` | ~108 | Uirlisí trasearnála (logáil, earráidí, sruthanna) |
 | `config/` | ~339 | Cumraíochtaí soláthraithe, tairisigh, clárlanna |
 
 ---
@@ -165,30 +165,30 @@ Scríobhtar déantáin loga glaonna (má tá siad cumasaithe) chuig `${DATA_DIR}
 
 ---
 
-## Mionanailís ar na Príomhchomhaid
+## Eochair-Chomhaid Léim dhomhain
 
 ### chatCore.ts (5977 líne)
 
-An **príomhláimhseálaí iarratas**. In ainneoin a mhéide, tá struchtúr soiléir aige:
+Tá an** príomhláimhseálaí iarratais** . In ainneoin a mhéid, tá struchtúr soiléir aige:
 
 ```ts
-// Bréagstruchtúr chatCore.ts
+// Pseudo-structure of chatCore.ts
 export async function handleChat(request: NextRequest) {
-  // 1. Fíordheimhniú + CORS
+  // 1. Auth + CORS
   await authenticateRequest(request);
   applyCorsHeaders(response);
 
-  // 2. Bailíochtú na colainne
+  // 2. Body validation
   const body = await parseRequestBody(request);
 
-  // 3. Brath formáide + aistriú
+  // 3. Format detection + translation
   const sourceFormat = detectFormat(request);
   const targetFormat = getTargetFormat(providerId);
   if (needsTranslation(sourceFormat, targetFormat)) {
     body = translateRequest(body, sourceFormat, targetFormat);
   }
 
-  // 4. Ródú teaglama
+  // 4. Combo routing
   const targets = await resolveComboTargets(comboId, body);
   for (const target of targets) {
     try {
@@ -196,20 +196,20 @@ export async function handleChat(request: NextRequest) {
       await recordUsage(result);
       return result;
     } catch (err) {
-      // Lean ar aghaidh chuig an chéad sprioc eile
+      // Continue to next target
     }
   }
 
-  // 5. Cúltaca éigeandála
+  // 5. Emergency fallback
   return await emergencyFallback(body);
 }
 ```
 
-Cé gur feidhm ollmhór amháin atá ann, tá sí eagraithe ina **rannóga a bhfuil nótaí tráchta orthu** a chomhfhreagraíonn don phíblíne 5 chéim.
+In ainneoin a bheith ina fheidhm ollmhór amháin, tá sé eagraithe isteach** ailt trácht** an léarscáil sin chuig an bpíblíne 5-chéim.
 
 ### combo.ts (4456 LOC)
 
-An **t-inneall ródaithe** a réitíonn teaglama ina spriocanna ordaithe.
+Tá an** inneall ródaithe** a réitíonn teaglama do spriocanna ordaithe.
 
 ```ts
 // services/combo.ts
@@ -226,46 +226,51 @@ export async function handleComboChat(body, comboId): Promise<ChatResult> {
 }
 ```
 
-Tacaíonn sé le **19 straitéis ródaithe** (féach `src/shared/constants/routingStrategies.ts`):
+Tacaíochtaí** 22 straitéis ródaithe** (féach `src/shared/constants/routingStrategies.ts`):
 
-| Straitéis           | Iompar                                                                           |
-| ------------------- | -------------------------------------------------------------------------------- |
-| `priority`          | Liosta ordaithe leis an gcéad sprioc ar dtús                                     |
-| `weighted`          | Dóchúlachtaíoch de réir mheáchan gach sprice                                     |
-| `round-robin`       | Timthriall trí na spriocanna in ord                                              |
-| `context-relay`     | Comhthéacs a thabhairt ar aghaidh idir spriocanna                                |
-| `fill-first`        | An cuóta a líonadh sula mbogtar chuig an chéad cheann eile                       |
-| `p2c`               | Cumhacht dhá rogha                                                               |
-| `random`            | Randamach aonfhoirmeach                                                          |
-| `least-used`        | Roghnaigh an ceann is lú úsáide le déanaí                                        |
-| `cost-optimized`    | An sprioc shláintiúil is saoire ar dtús                                          |
-| `reset-aware`       | Feasach ar fhuinneoga athshocraithe soláthraithe                                 |
-| `reset-window`      | Ródú bunaithe ar fhuinneoga athshocraithe                                        |
-| `headroom`          | An sprioc leis an lamháil cuóta is mó atá fágtha ar dtús                         |
-| `strict-random`     | Fíor-aonfhoirmeach (gan ualú cáilíochta)                                         |
-| `auto`              | Úsáid scóráil 16 fhachtóir (`autoCombo/`)                                        |
-| `lkgp`              | An soláthraí maith deireanach a bhí ar eolas ar dtús                             |
-| `context-optimized` | Is fearr d’iarratais a bhfuil comhthéacs fada acu                                |
-| `fusion`            | Seol chuig painéal go comhthreomhar, ansin sintéisigh trí mholtóir (`fusion.ts`) |
+| Straitéis           | Iompar                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| `priority`          | Liosta ordaithe den chéad sprioc                                                      |
+| `weighted`          | Dóchúil de réir meáchain in aghaidh an sprice                                         |
+| `round-robin`       | Rothaigh trí spriocanna in ord                                                        |
+| `context-relay`     | Tabhair comhthéacs trasna na spriocanna                                               |
+| `fill-first`        | Líon an cuóta roimh bogadh go dtí an chéad cheann eile                                |
+| `p2c`               | Cumhacht dhá rogha                                                                    |
+| `random`            | Éide randamach                                                                        |
+| `least-used`        | Roghnaigh an ceann is lú úsáidí le déanaí                                             |
+| `cost-optimized`    | An sprioc sláintiúil is saoire ar dtús                                                |
+| `reset-aware`       | Feasach ar fhuinneoga athshocrú soláthraí                                             |
+| `reset-window`      | Athshocraigh ródú fuinneogbhunaithe                                                   |
+| `expiry-first`      | Caith an cuntas a rachadh a chuóta in éag gan úsáid ar dtús                           |
+| `headroom`          | An chuid is mó de spás cloiginn fágtha ar dtús                                        |
+| `quota-weighted`    | Léim amach cuntais ídithe, ansin tarraing trí chuóta fágtha ÷ ualach in-eitilte       |
+| `strict-random`     | Fíor aonfhoirmeach (gan ualú cáilíochta)                                              |
+| `auto`              | Úsáid scóráil 16-fachtóir (`autoCombo/`)                                              |
+| `lkgp`              | An soláthraí maith is déanaí ar a dtugtar ar dtús                                     |
+| `context-optimized` | Is fearr le haghaidh iarratais fad-chomhthéacs                                        |
+| `cache-optimized`   | Pinn gach réimír leide ath-inúsáidte chuig an gcuntas céanna (amas leid-taisce)       |
+| `fusion`            | Fan amach chuig painéal ag an am céanna, ansin sintéis trí bhreitheamh (`fusion.ts`)  |
+| `pipeline`          | Céimeanna slabhra — cothaíonn aschur gach sprice an chéad cheann eile                 |
+| `jev`               | Liostáil: TypeSafe admhaíonn Jev cé na hiontrálacha rangaithe a ritheann; eile d'ordú |
 
 ### base.ts (1170 LOC)
 
-An **seiceadóir teibí** a ndéanann gach ceann de na 107 seiceadóir é a shíneadh. Tá na nithe seo ann:
+Tá an** seiceadóir teibí** go leathnaíonn gach aicme seiceadóra (go díreach nó trí `DefaultExecutor` agus fo-aicmí eile). Tá:
 
-- `buildUrl()` — tógáil réamhshocraithe URL (sáraíonn fo-aicmí é le haghaidh iompair shaincheaptha)
-- `buildHeaders()` — ceanntásca réamhshocraithe (fíordheimhniú, cineál inneachair)
-- `transformRequest()` — cur ar aghaidh gan athrú de réir réamhshocraithe
-- `execute()` — an phríomhlúb HTTP le hatriail/cúlú/scoradán
+- `buildUrl()` — tógáil réamhshocraithe URL (sáraíonn fo-aicmí le haghaidh saincheaptha)
+- ceanntásca réamhshocraithe `buildHeaders()` — (auth, cineál ábhair)
+- `transformRequest()` — pas-trí de réir réamhshocraithe
+- `execute()` — an príomh-lúb HTTP le retry/backoff/breaker
 
 ```ts
 // open-sse/executors/default.ts
 export class DefaultExecutor extends BaseExecutor {
-  // Láimhseálann sé gach soláthraí atá comhoiriúnach le OpenAI/Anthropic
-  // Cláraíonn soláthraithe cumraíochtaí (URL, fíordheimhniú, ceanntásca) ach roinneann siad loighic an tseiceadóra
+  // Handles all OpenAI/Anthropic-compatible providers
+  // Providers register configurations (URL, auth, headers) but share executor logic
 }
 ```
 
-Cumraítear iompar a bhaineann go sonrach le soláthraí (ceanntásca fíordheimhnithe, bun-URL, ceanntásca leagain) trí chlárlann na soláthraithe, seachas trí aicmí seiceadóra ar leith.
+Déantar iompraíocht a bhaineann go sonrach le soláthraí (ceanntásca auth, base URL, ceanntásca leagan) a chumrú trí chlár an tsoláthraí, ní trí ranganna seiceadóirí ar leith.
 
 ````
 
@@ -273,88 +278,88 @@ Cumraítear iompar a bhaineann go sonrach le soláthraí (ceanntásca fíordheim
 
 ## Seirbhísí (117 modúl)
 
-Is **modúil spriocdhírithe, aonfheidhme** iad seirbhísí a chomhcheanglaíonn láimhseálaithe. Seo iad na príomhchatagóirí:
+Tá seirbhísí** modúil aonfheidhme dírithe** a dhéanann láimhseálaithe. Na catagóirí móra:
 
 ### Ródú & Teaglama
 
-- `combo.ts` — pointe iontrála d’iarrataí atá ródaithe trí theaglama
-- `services/autoCombo/` — scóráil 16 fhachtóir, 8 straitéis uathródaithe
-- `wildcardRouter.ts` — meaitseálann sé róid le saoróg (`gpt-*`)
-- `modelFamilyFallback.ts` — cúltaca laistigh den fhine T5
+- pointe iontrála `combo.ts` — le haghaidh iarratais ar bhealaí teaglama
+- `services/autoCombo/` — scóráil 16-fachtóir, 8 straitéis ródaithe carranna
+- meaitseálann `wildcardRouter.ts` — bealaí saoróg (`gpt-*`)
+- `modelFamilyFallback.ts` — T5 cúltaca laistigh den teaghlach
 
-### Teorannú Ráta & Cuóta
+### Teorainn Ráta & Cuóta
 
-- `rateLimitManager.ts` — buicéad comharthaí in aghaidh na heochrach+an tsoláthraí
-- `usage.ts` — taifeadadh úsáide
-- `quotaCache.ts` — léargasanna cuóta sa chuimhne
+- buicéad comhartha `rateLimitManager.ts` — in aghaidh an tsoláthraí + eochair
+- `usage.ts` taifeadadh úsáide —
+- `quotaCache.ts` — grianghraif chuóta i gcuimhne
 
 ### Cuntas & Comhartha
 
-- `tokenRefresh.ts` — athnuachan OAuth ar 401
-- `accountFallback.ts` — aistriú chuig cuntas malartach
-- `sessionManager.ts` — staid seisiúin ilseal
+- `tokenRefresh.ts` — OAuth athnuachan ar 401
+- `accountFallback.ts` — aistrigh go cuntas malartach
+- `sessionManager.ts` — stát seisiún il-cas
 
 ### Intleacht
 
-- `intentClassifier.ts` — aicmíonn sé rún an iarratais
-- `taskAwareRouter.ts` — ródálann sé de réir cineáil taisc
-- `thinkingBudget.ts` — leithdháileann sé comharthaí smaointeoireachta
-- `contextManager.ts` — insteallann sé comhthéacs ródaithe
+- `intentClassifier.ts` — rún a rangú iarratais
+- bealach `taskAwareRouter.ts` — de réir cineáil taisc
+- `thinkingBudget.ts` — a leithdháileadh comharthaí smaointeoireachta
+- `contextManager.ts` — instealladh comhthéacs ródú
 
 ### Athléimneacht
 
-- `resilience.ts` — atriail, cúlú, agus ceolfhoireann scoradáin
-- `emergencyFallback.ts` — cúltaca mar rogha dheiridh
-- `modelDeprecation.ts` — uathródú chuig samhlacha comharba
+- `resilience.ts` — retry, backoff, breaker orchestration
+- `emergencyFallback.ts` — rogha dheireanach a thagann ar ais
+- `modelDeprecation.ts` — bealach uathoibríoch chuig samhlacha comharba
 
-### Staid
+### Stáit
 
-- `signatureCache.ts` — dídhúbláil de réir shíniú an iarratais
-- `volumeDetector.ts` — laghdú ualaigh
-- `contextHandoff.ts` — srathú seisiúin
+- `signatureCache.ts` — dedup ag síniú iarratais
+- doirteadh ualach `volumeDetector.ts` —
+- sraitheach seisiún `contextHandoff.ts` —
 
 ### Comhbhrú
 
-- `compression/` (fochomhadlann) — píblíne iomlán comhbhrúcháin
-- 39 comhad a chlúdaíonn innill, pacáistí rialacha, agus cuibheoirí
+- `compression/` (fochomhadlann) píblíne comhbhrú iomlán —
+- 39 comhad a chlúdaíonn innill, pacaí rialacha, cuibheoirí
 
 ### Scileanna
 
-- (clúdaithe in [SKILLS.md](./SKILLS.md))
+- (clúdaithe i [SKILLS.md](./SKILLS.md) )
 
 ### Cuimhne
 
-- (clúdaithe in [MEMORY.md](./MEMORY.md))
+- (clúdaithe i [MEMORY.md](./MEMORY.md) )
 
 ---
 
-## Seiceadóirí (75+ comhad)
+## Seiceadóirí (150 modúl)
 
-Comhad amháin in aghaidh an tsoláthraí. Síneann siad uile `BaseExecutor` agus sáraíonn siad an méid atá éagsúil.
+Comhad amháin in aghaidh an tsoláthraí den chuid is mó. Síneann na ranganna seiceadóir `BaseExecutor` go léir agus sáraíonn siad cad atá difriúil; is cúntóirí in aghaidh an tsoláthraí iad na modúil eile (scéimeanna uirlisí, cuibheoirí fetch/TTS, láimhseálaithe cuairc).
 
-### Patrúin Choitianta
+### Patrúin Coiteann
 
-Réitítear soláthraithe trí `getExecutor(providerId)`, a thugann an seiceadóir cumraithe ar ais. Úsáideann soláthraithe atá comhoiriúnach le OpenAI/Anthropic `DefaultExecutor` (`executors/default.ts`). Cumraítear iompar a bhaineann go sonrach leis an soláthraí (bun-URL, ceanntásca fíordheimhnithe, leagan API) in `open-sse/config/providers/`, agus láimhseáiltear claochluithe ar chorp an iarratais in `open-sse/translator/`.
+Réitítear soláthraithe trí `getExecutor(providerId)`, a sheolann an seiceadóir cumraithe ar ais. Úsáideann soláthraithe OpenAI/Anthropic-compatible `DefaultExecutor` (`executors/default.ts`). Tá iompar a bhaineann go sonrach le soláthraí (bonn URL, ceanntásca auth, leagan API ) cumraithe i `open-sse/config/providers/`, agus láimhseáiltear claochluithe coirp iarratais i `open-sse/translator/`.
 
-Socraítear **URL saincheaptha** trí chumraíocht an tsoláthraí:
+**URL saincheaptha** socraithe trí chumraíocht an tsoláthraí:
 
 ```ts
-// Cumraíocht soláthraí in open-sse/config/providers/
+// Provider config in open-sse/config/providers/
 export default {
   id: "together",
   baseURL: "https://api.together.xyz/v1/chat/completions",
 }
 ````
 
-Láimhseáiltear **fíordheimhniú saincheaptha** trí chumraíocht fíordheimhnithe chlárlann an tsoláthraí (eochair API, OAuth, próifílí ceanntásca).
+**Údar saincheaptha** láimhseáiltear é trí chumraíocht údaraithe chlárlann an tsoláthraí ( eochair API, OAuth, próifílí ceanntásca).
 
-Cláraítear claochluithe **saincheaptha ar chorp an iarratais** (m.sh., Anthropic ag scaradh `system` ó `messages`) de réir soláthraí in `open-sse/translator/`.
+**Comhlacht iarratais saincheaptha** cláraítear claochluithe (m.sh., Anthropic a scarann `system` ó `messages`) in aghaidh an tsoláthraí i `open-sse/translator/`.
 
 ````
 
-### Monarcha na Seiceadóirí
+### The Executor Factory
 
-Easpórtálann `executors/index.ts` `getExecutor(providerId)`:
+`executors/index.ts` exports `getExecutor(providerId)`:
 
 ```ts
 import { getExecutor } from "@omniroute/open-sse/executors";
@@ -366,7 +371,7 @@ const result = await executor.execute({
 });
 ````
 
-Téann an réiteach tríd an `ExecutorRegistry` (`executors/registry.ts`): dearbhaítear gach seiceadóir speisialaithe sa tábla ionsuite in `executors/index.ts` agus cláraítear é trí `registerExecutor(alias, instance)` agus an modúl á lódáil; téann `getExecutor()` i gcomhairle leis an gclárlann agus téann sé ar ais chuig `DefaultExecutor` meamaithe i gcás aon soláthraí nach bhfuil iontráil speisialaithe aige. Saintréithítear an mhapáil iomlán ailias → seiceadóir leis an tástáil órga `tests/unit/executor-map-golden.test.ts`.
+Téann an rún tríd an `ExecutorRegistry` (`executors/registry.ts`): dearbhaítear gach seiceadóir speisialaithe sa tábla ionsuite de `executors/index.ts` agus cláraítear é trí `registerExecutor(alias, instance)` ag ualach an mhodúil; Téann `getExecutor()` i gcomhairle leis an gclár agus titeann sé ar ais go dtí `DefaultExecutor` meabhrúcháin d’aon soláthraí gan iontráil speisialaithe. Is sainairíonna é léarscáiliú seiceadóir → ailias iomlán an `tests/unit/executor-map-golden.test.ts` tástála órga .
 
 ---
 
@@ -481,17 +486,17 @@ Láimhseálann sé seo:
 
 ## Cumraíocht
 
-Coinníonn `open-sse/config/` an tsraith chumraíochta:
+Coinníonn `open-sse/config/` an ciseal cumraíochta:
 
-| Comhad                        | Cuspóir                                                  |
-| ----------------------------- | -------------------------------------------------------- |
-| `providerRegistry.ts`         | Clárlann samhlacha comhrá thar an gcatalóg 352 soláthraí |
-| `providerModels.ts`           | Ailiasanna samhlacha, mapáil formáide                    |
-| `constants.ts`                | Teorainneacha ama, teorainneacha, cóid stádais           |
-| `defaultThinkingSignature.ts` | Síniú smaointeoireachta réamhshocraithe Claude           |
-| `modelStrip.ts` (i seirbhísí) | Baint réimsí de réir soláthraí                           |
+| Comhad                        | Cuspóir                                           |
+| ----------------------------- | ------------------------------------------------- |
+| `providerRegistry.ts`         | Clár comhrá-mhúnla thar an gcatalóg 394-soláthraí |
+| `providerModels.ts`           | Ailiasanna múnla, mapáil formáide                 |
+| `constants.ts`                | Amanna ama, teorainneacha, cóid stádais           |
+| `defaultThinkingSignature.ts` | Síniú smaoineamh Claude réamhshocraithe           |
+| `modelStrip.ts` (i seirbhísí) | Bearradh páirce in aghaidh an tsoláthraí          |
 
-### Scéimre Chlárlann na Soláthraithe
+### Scéimre Chlárlann Soláthraí
 
 ```ts
 interface ProviderConfig {
@@ -506,7 +511,7 @@ interface ProviderConfig {
 }
 ```
 
-Cinntíonn bailíochtú Zod agus an modúl á luchtú go bhfuil gach cumraíocht soláthraí bailí.
+Cinntíonn bailíochtú Zod ar ualach modúil go bhfuil gach cumraíocht soláthraí bailí.
 
 ---
 

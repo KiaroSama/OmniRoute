@@ -18,7 +18,7 @@
 
 ---
 
-## វិធីសាស្ត្រដំឡើង
+## វិធីសាស្រ្តដំឡើង
 
 ### npm (បានណែនាំ)
 
@@ -27,16 +27,18 @@ npm install -g omniroute
 omniroute
 ```
 
-ផ្ទាំងគ្រប់គ្រងបើកនៅ `http://localhost:20128` ហើយ URL មូលដ្ឋានរបស់ API គឺ `http://localhost:20128/v1`។
+ផ្ទាំងគ្រប់គ្រងបើកនៅ `http://localhost:20128` ហើយ API មូលដ្ឋាន URL គឺ `http://localhost:20128/v1`។
 
-### pnpm
+> **អ្នកប្រើប្រាស់ npm៖** ប្រសិនបើ npm ព្រមានថាការដំឡើងស្គ្រីបត្រូវបានរារាំង (ឧទាហរណ៍ `omniroute`, `better-sqlite3`) សូមមើល [ការដោះស្រាយបញ្ហា — npm install-scripts ត្រូវបានរារាំង](./TROUBLESHOOTING.md#npm-install-scripts-blocked-warning-global-install) ។
+
+### ppm
 
 ```bash
 pnpm add -g omniroute@latest --allow-build=better-sqlite3 --allow-build=@swc/core
 omniroute
 ```
 
-> **អ្នកប្រើ pnpm៖** ត្រូវការទង់ `--allow-build` ដើម្បីបើកស្គ្រីប build ដើមសម្រាប់ `better-sqlite3` និង `@swc/core`។ ពាក្យបញ្ជា `pnpm approve-builds -g` មិនត្រូវបានគាំទ្រសម្រាប់ការដំឡើងជាសកលលើ pnpm v11 ទេ។
+> **អ្នកប្រើប្រាស់ ppm៖** ទង់ `--allow-build` គឺត្រូវបានទាមទារដើម្បីបើកស្គ្រីបបង្កើតដើមសម្រាប់ `better-sqlite3` និង `@swc/core`។ ពាក្យបញ្ជា `pnpm approve-builds -g` មិនត្រូវបានគាំទ្រសម្រាប់ការដំឡើងជាសកលនៅលើ pnpm v11 ។
 
 ### Arch Linux (AUR)
 
@@ -45,68 +47,68 @@ yay -S omniroute-bin
 systemctl --user enable --now omniroute.service
 ```
 
-[កញ្ចប់ AUR](https://aur.archlinux.org/packages/omniroute-bin) ដំឡើង OmniRoute និងផ្ដល់សេវាអ្នកប្រើប្រាស់ systemd។
+[កញ្ចប់AUR](https://aur.archlinux.org/packages/omniroute-bin) ដំឡើង OmniRoute និងផ្តល់សេវាអ្នកប្រើប្រាស់ប្រព័ន្ធ។
 
-### ពីកូដប្រភព
+### ពីប្រភព
 
 ```bash
 npm install
 PORT=20128 DASHBOARD_PORT=20129 NEXT_PUBLIC_BASE_URL=http://localhost:20129 npm run dev
 ```
 
-> **ចំណាំសម្រាប់ Windows៖** តាមលំនាំដើម OmniRoute ប្រើ `%APPDATA%\omniroute` នៅពេលមិនមានថតចាស់ `%USERPROFILE%\.omniroute`។ កំណត់ `DATA_DIR` ដើម្បីជ្រើសរើសទីតាំងថតទិន្នន័យផ្សេង។
+> **Windows ចំណាំ៖** តាមលំនាំដើម OmniRoute ប្រើ `%APPDATA%\omniroute` នៅពេលដែលថត `%USERPROFILE%\.omniroute` កេរ្តិ៍ដំណែលមិនមានវត្តមាន។ កំណត់ `DATA_DIR` ដើម្បីជ្រើសរើសទីតាំងថតទិន្នន័យផ្សេង។
 
-> **ចំណាំ៖** `npm install` បង្កើត `.env` ដោយស្វ័យប្រវត្តិពី `.env.example` នៅពេលដំណើរការលើកដំបូង។ ការដំឡើងបន្ទាប់នឹងមិនសរសេរជាន់លើ `.env` ដែលមានស្រាប់ទេ ដូច្នេះការកែតម្រូវផ្ទាល់ខ្លួនត្រូវបានរក្សាទុក។ ដើម្បីបង្កើតវាឡើងវិញ សូមលុប `.env` មុនពេលដំណើរការម្ដងទៀត។
+> **ចំណាំ៖** `npm install` បង្កើត `.env` ដោយស្វ័យប្រវត្តិពី `.env.example` នៅពេលដំណើរការដំបូង។ ការដំឡើងជាបន្តបន្ទាប់នឹងមិនសរសេរជាន់លើ `.env` ដែលមានស្រាប់ទេ ដូច្នេះការប្តូរតាមបំណងត្រូវបានរក្សាទុក។ ដើម្បីបន្តពូជ សូមលុប `.env` មុនពេលដំណើរការឡើងវិញ។
 
 ### Docker
 
-សូមមើល [មគ្គុទ្ទេសក៍ Docker](./DOCKER_GUIDE.md) សម្រាប់ការដំឡើង Docker ពេញលេញ រួមទាំងប្រូហ្វាល់ Compose និង Caddy HTTPS។
+សូមមើល [មគ្គុទ្ទេសក៍Docker](./DOCKER_GUIDE.md) សម្រាប់ការដំឡើង Docker ពេញលេញរួមទាំងការតែងទម្រង់ និង Caddy HTTPS។
 
-### កម្មវិធីផ្ទៃតុ (Electron)
+### កម្មវិធីកុំព្យូទ័រ (Electron)
 
-OmniRoute ផ្ដល់ជូនកម្មវិធីគ្របសម្រាប់ផ្ទៃតុដែលបង្កើតឡើងលើ Electron 41 + electron-builder 26.10។ ស្គ្រីបដែលអាចប្រើបាន (ថតឫសរបស់ workspace)៖
+OmniRoute បញ្ជូនក្រដាសរុំផ្ទៃតុដែលបង្កើតឡើងដោយ Electron 41 + electron-builder 26.10 ។ ស្គ្រីបដែលមាន (ឫសកន្លែងធ្វើការ)៖
 
 ```bash
-npm run electron:dev          # ដំណើរការកម្មវិធីផ្ទៃតុជាមួយការផ្ទុកឡើងវិញដោយស្វ័យប្រវត្តិ
-npm run electron:build        # Build សម្រាប់ OS បច្ចុប្បន្ន (រកឃើញដោយស្វ័យប្រវត្តិ)
-npm run electron:build:win    # កម្មវិធីដំឡើង Windows (NSIS + portable)
+npm run electron:dev          # Run desktop with hot-reload
+npm run electron:build        # Build for current OS (auto-detected)
+npm run electron:build:win    # Windows installer (NSIS + portable)
 npm run electron:build:mac    # macOS (dmg + zip, arm64+x64)
 npm run electron:build:linux  # Linux (AppImage + deb + rpm)
-npm run electron:smoke:packaged  # សាកល្បង smoke លើ build ដែលបានវេចខ្ចប់
+npm run electron:smoke:packaged  # Smoke-test packaged build
 ```
 
-កំណែចេញផ្សាយនៃកម្មវិធីដំឡើងផ្ទៃតុត្រូវបានភ្ជាប់ជាមួយ GitHub Releases។ សម្រាប់ព័ត៌មានលម្អិតស៊ីជម្រៅពេញលេញអំពី Electron (ការចុះហត្ថលេខា, ស្ពាន IPC, ការចែកចាយ) សូមមើល [`ELECTRON_GUIDE.md`](./ELECTRON_GUIDE.md) _(បានបង្កើតនៅដំណាក់កាលក្រោយ)_។
+ការចេញផ្សាយកម្មវិធីដំឡើងផ្ទៃតុត្រូវបានភ្ជាប់ទៅនឹងការចេញផ្សាយ GitHub ។ សម្រាប់ការជ្រមុជទឹកជ្រៅ Electron ពេញលេញ (ការចុះហត្ថលេខា ស្ពាន IPC ការចែកចាយ) សូមមើល [`ELECTRON_GUIDE.md`](./ELECTRON_GUIDE.md) _(criado em fase posterior)_.
 
-### ម៉ាស៊ីនមេគ្មានចំណុចប្រទាក់ (CI/ស្វ័យប្រវត្តិកម្ម)
+### ម៉ាស៊ីនមេគ្មានក្បាល (CI/automation)
 
-សម្រាប់ការដំឡើងដោយមិនត្រូវការអ្នកមើលការខុសត្រូវ (Docker, Kubernetes, CI) សូមប្រើ៖
+សម្រាប់ការដំឡើងដែលមិនមានការយកចិត្តទុកដាក់ (Docker, Kubernetes , CI) សូមប្រើ៖
 
 ```bash
 omniroute setup --non-interactive
 omniroute providers test-batch
 ```
 
-នៅពេលប្រើរួមគ្នាជាមួយអថេរបរិស្ថាន (`INITIAL_PASSWORD`, `OMNIROUTE_WS_BRIDGE_SECRET` ជាដើម) វាអនុញ្ញាតឱ្យអ្នកដំណើរការ instance របស់ OmniRoute ដែលអាចកំណត់ដោយស្គ្រីបបានទាំងស្រុង។
+រួមបញ្ចូលគ្នាជាមួយ env vars (`INITIAL_PASSWORD`, `OMNIROUTE_WS_BRIDGE_SECRET`, ល។ ) នេះអនុញ្ញាតឱ្យអ្នកបង្វិលឧទាហរណ៍ OmniRoute ដែលអាចសរសេរអក្សរបានពេញលេញ។
 
 ### ជម្រើស CLI
 
-| ពាក្យបញ្ជា              | សេចក្ដីពិពណ៌នា                                                                           |
-| ----------------------- | ---------------------------------------------------------------------------------------- |
-| `omniroute`             | ចាប់ផ្ដើមម៉ាស៊ីនមេ (`PORT=20128`, API និងផ្ទាំងគ្រប់គ្រងនៅលើច្រកតែមួយ)                   |
-| `omniroute setup`       | ការណែនាំតាម CLI សម្រាប់ពាក្យសម្ងាត់ និងអ្នកផ្ដល់សេវាដំបូង                                |
-| `omniroute doctor`      | ដំណើរការការត្រួតពិនិត្យសុខភាពក្នុងមូលដ្ឋាន ដោយមិនចាប់ផ្ដើមម៉ាស៊ីនមេ                      |
-| `omniroute providers`   | ស្វែងរក រាយបញ្ជី ផ្ទៀងផ្ទាត់ និងសាកល្បងអ្នកផ្ដល់សេវាពី CLI                               |
-| `omniroute config`      | ការកំណត់រចនាសម្ព័ន្ធឧបករណ៍ CLI — រាយបញ្ជី ទាញយក កំណត់ និងផ្ទៀងផ្ទាត់ការកំណត់រចនាសម្ព័ន្ធ |
-| `omniroute status`      | ផ្ទាំងគ្រប់គ្រងស្ថានភាពក្រៅបណ្ដាញ — កំណែ, DB, ឧបករណ៍, ការកំណត់រចនាសម្ព័ន្ធ               |
-| `omniroute logs`        | បង្ហាញកំណត់ហេតុការប្រើប្រាស់បន្តផ្ទាល់ពី API (គាំទ្រ `--follow`)                         |
-| `omniroute update`      | ពិនិត្យមើល ឬអនុវត្តការធ្វើបច្ចុប្បន្នភាព OmniRoute                                       |
-| `omniroute provider`    | គ្រប់គ្រងការតភ្ជាប់អ្នកផ្ដល់សេវា — បន្ថែម រាយបញ្ជី លុប សាកល្បង កំណត់ជាលំនាំដើម           |
-| `omniroute --port 3000` | កំណត់ច្រក canonical/API ទៅជា 3000                                                        |
-| `omniroute --mcp`       | ចាប់ផ្ដើមម៉ាស៊ីនមេ MCP (ការដឹកជញ្ជូន stdio)                                              |
-| `omniroute --no-open`   | កុំបើកកម្មវិធីរុករកដោយស្វ័យប្រវត្តិ                                                      |
-| `omniroute --help`      | បង្ហាញជំនួយ                                                                              |
+| បញ្ជា                   | ការពិពណ៌នា                                                                                   |
+| ----------------------- | -------------------------------------------------------------------------------------------- |
+| `omniroute`             | ចាប់ផ្តើមម៉ាស៊ីនមេ (`PORT=20128`, API និងផ្ទាំងគ្រប់គ្រងនៅលើច្រកដូចគ្នា)                     |
+| `omniroute setup`       | ការណែនាំ CLI onboarding សម្រាប់ពាក្យសម្ងាត់ និងអ្នកផ្តល់សេវាដំបូង                            |
+| `omniroute doctor`      | ដំណើរការការត្រួតពិនិត្យសុខភាពក្នុងតំបន់ដោយមិនចាប់ផ្តើមម៉ាស៊ីនមេ                              |
+| `omniroute providers`   | ស្វែងរក រាយបញ្ជី ធ្វើឱ្យមានសុពលភាព និងសាកល្បងអ្នកផ្តល់សេវាពី CLI                             |
+| `omniroute config`      | ការកំណត់រចនាសម្ព័ន្ធឧបករណ៍CLI បញ្ជី —, ទទួលបាន, កំណត់, ធ្វើឱ្យការកំណត់រចនាសម្ព័ន្ធមានសុពលភាព |
+| `omniroute status`      | ផ្ទាំងគ្រប់គ្រងស្ថានភាពក្រៅបណ្តាញ — កំណែ DB ឧបករណ៍កំណត់រចនាសម្ព័ន្ធ                          |
+| `omniroute logs`        | ស្ទ្រីមកំណត់ហេតុការប្រើប្រាស់ពី API (គាំទ្រ `--follow`)                                      |
+| `omniroute update`      | ពិនិត្យមើល ឬអនុវត្តការអាប់ដេត OmniRoute                                                      |
+| `omniroute provider`    | គ្រប់គ្រងការតភ្ជាប់អ្នកផ្តល់សេវា — បន្ថែម រាយបញ្ជី យកចេញ សាកល្បង លំនាំដើម                    |
+| `omniroute --port 3000` | កំណត់ច្រក canonical/API ទៅ 3000                                                              |
+| `omniroute --mcp`       | ចាប់ផ្តើមម៉ាស៊ីនមេ MCP (ការដឹកជញ្ជូន stdio)                                                  |
+| `omniroute --no-open`   | កុំបើកកម្មវិធីរុករកតាមអ៊ីនធឺណិត                                                              |
+| `omniroute --help`      | បង្ហាញជំនួយ                                                                                  |
 
-ការដំឡើងគ្មានចំណុចប្រទាក់អាចកំណត់ដោយស្គ្រីបដោយប្រើទង់ ឬអថេរបរិស្ថាន៖
+ការរៀបចំដោយគ្មានក្បាលអាចត្រូវបានស្គ្រីបជាមួយទង់ ឬអថេរបរិស្ថាន៖
 
 ```bash
 omniroute setup --non-interactive --password "$OMNIROUTE_PASSWORD"
@@ -114,7 +116,7 @@ omniroute setup --non-interactive --add-provider --provider openai --api-key "$O
 omniroute setup --non-interactive --add-provider --provider openai --api-key "$OPENAI_API_KEY" --test-provider
 ```
 
-ដំណើរការការវិនិច្ឆ័យក្នុងមូលដ្ឋានដោយមិនបើកផ្ទាំងគ្រប់គ្រង៖
+ដំណើរការការវិនិច្ឆ័យក្នុងតំបន់ដោយមិនបើកផ្ទាំងគ្រប់គ្រង៖
 
 ```bash
 omniroute doctor
@@ -122,7 +124,7 @@ omniroute doctor --json
 omniroute doctor --no-liveness
 ```
 
-គ្រប់គ្រងអ្នកផ្ដល់សេវាតាមរយៈ SSH ឬស្គ្រីបដោយមិនបើកផ្ទាំងគ្រប់គ្រង៖
+គ្រប់គ្រងអ្នកផ្តល់សេវាពី SSH ឬស្គ្រីបដោយមិនបើកផ្ទាំងគ្រប់គ្រង៖
 
 ```bash
 omniroute providers available
@@ -138,21 +140,21 @@ omniroute providers validate
 
 ## ការកំណត់រចនាសម្ព័ន្ធឧបករណ៍ CLI
 
-### 1) ភ្ជាប់អ្នកផ្ដល់សេវា និងបង្កើត API Key
+### 1) ភ្ជាប់អ្នកផ្តល់សេវា និងបង្កើត API Key
 
-1. បើក Dashboard → `Providers` ហើយភ្ជាប់អ្នកផ្ដល់សេវាយ៉ាងហោចណាស់មួយ (OAuth ឬ API key)។
-2. បើក Dashboard → `Endpoints` ហើយបង្កើត API key មួយ។
-3. (ជាជម្រើស) បើក Dashboard → `Combos` ហើយកំណត់ខ្សែសង្រ្គោះបម្រុងរបស់អ្នក។
+1. បើក Dashboard → `Providers` ហើយភ្ជាប់អ្នកផ្តល់សេវាយ៉ាងហោចណាស់មួយ (OAuth ឬ API key)។
+2. បើក Dashboard → `Endpoints` ហើយបង្កើត API key។
+3. (ជាជម្រើស) បើក Dashboard → `Combos` ហើយកំណត់ខ្សែសង្វាក់បម្រុងរបស់អ្នក។
 
-### 2) ភ្ជាប់ឧបករណ៍សរសេរកូដរបស់អ្នក
+### 2) តម្រង់ឧបករណ៍សរសេរកូដរបស់អ្នក
 
 ```txt
 Base URL: http://localhost:20128/v1
-API Key:  [copy from Endpoint page]
-Model:    if/qwen3.8-max-preview (or any provider/model prefix)
+API Key:  [ចម្លងពីទំព័រ Endpoint]
+Model:    if/qwen3.8-max-preview (ឬបុព្វបទអ្នកផ្តល់សេវា/ម៉ូដែលណាមួយ)
 ```
 
-ប្រសិនបើកម្មវិធីកែសម្រួលរបស់អ្នកមិនអាចផ្ញើ `Authorization: Bearer ...` បានទេ សូមប្រើ base ដែលត្រូវគ្នា និងមាន token ជំនួសវិញ៖
+ប្រសិនបើកម្មវិធីកែសម្រួលរបស់អ្នកមិនអាចផ្ញើ `Authorization: Bearer ...` បានទេ សូមប្រើមូលដ្ឋានភាពឆបគ្នាដែលមានថូខឹនជំនួសវិញ៖
 
 ```txt
 Base URL: http://localhost:20128/api/v1/vscode/YOUR_KEY/
@@ -161,77 +163,75 @@ Chat URL: http://localhost:20128/api/v1/vscode/YOUR_KEY/chat/completions
 Ollama Tags URL: http://localhost:20128/api/v1/vscode/YOUR_KEY/api/tags
 ```
 
-ដំណើរការជាមួយ Claude Code, Codex CLI, Cursor, Cline, OpenClaw, OpenCode និង SDK ដែលត្រូវគ្នាជាមួយ OpenAI។
+ដំណើរការជាមួយ Claude Code, Codex CLI, Cursor, Cline, OpenClaw, OpenCode និង SDK ដែលឆបគ្នាជាមួយ OpenAI។
 
 #### កំណត់រចនាសម្ព័ន្ធដោយស្វ័យប្រវត្តិជាមួយ `setup-*`
 
-ជំនួសឱ្យការបិទភ្ជាប់ base URL និង key ដោយដៃ អនុញ្ញាតឱ្យ OmniRoute សរសេរការកំណត់រចនាសម្ព័ន្ធផ្ទាល់ខ្លួនរបស់ឧបករណ៍នីមួយៗ
-ពីកាតាឡុកម៉ូដែលដែលកំពុងដំណើរការ។ ប្រើពាក្យបញ្ជាមួយសម្រាប់ឧបករណ៍នីមួយៗ៖
+ជំនួសឱ្យការបិទភ្ជាប់ URL មូលដ្ឋាន និង key ដោយដៃ អនុញ្ញាតឱ្យ OmniRoute សរសេរការកំណត់រចនាសម្ព័ន្ធផ្ទាល់ខ្លួនរបស់ឧបករណ៍នីមួយៗពីបញ្ជីម៉ូដែលបច្ចុប្បន្ន។ ប្រើមួយ command សម្រាប់ឧបករណ៍នីមួយៗ៖
 
 ```bash
-omniroute setup-codex        # ទម្រង់ ~/.codex/<name>.config.toml
+omniroute setup-codex        # profile នៅក្នុង ~/.codex/<name>.config.toml
 omniroute setup-claude       # ~/.claude/profiles/<name>/settings.json
-omniroute setup-opencode     # ~/.config/opencode/opencode.json (ត្រូវគ្នាជាមួយ openai)
+omniroute setup-opencode     # ~/.config/opencode/opencode.json (ឆបគ្នាជាមួយ OpenAI)
 omniroute setup-cline        # ការកំណត់ Cline CLI + ផ្នែកបន្ថែម VS Code
 omniroute setup-kilo         # Kilo Code
 omniroute setup-continue     # ~/.continue/config.yaml (Continue / cn)
 omniroute setup-cursor       # បង្ហាញជំហានក្នុងកម្មវិធីរបស់ Cursor
 omniroute setup-roo          # ការនាំចូល Roo Code + ទ្រនិច autoImport
 omniroute setup-crush        # ~/.config/crush/crush.json
+omniroute setup-zed          # ~/.config/zed/settings.json (openai_compatible)
 omniroute setup-goose        # ~/.config/goose/config.yaml
 omniroute setup-aider        # ~/.aider.conf.yml
 omniroute setup-qwen         # ~/.qwen/settings.json + ~/.qwen/.env
 ```
 
-ពាក្យបញ្ជានីមួយៗទទួលយក `--remote <url> --api-key <key>` ដើម្បីកំណត់រចនាសម្ព័ន្ធឧបករណ៍មូលដ្ឋានឱ្យប្រើជាមួយ OmniRoute
-**ពីចម្ងាយ** ព្រមទាំង `--dry-run` ដើម្បីមើលជាមុន។ ដើម្បីចាប់ផ្ដើម CLI ដោយបានបញ្ចូល env ត្រឹមត្រូវ
-និងមិនសរសេរការកំណត់រចនាសម្ព័ន្ធអ្វីទាំងអស់ សូមប្រើកម្មវិធីចាប់ផ្ដើមទូទៅ
-`omniroute run <target>` (claude, codex, aider, goose, opencode, qwen, gemini);
-កម្មវិធីចាប់ផ្ដើមជាក់លាក់តាមឧបករណ៍ចាស់ៗ `omniroute launch` (Claude Code) និង
-`omniroute launch-codex` (Codex) នៅតែអាចប្រើបាន។
+នីមួយៗទទួលយក `--remote <url> --api-key <key>` ដើម្បីកំណត់រចនាសម្ព័ន្ធឧបករណ៍មូលដ្ឋានឱ្យប្រើជាមួយ OmniRoute **ពីចម្ងាយ** ព្រមទាំង `--dry-run` សម្រាប់មើលជាមុន។ ដើម្បីដំណើរការ CLI ដោយបញ្ចូល env ត្រឹមត្រូវ និងមិនសរសេរការកំណត់រចនាសម្ព័ន្ធអ្វីទាំងអស់ សូមប្រើកម្មវិធីបើកដំណើរការទូទៅ `omniroute run <target>` (claude, codex, aider, goose, opencode, qwen, gemini)។ កម្មវិធីបើកដំណើរការចាស់តាមឧបករណ៍នីមួយៗ `omniroute launch` (Claude Code) និង `omniroute launch-codex` (Codex) នៅតែអាចប្រើបាន។
 
-សម្រាប់តារាងពេញលេញ (អ្វីដែលពាក្យបញ្ជានីមួយៗសរសេរ, flag ទាំងអស់, មូលដ្ឋានធៀបនឹងពីចម្ងាយ, អនុសញ្ញា base-URL
-`/v1`) សូមមើល **[ការរួមបញ្ចូល CLI](./CLI-INTEGRATIONS.md)**។
+សម្រាប់តារាងពេញលេញ (អ្វីដែល command នីមួយៗសរសេរ flag ទាំងអស់ មូលដ្ឋានធៀបនឹងពីចម្ងាយ និងអនុសញ្ញា URL មូលដ្ឋាន `/v1`) សូមមើល **[ការរួមបញ្ចូល CLI](./CLI-INTEGRATIONS.md)**។
 
-សម្រាប់ការកំណត់រចនាសម្ព័ន្ធលម្អិតតាមឧបករណ៍នីមួយៗ (Claude Code, Codex CLI, Cursor, Cline, OpenClaw, Kilo Code, Copilot និងច្រើនទៀត) សូមមើល **[មគ្គុទ្ទេសក៍ឧបករណ៍ CLI](../reference/CLI-TOOLS.md)** ដែលផ្ដល់ជូនដោយឡែក។
+សម្រាប់ការកំណត់រចនាសម្ព័ន្ធលម្អិតតាមឧបករណ៍នីមួយៗ (Claude Code, Codex CLI, Cursor, Cline, OpenClaw, Kilo Code, Copilot និងឧបករណ៍ផ្សេងទៀត) សូមមើល **[មគ្គុទ្ទេសក៍ឧបករណ៍ CLI](../reference/CLI-TOOLS.md)** ដែលបានរៀបចំជាពិសេស។
 
 ---
 
-## ការរៀបចំពិធីការ (MCP + A2A)
+## ការដំឡើងពិធីការ (MCP + A2A)
 
-### ការរៀបចំ MCP (Model Context Protocol)
+### ការដំឡើង MCP (ពិធីការបរិបទគំរូ)
 
-ចាប់ផ្ដើម transport MCP ក្នុងរបៀប stdio៖
+ចាប់ផ្តើមការដឹកជញ្ជូន MCP នៅក្នុងរបៀប stdio៖
 
 ```bash
 omniroute --mcp
 ```
 
-លំហូរផ្ទៀងផ្ទាត់ដែលបានណែនាំ៖
+លំហូរសុពលភាពដែលបានណែនាំ៖
 
 ```bash
-# 1. ចាប់ផ្ដើមម៉ាស៊ីនមេ MCP
+# 1. Start MCP server
 omniroute --mcp
 
-# 2. ពីម៉ាស៊ីនភ្ញៀវ MCP របស់អ្នក សូមហៅ៖
-omniroute_get_health        # គួរតែត្រឡប់ស្ថានភាពសុខភាពប្រព័ន្ធ
-omniroute_list_combos       # គួរតែត្រឡប់ combos ដែលសកម្ម
+# 2. From your MCP client, call:
+omniroute_get_health        # Should return system health
+omniroute_list_combos       # Should return active combos
 
-# 3. ឬដំណើរការឈុត E2E ពេញលេញ៖
+# 3. Or run the full E2E suite:
 npm run test:protocols:e2e
 ```
 
-#### ការកំណត់រចនាសម្ព័ន្ធម៉ាស៊ីនភ្ញៀវ MCP
+#### MCP ការកំណត់រចនាសម្ព័ន្ធម៉ាស៊ីនភ្ញៀវ
 
-**Claude Code:**
+**កូដ Claude :**
+
+Claude Code ភ្ជាប់លើ HTTP ដែល `omniroute --mcp` (stdio) មិនចាប់ផ្តើម។ ការដឹកជញ្ជូន HTTP ត្រូវបានបិទតាមលំនាំដើម៖ បើកវានៅលើម៉ាស៊ីនមេដែលកំពុងដំណើរការជាមុនសិន។ នៅពេលការចូលផ្ទាំងគ្រប់គ្រងត្រូវបានបើក សំណើដោយគ្មានលិខិតសម្គាល់ទទួលបាន `401` ដូច្នេះហុចគ្រាប់ចុច API ដែលកាន់ `mcp:connect` (ឬ `manage`); កូនសោដោយគ្មាន `manage`/`admin` ក៏ត្រូវការវិសាលភាពរបស់ឧបករណ៍នីមួយៗផងដែរ (សូមមើល [MCP Server → MCP tool scopes](../frameworks/MCP-SERVER.md#mcp-tool-scopes) )។
 
 ```bash
-claude mcp add-server omniroute --type http --url http://localhost:20128/api/mcp/stream
+omniroute mcp enable --transport streamable-http
+claude mcp add --transport http omniroute http://localhost:20128/api/mcp/stream \
+  --header "Authorization: Bearer your-key"
 ```
 
 **Cursor / Cline:**
 
-បន្ថែមទៅក្នុងការកំណត់ MCP របស់អ្នក៖
+បន្ថែមទៅការកំណត់ MCP របស់អ្នក (stdio ដោយប្រើសោ ដូច្នេះអ្នកហៅចូលមានប្រាក់ដើម)៖
 
 ```json
 {
@@ -239,23 +239,30 @@ claude mcp add-server omniroute --type http --url http://localhost:20128/api/mcp
     "omniroute": {
       "command": "omniroute",
       "args": ["--mcp"],
-      "env": {}
+      "env": {
+        "OMNIROUTE_API_KEY": "your-key",
+        "OMNIROUTE_BASE_URL": "http://localhost:20128"
+      }
     }
   }
 }
 ```
 
-**ឯកសារ MCP ពេញលេញ៖** [README របស់ម៉ាស៊ីនមេ MCP](../../open-sse/mcp-server/README.md) — ឧបករណ៍ 110, ការកំណត់ IDE, ម៉ាស៊ីនភ្ញៀវ Python/TS/Go។
+ឬនៅពេលដែល `mcpTransport` គឺ `streamable-http` (កំណត់វានៅលើ `/dashboard/mcp` ឬជាមួយ `omniroute mcp enable --transport streamable-http`) ចង្អុលធាតុម៉ាស៊ីនមេ MCP ពីចម្ងាយរបស់អតិថិជននៅ `http://localhost:20128/api/mcp/stream`។
 
-### ការរៀបចំ A2A (Agent-to-Agent Protocol)
+គន្លឹះធ្វើដំណើរជា `Authorization: Bearer <api-key>` (សូមមើល [MCP Server → ការចូលប្រើពីចម្ងាយ](../frameworks/MCP-SERVER.md#remote-access-manage-scope-bypass) សម្រាប់ម៉ាស៊ីនពីចម្ងាយ សោពីចម្ងាយត្រូវការ `mcp:connect` បូកនឹងវិសាលភាព read/write របស់វា)។
 
-ផ្ទៀងផ្ទាត់ Agent Card៖
+**ឯកសារ MCP ពេញលេញ៖** [MCP Server README](../../open-sse/mcp-server/README.md) — 110 tools, IDE configs, Python/TS/Go clients. សេចក្តីយោងប្រតិបត្តិករសម្រាប់ឧបករណ៍ CCR/dedup ការបង្ហាប់ (សញ្ញាសម្គាល់ តម្រូវការជាមុន វិសាលភាពឧបករណ៍នីមួយៗ ការដកទំព័រ ការវិនិច្ឆ័យ)៖ [ម៉ាស៊ីនបង្ហាប់ → តម្រូវការជាមុន / មគ្គុទ្ទេសក៍ប្រតិបត្តិករ](../compression/COMPRESSION_ENGINES.md#prerequisites--operator-guide-ccr--session-dedup) ។
+
+### ការដំឡើង A2A (ពិធីការភ្នាក់ងារទៅភ្នាក់ងារ)
+
+ផ្ទៀងផ្ទាត់កាតភ្នាក់ងារ៖
 
 ```bash
 curl http://localhost:20128/.well-known/agent.json
 ```
 
-ផ្ញើភារកិច្ចមួយ៖
+ផ្ញើកិច្ចការ៖
 
 ```bash
 curl -X POST http://localhost:20128/a2a \
@@ -263,7 +270,7 @@ curl -X POST http://localhost:20128/a2a \
   -d '{"jsonrpc":"2.0","id":"quickstart","method":"message/send","params":{"skill":"quota-management","messages":[{"role":"user","content":"Give me a short quota summary."}]}}'
 ```
 
-**ឯកសារ A2A ពេញលេញ៖** [README របស់ម៉ាស៊ីនមេ A2A](../../src/lib/a2a/README.md) — JSON-RPC 2.0, ជំនាញ, ការស្ទ្រីម, វដ្តជីវិតភារកិច្ច។
+**ឯកសារ A2A ពេញលេញ៖** [A2A Server README](../../src/lib/a2a/README.md) — JSON-RPC 2.0, ជំនាញ, ការផ្សាយ, វដ្តជីវិតការងារ។
 
 ---
 
@@ -322,23 +329,23 @@ PORT=20128 DASHBOARD_PORT=20129 omniroute
 
 ---
 
-## ពុម្ពសម្រាប់ Void Linux (xbps-src)
+## គំរូ Linux (xbps-src) ចាត់ទុកជាមោឃៈ
 
-សម្រាប់អ្នកប្រើ Void Linux អ្នកអាចបង្កើតកញ្ចប់ដើមបានដោយប្រើ `xbps-src`។ រក្សាទុកប្លុកនេះជា `srcpkgs/omniroute/template`៖
+សម្រាប់អ្នកប្រើប្រាស់ Void Linux អ្នកអាចបង្កើតកញ្ចប់ដើមដោយប្រើ `xbps-src`។ រក្សាទុកប្លុកនេះជា `srcpkgs/omniroute/template`៖
 
 ```bash
-# ឯកសារពុម្ពសម្រាប់ 'omniroute'
+# Template file for 'omniroute'
 pkgname=omniroute
 version=3.8.0
 revision=1
 hostmakedepends="nodejs python3 make"
 depends="openssl"
-short_desc="ច្រកផ្លូវ AI សកលដែលមានការបញ្ជូនផ្លូវឆ្លាតវៃសម្រាប់អ្នកផ្ដល់សេវា LLM ជាច្រើន"
+short_desc="Universal AI gateway with smart routing for multiple LLM providers"
 maintainer="zenobit <zenobit@disroot.org>"
 license="MIT"
 homepage="https://github.com/diegosouzapw/OmniRoute"
 distfiles="https://github.com/diegosouzapw/OmniRoute/archive/refs/tags/v${version}.tar.gz"
-# បង្កើត checksum ឡើងវិញសម្រាប់ការចេញផ្សាយនីមួយៗដោយប្រើ៖
+# Regenerate the checksum for each release with:
 #   curl -L -o /tmp/omniroute.tar.gz "https://github.com/diegosouzapw/OmniRoute/archive/refs/tags/v${version}.tar.gz" && sha256sum /tmp/omniroute.tar.gz
 checksum=PLACEHOLDER_REGENERATE_PER_RELEASE
 system_accounts="_omniroute"

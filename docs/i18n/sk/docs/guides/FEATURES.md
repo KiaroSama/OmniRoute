@@ -57,29 +57,19 @@ Pripojenia OpenRouter môžu v rozšírených nastaveniach ukladať `preset` pre
 
 ---
 
-## 🎨 Kombinácie
+## 🎨 kombá
 
-Vytvárajte kombinácie smerovania modelov s 19 verejnými stratégiami: podľa priority, vážené, round-robin, prenos kontextu, postupné napĺňanie, p2c (výber z dvoch možností), náhodné, najmenej používané, optimalizované podľa nákladov, zohľadňujúce reset, podľa okna resetu, podľa rezervy, striktne náhodné, automatické, lkgp (posledný známy funkčný poskytovateľ), optimalizované podľa kontextu, optimalizované podľa vyrovnávacej pamäte, **fusion** (paralelné rozoslanie panelu modelov a následná syntéza jednej odpovede pomocou rozhodovacieho modelu) a **pipeline**. Každá kombinácia reťazí viacero modelov s automatickým záložným prepnutím a zahŕňa rýchle šablóny a kontroly pripravenosti.
+Vytvorte kombá smerovania modelov s 22 verejnými stratégiami: priorita, vážené, cyklicky, kontextové relé, vyplňte prvé, p2c (možnosť dvoch možností), náhodné, najmenej používané, optimalizované z hľadiska nákladov, s vedomím resetovania, okno obnovenia, prvé expirácia, rezerva, vážené kvótami, prísne náhodný, automatický kontext, známy lgovidpkgp optimalizované pre vyrovnávaciu pamäť,** fúzie** (vejár na panel modelov paralelne, potom syntetizujte jednu odpoveď prostredníctvom porotcu),** potrubia** , a** jev** (prihlásenie TypeSafe Jev nad vaším poradovým zoznamom). Každé kombo spája viacero modelov s automatickým vrátením a obsahuje rýchle šablóny a kontroly pripravenosti.
 
-Nedávne vylepšenia kombinácií:
+Nedávne vylepšenia komba:
 
-- **Štruktúrovaný nástroj na tvorbu kombinácií** — vytvorte každý krok výberom poskytovateľa, modelu a presného účtu/pripojenia
-- **Podpora opakovaných poskytovateľov** — toho istého poskytovateľa môžete v jednej kombinácii použiť viackrát, pokiaľ je trojica `(provider, model, connection)` jedinečná
-- **Stav cieľov kombinácie** — analytické a zdravotné prehľady teraz rozlišujú jednotlivé ciele/kroky kombinácie namiesto zlučovania všetkého do reťazcov modelov
-- **Zložené poradie úrovní** — `defaultTier -> fallbackTier` teraz ovplyvňuje poradie vykonávania a záložného prepínania krokov kombinácie najvyššej úrovne za behu
-- **Šablóny systémových pokynov** — `system_message` kombinácie podporuje na strane servera zástupné symboly
-  `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` a `{{FINGERPRINT}}`,
-  ktoré sa rozbalia podľa skutočne smerovaného cieľa tesne pred odoslaním.
-  Povolené sú iba symboly zo zoznamu povolených hodnôt a ich spracovanie nie je rekurzívne; neznáme zástupné symboly zostávajú nezmenené; prázdne hodnoty
-  sa rozbalia na prázdny reťazec; systémové pokyny klienta sa nikdy neprepisujú. `{{FINGERPRINT}}`
-  sa vyhodnotí iba pre bezplatných poskytovateľov založených na odtlačkoch s pripnutým alebo
-  automaticky rotovaným odtlačkom — inde sa rozbalí na prázdny reťazec (napr.
-  pripojenia s jedným odtlačkom, poskytovatelia bez fp). Rozbaľovanie sa vzťahuje na
-  štandardnú slučku odosielania, round-robin a pripnuté relácie kontextovej vyrovnávacej pamäte;
-  stratégie fusion, chaos, pipeline a nested-execute zatiaľ zástupné symboly
-  nerozbaľujú.
+- **Štruktúrovaný combo builder** — vytvorte každý krok výberom poskytovateľa, modelu a presného account/connection
+- **Opakovaná podpora poskytovateľa** — opakovane používa rovnakého poskytovateľa mnohokrát v jednej kombinácii, pokiaľ je n-tica `(provider, model, connection)` jedinečná
+- **Kombinovaný cieľ zdravia** Analytické a zdravotné povrchy — teraz rozlišujú jednotlivé kombinované targets/steps namiesto toho, aby všetko zbalili do modelových reťazcov
+- **Zložené usporiadanie vrstiev** — `defaultTier -> fallbackTier` teraz ovplyvňuje poradie execution/fallback runtime pre kombinované kroky najvyššej úrovne
+- **Šablóny systémových výziev** — combo `system_message` podporuje zástupné symboly `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` a `{{FINGERPRINT}}` na strane servera, rozšírené zo skutočne smerovaného cieľa tesne pred odoslaním. Povolené a nerekurzívne; neznáme zástupné symboly zostávajú doslovné; prázdne hodnoty expandovať na prázdne; výzvy klientskeho systému sa nikdy neprepisujú. `{{FINGERPRINT}}` sa rieši iba pre bezplatných poskytovateľov založených na odtlačkoch prstov s pripnutým alebo automaticky otočeným odtlačkom prsta — sa rozbalí a vyprázdni sa inde (napr. pripojenia s jedným odtlačkom prsta, poskytovatelia bez fp). Rozšírenie pokrýva štandardnú odoslanú slučku, cyklickú obsluhu a pripnuté relácie kontextovej vyrovnávacej pamäte; fusion, chaos, pipeline a nested-execute stratégie zatiaľ nerozširujú zástupné symboly.
 
-![Panel kombinácií](../screenshots/02-combos.png)
+![Combos Dashboard](../screenshots/02-combos.png)
 
 ---
 
@@ -200,23 +190,23 @@ E-mailové adresy účtov OAuth sú predvolene maskované (napr. `di*****@g****.
 
 ---
 
-## 👁️ Prepínač viditeľnosti modelov _(v3.5.6+)_
+## 👁️ prepínač viditeľnosti modelu _(v3.5.6 +)_
 
-Zoznam modelov na stránke poskytovateľa teraz obsahuje:
+Zoznam modelov stránok poskytovateľa teraz obsahuje:
 
-- **Panel vyhľadávania/filtrovania v reálnom čase** — Rýchlo vyhľadajte konkrétne modely
-- **Prepínač viditeľnosti pre jednotlivé modely** (ikona 👁) — Skryté modely sú sivé a vylúčené z katalógu `/v1/models`
-- **Odznak počtu aktívnych modelov** (`N/M aktívnych`) — Umožňuje okamžite zistiť, koľko modelov je povolených v porovnaní s ich celkovým počtom
+- **Bar search/filter v reálnom čase** — Rýchle vyhľadanie konkrétnych modelov
+- **Prepínač viditeľnosti podľa modelu** ( ikona 👁 ) — Skryté modely sú sivé a vylúčené z katalógu `/v1/models`
+- **Odznak aktívneho počítania** (`N/M active`) — Na prvý pohľad ukazuje, koľko modelov je povolených v porovnaní s celkovým počtom
 
 ---
 
-## 🔧 Oprava premenných prostredia OAuth _(v3.6.1+)_
+## 🔧 OAuth Env Repair _(v3.6.1 +)_
 
-Akcia „Opraviť premenné prostredia“ jedným kliknutím pre poskytovateľov OAuth, ktorá obnoví chýbajúce premenné prostredia a opraví nefunkčný stav autentifikácie. Dostupná cez `Ovládací panel → Poskytovatelia → [Poskytovateľ OAuth] → Opraviť premenné prostredia`. Automaticky zisťuje a opravuje:
+Akcia „Opraviť env“ na jedno kliknutie pre poskytovateľov OAuth, ktorá obnoví chýbajúce premenné prostredia a opraví nefunkčný stav overenia. Prístupné z `Dashboard → Providers → [OAuth Provider] → Repair env`. Automaticky rozpozná a opraví:
 
-- Chýbajúce prihlasovacie údaje klienta OAuth
-- Poškodené položky v súbore premenných prostredia
-- Bezpečné upravenie ciest záloh
+- Chýbajúce poverenia klienta OAuth
+- Poškodené položky súboru env
+- Dezinfekcia záložnej cesty
 
 ---
 
@@ -298,13 +288,13 @@ Kľúčové správanie:
 
 ## 🔑 Synchronizačné tokeny a konfiguračný balík _(v3.6.6+)_
 
-Prístup z viacerých zariadení a prístup externých operátorov je teraz možný prostredníctvom **synchronizačných tokenov s definovaným rozsahom**:
+Prístup z viacerých zariadení a prístup externých operátorov je teraz možný prostredníctvom **synchronizačných tokenov s obmedzeným rozsahom**:
 
-- **`POST /api/sync/tokens`** — Vydá nový synchronizačný token (s definovaným rozsahom a voliteľnou platnosťou)
-- **`DELETE /api/sync/tokens/:id`** — Zruší token
-- **`GET /api/sync/bundle`** — Stiahne verziovanú snímku JSON všetkých necitlivých nastavení s kľúčom ETag (heslá sú skryté)
+- **`POST /api/sync/tokens`** — Vydá nový synchronizačný token (s obmedzeným rozsahom a voliteľnou platnosťou)
+- **`DELETE /api/sync/tokens/:id`** — Zneplatní token
+- **`GET /api/sync/bundle`** — Stiahne verziovanú snímku konfigurácie vo formáte JSON identifikovanú pomocou ETag (overenie iba synchronizačným tokenom). Nastavenia overovania, ako je heslo ovládacieho panela, sú odstránené, ale prihlasovacie údaje poskytovateľov a kľúče API sú zahrnuté, preto tento súbor považujte za tajný
 
-Konfiguračný balík vytvára `src/lib/sync/bundle.ts`. Klienti porovnávajú hlavičku odpovede `ETag`, aby zistili zmeny bez opätovného sťahovania celého obsahu.
+Konfiguračný balík sa zostavuje pomocou `src/lib/sync/bundle.ts`. Klienti porovnávajú hlavičku odpovede `ETag`, aby zistili zmeny bez opätovného sťahovania celého obsahu. V rozhraní CLI ho príkaz `omniroute sync bundle <outPath> --token <syncToken>` (alebo `OMNIROUTE_SYNC_TOKEN`) uloží do súboru prístupného iba vlastníkovi.
 
 ---
 
@@ -318,12 +308,12 @@ Vo v3.6.6 pribudlo aj **hybridné počítanie tokenov**: keď poskytovateľ komp
 
 ## 🛡️ Bezpečné odchádzajúce načítavanie a ochrana pred SSRF _(v3.6.6+)_
 
-Všetky volania na overenie poskytovateľov a zisťovanie modelov teraz prechádzajú cez dvojvrstvovú ochranu odchádzajúcich spojení:
+Všetky volania na overenie poskytovateľov a zisťovanie modelov teraz prechádzajú cez dvojvrstvovú ochranu odchádzajúcej komunikácie:
 
-1. **Ochrana URL** (`src/shared/network/outboundUrlGuard.ts`) — Blokuje súkromné, slučkové a lokálne IP rozsahy liniek ešte pred otvorením soketu.
-2. **Bezpečný obal funkcie fetch** (`src/shared/network/safeOutboundFetch.ts`) — Aplikuje ochranu URL, zjednocuje časové limity a pri prechodných chybách opakuje pokusy s exponenciálne rastúcim oneskorením.
+1. **Ochrana URL** (`src/shared/network/outboundUrlGuard.ts`) — Najprv kontroluje názov hostiteľa alebo literál IP cieľa presne v zadanom tvare; v režime iba pre verejné adresy obal bezpečného načítavania zároveň preloží názov a odmietne privátne adresy. Predvolene blokuje koncové body cloudových metadát — celý rozsah 169.254.0.0/16 spolu so známymi názvami hostiteľov metadát; `OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS=false` blokuje aj privátne adresy a adresy spätnej slučky; `OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS=true` (alebo staršie nastavenie `OUTBOUND_SSRF_GUARD_ENABLED=false`) tieto kontroly vypne. Hodnota uložená pomocou prepínača príznaku na ovládacom paneli má prednosť pred príslušnou premennou a vstavaní lokálni poskytovatelia počas overovania kľúča túto ochranu obchádzajú. Pozrite si `docs/reference/ENVIRONMENT.md`.
+2. **Obal bezpečného načítavania** (`src/shared/network/safeOutboundFetch.ts`) — Aplikuje ochranu URL, normalizuje časové limity a pri prechodných chybách opakuje požiadavky s exponenciálnym predlžovaním intervalov.
 
-Porušenia ochrany sa prejavia ako HTTP 422 (`URL_GUARD_BLOCKED`) a prostredníctvom `providerAudit.ts` sa zapíšu do audítorského denníka súladu.
+Porušenia pravidiel ochrany sa zobrazujú ako `URL_GUARD_BLOCKED` — HTTP 503 prostredníctvom `getSafeOutboundFetchErrorStatus` (400 na trase zisťovania modelov) — a skutočné blokovania SSRF počas overovania sa zapisujú do audítorského denníka ako udalosti `provider.validation.ssrf_blocked`.
 
 ---
 

@@ -4,376 +4,401 @@
 
 ---
 
-> **Pre používateľov**: Hľadáte jednoduchý návod? Podrobné pokyny, ako získať bezplatnú AI, nájdete v [Sprievodcovi bezplatnými úrovňami](../getting-started/FREE-TIERS-GUIDE.md).
+> **Pre používateľov**: Hľadáte jednoduchý návod? Pozrite si [Sprievodcu bezplatnými úrovňami](../getting-started/FREE-TIERS-GUIDE.md), kde nájdete podrobné pokyny, ako získať bezplatnú AI.
 
-> **Posledný prieskum:** 2026-06-17 — webový prieskum jednotlivých poskytovateľov (oficiálna dokumentácia + správy za posledných 7 dní, kontrola 50 agentmi s adversariálnym overením), ktorý aktualizoval všetky kvóty bezplatných úrovní a podmienky používania. **Čiastočný opätovný audit 2026-09-02** (`gemini`, `ollama-cloud`, `groq`, `nara`, `mistral` — pozrite si datovanú poznámku nižšie).
-> **Zdroj pravdy (katalóg):** `open-sse/config/freeModelCatalog.ts` (rozpočty pre jednotlivé MODELY, deduplikované podľa fondov). Nižšie uvedené počty tokenov pochádzajú z aktuálneho webového prieskumu a sú **približné** — pozrite si [Metodiku a upozornenia](#methodology--caveats).
+> **Naposledy preskúmané:** 2026-06-17 — webový prieskum jednotlivých poskytovateľov (oficiálna dokumentácia + správy z posledných 7 dní, kontrola 50 agentmi s adversariálnym overením), ktorý aktualizoval všetky kvóty bezplatných úrovní a podmienky používania. **Čiastočný opätovný audit 2026-09-02** (`gemini`, `ollama-cloud`, `groq`, `nara`, `mistral` — pozrite si poznámku s dátumom nižšie).
+> **Zdroj pravdy (katalóg):** `open-sse/config/freeModelCatalog.ts` (rozpočty pre jednotlivé MODELY, s odstránenými duplicitami fondov). Nižšie uvedené počty rozpočtových tokenov pochádzajú z aktuálneho webového prieskumu a sú **približné** — pozrite si [Metodiku a upozornenia](#methodology--caveats).
 
-## TL;DR — koľko bezplatnej inferencie OmniRoute skutočne agreguje?
+## TL;DR — koľko voľného záveru OmniRoute skutočne agreguje?
 
-| Metrika                                           | Tokeny / mesiac    | Význam                                                                                                                                                                                                                                                                                                                                                 |
-| ------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Zdokumentovaný opakovaný prídel (stály)**       | **~1,62 mld.**     | **Fondy** bezplatných úrovní (katalóg pre jednotlivé modely), pričom každý zdieľaný fond sa započítava **iba raz**. Aktuálny zdroj údajov pre `/api/free-tier/summary` a stránku Rozpočet bezplatnej úrovne na informačnom paneli. **Používajte toto číslo.**                                                                                          |
-| **+ prvý mesiac s kreditmi za registráciu**       | **~2,22 mld.**     | Stály prídel + jednorazové kredity za registráciu (Z.AI 20 mil., DeepSeek 5 mil., …), deduplikované podľa účtu. **Iba prvý mesiac** — neopakujú sa.                                                                                                                                                                                                    |
-| **+ trvalo bezplatné, bez zverejneného limitu**   | _nemožno vyčísliť_ | `siliconflow`, `glm-cn` (GLM-4-Flash), `tencent`, `baidu`, `kilo-gateway`, `opencode-zen`, `gemini`, `ollama-cloud` — skutočný opakovaný prístup obmedzený frekvenciou/súbežnosťou, **bez limitu tokenov, ktorý by bolo možné započítať**. Uvádzajú sa, ale nikdy sa nesčítavajú (započítavanie podľa `RPM×24/7` je nadhodnocovanie, ktoré odmietame). |
-| **+ zvýšenie odomknuté vkladom**                  | **+~24 mil.**      | Jednorazové dobitie OpenRouter vo výške **$10** zvýši jeho bezplatný fond z 50 → 1000 požiadaviek/deň. Vykazuje sa samostatne, aby nikdy nenavyšovalo stálu hodnotu.                                                                                                                                                                                   |
-| **+ po regionálnom overení identity**             | **+~6 mil.**       | `modelscope` (prepojenie so službou Alibaba Cloud + overenie skutočnej identity v pevninskej Číne). Skutočná opakovaná kvóta sprístupnená ako `gatedRecurringTokens` / `gatedProviders` a na informačnom paneli. Nikdy sa nezapočítava do hlavného čísla: +~6 mil. po regionálnom overení identity.                                                    |
-| Teoretický strop (všetky limity frekvencie, 24/7) | ~10 mld.           | Súčet limitov frekvencie všetkých poskytovateľov extrapolovaný na nepretržité používanie. **Nie je to záruka** — neuvádzajte ho ako hlavný údaj.                                                                                                                                                                                                       |
+Tieto čísla popisujú samostatné účty tretích strán a podmienky oprávnenosti v celom katalógu. OmniRoute neposkytuje tento rozpočet: musíte získať požadované účty alebo poverenia, pripojiť oprávnených poskytovateľov a rešpektovať ich limity. Skutočná využiteľná kapacita môže byť nižšia, vrátane nuly na novej inštalácii bez vhodnej trasy. Poskytovatelia označení `tos: avoid` sú predvolene vylúčení z automatického smerovania.
 
-**Úprimný hlavný údaj:** _OmniRoute agreguje **~1,62 mld. zdokumentovaných bezplatných tokenov mesačne** (až ~2,22 mld. počas prvého mesiaca s kreditmi za registráciu) v rámci 35 fondov bezplatných úrovní — plus dlhý rad trvalo bezplatných poskytovateľov bez stanoveného limitu — a kompresia RTK + Caveman (úspora tokenov 15–95 %) ich využitie ešte predĺži._
+**Skontrolované 2026-10-08:** [Cerebras](https://www.cerebras.ai/pricing) ponúka jednorazový propagačný kredit 5 USD vyžadujúci spôsob platby, ktorého platnosť vyprší po 30 dňoch. [Gemini](https://ai.google.dev/gemini-api/docs/rate-limits) zverejňuje limity sadzieb project/model/tier ; zostáva mimo kvantifikovaného mesačného titulku.
 
-> **Prečo hodnota klesla z predchádzajúcich ~1,94B.** Aktualizácia z 2026-06-17 je opravou správnosti, nie stratou: `gemini` sa teraz deduplikuje na úrovni poolu (predtým bola hodnota nadhodnotená samostatným započítaním každého variantu Flash, 462M → 60M), `cloudflare-ai` bolo opravené na skutočných 10k neurónov/deň (122M → 30M), `doubao` bolo preklasifikované na jednorazový kredit za registráciu (nie opakovaný) a zrušené úrovne boli odstránené (`chutes`/`phind`/`kluster` boli ukončené). Čiastočne to vyvažuje `llm7` (správne 5M/deň → 150M) a noví bezplatní poskytovatelia (Kilo, OpenCode Zen, Z.AI GLM-Flash).
+| Metrické                                       | Tokeny / mesiac       | Význam                                                                                                                                                                                                                                                                      |
+| ---------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Zdokumentovaný opakujúci sa grant (stály)**  | **~ 1,62B**           | Voľná úroveň** bazény** (katalóg podľa modelu), počíta sa každý zdieľaný fond** raz** . Živý zdroj za `/api/free-tier/summary` a stránka Free-Tier Budget na informačnom paneli.** Použite toto číslo.**                                                                    |
+| **+ prvý mesiac s registračnými kreditmi**     | **~ 2,22B**           | Stabilné + jednorazové registračné kredity (Z.AI 20 miliónov, DeepSeek 5 miliónov, ...), odpočítané na účet.** Len prvý mesiac** — sa neopakuje.                                                                                                                            |
+| **+ trvalo zadarmo, bez zverejneného stropu**  | _nekvantifikovateľné_ | `glm-cn` (GLM-4-Flash), `tencent`, `baidu`, `kilo-gateway`, `opencode-zen`, `gemini` — skutočný opakujúci sa prístup, rate/concurrency-limited,** žiadny token cap na započítanie** . Uvedené, nikdy nesčítané (započítanie ich v `RPM×24/7` je inflácia, ktorú odmietame). |
+| **+ zvýšenie vkladu a odomknutia**             | **+~ 24 miliónov**    | Jednorazový** 10 dolárov** doplnenie OpenRouter zvyšuje svoj bezplatný fond z 50 → 1 000 req/day. Hlásené samostatne, takže nikdy nezvýši stabilné číslo.                                                                                                                   |
+| **+ za regionálnou kontrolou totožnosti**      | **+~ 6M**             | `modelscope` (Alibaba Cloudová väzba + pevnina-Čína overenie skutočného mena). Skutočná opakujúca sa kvóta zobrazená ako `gatedRecurringTokens` / `gatedProviders` a na prístrojovej doske. Nikdy nie je zhrnuté do nadpisu: +~ 6M za overením regionálnej identity.        |
+| Teoretický strop (všetky limity sadzieb, 24/7) | ~ 10B                 | Súčet limitu sadzby každého poskytovateľa extrapolovaný na nepretržité používanie.** Nie je zárukou** — toto nenapisujte.                                                                                                                                                   |
+
+**Úprimný nadpis:** _OmniRoute agregáty**~ 1,62B zdokumentovaných bezplatných tokenov za mesiac** (až 2,22 miliardy ~ za prvý mesiac s kreditmi za registráciu) v 34 fondoch bezplatných vrstiev — plus dlhý chvost trvalo bezplatných poskytovateľov bez obmedzenia — a RTK + Caveman kompresia (15 – 95 % úspora tokenov) to rozširuje._
+
+> **Prečo to kleslo z predchádzajúceho ~ 1,94B.** Obnovenie 2026-06-17 je opravou poctivosti, nie stratou: `gemini` je teraz zbavený duplicitného fondu (bolo nafúknuté počítaním každého variantu Flash samostatne, 462 miliónov → 60 miliónov), `cloudflare-ai` opravené na skutočné 10k-Neurons/day (122 miliónov → 30 miliónov), `doubao` reklasifikované ako kredit ti (jednorazové vypnutie `kluster` vypnutie)`chutes`/`phind` ukončené). Čiastočne kompenzované `llm7` (správne 5M/day → 150 miliónov) a novými bezplatnými poskytovateľmi (Kilo, OpenCode Zen, Z.AI GLM-Flash).
 >
-> **Ďalej opravené na ~1,37B vo v3.8.42:** `longcat` bolo po skončení bezplatnej ukážkovej prevádzky preklasifikované z opakovaného grantu 150M/mes. na jednorazový registračný kredit 10M. Platí rovnaké pravidlo správnosti — žiadny poskytovateľ nebol odstránený omylom.
+> **Ďalej opravené na ~ 1.37B vo verzii 3.8.42:** `longcat` bol preklasifikovaný z opakujúceho sa grantu 150M/mo na jednorazový 10-miliónový registračný kredit po skončení bezplatného náhľadu. Rovnaké pravidlo čestnosti — žiadny poskytovateľ nebol omylom vyradený.
 >
-> **Aktualizované 2026-08-26 po vyradení Felo Web:** Felo Web je vylúčené, kým pôvod a licencovanie odvodené od GPL zostávajú POZASTAVENÉ; zdroj v tom čase uvádzal 38 kľúčov poolov. Počet poolov je aktuálny a kontrolovaný v CI (`check:docs-counts` spôsobí zlyhanie zostavy, ak sa vyššie uvedené čísla odchýlia od `computeFreeModelTotals()`).
+> **Aktualizované 26. 8. 2026 po ukončení služby Felo Web:** Felo Web je vylúčený, zatiaľ čo jeho provenance/licensing odvodené od GPL zostáva na HOLD; zdroj v tom čase uvádzal 38 poolových kľúčov. Počet bazénov je aktívny a CI-gated (`check:docs-counts` zlyhá pri zostavovaní, ak sa čísla vyššie odchýlia od `computeFreeModelTotals()`).
 >
-> **Opätovne auditované 2026-09-02 podľa vlastných stránok poskytovateľov** (zdroje: komentáre `// dôkaz:` pri každej opätovne auditovanej položke v `open-sse/config/freeModelCatalog.data.ts`): `gemini` a `ollama-cloud` už nezverejňujú počet tokenov (Google odstránil bezplatnú tabuľku podľa modelov 2025-12-23; bezplatný plán Ollama predstavuje „štartovacie kredity na používanie“) a teraz sú uvedené ako **bez limitu**, pričom sa nikdy nezapočítavajú do súčtu (−80M); `groq` má päť limitov 200K TPD **pre každý model** (každý 6M, +15M), pričom tri vyradené ID boli odstránené; `nara` predstavuje jeden balík 7M/deň (+60M, 210M). Hodnota 1B pre `mistral` je viditeľná iba v konzole účtu — pozrite si časť _Triedy dôkazov_ v metodike.
+> **Opätovne skontrolované 2026-09-02 oproti vlastným stránkam poskytovateľov** (zdroje: komentáre `// evidence:` vedľa každého prekontrolovaného záznamu v `open-sse/config/freeModelCatalog.data.ts`): `gemini` a `ollama-cloud` už nezverejňujú tokenovú figúrku (Google odstránil bezplatný stôl pre každý model dňa 23. 12. 2025; bezplatný plán Ollama je „počiatočné kredity za použitie“) a teraz sú uvedené ako** bez uzáveru** , nikdy nesčítané (− 80M); `groq` je päť** na model** 200K-TPD čiapky (6M každý, + 15M) s tromi vyradenými IDs ; `nara` je jedno vedro 7M/day (+ 60M, 210M). 1B `mistral` je viditeľná iba v konzole účtu — pozri _Triedy dôkazov_ v časti Metodika.
 >
-> **Opravené 2026-09-03 (#11773):** `cerebras` bolo preklasifikované z opakovaného grantu 30M/mes. (staršia skúšobná verzia bez karty s 1M tokenov/deň) na jednorazový registračný kredit $5, ktorý vyžaduje platobnú metódu. Platí rovnaké pravidlo správnosti ako pri LongCat.
+> **Aktualizované 2026-11-09 (#19334):** `ollama-cloud` bol odstránený z bezplatného katalógu po tom, čo Ollama ukončil svoju bezplatnú úroveň a previedol všetky cloudové modely na priebežné platby.
 >
-> **Navyše xKiro (2026-09-03):** nový pool `xkiro-free` (150M/mes.) pridáva 35. opakovaný kľúč poolu. Felo Web zostáva vylúčené, kým jeho pôvod a licencovanie odvodené od GPL zostávajú POZASTAVENÉ. Zdroj teraz uvádza **35 opakovaných kľúčov poolov** a **stabilne ~1,62B** — aktuálny údaj kontrolovaný v CI (`check:docs-counts` spôsobí zlyhanie zostavy, ak sa táto hodnota odchýli od `computeFreeModelTotals()`).
+> **Opravené dňa 2026-09-03 (#11773):** `cerebras` bola preklasifikovaná z opakujúceho sa grantu 30M/mo (stará 1- tokens/day skúšobná verzia bez karty) na jednorazový registračný kredit 5 USD, ktorý vyžaduje spôsob platby. Rovnaké pravidlo čestnosti ako LongCat.
+>
+> **Plus xKiro (2026-09-03):** nový fond `xkiro-free` (150M/mo) pridáva 35. opakovaný kľúč fondu. Felo Web zostáva vylúčený, zatiaľ čo jeho provenance/licensing odvodený od GPL zostáva na HOLD. Teraz informuje zdroj** 34 opakujúcich sa bazénových kľúčov** a**~ 1,62B stabilný** — živé, CI-gated číslo (`check:docs-counts` zlyhá pri zostavovaní, ak sa odchýli od `computeFreeModelTotals()`).
 
-Najväčší **zdokumentovaní** prispievatelia: `mistral` 1,00B, `nara` 210M, `llm7` 150M, `xkiro` 150M, `groq` 30M (päť limitov pre jednotlivé modely), `cloudflare-ai` 30M, `api-airforce` 24M. (`longcat` je vylúčené — jeho grant 10M pre LongCat-2.0 je jednorazový registračný kredit podmienený KYC, nie opakovaný mesačný rozpočet.)
+Najväčší** zdokumentované** prispievatelia: `mistral` 1,00B, `nara` 210M, `llm7` 150M, `xkiro` 150M, `groq` 30M (päť čiapok na model), `cloudflare-ai` 30M, `api-airforce` 24M. (`longcat` je vylúčený — jeho 10 miliónov LongCat-2 0,0 grant je jednorazový, KYC-hradený registračný kredit, nie opakujúci sa mesačný rozpočet.)
 
-> ⚠️ Teoretický strop (~10B) je nadhodnotený poskytovateľmi obmedzenými iba rýchlostným limitom, ktorí **nemajú zverejnený limit tokenov** (`tencent`, `siliconflow`, `nvidia`, `baidu`, `glm-cn`, `sparkdesk`) a ktorých hodnoty by sa vypočítali ako `RPM/TPM × 24/7 × 30d` — ide o teoretické maximum, ktoré žiadny jednotlivý účet nedokáže dlhodobo využívať. Z obhájiteľného čísla sú **vylúčení** (namiesto toho sú uvedení v riadku „trvalo bezplatné, bez limitu“). Ide o rovnaké nadhodnotenie, pre ktoré sú niekoľkomiliardové tvrdenia konkurencie nespoľahlivé.
+> ⚠️ Teoretický strop (~ 10B) je nafúknutý iba poskytovateľmi s obmedzenou sadzbou** žiadny zverejnený token cap** (`tencent`, `nvidia`, `baidu`, `glm-cn`, `sparkdesk`), ktorých čísla by boli `RPM/TPM × 24/7 × 30d` — teoretické maximum, ktoré žiadny účet neudrží. sú** vylúčené** z obhájiteľného čísla (uvedeného namiesto toho v riadku „trvalo voľné, bez čiapky“). Ide o rovnakú infláciu, ktorá robí mnohomiliardové nároky konkurentov nespoľahlivými.
 
 ---
 
-## Aktualizácia 2026-06-17 — čo sa zmenilo od 2026-06-05
+## 2026-06-17 aktualizácia — čo sa zmenilo od 2026-06-05
 
-Celý katalóg bol aktualizovaný prostredníctvom webového prieskumu vykonaného 50 agentmi (oficiálna dokumentácia + správy z posledných 7 dní, adversariálne overené). Najdôležitejšie zmeny:
+Prieskum webu vykonaný 50 agentmi (oficiálna dokumentácia + správy za posledných 7 dní, adverzárne overené) aktualizoval celý katalóg. Hlavné body:
 
-- **Odstránené / bez bezplatnej úrovne (2026):** `chutes` (bezplatná úroveň skončila 2026-03), `phind` (spoločnosť ukončila činnosť 2026-01), `kluster` (ukončený 2026-06-09 → MITO), `gitlawb` + `gitlawb-gmi` (bezplatný prístup k MiMo zrušený 2026-05-24, promoakcia Nemotron skončila 2026-06 — opätovne overené 2026-06-18), `aimlapi` (bezplatná úroveň pozastavená — opätovne overené 2026-06-18), `yi` (Yi-Light vyradený, platba podľa spotreby — opätovne overené 2026-06-18), `featherless-ai` (aktuálne bez bezplatnej úrovne), `chipotle` („Pepper AI“ od Chipotle — spätne analyzovaný chatovací widget Amelia na `amelia.chipotle.com`, s ktorým poskytovateľ komunikoval, teraz vracia 404 na každej trase vrátane koreňovej; backend bol odstavený/presunutý, potvrdené 2026-09-15 — úplne odstránené z katalógu, #13131/#4037). `iflytek` / `sparkdesk` zostávajú uvedené, ale obsahujú upozornenie týkajúce sa podmienok používania (Spark Lite je bezplatný; podmienky používania obmedzujú použitie typu proxy/relay).
-- **Gemini** — `2.0 Flash` / `2.0 Flash-Lite` boli ukončené 2026-06-01 a `2.5 Pro` opustil bezplatnú úroveň (2026-04); bezplatná úroveň teraz zahŕňa **iba rodinu Flash** (2.5/3/3.1/3.5 Flash + Gemma). Katalóg teraz **združuje** rodinu Flash (predtým bola hodnota nadhodnotená samostatným započítavaním každého variantu: 462M → 60M).
-- **Opravené hodnoty:** `cloudflare-ai` 122M → **30M** (skutočných 10k neurónov/deň), `doubao` preklasifikovaný na jednorazový kredit za registráciu (nie opakovaný), `llm7` 4M → **150M** (zdokumentovaných 5M tokenov/deň), koncové body „-Free“ služby `together` boli zrušené → odstránený bol aj registračný kredit $25 (vyžaduje sa minimálny nákup za $5, bez bezplatnej skúšobnej verzie), ukážková verzia `longcat` skončila + modely Flash boli vyradené → iba **LongCat-2.0**, preklasifikovaný na jednorazový registračný kredit vo výške **10M** tokenov (podmienený KYC, nie opakovaný).
-- **Objavení noví bezplatní poskytovatelia:** ⭐ **Kilo Code** (`kilo-gateway` — rotujúca súprava „Auto Free“: rodina NVIDIA Nemotron 3, StepFun, Poolside, Nex-N2-Pro), ⭐ **OpenCode Zen** (`opencode-zen` — 6 rotujúcich bezplatných modelov na programovanie), ⭐ **Z.AI / Zhipu** (`glm-cn` — GLM-4-Flash / 4.5-Flash / 4.7-Flash trvalo bezplatné + registračný bonus 20M) a `arcee-ai` Trinity Large Preview.
-- **Nové transparentné úrovne** (pozrite si Metodiku): kategória _trvalo bezplatná, ale bez stanoveného limitu_ (skutočný opakovaný prístup bez limitu tokenov, ktorý by bolo možné započítať) a _navýšenie odomknuté vkladom_ (OpenRouter $10 → +24M/mesiac), pričom obe sú uvádzané **samostatne**, aby nikdy nenavyšovali hlavnú hodnotu.
+- **Odstránené / bez bezplatnej úrovne (2026):** `chutes` (bezplatná úroveň skončila 2026-03), `phind` (spoločnosť zanikla 2026-01), `kluster` (ukončené 2026-06-09 → MITO), `gitlawb` + `gitlawb-gmi` (bezplatný prístup k MiMo zrušený 2026-05-24, promo Nemotron skončilo 2026-06 — opätovne overené 2026-06-18), `aimlapi` (bezplatná úroveň pozastavená — opätovne overené 2026-06-18), `yi` (Yi-Light vyradený, režim pay-as-you-go — opätovne overené 2026-06-18), `featherless-ai` (momentálne žiadna bezplatná úroveň), `chipotle` („Pepper AI" od Chipotle — reverzne analyzovaný chatovací widget Amelia na `amelia.chipotle.com`, s ktorým poskytovateľ komunikoval, teraz vracia 404 na každej trase vrátane koreňovej; backend vyradený z prevádzky/presunutý, potvrdené 2026-09-15 — úplne odstránený z katalógu, #13131/#4037). `iflytek` / `sparkdesk` zostávajú uvedené, ale majú poznámku s upozornením na podmienky služby (Spark Lite je bezplatný; podmienky služby obmedzujú používanie proxy/relay).
+- **Gemini** — `2.0 Flash` / `2.0 Flash-Lite` boli vypnuté 2026-06-01 a `2.5 Pro` opustil bezplatnú úroveň (2026-04); bezplatná úroveň je teraz **iba rodina Flash** (2.5/3/3.1/3.5 Flash + Gemma). Katalóg teraz rodinu Flash **združuje** (predtým bola hodnota nafúknutá počítaním každého variantu zvlášť: 462M → 60M).
+- **Opravené čísla:** `cloudflare-ai` 122M → **30M** (reálnych 10k Neuronov/deň), `doubao` reklasifikovaný ako jednorazový registračný kredit (nie opakujúci sa), `llm7` 4M → **150M** (dokumentovaných 5M tokenov/deň), `together` — endpointy „-Free" ukončené → odstránený aj registračný kredit $25 (vyžaduje minimálny nákup $5, žiadna bezplatná skúšobná verzia), `longcat` — Preview skončilo + modely Flash vyradené → iba **LongCat-2.0**, reklasifikovaný ako jednorazový registračný kredit **10M** tokenov (podmienený KYC, nie opakujúci sa).
+- **Priama inferencia Poolside sa končí (overené 2026-10-20):** [oficiálna platforma](https://platform.poolside.ai/) oznamuje vypnutie **2026-10-31** a odkazuje používateľov na stiahnutie jej modelov z Hugging Face na vlastné hosťovanie. Priamy poskytovateľ `poolside` nesie toto upozornenie. Ručne kurátorovaný bezplatný katalóg nemá žiadne priame záznamy Poolside; jeho záznamy s názvom Poolside patria pod `kilo-gateway`. Toto oznámenie nepotvrdzuje dostupnosť modelov servírovaných bránami Kilo, Cline, NVIDIA alebo inými, takže tieto záznamy sa na tomto základe nevyraďujú.
+- **Noví objavení bezplatní poskytovatelia:** ⭐ **Kilo Code** (`kilo-gateway` — rotujúca sada „Auto Free": rodina NVIDIA Nemotron 3, StepFun, Poolside, Nex-N2-Pro), ⭐ **OpenCode Zen** (`opencode-zen` — 10 rotujúcich bezplatných modelov na kódovanie, aktualizované 2026-10-20), ⭐ **Z.AI / Zhipu** (`glm-cn` — GLM-4-Flash / 4.5-Flash / 4.7-Flash natrvalo bezplatné + registračný bonus 20M) a `arcee-ai` Trinity Large Preview.
+- **Nové čestné úrovne** (pozri Metodiku): kategória _natrvalo bezplatné, ale bez limitu_ (reálny opakujúci sa prístup, žiadny tokenový limit na započítanie) a _boost odomknutý vkladom_ (OpenRouter $10 → +24M/mes.), obe uvádzané **samostatne**, aby nikdy nenafukovali hlavné číslo.
 
-> Podrobná tabuľka jednotlivých poskytovateľov uvedená nižšie predstavuje **snímku k 2026-06-05**; vyššie uvedené rozdiely ju nahrádzajú. Aktuálnym, kanonickým zdrojom je katalóg jednotlivých modelov `open-sse/config/freeModelCatalog.ts`.
+> Podrobná tabuľka jednotlivých poskytovateľov nižšie je **snímka k 2026-06-05**; zmeny uvedené vyššie ju nahrádzajú. Živým, kanonickým zdrojom je katalóg podľa modelov `open-sse/config/freeModelCatalog.ts`.
 
 ---
+
+## Oprava bezplatných modelov SiliconFlow z 2026-10-18 (#17028)
+
+Desať vlajkových modelov SiliconFlow so zverejnenými kladnými cenami za token bolo nesprávne
+uvedených ako bezplatný prístup `recurring-uncapped`. Týchto desať riadkov bolo **odstránených** zo
+statického katalógu, ktorý teraz obsahuje **467 záznamov**. SiliconFlow už do statických súčtov
+neprispieva bezpodmienečne bezplatným modelom ani natrvalo bezplatným poskytovateľom.
+
+To **neznamená**, že SiliconFlow nemá žiadne bezplatné modely. Import iba bezplatných modelov a odznak Free
+teraz vyžadujú **pozitívny dôkaz pre konkrétny model z aktuálnych dát modelov poskytovateľa**, napríklad
+explicitný booleovský príznak bezplatnosti alebo nulové ceny za oba typy tokenov. Explicitný príznak plateného
+modelu alebo akákoľvek kladná číselná cena má prednosť pred optimistickým príznakom bezplatnosti. Model bez
+dostupných aktuálnych dôkazov sa **nepovažuje** za bezplatný; jednorazový kredit pre nový účet nemôže
+preukázať opakovanú bezplatnú kvótu. Ak aktuálne API poskytovateľa nedokáže poskytnúť spoľahlivé
+ceny na úrovni modelov, pred smerovaním ich overte v konzole poskytovateľa. Táto konzervatívna
+voľba zabraňuje neočakávaným poplatkom pri importoch iba bezplatných modelov a automatických kombináciách.
+
+Historická tabuľka poskytovateľov nižšie nie je aktuálnym prísľubom dostupnosti. Jej predchádzajúci
+záznam SiliconFlow s neobmedzeným prístupom/10 modelmi zámerne chýba, pretože už
+nepredstavuje preukázanú opakovanú bezplatnú kvótu.
+
+---
+
+## 2026-10-15 Oprava Bytez a Nous
+
+[Fakturácia Bytez](https://docs.bytez.com/model-api/docs/billing) obmedzuje otvorené
+modely v bezplatnom pláne na 7B parametrov. Položky 70B a 72B vyžadujú odomknutie
+prostredníctvom zakúpených kreditov a boli odstránené. Mistral-7B zostáva
+`recurring-credit`: kredity sa obnovujú každé štyri týždne, ale účtovanie
+prebieha za každú sekundu inferencie a nie je zverejnený žiadny tokenový limit.
+Jeho počítadlá tokenov sú nastavené na nulu, aby reprezentovali neznáme
+množstvo, čím nahrádzajú nepodložený odhad 1M tokenov; neznamená to nulový
+počet bezplatných kreditov. Zmeny týkajúce sa Nous sú podrobne opísané
+v poznámke poskytovateľa nižšie.
 
 ## Dva režimy — počítanie verzus rozhodovanie
 
-OmniRoute odpovedá na otázku „je to bezplatné?“ prostredníctvom dvoch režimov, ktoré zámerne čítajú
-z rôznych zdrojov:
+OmniRoute odpovedá na otázku „je to bezplatné?“ prostredníctvom dvoch režimov,
+ktoré zámerne čítajú z odlišných zdrojov:
 
-| Režim                    | Zdroj pravdy                                                                                                                                                                    | Miesta použitia                                                                                                                  |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| **Počítanie/zobrazenie** | Vyhodnotený katalóg — distribuovaný základ prekrytý kanálom Radar (`getRadarCatalog`)                                                                                           | Súčty bezplatných úrovní, karta rozpočtu, informačné panely                                                                      |
-| **Rozhodovanie**         | Iba distribuovaný katalóg (`FREE_MODEL_BUDGETS` v `open-sse/config/freeModelCatalog.data.ts`) spolu s lokálnymi heuristikami (prípona `:free`, nulová cena, `grantsFreeAccess`) | Každý používateľ `src/shared/utils/freeModels.ts`: import modelov, smerovanie `auto/*`, `GET /v1/models` a náhľady v prehliadači |
+| Režim                      | Zdroj pravdy                                                                                                                                                             | Použitie                                                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Počítanie/zobrazovanie** | Vyhodnotený katalóg — dodaný základ prekrytý dátami kanála Radar (`getRadarCatalog`)                                                                                     | Súhrny bezplatných úrovní, karta rozpočtu, informačné panely                                                                    |
+| **Rozhodovanie**           | Iba dodaný katalóg (`FREE_MODEL_BUDGETS` v `open-sse/config/freeModelCatalog.data.ts`) spolu s lokálnymi heuristikami (prípona `:free`, nulová cena, `grantsFreeAccess`) | Každý používateľ `src/shared/utils/freeModels.ts`: import modelu, smerovanie `auto/*`, `GET /v1/models` a náhľady v prehliadači |
 
-Počítanie sa môže zlepšiť vždy, keď je dostupný kanál. Rozhodovanie zostáva založené na
-artefakte vydania, takže odpoveď je v prehliadači aj na serveri identická,
-reprodukovateľná offline a testovateľná bez databázy. Ak by náhľad v prehliadači
-čítal z jedného zdroja, zatiaľ čo import na serveri z iného, náhľad by nezodpovedal
-tomu, čo sa stane po kliknutí — toto oddelenie je zámerné.
+Počítanie sa môže zlepšiť vždy, keď je dostupný dátový kanál. Rozhodovanie
+zostáva viazané na artefakt vydania, takže odpoveď je rovnaká v prehliadači
+aj na serveri, je reprodukovateľná offline a testovateľná bez databázy.
+Ak by náhľad v prehliadači čítal z jedného zdroja, zatiaľ čo import na serveri
+z iného, vznikol by náhľad, ktorý by nezodpovedal tomu, čo sa stane po kliknutí
+— toto rozdelenie je zachované zámerne.
 
 ## Metodika a upozornenia
 
-- Čísla sú **odhady hornej hranice** založené na zdokumentovaných limitoch bezplatnej úrovne jednotlivých poskytovateľov k dátumu **2026-06-17**, získané webovým prieskumom. Bezplatné úrovne sa neustále menia — pred použitím ktoréhokoľvek údaja ho znova overte.
-- **Za čo položka v skutočnosti ručí.** Žiadna položka nemá hodnotenie spoľahlivosti pre konkrétny riadok a API žiadne neposkytuje — každý vyššie uvedený údaj považujte za odhad rovnakej, nešpecifikovanej kvality. Dve skutočnosti sa líšia, pretože sú spravované ručne a nie odvodené: 44 položiek má nezávisle zdokumentované pevné zastavenie (39 z nich tvoria riadky xKiro, ktoré všetky zdieľajú jeden denný limit) a 13 položiek obsahuje informáciu o používaní promptov na trénovanie. `hardStopGuaranteed` sa nastavuje iba vtedy, keď vlastné podmienky poskytovateľa uvádzajú, že po prekročení bezplatného limitu bude požiadavka odmietnutá namiesto toho, aby vám poskytovateľ začal bez upozornenia účtovať poplatky, pričom zdroj je uvedený v komentári vedľa položky; nikdy sa predvolene nenastavuje na `true` a pri položke, ktorú nikto neoveril, zostáva nenastavený. Chýbajúci príznak pevného zastavenia teda znamená „nepotvrdené“, nie „je známe, že vám začne účtovať poplatky“. **Režim STRICT** (voliteľná ochrana smerovania `freeAccessPolicy=strict`) dôveruje iba položkám, ktoré tento príznak obsahujú; všetky ostatné bezplatné úrovne sú vylúčené ako `no-hard-stop` (pozrite si `open-sse/services/autoCombo/strictZeroCostFilter.ts`). Keď ochrana filtruje množinu, protokol viditeľný operátorovi uvádza počet vylúčených položiek aj podiel položiek `no-hard-stop`.
-- `estMonthlyFreeTokens` = iba pravidelne poskytované mesačné tokeny. **Jednorazové kredity za registráciu sa neopakujú** a počítajú sa ako 0. Zrušené úrovne sa takisto počítajú ako 0.
-- Denný limit tokenov → `monthly = daily × 30`. Ak je zdokumentované iba RPD → `RPD × ~800 výstupných tokenov × 30`. Ak sú uvedené iba RPM/TPM (bez denného limitu) → **bez stropu** (pozrite nižšie).
-- **Trvalo bezplatné, ale bez zverejneného limitu tokenov** (`siliconflow`, `glm-cn`, `tencent`, `baidu`, `kilo-gateway`, `opencode-zen`, `gemini`, `ollama-cloud`): ide o skutočný pravidelne poskytovaný bezplatný prístup obmedzený rýchlosťou/súbežnosťou. Klasifikujeme ich ako `recurring-uncapped` a **nikdy ich nesčítavame** — vynásobením `RPM × 24/7 × 30d` by vznikol nereálny strop (takéto nadhodnotenie odmietame). Sú uvedené, aby ste vedeli, že existujú.
-- **Navýšenie odomknuté vkladom:** jednorazové malé dobitie, ktoré natrvalo zvýši bezplatnú kvótu (OpenRouter: $10 → 1000 požiadaviek/deň ≈ +24M/mesiac). Uvádza sa ako samostatný údaj a nezahŕňa sa do hlavného údaja o stabilnej kvóte.
-- **Kvóty podmienené oprávnenosťou** (`eligibilityGate: "regional-identity"`): skutočná pravidelne poskytovaná kvóta, ktorá sa sprístupní až po overení identity viazanej na konkrétny región (v súčasnosti overenie skutočného mena v pevninskej Číne). Započítava sa podľa rovnakého pravidla deduplikácie množiny do samostatného údaja (`gatedRecurringTokens`), nikdy nie do hlavného údaja o stabilnej kvóte. Režim (`freeType`) sa nemení, takže smerovanie zostáva nezmenené.
-- **Triedy dôkazov.** Pravidlo: číslo v katalógu uvádza svoj zdroj v komentári `// evidence:` vedľa položky — `public-page` (stránka poskytovateľa, ktorú si môže prečítať ktokoľvek), `api-public` (neautentifikovaný koncový bod poskytovateľa, napr. verejný koncový bod plánov NaraRouter na router.bynara.id) alebo `console-verified <date> por <who>` (údaj je viditeľný iba v konzole účtu; komentár zaznamenáva, kto ho videl a kedy, ako aj verejnú stránku uvádzajúcu, že limit existuje). Aktuálny stav: obsahuje ho päť blokov opätovne auditovaných dňa 2026-09-02 (`gemini`, `groq`, `mistral`, `ollama-cloud`, `nara`); položky spred opätovného auditu z 2026-09-02 preberajú výsledky skoršieho prieskumu, kým nebudú upravené; každé **nové alebo zmenené** číslo bez komentára s dôkazom je chyba. V súčasnosti je iba `mistral` overený prostredníctvom konzoly.
+- Čísla sú** horné odhady** od každého poskytovateľa zdokumentovaných voľných limitov k dátumu** 2026-06-17** , zhromaždené webovým prieskumom. Voľné úrovne sa neustále menia, — znova overujte predtým, ako sa spoľahnete na postavu.
+- **Za čo vlastne vstup ručí.** Žiadna položka má hodnotenie spoľahlivosti na riadok a API neslúži žiadne — považuje každý údaj vyššie za odhad rovnakej, neuvedenej kvality. Dve skutočnosti sú rozdielne, pretože sú kurátorované ručne, a nie odvodzované: 44 záznamov má nezávisle zdokumentovanú pevnú zastávku (39 z nich riadky xKiro, ktoré majú všetky spoločné jeden denný príspevok) a 22 záznamov obsahuje informácie o rýchlom školení. `hardStopGuaranteed` sa nastaví iba vtedy, keď sa vo vlastných podmienkach poskytovateľa uvádza, že prekročenie bezplatnej kvóty odmietne požiadavku, namiesto toho, aby vám v tichosti začalo účtovať, so zdrojom v komentári vedľa položky; nikdy nie je predvolená hodnota `true` a položka, ktorú nikto neoveril, zostáva nenastavená. Chýbajúca vlajka na zastavenie znamená „nezavedený“, nie „známe, že vám to fakturuje“.** režim STRICT** (prihlásený strážca smerovania `freeAccessPolicy=strict` ) dôveruje iba záznamom, ktoré nesú príznak; každá ďalšia voľná úroveň je vylúčená ako `no-hard-stop` (pozri `open-sse/services/autoCombo/strictZeroCostFilter.ts`). Keď strážca filtruje oblasť, operátorom viditeľný protokol hlási počet vylúčení aj jeho podiel `no-hard-stop`.
+- len opakujúce sa mesačné tokeny `estMonthlyFreeTokens` =.** Jednorazové prihlasovacie kredity sa neopakujú** a počítať ako 0. Prerušené úrovne sú tiež 0.
+- Denný token cap → `monthly = daily × 30`. Iba RPD zdokumentované → `RPD × ~800 output tokens × 30`. Iba RPM/TPM (bez denného limitu) →** bez uzáveru** (pozri nižšie).
+- **Voľný prístup, ale bez zverejneného limitu tokenov** (`glm-cn`, `tencent`, `baidu`, `kilo-gateway`, `opencode-zen`, `gemini`, `nvidia`): toto sú rate/concurrency-limited. Klasifikujeme ich `recurring-uncapped` a** nikdy ich nesčítajte** — vynásobením `RPM × 24/7 × 30d` by vznikol fantastický strop (inflácia, ktorú odmietame). NVIDIAAPI je len na skúšobné použitie; pozri jeho upozornenie ToS nižšie.
+- **Zvýšenie odomknutia vkladu:** jednorazové malé navýšenie, ktoré natrvalo zvýši bezplatnú kvótu (OpenRouter: $ 10 → 1000 req/day ≈ +24M/mo). Uvádza sa ako samostatný údaj, ktorý sa nezobrazuje v stálych titulkoch.
+- **Oprávnené kvóty** (`eligibilityGate: "regional-identity"`): skutočná opakujúca sa kvóta, ktorá sa otvára až po kontrole identity viazanej na región (dnes overenie skutočného mena medzi pevninou a Čínou). Počíta sa pomocou rovnakého pravidla pool-dedupe do samostatnej číslice (`gatedRecurringTokens`), nikdy nie do stáleho nadpisu. Režim (`freeType`) je nezmenený, takže smerovanie je nezmenené.
+- **Triedy dôkazov.** Pravidlo: číslo v katalógu cituje svoj zdroj v komentári `// evidence:` vedľa položky — `public-page` (stránka poskytovateľa, ktorú si môže prečítať každý), `api-public` (neoverený koncový bod poskytovateľa, napr. koncový bod verejných plánov NaraRouter na adrese router.bynara.id) alebo `console-verified <date> por <who>` (číslo je viditeľné iba v konzole účtu; komentár a komentár zaznamenáva, kto a kedy ho videl verejná stránka). Dnešný stav: päť blokov prekontrolovaných 2026-09-02 to nesie (`gemini`, `groq`, `mistral`, `ollama-cloud`, `nara`); záznamy, ktoré sú staršie ako 2026-09-02 re-audit, dedia predchádzajúci výskum, kým sa ich nedotkne; akékoľvek** nové alebo zmenené** číslo bez komentára dôkazov je chyba. Dnes je overený konzolou iba `mistral`.
 
 ---
 
-## Prečo je naše číslo menšie než u iných agregátorov
+## Prečo je naše číslo nižšie než u iných agregátorov
 
-Väčšina údajov o „bezplatných tokenoch za mesiac“ v tejto oblasti predstavuje súčet limitov jednotlivých modelov. Náš údaj taký zámerne nie je:
+Väčšina údajov o „bezplatných tokenoch za mesiac“ v tejto oblasti je súčtom hodnôt uvádzaných pre jednotlivé modely. Náš údaj taký zámerne nie je:
 
-- **Každý zdieľaný fond sa započítava iba raz.** Bezplatný plán služby Mistral predstavuje jeden limit 1B/mesiac na organizáciu; jeho uvedenie pri piatich modeloch z neho neurobí 5B. Pri súčte podľa modelov by náš vlastný katalóg uvádzal **~7.4B** (prepočítané 2026-09-03; tento údaj nie je kontrolovaný systémom CI — premerajte ho vždy, keď sa katalóg zmení) — hlavný údaj uvádza **~1.47B**, pretože presne to môže jeden účet u každého poskytovateľa skutočne využiť.
-- **Denné limity sa prepočítavajú, rýchlostné limity nie.** Zdokumentovaný limit tokenov/deň sa prepočíta ako `× 30`; zdokumentovaný limit požiadaviek/deň ako `RPD × ~800 tokenov × 30`; poskytovateľ, ktorý zverejňuje iba počet požiadaviek za minútu, **nemá** mesačný údaj a uvádza sa ako _bez limitu_, pričom sa nikdy nezapočítava do súčtu. Násobenie rýchlostného limitu nepretržitou prevádzkou 24/7 je skresľovanie, ktoré odmietame.
-- **Kvóty podmienené regionálnym overením totožnosti sa uvádzajú samostatne** (`+~6M po regionálnom overení totožnosti`), pretože väčšina čitateľov ich nemôže využiť.
-- **Registračné kredity platia iba počas prvého mesiaca** a uvádzajú sa ako druhý údaj; nikdy sa nezlučujú so stabilným údajom.
-- **Správnosť údaja vynucuje CI.** `npm run check:docs-counts` prepočíta súčty z katalógu a zostavenie zlyhá, keď sa tento súbor, README alebo karta rozpočtu od nich odchýlia.
-
----
-
-## Tabuľka upozornení na ToS
-
-> **Príznak ToS je iba informatívny, nie je podmienkou smerovania.** Poskytovatelia označení ako `tos` sú predvolene naďalej zahrnutí do smerovania aj kombinácií/záložných možností; príznak sa zobrazuje iba na `/dashboard/free-tiers` a `/api/free-tier/summary`. Parameter dopytu `excludeTosAvoid` ovplyvňuje iba súhrnné zobrazenie, nie globálne smerovanie. Posúdenie sa nachádza v `open-sse/config/freeTierCatalog.ts` (je informatívne a smerovacie mechanizmy ho nečítajú).
-
-> Stručné zhrnutie podmienok jednotlivých poskytovateľov pre osobný proxy server hostovaný samotným používateľom a určený pre jediného používateľa. `caution` = ustanovenie o osobnom použití alebo proxy serveroch, ktoré sa oplatí skontrolovať; `ambiguous` = nejasné; `ok` = výslovne povolené. Iba informatívne, nejde o právne poradenstvo — rozhodnutie je na vás.
-
-### ⚠️ Upozornenie — ustanovenia o osobnom použití/proxy serveroch, ktoré sa oplatí skontrolovať (16)
-
-> Ich bezplatný prístup je skutočný a OmniRoute k nim dokáže smerovať požiadavky; o nižšie uvedených ustanoveniach sa iba oplatí vedieť. Možnosti založené na OAuth alebo bez kľúčov nie je možné vyjadriť počtom tokenov, preto nie sú zahrnuté v hlavnom údaji (nie preto, že by boli nepoužiteľné).
-
-| Poskytovateľ     | Poznámka                                                                                                                                                                                               |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `agy`            | ToS služby Google Antigravity výslovne zakazujú používanie softvéru, nástrojov alebo služieb tretích strán (vrátane proxy serverov) na prístup k službe cez OAuth; takéto…                             |
-| `ai21`           | §4.2/§8.2 ToS zakazujú poskytovať sublicencie alebo distribuovať prístup k API tretím stranám; §3.3 obmedzuje skúšobné/hodnotiace produkty na „interné hodnotenie v…                                   |
-| `amazon-q`       | Produkt už nie je dostupný pre nové registrácie; na existujúcich používateľov sa vzťahuje AWS Customer Agreement, ktorá upravuje používanie spravovaných služieb — používateľom hostovaný osobný pro…  |
-| `blackbox`       | ToS výslovne zakazujú poskytovanie sublicencií, ďalší predaj, sprístupňovanie služby tretím stranám a vytváranie odvodených služieb — používateľom hostovaný osobný pro…                               |
-| `coze`           | ToS služby Coze výslovne obmedzujú používanie na „osobné a nekomerčné účely“ a zakazujú prenájom, distribúciu, poskytovanie sublicencií alebo ďalší predaj služby; a…                                  |
-| `duckduckgo-web` | ToS služby Duck.ai (duckduckgo.com/duckai/privacy-terms) výslovne zakazujú „automatizované dopytovanie a vývoj alebo ponúkanie služieb AI“ a obchádzanie…                                              |
-| `featherless-ai` | Individuálne plány sú výslovne obmedzené na „interaktívne používanie alebo tvorbu prototypov a experimentovanie kupujúcim“ — ďalší predaj inferencie a používanie proxy servera vyž…                   |
-| `fireworks`      | ToS výslovne zakazujú používanie proxy serverov/sprostredkovateľov, prenos kľúčov API a poskytovanie sublicencií (časti 2.1 a 2.2(i)(j)); osobné proxy servery hostované samotným používateľom nie sú… |
-| `friendliai`     | Časti 8(e) a 8(f) ToS výslovne zakazujú používať FriendliAI ako proxy server alebo samostatne umožňovať prístup tretím stranám a zakazujú ďalší predaj/…                                               |
-| `iflytek`        | Časť 2.4(3) zmluvy iFlytek Spark LLM Service Agreement výslovne zakazuje „používanie akýchkoľvek automatizovaných alebo programových metód na extrakciu údajov alebo výstupov…                         |
-| `kiro`           | FAQ služby Kiro výslovne zakazujú používanie s „OpenClaw a podobnými nástrojmi, ktoré využívajú infraštruktúru tretích strán“ — používateľom hostovaný AI proxy server (ako OmniRoute), ktorý smer…    |
-| `modal`          | Časť 1.3 ToS výslovne zakazuje „prenajímať, ďalej predávať alebo inak umožniť akejkoľvek tretej strane priamy prístup k službe alebo jej používanie“ — vytvorenie používateľom hostovaného…            |
-| `muse-spark-web` | ToS spoločnosti Meta výslovne zakazujú automatizovaný prístup bez predchádzajúceho povolenia, spätné inžinierstvo bez písomného povolenia a obchádzanie technologických…                               |
-| `nlpcloud`       | ToS výslovne zakazujú „nastaviť proxy server alebo iné zariadenie, ktoré cezň umožní ostatným prístup k službe“, a udeľujú iba neprenosné,…                                                            |
-| `opencode`       | ToS (Anomaly Innovations, Inc.) výslovne obmedzujú používanie na „vaše vlastné interné použitie, a nie v mene ani v prospech akejkoľvek tretej strany“ — ope…                                          |
-| `t3-web`         | ToS výslovne obmedzujú účty iba na osobné použitie, zakazujú zdieľanie prihlasovacích údajov s tretími stranami a automatizovaný/botový/scrapingový prístup — a s…                                     |
-
-### ✅ Vo všeobecnosti povoľujúce — upozornenie / nejasné / povolené (ostatní)
-
-| Poskytovateľ     | Podmienky používania | Poznámka                                                                                                                                                                                                                  |
-| ---------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `aimlapi`        | nejednoznačné        | Podmienky používania udeľujú nevýhradnú licenciu na používanie, ale výslovne nepovoľujú ani nezakazujú vlastný hostovaný proxy server či ďalší predaj; žiadne „osob…                                                      |
-| `baichuan`       | nejednoznačné        | Vo verejne dostupnej dokumentácii sa nenašiel žiadny výslovný zákaz vlastných hostovaných osobných proxy serverov; bezplatný program M3 Plus však…                                                                        |
-| `bluesminds`     | nejednoznačné        | Nenašli sa žiadne výslovné ustanovenia podmienok používania týkajúce sa vlastného hostovaného proxy servera alebo ďalšieho predaja; stránka s cenami sa zameriava na limity funkcií/frekvencie…                           |
-| `bytez`          | nejednoznačné        | Stránka s podmienkami používania nebola dostupná (404); v dokumentácii sa nenašli žiadne verejné ustanovenia o použití výhradne na hodnotenie ani o zákaze proxy serverov, ale platforma…                                 |
-| `doubao`         | nejednoznačné        | Vo verejne indexovanej dokumentácii sa nenašiel žiadny výslovný zákaz proxy serverov alebo ďalšieho predaja; Volcengine je cloudová platforma orientovaná na vývojárov…                                                   |
-| `gitlawb-gmi`    | nejednoznačné        | Nenašlo sa žiadne výslovné ustanovenie podmienok používania zakazujúce používanie vlastného hostovaného osobného proxy servera; bezplatný model Nemotron obsahuje upozornenie spoločnosti NVIDIA…                         |
-| `monsterapi`     | nejednoznačné        | Stránka s podmienkami používania MonsterAPI (monsterapi.ai/terms-of-service) bola počas prieskumu nedostupná; nenašli sa žiadne konkrétne ustanovenia týkajúce sa proxy serverov, ďalšieho predaja alebo osob…            |
-| `nous-research`  | nejednoznačné        | Nous Portal je sám osebe agregačná/proxy služba; jeho používaním ako backendu pre iný vlastný hostovaný proxy server vzniká reťazec proxy…                                                                                |
-| `ollama-cloud`   | nejednoznačné        | Podmienky používania zakazujú využívať službu „na vývoj konkurenčných produktov“, ale neobsahujú žiadny výslovný zákaz vlastných hostovaných osobných proxy serverov…                                                     |
-| `stepfun`        | nejednoznačné        | Nenašiel sa žiadny výslovný zákaz vlastného hostovaného osobného proxy servera, ale podmienky používania programu Step Plan sú určené vývojárom používajúcim konkrétne ko…                                                |
-| `api-airforce`   | upozornenie          | Podmienky používania výslovne zakazujú „vytváranie konkurenčných služieb bez povolenia“ a „zdieľanie prihlasovacích údajov“ — vlastný hostovaný osob…                                                                     |
-| `arcee-ai`       | upozornenie          | Bezplatný prístup sa poskytuje prostredníctvom smerovacej vrstvy :free služby OpenRouter (nie podľa priamych podmienok API spoločnosti Arcee); podmienky používania OpenRouter povoľujú osobný výv…                       |
-| `baidu`          | upozornenie          | Podmienky používania neboli výslovne preskúmané z hľadiska ustanovení o proxy serveroch alebo ďalšom predaji, platforma však vyžaduje overenie skutočnej totožnosti (zvyčajne čínsky doklad totožnosti…                   |
-| `baseten`        | upozornenie          | Podmienky používania obmedzujú využitie na „interné obchodné účely zákazníka“ a výslovne zakazujú udeľovanie sublicencií, ďalší predaj alebo umožnenie…                                                                   |
-| `bazaarlink`     | upozornenie          | Podmienky používania výslovne zakazujú ďalší predaj alebo poskytovanie sublicencií na kľúče API tretím stranám; vlastný hostovaný osobný proxy server na osobné…                                                          |
-| `brave-search`   | upozornenie          | Podmienky používania zakazujú ďalšie šírenie, ďalší predaj a udeľovanie sublicencií na výsledky vyhľadávania; používanie API na „replikovanie alebo pokus o repl…                                                         |
-| `byteplus`       | upozornenie          | Tokeny sú neprenosné a určené iba pre jeden účet; neexistuje výslovný zákaz proxy serverov, ale BytePlus si vyhradzuje právo…                                                                                             |
-| `cerebras`       | upozornenie          | Podmienky používania udeľujú nevýhradné, neprenosné a nesublicencovateľné právo na osobné alebo obchodné použitie; zakazujú ďalší predaj, s…                                                                              |
-| `cloudflare-ai`  | upozornenie          | §2.2.1(j) podmienok samoobslužných služieb Cloudflare zakazuje používať služby na „poskytovanie virtuálnej súkromnej siete alebo iného podobného pro…                                                                     |
-| `cohere`         | upozornenie          | Cohere výslovne zakazuje používať skúšobné kľúče na „produkčné alebo komerčné účely“; vlastný hostovaný osobný proxy server smerujúci po…                                                                                 |
-| `deepinfra`      | upozornenie          | Podmienky používania vo všeobecnosti povoľujú zákonné komerčné využitie, ale zakazujú použitie „priamo alebo nepriamo konkurujúce akémukoľvek podnikaniu spoločnosti…                                                     |
-| `deepseek`       | upozornenie          | Podmienky používania otvorenej platformy (účinné od 2026-04-29) povoľujú široké využitie vrátane „vývoja odvodených produktov“ a osobného/kom…                                                                            |
-| `dify`           | upozornenie          | Vlastný hostovaný osobný proxy server pre jedného používateľa je povolený podľa upravenej licencie Apache 2.0; nasadenie pre viacerých nájomcov však…                                                                     |
-| `exa-search`     | upozornenie          | Nenašli sa žiadne výslovné ustanovenia o „zákaze proxy serverov“ ani o „použití iba na hodnotenie“; Exa aktívne ponúka partnerský program pre predajcov umožňujúci API…                                                   |
-| `firecrawl`      | upozornenie          | V podmienkach používania cloudového API sa nenašiel žiadny výslovný zákaz osobných proxy serverov, ale verzia s otvoreným zdrojovým kódom určená na vlastné hosťovanie používa AGPL-3.0 (vyž…                             |
-| `gemini`         | upozornenie          | Podmienky používania výslovne uvádzajú, že bezplatná úroveň je určená „vývojárom vytvárajúcim riešenia s modelmi Google AI na profesionálne alebo obchodné úč…                                                            |
-| `groq`           | upozornenie          | §6.3 zmluvy o poskytovaní služieb zakazuje ďalší predaj, udeľovanie sublicencií alebo distribúciu prístupu k API; §3.2 zakazuje ďalší predaj/prenájom úč…                                                                 |
-| `huggingchat`    | upozornenie          | Podmienky používania Hugging Face výslovne nezakazujú osobné vlastné hostované proxy servery, ale doplňujúce podmienky (na ktoré sa odkazuje, no neboli úplne…                                                            |
-| `huggingface`    | upozornenie          | Podmienky používania udeľujú obmedzenú licenciu na prístup k službe a jej používanie; dokument výslovne nepovoľuje ani nezakazuje proxy server pre jedného používateľa…                                                   |
-| `hyperbolic`     | upozornenie          | Podmienky používania udeľujú prístup k API „výhradne na vaše vlastné osobné alebo interné obchodné účely“ a výslovne zakazujú udeľovanie licencií,…                                                                       |
-| `inference-net`  | upozornenie          | Podmienky používania výslovne zakazujú „udeľovať sublicencie, ďalej predávať, distribuovať“ a prenášať kľúče API bez písomného súhlasu; proxy server pre jedného používateľa…                                             |
-| `jina-ai`        | upozornenie          | Bezplatných 10 miliónov tokenov je výslovne určených na nekomerčné použitie (licencia modelu CC-BY-NC 4.0); osobný proxy server pre jedného používateľa na osobné L…                                                      |
-| `jina-reader`    | upozornenie          | Podmienky používania zakazujú využívať výstupy na vytváranie konkurenčných služieb a zakazujú „automatizované metódy získavania informácií prostredníctvom scrapingu…                                                     |
-| `llm7`           | upozornenie          | Podmienky používania prezentujú službu ako určenú na „experimentovanie, vývoj a výskum“; neexistuje žiadny výslovný zákaz vlastných hostovaných osobných…                                                                 |
-| `longcat`        | upozornenie          | Zmluva o poskytovaní služieb platformy API (longcat.chat/platform/private/) povoľuje komerčnú integráciu a vlastné hostované aplikácie…                                                                                   |
-| `mistral`        | upozornenie          | Spotrebiteľské podmienky používania výslovne uvádzajú, že API možno používať iba na „osobné potreby“, a zakazujú sprístupňovať kľúče API tr…                                                                              |
-| `morph`          | opatrnosť            | Zmluvné podmienky vo všeobecnosti povoľujú komerčné použitie; nasadenia proxy s vlastným hostingom si vyžadujú výslovnú dohodu s obchodným oddelením. Časť 18.…                                                           |
-| `nebius`         | opatrnosť            | Zmluvné podmienky (časť 5f) výslovne zakazujú ďalší predaj, redistribúciu alebo ponúkanie služby „na samostatnom základe“ — proxy s vlastným…                                                                             |
-| `nomic`          | opatrnosť            | Zmluvné podmienky udeľujú nevýhradnú, neprenosnú licenciu na API; časť 6.b zakazuje vytvorenie konkurenčnej služby. Používanie t…                                                                                         |
-| `novita`         | opatrnosť            | Zmluvné podmienky zakazujú ďalší predaj a konkurenčné služby, ale výslovne neriešia osobné proxy s vlastným hostingom; osobné použitie …                                                                                  |
-| `nscale`         | opatrnosť            | Zásady prijateľného používania zakazujú „kopírovať, upravovať, duplikovať... vkladať do rámcov, zrkadliť, opätovne publikovať... distribuovať celú platformu Nscale alebo akúkoľvek jej časť…                             |
-| `nvidia`         | opatrnosť            | Bezplatná úroveň je výslovne určená iba na tvorbu prototypov/vývoj/výskum/hodnotenie — produkčné použitie (poskytovanie služby skutočným koncovým používateľom) vyžaduje…                                                 |
-| `openrouter`     | opatrnosť            | Zmluvné podmienky výslovne zakazujú ďalší predaj prístupu k API alebo vývoj konkurenčnej služby; osobné proxy s vlastným hostingom pre jedného používateľa…                                                               |
-| `pollinations`   | opatrnosť            | Licencia MIT uvedená v dokumentácii API naznačuje voľné opätovné použitie; nebol nájdený žiadny výslovný zákaz poskytovania proxy s vlastným hostingom. Avšak p…                                                          |
-| `predibase`      | opatrnosť            | Predibase je prezentovaný ako podniková platforma na dolaďovanie/poskytovanie modelov; bezplatná skúšobná verzia je výslovne určená na preskúmanie a…                                                                     |
-| `publicai`       | opatrnosť            | Zmluvné podmienky (publicai.co/tc) označujú služby ako „primárne určené na výskumné a vzdelávacie použitie“; žiadny výslovný zákaz proxy ani ďalšieho predaja p…                                                          |
-| `qoder`          | opatrnosť            | Stránka so zmluvnými podmienkami nevrátila žiadny čitateľný obsah; Qoder je klient IDE na programovanie (nie verejné API) a proxy obaly tretích strán …                                                                   |
-| `reka`           | opatrnosť            | Obchodné podmienky zakazujú poskytovanie sublicencií alebo distribúciu prístupu tretím stranám; osobné proxy pre jedného používateľa je pravdepodobne v po…                                                               |
-| `sambanova`      | opatrnosť            | Časť 1.5(c) zmluvných podmienok výslovne zakazuje ďalší predaj, poskytovanie sublicencií alebo sprístupnenie služby tretím stranám; proxy s vla…                                                                          |
-| `sensenova`      | opatrnosť            | V preskúmaných zmluvných podmienkach nebol nájdený žiadny výslovný zákaz proxy ani ďalšieho predaja, ale bezplatná úroveň je propagačná beta verzia bez SLA, Sen…                                                         |
-| `serper-search`  | opatrnosť            | Zmluvné podmienky výslovne zakazujú „zrkadlenie materiálov v nezmenenej podobe na akomkoľvek inom serveri bez pridanej hodnoty“ — jednoduché priechodné pr…                                                               |
-| `siliconflow`    | opatrnosť            | Zmluvné podmienky (ustanovenie 3.4(e)(f)(p)) výslovne zakazujú sprístupnenie služby akejkoľvek tretej strane, ďalší predaj/poskytovanie sublicencií,…                                                                     |
-| `sparkdesk`      | opatrnosť            | Používateľská zmluva SparkDesk udeľuje práva iba na osobné, nekomerčné použitie; zásady rozhrania API zakazujú automatizované získavanie údajov…                                                                          |
-| `tavily-search`  | opatrnosť            | Zmluvné podmienky výslovne uvádzajú, že API „nemožno previesť, postúpiť, zdieľať ani inak sprístupniť akejkoľvek tretej strane…                                                                                           |
-| `tencent`        | opatrnosť            | Zmluvné podmienky Tencent Cloud výslovne zakazujú poskytovanie sublicencií alebo ďalší predaj prístupu k API; osobné proxy s vlastným hostingom na osobné …                                                               |
-| `together`       | opatrnosť            | Časť 4.3(d) zmluvných podmienok výslovne zakazuje prevádzanie, distribúciu, ďalší predaj, prenájom alebo ponúkanie služieb na s…                                                                                          |
-| `uncloseai`      | opatrnosť            | Používanie osobného proxy je možné, ale nie je výslovne povolené; zmluvné podmienky zakazujú vytváranie „konkurenčných služieb strojového učenia s…                                                                       |
-| `veoaifree-web`  | opatrnosť            | Zmluvné podmienky výslovne zakazujú automatizované roboty alebo skripty pracujúce „neľudskou rýchlosťou“ a zakazujú kopírovanie platformy s cieľom vytvoriť …                                                             |
-| `vertex`         | opatrnosť            | Podmienky služby Google Cloud obmedzujú ďalší predaj iba na autorizovaných predajcov (časť 14 vyžaduje zmluvu s predajcom); s…                                                                                            |
-| `voyage-ai`      | opatrnosť            | Zmluvné podmienky povoľujú „osobné, nekomerčné použitie“ obsahu stránky a zakazujú zdieľanie prihlasovacích údajov/účtu s tretími stranami;…                                                                              |
-| `xkiro`          | opatrnosť            | Zmluvné podmienky (2026-07-30) zakazujú ďalší predaj/redistribúciu služby a porušovanie podmienok nadradených poskytovateľov; osobné pro…                                                                                 |
-| `360ai`          | neznáme              | Zmluvné podmienky vývojárskeho API nie sú verejne dostupné bez registrácie; prístup vyžaduje schválenie žiadosti, čo naznačuje …                                                                                          |
-| `chutes`         | neznáme              | Stránka so zmluvnými podmienkami existuje na chutes.ai/terms, ale jej obsah nebol dostupný prostredníctvom načítania; v … neboli nájdené žiadne výslovné ustanovenia o proxy/ďalšom predaji                               |
-| `freemodel-dev`  | neznáme              | Stránka so zmluvnými podmienkami (freemodel.dev/terms) vrátila prostredníctvom WebFetch iba hlavičku bez čitateľného obsahu; žiadne ustanovenie…                                                                          |
-| `gitlawb`        | neznáme              | Neboli nájdené žiadne zmluvné podmienky ani zásady prijateľného používania; obmedzenia proxy/ďalšieho predaja nie sú známe — pri používaní proxy s vlastným hostingom postupujte opatrne.                                 |
-| `liquid`         | neznáme              | Neexistuje žiadne hostované API, cez ktoré by bolo možné poskytovať proxy; komerčné používanie modelu s otvoreným zdrojovým kódom je bezplatné pre organizácie s ročnými príjmami do 10 miliónov USD. Žiadne vlastné hos… |
-| `yi`             | neznáme              | Zmluvné podmienky nie sú verejne dostupné bez prihlásenia; nebolo možné preskúmať žiadne ustanovenia o proxy/ďalšom predaji. Používanie osobného proxy s vlastným hostingom naď…                                          |
-| `comfyui`        | v poriadku           | Licencia GPL-3.0 s otvoreným zdrojovým kódom výslovne povoľuje používanie osobného proxy s vlastným hostingom; zmluvné podmienky Comfy Org potvrdzujú komerčné použitie…                                                  |
-| `scaleway`       | v poriadku           | Všeobecné podmienky poskytovania služieb Scaleway sú štandardnou komerčnou zmluvou o cloudových službách bez výslovného zákazu vlastného hos…                                                                             |
-| `sdwebui`        | v poriadku           | Licencia AGPL-3.0: bezplatné vlastné hosťovanie na osobné použitie bez obmedzení objemu používania; osobné proxy používajúce toto …                                                                                       |
-| `searxng-search` | v poriadku           | Licencia AGPL-3.0 s otvoreným zdrojovým kódom výslovne povoľuje používanie osobného proxy s vlastným hostingom bez obmedzenia typu použitia, ďalšieho preda…                                                              |
+- **Každý zdieľaný balík sa počíta iba raz.** Bezplatný program Mistral poskytuje jeden limit 1B/mesiac na organizáciu; uvedenie pod piatimi modelmi z neho neurobí 5B. Pri súčte podľa jednotlivých modelov by náš vlastný katalóg uvádzal **~7.4B** (prepočítané 2026-09-03; tento údaj nie je kontrolovaný CI — premerajte ho pri každej zmene katalógu) — hlavný údaj uvádza **~1.47B**, pretože práve to môže jeden účet u každého poskytovateľa reálne využiť.
+- **Denné limity sa prepočítavajú, rýchlostné limity nie.** Zdokumentovaný limit tokenov za deň sa prepočíta ako `× 30`; zdokumentovaný limit požiadaviek za deň ako `RPD × ~800 tokens × 30`; poskytovateľ, ktorý zverejňuje iba počet požiadaviek za minútu, **nemá** mesačný údaj a je uvedený ako _bez limitu_, nikdy sa nezapočítava do súčtu. Násobenie rýchlostného limitu nepretržitou prevádzkou 24/7 je nafukovanie údajov, ktoré odmietame.
+- **Kvóty podmienené regionálnym overením identity sa uvádzajú samostatne** (`+~6M behind regional identity verification`), pretože väčšina čitateľov ich nemôže využívať.
+- **Kredity za registráciu platia iba prvý mesiac** a vykazujú sa ako druhý údaj; nikdy sa nezlučujú s dlhodobým údajom.
+- **Dodržiavanie tohto údaja vynucuje CI.** `npm run check:docs-counts` prepočítava súčty z katalógu a spôsobí zlyhanie zostavenia, keď sa tento súbor, README alebo karta rozpočtu od nich odchýlia.
 
 ---
 
-## Bezplatná úroveň podľa poskytovateľa (aktualizované 2026-09-02 pre opätovne auditované riadky; inak 2026-06-17)
+## tabuľka pozornosti ToS
 
-> Znovu vygenerované z katalógu jednotlivých modelov (`open-sse/config/freeModelCatalog.ts`) a deduplikované podľa poolov. Zoradené podľa pravidelného stabilného počtu tokenov/mes. `uncapped*` = trvalo bezplatné, ale bez zverejneného limitu tokenov (obmedzené rýchlosťou/súbežnosťou) — skutočný prístup, **nezapočítaný** do hlavného súčtu. `—` = iba kredity / bez potreby kľúča / nemožno kvantifikovať pomocou tokenov.
+> **Vlajka ToS je poradná, nie smerovacia brána.** Poskytovatelia označení `tos` sú v predvolenom nastavení stále zahrnutí do smerovania a combo/fallback ; vlajka sa vynára len na `/dashboard/free-tiers` a `/api/free-tier/summary`. Parameter dotazu `excludeTosAvoid` ovplyvňuje iba súhrnné zobrazenie, nie globálne smerovanie. Verdikt žije v `open-sse/config/freeTierCatalog.ts` (informatívny, nečítajú ho smerovacie nástroje).
 
-| Poskytovateľ     | Typ bezplatnej ponuky | Stabilný počet tokenov/mes. | Kredit na prvý mesiac | Podmienky používania | Modely |
-| ---------------- | --------------------- | --------------------------- | --------------------- | -------------------- | ------ |
-| `mistral`        | opakovaná             | ~1.00B                      | —                     | opatrnosť            | 5      |
-| `nara`           | opakovaná             | ~210M                       | —                     | opatrnosť            | 8      |
-| `llm7`           | opakovaná             | ~150M                       | —                     | opatrnosť            | 4      |
-| `xkiro`          | opakovaná             | ~150M                       | —                     | opatrnosť            | 39     |
-| `longcat`        | jednorazová           | —                           | 10M                   | opatrnosť            | 1      |
-| `cerebras`       | jednorazová           | —                           | kredit $5             | opatrnosť            | 2      |
-| `cloudflare-ai`  | opakovaná             | ~30M                        | —                     | opatrnosť            | 9      |
-| `groq`           | opakovaná             | ~30M                        | —                     | opatrnosť            | 5      |
-| `api-airforce`   | opakovaná             | ~24M                        | —                     | opatrnosť            | 7      |
-| `bluesminds`     | opakovaná             | ~7M                         | —                     | nejednoznačné        | 22     |
-| `sambanova`      | opakovaná             | ~6M                         | —                     | opatrnosť            | 5      |
-| `arcee-ai`       | opakovaná             | ~5M                         | —                     | opatrnosť            | 1      |
-| `bazaarlink`     | opakovaná             | ~4M                         | —                     | opatrnosť            | 32     |
-| `openrouter`     | opakovaná             | ~1M                         | —                     | opatrnosť            | 1      |
-| `cohere`         | opakovaná             | ~800K                       | —                     | opatrnosť            | 6      |
-| `huggingchat`    | opakovaná             | ~500K                       | —                     | opatrnosť            | 4      |
-| `morph`          | opakovaná             | ~400K                       | —                     | v poriadku           | 2      |
-| `huggingface`    | opakovaná             | ~200K                       | —                     | opatrnosť            | 6      |
-| `kiro`           | opakovaná             | ~25K                        | —                     | vyhnúť sa            | 12     |
-| `glm-cn`         | bez obmedzenia        | bez obmedzenia\*            | ~20M                  | v poriadku           | 4      |
-| `baidu`          | bez obmedzenia        | bez obmedzenia\*            | —                     | opatrnosť            | 1      |
-| `gemini`         | bez obmedzenia        | bez obmedzenia\*            | —                     | opatrnosť            | 4      |
-| `kilo-gateway`   | bez obmedzenia        | bez obmedzenia\*            | —                     | opatrnosť            | 7      |
-| `ollama-cloud`   | bez obmedzenia        | bez obmedzenia\*            | —                     | nejednoznačné        | 8      |
-| `opencode-zen`   | bez obmedzenia        | bez obmedzenia\*            | —                     | opatrnosť            | 6      |
-| `siliconflow`    | bez obmedzenia        | bez obmedzenia\*            | —                     | opatrnosť            | 10     |
-| `tencent`        | bez obmedzenia        | bez obmedzenia\*            | —                     | opatrnosť            | 1      |
-| `vertex`         | kredit za registráciu | —                           | ~300M                 | opatrnosť            | 10     |
-| `agentrouter`    | kredit za registráciu | —                           | ~200M                 | opatrnosť            | 4      |
-| `predibase`      | kredit za registráciu | —                           | ~25M                  | opatrnosť            | 1      |
-| `doubao`         | kredit za registráciu | —                           | ~15M                  | nejednoznačné        | 1      |
-| `ai21`           | kredit za registráciu | —                           | ~10M                  | vyhnúť sa            | 2      |
-| `deepseek`       | kredit za registráciu | —                           | ~5M                   | v poriadku           | 2      |
-| `hyperbolic`     | kredit za registráciu | —                           | ~5M                   | v poriadku           | 8      |
-| `nscale`         | kredit za registráciu | —                           | ~5M                   | opatrnosť            | 6      |
-| `bytez`          | kredit za registráciu | —                           | ~1M                   | nejednoznačné        | 3      |
-| `deepinfra`      | kredit za registráciu | —                           | ~1M                   | opatrnosť            | 22     |
-| `fireworks`      | kredit za registráciu | —                           | ~1M                   | vyhnúť sa            | 10     |
-| `nebius`         | kredit za registráciu | —                           | ~1M                   | opatrnosť            | 1      |
-| `qoder`          | kredit za registráciu | —                           | ~1M                   | opatrnosť            | 14     |
-| `scaleway`       | kredit za registráciu | —                           | ~1M                   | v poriadku           | 6      |
-| `novita`         | kredit za registráciu | —                           | ~500K                 | opatrnosť            | 1      |
-| `agy`            | bez kľúča             | —                           | —                     | vyhnúť sa            | 16     |
-| `baichuan`       | bez kľúča             | —                           | —                     | nejednoznačné        | 1      |
-| `blackbox`       | bez kľúča             | —                           | —                     | vyhnúť sa            | 6      |
-| `coze`           | bez kľúča             | —                           | —                     | vyhnúť sa            | 1      |
-| `duckduckgo-web` | bez kľúča             | —                           | —                     | vyhnúť sa            | 6      |
-| `freemodel-dev`  | bez kľúča             | —                           | —                     | neznáme              | 4      |
-| `friendliai`     | bez kľúča             | —                           | —                     | vyhnúť sa            | 2      |
-| `iflytek`        | bez kľúča             | —                           | —                     | vyhnúť sa            | 1      |
-| `inference-net`  | bez kľúča             | —                           | —                     | opatrnosť            | 3      |
-| `liquid`         | bez kľúča             | —                           | —                     | neznáme              | 1      |
-| `monsterapi`     | bez kľúča             | —                           | —                     | nejednoznačné        | 1      |
-| `muse-spark-web` | bez kľúča             | —                           | —                     | vyhnúť sa            | 3      |
-| `nlpcloud`       | bez kľúča             | —                           | —                     | vyhnúť sa            | 1      |
-| `nous-research`  | bez kľúča             | —                           | —                     | nejednoznačné        | 2      |
-| `nvidia`         | bez kľúča             | —                           | —                     | opatrnosť            | 13     |
-| `opencode`       | bez kľúča             | —                           | —                     | vyhnúť sa            | 7      |
-| `pollinations`   | bez kľúča             | —                           | —                     | opatrnosť            | 31     |
-| `publicai`       | bez kľúča             | —                           | —                     | opatrnosť            | 3      |
-| `reka`           | bez kľúča             | —                           | —                     | opatrnosť            | 2      |
-| `sensenova`      | bez kľúča             | —                           | —                     | opatrnosť            | 1      |
-| `sparkdesk`      | bez kľúča             | —                           | —                     | opatrnosť            | 1      |
-| `stepfun`        | bez kľúča             | —                           | —                     | v poriadku           | 1      |
-| `t3-web`         | bez kľúča             | —                           | —                     | vyhnúť sa            | 23     |
-| `uncloseai`      | bez kľúča             | —                           | —                     | opatrnosť            | 3      |
+> Rýchle čítanie podmienok každého poskytovateľa pre osobný server proxy pre jedného používateľa s vlastným hosťovaním. `caution` = klauzula na osobné použitie alebo proxy klauzula, ktorú stojí za to skontrolovať; `ambiguous` = nejasné; `ok` = výslovne povolené. Informačné, nie právne poradenstvo — sa rozhodnete.
 
----
+### ⚠️ Upozornenie — osobné použitie / klauzuly proxy, ktoré sa oplatí skontrolovať (16)
 
-## OpenCode Free: obmedzenie klientskej zmluvy (#14313)
+> Ich voľný prístup je skutočný a OmniRoute k nim môže smerovať; nižšie uvedené klauzuly sa oplatí poznať. Tie OAuth/keyless nie sú tokenovo kvantifikovateľné, takže nie sú v čísle nadpisu (nie preto, že by boli nepoužiteľné).
 
-Poskytovateľ `opencode` bez kľúča (verejný `https://opencode.ai/zen/v1`) odmietne každú požiadavku,
-ktorá nezodpovedá klientskej zmluve OpenCode, s chybou **403 `FreeTierError`** a vetou
-_"Bezplatnú úroveň OpenCode možno používať iba v rámci OpenCode"_. Ide o odmietnutie
-viazané na požiadavku (rovnaký výsledok na každom účte pri rovnakom tvare požiadavky), nie o
-zákaz modelu ani čakaciu dobu pripojenia — OmniRoute ho klasifikuje ako `project_route_error`, preskočí
-uzamknutie modelu / čakaciu dobu a (na syntetickej ceste `noauth`) na krátky čas TTL pozastaví
-opätovný automatický výber kombinácie. Odosielajte požiadavky, ktoré obsahujú neprázdny zoznam nástrojov, `stream: true` a
-hlavičky relácie/UA OpenCode (`opencodeFreeTierContract.ts`), inak očakávajte chybu 403.
+| Poskytovateľ     | Poznámka                                                                                                                                                                                |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agy`            | Google Antigravity ToS výslovne zakazuje používanie softvéru, nástrojov alebo služieb tretích strán (vrátane serverov proxy) na prístup k službe prostredníctvom OAuth; robím…          |
+| `ai21`           | ToS §4.2/§8.2 zakazuje poskytovanie sublicencie alebo distribúciu prístupu API tretím stranám; § 3.3 obmedzuje produkty trial/evaluation na „interné hodnotenie na…                     |
+| `amazon-q`       | Produkt je ukončený pre nové registrácie; existujúci používatelia podliehajú zákazníckej zmluve AWS, ktorá upravuje používanie spravovaných služieb — self-hosted pro…                  |
+| `blackbox`       | ToS výslovne zakazuje sublicencovanie, opätovný predaj, sprístupňovanie služby tretím stranám a vytváranie odvodených služieb — a self-hosted na…                                       |
+| `coze`           | Coze ToS výslovne obmedzuje používanie na „osobné a nekomerčné použitie“ a zakazuje prenájom, distribúciu, sublicencovanie alebo ďalší predaj služby; a…                                |
+| `duckduckgo-web` | Duck.ai ToS (duckduckgo.com/duckai/privacy-terms) výslovne zakazuje „automatické dopytovanie a vývoj alebo ponúkanie služieb AI “ a obchádzanie…                                        |
+| `featherless-ai` | Individuálne plány sa výslovne obmedzujú na „interaktívne používanie alebo prototypovanie a experimentovanie kupujúcim“ — odvodiť ďalší predaj a použitie proxy…                        |
+| `fireworks`      | ToS výslovne zakazuje používanie proxy/intermediary, prenosy kľúčov API a sublicencovanie (sekcie 2.1 a 2.2(i)(j)); osobné servery proxy, ktoré si sami hosťujú, sú…                    |
+| `friendliai`     | ToS § 8 písm. e) a 8 písm. f) výslovne zakazuje používanie FriendliAI ako proxy alebo umožnenie samostatného prístupu tretích strán a zakazuje ďalší predaj/…                           |
+| `iflytek`        | Sekcia 2.4(3) zmluvy o poskytovaní služieb iFlytek Spark LLM výslovne zakazuje „používanie akýchkoľvek automatizovaných alebo programových metód na extrahovanie údajov alebo výstupov… |
+| `kiro`           | Kiro FAQ výslovne zakazuje používanie s nástrojmi „OpenClaw a podobnými nástrojmi, ktoré využívajú postroje tretích strán“ — samostatne hosťovaný server AI proxy (ako OmniRoute) rou…  |
+| `modal`          | ToS sekcia 1.3 výslovne zakazuje „prenajímať, predávať alebo inak umožňovať akejkoľvek tretej strane priamy prístup alebo používanie služby“ — budovanie vlastného hostiteľa…           |
+| `muse-spark-web` | Meta ToS výslovne zakazuje automatizovaný prístup bez predchádzajúceho povolenia, spätné inžinierstvo bez písomného povolenia a obchádzanie technológií…                                |
+| `nlpcloud`       | ToS výslovne zakazuje „nastavenie proxy alebo iného zariadenia, ktoré umožňuje ostatným prostredníctvom neho pristupovať k Službe“ a poskytuje iba neprenosné,…                         |
+| `t3-web`         | ToS výslovne obmedzuje účty iba na osobné použitie, zakazuje zdieľanie poverení s tretími stranami a zakazuje prístup automated/bot/scraping — pretože…                                 |
 
-## Čo sa zmenilo od vydaného katalógu (`freeNote`)
+### ✅ Všeobecne povoľný — opatrnosť / nejednoznačný / ok (zvyšok)
 
-> Reťazce `freeNote` z obdobia verzie v3.8.0 sú zastarané. Opravy zistené týmto výskumom (sú podkladom pre aktualizáciu katalógu v `_tasks/features-v3.8.12`):
-
-- **`360ai`** — Dodaná poznámka freeNote „Bezplatné modely 360 AI Brain“ sa zdá byť zastaraná. Aktuálny prístup je podmienený schválením žiadosti a je spoplatnený. Základom mohli byť jednorazové propagačné tokeny z obdobia spustenia v roku 2023 (100M–250M)…
-- **`agentrouter`** — Naša dodaná poznámka freeNote uvádza „Bezplatný kredit $200 pri registrácii.“ V súčasnosti však štandardné registrácie (bez odporúčania) získajú iba $100; registrácie cez odporúčanie môžu získať $200, ale komentár komunity z apríla 2026…
-- **`agy`** — Naša dodaná poznámka freeNote uvádza „(žiadna)“, čo naznačuje, že bezplatná úroveň neexistuje, no Antigravity má bezplatnú úroveň podmienenú OAuth. Podmienky používania však výslovne zakazujú používanie tejto bezplatnej úrovne prostredníctvom proxy, ako je OmniRoute …
-- **`ai21`** — Sprísnené: skúšobné obdobie sa skrátilo z „3 mesiacov“ na 7 dní. Výška kreditu $10 zostáva rovnaká, no platnosť prudko klesla z približne 90 dní na 7 dní.
-- **`aimlapi`** — Výrazne sa zmenilo. Dodaná poznámka freeNote propagovala „Bezplatný kredit $0.025/deň — viac ako 200 modelov“, ale bezplatná úroveň je teraz pozastavená/zrušená. Prideľovanie kreditu $0.025/deň (50 000 kreditov/deň, 10 požiadaviek/d…
-- **`amazon-q`** — Naša dodaná poznámka freeNote uvádza „(žiadna)“ — skutočnosť je ešte horšia: produkt už nie je dostupný pre nové registrácie (15. mája 2026). Predtým bezplatná úroveň ponúkala 50 agentných požiadaviek/mesiac + neobmedzené vnoren…
-- **`api-airforce`** — Katalóg obsahuje poznámku freeNote „(žiadna)“, no existuje zdokumentovaná bezplatná úroveň: opakovane 1 RPM / 1 000 RPD, vyžaduje sa registrácia účtu a je obmedzená na základné modely.
-- **`arcee-ai`** — Dodaná poznámka freeNote („Bezplatný model Trinity Large Thinking (kontext 262K)“) je čiastočne presná — Trinity Large Thinking je cez OpenRouter skutočne bezplatný a má kontext 262K — poznámka však neuvádza, že…
-- **`baichuan`** — Naša dodaná poznámka freeNote uvádza „Bezplatné modely Baichuan“, čo naznačuje trvalý bezplatný prístup, ale v súčasnosti je k dispozícii iba jednorazový skúšobný kredit 80 CNY pre nových používateľov (platný 3 mesiace). Neexistujú žiadne trvalo…
-- **`baidu`** — Katalóg uvádza „Bezplatné modely ERNIE Speed/Lite“, čo je vo všeobecnosti presné, ale podhodnocuje rozsah: bezplatné sú aj ERNIE-Tiny a viaceré varianty kontextového okna (8K a 128K). Zdá sa, že bezplatná úroveň…
-- **`bazaarlink`** — Vo všeobecnosti sa zhoduje — dodaná poznámka freeNote presne opisuje smerovanie auto:free pre inferenciu s nulovými nákladmi. Aktuálny stav však zahŕňa explicitné limity rýchlosti (10–20 RPM, približne 150 RPD), ktoré v nej nie sú uvedené…
-- **`blackbox`** — Naša dodaná poznámka freeNote tvrdí „neobmedzený základný chat plus Minimax-M2.5.“ V skutočnosti sú neobmedzené agentné požiadavky Minimax-M2.5 funkciou plateného programu (Pro+), nie súčasťou bezplatnej úrovne. Bezplatná úroveň má ob…
-- **`bluesminds`** — Naša dodaná poznámka freeNote bola „(žiadna)“ — BluesMinds však má zdokumentovanú bezplatnú úroveň: 500 kreditov pi, 20 RPM, 300 RPD a trvalý bezplatný program. Katalóg túto ponuku výrazne podhodnocuje.
-- **`brave-search`** — Katalóg uvádza „(žiadna)“, čo naznačuje, že sa nesledovala žiadna bezplatná úroveň, ale v skutočnosti existovala bezplatná úroveň s 5 000 dopytmi/mesiac (bez karty) až do 12. februára 2026, keď ju nahradil program za $5/mesiac…
-- **`byteplus`** — Náš katalóg obsahoval „(žiadna)“, no BytePlus ModelArk má bezplatnú úroveň: jednorazový skúšobný kredit 500k tokenov na každý model LLM pre nové účty. Katalóg túto možnosť neuvádza.
-- **`cerebras`** — Skúšobná ponuka 1M tokenov/deň bez karty už neexistuje. Aktuálna stránka cerebras.ai/pricing (2026-09-03) uvádza jednorazový kredit $5 pri registrácii, vyžaduje platobnú metódu a má platnosť 30 dní. Preklasifikované na `one-time-initial` (v tvare LongCat); odstránené z `LEGACY_FREE_PROVIDERS` a opakovaného rozpočtu.
-- **`chutes`** — Dodaná poznámka freeNote uvádza „K dispozícii je bezplatná úroveň“, ale k 15. marcu 2026 bola bezplatná úroveň oficiálne zrušená. Poznámka v katalógu je zastaraná a mala by sa aktualizovať tak, aby uvádzala, že neexistuje žiadna o…
-- **`coze`** — Dodaná poznámka „Bezplatná agentná platforma ByteDance“ je v zásade presná, ale neuvádza, že bezplatná úroveň je teraz prísne obmedzená kreditmi (10 kreditov/deň ≈ 5–100 správ v závislosti od modelu), čo je obmedzenie…
-- **`deepinfra`** — Naša dodaná poznámka freeNote uvádza „Bezplatné kredity pri registrácii na testovanie API“ — zdá sa, že je zastaraná. Oficiálna stránka s cenami teraz vyžaduje kartu alebo platbu vopred a neuvádza žiadny všeobecný bezplatný kredit pri registrácii. Bezplatná úr…
-- **`deepseek`** — Naša dodaná poznámka uvádza „5M bezplatných tokenov pri registrácii — nevyžaduje sa kreditná karta“ — pre jednorazové pridelenie je to stále presné, ale dôležité je, že platnosť kreditov vyprší po 30 dňoch (čo sa v dod…
-- **`dify`** — Dodaná poznámka freeNote („Bezplatný open-source nástroj na tvorbu aplikácií AI + RAG“) je v zásade presná, ale neúplná. Bezplatná cloudová úroveň je obmedzenejšia, než sa naznačuje: 200 kreditov na správy sa javí ako jednor…
-- **`doubao`** — Dodaná poznámka freeNote „Bezplatné modely Doubao (ByteDance)“ je v zásade správna, ale málo konkrétna. Aktuálna ponuka je štruktúrovanejšia: existuje kvantifikovaná opakovaná denná bezplatná úroveň (2M tokenov/deň v…
-- **`duckduckgo-web`** — Základný opis „bezplatný anonymný prístup“ je stále platný, no služba výrazne dospela: teraz má explicitné platené úrovne (Plus/Pro) s vyššími limitmi, čo naznačuje, že bezplatná úroveň je obmedzená rýchlos…
-- **`exa-search`** — Katalóg obsahuje poznámku freeNote „(žiadna)“, no Exa má zdokumentovanú opakovanú bezplatnú úroveň s 1 000 požiadavkami/mesiac. Ide o významný nedostatok — bezplatná úroveň existuje a je trvalá.
-- **`featherless-ai`** — Naša dodaná poznámka freeNote uvádza „K dispozícii je bezplatná úroveň“, ale žiadna všeobecná bezplatná úroveň neexistuje. Jediný bezplatný prístup poskytuje program Builder Series založený na pozvánkach/žiadostiach, ktorý nie je štandardnou bezplatnou…
-- **`firecrawl`** — Náš katalóg obsahoval poznámku freeNote „(žiadna)“, čo naznačuje, že bezplatná úroveň neexistuje. Firecrawl má v skutočnosti zdokumentovaný opakovaný bezplatný program s 1 000 kreditmi/mesiac — záznam v katalógu je nesprávny.
-- **`freemodel-dev`** — Naša dodaná poznámka freeNote je „(žiadna)“ — pravdepodobne išlo o zástupný text znamenajúci, že poskytovateľ ešte nebol zaradený do katalógu. V skutočnosti poskytovateľ ponúka jednorazový skúšobný kredit $300. Ide však o j…
-- **`friendliai`** — Dodaná poznámka freeNote („Bezplatná úroveň pre bezserverovú inferenciu“) je čiastočne presná, ale zavádzajúca. Bezplatný prístup je dostupný prostredníctvom Tier 0 a modelov označených ako bezplatné, no limity požiadaviek nie sú definované a ada…
-- **`gemini`** — Dodaná poznámka freeNote uvádza „1 500 požiadaviek/deň pre Gemini 2.5 Flash“ — to bolo presné pred decembrom 2025. Google v decembri 2025 znížil limity bezplatnej úrovne o 50 – 80 %, čím znížil limit pre Gemini 2.5 Flash z 1 500 R…
-- **`gitlawb`** — Dodaná poznámka freeNote „Bezplatná úroveň je k dispozícii“ je v podstate zastaraná. Pôvodný bezplatný prístup k MiMo bol odstránený v máji 2026; jedinou zostávajúcou „bezplatnou“ možnosťou je dočasný propagačný model (Nemotron 3 U…
-- **`gitlawb-gmi`** — Čiastočne stále presné — bezplatná úroveň existuje, ale po zrušení bezplatného prístupu k MiMo koncom mája 2026 je teraz obmedzená na jediný model (Nemotron 3 Ultra). Dodaná poznámka „Bezplatná úroveň je k dispozícii“ nedostatočne…
-- **`groq`** — Dodaná poznámka freeNote „30 RPM / 14,4K RPD“ je presná iba pre llama-3.1-8b-instant. Väčšina ostatných modelov (vrátane llama-3.3-70b-versatile) má oveľa nižší limit 1K RPD. Poznámka vynecháva špecifiká jednotlivých modelov… **Vyriešené 2026-09-02:** `freeNote` teraz uvádza „Bezplatný plán: limity podľa modelu (200K tokenov/deň na každý chatovací model; limity RPM/RPD nájdete na console.groq.com/docs/rate-limits) — bez evidovaného spôsobu platby.“ a katalóg obsahuje päť limitov 6M podľa jednotlivých modelov (llama-3.3-70b-versatile bol 2026-08-16 vyradený z bezplatnej úrovne) — pozrite si [poznámku z opätovného auditu z 2026-09-02](#tldr--how-much-free-inference-does-omniroute-actually-aggregate).
-- **`huggingchat`** — Dodaná poznámka freeNote („Bezplatný chat s LLM — nevyžaduje sa predplatné. Platia limity požiadaviek.“) je čiastočne presná, ale výrazne podhodnocuje obmedzenia. Bezplatná úroveň teraz funguje s pevným limitom $0.10/…
-- **`huggingface`** — Výrazne sprísnené. Dodaná poznámka freeNote („Bezplatné Inference API pre tisíce modelov“) naznačovala neobmedzený/štedrý bezplatný prístup, no od polovice roka 2025 je bezplatná úroveň obmedzená na opakovaný limit $0.10/mesiac…
-- **`hyperbolic`** — Naša dodaná poznámka freeNote uvádza „$1-5 skúšobných kreditov pri registrácii“ — časť o skúšobnom kredite $1 je presná, ale suma „$5“ označuje minimálny vklad potrebný na odomknutie prenájmu GPU (nie získané bezplatné kredity…
-- **`iflytek`** — Katalóg uvádza „Bezplatné modely Spark Lite“ — to je vo všeobecnosti presné. Aktuálna realita je však zložitejšia: bezplatný je iba Spark Lite (ponuka 100M tokenov pre Max bola jednorazovou akciou, nie opakovanou); …
-- **`inference-net`** — Dodaná poznámka freeNote uvádza „$25 bezplatných kreditov pri registrácii plus granty na výskum“. Aktuálna stránka s cenami uvádza iba opakované mesačné kredity vo výške $1 bez zmienky o registračnom bonuse $25 alebo výskumnom grante…
-- **`jina-reader`** — Naša dodaná poznámka freeNote bola „(žiadna)“, čo je nesprávne. Jina Reader má od spustenia verejne zdokumentovanú bezplatnú úroveň: prístup bez kľúča pri 20 RPM plus jednorazový grant 10M tokenov s bezplatným API kľúčom. …
-- **`kiro`** — Katalóg bol dodaný s poznámkou freeNote „(žiadna)“ — Kiro však má zdokumentovanú trvalú bezplatnú úroveň s 50 kreditmi/mesiac. Bezplatná úroveň existuje od verejného spustenia Kiro (ceny boli formalizované približne v októbri 2025). Ide o …
-- **`llm7`** — Limity požiadaviek sa oproti dodanej poznámke freeNote zvýšili (20 RPM / 100 požiadaviek/hod. → 40 RPM / 200 požiadaviek/hod.). Tvrdenie „nevyžaduje sa registrácia“ je teraz zastarané — aktuálne sa vyžaduje bezplatný token z token.llm7.io (hoci…
-- **`longcat`** — Verejná ukážka/beta sa skončila a modely Flash boli vyradené; zostáva iba všeobecne dostupný model `LongCat-2.0`. Bezplatná úroveň predstavuje **jednorazový grant 10M tokenov**, ktorý sa odomkne po registrácii účtu a **overení KYC** — **neobnovuje sa** denne ani mesačne. Po vyčerpaní grantu sa platí podľa spotreby.
-- **`mistral`** — Dodaná poznámka freeNote („Bezplatná úroveň Experiment: prístup ku všetkým modelom s obmedzenou frekvenciou“) je v zásade správna, ale neúplná. Aktuálny stav zahŕňa konkrétne zdokumentované limity: 2 RPM, 500K TPM, 1B tokenov/…
-- **`monsterapi`** — Dodaná poznámka freeNote uvádza „Bezplatné kredity na decentralizovanú inferenciu GPU“, čo je čiastočne presné — pri registrácii sa poskytujú jednorazové skúšobné kredity. Opakovaná bezplatná úroveň však zahŕňa 0 kreditov/mesiac…
-- **`morph`** — Dodaná poznámka freeNote uvádza „250K kreditov/mesiac“, čo zodpovedá aktuálnemu prídelu kreditov; významnejším obmedzením je však 200 požiadaviek/mesiac, čo nebolo zachytené v pôvodnom k…
-- **`muse-spark-web`** — Dodaná poznámka freeNote („Bezplatné po prihlásení — platforma Meta AI s modelmi Llama“) je vo všeobecnosti presná, pokiaľ ide o požiadavku na prihlásenie a prístup k modelom Llama. Nebolo zistené žiadne sprísnenie bezplatnej úrovne; naďalej…
-- **`nlpcloud`** — Dodaná poznámka freeNote uvádza „Skúšobné kredity pre nové účty“, čo naznačuje jednorazovú skúšobnú ponuku. V skutočnosti je bezplatná úroveň NLP Cloud opakovaným mesačným bezplatným plánom (10 000 požiadaviek/mesiac), nie skúšobnými kreditmi…
-- **`nomic`** — Naša dodaná poznámka freeNote uvádza „Bezplatné Nomic Embed API“ bez ďalšieho spresnenia, čím naznačuje trvalý bezplatný prístup. V skutočnosti ide iba o jednorazový skúšobný kredit 1M tokenov — po vyčerpaní tohto objemu tokenov sa vyžaduje platené predplatné…
-- **`nous-research`** — Dodaná poznámka freeNote („Bezplatná úroveň: 50 RPM, 500 000 TPM“) nezodpovedá aktuálnemu produktu Nous Portal. Portál bol spustený 27. apríla 2026 a jeho bezplatná úroveň je štruktúrovaná ako opakované kredity vo výške $0.10/mesiac…
-- **`nvidia`** — Časť s limitom „40 RPM, viac než 70 modelov“ zodpovedá katalógu, ale prezentácia poznámky freeNote ako jednoduchej úrovne prístupu pre vývojárov nedostatočne vystihuje, že pôvodný jednorazový balík kreditov bol odstránený — prístup je teraz skutočne…
-- **`ollama-cloud`** — Naša dodaná poznámka freeNote je „(žiadna)“ — je zastaraná. Ollama Cloud spustil produkt cloudovej inferencie so skutočnou bezplatnou úrovňou, ktorá poskytuje ľahký týždenný prístup k hostovaným otvoreným modelom založený na čase využitia GPU.
-- **`openrouter`** — RPD bol pre účty bez kreditu znížený z 200 na 50 (RPM zostáva nezmenené na hodnote 20). Poznámka v katalógu bola presná v prípade RPM, ale pre základnú úroveň bez kreditov uvádzala 4-násobne vyššie RPD. **Sledovanie za behu (#6842)**: už nejde iba o statickú poznámku — `open-sse/services/openrouterQuotaFetcher.ts` zisťuje cez `/api/v1/key` + `/api/v1/credits` kreditný limit, zostávajúce kredity a čas obnovenia pre jednotlivé kľúče, ako aj denné/týždenné/mesačné výdavky v USD, a `open-sse/services/openrouterFreeWindow.ts` lokálne sleduje vyššie opísané limity 50 alebo 1 000 požiadaviek denne + 20 RPM pre modely `:free` (korigované podľa hlavičiek odpovede `X-RateLimit-*` pri chybách 429), ktoré sa zobrazujú v Dashboard → Provider Quota.
-- **`phind`** — Phind ukončil prevádzku 16. januára 2026. Poskytovateľ bol teraz **úplne odstránený** z katalógu (register, vykonávací modul aj záznamy katalógu pre webové súbory cookie a kľúč API) — v súlade s precedensom odstraňovania nefunkčných služieb (#5246 Gemini CLI).
-- **`pollinations`** — Čiastočne sa zhoduje — tvrdenie „nevyžaduje sa žiadny kľúč API“ stále platí pre anonymný prístup, ale poznámka freeNote v katalógu neuvádza, že: (1) uplatňujú sa limity rýchlosti (intervalové obmedzenie približne na 1 požiadavku za 6 – 15 s pre anonymných …
-- **`predibase`** — Dodávaná poznámka freeNote (bezplatné skúšobné kredity v hodnote 25 USD s platnosťou 30 dní) stále zodpovedá aktuálnej dokumentácii. Katalóg však neuvádza súbežne platný serverless limit 20 000 tokenov denne, ktorý sa uplatňuje poč…
-- **`publicai`** — Dodávaná poznámka freeNote („Bezplatná komunitná úroveň inferencie“) je vo všeobecnosti presná, ale nie je dostatočne konkrétna: limit rýchlosti 20 RPM je už zdokumentovaný. Nebolo zistené žiadne zásadné sprísnenie; služba zostáva bez…
-- **`puter`** — **Úplne odstránený** z katalógu (register, vykonávací modul, katalóg bezplatných modelov a záznam s kľúčom API) na žiadosť vlastníka Puter (Nariman Jelveh) — pozrite si vyššie uvedený precedens odstraňovania nefunkčných služieb (`phind`).
-- **`qoder`** — Náš katalóg obsahuje poznámku freeNote „(žiadna)“, ale Qoder bezplatnú úroveň má: Community Edition s neobmedzeným počtom dokončení základných modelov (s denným limitom, ktorého hodnota nie je uvedená) a jednorazovú 14-dňovú/300-kreditovú skú…
-- **`sambanova`** — Naša dodávaná poznámka opisovala iba jednorazový kredit vo výške 5 USD (s platnosťou 30 dní). Aktuálna ponuka zahŕňa trvalú, pravidelne obnovovanú bezplatnú úroveň so zdokumentovanými limitmi rýchlosti (20 RPM, 20 RPD, 200k TPD), ktorá pretr…
-- **`sensenova`** — Naša dodávaná poznámka freeNote uvádza „Bezplatné modely SenseTime“, čo je nejasné, ale v zásade správne — bezplatný prístup existuje. Skutočnosť je však komplexnejšia: bezplatný prístup predstavuje časovo obmedzenú verejnú beta verziu (Token…
-- **`serper-search`** — Dodávaná poznámka freeNote uvádza „(žiadna)“, čo je čiastočne presné — neexistuje žiadny pravidelne obnovovaný bezplatný program — Serper však pri registrácii ponúka 2 500 jednorazových skúšobných kreditov. Poznámka v katalógu by mohla byť presnej…
-- **`siliconflow`** — Čiastočne sa zhoduje, ale situácia je komplexnejšia: bezplatný kredit vo výške 1 USD je jednorazová skúšobná ponuka (nie pravidelne obnovovaná), zatiaľ čo časť o „trvalo bezplatných modeloch“ stále platí — bezplatné modely za 0 USD naďalej existujú (Qwen3-8B, D…
-- **`sparkdesk`** — Čiastočne sa zhoduje — dodávaná poznámka freeNote „Bezplatné modely iFlytek Spark“ je presná v tom, že Spark Lite je trvalo bezplatný, ale nedostatočne opisuje obmedzenie (2 QPS na App ID) a nadhodnocuje rozsah (iba S…
-- **`stepfun`** — Dodávaná poznámka freeNote „Bezplatné modely Step-2“ je zastaraná. Bezplatný prístup k LLM Step-2 sa už neponúka; platforma prešla na modely Step 3.x spoplatňované podľa počtu tokenov bez bezplatnej úrovne LLM. Iba…
-- **`t3-web`** — Dodávaná poznámka freeNote je vo všeobecnosti presná (obmedzený prístup k modelom, Pro odomyká viac než 50 modelov za 8 USD/mesiac), ale chýbajú v nej dve kľúčové aktualizácie: (1) bezplatná úroveň sa teraz obnovuje denne namiesto mesačne (zmenené približne…
-- **`tavily-search`** — Katalóg obsahuje poznámku freeNote „(žiadna)“, ktorá naznačuje, že neexistuje bezplatná úroveň, Tavily však v skutočnosti ponúka zdokumentovanú, pravidelne obnovovanú bezplatnú úroveň s 1 000 kreditmi mesačne bez potreby kreditnej karty. Ide o významný roz…
-- **`tencent`** — Vo veľkej miere sa zhoduje — dodávaná poznámka freeNote („Bezplatné modely Hunyuan Lite“) je presná. Hunyuan-lite je trvalo bezplatný od mája 2024 a zostáva ním aj v roku 2026. Poznámka v katalógu uvádza menej podrob…
-- **`together`** — Dodávaná poznámka uvádza „25 USD v kreditoch pri registrácii + 3 trvalo bezplatné modely“, ale Together teraz vyžaduje zakúpenie kreditov minimálne za 5 USD a neponúka bezplatnú skúšobnú verziu. Kredit 25 USD pri registrácii bol z katalógu odstránený (#12526). Poskytovateľ naďalej hostí približne 80 trvalo bezplatných modelov, ale zmluvné podmienky (časť 4.3(d)) výslovne zakazujú prevádzať, distribuovať, ďalej predávať alebo ponúkať služby.
-- **`uncloseai`** — Vo veľkej miere sa zhoduje — stále je navždy bezplatný a bez registrácie. Zmluvné podmienky (terms-of-use.html) však objasňujú, že pri nadmernom používaní sa uplatňuje obmedzovanie na základe IP adresy, a zakazujú vytvárať konkurenčné služby ML bez…
-- **`veoaifree-web`** — Dodávaná poznámka freeNote uvádza „6 požiadaviek za hodinu“, ale takýto explicitný limit momentálne nie je nikde na veoaifree.com zdokumentovaný. Web uvádza neobmedzené bezplatné generovanie bez prihlásenia. Uvedené modely …
-- **`voyage-ai`** — Dodávaná poznámka freeNote „200M bezplatných tokenov pre embeddingy a preusporiadanie výsledkov“ je z hľadiska počtu tokenov v zásade správna, ale zavádzajúca — neuvádza, že ide o jednorazový prídel pre každý účet, nie o pravidelne obnov…
-- **`yi`** — Dodávaná poznámka freeNote „Bezplatné modely Yi-Light“ odkazuje na názov modelu („Yi-Light“), ktorý sa nenachádza v žiadnej aktuálnej dokumentácii ani katalógu modelov 01.AI — žiadny takýto model nie je uvedený na platform.01.ai, …
+| Poskytovateľ     | ToS           | Poznámka                                                                                                                                                                   |
+| ---------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `aimlapi`        | nejednoznačný | ToS udeľuje licenciu na nevýlučné používanie, ale výslovne nepovoľuje ani nezakazuje server proxy alebo ďalší predaj; žiadne "osoby...                                     |
+| `baichuan`       | nejednoznačný | Vo verejne prístupných dokumentoch neexistuje žiadny výslovný zákaz osobných proxy serverov s vlastným hosťovaním; avšak M3 Plus zadarmo pl…                               |
+| `bluesminds`     | nejednoznačný | Nenašli sa žiadne explicitné doložky ToS týkajúce sa servera proxy alebo ďalšieho predaja; cenová stránka sa zameriava na limity feature/rate...                           |
+| `bytez`          | nejednoznačný | Nebola prístupná žiadna explicitná stránka ToS (404); v dokumentoch sa nenašli žiadne klauzuly iba o verejnom hodnotení alebo bez proxy, ale platforma…                    |
+| `doubao`         | nejednoznačný | Vo verejne indexovanej dokumentácii sa nenašiel žiadny výslovný zákaz proxy/resale ; Volcengine je cloud orientovaný na vývojárov…                                         |
+| `gitlawb-gmi`    | nejednoznačný | Nenašla sa žiadna výslovná klauzula ToS zakazujúca používanie osobného proxy servera s vlastným hosťovaním; bezplatný model Nemotron nesie NVIDIA disk…                    |
+| `monsterapi`     | nejednoznačný | MonsterAPI stránka ToS (monsterapi.ai/terms-of-service) bola počas výskumu nedostupná; žiadne konkrétne proxy/resale/person...                                             |
+| `nous-research`  | nejednoznačný | Samotný portál Nous je službou aggregator/proxy ; jeho použitie ako backend pre iný server proxy s vlastným hosťovaním vytvorí server proxy-…                              |
+| `stepfun`        | nejednoznačný | Nenašiel sa žiadny výslovný zákaz osobného servera proxy s vlastným hosťovaním, ale plán krokov ToS sa zameriava na vývojárov, ktorí používajú špecifické ko...            |
+| `api-airforce`   | opatrnosť     | ToS výslovne zakazuje „budovanie konkurenčných služieb bez povolenia“ a „zdieľanie poverení“ — a self-hosted pers…                                                         |
+| `arcee-ai`       | opatrnosť     | Voľný prístup je cez vrstvu OpenRouter:free routing (nie priame podmienky API spoločnosti Arcee); OpenRouter ToS umožňuje osobný vývoj…                                    |
+| `baidu`          | opatrnosť     | ToS nie je explicitne kontrolovaná pre klauzuly proxy/resale, ale platforma vyžaduje autentifikáciu skutočným menom (čínske ID typické…                                    |
+| `baseten`        | opatrnosť     | ToS obmedzuje použitie na „interné obchodné účely zákazníka“ a výslovne zakazuje poskytovanie sublicencií, ďalší predaj alebo povoľovanie…                                 |
+| `bazaarlink`     | opatrnosť     | ToS výslovne zakazuje ďalší predaj alebo sublicencovanie kľúčov API tretím stranám; osobný server proxy pre osobné…                                                        |
+| `brave-search`   | opatrnosť     | ToS zakazuje redistribúciu, ďalší predaj a sublicencovanie výsledkov vyhľadávania; pomocou API na „replikáciu alebo pokus o opakovanie…                                    |
+| `byteplus`       | opatrnosť     | Tokeny sú neprenosné a iba pre jeden účet; žiadny výslovný zákaz proxy, ale BytePlus si vyhradzuje právo ...                                                               |
+| `cerebras`       | opatrnosť     | ToS udeľuje nevýlučné, neprenosné a nesublicencovateľné právo na osobné alebo obchodné použitie; zakazuje ďalší predaj,…                                                   |
+| `cloudflare-ai`  | opatrnosť     | Cloudflare Samoobsluha ToS § 2.2.1(j) zakazuje používanie Služieb na „poskytovanie virtuálnej súkromnej siete alebo iného podobného…                                       |
+| `cohere`         | opatrnosť     | Cohere výslovne zakazuje skúšobné kľúče na „výrobné alebo komerčné účely“; smerovanie osobného servera proxy s vlastným hosťovaním...                                      |
+| `deepinfra`      | opatrnosť     | ToS široko povoľuje legálne komerčné využitie, ale zakazuje používanie „priamo alebo nepriamo konkurujúce akejkoľvek činnosti…                                             |
+| `deepseek`       | opatrnosť     | Otvorená platforma ToS (účinná 2026-04-29) umožňuje široké využitie vrátane „vývoja odvodených produktov“ a personal/comm…                                                 |
+| `dify`           | opatrnosť     | Osobný server proxy pre jedného používateľa je povolený na základe upravenej licencie Apache 2.0; avšak nasadenie viacerých nájomníkov...                                  |
+| `exa-search`     | opatrnosť     | Nenašli sa žiadne explicitné klauzuly „bez proxy“ alebo „iba hodnotenie“; Exa aktívne ponúka partnerský program pre predajcov, ktorý umožňuje API …                        |
+| `firecrawl`      | opatrnosť     | Cloud API ToS nenašiel žiadny výslovný zákaz osobného servera proxy, ale verzia s otvoreným zdrojom s vlastným hosťovaním je AGPL-3.0 (re…                                 |
+| `gemini`         | opatrnosť     | ToS výslovne uvádza, že voľná úroveň je určená pre „vývojárov stavajúcich s modelmi Google AI pre profesionálne alebo obchodné ...                                         |
+| `groq`           | opatrnosť     | Zmluva o službách § 6.3 zakazuje ďalší predaj, poskytovanie sublicencie alebo distribúciu prístupu API ; § 3,2 barov reselling/leasing podľa…                              |
+| `huggingchat`    | opatrnosť     | Hugging Face ToS výslovne nezakazuje osobné servery proxy s vlastným hosťovaním, ale doplňujúce podmienky (odkazované, ale nie úplne…                                      |
+| `huggingface`    | opatrnosť     | ToS udeľuje obmedzenú licenciu na službu access/use ; dokument výslovne nepovoľuje ani nezakazuje jediného používateľa...                                                  |
+| `hyperbolic`     | opatrnosť     | ToS poskytuje API prístup „výhradne pre vaše osobné alebo interné obchodné účely“ a výslovne zakazuje udeľovanie licencií, …                                               |
+| `inference-net`  | opatrnosť     | ToS výslovne zakazuje „sublicencovať, predávať, distribuovať“ a prenášať kľúče API bez písomného súhlasu; jedno-u…                                                         |
+| `jina-ai`        | opatrnosť     | Bezplatné tokeny 10 miliónov sú výslovne nekomerčné (licencia modelu CC-BY-NC 4.0); osobný proxy pre jedného používateľa pre osobné L…                                     |
+| `jina-reader`    | opatrnosť     | ToS zakazuje používanie výstupov na vytváranie konkurenčných služieb a zakazuje „automatizované metódy na získavanie informácií prostredníctvom zoškrabovania…             |
+| `llm7`           | opatrnosť     | ToS umiestňuje službu ako pre „experimentovanie, vývoj a výskum“; žiadny výslovný zákaz vlastného hosťovania…                                                              |
+| `longcat`        | opatrnosť     | Zmluva o poskytovaní služieb platformy API (longcat.chat/platform/private/) umožňuje komerčnú integráciu a aplikácie s vlastným hosťovaním…                                |
+| `mistral`        | opatrnosť     | Spotrebiteľ ToS výslovne uvádza, že APIs sa môže používať iba na „osobné potreby“ a zakazuje sprístupňovanie kľúčov API …                                                  |
+| `morph`          | opatrnosť     | ToS umožňuje komerčné využitie všeobecne; nasadenia servera proxy s vlastným hosťovaním si vyžadujú explicitnú dohodu s predajom. Časť 18.…                                |
+| `nebius`         | opatrnosť     | ToS (oddiel 5f) výslovne zakazuje ďalší predaj, redistribúciu alebo ponúkanie služby „na samostatnom základe“ — a…                                                         |
+| `nomic`          | opatrnosť     | ToS udeľuje nevýhradnú, neprenosnú licenciu API ; Odsek 6.b zakazuje budovanie konkurenčnej služby. Pomocou t…                                                             |
+| `novita`         | opatrnosť     | ToS zakazuje ďalší predaj a konkurenčné služby, ale výslovne sa nezaoberá osobnými servermi proxy s vlastným hosťovaním; osobné použitie…                                  |
+| `nscale`         | opatrnosť     | AUP zakazuje „kopírovať, upravovať, duplikovať... rámovať, zrkadliť, znova publikovať... distribuovať celú alebo akúkoľvek časť platformy Nscale…                          |
+| `nvidia`         | opatrnosť     | Bezplatná úroveň je výslovne určená len pre prototyping/dev/research/evaluation, len produkčné použitie — (služba skutočným koncovým používateľom) vyžaduje…               |
+| `openrouter`     | opatrnosť     | ToS výslovne zakazuje ďalší predaj prístupu API alebo vývoj konkurenčnej služby; osobný server proxy s vlastným hosťovaním pre jedného používateľa…                        |
+| `pollinations`   | opatrnosť     | Licencia MIT citovaná v dokumentoch API navrhuje liberálne opätovné použitie; nenašiel sa žiadny výslovný zákaz vlastného servera proxy. Avšak, vy…                        |
+| `predibase`      | opatrnosť     | Predibase je umiestnená ako podniková platforma fine-tuning/serving ; bezplatná skúšobná verzia je výslovne určená na prieskum a…                                          |
+| `publicai`       | opatrnosť     | ToS (publicai.co/tc) označuje služby ako „predovšetkým na výskumné a vzdelávacie účely“; žiadny explicitný proxy alebo ďalší predaj p…                                     |
+| `qoder`          | opatrnosť     | stránka ToS nevrátila žiadny čitateľný obsah; Qoder je kódovací klient IDE (nie verejný API) a proxy wrappery tretích strán…                                               |
+| `reka`           | opatrnosť     | Obchodné podmienky zakazujú sublicencovanie alebo distribúciu prístupu tretím stranám; osobný server proxy pre jedného používateľa je pravdepodobne vhodný…                |
+| `sambanova`      | opatrnosť     | ToS sekcia 1.5(c) výslovne zakazuje ďalší predaj, sublicencovanie alebo sprístupnenie služby tretím stranám; taký…                                                         |
+| `sensenova`      | opatrnosť     | V recenzovanom ToS sa nenašiel žiadny explicitný proxy alebo zákaz ďalšieho predaja, ale bezplatná úroveň je propagačná beta bez SLA, Sen…                                 |
+| `serper-search`  | opatrnosť     | ToS výslovne zakazuje „zrkadlenie materiálov na akomkoľvek inom serveri tak, ako je bez pridanej hodnoty“ — jednoduchý prechodový pr…                                      |
+| `siliconflow`    | opatrnosť     | ToS (odsek 3.4(e)(f)(p)) výslovne zakazuje sprístupnenie služby akejkoľvek tretej strane, reselling/sublicensing,…                                                         |
+| `sparkdesk`      | opatrnosť     | SparkDesk User Agreement udeľuje iba osobné práva na nekomerčné používanie; Zásady rozhrania API zakazujú automatizované údaje…                                            |
+| `tavily-search`  | opatrnosť     | ToS výslovne uvádza API „nesmie byť prenesené, pridelené, zdieľané alebo inak sprístupnené žiadnej tretej strane…                                                          |
+| `tencent`        | opatrnosť     | Tencent Cloud ToS výslovne zakazuje sublicencovanie alebo opätovný predaj prístupu API ; osobný proxy server s vlastným hosťovaním pre osobné…                             |
+| `together`       | opatrnosť     | ToS Oddiel 4.3(d) výslovne zakazuje prevod, distribúciu, ďalší predaj, prenájom alebo ponúkanie Služieb na…                                                                |
+| `uncloseai`      | opatrnosť     | Osobné použitie proxy je možné, ale nie je výslovne povolené; ToS zakazuje budovanie „konkurenčných služieb strojového učenia s…                                           |
+| `veoaifree-web`  | opatrnosť     | ToS výslovne zakazuje automatické roboty alebo skripty bežiace „neľudskou rýchlosťou“ a zakazuje kopírovanie platformy na vytvorenie…                                      |
+| `vertex`         | opatrnosť     | Podmienky cloudovej služby Google obmedzujú ďalší predaj iba autorizovaným predajcom (oddiel 14 vyžaduje zmluvu s predajcom); ako…                                         |
+| `voyage-ai`      | opatrnosť     | ToS udeľuje „osobné, nekomerčné použitie“ obsahu stránky a zakazuje zdieľanie credential/account s tretími stranami;…                                                      |
+| `xkiro`          | opatrnosť     | ToS (2026-07-30) zakazuje službu reselling/redistributing a porušuje podmienky poskytovateľov na vyššej úrovni; osobný profík…                                             |
+| `360ai`          | neznámy       | ToS pre vývojárov API nie je verejne prístupný bez registrácie; prístup vyžaduje schválenie aplikácie, čo znamená...                                                       |
+| `chutes`         | neznámy       | stránka ToS existuje na chutes.ai/terms, ale obsah nebol prístupný prostredníctvom načítania; nenašli sa žiadne explicitné klauzuly proxy/resale v…                        |
+| `freemodel-dev`  | neznámy       | Stránka Podmienky služby (freemodel.dev/terms) vrátila iba hlavičku bez čitateľného obsahu cez WebFetch; žiadna klauzula…                                                  |
+| `gitlawb`        | neznámy       | Nenašli sa žiadne zásady ToS alebo prijateľného použitia; Obmedzenia proxy/resale neznáme — predpokladá opatrnosť pri použití servera proxy s vlastným hosťovaním.         |
+| `liquid`         | neznámy       | Neexistuje žiadna hosťovaná API pre proxy; Komerčné využitie modelu s otvoreným zdrojom je bezplatné pre organizácie s ročným príjmom 10 miliónov USD. Žiadna sebaobsluha… |
+| `yi`             | neznámy       | ToS nie je verejne prístupná bez prihlásenia; nebolo možné preskúmať žiadne klauzuly proxy/resale. Osobný proxy server s vlastným hosťovaním používa st…                   |
+| `comfyui`        | ok            | GPL-3.0 open-source licencia výslovne povoľuje použitie osobného proxy servera s vlastným hosťovaním; Comfy Org ToS potvrdzuje komerčné využitie…                          |
+| `scaleway`       | ok            | Všeobecné zmluvné podmienky spoločnosti Scaleway sú štandardnou komerčnou cloudovou zmluvou bez výslovného zákazu vlastného...                                             |
+| `sdwebui`        | ok            | Licencia AGPL-3.0: zadarmo na vlastné hosťovanie na osobné použitie bez obmedzenia objemu používania; osobný proxy pomocou tohto…                                          |
+| `searxng-search` | ok            | Licencia AGPL-3.0 open-source explicitne povoľuje použitie osobného servera proxy s vlastným hosťovaním bez obmedzenia typu použitia, ďalšieho predaja…                    |
 
 ---
 
-## Slovník
+## Voľná úroveň podľa poskytovateľa (Bytez/Nous skontrolované 2026-10-15; prekontrolované riadky 2026-09-02; ostatné 2026-06-17)
 
-| Pojem                    | Význam                                                                                |
-| ------------------------ | ------------------------------------------------------------------------------------- |
-| **RPM / RPD / RPH**      | Počet požiadaviek za minútu / deň / hodinu                                            |
-| **TPM / TPD**            | Počet tokenov za minútu / deň                                                         |
-| **Zdokumentovaný limit** | Poskytovateľ zverejňuje explicitný denný/mesačný limit tokenov (obhájiteľný rozpočet) |
-| **Teoretický strop**     | `rate-limit × 24/7 × 30d` — maximum, nie garantovaný rozpočet                         |
-| **Neurón**               | Výpočtová jednotka Cloudflare (~1 výstupný token)                                     |
+> Regenerované z katalógu jednotlivých modelov (`open-sse/config/freeModelCatalog.ts`), zbavené duplicitných zdrojov. Zoradené podľa opakujúceho sa stáleho tokens/mo. `uncapped*` = trvalo voľné, ale bez zverejneného tokenového limitu (rate/concurrency-limited) — skutočného prístupu,** nie** zhrnuté do titulku. `—` = len kreditné / bezkľúčové / nie je možné kvantifikovať tokenom.
 
-> Vygenerované z prieskumu jednotlivých poskytovateľov dňa 2026-06-05. Ak chcete údaje aktualizovať, znova spustite pracovný postup prieskumu (pozrite si `_tasks/features-v3.8.12`).
+| Poskytovateľ     | Voľný typ          | Stabilné tokens/mo | Kredit na prvý mesiac | ToS           | Modelky |
+| ---------------- | ------------------ | ------------------ | --------------------- | ------------- | ------- |
+| `mistral`        | opakujúce sa       | ~ 1,00 B           | —                     | opatrnosť     | 5       |
+| `nara`           | opakujúce sa       | ~ 210 miliónov     | —                     | opatrnosť     | 8       |
+| `llm7`           | opakujúce sa       | ~ 150 miliónov     | —                     | opatrnosť     | 4       |
+| `xkiro`          | opakujúce sa       | ~ 150 miliónov     | —                     | opatrnosť     | 39      |
+| `longcat`        | jednorazovo        | —                  | 10 mil                | opatrnosť     | 1       |
+| `cerebras`       | jednorazovo        | —                  | 5 $ kredit            | opatrnosť     | 2       |
+| `cloudflare-ai`  | opakujúce sa       | ~ 30 miliónov      | —                     | opatrnosť     | 9       |
+| `groq`           | opakujúce sa       | ~ 30 miliónov      | —                     | opatrnosť     | 5       |
+| `api-airforce`   | opakujúce sa       | ~ 24 miliónov      | —                     | opatrnosť     | 7       |
+| `bluesminds`     | opakujúce sa       | ~ 7M               | —                     | nejednoznačný | 22      |
+| `sambanova`      | opakujúce sa       | ~ 6M               | —                     | opatrnosť     | 5       |
+| `arcee-ai`       | opakujúce sa       | ~ 5 mil            | —                     | opatrnosť     | 1       |
+| `bazaarlink`     | opakujúce sa       | ~ 4M               | —                     | opatrnosť     | 32      |
+| `openrouter`     | opakujúce sa       | ~ 1 mil            | —                     | opatrnosť     | 1       |
+| `cohere`         | opakujúce sa       | ~ 800 tis          | —                     | opatrnosť     | 6       |
+| `huggingchat`    | opakujúce sa       | ~ 500 tis          | —                     | opatrnosť     | 4       |
+| `morph`          | opakujúce sa       | ~ 400 tis          | —                     | ok            | 2       |
+| `huggingface`    | opakujúce sa       | ~ 200 tis          | —                     | opatrnosť     | 6       |
+| `kiro`           | opakujúce sa       | ~ 25 tis           | —                     | vyhnúť sa     | 12      |
+| `glm-cn`         | bez uzáveru        | bez uzáveru\*      | ~ 20 miliónov         | ok            | 4       |
+| `baidu`          | bez uzáveru        | bez uzáveru\*      | —                     | opatrnosť     | 1       |
+| `gemini`         | bez uzáveru        | bez uzáveru\*      | —                     | opatrnosť     | 4       |
+| `kilo-gateway`   | bez uzáveru        | bez uzáveru\*      | —                     | opatrnosť     | 7       |
+| `opencode-zen`   | bez uzáveru        | bez uzáveru\*      | —                     | opatrnosť     | 10      |
+| `tencent`        | bez uzáveru        | bez uzáveru\*      | —                     | opatrnosť     | 1       |
+| `vertex`         | registračný kredit | —                  | ~ 300 miliónov        | opatrnosť     | 10      |
+| `agentrouter`    | registračný kredit | —                  | ~ 200 miliónov        | opatrnosť     | 4       |
+| `predibase`      | registračný kredit | —                  | ~ 25 miliónov         | opatrnosť     | 1       |
+| `doubao`         | registračný kredit | —                  | ~ 15 miliónov         | nejednoznačný | 1       |
+| `ai21`           | registračný kredit | —                  | ~ 10 mil              | vyhnúť sa     | 2       |
+| `deepseek`       | registračný kredit | —                  | ~ 5 mil               | ok            | 2       |
+| `hyperbolic`     | registračný kredit | —                  | ~ 5 mil               | ok            | 8       |
+| `nscale`         | registračný kredit | —                  | ~ 5 mil               | opatrnosť     | 6       |
+| `bytez`          | kredit (rec.)      | —                  | neznámy               | nejednoznačný | 1       |
+| `deepinfra`      | registračný kredit | —                  | ~ 1 mil               | opatrnosť     | 22      |
+| `fireworks`      | registračný kredit | —                  | ~ 1 mil               | vyhnúť sa     | 10      |
+| `nebius`         | registračný kredit | —                  | ~ 1 mil               | opatrnosť     | 1       |
+| `qoder`          | registračný kredit | —                  | ~ 1 mil               | opatrnosť     | 14      |
+| `scaleway`       | registračný kredit | —                  | ~ 1 mil               | ok            | 6       |
+| `novita`         | registračný kredit | —                  | ~ 500 tis             | opatrnosť     | 1       |
+| `agy`            | bezkľúčový         | —                  | —                     | vyhnúť sa     | 16      |
+| `baichuan`       | bezkľúčový         | —                  | —                     | nejednoznačný | 1       |
+| `blackbox`       | bezkľúčový         | —                  | —                     | vyhnúť sa     | 6       |
+| `coze`           | bezkľúčový         | —                  | —                     | vyhnúť sa     | 1       |
+| `duckduckgo-web` | bezkľúčový         | —                  | —                     | vyhnúť sa     | 6       |
+| `freemodel-dev`  | bezkľúčový         | —                  | —                     | neznámy       | 4       |
+| `friendliai`     | bezkľúčový         | —                  | —                     | vyhnúť sa     | 2       |
+| `iflytek`        | bezkľúčový         | —                  | —                     | vyhnúť sa     | 1       |
+| `inference-net`  | bezkľúčový         | —                  | —                     | opatrnosť     | 3       |
+| `liquid`         | bezkľúčový         | —                  | —                     | neznámy       | 1       |
+| `monsterapi`     | bezkľúčový         | —                  | —                     | nejednoznačný | 1       |
+| `muse-spark-web` | bezkľúčový         | —                  | —                     | vyhnúť sa     | 3       |
+| `nlpcloud`       | bezkľúčový         | —                  | —                     | vyhnúť sa     | 1       |
+| `nvidia`         | bez uzáveru        | bez uzáveru\*      | —                     | opatrnosť     | 3       |
+| `pollinations`   | bezkľúčový         | —                  | —                     | opatrnosť     | 31      |
+| `publicai`       | bezkľúčový         | —                  | —                     | opatrnosť     | 3       |
+| `reka`           | bezkľúčový         | —                  | —                     | opatrnosť     | 2       |
+| `sensenova`      | bezkľúčový         | —                  | —                     | opatrnosť     | 1       |
+| `sparkdesk`      | bezkľúčový         | —                  | —                     | opatrnosť     | 1       |
+| `stepfun`        | bezkľúčový         | —                  | —                     | ok            | 1       |
+| `t3-web`         | bezkľúčový         | —                  | —                     | vyhnúť sa     | 23      |
+| `uncloseai`      | bezkľúčový         | —                  | —                     | opatrnosť     | 3       |
+
+---
+
+## Čo sa zmenilo od odoslaného katalógu (`freeNote`)
+
+> Reťazce `freeNote` z éry 3.8.0 sú zastarané. Opravy zistené týmto výskumom (tieto vedú k aktualizácii katalógu v `_tasks/features-v3.8.12`):
+
+- **`360ai`** — Dodávané freeNote „Modely mozgu 360 AI zadarmo“ sa javia ako zastarané. Aktuálny prístup je viazaný na aplikáciu a je platený. Propagačné žetóny z éry 2023 (100 až 250 miliónov jednorazovo) mohli byť základom pre…
+- **`agentrouter`** — Naša odoslaná freeNote hovorí "200 USD bezplatných kreditov pri registrácii." Súčasné reality show štandardné (neodporúčané) registrácie dostávajú iba 100 USD; registrácia za odporúčanie môže získať 200 dolárov, ale komentár komunity od apríla 2026…
+- **`agy`** — Náš dodaný freeNote hovorí „(none)“, čo znamená, že neexistuje žiadna voľná úroveň, ale Antigravity má bezplatnú úroveň s bránou OAuth. ToS však výslovne zakazuje používanie tejto bezplatnej úrovne prostredníctvom servera proxy ako OmniRoute...
+- **`ai21`** — Utiahnuté: skúšobné okno sa skrátilo z „3 mesiacov“ na 7 dní. Suma kreditu 10 USD zostáva rovnaká, ale platnosť prudko klesla ~ 90 dní na 7 dní.
+- **`aimlapi`** — Výrazne zmenené. Odoslané freeNote inzerovali „0.025/day 200 + modely bezplatných kreditov — “, ale bezplatná úroveň je teraz paused/discontinued. Pridelenie kreditu 0.025/day $ (50 000 credits/day, 10 req/d…
+- **`amazon-q`** — Náš dodaný freeNote hovorí „(žiadne)“ — realita je horšia: produkt je teraz prerušený pre nové registrácie (15. mája 2026). Predtým bezplatná úroveň ponúkala neobmedzené množstvo 50 agentov requests/month + …
+- **`api-airforce`** Katalóg — sa dodáva freeNote "(none)", ale existuje zdokumentovaná bezplatná úroveň: 1 RPM / 1 000 RPD opakovane, vyžaduje sa registrácia účtu, obmedzené na základné modely.
+- **`arcee-ai`** — Dodávaný freeNote ("Model Free Trinity Large Thinking (262K kontext)") je čiastočne presný — Trinity Large Thinking je skutočne zadarmo cez OpenRouter s 262K kontextom — ale poznámka vynecháva, že toto...
+- **`baichuan`** — Náš dodaný freeNote hovorí „Free Baichuan models“, čo znamená nepretržitý bezplatný prístup, ale súčasná realita je len jednorazový skúšobný kredit 80 CNY pre nových používateľov (platný 3 mesiace). Neexistujú žiadne trvalé…
+- **`baidu`** — V katalógu sa uvádza „Free ERNIE Speed/Lite models“, čo je vo všeobecnosti presné, ale podhodnocuje rozsah: ERNIE-Tiny a viaceré varianty kontextového okna (8K a 128K) sú tiež zadarmo. Objaví sa bezplatná úroveň…
+- **`bazaarlink`** — Vo všeobecnosti sa zhoduje — dodaný freeNote presne popisuje automatické: bezplatné smerovanie pre odvodenie s nulovými nákladmi. Súčasná realita však zahŕňa explicitné limity sadzieb (10-20 RPM, ~ 150 RPD), ktoré nie sú uvedené v…
+- **`blackbox`** — Náš dodaný freeNote tvrdí „neobmedzený základný chat plus Minimax-M2.5.“ V skutočnosti sú neobmedzené požiadavky agentov Minimax-M2.5 funkciou plateného plánu (Pro +), nie sú súčasťou bezplatnej úrovne. Voľná úroveň má li…
+- **`bluesminds`** — Naša odoslaná freeNote bola "(žiadna)" — ale BluesMinds má zdokumentovanú bezplatnú úroveň: 500 pi kreditov, 20 RPM, 300 RPD, trvalý bezplatný plán. Katalóg výrazne podhodnocuje ponuku.
+- **`brave-search`** — V katalógu je uvedené „(žiadne)“, čo naznačuje, že nebola sledovaná žiadna voľná úroveň, ale v skutočnosti existovala bezplatná úroveň 5 000 queries/month (bez karty) do 12. februára 2026, ktorá bola odvtedy nahradená 5/month$…
+- **`byteplus`** — Náš katalóg bol odoslaný „(žiadny)“, ale BytePlus ModelArk má bezplatnú úroveň: jednorazový skúšobný kredit vo výške 500 000 tokenov na model LLM pre nové účty. Katalóg to neuvádza.
+- **`cerebras`** — Skúšobná verzia 1M tokens/day bez karty je preč. Live cerebras.ai/pricing (2026-09-03) je jednorazový registračný kredit 5 $, vyžaduje sa spôsob platby, platnosť 30 dní. Preklasifikované ako `one-time-initial` (v tvare LongCat); klesol zo `LEGACY_FREE_PROVIDERS` a opakujúceho sa rozpočtu.
+- **`chutes`** — Dodávaný freeNote hovorí „Bezplatná úroveň k dispozícii“, ale od 15. marca 2026 bola bezplatná úroveň oficiálne ukončená. Poznámka v katalógu je zastaraná a mala by byť aktualizovaná, aby odrážala, že neexistuje žiadna r…
+- **`coze`** — Dodaná poznámka „Bezplatná platforma ByteDance agenta“ je smerovo presná, ale vynecháva, že bezplatná úroveň je teraz prísne obmedzená kreditom (10 credits/day ≈ 5–100 správ v závislosti od modelu), čo je obmedzenie…
+- **`deepinfra`** — Náš odoslaný freeNote hovorí: „Bezplatné registračné kredity na testovanie API “ — sa to zdá byť zastarané. Oficiálna cenová stránka teraz vyžaduje card/prepayment bez zdokumentovaného všeobecného bezplatného registračného kreditu. Voľný ti…
+- **`deepseek`** — Naša odoslaná poznámka hovorí „5 miliónov bezplatných tokenov pri registrácii – nie je potrebná žiadna kreditná karta“ — toto je stále presné pre jednorazový grant, ale čo je dôležité, platnosť kreditov vyprší po 30 dňoch (nie sú uvedené v lodi…
+- **`dify`** — Dodaný freeNote („Bezplatný nástroj na tvorbu aplikácií AI otvoreným zdrojom + RAG“) je smerovo presný, ale neúplný. Bezplatná cloudová vrstva je obmedzenejšia, než sa predpokladá: 200 kreditov správ sa zdá byť jednorázová…
+- **`doubao`** — Dodávaný freeNote "Free Doubao models (ByteDance)" je smerovo správny, ale nešpecifikovaný. Súčasná realita je viac štruktúrovaná: existuje kvantifikovaná opakujúca sa denná bezplatná úroveň (2M tokens/day v…
+- **`duckduckgo-web`** — Základný popis „bezplatný anonymný prístup“ stále platí, ale služba výrazne dozrela: teraz má explicitné platené úrovne (Plus/Pro) s vyššími limitmi, z ktorých vyplýva, že bezplatná úroveň je sadzba-constr…
+- **`exa-search`** — katalóg dodáva freeNote "(none)", ale Exa má zdokumentovanú opakujúcu sa bezplatnú úroveň 1 000 requests/month. Toto je významná medzera — voľná úroveň existuje a je trvalá.
+- **`featherless-ai`** — Naša odoslaná freeNote hovorí "Bezplatná úroveň k dispozícii", ale neexistuje žiadna všeobecná bezplatná úroveň. Jediný bezplatný prístup je prostredníctvom programu invitation/application-based Builder Series, ktorý nie je štandardným bezplatným…
+- **`firecrawl`** — Náš katalóg bol odoslaný freeNote "(none)", čo znamená, že neexistuje žiadna bezplatná úroveň. V skutočnosti má Firecrawl zdokumentovaný opakujúci sa bezplatný plán s 1 000 credits/month — záznam v katalógu je nesprávny.
+- **`freemodel-dev`** — Naše odoslané freeNote je "(žiadne)" — toto bol pravdepodobne zástupný symbol, ktorý znamená, že poskytovateľ ešte nebol katalogizovaný. V skutočnosti má poskytovateľ jednorazovú skúšobnú kreditnú ponuku vo výške 300 USD. Toto je však aj…
+- **`friendliai`** — Dodávaný freeNote („Voľná úroveň pre odvodenie bez servera“) je čiastočne presný, ale zavádzajúci. K dispozícii je bezplatný prístup cez úroveň 0 a voľne určené modely, ale limity sadzby nie sú definované a…
+- **`gemini`** — Dodávaný freeNote hovorí „1 500 req/day pre Gemini 2.5 Flash“ — to bolo presné pred decembrom 2025. Google v decembri 2025 znížil limity voľnej úrovne o 50 – 80 %, čím sa znížil Gemini 2.5 Flash z 1 500 R…
+- **`gitlawb`** — Dodaný freeNote „Dostupná bezplatná úroveň“ je v skutočnosti zastaralý. Pôvodný bezplatný prístup MiMo bol odstránený v máji 2026; jedinou zostávajúcou „bezplatnou“ možnosťou je dočasný propagačný model (Nemotron 3 U…
+- **`gitlawb-gmi`** — Čiastočne stále presná bezplatná úroveň — existuje, ale teraz je zúžená na jeden model (Nemotron 3 Ultra) po tom, čo bol koncom mája 2026 zrušený bezplatný prístup MiMo Dodaná poznámka „Dostupná bezplatná úroveň“ pod…
+- **`groq`** — Dodávaný freeNote "30 RPM / 14,4K RPD" je presný iba pre llama-3.1-8b-instant. Väčšina ostatných modelov (vrátane llama-3.3-70b-versatile) má oveľa nižšiu hornú hranicu 1K RPD. Poznámka vynecháva špecifické modely…** Vyriešené 2026-09-02:** `freeNote` teraz znie: „Bezplatný plán: stropy na model (200 000 tokens/day na model chatu; pozri console.groq.com/docs/rate-limits pre RPM/RPD) — žiadny spôsob platby nie je v zázname.“ a katalóg obsahuje päť uzáverov 6M pre každý model (llama-3.3-70b-universatile vyradené z voľnej úrovne dňa 2026-08-16) — pozri [poznámku o opätovnom audite 2026-09-02](#tldr--how-much-free-inference-does-omniroute-actually-aggregate).
+- **`huggingchat`** — Odoslané freeNote ("Bezplatný LLM chat — nevyžaduje sa žiadne predplatné. Platia limity sadzby.") je čiastočne presné, ale výrazne podhodnocuje obmedzenia. Bezplatná úroveň teraz funguje na tvrdých 0,10 $/…
+- **`huggingface`** — Výrazne dotiahnuté. Dodávaný freeNote ("Free Inference API pre tisíce modelov") predpokladal bezplatný prístup unlimited/generous, ale od mid-2025 je bezplatná úroveň obmedzená na $0.10/month v opakovanom…
+- **`hyperbolic`** — Náš dodaný freeNote hovorí „1-5 $ skúšobných kreditov pri registrácii“ — časť skúšobného kreditu 1 $ je presná, ale údaj „5 $“ sa vzťahuje na minimálny vklad potrebný na odomknutie prenájmu GPU (nie bezplatné kredity g…
+- **`iflytek`** Katalóg — hovorí „Modely zadarmo Spark Lite“ — je to vo všeobecnosti presné. Súčasná realita je však jemnejšia: zadarmo je len Spark Lite (ponuka tokenov Max 100M bola jednorazová, neopakujúca sa akcia); …
+- **`inference-net`** — Dodávaný freeNote uvádza "25 USD bezplatných kreditov pri registrácii plus granty na výskum." Aktuálna cenová stránka zobrazuje iba 1 $ opakujúce sa mesačné kredity bez zmienky o 25 $ registračnom bonuse alebo výskumnom grante…
+- **`jina-reader`** — Naša odoslaná freeNote bola "(none)", čo je nesprávne. Jina Reader má od spustenia verejne zdokumentovanú bezplatnú úroveň: bezkľúčový prístup za 20 RPM plus 10 miliónov jednorazový token s bezplatným kľúčom API. …
+- **`kiro`** Katalóg — bol odoslaný freeNote "(none)" —, ale Kiro má zdokumentovanú, trvalú bezplatnú úroveň 50 credits/month. Bezplatná úroveň existuje od verejného uvedenia Kiro(cena bola formalizovaná ~ októbra 2025). Toto je…
+- **`llm7`** — Limity sadzieb sa zvýšili z dodaného freeNote (20 RPM / 100 req/hr → 40 RPM / 200 req/hr). Nárok „nevyžaduje sa žiadna registrácia“ je teraz zastaraný — je teraz potrebný bezplatný token z token.llm7.io (napr.
+- **`longcat`** — Verejné preview/beta skončilo a modely Flash boli vyradené; zostáva len GA `LongCat-2.0`. Voľná úroveň je a** jednorazový grant vo výške 10 miliónov tokenov** odomknuté po registrácii účtu +** overenie KYC** — to robí** nie** resetovať denne alebo mesačne. Okrem grantu je to priebežné platby.
+- **`mistral`** — Dodávaný freeNote („Bezplatná experimentálna úroveň: prístup ku všetkým modelom s obmedzenou rýchlosťou“) je smerovo správny, ale podhodnotený. Súčasná realita pridáva konkrétne zdokumentované limity: 2 RPM, 500 000 TPM, 1B tokenov/…
+- **`monsterapi`** — Dodávaný freeNote hovorí „Bezplatné kredity pre decentralizované odvodenie GPU “, čo je čiastočne presné — pri registrácii sú kredity na jednorazovú skúšku. Avšak opakujúca sa bezplatná úroveň má 0 credits/month…
+- **`morph`** — Dodávaný freeNote uvádza „250 000 credits/month“, čo zodpovedá aktuálnej alokácii kreditu; významnejšie obmedzenie je však 200 requests/month, ktoré nebolo zachytené v pôvodnom c…
+- **`muse-spark-web`** — Dodávaný freeNote ("Zadarmo s prihlásením — Meta AI platforma s modelmi Llama ") je vo všeobecnosti presný, pokiaľ ide o požiadavku na prihlásenie a prístup k modelu Llama. Nebolo zistené žiadne sprísnenie voľnej úrovne; to r…
+- **`nlpcloud`** — Dodávaný freeNote hovorí „Skúšobné kredity pre nové účty“, čo znamená jednorazovú skúšobnú verziu. V skutočnosti je bezplatná úroveň NLP Cloud opakujúcim sa mesačným bezplatným plánom (10 000 requests/month), nie skúšobným kreditom…
+- **`nomic`** — Naša odoslaná freeNote hovorí „Free Nomic Embed API“ bez kvalifikácie, čo znamená nepretržitý bezplatný prístup. Realitou je jednorazový skúšobný kredit v hodnote 1 milión tokenov len — po spotrebovaní rozpočtu na token, zaplatení odberatelia…
+- **`nous-research`** — Rechecked 2026-10-15: [Plán Nous Portal Free](https://portal.nousresearch.com/) ponúka bezplatné modely s mesačným kreditom 0 $, ale nezavádza bezplatný prístup pre Hermes-4-405B alebo Hermes-4-70B. Oba neoverené záznamy sú vylúčené z dodávaného bezplatného katalógu. To neznamená, že Nous nemá žiadne bezplatné modely.
+- **`nvidia`** — Dva aktívne koncové body voľného katalógu (Gemma 4 31B a Nemotron 3.5 Super VL) sú klasifikované ako `recurring-uncapped`: [NVIDIAFAQ](https://docs.api.nvidia.com/nim/docs/product) poskytuje členom programu vývojárov bezplatný prístup API na prototypovanie a ich modelové stránky inzerujú bezplatné koncové body. Vyžaduje sa účet a kľúč API. [Katalógové oznámenie o limite sadzieb](https://build.nvidia.com/search) zverejňuje až 40 RPM a 10 000 requests/day v závislosti od modelu a obmedzenia premávky; nezverejňuje žiadnu povolenú číselnú hodnotu. Nulové sumy token/credit znamenajú nekvantifikovaný prístup, nie neobmedzenú priepustnosť alebo záruku fakturácie. Obmedzenia skúšobného používania zostávajú (`tos: caution`); skúšobné podmienky môžu povoliť kredity. Starý riadok `openai/gpt-oss-120b` ktorý bol zrušený, sa spracováva samostatne v [#18443](https://github.com/cheaper-inference/OmniRoute/pull/18443) a je vylúčený z dvoch aktívnych modelov uvedených vyššie.
+- **`ollama-cloud`** — prekontrolovaný 2026-11-09 (#19334): Ollama ukončil svoju bezplatnú úroveň a previedol všetky cloudové modely na priebežné platby za token (https://ollama.com/pricing). Odstránené z katalógu voľných vrstiev.
+- **`openrouter`** — RPD tightened from 200 to 50 for zero-credit accounts (RPM unchanged at 20). The catalog note was accurate on RPM but overstated the RPD by 4x for the no-credits baseline tier. **Runtime tracking (#6842)**: this is no longer just a static note — `open-sse/services/openrouterQuotaFetcher.ts` polls `/api/v1/key` + `/api/v1/credits` for per-key credit cap/remaining/reset and daily/weekly/monthly USD spend, and `open-sse/services/openrouterFreeWindow.ts` locally tracks the `:free`-model 50-or-1000-per-day + 20 RPM windows described above (corrected from `X-RateLimit-*` response headers on 429s), surfaced in Dashboard → Provider Quota.
+- **`phind`** — Phind bol vypnutý 16. januára 2026. Poskytovateľ bol teraz** úplne odstránené** z katalógu (registra, spúšťača a položiek katalógu webových súborov cookie a kľúčov API) — zodpovedajúca precedensu odstránenia mŕtvej služby (#5246 Gemini CLI).
+- **`pollinations`** — Čiastočne zodpovedá — tvrdenie „nevyžaduje sa žiadny kľúč API “ stále platí pre anonymný prístup, ale katalóg freeNote vynecháva, že: (1) platia limity sadzieb (obmedzenie intervalu ~ 1 req/6-15s pre anonymné …
+- **`predibase`** — Dodaný freeNote (25 USD bezplatných skúšobných kreditov, 30-dňová platnosť) stále zodpovedá aktuálnej dokumentácii. Katalóg však vynecháva súčasný limit 20 000 tokens/day bez servera, ktorý platí počas…
+- **`publicai`** — Dodávaný freeNote ("úroveň odvodenia z bezplatnej komunity") je vo všeobecnosti presný, ale podceňuje špecifickosť: limit sadzby 20 RPM je teraz zdokumentovaný. Nenašlo sa žiadne veľké sprísnenie; služba zostáva bezplatná...
+- **`puter`** —** Úplne odstránené** z katalógu (register, exekútor, katalóg voľného modelu a záznam kľúča API) na žiadosť vlastníka Putera (Nariman Jelveh) — pozri precedens odstraňovania mŕtvej služby vyššie (`phind`).
+- **`qoder`** — Náš katalóg sa dodáva freeNote "(none)", ale Qoder má bezplatnú úroveň: edíciu pre komunitu s neobmedzeným počtom dokončení základného modelu (denný limit, nešpecifikovaný limit) plus jednorazový 14-day/300-credit Pr…
+- **`sambanova`** — Naša odoslaná poznámka popisovala iba jednorazový kredit 5 USD (platnosť 30 dní). Súčasná realita zahŕňa stálu opakujúcu sa bezplatnú úroveň so zdokumentovanými limitmi sadzieb (20 RPM, 20 RPD, 200 000 TPD), ktoré...
+- **`sensenova`** — Náš dodaný freeNote hovorí „Free SenseTime models“, čo je vágne, ale smerovo správne — voľný prístup existuje. Realita je však jemnejšia: bezplatný prístup je časovo obmedzená verejná beta verzia (Token…
+- **`serper-search`** — Dodávaný freeNote hovorí "(none)", čo je čiastočne presné — neexistuje žiadny opakujúci sa bezplatný plán — ale Serper ponúka 2 500 jednorazových skúšobných kreditov pri registrácii. Katalógová poznámka by mohla byť presnejšia...
+- **`siliconflow`** — Aktualizované 2026-10-18 (#17028): registračný kredit je jednorazová skúšobná verzia, nie opakujúci sa bezplatný plán. Zo statického bezplatného katalógu bolo odstránených desať účtovateľných ID vlajkových lodí. Niektoré modely môžu byť stále označené ako voľné v živom katalógu jednotlivých modelov SiliconFlow; dovozný a bezplatný odznak vyžadujú tento dôkaz (pri akomkoľvek kladnom cenovom vetovaní). Nevyžaduje sa žiadna statická neobmedzená bezplatná kvóta.
+- **`sparkdesk`** — Čiastočne zodpovedá — dodávanému freeNote „Free iFlytek Spark models“ je presné v tom, že Spark Lite je trvalo zadarmo, ale podhodnocuje obmedzenie (2 QPS na aplikáciu ID) a preháňa rozsah (iba S…
+- **`stepfun`** — Odoslaný freeNote „Free Step-2 models“ je zastaraný. bezplatný prístup Step-2 LLM sa už neponúka; platforma prešla na modely Step 3.x na základe platenia za token bez bezplatnej úrovne LLM. Len…
+- **`t3-web`** — Dodávaný freeNote je vo všeobecnosti presný (obmedzený prístup k modelu, Pro odomyká 50 modelov + za $8/month), ale chýbajú mu dve kľúčové aktualizácie: (1) bezplatná úroveň sa teraz obnovuje denne namiesto mesačne (zmena okolo…
+- **`tavily-search`** Katalóg — dodáva freeNote "(none)", čo znamená, že neexistuje žiadna bezplatná úroveň, ale Tavily v skutočnosti ponúka zdokumentovanú opakujúcu sa bezplatnú úroveň 1 000 credits/month bez potreby kreditnej karty. Toto je významný diskret…
+- **`tencent`** — Do značnej miery sa zhoduje — dodávané freeNote ("Free Hunyuan Lite modely") je presné. Hunyuan-lite je natrvalo zadarmo od mája 2024 a zostane tak aj od roku 2026. Poznámka v katalógu uvádza nižšie podrobnosti o…
+- **`together`** — Na odoslanom lístku je napísané „25 $ registračných kreditov + 3 trvalo bezplatné modely“, ale Together teraz vyžaduje nákup kreditu minimálne 5 $ a neponúka bezplatnú skúšobnú verziu. Registračný kredit 25 USD bol odstránený z katalógu (#12526). Poskytovateľ stále hosťuje ~ 80 trvalo bezplatné modely, ale ToS (oddiel 4.3(d)) výslovne zakazuje prenos, distribúciu, opätovný predaj alebo ponúkanie Služieb.
+- **`uncloseai`** — Zväčša sa zhoduje so — stále zadarmo navždy bez registrácie. ToS (terms-of-use.html) však objasňuje, že obmedzovanie založené na IP existuje pre nadmerné používanie a zakazuje vytváranie konkurenčných služieb ML bez…
+- **`veoaifree-web`** — Dodávaný freeNote uvádza "6 requests/hour", ale žiadny takýto explicitný limit nie je momentálne zdokumentovaný nikde na veoaifree.com. Stránka si nárokuje neobmedzené bezplatné generovanie bez prihlásenia. Uvedené modely…
+- **`voyage-ai`** — Dodaný freeNote „200 miliónov bezplatných tokenov na vloženie a zmenu poradia“ je z hľadiska počtu tokenov smerovo správny, ale zavádzajúci — vynecháva, že ide o jednorazové pridelenie na účet, nie o opakované…
+- **`yi`** — Dodávaný freeNote „Free Yi-Light models“ odkazuje na názov modelu („Yi-Light“), ktorý sa nenachádza v žiadnej aktuálnej dokumentácii AI alebo katalógu modelov — žiadny takýto model nie je uvedený na platform.01.ai, …
+
+---
+
+## Slovník pojmov
+
+| Pojem                   | Význam                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| **RPM / RPD / RPH**     | Požiadavky za minútu / deň / hodinu                                                   |
+| **TPM / TPD**           | Tokeny za minútu / deň                                                                |
+| **Dokumentovaný limit** | Poskytovateľ zverejňuje explicitný denný/mesačný limit tokenov (obhájiteľný rozpočet) |
+| **Teoretický strop**    | `rate-limit × 24/7 × 30d` — maximum, nie pridelený rozpočet                           |
+| **Neurón**              | Výpočtová jednotka Cloudflare (~1 výstupný token)                                     |
+
+> Vygenerované z prieskumu jednotlivých poskytovateľov z 2026-06-05. Ak chcete údaje aktualizovať, znova spustite pracovný postup prieskumu (pozrite si `_tasks/features-v3.8.12`).

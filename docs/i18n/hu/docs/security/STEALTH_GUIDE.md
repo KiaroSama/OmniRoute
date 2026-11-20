@@ -16,56 +16,62 @@ A rejtőzködési funkciók azért léteznek, hogy az OmniRoute kompatibilitási
 
 ---
 
-## TLS-ujjlenyomatozási réteg
+## TLS-ujjlenyomat-kezelési réteg
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-A tartós `wreq-js`-munkamenetek létrehozása lusta módon, fiókhatókörönként és feloldott proxynként történik. A folyamat egészére kiterjedő `TlsClient` legfeljebb 128 olyan munkamenetet tárol a készletben, amelyek **macOS rendszeren futó Chrome 124 böngészőt** utánoznak a Cloudflare mögött található upstream szolgáltatások számára. A `TlsClient.fetch()` biztonságosan hibára fut, ha a natív futtatókörnyezet nem érhető el; a hívó ezen burkolón kívül kifejezetten kiválaszthat egy tartalék megoldást.
+A tartós `wreq-js`-munkamenetek fiókhatókörönként és feloldott proxynként, lusta módon jönnek létre. A
+folyamatszintű `TlsClient` legfeljebb 128 munkamenetet tárol, amelyek **macOS rendszeren futó Chrome 124 böngészőt** személyesítenek meg a
+Cloudflare mögötti upstream szolgáltatásokhoz. A `TlsClient.fetch()` biztonságosan hibával leáll, ha a natív futtatókörnyezet
+nem érhető el; a hívó fél explicit módon választhat tartalék megoldást ezen a burkolón kívül.
 
 - Munkamenetprofil: `browser: "chrome_124", os: "macos"`
-- Proxyfeloldás (prioritási sorrendben): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (a kisbetűs változatokat is beleértve)
+- Proxyfeloldás (prioritási sorrendben): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (kisbetűs változatok is)
 - Időtúllépés: `TLS_CLIENT_TIMEOUT_MS` (a `FETCH_TIMEOUT_MS` értékét örökli, alapértelmezés szerint 600000)
-- A `wreq-js` Response kompatibilis a fetch API-val (`headers`, `text()`, `json()`, `clone()`, `body`).
-- Első bájtos figyelő (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): a `TlsClient.fetch()`
-  azonnal feloldódik, amint megérkeznek az upstream fejlécek, ezért a `TLS_CLIENT_TIMEOUT_MS` önmagában
-  nem képes időkorlátot szabni egy olyan törzsnek, amely soha nem ad vissza első bájtot. A `guardTlsFirstByte()`
-  versenyezteti a törzs első `read()` hívását a `TLS_FIRST_BYTE_WATCHDOG_MS` értékével (alapértelmezés szerint
-  `10000`, a `0` letiltja); az egészséges törzset ez nem érinti, míg egy elakadt törzs esetén megszakítja a
-  wreq-olvasót, és lehetővé teszi, hogy a `proxyFetch` meglévő TLS-tartaléklogikája továbblépjen a közvetlen/proxy
-  diszpécserhez (egy nem biztonságosan újrajátszható kérés, például egy törzzsel rendelkező POST, továbbra is
-  hibát dob ahelyett, hogy a rendszer észrevétlenül újrapróbálná).
+- A `wreq-js` Response fetch-kompatibilis (`headers`, `text()`, `json()`, `clone()`, `body`).
+- Első bájtos watchdog (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): a `TlsClient.fetch()`
+  azonnal visszatér, amint megérkeznek az upstream fejlécek, ezért a `TLS_CLIENT_TIMEOUT_MS` önmagában nem tudja időben korlátozni az olyan
+  törzset, amely soha nem ad első bájtot. A `guardTlsFirstByte()` versenyezteti a törzs első `read()`
+  műveletét a `TLS_FIRST_BYTE_WATCHDOG_MS` értékével (alapértelmezés szerint `10000`, a `0` letiltja); az egészséges törzset
+  ez nem érinti, míg elakadt törzs esetén megszakítja a wreq olvasóját, és lehetővé teszi, hogy a `proxyFetch` meglévő
+  TLS-tartaléklogikája továbblépjen a közvetlen/proxy diszpécserhez (a biztonságosan nem újrajátszható kérés, például
+  egy törzzsel rendelkező POST, továbbra is hibát dob a csendes újrapróbálkozás helyett).
 
-### Webes sütiket használó szolgáltatói átvitel — wreq-js 3.2.0
+### Webes cookie-szolgáltatók transzportja — wreq-js 3.2.0
 
-Az `open-sse/services/tlsClientBase.ts` az alábbi öt specializált, webes sütiket használó átvitel közös adaptere. Minden vékony szolgáltatói burkoló kiválaszt egy böngésző-/operációsrendszer-profilt. Az adapter az `open-sse/utils/tlsClient.ts` egyetlen wreq-futtatókörnyezet-betöltőjét és átviteli készletét használja, profil + operációs rendszer + feloldott proxy szerint kulcsolva, miközben minden kérés a `cookieMode: "ephemeral"` beállítást használja. A fiókok és kérések ezért megosztják az átviteli szintű kapcsolatokat, de soha nem osztoznak wreq-munkameneten vagy sütőtárolón.
+Az `open-sse/services/tlsClientBase.ts` az alábbi öt specializált
+webes cookie-transzport közös adaptere. Minden vékony szolgáltatói burkoló kiválaszt egy böngésző-/OS-profilt. Az adapter
+az `open-sse/utils/tlsClient.ts` egyetlen wreq-futtatókörnyezet-betöltőjét és transzportkészletét használja, amelynek kulcsa a
+profil + OS + feloldott proxy, miközben minden kérés a `cookieMode: "ephemeral"` beállítást használja. A fiókok és
+kérések így megosztják a transzportszintű kapcsolatokat, de soha nem osztoznak wreq-munkameneten vagy cookie-tárolón.
 
-| Szolgáltató | Profil        | Emulált operációs rendszer | Adatfolyam-végi szabályzat              |
-| ----------- | ------------- | -------------------------- | --------------------------------------- |
-| Claude      | `chrome_146`  | Linux                      | a `[DONE]` belefoglalása                |
-| Perplexity  | `firefox_148` | macOS                      | az `event: end_of_stream` belefoglalása |
-| Grok        | `chrome_146`  | Linux                      | a `[DONE]` kihagyása                    |
-| Notion      | `chrome_146`  | Windows                    | a `[DONE]` belefoglalása                |
-| LMArena     | `chrome_146`  | Windows                    | nincs jelző; bezárás natív EOF esetén   |
+| Szolgáltató | Profil        | Emulált OS | Adatfolyam-EOF szabályzata          |
+| ----------- | ------------- | ---------- | ----------------------------------- |
+| Claude      | `chrome_146`  | Linux      | tartalmazza: `[DONE]`               |
+| Perplexity  | `firefox_151` | macOS      | tartalmazza: `event: end_of_stream` |
+| Grok        | `chrome_146`  | Linux      | kihagyja: `[DONE]`                  |
+| Notion      | `chrome_146`  | Windows    | tartalmazza: `[DONE]`               |
+| LMArena     | `chrome_146`  | Windows    | nincs jelző; lezárás natív EOF-nál  |
 
-- Az adatfolyam-kezelés közvetlenül használja a natív válasz `ReadableStream` objektumát; nem jön
-  létre ideiglenes fájl vagy kísérőfolyamat.
-- Legfeljebb 256 kezdeti bájtot vizsgál meg a rendszer az adatfolyam elérhetővé tétele előtt. Az SSE-szolgáltatók
-  pufferelik a nem SSE-hibákat; a Grok/LMArena a Cloudflare-ellenőrzéseket `403`, a HTML-köztes oldalakat pedig
-  `502` állapotkódra képezi le.
-- A natív kérés időtúllépését továbbra is egy abszolút JS-korlát burkolja. Elakadás esetén csak az érintett
-  profil/operációs rendszer/proxy átvitel válik érvénytelenné és zárul be, mielőtt a következő kérés újra létrehozná.
-- A proxyfeloldás prioritása: hívásonkénti `proxyUrl` → kérés hatókörű fiók-/irányítópult-kontextus →
-  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (a kisbetűs változatokat is beleértve). A feloldási hibák biztonságosan
-  hibára futnak ahelyett, hogy közvetlen kapcsolatot szivárogtatnának ki. Az LMArena szándékosan az `arena.ai`
-  alapján végez feloldást.
-- A `byteResponse` UTF-8-sérülés nélkül ad vissza egy tartalomtípussal ellátott `data:` URL-t.
+- A streamelés közvetlenül használja fel a natív válasz `ReadableStream` objektumát; nem jön létre ideiglenes fájl vagy kísérőfolyamat.
+- Legfeljebb 256 kezdeti bájtot vizsgál meg a rendszer a stream elérhetővé tétele előtt. Az SSE-szolgáltatók pufferelik a nem SSE
+  hibákat; a Grok/LMArena a Cloudflare-ellenőrzéseket `403`, a HTML köztes oldalakat pedig `502` állapotkódra képezi le.
+- A natív kérés időtúllépését továbbra is egy abszolút JS-időkorlát burkolja. Elakadás esetén
+  csak az érintett profil-/OS-/proxytranszport válik érvénytelenné és záródik be, mielőtt a következő kérés újra létrehozza.
+- A proxyfeloldás prioritása: hívásonkénti `proxyUrl` → kérés hatókörű fiók-/irányítópult-környezet →
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (a kisbetűs változatokat is beleértve). A feloldási hibák
+  biztonságosan leállítják a műveletet a közvetlen kapcsolat kiszivárgása helyett. Az LMArena szándékosan az `arena.ai` alapján végzi a feloldást.
+- A `byteResponse` UTF-8-sérülés nélkül ad vissza tartalomtípussal ellátott `data:` URL-t.
 - A hibák típusai: `TlsClientUnavailableError` (a csomag/bővítmény nem érhető el), `TlsClientHangError`
-  (a határidő túllépve), valamint `WreqTransportCapacityError` (a megosztott munkamenet-kapacitási hibakód),
-  amikor mind a 128 korlátozott profil/operációs rendszer/proxy hely aktív vagy bezárás alatt áll.
+  (az időkorlát túllépve) és `WreqTransportCapacityError` (a megosztott munkamenet-kapacitási hibakód),
+  amikor mind a 128 korlátozott profil-/OS-/proxyhely aktív vagy bezárás alatt áll.
 
-A fenti általános `TlsClient`-munkamenet továbbra is a tartós, böngészőalapú sütiállapotra specializálódik. Mindkét útvonal ugyanazt a gyorsítótárazott wreq-modulbetöltőt és folyamat-életciklusfigyelőt használja újra; készleteik különállók maradnak, mert süti-élettartamaik szándékosan eltérnek.
+A fenti általános `TlsClient` munkamenet továbbra is a tartós, böngésző által támogatott cookie-állapotra
+specializálódik. Mindkét útvonal ugyanazt a gyorsítótárazott wreq-modulbetöltőt és folyamat-életciklus-hookot használja újra; készleteik
+különállóak maradnak, mivel a cookie-k élettartama szándékosan eltérő.
 
-A profilokat a rögzített csomag támogatja, de a valós WAF-elfogadás a helyi szerződéses tesztektől függetlenül is változhat. Mielőtt egy upstream böngészővel való egyenértékűséget állítana, ellenőrizze az ujjlenyomat-módosításokat egy kifejezetten engedélyezett, élő fiókkal.
+A rögzített csomag támogatja a profilokat, de a valós WAF-elfogadás a helyi szerződéstesztektől függetlenül
+változhat. Mielőtt egy upstream böngészővel való egyenértékűséget állítana, ellenőrizze az ujjlenyomat változásait egy explicit módon engedélyezett élő fiókkal.
 
 ---
 
@@ -114,7 +120,7 @@ Alkalmazási helyek: `system` blokkok, az összes `messages[].content`, valamint
 
 Olyan külső Anthropic-továbbítókhoz, amelyek csak „valódi Claude Code” forgalmat fogadnak el:
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - Az `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"` alapértelmezés szerint
@@ -131,41 +137,63 @@ Ugyanezen csomag kapcsolódó moduljai:
 
 ---
 
-## Antigravity lopakodó mód
+## Antigravity Stealth
 
-Az Antigravity-kérések bájtról bájtra megőrzik a hívó szövegét. Az OmniRoute nem szúr zéró szélességű karaktereket a promptokba, és nem nevez át vagy injektál eszközöket egy IDE-kliens utánzásához.
+Antigravity kérések byte-on-byte megőrzik a hívó szövegét. OmniRoute nem szúr be nulla szélességű karaktereket a promptokba vagy rename/inject eszközökbe, hogy utánozza a IDE klienst.
 
 ### `antigravityHeaderScrub.ts`
 
-Továbbítás előtt eltávolítja a Stainless SDK jelölőit (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`).
+Rozsdamentes SDK jelölők (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) csíkozása a továbbítás előtt.
 
-### ⚠️ Kockázat: `ANTIGRAVITY_CREDITS=always` (fióktiltási gócpont)
+### ⚠️ kockázat: `ANTIGRAVITY_CREDITS=always` (számlatiltás hot spot)
 
-Az `ANTIGRAVITY_CREDITS=always` (amelyet az `open-sse/executors/antigravity.ts` használ fel) **minden** kérést az Antigravity AI Credit Overages szolgáltatáson (fizetős Google-krediteken) keresztül irányít, ahelyett, hogy a Google ingyenes csomagjának kvótája korlátozná a használatot. Ez funkcióként van dokumentálva, de **ez az általunk látott szolgáltatásifeltétel-sértési jelentések messze leggyakoribb oka** — több Google Ultra-fiókot is letiltottak `403 / "service disabled for ToS violation" / insufficient_quota` hibával, miután néhány órán át `=always` beállítással futottak.
+`ANTIGRAVITY_CREDITS=always` ( `open-sse/executors/antigravity.ts` által fogyasztott) útvonalak** minden** kérjen Antigravity AI Credit Overages (fizetett Google kredit) segítségével ahelyett, hogy Google szabadszintű kvótakapuját hagyná. Ez jellemzőként van dokumentálva, de így van** az egyetlen leggyakoribb Általános Szerződési Feltételek megsértéséről szóló jelentés, amelyet látunk** — több Google Ultra fiókot letiltottak `403 / "service disabled for ToS violation" / insufficient_quota` miután néhány órán át futottak `=always`.
 
-A felsőbb rétegbeli szabályérvényesítés **a Google oldalán** történik, ezt az OmniRoute nem tudja megakadályozni. A környezeti változó neve és a meglévő dokumentáció azt a benyomást kelti, hogy biztonságosan bekapcsolható; ez nem így van.
+Az upstream végrehajtás be van kapcsolva**Google oldalán** , semmi sem akadályozhatja meg OmniRoute. Az env var név és a meglévő dokumentumok úgy hangzik, mint egy biztonságos gomb, amellyel meg lehet fordítani; nem az.
 
-**Miért vált ez ki agresszívebb visszaélés-észlelést, mint a kizárólag ingyenes csomagra korlátozott használat:**
+**Miért vezeti fel ez agresszívebben a visszaélések felderítését, mint a csak szabadszintű használat:**
 
-- Az egyetlen Google-fiókon keresztüli tartós, automatizált költést másként jelölik meg, mint amikor az ingyenes csomag eléri a kvótát, majd leáll.
-- A kredittúllépéseknek nincs sebességkorlátjuk, ezért egy hibásan konfigurált kliens percek alatt több száz USD-t költhet el, és API-kulcs-viszonteladásnak vagy botforgalomnak tűnhet.
-- Ha több OmniRoute-felhasználó párhuzamosan, ugyanarról a külső IP-címről használ túllépési krediteket, az tovább erősíti a jelzést.
+- Az egyetlen Google -fiókra fordított tartós automatizált költés másképp jelenik meg, mint a szabadszintű találati kvóta és leállás.
+- A hiteltúllépéseknek nincs kamatplafonja, így a rosszul konfigurált kliens percek alatt több száz USD égethet el, és API-kulcsos viszonteladásnak vagy botforgalomnak tűnhet.
+- Több OmniRoute felhasználó, akik párhuzamosan ütik el a túllépési kreditet ugyanarról a külső IP ről, fokozza a jelet.
 
-**Javasolt eljárás:**
+**Javasolt testtartás:**
 
-1. Tartsa meg az alapértelmezett `ANTIGRAVITY_CREDITS=off` beállítást, kivéve, ha az üzemeltető kifejezetten elfogadja a fizetős kreditekkel és a fiókkal szembeni intézkedésekkel járó kockázatot. A `retry` először elküldi a normál kérést, és egy megfelelő, kvótához kapcsolódó 429-es válasz után legfeljebb egyszer injektál krediteket; az `always` már az első kérésbe injektálja a krediteket.
-2. **Ossza el a terhelést a szolgáltatók között az Auto-Combo segítségével** (`model: "auto"` vagy `kr/glm/etc`-combo), ahelyett, hogy egyetlen Antigravity-fiókot terhelne túl.
-3. **Állítson be kapcsolatonkénti RPM-korlátokat** az Antigravity szolgáltató szerkesztési oldalán (Dashboard → Providers → Antigravity → kapcsolat → sebességkorlát). Tartós használat esetén a 30–60 RPM védhető felső határ.
-4. **Használjon stabil, az üzemeltető által felügyelt felsőbb rétegbeli hálózatot**, és kerülje egyetlen fiók megosztását egymástól független felhasználók vagy munkaterhelések között.
-5. **Letiltás esetén**: nyújtson be fellebbezést a `support.google.com` → „Restore Workspace/Account access” oldalon, és mellékelje a Google által küldött pontos `quota_exceeded` / `service disabled` választörzset. A helyreállítás nem garantált.
+1. Tartsa meg az alapértelmezett `ANTIGRAVITY_CREDITS=off` kivéve, ha az üzemeltető kifejezetten vállalja a kifizetett hitel és a számlavégrehajtás kockázatát. `retry` először a normál kérést küldi el, és a krediteket legfeljebb egyszer szúrja be a 429-es jogosult kvóta után; `always` az első kérésre beszúrja a krediteket.
+2. **Terhelés megosztása a szolgáltatók között az Auto-Combo segítségével** (`model: "auto"` vagy `kr/glm/etc` -combo) ahelyett, hogy egyetlen Antigravity fiókot telítenének.
+3. **Állítsa be a csatlakozásonkénti RPM határértékeket** a Antigravity szolgáltató szerkesztő oldalán (Dashboard → Providers → Antigravity → connection → rate limit). A 30–60 RPM egy védhető felső határ a tartós használathoz.
+4. **Használjon stabil, kezelő által vezérelt upstream hálózatot** és ne ossza meg egy fiókot független felhasználókkal vagy munkaterhelésekkel.
+5. **Ha betiltják** : fellebbezés `support.google.com` → " Workspace/Account hozzáférés visszaállítása" segítségével a Google pontos `quota_exceeded` / `service disabled` választörzs elküldésével. A helyreállítás nem garantált.
 
-A környezeti változók referenciadokumentációja ismerteti az egyes kreditmódok fiókra és költségekre gyakorolt hatásait.
+A környezeti hivatkozás dokumentálja az egyes jóváírási módok számla- és kiadási vonatkozásait.
 
-Érintett helyek:
+#### Nem csak `=always`: Antigravity OAuth útválasztás általában
 
-- `open-sse/executors/antigravity.ts` — beolvassa a `process.env.ANTIGRAVITY_CREDITS` értékét
-- `src/lib/oauth/providers/antigravity.ts` — hitelesítő adatok továbbítása
-- Eredeti incidensjelentés: [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183) beszélgetés
+A felfüggesztések nem korlátozódnak a hiteltúllépésekre. A 2026. novemberi jelentések (#19223, #19266) több Google fiókot írnak le, amelyeket felfüggesztettek a `antigravity` és `agy` (Antigravity CLI) szolgáltatókon keresztül történő átirányítás során, a következőkkel:
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+Mindkét szolgáltató a Antigravity termék OAuth munkamenetével hitelesít, erre az irányítópult kockázati figyelmeztetése („Ez a szolgáltató az Ön hivatalos session/OAuth termékét használja, amely nem engedélyezett proxy/router használatához”) figyelmeztet a kapcsolat hozzáadása előtt. A fenti ajánlások egyike sem teszi lehetővé ezt a felhasználást; csak azt csökkentik, hogy egy fiók mekkora forgalmat hordoz.
+
+**Engedélyezett API interfészek Gemini modellekhez.** Google programozott hozzáférést biztosít Gemini APIs keresztül, amelyet OmniRoute normál API-kulcs-szolgáltatóként támogat:
+
+| Szolgáltató azonosítója | Irányítópult neve         | Hitelesítési adat                                                                     |
+| ----------------------- | ------------------------- | ------------------------------------------------------------------------------------- |
+| `gemini`                | Gemini (Google AI Studio) | Gemini API kulcs a Google AI Studio-tól (ingyenes szint elérhető)                     |
+| `vertex`                | Vertex AI                 | Szolgáltatásfiók JSON, OAuth hozzáférési token vagy Vertex Express API kulcs (Gemini) |
+
+Ezek a szolgáltatók hitelesítő adatok Google problémákat használnak API hozzáféréshez, ellentétben a Antigravity termékmunkamenettel. Nem tesznek minden használatot megfelelővé, és nem szüntetik meg a végrehajtás kockázatát: mindegyikre a saját feltételei vonatkoznak, amelyeket az üzemeltetőnek ellenőriznie kell a telepítéshez. Például a [Gemini API Kiegészítő Szolgáltatási Feltételek](https://ai.google.dev/gemini-api/terms) csak Fizetett szolgáltatásokat engedélyeznek, ha API klienseket az Európai Gazdasági Térségben, Svájcban vagy az Egyesült Királyságban a felhasználók rendelkezésére bocsátják, és a Nem fizetett szolgáltatásoknak küldött tartalmak felhasználhatók Google termékeinek fejlesztésére. A Vertex AI ehelyett a Google Cloud feltételei alá esik ( [szolgáltatásspecifikus feltételek](https://cloud.google.com/terms/service-terms) ). Az árak és a kvóták a API feltételeket követik, nem pedig a Antigravity előfizetést.
+
+Azoknak az üzemeltetőknek, akik szeretnék elkerülni a fent leírt Antigravity felfüggesztéseket, Gemini forgalmat ezen szolgáltatók egyikén kell átirányítaniuk `antigravity` / `agy` helyett, miután ellenőrizték, hogy használatuk megfelel-e a szolgáltató feltételeinek.
+
+Érintési pontok:
+
+- `open-sse/executors/antigravity.ts` — `process.env.ANTIGRAVITY_CREDITS` olvas
+- `src/lib/oauth/providers/antigravity.ts` — hitelesítő vízvezeték
+- Eredeti eseményjelentés: Discussion [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
 
@@ -234,19 +262,18 @@ Minden MITM-végpont kezelési hitelesítést igényel (`requireCliToolsAuth`). 
 
 ---
 
-## User-Agent felülbírálások — környezeti változók (`.env.example` 12. szakasz)
+## A felhasználói ügynök felülbírálja — env vars-t (`.env.example`, 12. szakasz)
 
-| Változó                  | Alapértelmezett                                                 |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| Változó             | Alapértelmezett                               |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-Az `open-sse/executors/base.ts::buildHeaders()` használja dinamikus kereséssel. **Frissítse ezeket, amikor a szolgáltatók új CLI-verziókat adnak ki** — az elavult UA-karakterláncokat a rendszer elavult kliensekként kezdi elutasítani.
+`open-sse/executors/base.ts::buildHeaders()` dinamikus keresésen keresztül fogyasztja.** Ha a szolgáltatók új CLI verziókat adnak ki, nyomd meg ezeket** — elavult UA karakterláncait elavult kliensként kezdik elutasítani.
 
 ## CLI-kompatibilitási mód kapcsolói (`.env.example` 13. szakasz)
 

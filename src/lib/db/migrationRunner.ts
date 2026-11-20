@@ -1,10 +1,24 @@
 /**
  * Migration Runner — Versioned SQL Migrations for SQLite
  *
- * Reads numbered `.sql` files from the migrations directory and applies
- * them sequentially, tracking applied versions in a `schema_migrations` table.
+ * Reads `.sql` files from the migrations directory and applies them in version
+ * order, tracking applied versions in the `_omniroute_migrations` table.
  *
- * Naming convention: `NNN_description.sql` (e.g., `001_initial_schema.sql`)
+ * Naming convention — two formats share the directory:
+ * - `NNN_description.sql` (e.g. `001_initial_schema.sql`): the legacy sequential
+ *   set, frozen at `239_…` (exactly three digits; the known gaps stay gaps).
+ * - `YYYYMMDDHHMMSS_description.sql` (UTC timestamp, 14 digits): every new
+ *   migration. Create it with `npm run db:new-migration -- <description>`, so two
+ *   pull requests never race for the same number.
+ *
+ * Both record the bare digit prefix as the version. Ordering is by the NUMERIC
+ * value of that prefix (`compareMigrationVersions()` in
+ * `migrationRunner/ordering.ts`), never by text: as text `20261113120000` would
+ * sort before `235`. For the three-digit legacy set the two orders are identical.
+ * Pending means "not in the ledger", so a timestamped migration that reaches a
+ * database after a later-dated one still applies exactly once. Namespaced
+ * directories (`OMNIROUTE_EXTRA_MIGRATIONS_DIRS`, versions like `ee-134`) always
+ * run after the whole main set.
  *
  * All migrations run within a single transaction — all-or-nothing per file.
  *
@@ -18,7 +32,6 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import type { SqliteAdapter } from "./adapters/types";
-import { DEFAULT_DATABASE_SETTINGS } from "@/types/databaseSettings";
 import { isAutomatedTestProcess } from "@/shared/utils/testProcess";
 import {
   LEGACY_VERSION_SLOT_MIGRATIONS,
@@ -27,6 +40,11 @@ import {
   SUPERSEDED_DUPLICATE_MIGRATIONS,
 } from "./migrationRunner/constants";
 import { getExtraMigrationFiles } from "./migrationRunner/extraDirs";
+import {
+  compareMigrationFiles,
+  compareMigrationVersions,
+  isTimestampVersion,
+} from "./migrationRunner/ordering";
 import { migrationConsole as console } from "./migrationRunner/logger";
 import {
   createPreMigrationBackup,
@@ -34,6 +52,7 @@ import {
   type PreMigrationBackupReceipt,
 } from "./migrationRunner/preMigrationBackup";
 import {
+  applyMigrationSkippingExistingColumns,
   detectNameMismatches,
   getPlausiblePendingCount,
   hasColumn,
@@ -41,6 +60,7 @@ import {
   hasPhysicalTable,
   hasTable,
   inferPhysicalSchemaBaseline,
+  isCompatibilitySourceEligible,
   reconcileRenumberedMigrations,
   rehomeLegacyVersionSlotMigrations,
 } from "./migrationRunner/schemaState";
@@ -215,27 +235,36 @@ function isDeferredUnsupportedMigration(
 }
 
 /**
- * Get all migration files sorted by version number.
+ * Get all migration files in application order: the main directory sorted by the
+ * numeric value of the version prefix (legacy `NNN` before timestamped
+ * `YYYYMMDDHHMMSS`; see `migrationRunner/ordering.ts`), then the namespaced extra
+ * directories in their declared order.
+ *
+ * Exported for the ordering tests; the runner itself is the only production caller.
  */
-function getMigrationFiles(): Array<{ version: string; name: string; path: string }> {
+export function getMigrationFiles(): Array<{ version: string; name: string; path: string }> {
   // The extra directories are an independent set: a missing core directory must not
   // make them vanish silently.
   if (!fs.existsSync(MIGRATIONS_DIR)) return getExtraMigrationFiles();
 
-  const files = fs
-    .readdirSync(MIGRATIONS_DIR)
-    .filter((f) => f.endsWith(".sql"))
-    .sort()
-    .map((filename) => {
-      const match = filename.match(/^(\d+)_(.+)\.sql$/);
-      if (!match) return null;
-      return {
-        version: match[1],
-        name: match[2],
-        path: path.join(MIGRATIONS_DIR, filename),
-      };
-    })
-    .filter(Boolean) as Array<{ version: string; name: string; path: string }>;
+  // Numeric, not text, order: as text `20261113120000_x.sql` would sort before
+  // `235_x.sql` and run ahead of the tables it depends on. Files sharing a slot
+  // (superseded duplicates) keep their file-name order, as with the old text sort.
+  const files = (
+    fs
+      .readdirSync(MIGRATIONS_DIR)
+      .filter((f) => f.endsWith(".sql"))
+      .map((filename) => {
+        const match = filename.match(/^(\d+)_(.+)\.sql$/);
+        if (!match) return null;
+        return {
+          version: match[1],
+          name: match[2],
+          path: path.join(MIGRATIONS_DIR, filename),
+        };
+      })
+      .filter(Boolean) as Array<{ version: string; name: string; path: string }>
+  ).sort(compareMigrationFiles);
 
   // Detect version collisions early: two files sharing the same numeric prefix
   // would otherwise be silently skipped by the runner (only the first applied
@@ -263,9 +292,18 @@ function getMigrationFiles(): Array<{ version: string; name: string; path: strin
       .join("; ");
     throw new Error(
       `Migration version collision detected: ${summary}. ` +
-        `Each migration file must have a unique numeric prefix. Rename one of the ` +
-        `colliding files (and add a retroactive guard in isSchemaAlreadyApplied for ` +
-        `DBs that already applied the old number). See _tasks/features-v3.8.4/9route/POST-MERGE-AUDIT.md.`
+        `Each migration file must have a unique numeric prefix. Rename ONLY the file ` +
+        `that is not yet on main or on any release/* branch (regenerate its name with ` +
+        `\`npm run db:new-migration -- <description>\`); the other one may already have ` +
+        `run on user databases under its current name, and renaming it would apply it again. ` +
+        `If both are already merged, rename the later one WITHOUT changing its content and ` +
+        `add a RENAMED_MIGRATION_COMPATIBILITY entry from its old version and name to the ` +
+        `new ones, so databases that applied it under the old version do not run it again ` +
+        `(check:migration-numbering accepts that rename only with the entry and identical ` +
+        `content, and checks that the new position does not change the schema and that ` +
+        `upgraded databases do not run it again, so pick a new timestamp near the old one, ` +
+        `never the same timestamp with another name, which the runner would apply again; a ` +
+        `schema change goes in a new migration). See docs/ops/DATABASE_GUIDE.md.`
     );
   }
 
@@ -274,7 +312,9 @@ function getMigrationFiles(): Array<{ version: string; name: string; path: strin
   // the upstream one. Their versions are namespaced (`ee-134`), so they cannot
   // collide with a numeric slot, and every downstream consumer here — the applied
   // set, the gap reconciliation, the name-mismatch check — keys on the version
-  // string and needs no further change. Empty and filesystem-free when unset.
+  // string and needs no further change. Empty and filesystem-free when unset. The
+  // combined array is NOT re-sorted: the extras keep their declared order after the
+  // whole main set, including every timestamped migration.
   return [...files, ...getExtraMigrationFiles()];
 }
 
@@ -317,15 +357,16 @@ function getAppliedVersions(db: SqliteAdapter): Set<string> {
 }
 
 /**
- * Get applied migration records (version + name) for mismatch detection.
+ * Get applied migration records (version + name) for mismatch detection, in
+ * numeric version order. `version` is a TEXT column, so the SQL `ORDER BY version`
+ * would put `20261113120000` before `235`; the ordering happens here instead.
  */
 function getAppliedRecords(db: SqliteAdapter): Array<{ version: string; name: string }> {
-  return db
-    .prepare("SELECT version, name FROM _omniroute_migrations ORDER BY version")
-    .all() as Array<{
+  const rows = db.prepare("SELECT version, name FROM _omniroute_migrations").all() as Array<{
     version: string;
     name: string;
   }>;
+  return rows.sort((a, b) => compareMigrationVersions(a.version, b.version));
 }
 
 /**
@@ -369,10 +410,7 @@ function validateRequiredPhysicalMigrationProvenance(
         files.some(
           (file) => file.version === compatibility.toVersion && file.name === compatibility.toName
         ) &&
-        files.some(
-          (file) =>
-            file.version === compatibility.fromVersion && file.name !== compatibility.fromName
-        )
+        isCompatibilitySourceEligible(files, compatibility)
     );
     const knownLegacySlotCollision = LEGACY_VERSION_SLOT_MIGRATIONS.some(
       (legacy) =>
@@ -424,6 +462,13 @@ function ensureColumn(db: SqliteAdapter, tableName: string, columnName: string, 
   if (!hasColumn(db, tableName, columnName)) {
     db.exec(ddl);
   }
+}
+
+function triggerHasWhenClause(db: SqliteAdapter, triggerName: string): boolean {
+  const trigger = db
+    .prepare("SELECT sql FROM sqlite_master WHERE type = 'trigger' AND name = ?")
+    .get(triggerName) as { sql: string } | undefined;
+  return trigger !== undefined && /\bWHEN\b/i.test(trigger.sql);
 }
 
 function isSchemaAlreadyApplied(
@@ -593,6 +638,11 @@ function isSchemaAlreadyApplied(
         hasColumn(db, "provider_nodes", "daily_quota_reset_timezone") &&
         hasColumn(db, "provider_nodes", "daily_quota_reset_hour")
       );
+    case "178":
+      // 178 only exists to give memory_fts_au a WHEN clause. A released ledger slot
+      // (#18952) can replay it long after 203 rewrote that trigger, and the replay would
+      // drop 203's memory_id condition, which is what indexes new memories (#15707).
+      return triggerHasWhenClause(db, "memory_fts_au");
     case "179":
       // proxy_logs.upstream_status may already exist if ensureProxyLogsColumns ran first;
       // a bare ADD COLUMN would then throw. Renumbering the migration means renaming this case
@@ -619,9 +669,46 @@ function isSchemaAlreadyApplied(
       // would answer for another migration's schema and skip it.
       return hasColumn(db, "proxy_logs", "attempt_number");
     case "194":
-      // Same shape as 179/181/183/184/187: ensureProxyLogsColumns may have
-      // added headers_ms at boot. Keyed by version only.
-      return hasColumn(db, "proxy_logs", "headers_ms");
+      // 194 adds TWO timing columns. Boot-time ensureProxyLogsColumns can
+      // independently install either one; the presence of headers_ms alone
+      // must not mark first_chunk_ms as migrated. The migration runner can
+      // replay only the missing ADD COLUMN via stripExistingAddColumns.
+      return (
+        hasColumn(db, "proxy_logs", "headers_ms") && hasColumn(db, "proxy_logs", "first_chunk_ms")
+      );
+    case "212":
+      // Provider-reported cost columns (#16087, renumbered 206 -> 212: the 206 slot
+      // went to 206_codex_wakeup_tasks first). A DB that already applied the old
+      // 206 file has both columns, and a bare ADD COLUMN would throw on the re-run.
+      return (
+        hasColumn(db, "usage_history", "provider_credits") &&
+        hasColumn(db, "usage_history", "provider_cost_usd")
+      );
+    case "230":
+      // Cache-write tier columns (#17307, renumbered 213 -> 217 -> 226 -> 227 -> 228 -> 229 -> 230:
+      // the 213 slot went to 213_api_key_preferred_connections first, the 217 slot to
+      // 217_quota_recovery_tickets, the 226 slot to 226_request_cost_ledger_read_indexes, the
+      // 227 slot to 227_quota_recovery_due_cover, the 228 slot to
+      // 228_purge_orphaned_provider_catalogs and the 229 slot to 229_api_key_five_hour_limit,
+      // none of which has a guard here). Keyed by version
+      // only: a stale number would skip those migrations.
+      return [
+        "tokens_cache_creation_5m",
+        "tokens_cache_creation_1h",
+        "cache_creation_tier_status",
+        "cache_write_cost_usd",
+        "cache_write_priced_tokens",
+      ].every((column) => hasColumn(db, "call_logs", column));
+    case "236":
+      // Earlier builds applied this schema at 228, 231 or 233. Name-locked
+      // compatibility frees those slots; also handle a schema ahead of its ledger.
+      return (
+        migration.name === "usage_history_calculated_cost" &&
+        hasColumn(db, "usage_history", "calculated_cost_usd") &&
+        hasColumn(db, "usage_history", "billing_unit") &&
+        hasColumn(db, "usage_history", "billing_quantity") &&
+        hasColumn(db, "usage_history", "billing_unit_price_usd")
+      );
     default:
       return false;
   }
@@ -639,6 +726,31 @@ function applyApiKeyLifecycleMigration(db: SqliteAdapter): void {
     CREATE INDEX IF NOT EXISTS idx_api_keys_revoked_at ON api_keys(revoked_at);
     CREATE INDEX IF NOT EXISTS idx_api_keys_expires_at ON api_keys(expires_at);
   `);
+}
+
+// 207_remove_opencode_free_provider reads every credential column of provider_connections to
+// tell keyed OpenCode rows (moved to opencode-zen) from keyless ones (dropped). Those columns
+// come from the core.ts table definition, not from a numbered migration, so a database whose
+// provider_connections predates them aborted the whole migration run with "no such column".
+// Add the missing nullable TEXT columns first; an existing column is left untouched.
+const OPENCODE_FREE_REMOVAL_CREDENTIAL_COLUMNS = [
+  "api_key",
+  "access_token",
+  "refresh_token",
+  "id_token",
+  "provider_specific_data",
+] as const;
+
+function ensureOpencodeFreeRemovalColumns(db: SqliteAdapter): void {
+  if (!hasTable(db, "provider_connections")) return;
+  for (const column of OPENCODE_FREE_REMOVAL_CREDENTIAL_COLUMNS) {
+    ensureColumn(
+      db,
+      "provider_connections",
+      column,
+      `ALTER TABLE provider_connections ADD COLUMN ${column} TEXT`
+    );
+  }
 }
 
 function isSearchRequestTypeMigration(migration: { version: string; name: string }): boolean {
@@ -1049,6 +1161,16 @@ export function runMigrations(
 
   for (const migration of pending) {
     if (Number(migration.version) < highestAppliedBeforeMigrations) {
+      if (isTimestampVersion(migration.version)) {
+        // Timestamped migrations from parallel branches routinely land after a later-dated
+        // one; pending is "not in the ledger", so this is the normal path, not a gap.
+        console.log(
+          `[Migration] Applying ${migration.version}_${migration.name}, dated before the ` +
+            `latest applied migration ${highestAppliedBeforeMigrations}: it reached this ` +
+            `database later. Expected for timestamped migrations; each applies exactly once.`
+        );
+        continue;
+      }
       console.warn(
         `[Migration] 🔄 RECONCILIATION: Found missing intermediate migration ` +
           `${migration.version}_${migration.name} ` +
@@ -1077,6 +1199,7 @@ export function runMigrations(
   for (const migration of pending) {
     if (isDeferredUnsupportedMigration(db, migration)) continue;
 
+    let genericSql: string | null = null;
     const applyMigration = db.transaction(() => {
       if (atomicPhysicalReplays.has(migration.version)) {
         const removed = db
@@ -1101,7 +1224,11 @@ export function runMigrations(
       } else if (migration.version === "042") {
         applyCompressionCombosMigration(db, migration.path);
       } else {
+        if (migration.name === "remove_opencode_free_provider") {
+          ensureOpencodeFreeRemovalColumns(db);
+        }
         const sql = fs.readFileSync(migration.path, "utf-8");
+        genericSql = sql;
         db.exec(sql);
       }
       db.prepare("INSERT INTO _omniroute_migrations (version, name) VALUES (?, ?)").run(
@@ -1120,15 +1247,11 @@ export function runMigrations(
         message.includes("duplicate column name") &&
         !atomicPhysicalReplays.has(migration.version)
       ) {
-        const applyMarkerOnly = db.transaction(() => {
-          db.prepare(
-            "INSERT OR IGNORE INTO _omniroute_migrations (version, name) VALUES (?, ?)"
-          ).run(migration.version, migration.name);
-        });
-        applyMarkerOnly();
+        const skipped = applyMigrationSkippingExistingColumns(db, migration, genericSql);
         count += 1;
         console.log(
-          `[Migration] Applied (column pre-exists): ${migration.version}_${migration.name}`
+          `[Migration] Applied (column pre-exists): ${migration.version}_${migration.name}` +
+            (skipped.length > 0 ? ` (skipped existing: ${skipped.join(", ")})` : "")
         );
       } else {
         console.error(`[Migration] FAILED: ${migration.version}_${migration.name} — ${message}`);
@@ -1146,41 +1269,15 @@ export function runMigrations(
     console.log(`[Migration] ${count} migration(s) applied successfully.`);
   }
 
-  // After applying all migrations, insert default settings if we just ran migration 46
-  try {
-    if (appliedRecords.some((m) => m.name.startsWith("051_"))) {
-      insertDefaultDatabaseSettings(db);
-    }
-  } catch (error) {
-    console.error("Error inserting default database settings:", error);
-  }
+  // #17186: the "insert default settings after migration 051" guard that used
+  // to live here was unreachable — `name` is the filename's SECOND capture group
+  // (text after the numeric prefix), so it never starts with "051_". The seeded
+  // defaults were also redundant: the read path (optimizationSettings.ts) merges
+  // DEFAULT_DATABASE_SETTINGS on read, so absent rows are the normal case.
+  // Removed along with the dead insertDefaultDatabaseSettings() helper and its
+  // now-unused import.
 
   return count;
-}
-
-function insertDefaultDatabaseSettings(db: SqliteAdapter) {
-  const tx = db.transaction(() => {
-    // Insert all default settings
-    for (const [section, values] of Object.entries(DEFAULT_DATABASE_SETTINGS)) {
-      for (const [key, value] of Object.entries(values as Record<string, unknown>)) {
-        db.prepare("INSERT OR IGNORE INTO key_value (namespace, key, value) VALUES (?, ?, ?)").run(
-          "databaseSettings",
-          `${section}.${key}`,
-          JSON.stringify(value)
-        );
-      }
-    }
-  });
-
-  // Run in an immediate transaction to avoid nested transactions
-  try {
-    runImmediateTransaction(db, () => {
-      tx();
-    });
-  } catch (error) {
-    console.error("Transaction error inserting default settings:", error);
-    throw error;
-  }
 }
 
 /**
@@ -1192,9 +1289,14 @@ export function getMigrationStatus(db: SqliteAdapter): {
 } {
   ensureMigrationsTable(db);
 
-  const appliedRows = db
-    .prepare("SELECT version, name, applied_at FROM _omniroute_migrations ORDER BY version")
-    .all() as Array<{ version: string; name: string; applied_at: string }>;
+  // Numeric version order (see getAppliedRecords): never the TEXT `ORDER BY version`.
+  const appliedRows = (
+    db.prepare("SELECT version, name, applied_at FROM _omniroute_migrations").all() as Array<{
+      version: string;
+      name: string;
+      applied_at: string;
+    }>
+  ).sort((a, b) => compareMigrationVersions(a.version, b.version));
 
   const appliedVersions = new Set(appliedRows.map((r) => r.version));
   const allFiles = getMigrationFiles();

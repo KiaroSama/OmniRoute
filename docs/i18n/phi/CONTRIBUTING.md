@@ -8,12 +8,17 @@ Thank you for your interest in contributing! This guide covers everything you ne
 
 ---
 
-## Pag-set Up para sa Development
+## Setup sa Pag-develop
 
 ### Mga Kinakailangan
 
-- **Node.js** `>=22.22.3 <23`, o `>=24.0.0 <27` (inirerekomenda: 24 LTS)
+- **Node.js** `>=22.22.2 <23`, o `>=24.0.0 <27` (inirerekomenda: 24 LTS)
 - **npm** 10+
+
+> **Windows gamit ang Node 24:** gamitin ang kasalukuyang 24 LTS patch release (hindi bababa sa 24.20.0).
+> Maaaring mag-abort ang mga naunang release matapos ang matagumpay na mga test kapag isinasara ng `--test-force-exit` ang
+> proseso. Tinutugunan ng [Windows libuv fix](https://github.com/nodejs/node/pull/61999) ng Node
+> ang runtime crash na ito; panatilihing naka-enable ang mga assertion ng test at mga pagsusuri sa paglabas ng runner.
 
 > **Mga gumagamit ng npm v11+ (Node 24+):** Pagkatapos ng `npm install`, tiyaking na-install ang mga native module:
 > `node -e "require('better-sqlite3')"`. Kung mabigo ito dahil sa `MODULE_NOT_FOUND`,
@@ -43,77 +48,77 @@ echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 
 Mga pangunahing variable para sa development:
 
-| Variable               | Default sa Development   | Paglalarawan                   |
-| ---------------------- | ------------------------ | ------------------------------ |
-| `PORT`                 | `20128`                  | Port ng server                 |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128` | Base URL para sa frontend      |
-| `JWT_SECRET`           | (buuin sa itaas)         | Secret para sa pag-sign ng JWT |
-| `INITIAL_PASSWORD`     | `CHANGEME`               | Password sa unang pag-login    |
-| `APP_LOG_LEVEL`        | `info`                   | Antas ng detalye ng log        |
+| Variable               | Default para sa Development | Paglalarawan                   |
+| ---------------------- | --------------------------- | ------------------------------ |
+| `PORT`                 | `20128`                     | Port ng server                 |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`    | Base URL para sa frontend      |
+| `JWT_SECRET`           | (bumuo sa itaas)            | Secret para sa pag-sign ng JWT |
+| `INITIAL_PASSWORD`     | `CHANGEME`                  | Password sa unang pag-login    |
+| `APP_LOG_LEVEL`        | `info`                      | Antas ng verbosity ng log      |
 
 ### Mga Setting ng Dashboard
 
-Nagbibigay ang dashboard ng mga UI toggle para sa mga feature na maaari ding i-configure sa pamamagitan ng mga environment variable:
+Nagbibigay ang dashboard ng mga UI toggle para sa mga feature na maaari ring i-configure gamit ang mga environment variable:
 
 | Lokasyon ng Setting | Toggle             | Paglalarawan                             |
 | ------------------- | ------------------ | ---------------------------------------- |
 | Settings → Advanced | Debug Mode         | I-enable ang mga debug request log (UI)  |
 | Settings → General  | Sidebar Visibility | Ipakita/itago ang mga seksyon ng sidebar |
 
-Nakaimbak sa database ang mga setting na ito at nananatili ang mga ito sa bawat pag-restart, na nag-o-override sa mga default ng env var kapag naitakda.
+Naka-store ang mga setting na ito sa database at nananatili kahit mag-restart, at ino-override ang mga default ng env var kapag itinakda.
 
-### Lokal na Pagpapatakbo
+### Pagpapatakbo nang Lokal
 
 ```bash
 # Development mode (hot reload)
 npm run dev
 
 # Production build
-npm run build    # next build → .build/next/ pagkatapos ay assembleStandalone → dist/
+npm run build    # next build → .build/next/ at pagkatapos ay assembleStandalone → dist/
 npm run start
 
 # Mabilis na backend/API-only compile para sa mga pagbabago ng contributor
 npm run build:contributor
 
 # Release build (malinis na rebuild + HEAD sentinel — kinakailangan para sa deploy)
-npm run build:release   # rm -rf .build dist && build + isinusulat ang dist/BUILD_SHA
+npm run build:release   # rm -rf .build dist at build + nagsusulat ng dist/BUILD_SHA
 
 # Karaniwang configuration ng port
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-Nagsasagawa ang contributor build ng compile-only na validation: hindi nito binubuo ang standalone
-distribution o ang mga opsyonal na native packaging asset. Gamitin ang regular na production build kapag
-kailangan mong i-validate ang bundle na maaaring i-deploy.
+Nagsasagawa ang contributor build ng compile-only validation: hindi nito ina-assemble ang standalone
+distribution o bina-build ang mga opsyonal na native packaging asset. Gamitin ang regular na production build kapag
+kailangan mong i-validate ang shippable bundle.
 
 ### Layout ng Build Output
 
-| Directory | Mga Nilalaman                                                                   | Sinusubaybayan |
-| --------- | ------------------------------------------------------------------------------- | -------------- |
-| `src/`    | Source ng application (TypeScript / TSX)                                        | Oo             |
-| `.build/` | Mga intermediate — output ng `next build` (gitignored, `distDir = .build/next`) | Hindi          |
-| `dist/`   | Bundle na maaaring i-deploy — binuo ng `assembleStandalone` (gitignored)        | Hindi          |
+| Directory | Mga Nilalaman                                                                   | Naka-track |
+| --------- | ------------------------------------------------------------------------------- | ---------- |
+| `src/`    | Source ng application (TypeScript / TSX)                                        | Oo         |
+| `.build/` | Mga intermediate — output ng `next build` (gitignored, `distDir = .build/next`) | Hindi      |
+| `dist/`   | Shippable bundle — ina-assemble ng `assembleStandalone` (gitignored)            | Hindi      |
 
-Iisang pass ang build pipeline:
+Isang pass lamang ang build pipeline:
 
 ```
 npm run build
   └─ next build → .build/next/standalone  (output ng Next.js)
-  └─ assembleStandalone()                 (kinokopya ang standalone + static + public + native asset)
+  └─ assembleStandalone()                 (kinokopya ang standalone + static + public + native assets)
        └─ output: dist/                   (server.js, .next/static/, public/, node_modules/)
 ```
 
-Bukod dito, nililinis muna ng `npm run build:release` ang parehong directory at isinusulat ang
-`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) bilang sentinel ng integridad ng deploy.
+Nililinis din ng `npm run build:release` ang dalawang directory muna at nagsusulat ng
+`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) bilang deploy integrity sentinel.
 
-Ginagamit ng `npm run build:contributor` ang backend-only na build profile. Pansamantala nitong pinapalitan ng mga stub ang
-mga dashboard UI file habang nagbi-build, pinapanatili ang mga API route handler, at ibinabalik ang mga orihinal na file
+Ginagamit ng `npm run build:contributor` ang backend-only build profile. Pansamantala nitong hina-harangan ang
+mga dashboard UI file habang nagbu-build, pinananatili ang mga API route handler, at ibinabalik ang orihinal na mga file
 pagkatapos ng build. Gamitin ang `npm run build` para sa mga pagbabagong nakaaapekto sa dashboard UI o para sa buong
 release validation; hindi kapalit ng release build ang contributor profile.
 
-> **Tala para sa pag-deploy sa VPS:** hindi nagbago ang remote image directory na `/usr/lib/node_modules/omniroute/app/`.
-> Gumagamit ang mga deploy skill ng rsync upang ilagay rito ang mga nilalaman ng `dist/`.
-> Ang in-repo build output path lamang ang nagbago (`app/` → `dist/`).
+> **Tala para sa VPS deploy:** hindi nagbabago ang remote image directory na `/usr/lib/node_modules/omniroute/app/`.
+> Sini-rsync ng mga deploy skill ang mga nilalaman ng `dist/` papunta rito.
+> Tanging ang build output path sa loob ng repository ang inilipat (`app/` → `dist/`).
 
 Mga default na URL:
 
@@ -173,15 +178,15 @@ Mga scope (v3.8): `db`, `sse`, `oauth`, `dashboard`, `api`, `cli`, `docker`, `ci
 # Lahat ng test (unit + vitest + ecosystem + e2e)
 npm run test:all
 
-# Isang test file (katutubong test runner ng Node.js — ito ang ginagamit ng karamihan sa mga test)
+# Isang test file (native test runner ng Node.js — ito ang ginagamit ng karamihan sa mga test)
 node --import tsx/esm --test tests/unit/your-file.test.ts
 
-# Tanging mga unit test na apektado ng iyong pagbabago (kaparehong TIA selector ng CI gate, #8084)
-npm run test:scoped            # mga pagbabago sa huling commit (o sa working tree)
-npm run test:scoped:staged     # mga staged na pagbabago lamang — mahusay na ipares sa pre-commit na pagpapatakbo
-npm run test:scoped:full       # buuin munang muli ang import-graph map (pagkatapos magdagdag/maglipat ng mga file)
-# Ang Exit 1 + "patakbuhin ang buong suite" ay nangangahulugang may hub file (tsconfig, package.json, …) o
-# hindi naka-map na source na nagbago — ligtas na nabibigo ang selector at hindi ito tahimik na lumalaktaw kailanman.
+# Ang mga unit test lang na apektado ng iyong pagbabago (kaparehong TIA selector ng CI gate, #8084)
+npm run test:scoped            # mga pagbabago sa pinakabagong commit (o sa working tree)
+npm run test:scoped:staged     # mga staged na pagbabago lang — mahusay na ipares sa isang pre-commit run
+npm run test:scoped:full       # buuing muli muna ang import-graph map (pagkatapos magdagdag/maglipat ng mga file)
+# Ang Exit 1 + "run the full suite" ay nangangahulugang nagbago ang isang hub file (tsconfig, package.json, …) o
+# isang hindi naka-map na source — ligtas na nabibigo ang selector at hindi ito kailanman tahimik na lumalaktaw.
 
 # Vitest (MCP server, autoCombo, cache)
 npm run test:vitest
@@ -203,43 +208,44 @@ npm run coverage:report
 npm run lint
 npm run check
 
-# Gated na real-upstream combo smoke test (nangangailangan ng access sa VPS + totoong provider credits)
-# Kumokonekta sa mga TOTOONG provider — may kaunting gastos. HINDI KAILANMAN tumatakbo sa CI. Maayos na nilalaktawan kapag wala ang gate.
+# Gated na real-upstream combo smoke test (nangangailangan ng access sa VPS + tunay na provider credits)
+# Kumokonekta sa mga TUNAY na provider — may kaunting gastos. HINDI KAILANMAN tumatakbo sa CI. Maayos na nilalaktawan kapag wala ang gate.
 # Kailangan: access sa ssh root@192.168.0.15 (kumukuha ng read-only na DB snapshot mula sa VPS).
 RUN_COMBO_LIVE=1 npm run test:combo:live
 
-# Phase-3 VPS live smoke test — mga payak na Node ESM script na direktang kumokonekta sa live na .15 server.
-# Nangangailangan ng: access sa ssh root@192.168.0.15 (ginagawa/binubura ang mga combo sa pamamagitan ng SSH sqlite).
-# Kumokonekta sa mga TOTOONG provider (maliit na gastos). Gumagawa/nagbubura lamang ng mga __live_test__* combo. HINDI KAILANMAN tumatakbo sa CI.
-# REQUIRE_API_KEY=false sa .15 kaya hindi kailangan ng API key, ngunit sinusunod ang COMBO_LIVE_BASE_URL / COMBO_LIVE_API_KEY kung itinakda.
+# Phase-3 VPS live smoke test — mga plain Node ESM script na direktang kumokonekta sa live na .15 server.
+# Nangangailangan ng: access sa ssh root@192.168.0.15 (ginagawa/inaalis ang mga combo sa pamamagitan ng SSH sqlite).
+# Kumokonekta sa mga TUNAY na provider (maliit na gastos). Gumagawa/nagbubura lang ng mga __live_test__* combo. HINDI KAILANMAN tumatakbo sa CI.
+# REQUIRE_API_KEY=false sa .15 kaya hindi kailangan ng API key, ngunit sinusunod ang COMBO_LIVE_BASE_URL / COMBO_LIVE_API_KEY kung nakatakda.
 npm run test:combo:live:vps              # 7 HTTP scenario (priority/round-robin/weighted/cost/fusion/auto + health)
-npm run test:combo:live:vps:failover     # nagdaragdag ng totoong cross-provider failover scenario (8 sa kabuuan)
+npm run test:combo:live:vps:failover     # nagdaragdag ng tunay na cross-provider failover scenario (8 sa kabuuan)
 ```
 
-Mga tala tungkol sa coverage:
+Mga tala sa coverage:
 
 - Sinusukat ng `npm run test:coverage` ang source coverage para sa pangunahing unit test suite, hindi isinasama ang `tests/**`, at isinasama ang `open-sse/**`
-- Dapat mapanatili ng mga pull request ang coverage gate na **60%+** para sa statements/lines/functions/branches
+- Dapat panatilihin ng mga pull request ang coverage gate sa **60%+** para sa statements/lines/functions/branches
 - Kung binabago ng isang PR ang production code sa `src/`, `open-sse/`, `electron/`, o `bin/`, dapat itong magdagdag o mag-update ng mga automated test sa parehong PR
 - Ipinapakita ng `npm run coverage:report` ang detalyadong ulat para sa bawat file mula sa pinakabagong coverage run
-- Pinapanatili ng `npm run test:coverage:legacy` ang mas lumang sukatan para sa makasaysayang paghahambing
-- Tingnan ang `docs/ops/COVERAGE_PLAN.md` para sa roadmap ng unti-unting pagpapahusay ng coverage
+- Pinapanatili ng `npm run test:coverage:legacy` ang mas lumang metric para sa makasaysayang paghahambing
+- Tingnan ang `docs/ops/COVERAGE_PLAN.md` para sa phased roadmap ng pagpapahusay sa coverage
 
 ### Mga Kinakailangan sa Pull Request
 
 Bago magbukas ng PR, gamitin ang
 [Contribution Golden Path](docs/ops/CONTRIBUTION_GOLDEN_PATH.md) upang patakbuhin ang nakatuong loop para sa
-iyong binago. Ang buong unit suite (4 na CI shard), Vitest, ang **60%+** coverage gate, at
-ang production build ay responsibilidad ng CI — walang naidaragdag na impormasyon ang lokal na pagpapatakbo sa mga ito na
-hindi pa ibibigay sa iyo ng mga pagsusuri sa PR, at sa mas maliliit na machine ay maaari nitong sagarin ang host (#8084):
+binago mo. Responsibilidad ng CI ang buong unit suite (4 na CI shard), Vitest, ang **60%+** coverage gate, at
+ang production build — walang naidaragdag na signal ang lokal na pagpapatakbo sa mga ito na hindi pa ibibigay ng mga
+pagsusuri sa PR, at sa mas maliliit na machine maaari nitong lubusang gamitin ang host (#8084):
 
 - Patakbuhin ang mga test file na sumasaklaw sa iyong pagbabago: `node --import tsx/esm --test tests/unit/<file>.test.ts`
 - Patakbuhin ang `npm run lint`
 - Isama o i-update ang mga automated test sa parehong PR tuwing nagbabago ang production code
+- Sa mga `node:test` file, ilagay ang bawat top-level na `await` (gaya ng `await import(...)`) bago ang unang `test()` / `describe()`: sa ilalim ng `--test-force-exit`, ang mga test na inirehistro pagkatapos nito ay maaaring tahimik na hindi tumakbo (#18045; ipinapatupad ng `npm run check:test-tla-order`)
 - Isama sa paglalarawan ng PR ang mga binago o idinagdag na test file kapag nagbago ang production code
-- Suriin ang resulta ng SonarQube sa PR kapag naka-configure sa CI ang mga secret ng proyekto
+- Suriin ang resulta ng SonarQube sa PR kapag naka-configure ang mga project secret sa CI
 
-Kasalukuyang katayuan ng mga test: **122 unit test file** na sumasaklaw sa:
+Kasalukuyang katayuan ng test: **122 unit test file** na sumasaklaw sa:
 
 - Mga provider translator at conversion ng format
 - Rate limiting, circuit breaker, at resilience
@@ -288,7 +294,7 @@ Tingnan ang `open-sse/utils/stream.ts` at `open-sse/utils/streamHandler.ts` para
 
 ---
 
-## Project Structure
+## Istruktura ng Proyekto
 
 ```
 src/                        # TypeScript (.ts / .tsx)
@@ -301,7 +307,7 @@ src/                        # TypeScript (.ts / .tsx)
 │   ├── a2a/                # Agent-to-Agent v0.3 protocol server
 │   ├── acp/                # Agent Communication Protocol registry
 │   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
+│   ├── db/                 # SQLite domain modules + 130 migrations
 │   ├── memory/             # Persistent conversational memory
 │   ├── oauth/              # OAuth providers, services, and utilities
 │   ├── skills/             # Extensible skill framework
@@ -311,15 +317,15 @@ src/                        # TypeScript (.ts / .tsx)
 ├── mitm/                   # MITM proxy (cert, DNS, target routing)
 ├── shared/
 │   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
+│   ├── constants/          # Provider definitions (329), MCP scopes, 22 routing strategies
 │   ├── utils/              # Circuit breaker, sanitizer, auth helpers
 │   └── validation/         # Zod v4 schemas
 └── sse/                    # SSE proxy pipeline
 
 open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
+├── executors/              # 150 executor modules (executor classes + per-provider helpers)
 ├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
+├── mcp-server/             # MCP server (110 unique tools, 3 transports, 33 scopes)
 ├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
 ├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Responses API transformer
@@ -328,25 +334,32 @@ open-sse/                   # @omniroute/open-sse workspace
 electron/                   # Electron desktop app (cross-platform)
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
+├── unit/                   # Node.js test runner (1,574 test files)
 ├── integration/            # Integration tests
 ├── e2e/                    # Playwright tests
 ├── security/               # Security tests
 ├── translator/             # Translator-specific tests
 └── load/                   # Load tests
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # Architecture Decision Records
+├── architecture/            # System architecture & resilience
+├── comparison/              # OmniRoute vs alternatives
+├── compression/             # Compression guides & rules
+├── dev/                     # Development guides
+├── diagrams/                # Architecture diagrams
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # User guide, Docker, setup, troubleshooting
+├── i18n/                    # Internationalized README translations
+├── marketing/               # Marketing materials
+├── ops/                     # Deployment, proxy, coverage, releases
+├── providers/               # Provider-specific docs
+├── reference/               # API reference, env vars, CLI tools, free tiers
+├── releases/                # Release notes
+├── routing/                 # Auto-combo engine, reasoning replay
+├── screenshots/             # Dashboard screenshots
+├── security/                # Guardrails, compliance, stealth, tokens
+└── specs/                   # Design specs
 ```
 
 ---
@@ -392,23 +405,27 @@ Sumulat ng mga unit test sa `tests/unit/` na sumasaklaw, bilang minimum, sa:
 - [ ] Pumapasa ang mga test (`npm test`)
 - [ ] Pumapasa ang linting (`npm run lint`)
 - [ ] Matagumpay ang build (`npm run build`)
-- [ ] Naidagdag ang mga TypeScript type para sa mga bagong pampublikong function at interface
-- [ ] Walang mga naka-hardcode na secret o fallback value
-- [ ] Naka-embed ang mga pampublikong upstream credential sa pamamagitan ng `resolvePublicCred()` (tingnan ang [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), at hindi kailanman bilang mga literal
-- [ ] Dumadaan ang mga tugon sa error sa `buildErrorBody()` / `sanitizeErrorMessage()` — walang mga raw stack trace sa mga response body (tingnan ang [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
-- [ ] Ipinapasa ng mga shell command (`exec` / `spawn`) ang mga runtime value sa pamamagitan ng `env`, hindi sa pamamagitan ng string interpolation
-- [ ] Na-validate ang lahat ng input gamit ang mga Zod schema
-- [ ] Nagdagdag ng **fragment** ng changelog sa ilalim ng `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` para sa mga pagbabagong nakikita ng user (tingnan ang [`changelog.d/README.md`](./changelog.d/README.md)) — **huwag** direktang i-edit ang `CHANGELOG.md`; pinagsasama-sama ang mga fragment sa oras ng release at hindi kailanman nagkakaroon ng conflict sa pagitan ng mga PR
+- [ ] Nagdagdag ng mga TypeScript type para sa mga bagong pampublikong function at interface
+- [ ] Walang naka-hardcode na mga secret o fallback value
+- [ ] Ang mga pampublikong upstream credential ay naka-embed sa pamamagitan ng `resolvePublicCred()` (tingnan ang [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), at hindi kailanman bilang mga literal
+- [ ] Ang mga error response ay dumaraan sa `buildErrorBody()` / `sanitizeErrorMessage()` — walang mga raw stack trace sa mga response body (tingnan ang [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
+- [ ] Ang mga shell command (`exec` / `spawn`) ay nagpapasa ng mga runtime value sa pamamagitan ng `env`, hindi sa pamamagitan ng string interpolation
+- [ ] Napatunayan ang bisa ng lahat ng input gamit ang mga Zod schema
+- [ ] Nagdagdag ng **fragment** ng changelog sa ilalim ng `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` para sa mga pagbabagong nakikita ng user (tingnan ang [`changelog.d/README.md`](./changelog.d/README.md)) — **huwag** direktang i-edit ang `CHANGELOG.md`; pinagsasama-sama ang mga fragment sa oras ng release at hindi kailanman nagkakasalungatan sa pagitan ng mga PR
 - [ ] Na-update ang dokumentasyon (kung naaangkop)
-- [ ] Walang bagong nabuksang alerto mula sa CodeQL / Secret-Scanning, o na-dismiss ang bawat isa nang may teknikal na katwirang tumutukoy sa nauugnay na dokumento sa `docs/security/`
+- [ ] Walang bagong nabuksang alerto mula sa CodeQL / Secret-Scanning, o ang bawat isa ay na-dismiss nang may teknikal na katwiran na tumutukoy sa nauugnay na dokumento sa `docs/security/`
 - [ ] Ang mga route na naglulunsad ng mga child process (`/api/mcp/`, `/api/cli-tools/runtime/`) ay inuri bilang `isLocalOnlyPath()` sa `src/server/authz/routeGuard.ts` — tingnan ang [Mahigpit na Panuntunan #15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] Walang mga trailer na `Co-Authored-By` sa mga commit message — dapat lumabas ang mga commit sa ilalim lamang ng Git identity ng may-ari ng repository (Mahigpit na Panuntunan #16)
+- [ ] Walang mga AI/bot na `Co-authored-by` trailer sa mga commit message (Mahigpit na Panuntunan #16) — ang mga taong collaborator na muling ginamit ang gawa ay kinikilala gamit ang karaniwang `Co-authored-by: Name <email>` na mga trailer
 
 ---
 
-## Releasing
+## Paglalabas ng Release
 
-Releases are managed via the `/generate-release` workflow. When a new GitHub Release is created, the package is **automatically published to npm** via GitHub Actions.
+Pinamamahalaan ang mga release sa pamamagitan ng workflow na `/generate-release`. Kapag gumawa ng bagong GitHub Release, **awtomatikong inilalathala sa npm** ang package sa pamamagitan ng GitHub Actions.
+
+Para sa mga pag-deploy sa VPS, gamitin ang `npm run build:release` (hindi ang `npm run build`) — nagsasagawa ito ng malinis na
+muling pag-build, binubuo ang bundle sa `dist/`, at isinusulat ang sentinel na `dist/BUILD_SHA`.
+Pagkatapos, gamitin ang mga skill na `/deploy-vps-*-cc`, na gumagamit ng rsync upang ilipat ang `dist/` sa remote na direktoryong `app/`.
 
 ---
 

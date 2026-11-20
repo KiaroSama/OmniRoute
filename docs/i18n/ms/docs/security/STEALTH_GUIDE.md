@@ -20,57 +20,57 @@ Ciri penyamaran diwujudkan supaya OmniRoute boleh bertindak sebagai lapisan kese
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-Sesi `wreq-js` berterusan dicipta secara malas bagi setiap skop akaun dan proksi yang telah diselesaikan. Kumpulan `TlsClient` seluruh proses mengendalikan paling banyak 128 sesi yang menyamar sebagai **Chrome 124 pada macOS** untuk pihak huluan di sebalik Cloudflare. `TlsClient.fetch()` gagal secara tertutup apabila masa jalan natif tidak tersedia; pemanggil boleh memilih sandaran di luar pembalut ini secara eksplisit.
+Sesi `wreq-js` berterusan dicipta secara malas bagi setiap skop akaun dan proksi yang telah diselesaikan. Kumpulan `TlsClient` seluruh proses mengandungi paling banyak 128 sesi yang menyamar sebagai **Chrome 124 pada macOS** untuk huluan di belakang Cloudflare. `TlsClient.fetch()` gagal secara tertutup apabila persekitaran jalanan natif tidak tersedia; pemanggil boleh memilih sandaran di luar pembalut ini secara eksplisit.
 
 - Profil sesi: `browser: "chrome_124", os: "macos"`
-- Penyelesaian proksi (keutamaan): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (termasuk huruf kecil)
-- Tamat masa: `TLS_CLIENT_TIMEOUT_MS` (mewarisi daripada `FETCH_TIMEOUT_MS`, lalai 600000)
+- Penyelesaian proksi (keutamaan): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (juga huruf kecil)
+- Tamat masa: `TLS_CLIENT_TIMEOUT_MS` (diwarisi daripada `FETCH_TIMEOUT_MS`, lalai 600000)
 - Response `wreq-js` serasi dengan fetch (`headers`, `text()`, `json()`, `clone()`, `body`).
 - Pemantau bait pertama (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): `TlsClient.fetch()`
-  diselesaikan sebaik sahaja pengepala pihak huluan tiba, maka `TLS_CLIENT_TIMEOUT_MS` sahaja tidak dapat mengehadkan
-  badan yang tidak pernah menghasilkan bait pertama. `guardTlsFirstByte()` melumbakan `read()` pertama badan
-  dengan `TLS_FIRST_BYTE_WATCHDOG_MS` (lalai `10000`, `0` menyahdayakannya); badan yang sihat
-  tidak terjejas, manakala badan yang tersekat membatalkan pembaca wreq dan membolehkan logik
-  sandaran TLS sedia ada `proxyFetch` diteruskan ke penghantar langsung/proksi (permintaan yang tidak selamat untuk dimainkan semula, contohnya
-  POST dengan badan, masih melontarkan ralat dan bukannya dicuba semula secara senyap).
+  diselesaikan sebaik sahaja pengepala huluan tiba, maka `TLS_CLIENT_TIMEOUT_MS` sahaja tidak dapat mengehadkan
+  isi yang tidak pernah menghasilkan bait pertama. `guardTlsFirstByte()` melumbakan `read()` pertama isi
+  dengan `TLS_FIRST_BYTE_WATCHDOG_MS` (lalai `10000`, `0` menyahdayakannya); isi yang sihat
+  tidak terjejas, manakala isi yang tersekat membatalkan pembaca wreq dan membolehkan logik
+  sandaran TLS sedia ada `proxyFetch` diteruskan kepada penghantar langsung/proksi (permintaan yang tidak
+  selamat untuk dimainkan semula, misalnya POST dengan isi, masih melontarkan ralat dan bukannya dicuba semula secara senyap).
 
 ### Pengangkutan penyedia kuki web — wreq-js 3.2.0
 
-`open-sse/services/tlsClientBase.ts` ialah penyesuai dikongsi untuk lima pengangkutan khusus
-kuki web di bawah. Setiap pembalut penyedia yang nipis memilih profil pelayar/OS. Penyesuai
-menggunakan pemuat masa jalan wreq tunggal dan kumpulan pengangkutan dalam `open-sse/utils/tlsClient.ts`, yang dikunci berdasarkan
+`open-sse/services/tlsClientBase.ts` ialah penyesuai dikongsi untuk lima pengangkutan
+kuki web khusus di bawah. Setiap pembalut penyedia ringkas memilih profil pelayar/OS. Penyesuai
+menggunakan pemuat persekitaran jalanan wreq tunggal dan kumpulan pengangkutan dalam `open-sse/utils/tlsClient.ts`, yang dikunci mengikut
 profil + OS + proksi yang telah diselesaikan, manakala setiap permintaan menggunakan `cookieMode: "ephemeral"`. Oleh itu, akaun dan
-permintaan berkongsi sambungan pada peringkat pengangkutan, tetapi tidak pernah berkongsi sesi wreq atau balang kuki.
+permintaan berkongsi sambungan peringkat pengangkutan, tetapi tidak pernah berkongsi sesi wreq atau balang kuki.
 
-| Penyedia   | Profil        | OS Dicontohi | Dasar EOF Strim                     |
-| ---------- | ------------- | ------------ | ----------------------------------- |
-| Claude     | `chrome_146`  | Linux        | sertakan `[DONE]`                   |
-| Perplexity | `firefox_148` | macOS        | sertakan `event: end_of_stream`     |
-| Grok       | `chrome_146`  | Linux        | kecualikan `[DONE]`                 |
-| Notion     | `chrome_146`  | Windows      | sertakan `[DONE]`                   |
-| LMArena    | `chrome_146`  | Windows      | tiada penanda; tutup pada EOF natif |
+| Penyedia   | Profil        | OS Dicontohi | Dasar EOF Strim                      |
+| ---------- | ------------- | ------------ | ------------------------------------ |
+| Claude     | `chrome_146`  | Linux        | sertakan `[DONE]`                    |
+| Perplexity | `firefox_151` | macOS        | sertakan `event: end_of_stream`      |
+| Grok       | `chrome_146`  | Linux        | kecualikan `[DONE]`                  |
+| Notion     | `chrome_146`  | Windows      | sertakan `[DONE]`                    |
+| LMArena    | `chrome_146`  | Windows      | tiada sentinel; tutup pada EOF natif |
 
-- Penstriman menggunakan `ReadableStream` respons natif secara langsung; tiada fail sementara atau proses sampingan
+- Penstriman menggunakan `ReadableStream` respons natif secara langsung; tiada fail sementara atau sidecar
   dicipta.
 - Sehingga 256 bait awal diperiksa sebelum strim didedahkan. Penyedia SSE menimbal ralat bukan SSE;
   Grok/LMArena memetakan cabaran Cloudflare kepada `403` dan halaman perantara HTML kepada `502`.
-- Tamat masa permintaan natif kekal dibalut oleh tarikh akhir mutlak JS. Gantung menyebabkan
-  hanya pengangkutan profil/OS/proksi yang terjejas dibatalkan dan ditutup sebelum permintaan seterusnya menciptanya semula.
-- Keutamaan penyelesaian proksi ialah `proxyUrl` bagi setiap panggilan → konteks akaun/papan pemuka yang berskop permintaan →
-  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (termasuk varian huruf kecil). Ralat penyelesaian menyebabkan
-  kegagalan tertutup dan bukannya membocorkan sambungan langsung. LMArena sengaja membuat penyelesaian terhadap `arena.ai`.
-- `byteResponse` mengembalikan URL `data:` dengan jenis kandungan tanpa kerosakan UTF-8.
-- Ralat ialah `TlsClientUnavailableError` (pakej/tambahan tidak tersedia), `TlsClientHangError`
+- Tamat masa permintaan natif kekal dibalut oleh tarikh akhir mutlak JS. Keadaan tergantung membatalkan
+  dan menutup hanya pengangkutan profil/OS/proksi yang terjejas sebelum permintaan seterusnya menciptanya semula.
+- Keutamaan penyelesaian proksi ialah `proxyUrl` setiap panggilan → konteks akaun/papan pemuka berskop permintaan →
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (termasuk varian huruf kecil). Ralat penyelesaian gagal
+  secara tertutup dan bukannya membocorkan sambungan langsung. LMArena sengaja membuat penyelesaian terhadap `arena.ai`.
+- `byteResponse` mengembalikan URL `data:` yang ditaip mengikut kandungan tanpa kerosakan UTF-8.
+- Ralat terdiri daripada `TlsClientUnavailableError` (pakej/tambahan tidak tersedia), `TlsClientHangError`
   (tarikh akhir dilampaui), dan `WreqTransportCapacityError` (kod ralat kapasiti sesi dikongsi)
-  apabila kesemua 128 slot profil/OS/proksi terhad sedang aktif atau ditutup.
+  apabila kesemua 128 slot profil/OS/proksi terbatas sedang aktif atau ditutup.
 
-Sesi generik `TlsClient` di atas kekal dikhususkan untuk keadaan kuki berterusan yang disokong
-pelayar. Kedua-dua laluan menggunakan semula satu pemuat modul wreq tercache dan cangkuk kitar hayat proses; kumpulan masing-masing kekal
-berasingan kerana jangka hayat kuki mereka memang sengaja dibezakan.
+Sesi generik `TlsClient` di atas kekal dikhususkan untuk keadaan kuki berterusan yang disokong pelayar.
+Kedua-dua laluan menggunakan semula satu pemuat modul wreq bercache dan cangkuk kitaran hayat proses; kumpulannya kekal
+berasingan kerana jangka hayat kukinya sengaja dibezakan.
 
 Profil tersebut disokong oleh pakej yang dipinkan, tetapi penerimaan WAF sebenar boleh berubah secara bebas
 daripada ujian kontrak setempat. Sahkan perubahan cap jari menggunakan akaun langsung yang dibenarkan secara eksplisit
-sebelum mendakwa kesetaraan dengan pelayar pihak huluan.
+sebelum mendakwa kesetaraan dengan pelayar huluan.
 
 ---
 
@@ -119,7 +119,7 @@ Digunakan pada: blok `system`, semua `messages[].content`, dan `tools[].descript
 
 Untuk geganti Anthropic pihak ketiga yang hanya menerima trafik "Claude Code sebenar":
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"` secara lalai
@@ -136,41 +136,63 @@ Modul berkaitan dalam himpunan yang sama:
 
 ---
 
-## Mod Senyap Antigravity
+## Antigravity Stealth
 
-Permintaan Antigravity mengekalkan teks pemanggil bait demi bait. OmniRoute tidak menyisipkan aksara lebar sifar ke dalam gesaan atau menamakan semula/menyuntik alat untuk meniru klien IDE.
+Antigravity meminta mengekalkan teks pemanggil bait-untuk-bait. OmniRoute tidak memasukkan aksara lebar sifar ke dalam gesaan atau alat rename/inject untuk meniru klien IDE.
 
 ### `antigravityHeaderScrub.ts`
 
-Membuang penanda SDK Stainless (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) sebelum memajukan permintaan.
+Jalur Penanda SDK tahan karat (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) sebelum memajukan.
 
-### ⚠️ Risiko: `ANTIGRAVITY_CREDITS=always` (titik panas pengharaman akaun)
+### ⚠️ Risiko: `ANTIGRAVITY_CREDITS=always` (tempat panas larangan akaun)
 
-`ANTIGRAVITY_CREDITS=always` (digunakan oleh `open-sse/executors/antigravity.ts`) menghalakan **setiap** permintaan melalui Lebihan Kredit AI Antigravity (kredit Google berbayar), dan bukannya membenarkan kuota peringkat percuma Google mengehadkan penggunaan. Ini didokumenkan sebagai ciri, tetapi ia merupakan **laporan pelanggaran Syarat Perkhidmatan paling lazim yang kami terima** — beberapa akaun Google Ultra telah diharamkan dengan `403 / "service disabled for ToS violation" / insufficient_quota` selepas berjalan selama beberapa jam dengan `=always`.
+`ANTIGRAVITY_CREDITS=always` (dimakan oleh `open-sse/executors/antigravity.ts`) laluan** setiap** meminta melalui Antigravity AI Credit Overages (kredit Google berbayar) dan bukannya membiarkan kuota peringkat percuma Google mendapat sesuatu. Ini didokumenkan sebagai ciri, tetapi ia adalah** satu-satunya laporan pelanggaran ToS yang paling biasa yang kami lihat** — berbilang akaun Google Ultra telah diharamkan dengan `403 / "service disabled for ToS violation" / insufficient_quota` selepas dijalankan selama beberapa jam dengan `=always`.
 
-Penguatkuasaan huluan berlaku di **pihak Google**, dan bukan sesuatu yang boleh dicegah oleh OmniRoute. Nama pemboleh ubah persekitaran dan dokumentasi sedia ada membuatkannya kelihatan seperti tetapan yang selamat untuk diaktifkan; hakikatnya tidak.
+Penguatkuasaan huluan sedang dijalankan** sebelah Google** , tiada apa yang OmniRoute boleh halang. Nama env var dan dokumen sedia ada menjadikannya seperti tombol selamat untuk dibalikkan; ia tidak.
 
-**Mengapa ini mencetuskan pengesanan penyalahgunaan dengan lebih agresif berbanding penggunaan peringkat percuma sahaja:**
+**Mengapa ini menarik pengesanan penyalahgunaan dengan lebih agresif daripada penggunaan peringkat percuma sahaja:**
 
-- Perbelanjaan automatik berterusan pada satu akaun Google ditandai secara berbeza berbanding penggunaan peringkat percuma yang mencapai kuota lalu berhenti.
-- Lebihan kredit tidak mempunyai had kadar, maka klien yang tersalah konfigurasi boleh menghabiskan beberapa ratus USD dalam beberapa minit dan kelihatan seperti penjualan semula kunci API atau trafik bot.
-- Beberapa pengguna OmniRoute yang menggunakan kredit lebihan secara selari daripada alamat IP luaran yang sama menguatkan lagi isyarat tersebut.
+- Perbelanjaan automatik yang berterusan untuk satu akaun Google berbeza daripada kuota-kuota-dan-hentian peringkat percuma.
+- Lebihan kredit tidak mempunyai siling kadar, jadi pelanggan yang tersalah konfigurasi boleh membakar beberapa ratus USD dalam beberapa minit dan kelihatan seperti jualan semula kunci API atau trafik bot.
+- Berbilang pengguna OmniRoute yang mencapai kredit lebihan secara selari daripada IP luaran yang sama menggabungkan isyarat.
 
-**Pendekatan yang disyorkan:**
+**Postur yang disyorkan:**
 
-1. Kekalkan lalai `ANTIGRAVITY_CREDITS=off` melainkan pengendali secara jelas menerima risiko kredit berbayar dan penguatkuasaan akaun. `retry` menghantar permintaan biasa terlebih dahulu dan menyuntik kredit paling banyak sekali selepas ralat kuota 429 yang layak; `always` menyuntik kredit pada permintaan pertama.
-2. **Agihkan beban merentas penyedia melalui Auto-Combo** (`model: "auto"` atau kombo `kr/glm/etc`) dan bukannya memenuhi kapasiti satu akaun Antigravity.
-3. **Tetapkan had RPM bagi setiap sambungan** pada halaman suntingan penyedia Antigravity (Dashboard → Providers → Antigravity → connection → rate limit). 30–60 RPM ialah had atas yang munasabah untuk penggunaan berterusan.
-4. **Gunakan rangkaian huluan stabil yang dikawal oleh pengendali** dan elakkan perkongsian satu akaun merentas pengguna atau beban kerja yang tidak berkaitan.
-5. **Jika diharamkan**: buat rayuan melalui `support.google.com` → "Restore Workspace/Account access" dengan isi respons `quota_exceeded` / `service disabled` sebenar yang dihantar oleh Google. Pemulihan tidak dijamin.
+1. Kekalkan `ANTIGRAVITY_CREDITS=off` lalai melainkan pengendali secara eksplisit menerima kredit berbayar dan risiko penguatkuasaan akaun. `retry` menghantar permintaan biasa dahulu dan menyuntik kredit paling banyak sekali selepas kuota yang layak 429; `always` menyuntik kredit pada permintaan pertama.
+2. **Sebarkan beban ke seluruh penyedia melalui Auto-Kombo** (`model: "auto"` atau `kr/glm/etc` -combo) dan bukannya memenuhi satu akaun Antigravity.
+3. **Tetapkan had RPM setiap sambungan** dalam halaman edit pembekal Antigravity (Papan pemuka → Providers → Antigravity → sambungan had kadar → ). 30–60 RPM ialah batas atas yang boleh dipertahankan untuk kegunaan berterusan.
+4. **Gunakan rangkaian huluan yang stabil dan dikawal oleh pengendali** dan elakkan berkongsi satu akaun merentas pengguna atau beban kerja yang tidak berkaitan.
+5. **Jika diharamkan** : rayuan melalui `support.google.com` → "Pulihkan akses Workspace/Account " dengan `quota_exceeded` / `service disabled` badan tindak balas Google yang tepat dihantar. Pemulihan tidak dijamin.
 
-Rujukan persekitaran mendokumenkan implikasi akaun dan perbelanjaan bagi setiap mod kredit.
+Rujukan persekitaran mendokumenkan akaun dan implikasi perbelanjaan bagi setiap mod kredit.
 
-Titik berkaitan:
+#### Bukan sahaja `=always`: Antigravity OAuth routing secara umum
+
+Penggantungan tidak terhad kepada lebihan kredit. Laporan pada November 2026 (#19223, #19266) menerangkan beberapa akaun Google yang digantung semasa membuat penghalaan melalui pembekal `antigravity` dan `agy` (Antigravity CLI), dengan:
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+Kedua-dua pembekal mengesahkan dengan sesi OAuth produk Antigravity, yang mana notis risiko papan pemuka ("Pembekal ini menggunakan produk rasmi anda session/OAuth, yang tidak dibenarkan untuk penggunaan proxy/router ") memberi amaran sebelum sambungan ditambahkan. Tiada satu pun pengesyoran di atas menjadikan penggunaan itu dibenarkan; mereka hanya mengurangkan jumlah trafik yang dibawa oleh satu akaun.
+
+**Antara muka API yang dibenarkan untuk model Gemini.** Google menawarkan akses terprogram kepada Gemini melalui APIs, yang OmniRoute menyokong sebagai pembekal kunci API biasa:
+
+| id pembekal | Nama papan pemuka         | Tauliah                                                                           |
+| ----------- | ------------------------- | --------------------------------------------------------------------------------- |
+| `gemini`    | Gemini (Google AI Studio) | kunci Gemini API daripada Google AI Studio (peringkat percuma tersedia)           |
+| `vertex`    | Puncak AI                 | Akaun Perkhidmatan JSON, token akses OAuth atau kunci API Vertex Express (Gemini) |
+
+Pembekal ini menggunakan bukti kelayakan isu Google untuk akses API, tidak seperti sesi produk Antigravity. Mereka tidak menjadikan setiap penggunaan mematuhi atau menghapuskan risiko penguatkuasaan: masing-masing dikawal oleh syaratnya sendiri, yang mana pengendali perlu menyemak penggunaannya. Contohnya, [Syarat Perkhidmatan Tambahan Gemini API](https://ai.google.dev/gemini-api/terms) hanya membenarkan Perkhidmatan Berbayar apabila pelanggan API disediakan kepada pengguna di Kawasan Ekonomi Eropah, Switzerland atau United Kingdom dan kandungan yang dihantar kepada Perkhidmatan Tidak Berbayar boleh digunakan untuk menambah baik produk Google. Vertex AI berada di bawah syarat Awan Google sebaliknya ( [Syarat Khusus Perkhidmatan](https://cloud.google.com/terms/service-terms) ). Harga dan kuota mengikut syarat API tersebut dan bukannya langganan Antigravity.
+
+Operator yang ingin mengelakkan penggantungan Antigravity yang diterangkan di atas harus menghalakan trafik Gemini melalui salah satu penyedia ini dan bukannya `antigravity` / `agy`, selepas menyemak sama ada penggunaannya sesuai dengan syarat penyedia.
+
+Titik sentuh:
 
 - `open-sse/executors/antigravity.ts` — membaca `process.env.ANTIGRAVITY_CREDITS`
-- `src/lib/oauth/providers/antigravity.ts` — penyaluran kelayakan
-- Laporan insiden asal: Perbincangan [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
+- paip kelayakan `src/lib/oauth/providers/antigravity.ts` —
+- Laporan kejadian asal: Perbincangan [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
 
@@ -237,19 +259,18 @@ Selain itu, `updateNssDatabases()` memasang sijil ke dalam DB NSS setiap penggun
 
 Semua titik akhir MITM memerlukan pengesahan pengurusan (`requireCliToolsAuth`). Kata laluan sudo dicache dalam skop modul (tidak pernah dalam `globalThis`) dan dikosongkan ketika `stopMitm()`.
 
-## Penggantian User-Agent — pemboleh ubah persekitaran (`.env.example` seksyen 12)
+## Ejen Pengguna Mengatasi — env vars (`.env.example` bahagian 12)
 
-| Pemboleh ubah            | Lalai                                                           |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| Pembolehubah        | Lalai                                         |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-Digunakan oleh `open-sse/executors/base.ts::buildHeaders()` melalui carian dinamik. **Naik taraf nilai ini apabila penyedia mengeluarkan versi CLI baharu** — rentetan UA yang lapuk akan mula ditolak sebagai klien yang sudah lapuk.
+Digunakan oleh `open-sse/executors/base.ts::buildHeaders()` melalui carian dinamik.** Bantah ini apabila pembekal mengeluarkan versi CLI baharu** rentetan UA basi — mula ditolak sebagai pelanggan lapuk.
 
 ## Togol Mod Keserasian CLI (`.env.example` bahagian 13)
 

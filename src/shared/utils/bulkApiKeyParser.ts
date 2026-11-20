@@ -8,6 +8,8 @@
  *   - blank lines (skipped)
  *
  * `apiKey` may contain `|` — only the first `|` is treated as the separator.
+ * Exception: for the `muse-code` provider only, a line that starts with `LLM|` is a Muse key. It is
+ * kept whole as the key and auto-named. For every other provider it is a plain `name|apiKey` line.
  *
  * When `withAccountId` is enabled (Cloudflare Workers AI), each line carries a
  * per-key account id in a 3-field shape:
@@ -33,9 +35,49 @@ export interface BulkApiKeyParseResult {
 export interface ParseBulkApiKeysOptions {
   /** Parse each line as the 3-field `name|accountId|apiKey` shape (Cloudflare Workers AI). */
   withAccountId?: boolean;
+  /** Provider id. Only `muse-code` reads an `LLM|` line as a whole Muse key. */
+  provider?: string;
 }
 
 const MAX_BULK_LINES = 200;
+
+type ParsedKeyLine = Omit<BulkApiKeyEntry, "lineNumber"> | { warning: string };
+
+function parseAccountKeyLine(raw: string, nextName: () => string): ParsedKeyLine {
+  const firstPipe = raw.indexOf("|");
+  if (firstPipe === -1) return { warning: "expected name|accountId|apiKey, skipped" };
+  const secondPipe = raw.indexOf("|", firstPipe + 1);
+  if (secondPipe === -1) return { warning: "missing accountId or apiKey, skipped" };
+
+  const namePart = raw.slice(0, firstPipe).trim();
+  const accountId = raw.slice(firstPipe + 1, secondPipe).trim();
+  const apiKey = raw.slice(secondPipe + 1).trim();
+  // Allocate the name before validation: invalid unnamed rows consume an index too.
+  const name = namePart || nextName();
+  if (!accountId) return { warning: "empty accountId, skipped" };
+  if (!apiKey) return { warning: "empty apiKey, skipped" };
+  return { name, accountId, apiKey };
+}
+
+// A Muse key starts with `LLM|`. Splitting it at the first pipe stores the name "LLM" and a key
+// without its prefix, which upstream rejects. Only the muse-code provider reads a line this way.
+const MUSE_KEY_LINE = /^LLM\|/i;
+const MUSE_PROVIDER = "muse-code";
+
+function parseKeyLine(raw: string, nextName: () => string, provider?: string): ParsedKeyLine {
+  if (provider === MUSE_PROVIDER && MUSE_KEY_LINE.test(raw)) {
+    // Allocate the name before validation, as the other branches do: a skipped row uses an index.
+    const name = nextName();
+    // `LLM|` alone carries no key: fall through to the same empty-key warning.
+    return raw.slice(4).trim() ? { name, apiKey: raw } : { warning: "empty apiKey, skipped" };
+  }
+  const pipeIdx = raw.indexOf("|");
+  const namePart = pipeIdx === -1 ? "" : raw.slice(0, pipeIdx).trim();
+  const apiKey = pipeIdx === -1 ? raw : raw.slice(pipeIdx + 1).trim();
+  const name = namePart || nextName();
+  if (!apiKey) return { warning: "empty apiKey, skipped" };
+  return { name, apiKey };
+}
 
 export function parseBulkApiKeys(
   text: string,
@@ -45,6 +87,7 @@ export function parseBulkApiKeys(
   const entries: BulkApiKeyEntry[] = [];
   const warnings: string[] = [];
   let autoIdx = 1;
+  const nextName = () => `Key ${autoIdx++}`;
 
   if (lines.length > MAX_BULK_LINES) {
     warnings.push(
@@ -58,53 +101,14 @@ export function parseBulkApiKeys(
     if (!raw) continue;
     if (raw.startsWith("#")) continue;
 
-    if (options.withAccountId) {
-      const firstPipe = raw.indexOf("|");
-      if (firstPipe === -1) {
-        warnings.push(`Line ${i + 1}: expected name|accountId|apiKey, skipped`);
-        continue;
-      }
-      const secondPipe = raw.indexOf("|", firstPipe + 1);
-      if (secondPipe === -1) {
-        warnings.push(`Line ${i + 1}: missing accountId or apiKey, skipped`);
-        continue;
-      }
-      const namePart = raw.slice(0, firstPipe).trim();
-      const accountId = raw.slice(firstPipe + 1, secondPipe).trim();
-      const apiKey = raw.slice(secondPipe + 1).trim();
-      const name = namePart || `Key ${autoIdx++}`;
-
-      if (!accountId) {
-        warnings.push(`Line ${i + 1}: empty accountId, skipped`);
-        continue;
-      }
-      if (!apiKey) {
-        warnings.push(`Line ${i + 1}: empty apiKey, skipped`);
-        continue;
-      }
-
-      entries.push({ name, accountId, apiKey, lineNumber: i + 1 });
+    const parsed = options.withAccountId
+      ? parseAccountKeyLine(raw, nextName)
+      : parseKeyLine(raw, nextName, options.provider);
+    if ("warning" in parsed) {
+      warnings.push(`Line ${i + 1}: ${parsed.warning}`);
       continue;
     }
-
-    const pipeIdx = raw.indexOf("|");
-    let name: string;
-    let apiKey: string;
-    if (pipeIdx === -1) {
-      name = `Key ${autoIdx++}`;
-      apiKey = raw;
-    } else {
-      const namePart = raw.slice(0, pipeIdx).trim();
-      apiKey = raw.slice(pipeIdx + 1).trim();
-      name = namePart || `Key ${autoIdx++}`;
-    }
-
-    if (!apiKey) {
-      warnings.push(`Line ${i + 1}: empty apiKey, skipped`);
-      continue;
-    }
-
-    entries.push({ name, apiKey, lineNumber: i + 1 });
+    entries.push({ ...parsed, lineNumber: i + 1 });
   }
 
   return { entries, warnings };

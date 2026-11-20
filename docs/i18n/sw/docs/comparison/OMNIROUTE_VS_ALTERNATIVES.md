@@ -4,46 +4,45 @@
 
 ---
 
-Ulinganisho wa vipengele kwa njia yenye lengo dhidi ya vipanga-njia maarufu vya AI vya chanzo huria.
+Ulinganisho wa kipengele cha lengo dhidi ya vipanga njia maarufu vya chanzo-wazi AI.
 
-> **Mbinu**: Hifadhi za umma zilikaguliwa 2026-Q2. Matoleo kama yalivyoorodheshwa.
-> Wasilisha masahihisho kupitia PR — tunataka taarifa hizi ziwe sahihi.
+> **Mbinu** : Repo za umma zilizokaguliwa 2026-Q2. Matoleo kama yalivyoorodheshwa. Wasilisha masahihisho kupitia PR — tunataka hii iwe sahihi.
 
-| Kipengele                                                    |                 OmniRoute 3.8                  |       LiteLLM 1.x       |      OpenRouter (SaaS)      |   Portkey    |
-| ------------------------------------------------------------ | :--------------------------------------------: | :---------------------: | :-------------------------: | :----------: |
-| **Watoa huduma**                                             |                    **329**                     |          ~100           |             ~50             |     ~30      |
-| **Vipengee vya katalogi vya bure/bila uthibitishaji**        |                    **155**                     |           n/a           | upitishaji wa moja kwa moja |     n/a      |
-| **Inaweza kupangishwa binafsi**                              |                       ✅                       |           ✅            |             ❌              | ⚠ inalipiwa  |
-| **Vipengee vya katalogi vya OAuth**                          |                     **23**                     |      kiasi fulani       |             ❌              |      ❌      |
-| **Michanganyiko ya urejeshaji kiotomatiki**                  |                **mikakati 19**                 | kulingana na kipaumbele |    kulingana na kiwango     | yenye uzani  |
-| **Muunganisho (jopo sambamba + usanisi wa mwamuzi)**         |                       ✅                       |           ❌            |             ❌              |      ❌      |
-| **Urejeshaji wa Kiwango cha 1/2/3 (usajili→bei nafuu→bure)** |                    ✅ + UI                     |       kwa mikono        |             n/a             |  kwa mikono  |
-| **Mfinyazo wa tokeni**                                       | rundo la injini 12 (RTK + Caveman + LLMLingua) |         hakuna          |           hakuna            |    hakuna    |
-| **Uzalishaji wa modi nyingi (usemi/muziki/video)**           |                       ✅                       |           ❌            | upitishaji wa moja kwa moja |      ❌      |
-| **Seva ya MCP iliyojengewa ndani**                           |            ✅ zana 110, mawanda 33             |           ❌            |             ❌              |      ❌      |
-| **Itifaki ya A2A**                                           |                   ✅ ujuzi 6                   |           ❌            |             ❌              |      ❌      |
-| **Kumbukumbu (FTS5 + vekta)**                                |                       ✅                       |           ❌            |             ❌              |      ❌      |
-| **Vizuizi vya usalama (PII, udukuzi wa maagizo, kuona)**     |                       ✅                       |      kiasi fulani       |             ❌              | ✅ inalipiwa |
-| **Miunganisho ya mawakala wa wingu**                         |          Codex, Cursor, Devin, Jules           |           ❌            |             ❌              |      ❌      |
-| **Kikatiza saketi kwa kila mtoa huduma**                     |     ✅ hali 3, urejeshaji wa kucheleweshwa     |         msingi          |             ❌              |      ✅      |
-| **Ufichaji wa alama ya kidole ya TLS (JA3/JA4)**             |                   ✅ wreq-js                   |           ❌            |             ❌              |      ❌      |
-| **Mfumo wa tathmini**                                        |              ✅ umejengewa ndani               |           ❌            |             ❌              | ⚠ inalipiwa  |
-| **Proksi ya MITM (hunasa Cursor/Antigravity)**               |               ✅ majukwaa mengi                |           ❌            |             ❌              |      ❌      |
-| **CLI yenye trei ya mfumo (bila Electron)**                  |                       ✅                       |           ❌            |             n/a             |     n/a      |
-| **Uthibitishaji kiotomatiki wa CLI kwa machine-ID**          |                       ✅                       |           ❌            |             n/a             |     n/a      |
-| **Dashibodi**                                                |                   Next.js 16                   |         msingi          |         ya umiliki          |  ya umiliki  |
-| **i18n**                                                     |                  **lugha 42**                  |           ❌            |             ❌              |      ⚠       |
-| **Ujuzi wa umma wa mawakala (SKILL.md)**                     |                     ✅ 45                      |           ❌            |             ❌              |      ❌      |
-| **Usaidizi wa handaki (Cloudflared, Tailscale, Ngrok)**      |                       ✅                       |           ❌            |             n/a             |     n/a      |
-| **Leseni**                                                   |                      MIT                       |           MIT           |         ya umiliki          |  ya umiliki  |
+| Kipengele                                                      |                 OmniRoute 3.8                 |    LiteLLM 1.x    |  OpenRouter (SaaS)   |   Portkey   |
+| -------------------------------------------------------------- | :-------------------------------------------: | :---------------: | :------------------: | :---------: |
+| **Watoa huduma**                                               |                    **329**                    |       ~100        |         ~50          |     ~30     |
+| **Free/no-auth maingizo ya katalogi**                          |                    **155**                    |        n/a        |    njia ya kupita    |     n/a     |
+| **Mwenyeji mwenyewe**                                          |                      ✅                       |        ✅         |          ❌          |  ⚠ kulipwa  |
+| **OAuth maingizo ya katalogi**                                 |                    **23**                     |      sehemu       |          ❌          |     ❌      |
+| **Mchanganyiko wa kurudi nyuma kiotomatiki**                   |                **Mikakati 22**                | kipaumbele-msingi | kulingana na kiwango | yenye uzito |
+| **Fusion (jopo sambamba + jaji awali)**                        |                      ✅                       |        ❌         |          ❌          |     ❌      |
+| **Kiwango 1/2/3 kurudi nyuma (usajili → nafuu → bila malipo)** |                    ✅ + UI                    |     mwongozo      |         n/a          |  mwongozo   |
+| **Ukandamizaji wa ishara**                                     | Rafu ya injini 12 (RTK + Caveman + LLMLingua) |      hakuna       |        hakuna        |   hakuna    |
+| **Uzalishaji wa multimodal (speech/music/video)**              |                      ✅                       |        ❌         |    njia ya kupita    |     ❌      |
+| **Seva MCP iliyojengwa ndani**                                 |             ✅ 110 zana, 33 upeo              |        ❌         |          ❌          |     ❌      |
+| **itifaki A2A**                                                |                  ✅ 6 ujuzi                   |        ❌         |          ❌          |     ❌      |
+| **Kumbukumbu (FTS5 + vekta )**                                 |                      ✅                       |        ❌         |          ❌          |     ❌      |
+| **Walinzi (PII, sindano, maono)**                              |                      ✅                       |      sehemu       |          ❌          | ✅ kulipwa  |
+| **Miunganisho ya wakala wa wingu**                             |          Codex, Cursor, Devin, Jules          |        ❌         |          ❌          |     ❌      |
+| **Kivunja mzunguko kwa kila mtoa huduma**                      |          ✅ 3-hali, ahueni ya uvivu           |      msingi       |          ❌          |     ✅      |
+| **TLS wizi wa alama za vidole (JA3/JA4)**                      |                  ✅ wreq-js                   |        ❌         |          ❌          |     ❌      |
+| **Mfumo wa Eval**                                              |             ✅ iliyojengwa ndani              |        ❌         |          ❌          |  ⚠ kulipwa  |
+| **MITM proksi (inaingilia Cursor/Antigravity)**                |               ✅ jukwaa-msalaba               |        ❌         |          ❌          |     ❌      |
+| **CLI na tray ya mfumo (hakuna Electron)**                     |                      ✅                       |        ❌         |         n/a          |     n/a     |
+| **CLI machine-ID auto-auth**                                   |                      ✅                       |        ❌         |         n/a          |     n/a     |
+| **Dashibodi**                                                  |                  Next.js 16                   |      msingi       |       umiliki        |   umiliki   |
+| **i18n**                                                       |                 **67 maeneo**                 |        ❌         |          ❌          |      ⚠      |
+| **Ujuzi wa wakala wa umma (SKILL.md)**                         |                     ✅ 45                     |        ❌         |          ❌          |     ❌      |
+| **Usaidizi wa handaki (Cloudflared, Tailscale, Ngrok)**        |                      ✅                       |        ❌         |         n/a          |     n/a     |
+| **Leseni**                                                     |                      MIT                      |        MIT        |       umiliki        |   umiliki   |
 
 ## Wakati wa kuchagua OmniRoute
 
-- Unapangisha mwenyewe na unataka **ufikiaji wa juu zaidi wa watoa huduma** (watoa huduma 329, vipengee 155 vya katalogi vya bure/bila uthibitishaji)
-- Unahitaji **seva ya MCP iliyojengewa ndani** (zana za LLM, kumbukumbu na ujuzi vinavyotolewa kama zana)
-- Unahitaji **itifaki ya A2A** kwa mitiririko ya kazi baina ya mawakala
-- Unataka **ufichaji wa alama ya kidole** (JA3/JA4) ili kuepuka kugunduliwa na CAPTCHA za huduma za juu
-- Unahitaji **vipengele vya kiwango cha biashara** (vizuizi vya usalama, tathmini, kumbukumbu ya ukaguzi) bila bili ya SaaS
+- Wewe mwenyewe mwenyeji na unataka** kiwango cha juu cha chanjo ya mtoa huduma** (Watoa huduma 394, maingizo ya katalogi ya free/no-auth 155)
+- Unahitaji** seva MCP iliyojengwa ndani** ( Zana za LLM, kumbukumbu, ujuzi wazi kama zana)
+- Unahitaji** itifaki A2A** kwa mtiririko wa kazi kati ya wakala kwa wakala
+- Unataka** wizi wa alama za vidole** (JA3/JA4) ili kuzuia kugunduliwa na CAPTCHAs ya juu ya mkondo
+- Unahitaji** sifa za biashara** (walinzi, wasaidizi, njia ya ukaguzi) bila muswada SaaS
 
 ## Wakati wa kuchagua LiteLLM
 

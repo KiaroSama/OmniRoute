@@ -46,7 +46,8 @@ test("provider onboarding renders provider logos instead of treating catalog ids
 test("shared empty states render Material Symbol ids as icons", () => {
   const source = readSource("src/shared/components/EmptyState.tsx");
   assert.match(source, /usesMaterialSymbol/);
-  assert.match(source, /className="material-symbols-outlined"/);
+  // KEA-7886: Material ids render through the shared <Icon> (Lucide, Material fallback).
+  assert.match(source, /<Icon name=\{icon\}/);
 });
 
 test("compression engine pages localize API-driven labels and normalize icon ids", () => {
@@ -159,7 +160,9 @@ test("changelog and settings breadcrumbs use localized labels", () => {
     assert.equal(changelog.includes(rawText), false, `raw changelog copy: ${rawText}`);
   }
 
-  const breadcrumbs = readSource("src/shared/components/Breadcrumbs.tsx");
+  // The segment → label-key map moved out of the component (pure rules, checked against the
+  // route tree by tests/unit/breadcrumb-trail-routes.test.ts).
+  const breadcrumbs = readSource("src/shared/utils/breadcrumbTrail.ts");
   assert.match(breadcrumbs, /general: "general"/);
   assert.match(breadcrumbs, /"feature-flags": "featureFlags"/);
 });

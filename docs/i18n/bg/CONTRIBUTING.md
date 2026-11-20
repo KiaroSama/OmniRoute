@@ -8,17 +8,22 @@ Thank you for your interest in contributing! This guide covers everything you ne
 
 ---
 
-## Настройка на средата за разработка
+## Настройка на разработката
 
 ### Предварителни изисквания
 
-- **Node.js** `>=22.22.3 <23` или `>=24.0.0 <27` (препоръчително: 24 LTS)
+- **Node.js** `>=22.22.2 <23` или `>=24.0.0 <27` (препоръчва се: 24 LTS)
 - **npm** 10+
 
-> **Потребители на npm v11+ (Node 24+):** След `npm install` проверете дали нативните модули са инсталирани:
-> `node -e "require('better-sqlite3')"`. Ако командата завърши неуспешно с `MODULE_NOT_FOUND`,
+> **Windows с Node 24:** използвайте текущата 24 LTS коригираща версия (поне 24.20.0).
+> По-ранните версии могат да прекратят изпълнението след успешно приключили тестове, когато `--test-force-exit` затвори
+> процеса. [Корекцията на Windows libuv](https://github.com/nodejs/node/pull/61999) отстранява
+> този срив по време на изпълнение; оставете проверките на твърденията в тестовете и проверките за изход на изпълнителя активирани.
+
+> **Потребители на npm v11+ (Node 24+):** След `npm install` проверете дали са инсталирани нативните модули:
+> `node -e "require('better-sqlite3')"`. Ако командата завърши с грешка `MODULE_NOT_FOUND`,
 > изпълнете `npm approve-scripts better-sqlite3 && npm install`. Вижте
-> [Отстраняване на проблеми](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module).
+> [Отстраняване на неизправности](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module).
 
 - **Git**
 
@@ -36,88 +41,83 @@ npm install
 # Създайте своя .env от шаблона
 cp .env.example .env
 
-# Генерирайте необходимите тайни стойности
+# Генерирайте необходимите секрети
 echo "JWT_SECRET=$(openssl rand -base64 48)" >> .env
 echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 ```
 
 Основни променливи за разработка:
 
-| Променлива             | Стойност по подразбиране за разработка | Описание                                |
-| ---------------------- | -------------------------------------- | --------------------------------------- |
-| `PORT`                 | `20128`                                | Порт на сървъра                         |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`               | Основен URL за потребителския интерфейс |
-| `JWT_SECRET`           | (генерирайте по-горе)                  | Тайна стойност за подписване на JWT     |
-| `INITIAL_PASSWORD`     | `CHANGEME`                             | Парола за първоначално влизане          |
-| `APP_LOG_LEVEL`        | `info`                                 | Ниво на подробност на журналите         |
+| Променлива             | Стойност по подразбиране за разработка | Описание                           |
+| ---------------------- | -------------------------------------- | ---------------------------------- |
+| `PORT`                 | `20128`                                | Порт на сървъра                    |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`               | Базов URL адрес за frontend        |
+| `JWT_SECRET`           | (генерирайте по-горе)                  | Секретен ключ за подписване на JWT |
+| `INITIAL_PASSWORD`     | `CHANGEME`                             | Парола за първото влизане          |
+| `APP_LOG_LEVEL`        | `info`                                 | Ниво на подробност на журналите    |
 
-### Настройки на таблото за управление
+### Настройки на таблото
 
-Таблото за управление предоставя превключватели в потребителския интерфейс за функции, които могат да бъдат конфигурирани и чрез променливи на средата:
+Таблото предоставя превключватели в потребителския интерфейс за функции, които могат да бъдат конфигурирани и чрез променливи на средата:
 
-| Местоположение на настройката | Превключвател                   | Описание                                                      |
-| ----------------------------- | ------------------------------- | ------------------------------------------------------------- |
-| Настройки → Разширени         | Режим за отстраняване на грешки | Активира журналите на заявките за отстраняване на грешки (UI) |
-| Настройки → Общи              | Видимост на страничната лента   | Показва/скрива разделите на страничната лента                 |
+| Местоположение на настройката | Превключвател      | Описание                                                         |
+| ----------------------------- | ------------------ | ---------------------------------------------------------------- |
+| Settings → Advanced           | Debug Mode         | Активиране на журналите за заявки за отстраняване на грешки (UI) |
+| Settings → General            | Sidebar Visibility | Показване/скриване на секциите на страничната лента              |
 
-Тези настройки се съхраняват в базата данни и се запазват след рестартиране, като при задаването им имат предимство пред стойностите по подразбиране от променливите на средата.
+Тези настройки се съхраняват в базата данни и се запазват между рестартиранията, като заменят стойностите по подразбиране на променливите на средата, когато са зададени.
 
-### Локално стартиране
+### Локално изпълнение
 
 ```bash
 # Режим за разработка (автоматично презареждане)
 npm run dev
 
-# Продукционна компилация
-npm run build    # next build → .build/next/, след което assembleStandalone → dist/
+# Компилация за продукционна среда
+npm run build    # next build → .build/next/ then assembleStandalone → dist/
 npm run start
 
-# Бърза компилация само на бекенда/API за промени от сътрудници
+# Бърза компилация само на backend/API за промени от сътрудници
 npm run build:contributor
 
-# Компилация за издание (чиста повторна компилация + HEAD маркер — задължително за внедряване)
-npm run build:release   # rm -rf .build dist, след това компилация + записва dist/BUILD_SHA
+# Компилация за издаване (чиста повторна компилация + HEAD маркер — необходима за внедряване)
+npm run build:release   # rm -rf .build dist && build + writes dist/BUILD_SHA
 
-# Често използвана конфигурация на порта
+# Обичайна конфигурация на порта
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-Компилацията за сътрудници извършва проверка само чрез компилиране: тя не сглобява самостоятелната
-дистрибуция и не компилира незадължителните нативни ресурси за пакетиране. Използвайте обичайната продукционна компилация, когато
-трябва да проверите пакета, предназначен за разпространение.
+Компилацията за сътрудници извършва само проверка чрез компилация: тя не събира самостоятелната дистрибуция и не компилира незадължителните нативни пакетиращи ресурси. Използвайте стандартната продукционна компилация, когато трябва да проверите пакета, готов за доставка.
 
-### Структура на изходните файлове от компилацията
+### Структура на изхода от компилацията
 
-| Директория | Съдържание                                                                                | Проследява се |
-| ---------- | ----------------------------------------------------------------------------------------- | ------------- |
-| `src/`     | Изходен код на приложението (TypeScript / TSX)                                            | Да            |
-| `.build/`  | Междинни файлове — резултат от `next build` (игнорира се от Git, `distDir = .build/next`) | Не            |
-| `dist/`    | Пакет за разпространение — сглобен от `assembleStandalone` (игнорира се от Git)           | Не            |
+| Директория | Съдържание                                                                     | Проследява се |
+| ---------- | ------------------------------------------------------------------------------ | ------------- |
+| `src/`     | Изходен код на приложението (TypeScript / TSX)                                 | Да            |
+| `.build/`  | Междинни файлове — изход от `next build` (gitignored, `distDir = .build/next`) | Не            |
+| `dist/`    | Пакет, готов за доставка — събран от `assembleStandalone` (gitignored)         | Не            |
 
-Процесът на компилация се изпълнява в един проход:
+Конвейерът за компилация преминава на един етап:
 
 ```
 npm run build
-  └─ next build → .build/next/standalone  (резултат от Next.js)
-  └─ assembleStandalone()                 (копира самостоятелния пакет + статичните + публичните + нативните ресурси)
-       └─ резултат: dist/                 (server.js, .next/static/, public/, node_modules/)
+  └─ next build → .build/next/standalone  (Next.js output)
+  └─ assembleStandalone()                 (copies standalone + static + public + native assets)
+       └─ output: dist/                   (server.js, .next/static/, public/, node_modules/)
 ```
 
-`npm run build:release` допълнително изчиства първо и двете директории и записва
-`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) като контролен маркер за целостта на внедряването.
+`npm run build:release` допълнително изчиства и двете директории и записва
+`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) като маркер за целостност при внедряване.
 
-`npm run build:contributor` използва профила за компилация само на бекенда. По време на компилацията той временно заменя
-файловете на потребителския интерфейс на таблото за управление със заместители, запазва обработчиците на API маршрути и възстановява оригиналните файлове
-след компилацията. Използвайте `npm run build` за промени, които засягат потребителския интерфейс на таблото за управление, или за пълна
-проверка на изданието; профилът за сътрудници не замества компилацията за издание.
+`npm run build:contributor` използва профила за компилация само на backend. Той временно заменя файловете на потребителския интерфейс на таблото с временни файлове по време на компилацията, запазва обработващите API маршрути и възстановява оригиналните файлове след компилацията. Използвайте `npm run build` за промени, които засягат потребителския интерфейс на таблото, или за пълна проверка преди издаване; профилът за сътрудници не е заместител на компилацията за издаване.
 
-> **Бележка за внедряване на VPS:** отдалечената директория на изображението `/usr/lib/node_modules/omniroute/app/`
-> остава непроменена. Инструментите за внедряване синхронизират съдържанието на `dist/` в нея чрез rsync.
-> Променен е само пътят до изходните файлове от компилацията в хранилището (`app/` → `dist/`).
+> **Бележка за внедряване във VPS:** отдалечената директория с образа `/usr/lib/node_modules/omniroute/app/`
+> остава непроменена. Уменията за внедряване синхронизират съдържанието на `dist/` в нея.
+> Преместен е само пътят до изхода от компилацията в хранилището (`app/` → `dist/`).
 
 URL адреси по подразбиране:
 
-- **Табло за управление**: `http://localhost:20128/dashboard`
+- **Табло**: `http://localhost:20128/dashboard`
 - **API**: `http://localhost:20128/v1`
 
 ---
@@ -170,18 +170,18 @@ refactor(db): consolidate rate limit tables
 ## Изпълнение на тестове
 
 ```bash
-# Всички тестове (модулни + vitest + екосистема + e2e)
+# Всички тестове (unit + vitest + ecosystem + e2e)
 npm run test:all
 
 # Един тестов файл (вграденият инструмент за изпълнение на тестове на Node.js — повечето тестове използват него)
 node --import tsx/esm --test tests/unit/your-file.test.ts
 
-# Само модулните тестове, засегнати от промяната ви (същият TIA селектор като при проверката в CI, #8084)
+# Само unit тестовете, засегнати от промяната ви (същият TIA селектор като при проверката в CI, #8084)
 npm run test:scoped            # промени в последния commit (или в работното дърво)
-npm run test:scoped:staged     # само промените в staging областта — подходящо за изпълнение преди commit
-npm run test:scoped:full       # първо пресъздава картата на графа за импортиране (след добавяне/преместване на файлове)
-# Изходен код 1 + "run the full suite" означава, че централен файл (tsconfig, package.json, …) или
-# некартографиран изходен файл е променен — селекторът прекратява безопасно и никога не пропуска без предупреждение.
+npm run test:scoped:staged     # само staged промени — подходящо за изпълнение преди commit
+npm run test:scoped:full       # първо изгражда отново картата на графа на импортите (след добавяне/преместване на файлове)
+# Exit 1 + "run the full suite" означава, че централен файл (tsconfig, package.json, …) или
+# некартиран изходен файл е променен — селекторът прекратява безопасно и никога не пропуска тестове без предупреждение.
 
 # Vitest (MCP сървър, autoCombo, кеш)
 npm run test:vitest
@@ -195,7 +195,7 @@ npm run test:protocols:e2e
 # Тестове за съвместимост с екосистемата
 npm run test:ecosystem
 
-# Праг за покритие: 60% изрази/редове/функции/разклонения
+# Праг за покритие: 60% оператори/редове/функции/разклонения
 npm run test:coverage
 npm run coverage:report
 
@@ -203,52 +203,53 @@ npm run coverage:report
 npm run lint
 npm run check
 
-# Ограничен реален комбиниран smoke тест с външни услуги (изисква достъп до VPS + реални кредити при доставчиците)
-# Използва РЕАЛНИ доставчици — струва малко. НИКОГА не се изпълнява в CI. Пропуска се коректно без активиращата настройка.
-# Изисква: достъп чрез ssh root@192.168.0.15 (зарежда snapshot само за четене на базата данни от VPS).
+# Ограничен smoke тест на комбинации с реални upstream услуги (изисква достъп до VPS + реални кредити при доставчиците)
+# Използва РЕАЛНИ доставчици — струва малко. НИКОГА не се изпълнява в CI. Пропуска се безпроблемно без разрешаващата променлива.
+# Необходимо е: достъп чрез ssh root@192.168.0.15 (зарежда snapshot само за четене на DB от VPS).
 RUN_COMBO_LIVE=1 npm run test:combo:live
 
-# Реален smoke тест от фаза 3 на VPS — обикновени Node ESM скриптове, които използват директно работещия .15 сървър.
+# Live smoke тест от фаза 3 за VPS — обикновени Node ESM скриптове, които се обръщат директно към активния .15 сървър.
 # Изисква: достъп чрез ssh root@192.168.0.15 (комбинациите се създават/премахват чрез SSH sqlite).
 # Използва РЕАЛНИ доставчици (малък разход). Създава/изтрива само комбинации __live_test__*. НИКОГА не се изпълнява в CI.
 # REQUIRE_API_KEY=false на .15, така че не е необходим API ключ, но използва COMBO_LIVE_BASE_URL / COMBO_LIVE_API_KEY, ако са зададени.
-npm run test:combo:live:vps              # 7 HTTP сценария (приоритет/циклично/претеглено/цена/обединяване/автоматично + състояние)
-npm run test:combo:live:vps:failover     # добавя реален сценарий за превключване между доставчици при отказ (общо 8)
+npm run test:combo:live:vps              # 7 HTTP сценария (priority/round-robin/weighted/cost/fusion/auto + проверка на състоянието)
+npm run test:combo:live:vps:failover     # добавя реален сценарий за превключване при отказ между доставчици (общо 8)
 ```
 
 Бележки за покритието:
 
-- `npm run test:coverage` измерва покритието на изходния код за основния набор от модулни тестове, изключва `tests/**` и включва `open-sse/**`
-- Заявките за сливане трябва да поддържат прага за покритие от **60%+** за изрази/редове/функции/разклонения
-- Ако дадена PR променя продукционен код в `src/`, `open-sse/`, `electron/` или `bin/`, тя трябва да добавя или актуализира автоматизирани тестове в същата PR
-- `npm run coverage:report` извежда подробен отчет файл по файл от последното изпълнение за покритие
-- `npm run test:coverage:legacy` запазва по-старата метрика за историческо сравнение
+- `npm run test:coverage` измерва покритието на изходния код за основния набор от unit тестове, изключва `tests/**` и включва `open-sse/**`
+- Заявките за сливане трябва да поддържат прага за покритие от **60%+** за оператори/редове/функции/разклонения
+- Ако PR променя production код в `src/`, `open-sse/`, `electron/` или `bin/`, в същия PR трябва да бъдат добавени или актуализирани автоматизирани тестове
+- `npm run coverage:report` отпечатва подробния отчет по файлове от последното изпълнение за покритие
+- `npm run test:coverage:legacy` запазва по-стария показател за историческо сравнение
 - Вижте `docs/ops/COVERAGE_PLAN.md` за поетапния план за подобряване на покритието
 
 ### Изисквания към заявките за сливане
 
 Преди да отворите PR, използвайте
-[Основния процес за принос](docs/ops/CONTRIBUTION_GOLDEN_PATH.md), за да изпълните целевия цикъл за
-направените от вас промени. Пълният набор от модулни тестове (4 CI сегмента), Vitest, прагът за покритие от **60%+** и
-продукционната компилация са отговорност на CI — локалното им изпълнение не предоставя допълнителна информация извън тази,
-която проверките на PR вече ще ви дадат, а при по-слаби машини може да натовари максимално системата (#8084):
+[Препоръчания процес за принос](docs/ops/CONTRIBUTION_GOLDEN_PATH.md), за да изпълните целевия цикъл за
+направените от вас промени. Пълният набор от unit тестове (4 CI шарда), Vitest, прагът за покритие от **60%+** и
+production компилацията са отговорност на CI — локалното им изпълнение не предоставя допълнителна информация, която
+проверките на PR така или иначе няма да ви дадат, а при по-слаби машини може да натовари системата до краен предел (#8084):
 
 - Изпълнете тестовите файлове, които покриват промяната ви: `node --import tsx/esm --test tests/unit/<file>.test.ts`
 - Изпълнете `npm run lint`
-- Добавяйте или актуализирайте автоматизирани тестове в същата PR винаги когато се променя продукционен код
-- Включете променените или добавените тестови файлове в описанието на PR, когато е променен продукционен код
+- Добавяйте или актуализирайте автоматизирани тестове в същия PR винаги когато се променя production код
+- Във файловете за `node:test` поставяйте всеки `await` от най-горно ниво (например `await import(...)`) преди първия `test()` / `describe()`: при `--test-force-exit` регистрираните след него тестове може без предупреждение никога да не се изпълнят (#18045; налага се от `npm run check:test-tla-order`)
+- Когато е променен production код, включете променените или добавените тестови файлове в описанието на PR
 - Проверете резултата от SonarQube в PR, когато тайните на проекта са конфигурирани в CI
 
-Текущо състояние на тестовете: **122 файла с модулни тестове**, покриващи:
+Текущо състояние на тестовете: **122 файла с unit тестове**, които покриват:
 
-- Преобразуватели на доставчици и конвертиране на формати
-- Ограничаване на честотата, прекъсвач на веригата и устойчивост
-- Семантичен кеш, идемпотентност, проследяване на напредъка
+- Транслатори на доставчици и преобразуване на формати
+- Ограничаване на честотата, circuit breaker и устойчивост
+- Семантичен кеш, идемпотентност и проследяване на напредъка
 - Операции с базата данни и схема (21 DB модула)
-- OAuth потоци и удостоверяване
+- OAuth процеси и удостоверяване
 - Валидиране на API крайни точки (Zod v4)
-- Инструменти на MCP сървъра и прилагане на обхвати
-- Системи за памет и умения
+- Инструменти на MCP сървъра и налагане на обхвата
+- Системите Memory и Skills
 
 ---
 
@@ -288,7 +289,7 @@ npm run test:combo:live:vps:failover     # добавя реален сцена�
 
 ---
 
-## Project Structure
+## Структура на проекта
 
 ```
 src/                        # TypeScript (.ts / .tsx)
@@ -301,7 +302,7 @@ src/                        # TypeScript (.ts / .tsx)
 │   ├── a2a/                # Agent-to-Agent v0.3 protocol server
 │   ├── acp/                # Agent Communication Protocol registry
 │   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
+│   ├── db/                 # SQLite domain modules + 130 migrations
 │   ├── memory/             # Persistent conversational memory
 │   ├── oauth/              # OAuth providers, services, and utilities
 │   ├── skills/             # Extensible skill framework
@@ -311,15 +312,15 @@ src/                        # TypeScript (.ts / .tsx)
 ├── mitm/                   # MITM proxy (cert, DNS, target routing)
 ├── shared/
 │   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
+│   ├── constants/          # Provider definitions (329), MCP scopes, 22 routing strategies
 │   ├── utils/              # Circuit breaker, sanitizer, auth helpers
 │   └── validation/         # Zod v4 schemas
 └── sse/                    # SSE proxy pipeline
 
 open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
+├── executors/              # 150 executor modules (executor classes + per-provider helpers)
 ├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
+├── mcp-server/             # MCP server (110 unique tools, 3 transports, 33 scopes)
 ├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
 ├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Responses API transformer
@@ -328,25 +329,32 @@ open-sse/                   # @omniroute/open-sse workspace
 electron/                   # Electron desktop app (cross-platform)
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
+├── unit/                   # Node.js test runner (1,574 test files)
 ├── integration/            # Integration tests
 ├── e2e/                    # Playwright tests
 ├── security/               # Security tests
 ├── translator/             # Translator-specific tests
 └── load/                   # Load tests
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # Architecture Decision Records
+├── architecture/            # System architecture & resilience
+├── comparison/              # OmniRoute vs alternatives
+├── compression/             # Compression guides & rules
+├── dev/                     # Development guides
+├── diagrams/                # Architecture diagrams
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # User guide, Docker, setup, troubleshooting
+├── i18n/                    # Internationalized README translations
+├── marketing/               # Marketing materials
+├── ops/                     # Deployment, proxy, coverage, releases
+├── providers/               # Provider-specific docs
+├── reference/               # API reference, env vars, CLI tools, free tiers
+├── releases/                # Release notes
+├── routing/                 # Auto-combo engine, reasoning replay
+├── screenshots/             # Dashboard screenshots
+├── security/                # Guardrails, compliance, stealth, tokens
+└── specs/                   # Design specs
 ```
 
 ---
@@ -387,28 +395,32 @@ docs/                       # Documentation
 
 ---
 
-## Контролен списък за Pull Request
+## Контролен списък за заявка за изтегляне
 
-- [ ] Тестовете преминават успешно (`npm test`)
-- [ ] Проверката за стил преминава успешно (`npm run lint`)
-- [ ] Компилацията завършва успешно (`npm run build`)
-- [ ] Добавени са TypeScript типове за новите публични функции и интерфейси
-- [ ] Няма твърдо зададени тайни или резервни стойности
-- [ ] Публичните идентификационни данни за upstream са вградени чрез `resolvePublicCred()` (вижте [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), никога като литерални стойности
-- [ ] Отговорите при грешки преминават през `buildErrorBody()` / `sanitizeErrorMessage()` — без необработени stack trace-ове в телата на отговорите (вижте [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
-- [ ] Shell командите (`exec` / `spawn`) подават стойности по време на изпълнение чрез `env`, а не чрез интерполация на низове
-- [ ] Всички входни данни са валидирани със Zod схеми
-- [ ] Добавен е **фрагмент** за списъка с промени в `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` за промени, видими за потребителите (вижте [`changelog.d/README.md`](./changelog.d/README.md)) — **не** редактирайте директно `CHANGELOG.md`; фрагментите се обединяват при публикуване на версия и никога не предизвикват конфликти между Pull Request-и
-- [ ] Документацията е актуализирана (ако е приложимо)
-- [ ] Няма нови отворени предупреждения от CodeQL / Secret-Scanning или всяко от тях е отхвърлено с техническа обосновка, която препраща към съответния документ в `docs/security/`
-- [ ] Маршрутите, които стартират дъщерни процеси (`/api/mcp/`, `/api/cli-tools/runtime/`), са класифицирани като `isLocalOnlyPath()` в `src/server/authz/routeGuard.ts` — вижте [Строго правило №15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] Няма `Co-Authored-By` завършващи редове в съобщенията на commit-ите — commit-ите трябва да се показват единствено под Git самоличността на собственика на хранилището (Строго правило №16)
+- [ ] Тестовете са преминали (`npm test`)
+- [ ] Линтинг пропуски (`npm run lint`)
+- [ ] Изграждането е успешно (`npm run build`)
+- [ ] добавени типове TypeScript за нови публични функции и интерфейси
+- [ ] Без твърдо кодирани тайни или резервни стойности
+- [ ] Публични идентификационни данни нагоре, вградени чрез `resolvePublicCred()` (вижте [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) ), никога като литерали
+- [ ] Маршрут на отговорите за грешка през `buildErrorBody()` / `sanitizeErrorMessage()` — няма необработени следи на стека в телата на отговора (вижте [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) )
+- [ ] Командите на Shell (`exec` / `spawn`) предават стойности по време на изпълнение чрез `env`, а не чрез интерполация на низ
+- [ ] Всички въведени данни са валидирани с Zod схеми
+- [ ] Дневник на промените** фрагмент** добавен под `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` за промени, обърнати към потребителя (вижте [`changelog.d/README.md`](./changelog.d/README.md) ) — do** не** редактирайте директно `CHANGELOG.md` ; фрагментите се агрегират по време на освобождаване и никога не влизат в конфликт между PRs
+- [ ] Актуализирана документация (ако е приложимо)
+- [ ] Няма отворени нови сигнали CodeQL /тайно сканиране или всяко от тях е отхвърлено с техническа обосновка, препращаща към съответния `docs/security/` документ
+- [ ] Маршрути, които раждат дъщерни процеси (`/api/mcp/`, `/api/cli-tools/runtime/`), класифицирани като `isLocalOnlyPath()` в `src/server/authz/routeGuard.ts` — вижте [Hard Rule #15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] Без AI/bot `Co-authored-by` трейлъри в съобщенията за ангажиране (твърдо правило #16) — човешки сътрудници, чиято работа се използва повторно, се кредитират със стандартни `Co-authored-by: Name <email>` трейлъри
 
 ---
 
-## Releasing
+## Публикуване на версии
 
-Releases are managed via the `/generate-release` workflow. When a new GitHub Release is created, the package is **automatically published to npm** via GitHub Actions.
+Версиите се управляват чрез работния процес `/generate-release`. Когато бъде създадена нова версия в GitHub, пакетът се **публикува автоматично в npm** чрез GitHub Actions.
+
+За внедряване на VPS използвайте `npm run build:release` (а не `npm run build`) — командата извършва чисто
+повторно компилиране, сглобява пакета в `dist/` и записва контролния файл `dist/BUILD_SHA`.
+След това използвайте уменията `/deploy-vps-*-cc`, които синхронизират чрез rsync `dist/` с отдалечената директория `app/`.
 
 ---
 

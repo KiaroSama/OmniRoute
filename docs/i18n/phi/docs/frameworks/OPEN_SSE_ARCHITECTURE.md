@@ -26,33 +26,33 @@ Ang `open-sse/` ay isang **standalone workspace** sa OmniRoute monorepo dahil sa
 
 ---
 
-## Pangunahing Istruktura
+## Pangunahing Estruktura
 
 ```
 open-sse/
 ├── index.ts              # Pampublikong entry point
-├── types.d.ts            # Mga pampublikong type export
+├── types.d.ts            # Mga pampublikong pag-export ng uri
 ├── package.json          # @omniroute/open-sse
 ├── config/               # Mga config ng provider, constant, at registry
-├── executors/            # Mga HTTP executor para sa bawat provider (67 + base.ts/index.ts)
-├── handlers/             # Mga handler ng kahilingan (chatCore, responses, atbp.)
+├── executors/            # Mga HTTP executor para sa bawat provider (150 module + base.ts/index.ts)
+├── handlers/             # Mga handler ng request (chatCore, responses, atbp.)
 ├── lib/                  # Mga panloob na utility
-├── mcp-server/           # Model Context Protocol server
+├── mcp-server/           # Server ng Model Context Protocol
 ├── services/             # ~298 module ng serbisyo
 ├── transformer/          # Transformer ng format ng Responses API
 ├── translator/           # Pagsasalin ng format (OpenAI ↔ Claude ↔ Gemini)
-└── utils/                # Mga nakabahaging utility (logging, error, stream, atbp.)
+└── utils/                # Mga pinagsasaluhang utility (pag-log, error, stream, atbp.)
 ```
 
 ### Bilang ng mga Module
 
 | Direktoryo | Mga File | Layunin |
-| `executors/` | 167 | Mga HTTP executor para sa bawat provider (pinag-isa sa pamamagitan ng DefaultExecutor factory) |
-| `handlers/` | 157 | Mga entry point ng kahilingan (chatCore, responses, embeddings) |
-| `services/` | ~536 | Routing, caching, rate limiting, refresh, atbp. |
+| `executors/` | 167 | Mga HTTP executor para sa bawat provider (pinag-isa sa pamamagitan ng factory na DefaultExecutor) |
+| `handlers/` | 157 | Mga entry point ng request (chatCore, responses, embeddings) |
+| `services/` | ~536 | Pagruruta, pag-cache, paglilimita ng rate, pag-refresh, atbp. |
 | `translator/` | 56 | Pag-convert ng format (OpenAI ↔ Claude ↔ Gemini) |
-| `mcp-server/` | 44 | Mga MCP tool at transport |
-| `utils/` | ~108 | Mga utility na ginagamit sa iba't ibang bahagi (logging, error, stream) |
+| `mcp-server/` | 44 | Mga tool at transport ng MCP |
+| `utils/` | ~108 | Mga utility na ginagamit sa iba't ibang bahagi (pag-log, error, stream) |
 | `config/` | ~339 | Mga config ng provider, constant, at registry |
 
 ---
@@ -165,23 +165,23 @@ Ang mga artifact ng log ng tawag (kung naka-enable) ay isinusulat sa `${DATA_DIR
 
 ---
 
-## Masusing Pagsusuri sa Mahahalagang File
+## Mga Key File Deep-Dive
 
 ### chatCore.ts (5977 linya)
 
-Ang **pangunahing tagapangasiwa ng request**. Sa kabila ng laki nito, mayroon itong malinaw na istruktura:
+Ang** pangunahing tagapangasiwa ng kahilingan** . Sa kabila ng laki nito, mayroon itong malinaw na istraktura:
 
 ```ts
-// Pseudo-istruktura ng chatCore.ts
+// Pseudo-structure of chatCore.ts
 export async function handleChat(request: NextRequest) {
   // 1. Auth + CORS
   await authenticateRequest(request);
   applyCorsHeaders(response);
 
-  // 2. Pagpapatunay ng body
+  // 2. Body validation
   const body = await parseRequestBody(request);
 
-  // 3. Pagtukoy + pagsasalin ng format
+  // 3. Format detection + translation
   const sourceFormat = detectFormat(request);
   const targetFormat = getTargetFormat(providerId);
   if (needsTranslation(sourceFormat, targetFormat)) {
@@ -196,20 +196,20 @@ export async function handleChat(request: NextRequest) {
       await recordUsage(result);
       return result;
     } catch (err) {
-      // Magpatuloy sa susunod na target
+      // Continue to next target
     }
   }
 
-  // 5. Pang-emergency na fallback
+  // 5. Emergency fallback
   return await emergencyFallback(body);
 }
 ```
 
-Sa kabila ng pagiging isang napakalaking function, nakaayos ito sa mga **seksyon na may komento** na tumutugma sa 5-yugtong pipeline.
+Sa kabila ng pagiging isang higanteng function, ito ay nakaayos sa** mga seksyon ng komento** na mapa sa 5-stage pipeline.
 
 ### combo.ts (4456 LOC)
 
-Ang **routing engine** na nagre-resolve ng combo tungo sa mga target na nakaayos ayon sa pagkakasunod-sunod.
+Ang** routing engine** na nagre-resolve ng combo sa mga nakaayos na target.
 
 ```ts
 // services/combo.ts
@@ -226,135 +226,140 @@ export async function handleComboChat(body, comboId): Promise<ChatResult> {
 }
 ```
 
-Sinusuportahan ang **19 na routing strategy** (tingnan ang `src/shared/constants/routingStrategies.ts`):
+Mga sumusuporta** 22 mga diskarte sa pagruruta** (tingnan `src/shared/constants/routingStrategies.ts`):
 
-| Strategy            | Pag-uugali                                                                                              |
-| ------------------- | ------------------------------------------------------------------------------------------------------- |
-| `priority`          | Listahang inuuna ang unang target                                                                       |
-| `weighted`          | Probabilistiko batay sa timbang ng bawat target                                                         |
-| `round-robin`       | Umikot sa mga target ayon sa pagkakasunod-sunod                                                         |
-| `context-relay`     | Ipasa ang context sa iba't ibang target                                                                 |
-| `fill-first`        | Punuin ang quota bago lumipat sa susunod                                                                |
-| `p2c`               | Kapangyarihan ng dalawang pagpipilian                                                                   |
-| `random`            | Pantay-pantay na random                                                                                 |
-| `least-used`        | Piliin ang may pinakakaunting kamakailang paggamit                                                      |
-| `cost-optimized`    | Unahin ang pinakamurang maayos na target                                                                |
-| `reset-aware`       | Isinasaalang-alang ang mga reset window ng provider                                                     |
-| `reset-window`      | Routing batay sa reset window                                                                           |
-| `headroom`          | Unahin ang may pinakamaraming natitirang quota headroom                                                 |
-| `strict-random`     | Talagang pantay-pantay (walang pagtitimbang ayon sa kalidad)                                            |
-| `auto`              | Gumamit ng 16-factor scoring (`autoCombo/`)                                                             |
-| `lkgp`              | Unahin ang huling provider na napatunayang maayos                                                       |
-| `context-optimized` | Pinakamainam para sa mga request na may mahabang context                                                |
-| `fusion`            | Ipadala sa isang panel nang sabay-sabay, pagkatapos ay pagsamahin sa pamamagitan ng judge (`fusion.ts`) |
+| Diskarte            | Pag-uugali                                                                                                     |
+| ------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `priority`          | Unang-target na inayos na listahan                                                                             |
+| `weighted`          | Probabilistic sa bawat target na timbang                                                                       |
+| `round-robin`       | Ikot sa pamamagitan ng mga target sa pagkakasunud-sunod                                                        |
+| `context-relay`     | Ibigay ang konteksto sa mga target                                                                             |
+| `fill-first`        | Punan ang quota bago lumipat sa susunod                                                                        |
+| `p2c`               | Kapangyarihan ng dalawang pagpipilian                                                                          |
+| `random`            | Uniform random                                                                                                 |
+| `least-used`        | Piliin ang isa na may kaunting mga kamakailang gamit                                                           |
+| `cost-optimized`    | Pinaka murang malusog na target muna                                                                           |
+| `reset-aware`       | Alam ang mga window ng pag-reset ng provider                                                                   |
+| `reset-window`      | I-reset ang window-based na pagruruta                                                                          |
+| `expiry-first`      | Gastusin ang account na ang quota ay mag-e-expire muna nang hindi nagamit                                      |
+| `headroom`          | Karamihan sa natitirang quota headroom muna                                                                    |
+| `quota-weighted`    | Laktawan ang mga naubos na account, pagkatapos ay gumuhit ayon sa natitirang quota ÷ in-flight load            |
+| `strict-random`     | Tunay na uniporme (walang kalidad na timbang)                                                                  |
+| `auto`              | Gumamit ng 16-factor na pagmamarka (`autoCombo/`)                                                              |
+| `lkgp`              | Huling kilalang mabuting provider muna                                                                         |
+| `context-optimized` | Pinakamahusay para sa mga kahilingan sa mahabang konteksto                                                     |
+| `cache-optimized`   | I-pin ang bawat magagamit muli na prompt prefix sa parehong account (prompt-cache hit)                         |
+| `fusion`            | Fan out sa isang panel nang magkatulad, pagkatapos ay i-synthesize sa pamamagitan ng isang judge (`fusion.ts`) |
+| `pipeline`          | Chain steps — ang output ng bawat target ay nagpapakain sa susunod                                             |
+| `jev`               | Mag-opt-in: inamin TypeSafe Jev kung aling mga ranggo ang tumatakbo; iba ang iyong order                       |
 
 ### base.ts (1170 LOC)
 
-Ang **abstract executor** na pinapalawak ng lahat ng 107 executor. Naglalaman ito ng:
+Ang** abstract executor** na ang bawat executor class ay umaabot (direkta o sa pamamagitan ng `DefaultExecutor` at iba pang mga subclass). Naglalaman ito ng:
 
-- `buildUrl()` — default na pagbuo ng URL (ino-override ng mga subclass para sa custom na gawi)
-- `buildHeaders()` — mga default na header (auth, content-type)
+- `buildUrl()` — default URL construction (na-override ang mga subclass para sa custom)
+- `buildHeaders()` — default na mga header (auth, content-type)
 - `transformRequest()` — pass-through bilang default
 - `execute()` — ang pangunahing HTTP loop na may retry/backoff/breaker
 
 ```ts
 // open-sse/executors/default.ts
 export class DefaultExecutor extends BaseExecutor {
-  // Pinangangasiwaan ang lahat ng provider na compatible sa OpenAI/Anthropic
-  // Nagrerehistro ang mga provider ng mga configuration (URL, auth, headers) ngunit iisa ang ginagamit na executor logic
+  // Handles all OpenAI/Anthropic-compatible providers
+  // Providers register configurations (URL, auth, headers) but share executor logic
 }
 ```
 
-Ang gawi na partikular sa provider (mga auth header, base URL, mga version header) ay kino-configure sa pamamagitan ng provider registry, hindi sa magkakahiwalay na executor class.
+Ang pag-uugaling partikular sa provider (mga header ng auth, base URL, mga header ng bersyon) ay na-configure sa pamamagitan ng registry ng provider, hindi hiwalay na mga klase ng tagapagpatupad.
 
 ````
 
 ---
 
-## Mga Serbisyo (117 module)
+## Mga Serbisyo (117 modules)
 
-Ang mga serbisyo ay mga **nakatuon at may iisang layuning module** na pinagsasama-sama ng mga handler. Ang malalaking kategorya:
+Ang mga serbisyo ay** nakatutok, isang layunin na mga module** na binubuo ng mga handler. Ang malalaking kategorya:
 
 ### Pagruruta at Combo
 
-- `combo.ts` — entry point para sa mga kahilingang niruruta sa pamamagitan ng combo
-- `services/autoCombo/` — 16-factor na pagmamarka, 8 awtomatikong estratehiya sa pagruruta
-- `wildcardRouter.ts` — tumutugma sa mga wildcard route (`gpt-*`)
-- `modelFamilyFallback.ts` — T5 fallback sa loob ng parehong pamilya
+- `combo.ts` — entry point para sa combo-routed na mga kahilingan
+- `services/autoCombo/` — 16-factor na pagmamarka, 8 mga diskarte sa pagruruta ng auto
+- `wildcardRouter.ts` — ay tumutugma sa mga wildcard na ruta (`gpt-*`)
+- `modelFamilyFallback.ts` — T5 intra-family fallback
 
 ### Paglilimita sa Rate at Quota
 
-- `rateLimitManager.ts` — token bucket kada key+provider
-- `usage.ts` — pagtatala ng paggamit
-- `quotaCache.ts` — mga in-memory na snapshot ng quota
+- `rateLimitManager.ts` — token bucket bawat key + provider
+- pag-record ng paggamit `usage.ts` —
+- `quotaCache.ts` — in-memory quota snapshot
 
 ### Account at Token
 
-- `tokenRefresh.ts` — pag-refresh ng OAuth kapag may 401
-- `accountFallback.ts` — lumipat sa alternatibong account
-- `sessionManager.ts` — estado ng multi-turn na session
+- `tokenRefresh.ts` — OAuth refresh sa 401
+- `accountFallback.ts` — lumipat sa kahaliling account
+- `sessionManager.ts` — multi-turn session na estado
 
-### Intelihensiya
+### Katalinuhan
 
 - `intentClassifier.ts` — uriin ang layunin ng kahilingan
-- `taskAwareRouter.ts` — iruta ayon sa uri ng gawain
-- `thinkingBudget.ts` — maglaan ng mga token para sa pag-iisip
-- `contextManager.ts` — mag-inject ng konteksto sa pagruruta
+- `taskAwareRouter.ts` — ruta ayon sa uri ng gawain
+- `thinkingBudget.ts` — maglaan ng mga token sa pag-iisip
+- `contextManager.ts` — inject routing context
 
 ### Katatagan
 
-- `resilience.ts` — orkestrasyon ng retry, backoff, at breaker
-- `emergencyFallback.ts` — fallback bilang huling opsyon
-- `modelDeprecation.ts` — awtomatikong iruta sa mga kapalit na modelo
+- `resilience.ts` — muling subukan, backoff, breaker orchestration
+- `emergencyFallback.ts` — last-resort fallback
+- `modelDeprecation.ts` — auto-route sa mga kapalit na modelo
 
 ### Estado
 
-- `signatureCache.ts` — pag-aalis ng mga duplikado ayon sa signature ng kahilingan
-- `volumeDetector.ts` — pagbabawas ng load
-- `contextHandoff.ts` — serialization ng session
+- `signatureCache.ts` — dedup sa pamamagitan ng kahilingang lagda
+- `volumeDetector.ts` — load shedding
+- `contextHandoff.ts` — session serialization
 
 ### Compression
 
-- `compression/` (subdirectory) — kumpletong pipeline ng compression
-- 39 na file na sumasaklaw sa mga engine, rule pack, at adapter
+- `compression/` (subdirectory) — full compression pipeline
+- 39 na file na sumasaklaw sa mga engine, rule pack, adapter
 
-### Mga Skill
+### Mga kasanayan
 
-- (tinatalakay sa [SKILLS.md](./SKILLS.md))
+- (nasaklaw sa [SKILLS.md](./SKILLS.md) )
 
-### Memorya
+### Alaala
 
-- (tinatalakay sa [MEMORY.md](./MEMORY.md))
+- (nasaklaw sa [MEMORY.md](./MEMORY.md) )
 
 ---
 
-## Mga Executor (75+ file)
+## Mga tagapagpatupad (150 modules)
 
-Isang file kada provider. Lahat ng ito ay nag-e-extend sa `BaseExecutor` at nag-o-override sa mga bahaging naiiba.
+Kadalasan isang file bawat provider. Ang mga klase ng tagapagpatupad ay lahat ay nagpapalawak `BaseExecutor` at na-override kung ano ang naiiba; ang iba pang mga module ay mga katulong ng bawat provider (tool schemas, fetch/TTS adapters, quirk handler).
 
 ### Mga Karaniwang Pattern
 
-Nire-resolve ang mga provider sa pamamagitan ng `getExecutor(providerId)`, na nagbabalik ng naka-configure na executor. Ginagamit ng mga provider na compatible sa OpenAI/Anthropic ang `DefaultExecutor` (`executors/default.ts`). Kino-configure sa `open-sse/config/providers/` ang gawi na partikular sa provider (base URL, mga auth header, bersyon ng API), habang pinangangasiwaan sa `open-sse/translator/` ang mga transformation sa request body.
+Naresolba ang mga provider sa pamamagitan ng `getExecutor(providerId)`, na nagbabalik ng naka-configure na tagapagpatupad. Ang mga nagbibigay ng OpenAI/Anthropic-compatible ay gumagamit `DefaultExecutor` (`executors/default.ts`). Ang gawi na partikular sa provider (base URL, auth header, API na bersyon) ay naka-configure sa `open-sse/config/providers/`, habang ang mga pagbabago sa katawan ng kahilingan ay pinangangasiwaan sa `open-sse/translator/`.
 
-Itinatakda ang **Custom URL** sa pamamagitan ng configuration ng provider:
+**Custom URL** ay nakatakda sa pamamagitan ng configuration ng provider:
 
 ```ts
-// Configuration ng provider sa open-sse/config/providers/
+// Provider config in open-sse/config/providers/
 export default {
   id: "together",
   baseURL: "https://api.together.xyz/v1/chat/completions",
 }
 ````
 
-Pinangangasiwaan ang **custom auth** sa pamamagitan ng auth configuration ng registry ng provider (API key, OAuth, mga header profile).
+**Custom na auth** ay pinangangasiwaan sa pamamagitan ng pagsasaayos ng auth ng registry ng provider (API key, OAuth, mga profile ng header).
 
-Ang mga transformation sa **custom request body** (halimbawa, paghihiwalay ng Anthropic sa `system` mula sa `messages`) ay nirerehistro kada provider sa `open-sse/translator/`.
+**katawan ng custom na kahilingan** mga pagbabagong-anyo (hal., Anthropic na naghihiwalay sa `system` sa `messages`) ay nakarehistro sa bawat provider sa `open-sse/translator/`.
 
 ````
 
-### Ang Executor Factory
+### The Executor Factory
 
-Ini-export ng `executors/index.ts` ang `getExecutor(providerId)`:
+`executors/index.ts` exports `getExecutor(providerId)`:
 
 ```ts
 import { getExecutor } from "@omniroute/open-sse/executors";
@@ -366,7 +371,7 @@ const result = await executor.execute({
 });
 ````
 
-Dumadaan ang resolution sa `ExecutorRegistry` (`executors/registry.ts`): idinedeklara ang bawat espesyal na executor sa built-in na talahanayan ng `executors/index.ts` at nirerehistro sa pamamagitan ng `registerExecutor(alias, instance)` kapag nilo-load ang module; kinokonsulta ng `getExecutor()` ang registry at bumabalik sa isang memoized na `DefaultExecutor` para sa anumang provider na walang espesyal na entry. Inilalarawan ng golden test na `tests/unit/executor-map-golden.test.ts` ang kumpletong mapping ng alias → executor.
+Ang resolusyon ay dumadaan sa `ExecutorRegistry` (`executors/registry.ts`): ang bawat dalubhasang tagapagpatupad ay idineklara sa built-in na talahanayan ng `executors/index.ts` at nakarehistro sa pamamagitan ng `registerExecutor(alias, instance)` sa pag-load ng module; Kinokonsulta ng `getExecutor()` ang registry at bumabalik sa isang memoized `DefaultExecutor` para sa sinumang provider na walang espesyal na entry. Ang buong alias → executor mapping ay nailalarawan sa pamamagitan ng golden test `tests/unit/executor-map-golden.test.ts`.
 
 ---
 
@@ -481,17 +486,17 @@ Pinangangasiwaan nito ang:
 
 ## Configuration
 
-Nasa `open-sse/config/` ang layer ng configuration:
+hawak `open-sse/config/` ang layer ng pagsasaayos:
 
-| File                          | Layunin                                            |
-| ----------------------------- | -------------------------------------------------- |
-| `providerRegistry.ts`         | Registry ng chat model sa katalogo ng 352 provider |
-| `providerModels.ts`           | Mga alias ng model, pagmamapa ng format            |
-| `constants.ts`                | Mga timeout, limitasyon, at status code            |
-| `defaultThinkingSignature.ts` | Default na signature ng pag-iisip ng Claude        |
-| `modelStrip.ts` (sa services) | Pag-aalis ng field para sa bawat provider          |
+| file                              | Layunin                                                   |
+| --------------------------------- | --------------------------------------------------------- |
+| `providerRegistry.ts`             | Rehistrasyon ng modelo ng chat sa catalog ng 394-provider |
+| `providerModels.ts`               | Mga alias ng modelo, pagmamapa ng format                  |
+| `constants.ts`                    | Mga timeout, limitasyon, status code                      |
+| `defaultThinkingSignature.ts`     | Default Claude thinking signature                         |
+| `modelStrip.ts` (sa mga serbisyo) | Pagtanggal ng field ng bawat provider                     |
 
-### Schema ng Provider Registry
+### Schema ng Registry ng Provider
 
 ```ts
 interface ProviderConfig {
@@ -506,7 +511,7 @@ interface ProviderConfig {
 }
 ```
 
-Tinitiyak ng Zod validation sa pag-load ng module na valid ang lahat ng configuration ng provider.
+Tinitiyak ng pagpapatunay Zod sa pag-load ng module na valid ang lahat ng mga config ng provider.
 
 ---
 

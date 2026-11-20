@@ -1,22 +1,54 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { RequestPipelinePayloads } from "@omniroute/open-sse/utils/requestLogger.ts";
-import { resolveDataDir } from "../dataPaths";
-import { getCallLogPipelineMaxSizeBytes, isChatDebugFileEnabled } from "../logEnv";
+import { resolveWritableDataDir } from "../dataPaths.ts";
+import {
+  getCallLogMinFreeDiskBytes,
+  getCallLogPipelineMaxSizeBytes,
+  isChatDebugFileEnabled,
+} from "../logEnv.ts";
 import {
   CALL_LOG_SIZE_LIMIT_REASON as SIZE_LIMIT_EXCEEDED_REASON,
   CALL_LOG_BODY_OMITTED_FOR_SIZE_LIMIT as OMITTED_FOR_SIZE_LIMIT,
   CALL_LOG_STREAM_CHUNKS_OMITTED_FOR_SIZE_LIMIT as STREAM_CHUNKS_OMITTED_FOR_SIZE_LIMIT,
   isSizeLimitOmissionMarker,
-} from "@/shared/constants/callLogSizeLimitMarkers";
+} from "../../shared/constants/callLogSizeLimitMarkers.ts";
 
 const isCloud = typeof globalThis.caches === "object" && globalThis.caches !== null;
 const isBuildPhase =
   process.env.NEXT_PHASE === "phase-production-build" || process.env.OMNIROUTE_BUILDING === "1";
-const DATA_DIR = resolveDataDir({ isCloud });
 
-export const CALL_LOGS_DIR = isCloud ? null : path.join(DATA_DIR, "call_logs");
+/**
+ * Directory holding per-request artifact files. Resolved lazily on every call
+ * so a test-context redirect picked up after import (see `resolveWritableDataDir`)
+ * carries the artifacts along with the database instead of leaving them in the
+ * operator's real data directory.
+ */
+export function getCallLogsDir(): string | null {
+  if (isCloud) return null;
+  return path.join(resolveWritableDataDir({ isCloud }), "call_logs");
+}
 export const MAX_CALL_LOG_ARTIFACT_BYTES = 512 * 1024;
+
+// Artifacts hold full request/response bodies (prompts, tool output): keep them
+// owner-only regardless of the process umask, as defense in depth on top of the
+// private DATA_DIR (bind-mounted or externally created DATA_DIRs skip that chmod).
+const PRIVATE_DIR_MODE = 0o700;
+const PRIVATE_FILE_MODE = 0o600;
+let callLogsRootTightened = false;
+
+function ensurePrivateArtifactDir(rootDir: string, dir: string) {
+  fs.mkdirSync(dir, { recursive: true, mode: PRIVATE_DIR_MODE });
+  if (callLogsRootTightened) return;
+  try {
+    // Tighten a root created before this hardening; only the subtree OmniRoute owns,
+    // never the operator-configured DATA_DIR itself.
+    fs.chmodSync(rootDir, PRIVATE_DIR_MODE);
+  } catch {
+    // Best effort (e.g. a root owned by another UID): the artifact file itself is still 0600.
+  }
+  callLogsRootTightened = true;
+}
 
 // Re-exported for backward compatibility: consumers (completedRequestDetails.ts)
 // import this marker check from here. Definition now lives in the shared
@@ -59,7 +91,8 @@ function preserveErrorForSizeLimit(error: unknown): unknown {
   return `${truncateUtf8(serialized, MAX_PRESERVED_ERROR_BYTES)} ${ERROR_TRUNCATED_FOR_SIZE_LIMIT}`;
 }
 
-export type CallLogDetailState = "none" | "ready" | "missing" | "corrupt" | "legacy-inline";
+export type CallLogDetailState =
+  "none" | "pending" | "ready" | "missing" | "corrupt" | "legacy-inline";
 
 export type CallLogArtifact = {
   schemaVersion: 5;
@@ -227,7 +260,9 @@ function buildSizeLimitStages(artifact: CallLogArtifact): Array<() => unknown> {
   const omitBodies = <T extends object>(value: T, keepResponse = false) => ({
     ...value,
     requestBody: OMITTED_FOR_SIZE_LIMIT,
-    responseBody: keepResponse ? (value as { responseBody: unknown }).responseBody : OMITTED_FOR_SIZE_LIMIT,
+    responseBody: keepResponse
+      ? (value as { responseBody: unknown }).responseBody
+      : OMITTED_FOR_SIZE_LIMIT,
     error: preserveErrorForSizeLimit(artifact.error),
   });
 
@@ -285,13 +320,56 @@ function serializeArtifactForStorage(artifact: CallLogArtifact): string {
   });
 }
 
+let freeBytesProbe: ((dir: string) => number) | null = null;
+let lastLowDiskWarningAt = 0;
+
+/** Test hook: replace the free-space probe (null restores statfs). */
+export function setFreeBytesProbeForTest(probe: ((dir: string) => number) | null): void {
+  freeBytesProbe = probe;
+}
+
+function readFreeBytes(dir: string): number {
+  if (freeBytesProbe) return freeBytesProbe(dir);
+  const stats = fs.statfsSync(dir);
+  return stats.bavail * stats.bsize;
+}
+
+/**
+ * False when the volume that holds the call_logs directory (and, normally, storage.sqlite)
+ * has less free space than the floor. Artifacts must not take the last bytes that the usage
+ * ledger and call log row writes need. Fails open: a probe error never drops a log.
+ */
+export function hasRoomForCallLogArtifact(): boolean {
+  const floor = getCallLogMinFreeDiskBytes();
+  const logsDir = getCallLogsDir();
+  if (floor === 0 || !logsDir) return true;
+  try {
+    // call_logs is created on the first write: measure the nearest existing parent.
+    let dir = logsDir;
+    while (!fs.existsSync(dir) && path.dirname(dir) !== dir) dir = path.dirname(dir);
+    const free = readFreeBytes(dir);
+    if (free >= floor) return true;
+    const now = Date.now();
+    if (now - lastLowDiskWarningAt > 60_000) {
+      lastLowDiskWarningAt = now;
+      console.warn(
+        `[callLogs] Low disk space (${free} bytes free, floor ${floor}); call log details are skipped.`
+      );
+    }
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 export function writeCallArtifact(
   artifact: CallLogArtifact,
   relativePath = buildArtifactRelativePath(artifact.summary.timestamp, artifact.summary.id)
 ): CallLogArtifactWriteResult | null {
-  if (!CALL_LOGS_DIR || isBuildPhase) return null;
+  const logsDir = getCallLogsDir();
+  if (!logsDir || isBuildPhase) return null;
 
-  const absPath = path.join(CALL_LOGS_DIR, relativePath);
+  const absPath = path.join(logsDir, relativePath);
   const tmpPath = `${absPath}.${process.pid}.${Date.now()}.tmp`;
 
   try {
@@ -301,8 +379,9 @@ export function writeCallArtifact(
     // so artifact bookkeeping is not treated as password hashing by static analysis.
     const fileChecksum = computeArtifactChecksum(serialized);
 
-    fs.mkdirSync(path.dirname(absPath), { recursive: true });
-    fs.writeFileSync(tmpPath, serialized);
+    ensurePrivateArtifactDir(logsDir, path.dirname(absPath));
+    // The mode is applied at creation and survives the atomic rename.
+    fs.writeFileSync(tmpPath, serialized, { mode: PRIVATE_FILE_MODE });
     fs.renameSync(tmpPath, absPath);
 
     return {
@@ -325,12 +404,16 @@ export function readCallArtifact(relativePath: string | null): {
   artifact: CallLogArtifact | null;
   state: "ready" | "missing" | "corrupt";
 } {
-  if (!CALL_LOGS_DIR || !relativePath) {
+  if (!relativePath) {
+    return { artifact: null, state: "missing" };
+  }
+  const logsDir = getCallLogsDir();
+  if (!logsDir) {
     return { artifact: null, state: "missing" };
   }
 
   try {
-    const absPath = path.join(CALL_LOGS_DIR, relativePath);
+    const absPath = path.join(logsDir, relativePath);
     if (!fs.existsSync(absPath)) {
       return { artifact: null, state: "missing" };
     }
@@ -344,7 +427,10 @@ export function readCallArtifact(relativePath: string | null): {
   }
 }
 
-export function deleteCallArtifact(relativePath: string | null, baseDir = CALL_LOGS_DIR): boolean {
+export function deleteCallArtifact(
+  relativePath: string | null,
+  baseDir: string | null = getCallLogsDir()
+): boolean {
   if (!baseDir || !relativePath) return false;
 
   try {
@@ -366,7 +452,7 @@ export function deleteCallArtifact(relativePath: string | null, baseDir = CALL_L
   }
 }
 
-export function cleanupEmptyCallLogDirs(baseDir = CALL_LOGS_DIR) {
+export function cleanupEmptyCallLogDirs(baseDir: string | null = getCallLogsDir()) {
   if (!baseDir || !fs.existsSync(baseDir)) return;
 
   try {
@@ -383,7 +469,7 @@ export function cleanupEmptyCallLogDirs(baseDir = CALL_LOGS_DIR) {
   }
 }
 
-export function listCallLogArtifactFiles(baseDir = CALL_LOGS_DIR) {
+export function listCallLogArtifactFiles(baseDir: string | null = getCallLogsDir()) {
   if (!baseDir || !fs.existsSync(baseDir)) return [];
 
   return fs
@@ -414,7 +500,7 @@ export function listCallLogArtifactFiles(baseDir = CALL_LOGS_DIR) {
 }
 
 export function purgeCallLogArtifactDirectory(
-  baseDir = CALL_LOGS_DIR
+  baseDir: string | null = getCallLogsDir()
 ): PurgeCallLogArtifactDirectoryResult {
   const result = { deletedArtifacts: 0, errors: 0 };
   if (!baseDir || !fs.existsSync(baseDir)) return result;

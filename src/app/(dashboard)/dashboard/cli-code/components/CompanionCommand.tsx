@@ -28,7 +28,7 @@ export default function CompanionCommand({
   return (
     <li className="min-w-0 space-y-2 border-t border-border py-3 first:border-t-0">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="text-sm font-medium text-text-main">{title}</h3>
+        <h3 className="text-sm text-text-main">{title}</h3>
         <Button
           variant="secondary"
           icon="content_copy"
@@ -40,7 +40,7 @@ export default function CompanionCommand({
           {common("copy")}
         </Button>
       </div>
-      <pre className="max-w-full whitespace-pre-wrap break-all rounded-control bg-black/5 p-3 text-xs leading-relaxed text-text-main dark:bg-white/5">
+      <pre className="max-w-full whitespace-pre-wrap break-all rounded-control bg-bg-subtle p-3 text-xs leading-relaxed text-text-main">
         <code>{command}</code>
       </pre>
       {hint && <p className="max-w-prose text-sm text-text-muted">{hint}</p>}

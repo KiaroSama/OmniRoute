@@ -36,36 +36,36 @@ Studio med tre faner, der samler websøgning, webscraping og sideordnet sammenli
 
 ## Faner
 
-### Fanen Søgning
+### Fanen Søg
 
-Videreudvikler de eksisterende `SearchForm` + `ResultsPanel` + `RerankPanel` til en fane:
+Udvikler den eksisterende `SearchForm` + `ResultsPanel` + `RerankPanel` til en fane:
 
-- Forespørgsel → resultater (titel, URL, uddrag, relevansscore).
-- Udbydermetadata i konfigurationsruden (omkostning, kvote, status).
-- Rerank-sektion: vælg en rerank-model, omarranger resultaterne, og vis `positionDelta`.
-- Tom tilstand med CTA, når ingen søgeudbydere er konfigureret.
+- Forespørg → resultater (titel, URL, uddrag, relevansscore).
+- Udbydermetadata i konfigurationsruden (pris, kvote, status).
+- Genranger sektion: vælg en omrangeringsmodel, omarranger resultater, vis `positionDelta`.
+- Tom tilstand med CTA når ingen søgeudbydere er konfigureret.
 - Søgehistorik via `SearchHistory.tsx`.
-- Kalder `POST /v1/search` (eksisterende endpoint, ingen ændringer).
+- Kalder `POST /v1/search` (eksisterende slutpunkt, ingen ændringer).
 
-### Fanen Scraping
+### Skrab Tab
 
-Ny fane til udtrækning af indhold fra en URL via `POST /v1/web/fetch` (oprettet i plan 05):
+Ny fane til at udtrække indhold fra en URL via `POST /v1/web/fetch` (oprettet i plan 05):
 
-- Input: URL + skifteknap for fuld side + formatvælger (markdown / tekst / HTML).
-- Indsend → hent → gengiv `ScrapeResult.tsx`.
-- `ScrapeResult` gengiver en markdown-forhåndsvisning + en skifteknap til rådata.
-- Grænse: Hvis svarindholdet er større end **256 KB**, viser brugerfladen `(afkortet, vis rådata)` og åbner rådataene i en Monaco-modal (D21).
-- Metadatapanel: udbyder (firecrawl/jina-reader/tavily-search/tinyfish/nimble-search/anysearch-search), latenstid, omkostning, svarstørrelse, antal links.
-- Bruger hooket `useScrapeFetch.ts`.
+- Input: URL + helside til/fra + -formatvælger (markdown / text / HTML).
+- Send → fetch → render `ScrapeResult.tsx`.
+- `ScrapeResult` gengiver markdown preview + raw skifte.
+- Cap: if respons body >** 256 KB** , UI viser `(truncated, view raw)` og åbner rå i en Monaco-modal (D21).
+- Metadatapanel: udbyder (firecrawl/jina-reader/tavily-search/tinyfish/nimble-search/anysearch-search/parallel-search/keenable-search), ventetid, pris, svarstørrelse, antal links.
+- Bruger `useScrapeFetch.ts` krog.
 
-### Fanen Sammenligning
+### Sammenlign Tab
 
-Kører den samme forespørgsel/URL hos op til **4 udbydere parallelt** (D22):
+Kører den samme query/URL over op til** 4 udbydere parallelt** (D22):
 
-- Sideordnede kolonner for hver udbyder.
-- Målepunkter: latenstid, omkostning, antal resultater, svarstørrelse.
-- Beregning af URL-overlap for søgning (antal delte URL'er i forhold til det oprindelige resultat).
-- Kalder `POST /v1/search` (søgning) eller `POST /v1/web/fetch` (scraping) for hver udbyder.
+- Side-by-side kolonner pr. udbyder.
+- Metrics: latenstid, omkostninger, resultatantal, svarstørrelse.
+- URL -overlapsberegning for søgning (antal delte URLs vs. startresultat).
+- Kalder `POST /v1/search` (søgning) eller `POST /v1/web/fetch` (scrape) pr. udbyder.
 
 ---
 
@@ -100,13 +100,13 @@ Kører den samme forespørgsel/URL hos op til **4 udbydere parallelt** (D22):
 
 ## Udbyderkatalog
 
-`ProviderCatalog.tsx` viser den komplette liste over udbydere fra `GET /api/search/providers`
-(udvidet i F4 til at omfatte hentningsudbydere):
+`ProviderCatalog.tsx` afslører den fulde udbyderliste fra `GET /api/search/providers` (udvidet i F4 til at omfatte henteudbydere):
 
-| `kind` | `"search"` (20 udbydere) eller `"fetch"` (firecrawl, jina-reader, tavily-search, tinyfish, nimble-search, anysearch-search) |
+| `kind` | `"search"` (24 udbydere) eller `"fetch"` (firecrawl, jina-reader, tavily-search, tinyfish, nimble-search, anysearch-search, parallel-search, keenable-search) |
 
-Statussen **udledes på forespørgselstidspunktet** ved at kontrollere, om legitimationsoplysningerne findes, og om
-alle nøgler aktuelt er i nedkølingsperiode.
+Status er** udledt på anmodningstidspunktet** ved at kontrollere, om legitimationsoplysninger findes, og om alle nøgler i øjeblikket er i nedkøling.
+
+`codex-search` (Codex websøgning) har ingen egen nøgle: den genbruger en tilsluttet Codex (ChatGPT) konto, så hver søgning bruger ChatGPT abonnementskvote og tager omkring 10-40 s. Den kører, når en anmodning navngiver den; automatisk valg kræver `CODEX_SEARCH_AUTO_FALLBACK_ENABLED` -funktionsflaget (deaktiveret som standard).
 
 ---
 
@@ -118,18 +118,18 @@ Pladsholderen for API-nøglen er altid `$OMNIROUTE_API_KEY` (D11, deles med Play
 
 ---
 
-## Backendændringer
+## Backend ændringer
 
-Der var kun behov for én backendændring til denne funktion:
+Kun én backend-ændring var nødvendig for denne funktion:
 
 ### Udvidet `GET /api/search/providers`
 
-`src/app/api/search/providers/route.ts` blev udvidet til at:
+`src/app/api/search/providers/route.ts` blev udvidet til:
 
-- Inkludere alle 6 hentningsudbydere (`firecrawl`, `jina-reader`, `tavily-search`, `tinyfish`, `nimble-search`, `anysearch-search`) i arrayet.
-- Føje `kind: "search" | "fetch"` til hvert element.
-- Føje `status: "configured" | "missing" | "rate_limited"` til, udledt fra den aktuelle legitimationsstatus.
-- Bevare bagudkompatibilitet — eksisterende felter (`id`, `name` osv.) er uændrede.
+- Inkluder hver henteudbyder (`firecrawl`, `jina-reader`, `tavily-search`, `tinyfish`, `nimble-search`, `anysearch-search`, `parallel-search`, `keenable-search`) i arrayet.
+- Tilføj `kind: "search" | "fetch"` til hvert element.
+- Tilføj `status: "configured" | "missing" | "rate_limited"` afledt af live legitimationsstatus.
+- Oprethold bagudkompatibilitet — eksisterende felter (`id`, `name`, etc.) uændret.
 
 ---
 

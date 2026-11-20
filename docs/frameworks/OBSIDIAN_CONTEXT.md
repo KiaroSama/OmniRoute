@@ -93,12 +93,25 @@ curl http://localhost:20128/api/settings/obsidian/webdav
 curl -X DELETE http://localhost:20128/api/settings/obsidian/webdav
 ```
 
+### Security & Transport
+
+WebDAV authentication enforces per-IP failure tracking and lockout (10 failed attempts within a 60-second window triggers a 5-minute lockout with `429 Too Many Requests` and `Retry-After`). Because WebDAV transmits Basic authentication credentials, terminating TLS (or routing over a secure tunnel such as Tailscale or Cloudflare Tunnel) is strongly recommended when accessing the WebDAV endpoint outside loopback.
+
 ### Per-API-key context source (optional)
 
 Obsidian config can be scoped **per API key** via the `api_key_context_sources` table
 (`src/lib/db/apiKeyContextSources.ts`). When an MCP call carries an authenticated API
 key id, `getObsidianConfigForApiKey()` prefers that key's own token/base-URL/vault-path
 (`source: "api_key"`) and otherwise falls back to the global config (`source: "global"`).
+
+Non-sync MCP tools require a resolved caller identity before reading this configuration.
+A caller without an identity receives `Obsidian API token not configured`, and no vault
+request is sent. HTTP callers resolve through their request credentials; stdio callers
+can resolve through `OMNIROUTE_API_KEY` or `ROUTER_API_KEY`. An unresolved HTTP caller
+cannot inherit the server's environment identity. Placeholder IDs alone do not authorize
+access; a valid environment credential that resolves to `env-key` remains supported.
+Authenticated keys without per-key Obsidian configuration retain the global fallback.
+The four `obsidian_sync_*` tools keep their separate sync-token behavior.
 
 ## MCP tools (22)
 

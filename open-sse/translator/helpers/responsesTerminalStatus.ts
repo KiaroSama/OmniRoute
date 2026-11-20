@@ -5,7 +5,7 @@
  * vendor/codex-chatgpt-web/bridge.ts — and not silently as "completed", which
  * gives a caller no signal that the output was cut off mid-generation rather
  * than the model actually finishing. An upstream error is a harder failure and
- * still wins: with `hasUpstreamError` the response is left untouched.
+ * still wins: with `hasUpstreamError` emit the failure terminal.
  *
  * Mutates `response` in place and returns the terminal SSE event type to emit.
  */
@@ -13,15 +13,28 @@ export function finalizeResponsesTerminalStatus(
   response: Record<string, unknown>,
   finishReason: unknown,
   hasUpstreamError = false
-): "response.completed" | "response.incomplete" {
+): "response.completed" | "response.incomplete" | "response.failed" {
+  if (hasUpstreamError) return "response.failed";
   const reason =
     finishReason === "length"
       ? "max_output_tokens"
       : finishReason === "content_filter"
         ? "content_filter"
         : undefined;
-  if (hasUpstreamError || !reason) return "response.completed";
+  if (!reason) return "response.completed";
   response.status = "incomplete";
   response.incomplete_details = { reason };
   return "response.incomplete";
+}
+
+/**
+ * True for a Responses body that may end with no output on purpose once the native
+ * turn is trusted: an ordinary completion, or the status given above to a filtered
+ * turn such as a Claude refusal. `max_output_tokens` stays out because that output
+ * was cut short, not withheld.
+ */
+export function isDeliberateEmptyResponsesTerminal(body: Record<string, unknown>): boolean {
+  if (body.status === "completed") return true;
+  const details = body.incomplete_details as Record<string, unknown> | null | undefined;
+  return body.status === "incomplete" && details?.reason === "content_filter";
 }

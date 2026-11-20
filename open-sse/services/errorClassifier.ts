@@ -2,18 +2,21 @@ import {
   ACCOUNT_DEACTIVATED_SIGNALS,
   CREDITS_EXHAUSTED_SIGNALS,
   isAccountDeactivated,
-  isCreditsExhausted,
   isDailyQuotaExhausted,
   isOAuthInvalidToken,
 } from "./accountFallback.ts";
 import { isSubscriptionQuotaText } from "./quotaTextCooldowns.ts";
+import { isCreditsExhaustedForStatus } from "./accountFallback/creditsExhaustedForStatus.ts";
+import { isProviderSafetyRefusalBody } from "../utils/providerSafety.ts";
+import { isModelScopedAccessDenial } from "./accountFallback/modelScopedAccessDenial.ts";
 import { getProviderCategory, getRegistryEntry } from "../config/providerRegistry.ts";
 
 // Terminal stop signals where an empty content payload is still a legitimate,
 // successful completion (truncated at the token limit, or a tool-call turn) —
 // NOT a silent "fake success" failure. Used to avoid rewriting a valid HTTP 200
 // (e.g. a Claude Code `max_tokens: 1` connectivity ping) into a synthetic 502.
-const LEGIT_EMPTY_CLAUDE_STOP = new Set(["max_tokens", "tool_use"]);
+// A "refusal" is the model declining under usage policy; the client must see it.
+const LEGIT_EMPTY_CLAUDE_STOP = new Set(["max_tokens", "tool_use", "refusal"]);
 const LEGIT_EMPTY_OPENAI_FINISH = new Set(["length", "tool_calls", "content_filter"]);
 
 // #14160: first-party APIs where an empty completion carrying a NORMAL terminal
@@ -30,10 +33,11 @@ const NORMAL_STOP_CLAUDE_STOP = new Set(["end_turn"]);
 
 export function isEmptyContentResponse(
   responseBody: unknown,
-  opts?: { provider?: string | null }
+  opts?: { provider?: string | null; trustedEmptyTurn?: boolean }
 ): boolean {
   const trustedEmptyStop =
-    typeof opts?.provider === "string" && TRUSTED_EMPTY_STOP_PROVIDERS.has(opts.provider);
+    opts?.trustedEmptyTurn === true ||
+    (typeof opts?.provider === "string" && TRUSTED_EMPTY_STOP_PROVIDERS.has(opts.provider));
   if (!responseBody || typeof responseBody !== "object") return false;
 
   const body = responseBody as Record<string, unknown>;
@@ -79,7 +83,11 @@ export function isEmptyContentResponse(
     // failure. Only flag empty content when no such terminal stop_reason is present.
     const stopReason = typeof body.stop_reason === "string" ? body.stop_reason : "";
     // #14160: same exemption for the Claude wire shape on trusted first-party APIs.
-    if (trustedEmptyStop && NORMAL_STOP_CLAUDE_STOP.has(stopReason)) return false;
+    if (
+      (trustedEmptyStop && NORMAL_STOP_CLAUDE_STOP.has(stopReason)) ||
+      (opts?.trustedEmptyTurn === true && stopReason === "stop_sequence")
+    )
+      return false;
     return !LEGIT_EMPTY_CLAUDE_STOP.has(stopReason);
   }
 
@@ -120,6 +128,9 @@ export const PROVIDER_ERROR_TYPES = {
   // First case: Anthropic's OAuth 403 "Request not allowed" (#12859), which
   // lands on a handful of requests between thousands of 200s on the same token.
   REQUEST_REJECTED: "request_rejected",
+  // An explicit provider safety stop (e.g. Codex `misalignment_policy_violation`): refuses one
+  // request, says nothing about the account. Never terminal, never counted toward a ban.
+  PROVIDER_SAFETY_REFUSAL: "provider_safety_refusal",
 } as const;
 
 export type ProviderErrorType = (typeof PROVIDER_ERROR_TYPES)[keyof typeof PROVIDER_ERROR_TYPES];
@@ -347,6 +358,27 @@ export function isGrokContentRefusal(errorText: string): boolean {
   return /\bi can['’]t help with that request\b/i.test(String(errorText || ""));
 }
 
+/**
+ * MegaBrain refuses a model the account cannot pay for with one of two 403s:
+ * `plan_tier_required` (Claude, GPT and Gemini below Pro without Extra Usage: "…turn on
+ * Extra Usage in Billing, or move to Pro…") and `extra_usage_off` (a Free account whose
+ * Extra Usage is off: "Extra Usage is off, so your balance does not pay for models…").
+ * Both refuse the model, not the account: the same token keeps serving the free and
+ * included models. The generic 403 → FORBIDDEN would ban the only MegaBrain connection
+ * on the account's first Claude request. The executor flattens the body to its message,
+ * so the message wording is matched as well as the error types.
+ */
+export function isMegabrainProvider(provider?: string | null): boolean {
+  const id = String(provider || "").toLowerCase();
+  return id === "megabrain" || id === "mb";
+}
+
+export function isMegabrainPlanTierRefusal(errorText: string): boolean {
+  return /\bplan_tier_required\b|\bextra_usage_off\b|\bextra usage\b|\bcome with pro and above\b/i.test(
+    String(errorText || "")
+  );
+}
+
 function responseBodyToString(responseBody: unknown): string {
   if (typeof responseBody === "string") return responseBody;
   if (responseBody !== null && typeof responseBody === "object") {
@@ -360,10 +392,11 @@ function responseBodyToString(responseBody: unknown): string {
 }
 
 // A provider can return 404 for request-scoped resources (Files API ids,
-// response items, uploads, etc.). These failures describe the request payload,
-// not provider/model health. Keep every expression bounded to avoid ReDoS on
-// upstream-controlled error bodies.
-const RESOURCE_NOT_FOUND_PATTERNS = [
+// response items, uploads, etc.) or request capabilities / routing preferences
+// (e.g. OpenRouter "No endpoints found that support image input", "No allowed providers").
+// These failures describe the request payload or constraints, not provider/model health.
+// Keep every expression bounded to avoid ReDoS on upstream-controlled error bodies.
+export const RESOURCE_NOT_FOUND_PATTERNS = [
   /\bfiles?\b[^\n]{0,160}\b(?:not found|does not exist)\b/i,
   /\b(?:not found|does not exist)\b[^\n]{0,160}\bfiles?\b/i,
   /\b(?:input[_ -]?file|file[_ -]?id|item|response|vector[_ -]?store|upload)\b[^\n]{0,160}\b(?:not found|does not exist)\b/i,
@@ -371,8 +404,19 @@ const RESOURCE_NOT_FOUND_PATTERNS = [
   /\bfile-[a-z0-9_-]+\b[^\n]{0,160}\b(?:not found|does not exist)\b/i,
 ];
 
+// OpenRouter privacy settings belong to the account, so this 404 says nothing about
+// another account serving the same request (#19686).
+const ACCOUNT_DATA_POLICY_NOT_FOUND_PATTERN =
+  /\bno endpoints found\b[^\n]{0,160}\bmatching your data policy\b/i;
+
+export const CAPABILITY_OR_PREFERENCE_NOT_FOUND_PATTERNS = [
+  /\bno endpoints found that support\b/i,
+  /\bno allowed providers\b/i,
+  ACCOUNT_DATA_POLICY_NOT_FOUND_PATTERN,
+];
+
 /**
- * Whether an upstream error identifies a missing request-scoped resource.
+ * Whether an upstream error identifies a missing request-scoped resource or capability mismatch.
  *
  * Resource signals intentionally take precedence over an outer
  * `code: "model_not_found"` because compatibility layers may synthesize that
@@ -380,7 +424,20 @@ const RESOURCE_NOT_FOUND_PATTERNS = [
  */
 export function isResourceNotFoundResponse(responseBody: unknown): boolean {
   const body = responseBodyToString(responseBody);
-  return RESOURCE_NOT_FOUND_PATTERNS.some((pattern) => pattern.test(body));
+  return (
+    RESOURCE_NOT_FOUND_PATTERNS.some((pattern) => pattern.test(body)) ||
+    CAPABILITY_OR_PREFERENCE_NOT_FOUND_PATTERNS.some((pattern) => pattern.test(body))
+  );
+}
+
+export function isRequestCapabilityNotFoundResponse(responseBody: unknown): boolean {
+  const body = responseBodyToString(responseBody);
+  return CAPABILITY_OR_PREFERENCE_NOT_FOUND_PATTERNS.some((pattern) => pattern.test(body));
+}
+
+/** Whether a 404 is an account's data-policy refusal, which another account may not share. */
+export function isAccountDataPolicyNotFoundResponse(responseBody: unknown): boolean {
+  return ACCOUNT_DATA_POLICY_NOT_FOUND_PATTERN.test(responseBodyToString(responseBody));
 }
 
 function shouldPreserveQuotaSignalsFor429(provider?: string | null): boolean {
@@ -394,11 +451,20 @@ export function classifyProviderError(
   provider?: string | null
 ): ProviderErrorType | null {
   const bodyStr = responseBodyToString(responseBody);
-  const creditsExhausted = isCreditsExhausted(bodyStr);
-  const subscriptionQuotaExhausted = isSubscriptionQuotaText(bodyStr.toLowerCase());
+  const creditsExhausted = isCreditsExhaustedForStatus(statusCode, provider, bodyStr);
+  // Claude's native weekly 429 wording is provider-scoped; omitting provider
+  // silently classified the long-window quota as a short RPM rate limit.
+  const subscriptionQuotaExhausted = isSubscriptionQuotaText(bodyStr.toLowerCase(), provider);
   const accountDeactivated = isAccountDeactivated(bodyStr);
   const oauthInvalid = isOAuthInvalidToken(bodyStr);
   const preserveQuota429 = shouldPreserveQuotaSignalsFor429(provider);
+
+  if (
+    (statusCode === 400 || statusCode === 403) &&
+    isProviderSafetyRefusalBody(statusCode, responseBody)
+  ) {
+    return PROVIDER_ERROR_TYPES.PROVIDER_SAFETY_REFUSAL;
+  }
 
   if (
     (creditsExhausted || subscriptionQuotaExhausted) &&
@@ -426,10 +492,15 @@ export function classifyProviderError(
   // retry/backoff loop keeps hammering the dead endpoint until the upstream
   // rate-limits it (404 + 429 storm). Classify as MODEL_NOT_FOUND so the model
   // gets locked via the cooldown layer and retries stop. Request-scoped
-  // resource errors are excluded because retrying another account/model cannot
-  // make an unknown file/item id valid. (#6827)
+  // resource errors and capability/preference mismatches are excluded because
+  // retrying another account/model cannot make an unknown file/item id valid,
+  // and request capability mismatches must not lock the model for other callers. (#6827, #19686)
   if (statusCode === 404) {
     if (isResourceNotFoundResponse(responseBody)) return null;
+    return PROVIDER_ERROR_TYPES.MODEL_NOT_FOUND;
+  }
+
+  if (isModelScopedAccessDenial(provider, statusCode, responseBody)) {
     return PROVIDER_ERROR_TYPES.MODEL_NOT_FOUND;
   }
 
@@ -516,6 +587,11 @@ export function classifyProviderError(
     // Must be checked BEFORE the generic 403 → FORBIDDEN fall-through, which bans
     // the connection permanently.
     return PROVIDER_ERROR_TYPES.REQUEST_REJECTED;
+  }
+  if (statusCode === 403 && isMegabrainProvider(provider) && isMegabrainPlanTierRefusal(bodyStr)) {
+    // A model above the account's plan — see isMegabrainPlanTierRefusal. MODEL_NOT_FOUND
+    // locks only that model on this connection; must precede the generic 403 → FORBIDDEN.
+    return PROVIDER_ERROR_TYPES.MODEL_NOT_FOUND;
   }
   if (statusCode === 403) {
     // Cloud Code / Antigravity (Gemini Code Assist) 403s are almost always a

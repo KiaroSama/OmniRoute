@@ -7,14 +7,14 @@
 > **Laatst bijgewerkt:** 2026-08-28 — v3.8.51
 > Gestroomlijnd releaseproces dat Claude Code-skills gebruikt voor automatisering.
 >
-> **Houd de wachtrij/branch groen tussen releases:** zie [RELEASE_GREEN.md](./RELEASE_GREEN.md)
-> (`/green-prs`-familie + `npm run check:release-green` + `/babysit` + nightly). Door dit
+> **Houd de wachtrij/branch tussen releases groen:** zie [RELEASE_GREEN.md](./RELEASE_GREEN.md)
+> (`/green-prs`-familie + `npm run check:release-green` + `/babysit` + nachtelijke uitvoering). Door dit
 > periodiek uit te voeren — en vooral **vóór** deze checklist — begint de release-PR groen.
 
 ## Kort samengevat
 
 ```bash
-# 1. Verhoog de versie + genereer CHANGELOG (skill)
+# 1. Verhoog de versie + genereer de CHANGELOG (skill)
 /version-bump-cc patch    # of minor/major
 
 # 2. Voer de kwaliteitscontrole lokaal uit
@@ -23,7 +23,7 @@ npm run test:coverage      # volledige dekkingscontrole (60/60/60/60)
 
 # 3. Bouw en voer een rooktest uit
 npm run build
-npm run test:e2e           # optioneel maar aanbevolen
+npm run test:e2e           # optioneel, maar aanbevolen
 
 # 4. Genereer de release (skill)
 /generate-release-cc
@@ -31,241 +31,214 @@ npm run test:e2e           # optioneel maar aanbevolen
 # 5. Implementeer (skill)
 /deploy-vps-both-cc        # of akamai-cc / local-cc
 
-# 6. Leg releasebewijzen vast (skill)
+# 6. Leg releasebewijsstukken vast (skill)
 /capture-release-evidences-cc
 ```
 
-## npm Trusted Publishing (standaard sinds v3.8.51) — gefaseerd op verzoek, direct als terugvaloptie
+## npm Trusted Publishing (standaard sinds v3.8.51) — geënsceneerd op verzoek, direct als fallback
 
-`npm-publish.yml` publiceert standaard via **npm Trusted Publishing (OIDC)**: de
-`stage-npm`-job (gehost door GitHub) wisselt het id-token van GitHub in voor tijdelijke
-npm-referenties voor die uitvoering — geen langlevend npm-token in de repositorygeheimen, geen 2FA-prompt, provenance toegevoegd.
-Dat is de door npm goedgekeurde omzeiling nu tokens die 2FA overslaan worden uitgefaseerd;
-het herstelt de volledig automatische workflow die het project tot en met v3.8.48 had, met behoud van de
-WS1.3-garantie (een gelekt token kan niet zelfstandig publiceren — er is geen token).
+`npm-publish.yml` publiceert via** npm Trusted Publishing (OIDC)** standaard: de `stage-npm` job (gehost door github) wisselt GitHub's id-token uit voor een kortstondige npm-referentie voor die run — geen langlevende npm-token in de repository-geheimen, geen 2FA-prompt, herkomst bijgevoegd. Dat zijn de bypass-npm-sancties nu tokens die 2FA overslaan, met pensioen gaan; het herstelt de volledig automatische stroom die het project had tot v3.8.48, terwijl de WS1.3-garantie behouden blijft (een gelekt token kan niet alleen publiceren — er is geen token).
 
-**Eenmalige configuratie (eigenaar):** npmjs.com → package `omniroute` → Settings → _Trusted
-Publisher_ → GitHub: owner `diegosouzapw`, repo `OmniRoute`, workflow `npm-publish.yml`
-(environment: none). Totdat dit bestaat, mislukt de automatische stap met `ENEEDAUTH`:
-start opnieuw met `publish_mode=staged` (hieronder) of `direct`.
+**Eenmalige installatie (eigenaar):** npmjs.com → pakket `omniroute` → Instellingen → _Trusted Publisher_ → GitHub: eigenaar `diegosouzapw`, repo `OmniRoute`, workflow `npm-publish.yml` (omgeving: geen). Totdat dat bestaat, mislukt de automatische stap met `ENEEDAUTH`: opnieuw verzenden met `publish_mode=staged` (hieronder) of `direct`.
 
-### Gefaseerd publiceren (op verzoek — `publish_mode=staged`)
+### Geënsceneerd publiceren (op aanvraag — `publish_mode=staged`)
 
-De npm-publish-workflow publiceert niet langer rechtstreeks: deze start de ingepakte tarball
-(`check:pack-boot`) en voert vervolgens `npm stage publish` uit — exact dezelfde bytes worden in
-het register geparkeerd en zijn **niet installeerbaar** totdat de eigenaar ze goedkeurt. De menselijke 2FA-controle is verplaatst
-naar NA het bewijs, niet ervoor.
+De npm-publish-workflow publiceert niet langer rechtstreeks: het start de ingepakte tarball (`check:pack-boot`) en voert vervolgens `npm stage publish` — uit, de exacte bytes zijn geparkeerd in het register,** niet installeerbaar** totdat de eigenaar akkoord gaat. De menselijke 2FA-poort bewoog AFTER het bewijs, niet ervoor.
 
-**Workflow voor de eigenaar nadat de workflow groen wordt:**
+**Eigenaarsstroom nadat de workflow groen wordt:**
 
-1. `npm stage list omniroute` — zoek de stage-id (ook vermeld in het workflowoverzicht).
-2. Verifieer de gefaseerde bytes (aanbevolen): `npm stage download <id>` en installeer vervolgens de
-   gedownloade tarball in een tijdelijke prefix en start deze (`npm run check:pack-boot` automatiseert
-   hetzelfde pack→install→boot-oordeel in CI).
-3. `npm stage approve <id>` — de 2FA-prompt IS de publicatie. `npm stage reject <id>` verwijdert de stage.
-4. Vangnet na publicatie: de post-publish-verificatie (WS1.4 van het v3.8.49-plan) installeert de
-   gepubliceerde versie vanuit het openbare register in een schone container en start deze.
+1. `npm stage list omniroute` — vind de fase-ID (ook afgedrukt in het workflowoverzicht).
+2. Controleer de geënsceneerde bytes (aanbevolen): `npm stage download <id>`, installeer vervolgens de gedownloade tarball in een tijdelijk voorvoegsel en start deze op (`npm run check:pack-boot` automatiseert hetzelfde pakket → install → boot oordeel in CI).
+3. `npm stage approve <id>` — de 2FA-prompt IS de publicatie. `npm stage reject <id>` weggooit.
+4. Post-publish net: de post-publish verifier (WS1.4 van het v3.8.49-plan) installeert de gepubliceerde versie vanuit het openbare register in een schone container en start deze op.
 
-**Noodoplossing:** `workflow_dispatch` met `publish_mode=direct` herstelt de
-oude directe `npm publish` (alleen gebruiken als staging zelf niet goed werkt; leg vast waarom).
+**Noodterugval:** `workflow_dispatch` met `publish_mode=direct` herstelt de bestaande onmiddellijke `npm publish` (alleen gebruiken als de enscenering zich misdraagt; noteer waarom).
 
-**Eenmalige beveiliging (eigenaar, npmjs.com):** configureer de Trusted Publisher voor
-`omniroute` in de modus alleen-staging, zodat een gelekt langlevend token niet rechtstreeks
-vanaf een willekeurige locatie `npm publish` kan uitvoeren — CI kan alleen staging uitvoeren; alleen de 2FA van de eigenaar geeft vrij.
+**Eenmalige verharding (eigenaar, npmjs.com):** configureer de Trusted Publisher voor `omniroute` in de stage-only-modus, zodat een gelekt token met een lange levensduur niet rechtstreeks kan `npm publish` vanaf elke plek waar — CI alleen kan stagen; alleen de 2FA-releases van de eigenaar.
 
-**Draaiboek voor defecte artefacten (ongewijzigd):** `npm deprecate omniroute@<bad> "<reason> — use <fixed>"`
-als standaardreactie (minuten, omkeerbaar); `npm unpublish` alleen binnen het venster van 72 uur/geen afhankelijke pakketten
-en nooit als eerste stap. Docker: overschrijf nooit een versietag — terugdraaien betekent dat
-`latest` opnieuw naar de laatst werkende digest wordt verwezen.
+**Speelboek met kapotte artefacten (ongewijzigd):** `npm deprecate omniroute@<bad> "<reason> — use <fixed>"` als standaardreflex (minuten, omkeerbaar); `npm unpublish` alleen binnen het 72h/no-dependents venster en nooit als eerste zet. Docker: herschrijf nooit een versietag — rollback verwijst `latest` opnieuw naar de laatste goede samenvatting.
 
-**Docker Hub `latest` (vereist bij elke stabiele SemVer-publicatie):** de
-`docker-publish`-workflow moet **zowel** `X.Y.Z` taggen als, wanneer
-`should-promote-latest.sh` bevestigt dat dit de hoogste stabiele SemVer is, `:latest`,
-met **dezelfde digest**. Na de job: de `latest`-digest op Hub is gelijk aan de nieuwe
-SemVer-digest en `last_updated` is bijgewerkt. Laat `:latest` niet naar een oudere
-build verwijzen terwijl de releaseopmerkingen oplossingen bespreken die alleen in git bestaan. Compose-
-quickstarts gebruiken `:latest`; GitOps moet `X.Y.Z` vastgepind blijven gebruiken. Zie
-[Docker-releasekanalen](../guides/DOCKER_GUIDE.md#release-channels) en #10317.
+**Docker Hub `latest` (vereist bij elke stabiele SemVer publicatie):** de `docker-publish` workflow moet taggen** beide** `X.Y.Z` en, wanneer `should-promote-latest.sh` akkoord gaat, is dit de hoogste stabiele SemVer, `:latest` met de** zelfde vertering** . Na de klus: Hub `latest` digest is gelijk aan de nieuwe SemVer digest en `last_updated` verplaatst. Laat `:latest` niet op een oudere build staan terwijl release-opmerkingen praten over oplossingen die alleen op git bestaan. Snelstartgidsen opstellen gebruik `:latest`; GitOps moet `X.Y.Z` blijven vastzetten. Zie [Docker releasekanalen](../guides/DOCKER_GUIDE.md#release-channels) en #10317.
 
-## Hotfix-sneltraject (label `hotfix`)
+**Docker Hub-organisatierepository (`cheaperinference/omniroute`):** Docker Hub kan een repository niet tussen naamruimten verplaatsen, dus `diegosouzapw/omniroute` behoudt zijn pull-geschiedenis en elke release, en de `mirror-org-dockerhub` -taak van `docker-publish` kopieert elke uitgebrachte versie (en `:latest` wanneer gepromoveerd) van `ghcr.io/cheaper-inference/omniroute` naar de repository van de organisatie. Het heeft de `DOCKERHUB_ORG_USERNAME` / `DOCKERHUB_ORG_TOKEN` geheimen nodig; zonder hen blijft de taak groen met een waarschuwing "Docker Hub org mirror skipped" en publiceren de andere registers normaal. Als u daar later een vrijgegeven versie wilt publiceren, voert u de opdracht uit** Acties → Docker -afbeelding spiegelen naar de Docker Hub-org → Run-workflow** met `version=X.Y.Z` (en `promote_latest` voor de hoogste stabiele versie): het kopieert de bestaande afbeeldingen, niet opnieuw opbouwen.
 
-Een PR met het label `hotfix` slaat de zware CI-matrix over (E2E met 9 shards, coverage-ratchet,
-quality-gate, quality-extended) en behoudt de snelle controles met een sterk signaal: build,
+## Snelle hotfix-route (label `hotfix`)
+
+Een PR met het label `hotfix` slaat de zware CI-matrix over (E2E met 9 shards, coverage ratchet,
+quality-gate, quality-extended) en behoudt de snelle gates met een sterk signaal: build,
 unit-shards, integratie, vitest, lint/typecheck, docs-sync, `check:pack-artifact`
-en de boot-smoketest van de tarball (`check:pack-boot`). Doel: groen binnen ≤15 min in plaats van ~33 min.
+en de boot-smoketest van de tarball (`check:pack-boot`). Doel: groen in ≤15 min in plaats van ~33 min.
 
-**Toelatingsbeleid — alle vier vereist (gebaseerd op noodtrajecten van Chromium/VS Code/Node):**
+**Toelatingsbeleid — alle vier vereist (gebaseerd op noodroutes van Chromium/VS Code/Node):**
 
-1. **Ernst**: productie is defect — een gepubliceerd artifact crasht tijdens het opstarten / een
-   beveiligingsoplossing / elke gebruiker van de release wordt getroffen. "Belangrijk" is niet hetzelfde als "defect".
-2. **Bevoegdheid**: alleen de eigenaar van de repository past het label `hotfix` toe. Het label IS
+1. **Ernst**: productie is defect — een gepubliceerd artefact crasht bij het opstarten / een
+   beveiligingsfix / elke gebruiker van de release ondervindt gevolgen. "Belangrijk" is niet "defect".
+2. **Bevoegdheid**: alleen de eigenaar van de repository brengt het label `hotfix` aan. Het label IS
    de goedkeuring — pas dit nooit zelf toe op een campagne-PR.
 3. **Bewijs**: de PR-beschrijving bevat een link naar de vorige volledig groene zware run (de suite die
    de overgeslagen jobs opnieuw zouden valideren), plus de eigen test van de fix die eerst faalde en daarna slaagde.
-4. **Bereik**: uitsluitend cherry-pick — de minimale fix, geen refactors, geen meeliftende wijzigingen.
+4. **Reikwijdte**: uitsluitend cherry-pick — de minimale fix, geen refactors, geen meeliftende wijzigingen.
 
-Het overgeslagen coverage-/ratchet-oppervlak wordt opnieuw gevalideerd door de volgende volledige run op de
-releasebranch (doorlopend groene release) — het traject slaat alleen het WACHTEN over, nooit de validatie.
+Het overgeslagen coverage/ratchet-oppervlak wordt opnieuw gevalideerd door de volgende volledige run op de
+releasebranch (continu groene release) — de route slaat WACHTEN over, nooit validatie.
 Diffs met uitsluitend tests (alle bestanden onder `tests/`, geen onder `tests/e2e/`) slaan de E2E-
 matrix automatisch over, zonder label.
 
 ## Gedetailleerde checklist
 
-### Vóór de release
+### Pre-release
 
-- [ ] Alle PR's die voor deze release zijn bestemd, zijn samengevoegd in `release/vX.Y.0`
-- [ ] Alle openstaande Linear-/issue-items voor deze versie zijn gesloten of naar de volgende milestone verplaatst
-- [ ] CI is groen op de branch `release/vX.Y.0`
-- [ ] Geen `TODO(release)`-markeringen in de code: `grep -r "TODO(release)" src/ open-sse/`
-- [ ] Docker-basisimage is up-to-date (momenteel `node:24.15.0-trixie-slim`)
+- [ ] Alle PRs die op deze release zijn gericht, zijn samengevoegd tot `release/vX.Y.0`
+- [ ] Alle open Linear/issue items voor deze versie zijn gesloten of naar de volgende mijlpaal gepusht
+- [ ] CI groen op `release/vX.Y.0` tak
+- [ ] Geen `TODO(release)` -markeringen in code: `grep -r "TODO(release)" src/ open-sse/`
+- [ ] Docker basisimage up-to-date (momenteel `node:24.15.0-trixie-slim`)
 
-### Versie en changelog
+### Versie en wijzigingslog
 
-- [ ] Voer `/version-bump-cc <patch|minor|major>` uit (Claude Code-skill)
-  - Verhoogt de versie in `package.json`, `electron/package.json`
-  - Genereert `CHANGELOG.md` opnieuw op basis van git-commits sinds de laatste tag
-  - Werkt badges in README.md bij
-- [ ] Controleer CHANGELOG.md handmatig en ruim commitberichten indien nodig op
-- [ ] Zorg dat de nieuwste semver-sectie in `CHANGELOG.md` gelijk is aan de versie in `package.json`
-- [ ] Behoud `## [Unreleased]` als de eerste changelogsectie voor aankomend werk
-- [ ] Werk `docs/openapi.yaml` bij → `info.version` moet gelijk zijn aan de versie in `package.json`
+- [ ] Voer `/version-bump-cc <patch|minor|major>` uit (Claude codevaardigheid)
+  - Hobbels `package.json`, `electron/package.json`
+  - Regenereert `CHANGELOG.md` van git commits sinds de laatste tag
+  - Werkt README.md badges bij
+- [ ] Controleer CHANGELOG.md handmatig en ruim commit-berichten op indien nodig
+- [ ] Zorg ervoor dat de nieuwste semver-sectie in `CHANGELOG.md` gelijk is aan `package.json` versie
+- [ ] Houd `## [Unreleased]` als de eerste changelog-sectie voor aankomend werk
+- [ ] Update `docs/openapi.yaml` → `info.version` moet gelijk zijn aan `package.json` -versie
 
 ### Codekwaliteit
 
-- [ ] `npm run lint` — 0 fouten (waarschuwingen bestonden al)
-- [ ] `npm run typecheck:core` — zonder problemen
-- [ ] `npm run typecheck:noimplicit:core` — zonder problemen (strikt)
-- [ ] `npm run check:cycles` — geen circulaire afhankelijkheden
-- [ ] `npm run check:any-budget:t11` — binnen het budget
-- [ ] `npm run check:route-validation:t06` — zonder problemen
-- [ ] `npm run check:node-runtime` — ondersteunde minimale runtimeversie gehaald (`>=22.22.2 <23`, `>=24.0.0 <27`, volgens `SUPPORTED_NODE_RANGE` in `src/shared/utils/nodeRuntimeSupport.ts`; afgestemd op `engines` in `package.json`)
+- [ ] `npm run lint` — 0 fouten (waarschuwingen bestaan al)
+- [ ] `npm run typecheck:core` — schoon
+- [ ] `npm run typecheck:noimplicit:core` — schoon (streng)
+- [ ] `npm run check:cycles:ratchet` — binnen het bevroren `metrics.cycles` plafond (kale `check:cycles` verlaat 1 op elke cyclus, #15281)
+- [ ] `npm run check:any-budget:t11` — binnen budget
+- [ ] `npm run check:route-validation:t06` — schoon
+- [ ] `npm run check:node-runtime` — ondersteunde runtime-vloer voldaan (`>=22.22.2 <23`, `>=24.0.0 <27`, per `SUPPORTED_NODE_RANGE` in `src/shared/utils/nodeRuntimeSupport.ts`; uitgelijnd met `package.json` `engines`)
 
 ### Testen
 
-- [ ] `npm run test:unit` — geslaagd
-- [ ] `npm run test:vitest` — geslaagd (MCP-server, autoCombo, cache)
-- [ ] `npm run test:coverage` — drempel van 60/60/60/60 gehaald (statements/lines/functions/branches)
-- [ ] `npm run test:integration` — geslaagd (als wijzigingen betrekking hebben op DB / handlers)
-- [ ] `npm run test:combo:matrix` — geslaagd (matrix van combostrategieën: bewijst op deterministische wijze de selectiebeslissingen van alle 19 publieke routeringsstrategieën; uitvoeren bij wijzigingen aan combo-routering, strategieoplossing of fallbacklogica)
-- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` — **optioneel/handmatig** (afgeschermde smoketest met echte upstreams; haalt een alleen-lezen DB-snapshot op van VPS `root@192.168.0.15`; benadert echte providers, kost credits; wordt nooit uitgevoerd in CI; wordt zonder de activering netjes overgeslagen)
-- [ ] `npm run test:combo:live:vps` — **optioneel/handmatig** (live VPS-smoketest voor fase 3: 7 HTTP-scenario's tegen de live `.15`-server via gewone Node ESM; vereist `ssh root@192.168.0.15`; maakt/verwijdert alleen combo's met `__live_test__*`; benadert echte providers; wordt nooit uitgevoerd in CI)
-- [ ] `npm run test:e2e` — geslaagd (UI-wijzigingen)
-- [ ] `npm run test:protocols:e2e` — geslaagd (MCP-/A2A-wijzigingen)
-- [ ] `npm run test:ecosystem` — geslaagd
+- [ ] `npm run test:unit` — pas
+- [ ] `npm run test:vitest` — pass (MCP server, autoCombo, cache)
+- [ ] `npm run test:coverage` — poort 60/60/60/60 tevreden (statements/lines/functions/branches)
+- [ ] `npm run test:integration` — pass (bij wijzigingen raak DB / handlers aan)
+- [ ] `npm run test:combo:matrix` — pass (combostrategiematrix: bewijst de selectiebeslissingen van alle 22 openbare routeringsstrategieën deterministisch; wordt uitgevoerd bij het aanraken van combo-routering, strategieresolutie of fallback-logica)
+- [ ] `RUN_COMBO_LIVE=1 npm run test:combo:live` —**optional/manual** (gated real-upstream smoke; haalt een alleen-lezen DB momentopname van VPS `root@192.168.0.15`; raakt echte providers, kost credits; draait nooit in CI; slaat netjes over zonder de poort)
+- [ ] `npm run test:combo:live:vps` —**optional/manual** (Phase-3 VPS live smoke: 7 HTTP scenario's tegen de live `.15` server via gewoon knooppunt ESM; vereist `ssh root@192.168.0.15`; creates/deletes alleen `__live_test__*` combo's; raakt echte providers; draait nooit in CI)
+- [ ] `npm run test:e2e` — pass (UI wijzigingen)
+- [ ] `npm run test:protocols:e2e` — pass (MCP/A2A wijzigingen)
+- [ ] `npm run test:ecosystem` — pas
 
-### Hooks (gevalideerd door Husky)
+### Haken (Husky gevalideerd)
 
-Husky-hooks bevinden zich in `.husky/` en worden automatisch uitgevoerd bij git-bewerkingen.
+Husky hooks leven in `.husky/` en worden automatisch uitgevoerd bij git-bewerkingen.
 
-- **pre-commit:** `npx lint-staged + node scripts/check/check-docs-sync.mjs + npm run check:any-budget:t11`
-- **pre-push:** snelle deterministische controles — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (geactiveerd op 2026-06-13). Sluit `test:unit` bewust uit (traag; afgedekt door de CI-job `test-unit`).
-  - Voer `npm run test:unit` handmatig uit voordat releasebranches worden gepusht.
+- **vooraf vastleggen:** `npx lint-staged + node scripts/check/check-docs-sync.mjs + npm run check:any-budget:t11`
+- **voorduwen:** snelle deterministische poorten — `npm run check:any-budget:t11 && npm run check:tracked-artifacts` (geactiveerd 13-06-2026). Sluit opzettelijk `test:unit` uit (langzaam; gedekt door de CI `test-unit` -taak).
+  - Voer `npm run test:unit` handmatig uit voordat u de vrijgavetakken indrukt.
 
-Als een hook faalt: los het onderliggende probleem op en omzeil de hook niet met `--no-verify`.
+Als een hook faalt: los het onderliggende probleem op, niet omzeilen met `--no-verify`.
 
-### Conventional Commits
+### Conventionele verplichtingen
 
-Alle commits die voor een release zijn bestemd, moeten de notatie `type(scope): subject` volgen.
+Alle release-gebonden commits moeten het `type(scope): subject` formaat volgen.
 
 **Geldige typen:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `style`, `ci`
 
-**Geldige scopes:** `db`, `sse`, `oauth`, `dashboard`, `api`, `cli`, `docker`, `ci`, `mcp`, `a2a`, `memory`, `skills`, `cloud-agent`, `guardrails`, `compression`, `auto-combo`, `resilience`, `providers`, `executors`, `translator`, `domain`, `authz`
+**Geldige bereiken:** `db`, `sse`, `oauth`, `dashboard`, `api`, `cli`, `docker`, `ci`, `mcp`, `a2a`, `memory`, `skills`, `cloud-agent`, `guardrails`, `compression`, `auto-combo`, `resilience`, `providers`, `executors`, `translator`, `domain`, `authz`
 
-Incompatibele wijzigingen: voeg een `BREAKING CHANGE:`-footer toe of een `!` na de scope (bijvoorbeeld `feat(api)!: drop /v0`).
+Belangrijke wijzigingen: voeg `BREAKING CHANGE:` voettekst of `!` toe na het bereik (bijv. `feat(api)!: drop /v0`).
 
 ### Documentatie
 
-- [ ] `npm run check:docs-sync` slaagt (automatisch uitgevoerd door pre-commit)
-- [ ] `npm run check:docs-all` slaagt (overkoepelend: docs-sync + docs-counts + env-doc-sync + deprecated-versions + doc-links)
-- [ ] `npm run check:env-doc-sync` eindigt met 0 — het env-contract tussen code ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` is intact
-- [ ] `npm run check:doc-links` eindigt met 0 — geen verbroken interne markdown-verwijzingen na de herstructurering
-- [ ] `docs/architecture/ARCHITECTURE.md` gecontroleerd op afwijkingen in opslag/runtime
-- [ ] `docs/guides/TROUBLESHOOTING.md` gecontroleerd op afwijkingen in omgevingsvariabelen en operationele informatie
-- [ ] Als `.env.example` is gewijzigd: `docs/reference/ENVIRONMENT.md` bijgewerkt
-- [ ] Als een nieuwe functie een UI heeft: `docs/guides/USER_GUIDE.md` vermeldt deze
-- [ ] Als een nieuwe functie een API heeft: `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` bijgewerkt
-- [ ] Als een nieuwe functie een module is: er bestaat een afzonderlijk bestand `docs/<MODULE>.md`
-- [ ] Bij een brekende wijziging: `docs/guides/TROUBLESHOOTING.md` bevat een migratieopmerking
+- [ ] `npm run check:docs-sync` -passen (automatisch uitgevoerd door pre-commit)
+- [ ] `npm run check:docs-all` passen (paraplu: docs-sync + docs-counts + env-doc-sync + verouderde versies + doc-links)
+- [ ] `npm run check:env-doc-sync` verlaat 0 — code ↔ `.env.example` ↔ `docs/reference/ENVIRONMENT.md` env-contract is intact
+- [ ] `npm run check:doc-links` verlaat 0 — geen gebroken interne prijsverlagingsreferenties na herstructurering
+- [ ] `docs/architecture/ARCHITECTURE.md` beoordeeld voor storage/runtime drift
+- [ ] `docs/guides/TROUBLESHOOTING.md` beoordeeld op env var en operationele drift
+- [ ] Als `.env.example` is gewijzigd: `docs/reference/ENVIRONMENT.md` is bijgewerkt
+- [ ] Als de nieuwe functie een UI heeft: `docs/guides/USER_GUIDE.md` vermeldt dit
+- [ ] Als de nieuwe functie API heeft: `docs/reference/API_REFERENCE.md` + `docs/openapi.yaml` bijgewerkt
+- [ ] Als de nieuwe functie een module is: er bestaat een speciale `docs/<MODULE>.md`
+- [ ] Als de verandering wordt verbroken: `docs/guides/TROUBLESHOOTING.md` heeft een migratienota
 
-### i18n
+### ik18n
 
-- [ ] `npm run i18n:check` eindigt met 0 — vertaalstatus (`.i18n-state.json`) is gesynchroniseerd met de brondocumentatie (geen afgeweken bronnen in strikte modus; een waarschuwing in waarschuwingsmodus is acceptabel voor documentatieaanpassingen op het laatste moment, maar moet 0 zijn vóór het taggen)
-- [ ] `npm run i18n:check-ui-coverage` eindigt met 0 — elke UI-locale bevindt zich op of boven de minimale dekkingsgraad van 80%
-- [ ] `npm run i18n:sync-ui:dry` rapporteert 0 ontbrekende sleutels voor alle 42 locales
-- [ ] Als de Engelse brondocumentatie is gewijzigd, voer dan vóór het taggen `npm run i18n:run` uit (vereist `OMNIROUTE_TRANSLATION_API_KEY` in `.env`)
-- [ ] Vertaalbijdragen kunnen bij kleine wijzigingen worden uitgesteld tot de volgende release (bijhouden in CHANGELOG)
+- [ ] `npm run i18n:check` verlaat 0 — -vertaalstatus (`.i18n-state.json`) synchroon met brondocumenten (geen afwijkende bronnen in de strikte modus; advies in de waarschuwingsmodus is acceptabel voor last-minute aanpassingen aan documenten, maar moet 0 zijn vóór het taggen)
+- [ ] `npm run i18n:check-ui-coverage` verlaat 0 — elke UI locatie op of boven de dekkingsvloer van 80%
+- [ ] `npm run i18n:sync-ui:dry` rapporteert 0 ontbrekende sleutels in alle 66 doellandinstellingen (elke landinstelling behalve de `en` bron)
+- [ ] Als de Engelse brondocumenten zijn gewijzigd, voert u `npm run i18n:run` uit (vereist `OMNIROUTE_TRANSLATION_API_KEY` in `.env`) voordat u gaat taggen
+- [ ] Vertaalbijdragen kunnen worden uitgesteld naar de volgende release als ze klein zijn (track in CHANGELOG)
 
 ### Databasemigraties
 
-- [ ] Als `src/lib/db/migrations/` nieuwe bestanden bevat:
-  - [ ] Elke migratie is idempotent (`CREATE TABLE IF NOT EXISTS`, enz.)
-  - [ ] Migraties zijn verpakt in transacties
-  - [ ] Correct genummerd (geen gaten in de reeks)
-- [ ] Test bij een nieuwe installatie: verwijder `~/.omniroute/omniroute.db` en voer `npm run dev` uit
-- [ ] Test bij een bestaande installatie: maak een back-up van de database, voer de migratie uit en controleer het schema
-- [ ] WAL-bestanden (`-wal`, `-shm`) worden correct afgehandeld als de migratie tabellen herschrijft
+- [ ] Als `src/lib/db/migrations/` nieuwe bestanden heeft:
+  - [ ] Elke migratie is idempotent (`CREATE TABLE IF NOT EXISTS`, etc.)
+  - [ ] Migraties verpakt in transacties
+  - [ ] Correct genummerd (geen gaten in de volgorde)
+- [ ] Test op nieuwe installatie: verwijder `~/.omniroute/omniroute.db` en voer `npm run dev` uit
+- [ ] Test op bestaande installatie: maak een back-up van DB, voer migratie uit, verifieer schema
+- [ ] WAL bestanden (`-wal`, `-shm`) worden correct afgehandeld als de migratie tabellen herschrijft
 
-### Providercatalogus (gevalideerd met Zod)
+### Providercatalogus (Zod-gevalideerd)
 
-- [ ] Zod-schema van `src/shared/constants/providers.ts` is geldig tijdens het laden
-  - [ ] Alle providers hebben de vereiste velden (`id`, `label`, `kind`, enz.)
-  - [ ] `freeNote` is opgegeven voor nieuwe gratis providers
-  - [ ] OAuth-providers hebben een `oauthConfig` die is geregistreerd in `src/lib/oauth/constants/oauth.ts`
-- [ ] Als een nieuwe provider is toegevoegd: bijbehorende executor in `open-sse/executors/`
-- [ ] Bij een niet-OpenAI-indeling: translator in `open-sse/translator/`
+- [ ] `src/shared/constants/providers.ts` Zod schema geldig tijdens het laden
+  - [ ] Alle providers hebben verplichte velden (`id`, `label`, `kind`, etc.)
+  - [ ] `freeNote` zorgde voor nieuwe gratis aanbieders
+  - [ ] OAuth aanbieders hebben `oauthConfig` geregistreerd in `src/lib/oauth/constants/oauth.ts`
+- [ ] Indien nieuwe aanbieder toegevoegd: corresponderende uitvoerder in `open-sse/executors/`
+- [ ] Indien niet-OpenAI-formaat: vertaler in `open-sse/translator/`
 - [ ] Modellen geregistreerd in `open-sse/config/providerRegistry.ts`
-- [ ] Unittests in `tests/unit/` dekken providerclassificatie en routering
+- [ ] Eenheidstests in `tests/unit/` cover provider classificatie en routing
 
 ### Desktop (Electron)
 
 Als `electron/` is gewijzigd:
 
-- [ ] `npm run electron:smoke:packaged` slaagt
+- [ ] `npm run electron:smoke:packaged` gaat voorbij
 - [ ] Builds getest voor ten minste één van `:win`, `:mac`, `:linux`
-- [ ] Certificaten voor codeondertekening zijn niet verlopen (indien ondertekening wordt gebruikt)
-- [ ] Versie in `electron/package.json` komt overeen met die in het hoofd-`package.json`
-- [ ] Verwijzing naar het kanaal voor automatische updates bijgewerkt bij een release naar `stable`
+- [ ] Codeondertekeningscertificaten zijn niet verlopen (bij ondertekening)
+- [ ] `electron/package.json` versie komt overeen met root `package.json`
+- [ ] Kanaalwijzer automatisch bijwerken bijgewerkt bij vrijgeven naar `stable`
 
-### Buildindeling
+### Bouw lay-out
 
-De repository gebruikt drie afzonderlijke uitvoermappen — haal ze nooit door elkaar:
+De repository gebruikt drie verschillende uitvoermappen — verwissel ze nooit:
 
-| Map       | Doel                                                                | Bijgehouden?             |
-| --------- | ------------------------------------------------------------------- | ------------------------ |
-| `src/`    | Applicatiebroncode (TypeScript / TSX)                               | Ja                       |
-| `.build/` | Tussenproducten van de build — uitvoer van `next build` (`distDir`) | Nee (genegeerd door git) |
-| `dist/`   | Distribueerbare npm-bundel — samengesteld door `assembleStandalone` | Nee (genegeerd door git) |
+| Directory | Doel                                                            | Bijgehouden?        |
+| --------- | --------------------------------------------------------------- | ------------------- |
+| `src/`    | Applicatiebron (TypeScript / TSX)                               | Ja                  |
+| `.build/` | Bouw tussenproducten — `next build` uitvoer (`distDir`)         | Nee (git genegeerd) |
+| `dist/`   | Verzendbare npm-bundel — samengesteld door `assembleStandalone` | Nee (git genegeerd) |
 
-> **Opmerking voor operators:** de map van de externe VPS-image blijft `/usr/lib/node_modules/omniroute/app/`.
-> Alleen de builduitvoer **in de repository** is verplaatst (`app/` → `dist/`). De deploy-skills synchroniseren
-> de inhoud van `dist/` via rsync naar de externe map `app/` — er zijn geen wijzigingen aan VPS-paden nodig.
+> **Opmerking van de operator:** de externe VPS -imagemap blijft `/usr/lib/node_modules/omniroute/app/`. Alleen de** in repository** build-uitvoer verplaatst (`app/` → `dist/`). De implementatievaardigheden rsync `dist/` inhoud naar de externe `app/` dir — er zijn geen VPS padwijzigingen vereist.
 
-**Flow met één build:**
+**Single-build-stroom:**
 
 ```
 npm run build:release
-  └─ rm -rf .build dist          (opschonen)
-  └─ next build → .build/next/   (tussenproducten)
-  └─ assembleStandalone          (kopieert standalone + static + public + natives → dist/)
-  └─ schrijft dist/BUILD_SHA     (HEAD-controlebestand)
+  └─ rm -rf .build dist          (clean)
+  └─ next build → .build/next/   (intermediates)
+  └─ assembleStandalone          (copies standalone + static + public + natives → dist/)
+  └─ writes dist/BUILD_SHA       (HEAD sentinel)
 ```
 
-Voer voor deployment NIET eerst `npm run build` uit gevolgd door een afzonderlijke `npm run build:cli` — gebruik
-`npm run build:release`, waarmee in één opdracht een schone rebuild wordt uitgevoerd en het controlebestand wordt aangemaakt.
+Voer NOT voer `npm run build` uit, gevolgd door een afzonderlijke `npm run build:cli` voor het inzetten van — gebruik `npm run build:release` wat een schone herbouw + schildwacht in één opdracht uitvoert.
 
-### Artefactvalidatie
+### Validatie van artefacten
 
 - [ ] `npm run build:release` slaagt en `dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] `npm run check:pack-artifact` is schoon — geen `app.__qa_backup`, `scripts/scratch`, `package-lock.json` of andere lokale restbestanden
+- [ ] `npm run check:pack-artifact` clean — geen `app.__qa_backup`, `scripts/scratch`, `package-lock.json` of ander lokaal residu
 - [ ] `dist/server.js` bestaat na de build
+- [ ] Optionele lokale rook tijdens verpakte runtime: `npm run dev:candidate -- validate` nadat `npm run dev:candidate -- build` de ingepakte tarball opstart op een geïsoleerde `DATA_DIR` en `/api/health` + `/v1/models` controleert (zie [Bijdrage Golden Path](CONTRIBUTION_GOLDEN_PATH.md#local-candidate-loop) )
 
-### Taggen & release
+### Taggen en vrijgeven
 
-- [ ] Voer `/generate-release-cc` uit (Claude Code-skill):
-  - Maakt tag `vX.Y.Z`
-  - Pusht tag en branch
-  - Opent een GitHub-release met de changelogtekst
-  - Voegt Electron-installatieprogramma's toe (indien gebouwd)
+- [ ] Voer `/generate-release-cc` uit (Claude Code-vaardigheid):
+  - Creëert tag `vX.Y.Z`
+  - Duwt tag en tak
+  - Opent GitHub -release met changelog-tekst
+  - Bevestigt Electron -installatieprogramma's (indien gebouwd)
 - [ ] Of handmatig:
   ```bash
   git tag -a vX.Y.Z -m "Release vX.Y.Z"
@@ -273,76 +246,75 @@ Voer voor deployment NIET eerst `npm run build` uit gevolgd door een afzonderlij
   gh release create vX.Y.Z --notes-from-tag
   ```
 
-### Deployment
+### Aanwenden
 
-Deploy-skills gebruiken de lichte rsync-flow — geen `npm pack`, geen `npm i -g`:
+Implementeer vaardigheden gebruik de lichte rsync-stroom — no `npm pack`, no `npm i -g`:
 
-- [ ] Gebruik de deploy-skill die overeenkomt met het doel:
+- [ ] Gebruik de inzetvaardigheid die overeenkomt met het doel:
   - `/deploy-vps-local-cc` — lokale VPS (192.168.0.15)
-  - `/deploy-vps-akamai-cc` — Akamai-VPS (69.164.221.35)
-  - `/deploy-vps-both-cc` — beide
-- [ ] Controleer vóór de deployment dat `dist/BUILD_SHA` == `git rev-parse --short HEAD`
-- [ ] De build moet worden uitgevoerd waar `node_modules` echt is (hoofdcheckout of worktree waarop `npm ci` is uitgevoerd — GEEN worktree met symbolische koppelingen)
-- [ ] Voer een rooktest uit op de gedeployde instantie:
-  - Open `/dashboard/health` → controleer of de versietekenreeks overeenkomt met de release
-  - Voer een `/v1/chat/completions`-aanvraag uit bij een bekende provider
-  - Controleer of `/api/monitoring/health` circuitbreakers met status `CLOSED` retourneert
-  - Bevestig dat MCP-transports reageren (`/mcp` HTTP, `/mcp-sse` SSE)
+  - `/deploy-vps-akamai-cc` — Akamai VPS (69.164.221.35)
+  - `/deploy-vps-both-cc` — allebei
+- [ ] Bevestig `dist/BUILD_SHA` == `git rev-parse --short HEAD` voordat u het implementeert
+- [ ] Build moet worden uitgevoerd waar `node_modules` echt is (hoofdafrekening of `npm ci`'d worktree — NOT een symbolisch gekoppelde werkboom)
+- [ ] Rooktest geïmplementeerd exemplaar:
+  - Open `/dashboard/health` → controleer de versiereeks die overeenkomt met de release
+  - Voer een `/v1/chat/completions` -verzoek uit tegen een bekende provider
+  - Controleer of `/api/monitoring/health` `CLOSED` -stroomonderbrekers retourneert
+  - Bevestig dat MCP -transporten reageren (`/mcp` HTTP, `/mcp-sse` SSE)
 
-### Na de release
+### Post-release
 
-- [ ] Voer `/capture-release-evidences-cc` uit (Claude Code-skill)
-  - Maakt WebP-schermafbeeldingen/-opnamen van nieuwe functies
-  - Voegt deze toe aan releaseopmerkingen / blogbericht
-- [ ] Werk GitHub Discussions / Discord bij met de releaseaankondiging
-- [ ] Open een milestone voor de volgende versie
-- [ ] Indien kritiek: zet de discussie vast of plaats deze in `news.json` voor een banner in de app
+- [ ] Voer `/capture-release-evidences-cc` uit (Claude codevaardigheid)
+  - Legt WebP screenshots/recordings van nieuwe functies vast
+  - Wordt bijgevoegd bij releaseopmerkingen/blogpost
+- [ ] Update GitHub Discussions / Discord met release-aankondiging
+- [ ] Open mijlpaal voor de volgende versie
+- [ ] Indien kritisch: discussie vastzetten of posten in `news.json` voor in-app-banner
 
-### Radar-gate voor publieke lancering
+### Radar openbare lanceerpoort
 
-De Radar-aankondiging is bewust gecommit met `active: false`. Activering is een afzonderlijke
-wijziging nadat voor elk onderstaand punt bewijs is geleverd:
+De Radar-aankondiging is opzettelijk gepleegd met `active: false`. Activering is een afzonderlijke wijziging nadat elk hieronder item is aangetoond:
 
-- [ ] Alle gestapelde Radar-PR's zijn gemerged en de CI voor de release-tip is groen
-- [ ] Implementeer de OSS Radar-routes en voer er smoketests op uit terwijl `RADAR_ENABLED` standaard nog uitgeschakeld is
-- [ ] Voer smoketests uit op `GET /planos`, `/termos`, `/privacidade` en `/reembolso` op de genoemde Radar-host
-- [ ] Leg de identiteit/contactgegevens/het adres van de beheerder en de door de eigenaar goedgekeurde juridische beoordeling vast in de privéservice
-- [ ] Test Stripe Checkout en de ondertekende webhook uitsluitend in de testmodus
-- [ ] Test één versleutelde levering van een transactionele e-mail met de goedgekeurde afzender/het goedgekeurde domein
-- [ ] Toon aan dat een back-up kan worden hersteld en voer één begeleide onderzoekstaak uit met een budgetlimiet
-- [ ] Keur het BRL/PIX-beoordelingsbeleid goed voordat donatiebewijzen worden geaccepteerd
-- [ ] Schakel openbare Checkout pas in nadat aan de voorgaande gates is voldaan en activeer vervolgens de nieuwe `news.json`-ID
-- [ ] Controleer of de Home-banner gelokaliseerde tekst gebruikt en of een nieuwe ID opnieuw verschijnt nadat een oudere ID is gesloten
+- [ ] Alle gestapelde Radar PRs zijn samengevoegd en de release-tip CI is groen
+- [ ] Implementeer en rook de OSS -radarroutes terwijl `RADAR_ENABLED` standaard nog uitgeschakeld is
+- [ ] Rook `GET /planos`, `/termos`, `/privacidade` en `/reembolso` op de genoemde Radar-host
+- [ ] Platenexploitant identity/contact/address en door de eigenaar goedgekeurde juridische toetsing in de particuliere dienst
+- [ ] Oefen Stripe Checkout en de ondertekende webhook alleen uit in de testmodus
+- [ ] Voer één gecodeerde transactionele e-mailbezorging uit met de goedgekeurde sender/domain
+- [ ] Bewijs back-upherstel en één gecontroleerde onderzoeksrun met een beperkt budget
+- [ ] Keur het BRL/PIX -beoordelingsbeleid goed voordat u donatiebewijs accepteert
+- [ ] Schakel openbaar afrekenen alleen in na de voorgaande poorten en activeer vervolgens de nieuwe `news.json` ID
+- [ ] Controleer of de Home-banner een gelokaliseerde kopie gebruikt en dat er opnieuw een nieuwe ID verschijnt nadat een oudere ID is verwijderd
 
-## Smoke-test voor Embedded Services (v3.8.4+)
+## Smoke-test voor ingebedde services (v3.8.4+)
 
-Controleer vóór het uitbrengen van een release met wijzigingen aan embedded services:
+Controleer voordat je een release uitbrengt die wijzigingen aan ingebedde services bevat:
 
-### Opstarten met een nieuwe database (detecteert migratieconflicten — toegevoegd na de v3.8.4-hotfix)
+### Opstarten met een nieuwe database (detecteert migratieconflicten — toegevoegd na de hotfix voor v3.8.4)
 
 - [ ] `DATA_DIR=$(mktemp -d) npm start &` — wacht 10 s op het opstarten
-- [ ] `curl -s http://127.0.0.1:20128/api/services/9router/status | jq '.tool'` retourneert `"9router"` (NIET 404, NIET 500). Bevestigt dat migratie `071_services.sql` is toegepast en de rij is aangemaakt.
+- [ ] `curl -s http://127.0.0.1:20128/api/services/9router/status | jq '.tool'` retourneert `"9router"` (NIET 404, NIET 500). Bevestigt dat migratie `071_services.sql` is toegepast en de rij is toegevoegd.
 - [ ] `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(version_manager);" | grep -E "provider_expose|logs_buffer_path|last_sync_at"` retourneert 3 rijen.
-- [ ] `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(webhooks);" | grep -E "kind|metadata_encrypted"` retourneert 2 rijen (valideert dat `070_webhooks_kind_metadata.sql` is toegepast).
+- [ ] `sqlite3 $DATA_DIR/storage.sqlite "PRAGMA table_info(webhooks);" | grep -E "kind|metadata_encrypted"` retourneert 2 rijen (bevestigt dat `070_webhooks_kind_metadata.sql` is toegepast).
 - [ ] `node --import tsx/esm --test tests/unit/db/no-migration-collisions.test.ts` slaagt — beschermt tegen toekomstige conflicten.
 
 ### 9Router
 
-- [ ] `POST /api/services/9router/install` retourneert binnen 2 min een 200-respons met `installedVersion`
-- [ ] `POST /api/services/9router/start` retourneert binnen 30 s een 200-respons en `state: "running"`
-- [ ] `GET /api/services/9router/status` rapporteert `health: "healthy"`
+- [ ] `POST /api/services/9router/install` retourneert binnen 2 min 200 met `installedVersion`
+- [ ] `POST /api/services/9router/start` retourneert binnen 30 s 200 en `state: "running"`
+- [ ] `GET /api/services/9router/status` meldt `health: "healthy"`
 - [ ] `POST /v1/chat/completions` met `"model": "9router/auto/..."` retourneert 200 (end-to-end-routering via 9Router)
-- [ ] `GET /dashboard/providers/services/9router/embed/dashboard` geeft de native gebruikersinterface van 9Router binnen de proxy weer (geen directe `127.0.0.1:port`-iframe)
-- [ ] `POST /api/services/9router/rotate-key` retourneert `{ keyRotated: true }` en de service start zonder problemen opnieuw
+- [ ] `GET /dashboard/providers/services/9router/embed/dashboard` rendert de native gebruikersinterface van 9Router binnen de proxy (geen directe `127.0.0.1:port`-iframe)
+- [ ] `POST /api/services/9router/rotate-key` retourneert `{ keyRotated: true }` en de service start probleemloos opnieuw
 - [ ] `POST /api/services/9router/stop` retourneert 200 en `state: "stopped"`
 - [ ] `GET /api/services/9router/logs?tail=50` retourneert een SSE-stream met een `snapshot`-event dat recente regels bevat
-- [ ] Installatie in een omgeving zonder `npm` in PATH retourneert 500 met een duidelijke foutmelding (zonder stacktrace)
+- [ ] Installatie in een omgeving zonder `npm` in PATH retourneert 500 met een gebruiksvriendelijke foutmelding (zonder stacktrace)
 
 ### CLIProxyAPI
 
-- [ ] `POST /api/services/cliproxy/install` retourneert binnen 2 min een 200-respons
-- [ ] `POST /api/services/cliproxy/start` retourneert binnen 30 s een 200-respons en `state: "running"`
-- [ ] `GET /api/services/cliproxy/status` rapporteert `health: "healthy"`
+- [ ] `POST /api/services/cliproxy/install` retourneert binnen 2 min 200
+- [ ] `POST /api/services/cliproxy/start` retourneert binnen 30 s 200 en `state: "running"`
+- [ ] `GET /api/services/cliproxy/status` meldt `health: "healthy"`
 - [ ] `POST /api/services/cliproxy/stop` retourneert 200 en `state: "stopped"`
 - [ ] `GET /api/services/cliproxy/logs?tail=50` retourneert een SSE-stream
 
@@ -350,11 +322,11 @@ Controleer vóór het uitbrengen van een release met wijzigingen aan embedded se
 
 - [ ] `curl -H "X-Forwarded-For: 1.2.3.4" http://localhost:20128/api/services/9router/start` retourneert `403 LOCAL_ONLY`
 - [ ] `curl -H "X-Forwarded-For: 1.2.3.4" http://localhost:20128/api/services/cliproxy/start` retourneert `403 LOCAL_ONLY`
-- [ ] Foutresponsen van `/api/services/*` bevatten geen `err.stack` of absolute bestandspaden
+- [ ] Foutreacties van `/api/services/*` bevatten geen `err.stack` of absolute bestandspaden
 
 ## Controles voor v3.8.0+
 
-Controleer vóór het uitbrengen van een v3.8.x-release ook deze aanvullende punten:
+Controleer deze aanvullende punten voordat je een v3.8.x-release uitbrengt:
 
 - [ ] `omniroute --tray` start op macOS (systray2 geïnstalleerd in `~/.omniroute/runtime/`)
 - [ ] `omniroute --tray` start op Linux (vereist DISPLAY; duidelijke foutmelding als dit niet is ingesteld)
@@ -364,22 +336,130 @@ Controleer vóór het uitbrengen van een v3.8.x-release ook deze aanvullende pun
 - [ ] Het updatepad behoudt optionele afhankelijkheden: `omniroute update --apply` en de automatische updater
       voeren `npm install -g … --include=optional` uit, zodat `optionalDependencies` (better-sqlite3,
       keytar, tls-client en de llmlingua SLM-stack: `@atjsh/llmlingua-2@2.0.5`,
-      `js-tiktoken`) een update overleven. De ultra-`modelPath`-SLM-laag heeft ook het
+      `js-tiktoken`) een update overleven. De ultra `modelPath` SLM-laag heeft ook het
       tinybert-model nodig, dat bij het eerste gebruik automatisch naar `${DATA_DIR}/models/llmlingua` wordt gedownload. Postinstall
-      (`scripts/build/colocateOptionals.mjs`) plaatst vervolgens de optionele SLM-closure samen in
-      `dist/node_modules`, zodat de worker één ENKELE instantie van `@huggingface/transformers` ^4.2.0
-      resolveert — de zelfstandige trace bundelt alleen transformers, niet de dynamisch geïmporteerde
-      optionele afhankelijkheden; zonder dit zou de worker llmlingua-2 laden met de transformers van de root
-      en zou de SLM-laag stilzwijgend fail-open werken.
+      (`scripts/build/colocateOptionals.mjs`) plaatst vervolgens de optionele SLM-afhankelijkheden samen in
+      `dist/node_modules`, zodat de worker ÉÉN instantie van `@huggingface/transformers` ^4.2.0
+      vindt — de zelfstandige trace bundelt alleen transformers, niet de dynamisch geïmporteerde
+      optionele afhankelijkheden, waardoor de worker zonder dit llmlingua-2 zou laden tegen transformers uit de root
+      en de SLM-laag ongemerkt zou terugvallen.
 - [ ] `omniroute status` werkt zonder `.env` (CLI-tokenpad, alleen loopback)
 - [ ] `curl http://localhost:20128/api/shutdown` retourneert 401 (altijd beveiligde route)
 - [ ] `curl -H "host: evil.com" http://localhost:20128/api/mcp/sse` retourneert 401 (loopbackbeveiliging)
-- [ ] De SQLite-runtime resolveert bij de eerste uitvoering naar `bundled` (gebundeld binair bestand is geldig voor het platform)
+- [ ] De SQLite-runtime wordt bij de eerste uitvoering opgelost naar `bundled` (gebundeld binair bestand is geldig voor het platform)
 - [ ] De SQLite-runtime valt terug op `runtime` wanneer `node_modules/better-sqlite3` is verwijderd
 - [ ] Het slimme MCP-filter comprimeert echte `playwright-mcp browser_snapshot`-uitvoer (≥50% reductie)
 - [ ] Alle 10 `skills/omniroute*/SKILL.md`-bestanden zijn openbaar op te halen via een onbewerkte GitHub-URL
 - [ ] De onboardingwizard toont bij een nieuwe configuratie de rondleidingsstap "Hoe het werkt" voor de lagen
-- [ ] De widget voor laagdekking op het startdashboard toont de aantallen geconfigureerde/actieve lagen
+- [ ] De widget voor laagdekking op het hoofddashboard toont aantallen geconfigureerde/actieve lagen
+
+---
+
+## 3.9.0 LTS-splitsing (geoefend in 3.8.58)
+
+Na v3.8.59 is de volgende versie 3.9.0 en wordt de topcommit ervan opgesplitst in twee langlevende branches:
+`stable/v3` (de v3 LTS-lijn, npm `latest`) en `develop` (v4, verhoogd naar 4.0.0, npm
+`nightly`). Het branch-/kanaalmodel, de forward-port en labels staan in
+[RELEASE_STRATEGY.md](./RELEASE_STRATEGY.md); het plan staat in de [ROADMAP](../../ROADMAP.md) (Fase 3). De splitsing wordt eenmaal uitgevoerd;
+3.8.58 oefent deze van begin tot eind op een fork en 3.8.59 wordt afgesloten met de
+[GO/NO-GO-controlelijst](./LTS_GO_NO_GO.md).
+
+### Proefuitvoering (alleen-lezen, altijd veilig)
+
+```bash
+npm run release:dry-run-lts-cut                       # de echte splitsing: 3.9.0 vanaf HEAD, vorige tag v3.8.59
+npm run release:dry-run-lts-cut -- --from <3.9.0-tip> # zet de broncommit vast
+```
+
+`scripts/release/dry-run-lts-cut.mjs` voert niets uit: het leest git en `gh` en drukt de
+volledige reeks af — voorafgaande voorwaarden (de bron kan worden gevonden, de bronrepository heeft een volledige geschiedenis —
+een ondiepe kloon kan `stable/v3` niet pushen, de ontvangende zijde weigert het pakket bij de eerste
+geënte parent, dus voer de splitsing uit vanuit een volledige kloon of voer eerst `git fetch --unshallow origin` uit — de vorige
+tag bestaat, `package.json` heeft de doelversie, er staat een `release-freeze`-issue open, er staat geen
+`Release branch not green`-issue open
+voor een bestaande releasebranch — een branch die niet bestaat, rapporteert `?` onbekend, nooit
+groen — de Mergify-wachtrij `release` is geconfigureerd (G11: `queue_rules`, `checks_timeout`,
+label `queue`), de regelset `release/*` blokkeert nog steeds verwijdering en geforceerde pushes, en
+`stable/v3` en `develop` bestaan nog niet), de twee branchstappen, welke triggers van slapende workflows
+en `if:`-voorwaarden waar worden (en welke geblokkeerd blijven door een repositoryvariabele of
+vastgezet zijn op de canonieke repository), de verwachte dist-tags (`latest` → 3.9.0, `next` en
+`nightly` leeg) en het terugdraaien. Afsluitcode `0` = `RESULT: READY`, `1` = een blokkerende voorafgaande voorwaarde
+is mislukt (`✗`), `2` = gebruiksfout. `--advisory <id,...>` verlaagt een controle tot een waarschuwing (`!`)
+zonder deze te verbergen.
+
+Voer de proefuitvoering van de echte splitsing uit terwijl de releasefreeze voor 3.9.0 nog actief is — de branches worden
+na de tag en voordat Fase 12c de freeze opheft aangemaakt.
+
+### 3.8.58-oefening (alleen fork)
+
+```bash
+# 1. Proefuitvoering op de huidige topcommit met oefenparameters
+npm run release:dry-run-lts-cut -- --target-version 3.8.58 --previous-tag v3.8.57 \
+  --advisory freeze,base-green
+
+# 2. Voer uit met een FORK-remote (origin, of elke remote waarvan de URL naar de canonieke
+#    repository verwijst, wordt geweigerd; elke stap vraagt om bevestiging in de terminal)
+git remote add rehearsal https://github.com/<you>/OmniRoute.git
+node scripts/release/dry-run-lts-cut.mjs --execute --remote rehearsal \
+  --target-version 3.8.58 --previous-tag v3.8.57 --advisory freeze,base-green
+
+# 3. Test de slapende workflows in de fork (workflow_dispatch wanneer de proefuitvoering
+#    een vastzetting op de canonieke repository rapporteert) en draai daarna terug
+node scripts/release/dry-run-lts-cut.mjs --execute --rollback --remote rehearsal \
+  --target-version 3.8.58 --previous-tag v3.8.57 --advisory freeze,base-green
+```
+
+De commit die de versie van develop verhoogt, wordt met git-plumbing opgebouwd (zonder de werkboom te wijzigen) en verhoogt
+dezelfde vijf bestanden als een commit die een cyclus opent: `package.json`, `open-sse/package.json`,
+`electron/package.json`, `package-lock.json` en `docs/openapi.yaml`. De sectie `[4.0.0]` in het
+CHANGELOG en de i18n-equivalenten daarvan worden daarna op `develop` geopend, vóór de eerste
+PR ervan. Het script wijzigt nooit npm-dist-tags — oefen deze met een tijdelijk pakket.
+
+### PR-previewartefact (eenmaal bouwen, exact dezelfde bytes promoveren)
+
+`.github/workflows/preview-artifact.yml` bouwt één productietarball vanaf de head van een PR en
+valideert exact die build (deel (a) van #8084). Alleen PR's binnen dezelfde repository; er wordt niets gepubliceerd.
+
+```bash
+gh workflow run preview-artifact.yml -f pr_number=<N>   # of voeg het label `preview-artifact` toe
+gh run download <run-id> --name preview-artifact-pr<N>-<sha7> --dir preview
+cd preview && sha256sum -c SHA256SUMS
+gh attestation verify omniroute-*.tgz --repo diegosouzapw/OmniRoute
+npm install -g ./omniroute-*.tgz                          # preview-installatie
+```
+
+De uitvoering voert `npm ci`, `npm run build:release` en `npm run check:pack-artifact` uit, pakt de
+tarball in, voert `npm run check:pack-boot` uit (nepgeheimen, tijdelijke datamap), pakt deze opnieuw in en
+mislukt tenzij de digest identiek is, legt vervolgens `artifact-identity.json` vast (head-SHA, base-
+SHA, lockfile-hash, platform, architectuur, node ABI, bundler, buildbeleid —
+`scripts/release/artifact-identity.mjs`) en attesteert de tarball in een afzonderlijke job. Een preview
+promoveren betekent die tarball installeren: bouw nooit opnieuw vanuit de broncode.
+
+### De splitsing (3.9.0, na GO)
+
+1. GO vastgelegd in [LTS_GO_NO_GO.md](./LTS_GO_NO_GO.md).
+2. `npm run release:dry-run-lts-cut -- --from v3.9.0` drukt `RESULT: READY` af.
+3. Maak de branches handmatig aan op `origin` met de opdrachten die de proefuitvoering afdrukt — het
+   script weigert naar `origin` te pushen. Om een beoordeelde develop-commit opnieuw te gebruiken, voert u
+   eerst de `--execute`-oefening op de 3.9.0-topcommit uit tegen uw fork; deze drukt beide SHA's af en
+   dezelfde commits kunnen worden gepusht:
+
+   ```bash
+   git push origin <stable-sha>:refs/heads/stable/v3 <develop-sha>:refs/heads/develop
+   ```
+
+4. Bescherm `stable/v3` en `develop` (regelsets + samenvoegwachtrij) voordat de eerste PR wordt geïntegreerd.
+5. De slapende workflows worden geactiveerd zodra de branches bestaan: `forward-port.yml` (push naar
+   `stable/v3`), `validate-stable-pr.yml` (PR's naar `stable/v3`) en `nightly-v4-build.yml`
+   (bouwt `develop`). Stel vóór de ingebruikname het repositorygeheim `secrets.FORWARD_PORT_TOKEN` in (zodat CI wordt uitgevoerd voor
+   forward-port-PR's); nachtelijke publicatie blijft uitgeschakeld totdat de eigenaar de repositoryvariabele
+   `vars.NIGHTLY_PUBLISH` instelt op `true` en npm Trusted Publishing
+   `nightly-v4-build.yml` accepteert. Kanaalresolutie wordt afgehandeld door `scripts/release/dist-tag.mjs`, dezelfde
+   resolver die door `npm-publish.yml` wordt gebruikt.
+6. Controleer de kanalen: `npm view omniroute dist-tags --json` toont `latest` = 3.9.0 en geen
+   `next` / `nightly` totdat v4 wordt gepubliceerd.
+7. Terugdraaien, indien nodig: `git push origin --delete refs/heads/stable/v3 refs/heads/develop`
+   en `npm dist-tag add omniroute@3.8.59 latest`.
 
 ---
 
@@ -397,16 +477,16 @@ Als een release een kritiek probleem heeft:
 - Commit nooit rechtstreeks naar `main`
 - Gebruik nooit `git push --force` naar `main`- of `release/*`-branches
 - Sla Husky-hooks nooit over (`--no-verify`)
-- Commit nooit geheimen, inloggegevens of `.env`-bestanden
+- Commit nooit geheimen, aanmeldgegevens of `.env`-bestanden
 - De dekking moet ≥60/60/60/60 blijven (statements/regels/functies/branches)
 - Voeg altijd tests toe of werk ze bij wanneer je productiecode wijzigt in `src/`, `open-sse/`, `electron/` of `bin/`
 
 ## Geautomatiseerde synchronisatiecontrole
 
-Voer de synchronisatiecontrole voor documentatie lokaal uit voordat je een PR opent:
+Voer de synchronisatiecontrole voor de documentatie lokaal uit voordat je een PR opent:
 
 ```bash
 npm run check:docs-sync
 ```
 
-CI voert deze controle ook uit in `.github/workflows/ci.yml` (lint-job).
+CI voert deze controle ook uit in `.github/workflows/ci.yml` (lint-taak).

@@ -4,802 +4,798 @@
 
 ---
 
-OmniRoute uchta alohida, ammo o‘zaro bog‘liq chidamlilik mexanizmiga ega. Ularning har biri turli qamrov va maqsadga ega. Marshrutlash xatti-harakatini nosozliklardan tozalashda ularni bir-biridan ajratib ko‘ring.
+OmniRoute uchta alohida, lekin bir-biriga bog'liq bo'lgan moslashuvchanlik mexanizmiga ega. Har birining maqsadi va doirasi boshqacha. Marshrutlash xatti-harakatlarini tuzatishda ularni alohida saqlang.
 
-![3 qatlamli chidamlilik modeli](../diagrams/exported/resilience-3layers.svg)
+![3-layer resilience model](../diagrams/exported/resilience-3layers.svg)
 
 > Manba: [diagrams/resilience-3layers.mmd](../diagrams/resilience-3layers.mmd)
 
-## 1. Provayder avtomatik uzgichi
+> **Moslashuvchanlikni almashtirish uchun Env-vs-boshqaruv paneli ustunligi.** Qo'shilishga chidamlilik muhitdan — `QUOTA_PREFLIGHT_CUTOFF_ENABLED`, `PROVIDER_COOLDOWN_ENABLED`, `STREAM_RECOVERY_ENABLED`, `STREAM_RECOVERY_MIDSTREAM_ENABLED`, `STREAM_THROUGHPUT_WATCHDOG_ENABLED` — o'zgartiriladi faqat _default_ (`DEFAULT_RESILIENCE_SETTINGS`, `src/lib/resilience/settings.ts`) bilan ta'minlaydi. Mantiqiy qiymat `resilienceSettings` da saqlanib qoldi (Dashboard →** Sozlamalar → Resilience** / `PATCH /api/resilience`, `key_value` da saqlanadi) env qiymatini yutadi: normallashtirish (`toBoolean`, `src/lib/resilience/settings/normalize.ts`) mavjud bo'lganda saqlangan mantiqiy qiymatni saqlaydi. Boshqaruv paneli allaqachon saqlangan `false` bo'lgan joylashtirishda bunday env var ni `true` ga o'rnatish, shuning uchun hech narsani o'zgartirmaydi — almashtirish tugmachasini aylantiradi** Sozlamalar → Resilience** (yoki saqlangan maydonni tozalang) o'rniga.
 
-**Qamrovi:** butun provayder (masalan, `glm`, `openai`, `anthropic`).
+## 1. Provayder avtomatik uzgichi (Circuit Breaker)
 
-**Maqsadi:** yuqori oqim/xizmat darajasida qayta-qayta ishlamayotgan provayderga trafik yuborishni to‘xtatish.
+**Qamrov:** butun provayder (masalan, `glm`, `openai`, `anthropic`).
 
-**Amalga oshirilishi:**
+**Maqsad:** yuqori oqim/xizmat darajasida takroran ishlamayotgan provayderga trafik yuborishni to'xtatish.
+
+**Amalga oshirish:**
 
 - Asosiy klass: `src/shared/utils/circuitBreaker.ts`
 - Ulanish: `src/sse/handlers/chatHelpers.ts`, `src/sse/handlers/chat.ts`
-- Holat API’si: `GET /api/monitoring/health`
-- Qayta tiklash API’si: `POST /api/resilience/reset`
-- O‘ramlar: `open-sse/services/accountFallback.ts`
+- Holat API'si: `GET /api/monitoring/health`
+- Qayta tiklash API'si: `POST /api/resilience/reset`
+- O'ramlar (wrapper): `open-sse/services/accountFallback.ts`
 - DB jadvali: `domain_circuit_breakers`
 
 **Holatlar:**
 
-- `CLOSED` — odatiy trafikka ruxsat beriladi
-- `DEGRADED` — trafikka hali ham ruxsat beriladi, ammo provayderdagi ko‘paygan nosozliklar kuzatib boriladi
-- `OPEN` — provayder vaqtincha bloklanadi; kombinatsiyalangan marshrutlash uni o‘tkazib yuboradi
-- `HALF_OPEN` — qayta tiklash kutish vaqti tugagan; sinov so‘roviga ruxsat beriladi
+- `CLOSED` — oddiy trafik ruxsat etiladi
+- `DEGRADED` — trafik hali ham ruxsat etiladi, lekin provayderda ko'paygan xatoliklar kuzatilmoqda; yetarli miqdordagi muvaffaqiyatli so'rovlar, amal qiladigan ulanish testi yoki oxirgi xatolik turi uchun eng uzun `OPEN` ushlab turish muddatidan keyin (uning `cooldownByKind` qiymati, aks holda `resetTimeout`, × `maxBackoffMultiplier`, kamida bitta cooldown) yangi xatolik yuz bermasa, `CLOSED` holatiga qaytadi
+- `OPEN` — provayder vaqtincha bloklangan; combo marshrutlash uni o'tkazib yuboradi
+- `HALF_OPEN` — qayta tiklanish vaqti o'tgan; sinov (probe) so'roviga ruxsat beriladi
 
-**Sozlanadigan standart qiymatlar (`open-sse/config/constants.ts`, Boshqaruv paneli → Sozlamalar → Chidamlilik bo‘limida mavjud):**
+**Sozlanadigan standart qiymatlar (`open-sse/config/constants.ts`, Boshqaruv paneli → Sozlamalar → Chidamlilik sahifasida ko'rsatiladi):**
 
-| Klass      | Pasayish chegarasi   | Ochilish chegarasi | Qayta tiklash kutish vaqti |
-| ---------- | -------------------- | ------------------ | -------------------------- |
-| OAuth      | 5 ta nosozlik        | 8 ta nosozlik      | 60s                        |
-| API kaliti | 7 ta nosozlik        | 12 ta nosozlik     | 30s                        |
-| Mahalliy   | hisoblab chiqariladi | 2 ta nosozlik      | 15s                        |
+| Sinf    | DEGRADED bo'ladi | Ochiladi   | Qayta tiklanish vaqti |
+| ------- | ---------------- | ---------- | --------------------- |
+| OAuth   | 5 xatolik        | 8 xatolik  | 60s                   |
+| API-key | 7 xatolik        | 12 xatolik | 30s                   |
+| Local   | hosilaviy        | 2 xatolik  | 15s                   |
 
-`degradationThreshold` provayder qachon `DEGRADED` holatiga o‘tishini boshqaradi; `failureThreshold` esa u qachon ochilishi va o‘tkazib yuborilishini boshqaradi. Mahalliy provayder profillari hali Chidamlilik sozlamalari sahifasida mavjud emas.
+`degradationThreshold` provayder qachon `DEGRADED` holatiga kirishini boshqaradi; `failureThreshold` esa qachon ochilishi va o'tkazib yuborilishini belgilaydi. Mahalliy (Local) provayder profillari hozircha Chidamlilik sozlamalari sahifasida ko'rsatilmaydi.
 
-**Ishga tushirish kodlari:** faqat provayder darajasidagi `[408, 500, 502, 503, 504]` holatlari. Hisob darajasidagi xatolar (aksariyat 401/403/429 — ular sovitish yoki bloklash mexanizmiga tegishli) uchun avtomatik uzgichni ishga tushirmang.
+**Uzgich kodlari:** faqat provayder darajasidagi statuslar `[408, 500, 502, 503, 504]`. Hisob (account) darajasidagi xatoliklar uchun ishga TUSHMASLIGI kerak (ko'pchilik 401/403/429 xatoliklari cooldown yoki lockout mexanizmlariga tegishli).
 
-**Sust tiklanish:** `OPEN` muddati tugaganda, `getStatus()`, `canExecute()`, `getRetryAfterMs()` holatni `HALF_OPEN` holatiga yangilaydi. Fon taymeri talab qilinmaydi.
+**Dangasa tiklanish (lazy recovery):** `OPEN` muddati tugagach, `getStatus()`, `canExecute()`, `getRetryAfterMs()` holatni `HALF_OPEN` ga yangilaydi. Xuddi shu o'qishlar (va keyingi xatolik) eskirgan `DEGRADED` holatini `CLOSED` ga qaytaradi. Orqa fon taymeri kerak emas.
 
 ---
 
-### Ixtiyoriy global provayder sovitishi (vaqt oynasi to‘sig‘i)
+### Ixtiyoriy (opt-in) global Provayder Cooldown'i (oyna cheklovi)
 
-To‘rtinchi, **ixtiyoriy** qatlam (`PROVIDER_COOLDOWN_ENABLED`, standart holatda **o‘chirilgan**) ishlamayotgan provayderlar haqidagi so‘rovlararo xotirani
-`open-sse/services/providerCooldownTracker.ts` faylida saqlaydi va undan kombinatsiyalangan nishonlarni
-aniqlashda foydalanadi, shunda ketma-ket kombinatsiyalangan so‘rovlar hozirgina
-ishlamay qolgan provayderni qayta-qayta tekshirmaydi. Provayder darajasidagi yozuvlar `PROVIDER_PROFILES` vaqt oynasi to‘sig‘iga rioya qiladi:
+To'rtinchi, **ixtiyoriy** qavat (`PROVIDER_COOLDOWN_ENABLED`, sukut bo'yicha **o'chiq**) ishlamayotgan provayderlar haqida so'rovlararo xotirani `open-sse/services/providerCooldownTracker.ts` faylida saqlaydi; combo maqsadlarini aniqlash shu xotiraga murojaat qiladi, shunda ketma-ket combo so'rovlar hozirgina ishlamay qolgan provayderni qayta-qayta tekshirib o'tirmaydi. Provayder darajasidagi yozuvlar `PROVIDER_PROFILES` oyna chekloviga bo'ysunadi:
 
-| Profil     | ishga tushish chegarasi (`providerFailureThreshold`) | vaqt oralig‘i (`providerFailureWindowMs`) | sovitish muddati (`providerCooldownMs`) |
-| ---------- | ---------------------------------------------------: | ----------------------------------------: | --------------------------------------: |
-| OAuth      |                                                 `10` |                                   `15min` |                                  `5min` |
-| API kaliti |                                                 `15` |                                   `30min` |                                 `10min` |
+| Profil  | ishga tushadi (`providerFailureThreshold`) | ichida (`providerFailureWindowMs`) | soviydi (`providerCooldownMs`) |
+| ------- | -----------------------------------------: | ---------------------------------: | -----------------------------: |
+| OAuth   |                                       `10` |                            `15min` |                         `5min` |
+| API key |                                       `15` |                            `30min` |                        `10min` |
 
-Chegaradan past bo‘lsa, provayder **sovitilayotgan** deb hisoblanmaydi; muvaffaqiyatli
-urinish vaqt oynasini tozalaydi. Ulanish darajasidagi yozuvlar (`provider:connectionId`) uning o‘rniga
-eksponensial `minRetryCooldownMs → maxRetryCooldownMs` kechikishini saqlab qoladi. Qayta belgilashlar:
+Chegaradan past bo'lsa, provayder sovuyapti deb hisoblan**maydi**; muvaffaqiyatli so'rov oynani tozalaydi. Ulanish darajasidagi yozuvlar (`provider:connectionId`) buning o'rniga eksponensial `minRetryCooldownMs → maxRetryCooldownMs` backoff'ini saqlaydi. Qayta belgilashlar (override):
 `OMNIROUTE_PROVIDER_BREAKER_{OAUTH,API_KEY}_{FAILURE_THRESHOLD,FAILURE_WINDOW_MS,COOLDOWN_MS}`.
-Regressiyadan himoya: `tests/unit/provider-cooldown-window-gate.test.ts`.
+Regressiyadan himoya qiluvchi test: `tests/unit/provider-cooldown-window-gate.test.ts`.
 
-## 2. Ulanishning sovish davri
+## 2. Ulanishni sovutish
 
-**Qamrov:** bitta provayder ulanishi/hisobi/kaliti.
+**Qo'llash doirasi:** yagona provayder connection/account/key.
 
-**Maqsad:** ayni provayderning boshqa ulanishlari xizmat ko‘rsatishda davom etayotgan paytda bitta nosoz kalitni chetlab o‘tish.
+**Maqsad:** Xuddi shu provayder uchun boshqa ulanishlar xizmat qilishda davom etar ekan, bitta noto'g'ri kalitni o'tkazib yuboring.
 
-**Amalga oshirilishi:**
+**Amalga oshirish:**
 
-- Mavjud emas deb belgilash: `src/sse/services/auth.ts::markAccountUnavailable()`
-- Tanlash: ayni fayldagi `getProviderCredentials*`
-- Sovish davrini hisoblash: `open-sse/services/accountFallback.ts::checkFallbackError()`
+- Mavjud emas deb belgilang: `src/sse/services/auth.ts::markAccountUnavailable()`
+- Tanlash: bir xil faylda `getProviderCredentials*`
+- Sovutish vaqti: `open-sse/services/accountFallback.ts::checkFallbackError()`
 - Sozlamalar: `src/lib/resilience/settings.ts`
 
 **Har bir ulanish uchun maydonlar:**
 
-- `rateLimitedUntil` — sovish davri tugaydigan vaqt tamg‘asi
+- `rateLimitedUntil` — vaqt tamg'asi sovutish muddati tugaguncha
 - `testStatus: "unavailable"`
 - `lastError`, `lastErrorType`, `errorCode`
-- `backoffLevel` — eksponensial ortga chekinish hisoblagichi
+- `backoffLevel` — eksponensial orqaga qaytish hisoblagichi
 
-**Standart sovish davrlari:**
+**Standart sovutish vaqti:**
 
-- OAuth bazaviy qiymati: 5s
-- API-key bazaviy qiymati: 3s
-- API-key 429: yuqori oqimdagi `Retry-After`/tiklash sarlavhalari/tahlil qilinadigan tiklash matniga ustunlik beradi
-- Orqaga chekinish: `baseCooldownMs * 2 ** failureIndex`
+- OAuth bazasi: 5s
+- API kalitlari bazasi: 3s
+- API-kalit 429: yuqori oqim `Retry-After`/ reset headers/parseable reset matnini afzal ko'radi
+- Orqaga qaytish: `baseCooldownMs * 2 ** failureIndex`
 
-**Birdaniga ommaviy qayta urinishdan himoya:** bir vaqtdagi nosozliklar sovish davrini haddan tashqari uzaytirishi yoki `backoffLevel` qiymatini ikki marta oshirishining oldini oladi.
+**Har bir provayder uchun qayta urinish kechikishi.** Provayder tafsilotlari sahifasida a bor** Qayta urinish kechikish** tanlang (Avtomatik, 15 soniyadan 1 soatgacha). `resilienceSettings.providerQuotaOverrides[<providerId>].rateLimitCooldownSeconds` (1–21600, `PATCH /api/resilience` orqali) saqlaydi. Tezlik chegarasi xatosi yuqori oqimga qayta urinib ko‘rish haqida maslahat bermasa, bu qiymat provayder uchun miqyosdagi orqaga qaytish o‘rnini bosadi va `backoffLevel` 0 (`open-sse/services/rotationConfig.ts::overrideFor`) ga qaytaradi. Tezlik bilan cheklangan xatolik uchun ustunlik, birinchi navbatda eng yuqori: yuqori oqimdagi qayta urinish bo‘yicha maslahat, so‘ngra har bir ulanish uchun `providerSpecificData.rotationOverrides.rateLimitResetSeconds`, keyin har bir provayder uchun qayta urinish kechikishi, keyin env `OMNIROUTE_ROTATION_RATE_LIMIT_RESET_SECONDS`, so‘ngra masshtabli qaytarilish. Maydonni avtomatik olib tashlaydi. Bu faqat tarif chegarasi sababiga ta'sir qiladi, hech qachon terminal holatlariga ta'sir qilmaydi.
 
-**Yakuniy holatlar (sovish davrlari EMAS):**
+**Momaqaldiroqqa qarshi qorovul:** Sovutish muddatini haddan tashqari uzaytirish yoki `backoffLevel` ikki baravar oshirishdan bir vaqtda nosozliklarni oldini oladi.
 
-- `banned` — taqiqlangan kalit so‘zi / hisob bloklanishini aniqlash orqali o‘rnatiladi ([BAN_DETECTION](../security/BAN_DETECTION.md) ga qarang), shuningdek, yuqori oqimdagi har bir so‘rov bo‘yicha ketma-ket uchta rad javobidan so‘ng (`request_rejected`, masalan, Anthropic OAuth 403 "So‘rovga ruxsat berilmagan" — `open-sse/services/requestRejectedStreak.ts`); bitta rad javobi ulanishni faqat sovish holatiga o‘tkazadi
-- `expired` (cheklangan qayta urinishlardan so‘ng yakuniy holatga o‘tadi — eksponensial orqaga chekinish bilan `EXPIRED_RETRY_MAX = 3` — shunda vaqtinchalik OAuth xatolari hisob butunlay o‘chirilishidan oldin o‘z-o‘zidan tiklanishi mumkin)
+**429-sonli parallellik chegarasi orqaga qaytish zinapoyasiga chiqmaydi.** Tanasi parallellik chegarasi haqida xabar bergan `429` (“juda ko‘p bir vaqtda so‘rovlar”, “parallellik chegarasi”, “parallel so‘rov chegarasi”, GLM `并发数过高`) hisob sog‘lom, lekin band ekanligini bildiradi. `checkFallbackError()` `concurrency_limited` sababini qaytaradi: hozir keyingi ulanishga o‘tish, uni sobit `CONCURRENCY_LIMIT_COOLDOWN_MS` (1s) yoki yuqori oqimga qayta urinib ko‘rish uchun sovitish, `backoffLevel` o‘zgarmagan holda saqlash va `skipProviderBreaker` o‘rnatish. Aniq kvota tanasi hali ham g'alaba qozonadi, shuning uchun kvota tartibiga mos keladigan organ kvota hukmi bo'lib qoladi. Aniqlash: `src/shared/utils/classify429.ts` ichida `looksLikeConcurrencyLimit()` ; hukm: `open-sse/services/accountFallback/concurrencyLimit429.ts`. `classify429()` (to'xtatuvchining `FailureKind`) o'zgarmagan va hali ham bu jismlar uchun `rate_limit` o'qiydi.
+
+**Stream kontenti stendlari hisobni sovutmaydi.** Kontent-stall kuzatuvchisi (`open-sse/utils/streamHandler.ts`) o‘z vaqtida model chiqishini jo‘natmagan oqimdan voz kechsa, `markAccountUnavailable()` ulanishdagi xatolikni qayd qiladi, lekin sovutish vaqti o‘rnatmaydi: to‘xtash joyi o‘sha so‘rovga tegishli bo‘lib, ko‘pincha hali chiqmagan holda uzoq fikrlash davri. Operatorlar `resilienceSettings.streamStallCooldown.enabled` (standart `false`) bilan qayta kirishlari mumkin.
+
+**`p2c` hisobini tanlash uchun kechikish signali.** Har bir jo'natilgan urinish o'zining birinchi baytgacha bo'lgan vaqtini va har bir ulanish (va har bir ulanish + modeli) natijasini xotiradagi siljish oynasida qayd etadi: 15 daqiqa ichida oxirgi 20 ta namuna (`open-sse/services/connectionLatencyTracker.ts`, `safeLogEvents()` dan `src/sse/handlers/chatHelpers.ts` da yozib olingan). `resilienceSettings.p2cLatency.weight` `0` yuqori bo'lsa (diapazon 0-20, standart `0` = o'chirilgan), `src/sse/services/auth.ts` `compareP2CConnections()` juftlikning har bir nomzodiga `weight` ballgacha qo'shadi. Buning yarmi kechikishdan tezroq nomzodga nisbati (ikki baravar sekin to'liq yarmini oladi) va yarmi aylanish xatosi darajasidan kelib chiqadi. Ushbu atama faqat ikkala nomzodda kamida 3 ta namunaga ega bo'lgan taqdirdagina qo'llaniladi, shuning uchun yangi hisoblar jazolanmaydi va uning chegarasi kvota bloklangan va kvota tugagan jazolardan past bo'ladi. U o'ziga xos sxemani qo'shmaydi: muvaffaqiyatsiz hisoblar hali ham sovutish, blokirovka va to'xtatuvchi qatlamlar tomonidan boshqariladi. Uni `PATCH /api/resilience` `{ "p2cLatency": { "weight": 10 } }` bilan o'rnating.
+
+**Fikrlash ramkalari kontent-to'xtash byudjetini qayta ishga tushiradi.** Fikrlash modeli o'zining birinchi ko'rinadigan tokenidan oldin bir necha daqiqa o'ylab ko'rishi mumkin: Claude fikrlash matni bo'sh bo'lishi mumkin bo'lgan `thinking_delta` freymlarni uzatadi va API javoblari birin-ketin fikrlash elementini uzatadi. `isReasoningProgressFrame()` (`open-sse/utils/streamReadiness.ts`) bu kadrlarni taniydi va qo‘riqchi navbatni bekor qilish o‘rniga har birida o‘z byudjetini qayta ishga tushiradi. Ular hali ham namunaviy chiqish emas, shuning uchun faqat fikrlash bilan tugaydigan burilish hali ham bo'sh deb xabar qilinadi va fikrlashni to'xtatuvchi va faqat yurak urishlarini yuboradigan burilish hali ham kuzatuvchini qo'zg'atadi.
+
+Kiro ning bo'sh bo'lmagan imzosi bo'lgan ikkilik `reasoningContentEvent` freymlari bu fikrlash faoliyatini bajaruvchi orqali bo'sh `reasoning_content` deltasi sifatida saqlaydi. Imzo yuborilmaydi. Metadata, to'liq bo'lmagan ramkalar va bo'sh imzolar kontent byudjetini qayta ishga tushirmaydi; mustaqil faol oqim vaqti va mijozni bekor qilish hali ham amal qiladi (`open-sse/executors/kiro/reasoning.ts`).
+
+**Terminal holatlari (NOT sovutish vaqti):**
+
+- `banned` — taqiqlangan kalit so'z / hisobni taqiqlashni aniqlash orqali o'rnatiladi (qarang: [BAN_DETECTION](../security/BAN_DETECTION.md) ). Yuqori oqim boshiga so‘rovni rad etish (`request_rejected`, masalan Anthropic OAuth 403 “So‘rovga ruxsat yo‘q”) hech qachon o‘rnatilmaydi: ular har bir ulanish va model bo‘yicha hisoblanadi va `REQUEST_REJECTED_MAX_COOLDOWN_MS` (1 soat) bilan chegaralangan o‘sib borayotgan sovutish vaqti bilan ushbu modelni aylanishdan olib tashlaydi yoki hech qanday model ma’lum bo‘lmasa, ulanishni sovutadi — `open-sse/services/requestRejectedStreak.ts`
+- `expired` (cheklangan takroriy urinishlardan so‘ng terminalga o‘tish — `EXPIRED_RETRY_MAX = 3` eksponensial orqaga qaytish — bilan, shuning uchun vaqtinchalik OAuth xatolar hisob butunlay o‘chirilgunga qadar o‘z-o‘zidan tuzalishi mumkin)
 - `credits_exhausted`
 
-Bu holatlar hisob ma’lumotlari o‘zgarmaguncha yoki operator ularni tiklamaguncha saqlanib qoladi. Yakuniy holatlarni vaqtinchalik sovish holati bilan almashtirmang.
+Hisob ma'lumotlari o'zgarmaguncha yoki operator ularni qayta tiklamaguncha ular saqlanib qoladi. Vaqtinchalik sovutish holatiga ega terminal holatlarini qayta yozmang.
 
-**Kechiktirilgan tiklanish:** `rateLimitedUntil` vaqti o‘tgach, ulanish yana foydalanishga yaroqli bo‘ladi. Muvaffaqiyatli ishlatilganda `clearAccountError()` barcha xato maydonlarini tozalaydi.
+**Dangasa tiklanish:** `rateLimitedUntil` o'tganda, ulanish yana yaroqli bo'ladi. Muvaffaqiyatli foydalanishda `clearAccountError()` barcha xato maydonlarini tozalaydi.
 
-### Claude OAuth foydalanish devori: pastroq ustuvorlikdagi yo‘lak + seans cheklovini tiklash
+### Claude OAuth foydalanish devori: past ustuvor yo‘lak + seans chegarasini tiklash
 
-**Qamrov:** bitta Claude obunasi (OAuth) ulanishi. Har ikkala xususiyat ham **har bir
-ulanish uchun alohida yoqiladi** (Ulanishni tahrirlash → Claude bo‘limi → `providerSpecificData`
-ichidagi `lowPriorityMode` / `autoLimitReset`, ikkalasi ham standart holatda o‘chiq) va Claude
-Codeʼning `/low-priority` hamda `/limit-reset` buyruqlarini takrorlaydi (aloqa protokoli
-Claude Code 2.1.263 versiyasidan olingan).
-
-**Amalga oshirilishi:**
-
-- Holatlar mashinasi + javoblarni tasniflash: `open-sse/services/claudeLowPriority.ts`
-- Tiklash holati/so‘rovi mijozi: `open-sse/services/claudeLimitReset.ts`
-- Bajaruvchi huk (sarlavha kiritish + ayni hisobda qayta urinish): `open-sse/executors/base.ts::execute()`
-- Alohida yoqish holatini saqlash: `src/lib/providers/requestDefaults.ts::normalizeProviderSpecificData()`
-
-**Ishga tushirish sharti:** 5 soatlik foydalanish devori — sarlavhalarida
-`anthropic-ratelimit-unified-status: rejected` va hisob mos bo‘lganda
-`anthropic-ratelimit-unified-slow-offer: treatment` mavjud bo‘lgan `429`. Birinchi devor
-429 javobidan oldin hech narsa yuborilmaydi; birlashtirilgan sarlavhalarsiz keskin 429
-javobi odatiy sovish yo‘lidan o‘tadi.
-
-**Pastroq ustuvorlikdagi yo‘lak** (`lowPriorityMode`):
-
-- Devor 429 javobida bajaruvchi taklifni qabul qiladi va **ayni** hisob bilan
-  `anthropic-usage-limit: slow` sarlavhasini qo‘shib darhol qayta urinadi; yo‘lak e’lon
-  qilingan `anthropic-ratelimit-unified-reset` vaqtigacha (+60s imtiyozli davr) faol qoladi
-  va shu vaqt oralig‘idagi har bir so‘rov ushbu sarlavhani olib yuradi. Ushlab qolingan 429
-  javobi `handleChatCore` ga hech qachon yetib bormaydi, shu sababli ulanish sovish
-  holatiga **o‘tkazilmaydi** va boshqasiga almashtirilmaydi.
-- Keyingi javoblardagi `anthropic-ratelimit-unified-slow-status`: `active` / `not_needed`
-  yo‘lakni saqlab qoladi; `slot_busy` (429) yoki `529` serverning
-  `anthropic-ratelimit-unified-slow-retry-after` muddatini kutadi (standart 20s, 5–600s
-  oralig‘ida cheklanadi, ±30% tasodifiy og‘ish) va
-  `anthropic-ratelimit-unified-slow-max-wait` bilan cheklangan holda qayta urinadi
-  (standart 20 min, 1 min–6 h oralig‘ida cheklanadi) — bu muddatdan keyin yo‘lak tugaydi
-  va 10 daqiqalik sovish qayta qabul qilishni bloklaydi. Kutish vaqti, shuningdek,
-  so‘rovning yuqori oqimni boshlash taymautidan (`resolveFetchStartTimeout`, standart
-  10 min) qolgan vaqt minus 5 s zaxira bilan cheklanadi: bu cheklovsiz standart
-  20 daqiqalik maksimal kutish so‘rovning o‘zidan uzoq davom etar va uyqu kutishning
-  o‘rtasida bekor qilinib, odatiy `max_wait` yakuni + sovish o‘rniga `TimeoutError`
-  yuzaga kelishiga sabab bo‘lar edi.
-- `weekly_limit` / `budget_exhausted` / `off` / `ineligible`, 5h oynaning almashishi yoki
-  `ineligible` + `anthropic-ratelimit-unified-overage-in-use: true` (pulli ortiqcha
-  foydalanish endi devorni qoplagani sababli, har qanday holatda uni `extra_usage`
-  sifatida tugatadi) yo‘lakni yakunlaydi; keyin javob odatiy sovish yo‘liga o‘tadi.
-  `budget_exhausted` e’lon qilingan budjet tiklanishigacha (≤ 8 kun) eslab qolinadi.
-- Devor tekshiruvi bajaruvchining 400 sababli bir urinish doirasidagi qayta urinishlaridan
-  (kontekstni tahrirlash, fikrlash/sa’y-harakat chegaralari, parametrlarni avtomatik
-  o‘rganish) keyin bajariladi, shu sababli faqat ushbu qayta urinishlardan birida paydo
-  bo‘ladigan devor 429 javobi ham sovish yo‘liga yetib borish o‘rniga ushlab qolinadi.
-- Holat har bir ulanish uchun xotirada saqlanadi (qayta ishga tushirish qayta qabul qilish
-  uchun bitta qo‘shimcha devor 429 javobini talab qiladi).
-
-**Seans cheklovini tiklash** (`autoLimitReset`, ikkalasi ham yoqilganida yo‘lakdan oldin sinab ko‘riladi):
-
-- `GET https://api.anthropic.com/api/oauth/usage?at_wall=1&skip_spend=1` → `juniper_tide`
-  bloki; `arm: "reset"` va `available: true` bo‘lganda,
-  `{ "program": "juniper_tide" }` bilan
-  `POST https://api.anthropic.com/api/organizations/{orgUUID}/reset_rate_limits`
-  (`providerSpecificData.organizationUUID` dan tashkilot UUIDsi, boshlang‘ich zaxira
-  variant bilan).
-- `result: reset|not_limited` → so‘rov to‘liq tezlikda qayta uriniladi (sekinlik sarlavhasisiz).
-  `already_used` / `not_offered` `next_available_at` qiymatini xotirada saqlaydi (standart
-  bir hafta); har qanday nosozlik 15 daqiqalik orqaga chekinishga olib keladi. Tiklash
-  haftada bir marta amalga oshiriladi va baribir haftalik cheklovga kiradi.
-
-Regressiyadan himoya testlari: `tests/unit/claude-low-priority-mode.test.ts`,
-`tests/unit/claude-limit-reset.test.ts`, `tests/unit/claude-low-priority-executor.test.ts`.
-
-### Seansga bog‘liqlik (#7274)
-
-**Qamrov:** **istalgan** provayder uchun bitta ulanishga biriktirilgan bitta mijoz seansi (`X-Session-Id` / `x-codex-session-id` / `x-omniroute-session` sarlavhasi).
-
-**Maqsad:** ko‘p bosqichli agentni (Claude Code, aider, maxsus agentlar) so‘rovlar davomida bir xil hisobda saqlash, shu orqali hisoblararo kontekst yo‘qolishini va har bir hisob bo‘yicha sessiya holatiga ega provayderlarda takroriy sovuq ishga tushish 429 xatolarini kamaytirish.
+**Qo'llash doirasi:** bitta Claude obuna (OAuth) ulanishi. Ikkala xususiyat ham** har bir ulanish uchun ro'yxatdan o'tish** (Ulanish → Claude bo‘limi → `lowPriorityMode` / `autoLimitReset` in `providerSpecificData`, ikkalasi ham sukut bo‘yicha o‘chirilgan) va Claude Codening `/low-priority` va `/limit-reset` buyruqlarini aks ettiring ( Claude Code 2.1.263 dan olingan simli shartnoma).
 
 **Amalga oshirish:**
 
-- TTL aniqlash: `src/sse/services/sessionAffinityPin.ts::resolveSessionAffinityTtlMs()`
-- Biriktirishni tanlash/yaratish: `src/sse/services/sessionAffinityPin.ts::selectSessionAffinityConnection()`
-- Sarlavhani ajratib olish (umumiy, istalgan provayder): `src/sse/services/auth.ts::extractSessionAffinityKey()`
-- Saqlanadigan biriktirish jadvali: `sessionAccountAffinity` (`src/lib/db/sessionAccountAffinity.ts`)
-- Sozlama: `sessionAffinityTtlMs` (ms dagi global TTL, `0` o‘chiradi) — `src/lib/db/settings.ts`. Faqat Codex uchun mo‘ljallangan `codexSessionAffinityTtlMs` nomidan `124_generic_session_affinity_ttl.sql` migratsiyasi orqali o‘zgartirilgan; u avval sozlangan har qanday Codex TTL qiymatini yangi standart qiymat sifatida ko‘chiradi.
+- Davlat mashinasi + javob tasnifi: `open-sse/services/claudeLowPriority.ts`
+- status/claim mijozini tiklash: `open-sse/services/claudeLimitReset.ts`
+- Ijrochi kancasi (sarlavha kiritish + bir xil hisobni qayta urinish): `open-sse/executors/base.ts::execute()`
+- Ro'yxatdan o'tishda qat'iylik: `src/lib/providers/requestDefaults.ts::normalizeProviderSpecificData()`
 
-#7274 dan oldin `resolveSessionAffinityTtlMs()` `codex` dan boshqa barcha provayderlar uchun darhol `0` qaytarar edi, shu sababli biriktirish mexanizmi va sarlavhalarni ajratib olish allaqachon provayderga bog‘liq bo‘lmagan bo‘lsa ham, TTL sozlamasi (va sessiya sarlavhalari) boshqa joylarda hech qanday ta’sir ko‘rsatmas edi. Tuzatish ushbu erta qaytishni olib tashladi; endi TTL global miqyosda `0` dan yuqori qiymatga o‘rnatilgach, barcha provayderlarga bir xil tarzda qo‘llanadi.
+**Trigger:** 5 soatlik foydalanish devori — a `429`, uning sarlavhalari `anthropic-ratelimit-unified-status: rejected` o'z ichiga oladi va agar hisob mos bo'lsa, `anthropic-ratelimit-unified-slow-offer: treatment`. O'sha birinchi devordan oldin hech narsa yuborilmaydi 429; birlashtirilgan sarlavhalarsiz portlash 429 oddiy sovutish yo'lidan o'tadi.
 
-Sessiya yaqinligini belgilovchi uchta sarlavha hech qachon yuqori oqimga uzatilmaydi — ijrochilar mijoz sarlavhalarini to‘g‘ridan-to‘g‘ri uzatish o‘rniga o‘zlarining yuqori oqim sarlavhalarini boshidan yaratadi, shuning uchun bu faqat ichki korrelyatsiya identifikatori bo‘lib qoladi.
+**Pastki ustuvor yo'lak** (`lowPriorityMode`):
 
-### Boshqariladigan sessiya ulanishlarining eksklyuziv ijaralari
+- Devorda 429 ijrochi taklifni qabul qiladi va darhol qayta urinib ko'radi** bir xil** `anthropic-usage-limit: slow` bilan hisob; qator e'lon qilingan `anthropic-ratelimit-unified-reset` (+ 60s grace)gacha faol qoladi va bu oynadagi har bir so'rov sarlavhani olib yuradi. Qabul qilingan 429 hech qachon `handleChatCore` etib bormaydi, shuning uchun ulanish** emas** sovutish rejimiga qo'ying va aylanmaydi.
+- keyingi javoblarda `anthropic-ratelimit-unified-slow-status` : `active` / `not_needed` chiziqni ushlab turing; `slot_busy` (429) yoki `529` serverning `anthropic-ratelimit-unified-slow-retry-after` kuting (standart 20s, qisqich 5–600s, ± 30% jitter) va `anthropic-ratelimit-unified-slow-max-wait` bilan chegaralangan (standart 20 daqiqa, qisqich 1 min–6 soat) — yo‘lak tugashi va sovishini kuting. Kutish, qo'shimcha ravishda, so'rovning o'zining yuqoriga yo'nalishda ishga tushish vaqti (`resolveFetchStartTimeout`, sukut bo'yicha 10 min) minus 5 s chegarasi bilan chegaralanadi: bu cheklovsiz 20 daqiqalik sukut bo'yicha maksimal kutish so'rovdan oshib ketadi va kutish kutishning o'rtalarida to'xtatiladi, + esa cooloff o'rniga `max_wait` o'rniga `TimeoutError` grace.
+- `weekly_limit` / `budget_exhausted` / `off` / `ineligible`, 5 soatlik oynani ag'darish yoki `ineligible` + `anthropic-ratelimit-unified-overage-in-use: true` (bu har qanday holatda `extra_usage` sifatida tugaydi, chunki to'langan ortiqcha to'lov endi devorni qoplaydi) chiziqni tugatadi; keyin javob normal sovutish yo'liga oqib o'tadi. `budget_exhausted` e'lon qilingan byudjetni tiklashgacha eslab qoladi (≤ 8 kun).
+- Devor tekshiruvi ijrochining 400 ta intra-urinishlaridan (kontekstni tahrirlash, thinking/effort qisqichlari, parametrlarni avtomatik o'rganish) so'ng amalga oshiriladi, shuning uchun 429-sonli devor sovutish yo'liga etib borish o'rniga, faqat shu qayta urinishlardan birida yuzalarni ushlab turadi.
+- Holat har bir ulanish uchun xotirada (qayta ishga tushirish uchun yana bitta devor 429 turadi).
 
-**Qamrov:** bitta faol boshqariladigan HTTP mijoz/sessiya bitta mos OmniRoute ulanishiga egalik qiladi.
+**Seans chegarasini tiklash** (`autoLimitReset`, ikkalasi ham yoqilgan bo'lsa, chiziqdan oldin harakat qildi):
 
-**Maqsad:** so‘rovlar davomida qat’iy marshrutlash chegarasiga muhtoj mijozlar uchun bardavom eksklyuziv ulanish egaligini ta’minlash. Bu yumshoq uzluksizlik afzalligi bo‘lgan sessiya yaqinligidan farq qiladi: eksklyuziv ijara hayot sikli holatini SQLite’da saqlaydi, faol egalar va faol ulanishlarning global yagonaligini ta’minlaydi hamda provayderga yuborishdan oldin eskirgan avlodni rad etadi.
+- `GET https://api.anthropic.com/api/oauth/usage?at_wall=1&skip_spend=1` → `juniper_tide` bloki; qachon `arm: "reset"` va `available: true`, `POST https://api.anthropic.com/api/organizations/{orgUUID}/reset_rate_limits` bilan `{ "program": "juniper_tide" }` (tashkilot UUID dan `providerSpecificData.organizationUUID`, bootstrap fallback).
+- `result: reset|not_limited` → so'rov to'liq tezlikda qayta urinib ko'riladi (sekin sarlavha yo'q). `already_used` / `not_offered` memoise `next_available_at` (standart bir hafta); har qanday nosozlik 15 daqiqada to'xtaydi. Qayta o'rnatish haftada bir marta amalga oshiriladi va hali ham haftalik chegaraga kiradi.
 
-Bu imkoniyat har bir API kaliti uchun ixtiyoriy ravishda yoqiladi. Boshqariladigan kalit `lease:exclusive` qamroviga va aniq ko‘rsatilgan, bo‘sh bo‘lmagan `allowedConnections` ro‘yxatiga ega bo‘lishi kerak. Istalgan HTTP mijoz hayot sikli endpointidan foydalanishi mumkin; mijoz nomi, user-agent, provayder, OAuth usuli yoki model talab qilinmaydi. Ijara modelga emas, ulanishga egalik qiladi, shu sababli ulanish odatdagi mezonlarga muvofiq qolsa, modelning o‘zgarishi bog‘lanishni saqlab qoladi. Model, kvota, salomatlik holati, sovish davri va ruxsat etilganlar ro‘yxatining odatiy qoidalari o‘z kuchida qoladi hamda ayni avlodni boshqa bo‘sh va mos ulanishga o‘tkazishi mumkin.
+Regressiya himoyachilari: `tests/unit/claude-low-priority-mode.test.ts`, `tests/unit/claude-limit-reset.test.ts`, `tests/unit/claude-low-priority-executor.test.ts`.
 
-Hayot sikli `acquire`, `renew` va `release` JSON amallariga ega `POST /api/v1/session-leases` orqali boshqariladi. Boshqariladigan inferensiya so‘rovlarida shaffof bo‘lmagan `X-OmniRoute-Lease-Owner` qiymati va aniq `X-OmniRoute-Lease-Generation` taqdim etiladi. Ega identifikatori `vlo_` dan keyin keladigan 43 ta base64url belgisidan iborat; faqat uning SHA-256 xeshi saqlanadi. Har bir yakuniy jo‘natish chegarasi autentifikatsiya qilingan API kaliti ID sini va faol ulanish ID sini ham bog‘laydi. Ijarani boshqarish sarlavhalari jurnallardan, saqlanadigan so‘rov oniy nusxalaridan va yuqori oqim ijrochisi sarlavhalaridan olib tashlanadi.
+### Bank o'rnatilgan tiklashlarni avtomatik qo'llash
 
-Agar odatiy marshrutlashda mos boshqariladigan nomzodlar mavjud bo‘lsa-yu, ammo har bir bo‘sh nomzod begona faol ijara bilan band bo‘lsa, OmniRoute HTTP `429`, lease-capacity-unavailable kodi, sig‘imni kutish holati va eng yaqin tegishli amal qilish muddati tugashidan hisoblangan chegaralangan `Retry-After` qiymatini qaytaradi. Moslikning odatiy tarzda bo‘sh bo‘lishi ijara ziddiyati hisoblanmaydi va mavjud marshrutlash xatosi semantikasini saqlab qoladi.
+**Qo'llash doirasi:** Codex va Claude obuna (OAuth) ulanishlari.** Ro‘yxatdan o‘tish** : `bankedResetAutoApply` sozlamasi oʻchirilgan va sukut boʻyicha `dry-run` rejimida (Sozlamalar → AI → Banklangan qayta oʻrnatishlarni avtomatik qoʻllash).
 
-Tegishli mexanizmlar alohida bo‘lib qoladi:
+**Maqsad:** Operatorning Provayder chegaralari sahifasida “Qabul qilish” tugmasini bosishini kutish o‘rniga, hisob foydalanish devoriga tushganda, bank o‘rnatilgan resetlarni mustaqil ravishda sarflang.
 
-- OAuth sessiyalarining bandligi OAuth hisoblari uchun jarayon doirasidagi yumshoq taqsimotdir.
-- Hisob semaforlari so‘rovlar parallelligi uchun ruxsatlar beradi va so‘rov yakunlanganda tugaydi.
-- Boshqariladigan sessiyalarning eksklyuziv ijaralari — bu avlod chegarasiga ega bardavom hayot sikli egaligidir.
+| Kredit turi (`creditTypes`) | Qaytarilgan narsa                                   | Qayerda yuradi                                                              |
+| --------------------------- | --------------------------------------------------- | --------------------------------------------------------------------------- |
+| `codexCredits`              | Codex kreditlarni tiklash                           | fon ishi, har 60 soniyada                                                   |
+| `claudeCredits`             | Claude bank grantlari (`GRANT` kreditlari)          | fon ishi, har 60 soniyada                                                   |
+| `claudeSessionReset`        | Claude haftalik sessiya limitini tiklash (yuqorida) | so'rov yo'li, har bir hisob uchun almashtirish bilan bir xil siyosat orqali |
+
+**Amalga oshirish:**
+
+- Sof qaror (har ikki yo'l uchun bir qoida o'rnatilgan): `src/lib/usage/bankedResetPolicy.ts::decideBankedReset()`
+- Asosiy ish: `src/lib/services/bankedResetAutoApply.ts` ( `src/instrumentation-node.ts` da boshlangan)
+- Claude so'rov yo'li darvozasi: `src/lib/usage/claudeSessionResetPolicy.ts`, `open-sse/services/claudeLimitReset.ts` da `setClaudeLimitResetPolicy()` orqali ro'yxatdan o'tgan
+- Tarix, bosh harflar va vebhuk: `src/lib/usage/bankedResetAudit.ts`
+- Tarix API: `GET /api/settings/banked-reset-auto/history?limit=50` (boshqaruv auth)
+
+**Qaror qabul qilish tartibi** (birinchi muvaffaqiyatsiz qoida - bu qayd etilgan sabab):
+
+1. Funksiya o‘chirilgan, kredit turi o‘chirilgan yoki hisob ko‘rib chiqilmagan (`accountScope` `all` / `selected` va har bir hisob uchun `connections` xaritasi).
+2. Ixtiyoriy UTC jadvalidan tashqari (`startHourUtc` > `endHourUtc` yarim tunni kesib o'tadi).
+3. Oxirgi 24 soatdagi bosh harflar: `maxPerAccountPerDay` (1), `maxPerDay` (3) va `minSpacingMinutes` (30) har qanday ikkita xarid o‘rtasida.
+4. Trigger: devor bilan o'ralgan `session` yoki `weekly` oynasi ( `getQuotaWindowStatus().reachedThreshold` emas, `isAccountQuotaExhausted()` dan o'qing, u faqat har bir sarflangan oynada hisob haqida xabar beradi) yoki kamida `expiringCreditMinUsedPercent` (50) ishlatgan hisobdagi kredit muddati `expiringCreditHours` (24) ichida tugaydi.
+5. Tabiiy qayta o'rnatish qo'riqchisi: devor bilan o'ralgan 5 soatlik oyna `sessionResetGuardMinutes` (90) ichida yoki haftalik devorli oyna `weeklyResetGuardHours` (12) ichida tiklanganda o'tkazib yuboring.
+6. Haftalik qavat: haftalik qolgan `weeklyFloorPercent` (10) dan past bo'lsa, 5 soatlik tiklashni o'tkazib yuboring.
+7. `last-resort` rejimi: bir xil provayderning boshqa bir hisob qaydnomasi ikkala oynada kamida `poolHeadroomPercent` (10) qolgan bo‘lsa, o‘tkazib yuboring. Muddati tugagan kredit tetiklari buni chetlab o'tadi.
+8. `dry-run` qatorni yozadi va hech narsani qaytarib bermaydi; `last-resort` va `eager` sotib olish.
+
+Yo'qolgan kvota ma'lumotlari to'lovni hech qachon ochmaydi: noma'lum tiklash vaqti yoki haftalik foydalanish o'tkazib yuboriladi.
+
+**Claude sessiyasini tiklash:** xususiyat o'chirilgan yoki `claudeSessionReset` o'chirilgan holda, har bir hisob uchun `autoLimitReset` o'tish-o'tish to'liq avvalgidek qaror qiladi. Ikkalasi ham yoqilgan bo‘lsa, bu xususiyat har bir hisob uchun almashtirishlarni almashtiradi: amaldagi hisob faqat siyosat ruxsat bergan taqdirdagina da’vo qilishi mumkin va `dry-run` rejimida hech qanday da’vo qo‘yilmaydi.
+
+**Xavfsizlik:** Ish har bir belgi uchun koʻpi bilan bitta kreditni sotib oladi, kreditlarni roʻyxatga olishdan oldin qaror qiladi (oʻtkazib yuborilgan hisob hech qachon roʻyxatga kiritilmaydi), `auto-reset:<connectionId>:<yyyy-mm-dd>:<n>` idempotency kalitlaridan foydalanadi va roʻyxatga olish muvaffaqiyatsiz tugashi yoki sotib olinganidan keyin 1 soat davomida hisobni oʻchirib qoʻyadi. Har bir sotib olish, muvaffaqiyatsizlik va quruq ishga tushirish qarori `audit_log` ga yoziladi (`action: "bankedReset.redeem"`, tokenlar yoki kredit identifikatorlari yo'q); qopqoqlar o'sha qatorlardan hisoblanadi, shuning uchun ular qayta ishga tushirilganda omon qoladilar. Muvaffaqiyatli xaridlar `provider.reset_redeemed` veb-hukni ham ishga tushiradi.
+
+Regressiya himoyachilari: `tests/unit/banked-reset-policy.test.ts`, `tests/unit/banked-reset-auto-apply.test.ts`, `tests/unit/claude-limit-reset-policy-gate.test.ts`, `tests/unit/banked-reset-history-route.test.ts`.
+
+### Seansga yaqinlik (#7274)
+
+**Qo'llash doirasi:** bitta ulanishga biriktirilgan bitta mijoz seansi (`X-Session-Id` / `x-codex-session-id` / `x-omniroute-session` sarlavhasi),** har qanday** provayder.
+
+**Maqsad:** Ko‘p burilishli agentni (Claude Code, yordamchi, maxsus agentlar) so‘rovlar bo‘yicha bir xil hisob qaydnomasida saqlang, bu esa har bir hisob seansi holatiga ega provayderlarda o‘zaro hisob kontekstini yo‘qotish va takroriy sovuq ishga tushirish 429-larni kamaytirish imkonini beradi.
+
+**Amalga oshirish:**
+
+- TTL o'lchamlari: `src/sse/services/sessionAffinityPin.ts::resolveSessionAffinityTtlMs()`
+- Pin selection/creation: `src/sse/services/sessionAffinityPin.ts::selectSessionAffinityConnection()`
+- Sarlavhani chiqarish (umumiy, har qanday provayder): `src/sse/services/auth.ts::extractSessionAffinityKey()`
+- Doimiy pin jadvali: `sessionAccountAffinity` (`src/lib/db/sessionAccountAffinity.ts`)
+- Sozlama: `sessionAffinityTtlMs` (global TTL ms, `0` o'chiradi) — `src/lib/db/settings.ts`. Oldin sozlangan har qanday Codex TTL yangi standart sifatida olib yuruvchi `124_generic_session_affinity_ttl.sql` migratsiyasi orqali faqat Kodeks `codexSessionAffinityTtlMs` nomidan qayta nomlandi.
+
+#7274 oldin `resolveSessionAffinityTtlMs()` `codex` tashqari har bir provayder uchun `0` ga qattiq bog'langan edi, shuning uchun TTL sozlamasi (va sessiya sarlavhalari) boshqa joyda hech qanday ta'sir ko'rsatmadi, garchi mahkamlash mexanizmi va sarlavhani chiqarish allaqachon provayder-agnostik bo'lsa ham. Tuzatish erta qaytishni olib tashladi; TTL endi global miqyosda `0` dan yuqori o'rnatilgan har bir provayder uchun bir xilda qo'llaniladi.
+
+Uchta seansga yaqinlik sarlavhalari hech qachon yuqoriga yo'naltirilmaydi — ijrochilari mijoz sarlavhalarini o'tkazish o'rniga noldan o'zlarining yuqori oqim sarlavhalarini yaratadilar, shuning uchun bu faqat ichki korrelyatsiya identifikatori bo'lib qoladi.
+
+### Eksklyuziv boshqariladigan seans ulanishi ijarasi
+
+**Qo'llash doirasi:** bitta faol boshqariladigan HTTP client/session bitta mos OmniRoute ulanishiga ega.
+
+**Maqsad:** so'rovlar bo'ylab qattiq marshrutlash panjarasiga muhtoj bo'lgan mijozlar uchun mustahkam eksklyuziv ulanish egaligini ta'minlash. Bu yumshoq uzluksizlik afzalligi boʻlgan seans yaqinligidan farq qiladi: eksklyuziv ijara SQLite hayot sikli holatini saqlab qoladi, global faol egasi va faol ulanish yagonaligini taʼminlaydi va provayder joʻnatilishidan oldin eskirgan avlodni rad etadi.
+
+Xususiyat har bir API kalitiga kirish. Boshqariladigan kalitda `lease:exclusive` doirasi va aniq bo‘sh bo‘lmagan `allowedConnections` ro‘yxati bo‘lishi kerak. Har qanday HTTP mijozi hayot aylanishining yakuniy nuqtasidan foydalanishi mumkin; mijoz nomi, foydalanuvchi-agent, provayder, OAuth usuli yoki modeli talab qilinmaydi. Lizing modelga emas, balki ulanishga ega, shuning uchun modelni o'zgartirish majburiylikni saqlab qoladi va ulanish odatda mos bo'lib qoladi. Oddiy model, kvota, sog'liq, sovutish muddati va ruxsat etilgan ro'yxat qoidalari ishonchli bo'lib qoladi va bir xil avlodni boshqa bepul ulanishga o'tkazishi mumkin.
+
+Hayotiy tsikl `acquire`, `renew` va `release` JSON amallari bilan `POST /api/v1/session-leases`. Boshqariladigan xulosa so'rovlari noaniq `X-OmniRoute-Lease-Owner` qiymatini va aniq `X-OmniRoute-Lease-Generation` taqdim etadi. Egasi `vlo_` dan keyin 43 ta base64url belgilaridan foydalanadi; faqat uning SHA-256 xeshi saqlanadi. Har bir oxirgi jo'natish panjarasi, shuningdek, autentifikatsiya qilingan API kaliti ID va faol ulanish ID bilan bog'lanadi. Ijara boshqaruvi sarlavhalari jurnallardan, saqlangan soʻrov suratlari va yuqoridagi ijrochi sarlavhalaridan olib tashlanadi.
+
+Agar oddiy marshrutda muvofiq boshqariladigan nomzodlar bo‘lsa, lekin har bir bepul nomzod xorijiy faol ijaraga ega bo‘lsa, OmniRoute HTTP `429`, ijara sig‘imi mavjud emas kodi, sig‘imni kutish holati va eng erta tegishli muddatdan kelib chiqqan chegaralangan `Retry-After` qaytaradi. Oddiy bo'sh muvofiqlik ijara bahsi emas va uning mavjud marshrutlash xatosi semantikasini saqlab qoladi.
+
+Tegishli mexanizmlar alohida bo'lib qoladi:
+
+- OAuth sessiyasi bandligi OAuth hisoblari uchun jarayon-lokal yumshoq taqsimotdir.
+- Hisob semaforlari soʻrovlar bilan muvofiqlik ruxsatlarini beradi va soʻrov tugashi bilan tugaydi.
+- Eksklyuziv boshqariladigan seans lizinglari avlod to'sig'i bilan mustahkam umrbod egalikdir.
 
 ---
 
-## 3. Modelni bloklash
+## 3. Model bloklanishi
 
-**Qamrov:** provayder + ulanish + model uchligi.
+**Qo‘llanish sohasi:** provayder + ulanish + model uchligi.
 
-**Holat bo‘yicha kalit qamrovi:** xato holati bloklash qaysi kalitga
-yozilishini belgilaydi (`open-sse/services/accountFallback/exactModelLock.ts` ichidagi `resolveLockoutScope()`):
+**Holat bo‘yicha qo‘llanish sohasi:** bloklanish qaysi kalitga yozilishini muvaffaqiyatsiz holat belgilaydi
+(`open-sse/services/accountFallback/exactModelLock.ts` ichidagi `resolveLockoutScope()`):
 
-- `429` / `403` / `402` — kvota yoki foydalanish huquqi signali — **kvota oilasini** bloklaydi:
-  codex uchun butun `codex` / `spark` qamrovi (ulanishdagi barcha `gpt-5*`
-  modellari), boshqa provayderlar uchun `getQuotaScopedModelForProvider()`.
-- `404` faqat modelning o‘zini bloklaydi (`getModelLockKey()` `not_found` qamrovini toraytiradi).
-- Boshqa har qanday holat — `5xx` transport/server xatolari va sifat tekshiruvi
-  natijasida OmniRoute tomonidan yaratilgan `502` — faqat **aniq**
-  provayder/ulanish/model uchligini bloklaydi. Bitta modeldagi nosoz oqim akkaunt
-  kvotasi haqida dalil emas; bu qoidadan oldin `codex/gpt-5.6-luna` modelidagi
-  bitta bo‘sh javob ushbu ulanishning barcha `gpt-5*` modellarini, kvotasi
-  o‘zgarmagan bo‘lsa ham, marshrutlashdan 2–30 daqiqaga (bosqichma-bosqich oshib boruvchi) chiqarib tashlardi.
-- Chaqiruvchining aniq ko‘rsatilgan `scope` opsiyasi doimo ustun turadi (Antigravity `"exact"` uzatadi).
+- `429` / `403` / `402` — kvota yoki huquq signali — **kvota oilasi**ni bloklaydi:
+  codex uchun butun `codex` / `spark` sohasi (ulanishdagi barcha `gpt-5*` modellari), boshqa provayderlar uchun esa `getQuotaScopedModelForProvider()`.
+- `404` yalang‘och modelni bloklaydi (`getModelLockKey()` `not_found`ni toraytiradi).
+- Boshqa har qanday holat — `5xx` transport/server xatolari va OmniRoute sifatni tekshirishdan hosil qiladigan o‘zining `502` holati — faqat **aniq** provayder/ulanish/model uchligini bloklaydi. Bitta modeldagi noto‘g‘ri oqim hisob kvotasi haqida dalil bermaydi; bu qoida joriy etilishidan oldin `codex/gpt-5.6-luna`dagi bitta bo‘sh javob ushbu ulanishdagi barcha `gpt-5*` modellarini 2–30 daqiqaga (bosqichma-bosqich oshib boradigan muddat bilan) marshrutlashdan chiqarar, kvotasi esa o‘zgarishsiz qolardi.
+- Chaqiruvchining aniq `scope` opsiyasi har doim ustun turadi (Antigravity `"exact"` qiymatini uzatadi).
 
-**Maqsad:** faqat bitta model mavjud bo‘lmaganda yoki kvotasi cheklanganda butun ulanishni o‘chirib qo‘yishning oldini olish.
+**Maqsad:** faqat bitta model mavjud bo‘lmaganda yoki kvota bilan cheklanganda butun ulanishni o‘chirib qo‘ymaslik.
 
 **Misollar:**
 
-- Har bir model uchun alohida kvotaga ega provayderlarning 429 qaytarishi
-- Mahalliy provayderlarning mavjud bo‘lmagan bitta model uchun 404 qaytarishi
-- Provayderga xos rejim/model ruxsati xatolari (masalan, Grok rejimlari)
+- 429 qaytaradigan har bir model uchun alohida kvotaga ega provayderlar
+- Bitta mavjud bo‘lmagan model uchun 404 qaytaradigan mahalliy provayderlar
+- Provayderga xos rejim/model ruxsati bilan bog‘liq xatolar (masalan, Grok rejimlari)
 
 **Amalga oshirish:** `open-sse/services/accountFallback.ts` — `lockModel()`, `clearModelLock()`, `getAllModelLockouts()`.
 
-### Model kutish muddatlari boshqaruv paneli (v3.8.0)
+### Model sovitishlari paneli (v3.8.0)
 
-UI: Sozlamalar → Model kutish muddatlari (`src/app/(dashboard)/dashboard/settings/components/ModelCooldownsCard.tsx`)
+UI: Sozlamalar → Model sovitishlari (`src/app/(dashboard)/dashboard/settings/components/ModelCooldownsCard.tsx`)
 
-Faol bloklashlarni quyidagi ma’lumotlar bilan ko‘rsatadi: provayder, ulanish, model, sabab, expiresAt. Operatorlar kartadan modelni qo‘lda qayta yoqishi mumkin.
+Faol bloklanishlarni quyidagilar bilan ko‘rsatadi: provayder, ulanish, model, sabab, tugash vaqti. Operatorlar kartadan modelni qo‘lda qayta yoqishi mumkin.
 
 **REST API:**
 
-- `GET /api/resilience/model-cooldowns` — faol bloklashlar ro‘yxatini olish
-- `DELETE /api/resilience/model-cooldowns` — qo‘lda qayta yoqish. So‘rov tanasi: `{provider, connection, model}`. Autentifikatsiya: boshqaruv.
+- `GET /api/resilience/model-cooldowns` — faol bloklanishlarni ro‘yxatlash
+- `DELETE /api/resilience/model-cooldowns` — qo‘lda qayta yoqish. Tana: `{provider, connection, model}`. Autentifikatsiya: boshqaruv.
 
-### Bloklash sozlamalari UI’i + muvaffaqiyat asosidagi pasayish orqali tiklash (v3.8.23)
+### Sovitishlar menejeri
 
-Modelni bloklash doimo yoqilgan, kodda qat’iy belgilangan xatti-harakatdan o‘z
-sozlamalar kartasi va o‘zini o‘zi tiklash yo‘liga ega, to‘liq sozlanadigan hamda
-ixtiyoriy yoqiladigan funksiyaga aylantirildi.
+UI: Monitoring → Sovitishlar menejeri (`src/app/(dashboard)/dashboard/resilience/cooldowns/`).
 
-**Sozlamalar kartasi:** Sozlamalar → Modelni bloklash
+Vaqtinchalik sababga ko‘ra marshrutlashdan chiqarilgan har bir ulanish uchun alohida provayder sahifasini ochish o‘rniga bitta sahifa. Unda ulanish sovitishlari, model bloklanishlari va terminal holatlar ko‘rsatiladi, ularni ulanish bo‘yicha, tanlangan ulanishlar uchun yoki provayderning barcha ulanishlari uchun tozalash, shuningdek, eng ko‘p sozlanadigan sovitish qoidalarini — `streamStallCooldown.enabled` va OAuth / API-kalit `connectionCooldown` boshlang‘ich sovitish muddati hamda maksimal backoff bosqichlarini — tahrirlash mumkin (`PATCH /api/resilience` orqali saqlanadi). Terminal holatlar (`banned`, `expired`, `credits_exhausted`) ro‘yxatga olinadi, ammo bu yerda hech qachon tozalanmaydi.
+
+Xuddi shu sahifadagi **Xatolarni sovitish qoidalari** kartasi operator xatolari qoidalarini (`settings.providerErrorRules`) va har bir provayder uchun umumiy standartlarni (`settings.providerErrorDefaults`) `PATCH /api/settings` orqali tahrirlaydi — ular qanday mos kelishi haqida §7 dagi “Operator e’lon qilgan qoidalar” bo‘limiga qarang. Davomiyliklar Standart (aniq sovitish muddati yo‘q), 30 daqiqa, 1 soat, 5 soat, 24 soat yoki 1–43 200 daqiqa (30 kun) oralig‘idagi maxsus qiymat bo‘lishi mumkin.
+
+**REST API** (`src/lib/resilience/cooldownManager.ts`, autentifikatsiya: boshqaruv):
+
+- `GET /api/resilience/cooldowns[?provider=]` — holat, qolgan sovitish muddati, backoff darajasi, so‘nggi xato turi va model bloklanishlari ko‘rsatilgan ulanishlar (maxfiy ma’lumotlarsiz)
+- `POST /api/resilience/cooldowns` — tana `{connectionIds: string[]}` yoki `{all: true, provider?}`; `{cleared, unchanged, skippedTerminal, lockoutsCleared}`ni qaytaradi
+
+### Bloklanish sozlamalari UI + muvaffaqiyatga asoslangan kamayish orqali tiklanish (v3.8.23)
+
+Model bloklanishi doim yoqilgan, kodga qattiq kiritilgan xatti-harakatdan o‘z sozlamalar kartasiga va o‘zini tiklaydigan qayta tiklanish yo‘liga ega, to‘liq sozlanadigan, ixtiyoriy funksiyaga aylandi.
+
+**Sozlamalar kartasi:** Sozlamalar → Model bloklanishi
 (`src/app/(dashboard)/dashboard/settings/components/ModelLockoutCard.tsx`).
-Bu yuqoridagi faqat o‘qish uchun mo‘ljallangan `ModelCooldownsCard`dan (u faqat
-faol bloklashlarni _ro‘yxatlaydi_) **farq qiladi** — yangi karta _parametrlarni sozlaydi_. Standart
-qiymatlar `DEFAULT_MODEL_LOCKOUT_SETTINGS` ichida joylashgan
-(`src/lib/resilience/modelLockoutSettings.ts`):
+Bu yuqoridagi faqat o‘qish uchun mo‘ljallangan `ModelCooldownsCard`dan **farq qiladi** (u faqat faol bloklanishlarni
+_ro‘yxatlaydi_) — yangi karta _parametrlarni sozlaydi_. Standart qiymatlar `DEFAULT_MODEL_LOCKOUT_SETTINGS`
+(`src/lib/resilience/modelLockoutSettings.ts`) ichida saqlanadi:
 
-| Sozlama                 | Standart qiymat                  | Ma’nosi                                                                    |
-| ----------------------- | -------------------------------- | -------------------------------------------------------------------------- |
-| `enabled`               | `false`                          | Asosiy almashtirgich — modelni bloklash **standart holatda o‘chiq**.       |
-| `errorCodes`            | `[403, 404, 429, 502, 503, 504]` | Model qamrovidagi xato sifatida hisoblanadigan yuqori oqim holatlari.      |
-| `baseCooldownMs`        | `120_000` (120 s)                | Birinchi xato uchun dastlabki bloklash davomiyligi.                        |
-| `maxCooldownMs`         | `1_800_000` (30 min)             | Bosqichma-bosqich oshiriladigan kutish muddatining yuqori chegarasi.       |
-| `maxBackoffSteps`       | `10`                             | Eksponensial kechikishni oshirish bosqichlarining maksimal soni.           |
-| `useExponentialBackoff` | `true`                           | Takroriy xatolar kutish muddatini eksponensial ravishda oshirishi kerakmi. |
+| Sozlama                 | Standart qiymat                  | Ma’nosi                                                                      |
+| ----------------------- | -------------------------------- | ---------------------------------------------------------------------------- |
+| `enabled`               | `false`                          | Asosiy almashtirgich — model bloklanishi **standart bo‘yicha o‘chiq**.       |
+| `errorCodes`            | `[403, 404, 429, 502, 503, 504]` | Model doirasidagi xato sifatida hisoblanadigan yuqori oqim holatlari.        |
+| `baseCooldownMs`        | `120_000` (120 s)                | Birinchi xato uchun boshlang‘ich bloklanish davomiyligi.                     |
+| `maxCooldownMs`         | `1_800_000` (30 min)             | Oshirilgan sovitish muddatining yuqori chegarasi.                            |
+| `maxBackoffSteps`       | `10`                             | Eksponensial backoff oshirish bosqichlarining maksimal soni.                 |
+| `useExponentialBackoff` | `true`                           | Takroriy xatolar sovitish muddatini eksponensial ravishda oshirishi kerakmi. |
 
-Sozlamalar odatiy sozlamalar ombori orqali saqlanadi va chidamlilik sozlamalari
-sxemasi orqali tekshiriladi; karta `baseCooldownMs`/`maxCooldownMs`
-qiymatlarini (`maxCooldownMs ≥ baseCooldownMs` sharti bilan) hamda `maxBackoffSteps`ni cheklaydi.
+Sozlamalar odatiy sozlamalar ombori orqali saqlanadi va resilience sozlamalari sxemasi orqali tekshiriladi; karta `baseCooldownMs`/`maxCooldownMs` qiymatlarini (`maxCooldownMs ≥ baseCooldownMs` sharti bilan) hamda `maxBackoffSteps`ni chegaralaydi.
 
-**Muvaffaqiyat asosidagi pasayish orqali tiklash:** tiklash faqat taymer muddati
-tugashiga bog‘liq **emas**. Sog‘lom javob modelning xatolar sonini bosqichma-bosqich
-kamaytiradi, shuning uchun vaqt oralig‘i davomida tiklangan model taymer muddati
-tugashidan oldin oshib borishni to‘xtatadi (va bloklash bekor qilinadi). Kombinatsiyalangan
-nishon muvaffaqiyatli bo‘lganda, `open-sse/services/combo.ts` fayli
-`decayModelFailureCount()`ni (`open-sse/services/accountFallback.ts`) chaqiradi,
-u saqlangan `failureCount` qiymatini **yarmiga kamaytiradi**
-(`Math.floor(failureCount / 2)`); qiymat `0`ga yetganda bloklash yozuvi butunlay
-o‘chiriladi. Unga mos `recordModelLockoutFailure()` eskalatsiya oralig‘ida yuz
-bergan xatolarda hisoblagichni oshiradi (va kutish muddatini uzaytiradi).
-Muvaffaqiyat asosidagi bu pasayish oddiy taymer muddati tugashiga qo‘shimcha
-ravishda ishlaydi — har ikkala yo‘l ham modelni qayta yoqishi mumkin.
+**Muvaffaqiyatga asoslangan kamayish orqali tiklanish:** tiklanish **faqat taymer tugashiga** bog‘liq emas. Sog‘lom javob modelning xatolar hisobini kamaytiradi, shuning uchun tiklangan model muddat oynasi davomida oshirishni to‘xtatadi (va bloklanishni olib tashlaydi). Muvaffaqiyatli combo nishonida `open-sse/services/combo.ts` `decayModelFailureCount()`ni
+(`open-sse/services/accountFallback.ts`) chaqiradi; bu saqlangan
+`failureCount`ni ikkiga bo‘ladi (`Math.floor(failureCount / 2)`); u `0`ga yetganda bloklanish yozuvi butunlay o‘chiriladi. Buning qarama-qarshi tomoni bo‘lgan `recordModelLockoutFailure()` oshirish oynasi ichidagi xatolarda hisobni oshiradi (va sovitish muddatini oshiradi). Ushbu muvaffaqiyatga asoslangan kamayish oddiy taymer tugashiga qo‘shimcha hisoblanadi — har ikkala yo‘l ham modelni qayta yoqishi mumkin.
 
-**Holat:** bloklashlar DB’da saqlanmaydi, balki **xotirada** saqlanadi (har bir
-jarayon uchun `provider:connectionId:model` kalitli `ModelLockoutEntry`
-`Map`lari, aniq qamrovli bloklashlar uchun esa `provider:connectionId:exact:model`);
-ular qayta ishga tushirilganda yo‘qoladi. _Sozlamalar_ doimiy saqlanadi; faol
-bloklash _holati_ esa vaqtinchalikdir.
+**Holat:** bloklashlar **xotirada** saqlanadi (har bir jarayon uchun `ModelLockoutEntry` obyektlaridan iborat, `provider:connectionId:model` kaliti bo‘yicha `Map`lar, aniq qamrovli bloklashlar esa `provider:connectionId:exact:model` bo‘yicha), ma’lumotlar bazasiga saqlanmaydi — qayta ishga tushirilganda ular yo‘qoladi. _Sozlamalar_ saqlanadi; faol bloklash _holati_ esa vaqtinchalik.
+
+## 4. Kvota-ulashishning parallelligini nazorat qilish (v3.8.36)
+
+Obuna hisoblari (GLM, MiniMax va boshqalar) ko'pincha faqat ~ 1–3 bir vaqtda so'rovlarni qabul qiladi; buning oshib ketishi 429 soniya va sovutish vaqtini ishga tushiradi. Bu o'tkir ostida** kvota-ulush** (`qtSd/…`) kombinatsiyalar, bu erda bir nechta API kalitlari bitta yuqori oqim hisobini baham ko'radi. Uchta qatlam umumiy hisobni suv bosishidan saqlaydi.
+
+### Har bir ulanish uchun moslik chegarasi (`max_concurrent`)
+
+Har bir provayder ulanishi `max_concurrent` shiftini e'lon qilishi mumkin (`provider_connections.max_concurrent`, ulanish modal / API / DB da o'rnatiladi). Hech qanday cheklovsiz uni bo'sh qoldiring. Bu — ostidagi ketma-ketlashtirish qatlamini boshqaradigan yagona tugma bo'lib, uni hisobning haqiqiy parallelligiga o'rnatadi (masalan, GLM ~ 1, MiniMax ~ 2).
+
+### Har bir model uchun mos keladigan chegaralar (`modelConcurrency`)
+
+Ulanish qo'shimcha ravishda o'zining `rateLimitOverrides` xaritasi ichida har bir model uchun aniq moslik shiftini e'lon qilishi mumkin:
+
+```json
+{
+  "rateLimitOverrides": {
+    "maxConcurrent": 4,
+    "modelConcurrency": { "glm-5": 1, "glm-4.7": 3 }
+  }
+}
+```
+
+Uni ulanish rejimiga o'rnating (** Tarif chegarasi har bir model uchun → chegaralarini bekor qiladi** , har bir satr uchun bitta `model=cap` ) yoki bir xil JSON shakliga ega `PATCH /api/providers/[id]` orqali. Asosiy semantika:
+
+- **Ulanish bo'yicha va modelga xos:** `maxConcurrent` umumiy ulanish bo'yicha shift bo'lib qoladi. Ikkalasi ham qo'llanilganda, ikkala eshik ham bir xil kompozit eshikda (`global → provider → account → model`) atomik ravishda olinadi; samarali xatti-harakatlar qat'iyroq qo'llaniladigan chegaradir.
+- **Aniq model kaliti mosligi:** kalit — marshrutlashdan so'ng ijrochiga o'tkaziladigan model qatori odatda yalang'och yuqori oqim model identifikatori (`glm-5`), mijoz tomoni `provider/model` taxallus emas (`zai/glm-5` `glm-5` mos kelmaydi). Qiymatlar musbat-butun sonli bir vaqtning o'zida so'rov shiftlaridir.
+- **Mahalliy navbat, topilmadi:** ortiqcha so'rovlar mavjud queue/timeout semantikasi (yozilgan `SEMAPHORE_TIMEOUT` / `SEMAPHORE_QUEUE_FULL` kirish xatolari) bilan mahalliy navbat. OmniRoute yuqori oqim siyosatini aniqlamaydi yoki xulosa qilmaydi — u operator sozlagan aniq shiftlarni amalga oshiradi. To'yingan model darvozasi hech qachon provayderni o'chirib qo'ymaydi va hech qachon doimiy model blokirovkasini yaratmaydi; upstream 429/cooldown/fallback xatti xato backstop bo'lib qoladi.
+- **Har bir ulanish, har bir jarayon doirasi:** bosh harflar har bir ma'lumotlar bazasi ulanishi va xotirada saqlanadi, shuning uchun bir xil yuqori oqim API kalitini qayta ishlatadigan ikkita ulanish bir-biri bilan muvofiqlashtirilmaydi.
+- **Konfiguratsiya o'zgarmagan degan ma'noni anglatadi:** xaritani o'tkazib yuborish (yoki asboblar paneli maydonini bo'sh qoldirish) hech qanday model darvozasini qo'shmaydi. Har qanday universal provayder chegarasini tasdiqlamasdan konfiguratsiyaga misol:
+
+```text
+glm-5=1
+glm-4.7=3
+```
+
+### Kvota almashish soʻrovini ketma-ketlashtirish
+
+Kvota taqsimoti musbat `max_concurrent` e'lon qiladigan ulanishni maqsad qilganda, unga bir vaqtda so'rovlar yuboriladi.** hisob** har bir ulanish semafori (kalit `qsconn:<connectionId>`) orqali ketma-ketlashtiriladi: ortiqcha so'rovlar** navbatda kuting** hisobni to'ldirish o'rniga. Bu** muvaffaqiyatsiz ochiq** — to'yingan navbat yoki vaqt tugashi jo'natilishi mumkin bo'lgan so'rovni rad etishdan ko'ra, tirqishsiz davom etadi. Kirish** Parametrlar → Moslashuvchanlik → Kvota-ulanish uchun bir vaqtning o‘zida** (`resilienceSettings.quotaShareConcurrencyLimit.enabled`, sukut bo'yicha yoqilgan). `max_concurrent` qopqog'isiz xatti-harakatlar o'zgarmaydi.
+
+> Kvota-ulush marshrutlash eshigi (`selectQuotaShareTarget`, DRR + P2C) o'zi ishlamay qoladi va faqat bitta ulanishli hovuzga ega bo'lgan — ulanishini _deprioritizes_, u qattiq cheklay olmaydi, shuning uchun bu semafor aslida toshqinni o'z ichiga oladi.
+
+### Kombo sovishini hisobga olgan holda qayta urinib ko'ring
+
+Har bir kombinatsiyalangan strategiya uchun (yoqilganda) SHORT vaqtinchalik sovutish uchun 429 ni kristallashtiradigan so'rov uni kutadi va 429 — ni qaytarish o'rniga qayta jo'natadi, bu Gemini-sinf TPM/RPM oynalarini (~ 60s qayta urinib ko'ring) qamrab oladi, masalan, ko'p modelli kombo va 2-tarmoqli kombinatsiyalarda. tarif chegarasi. `comboCooldownWait` (`enabled`, `maxWaitMs`, `maxAttempts`, `budgetMs`) bilan chegaralangan** → Moslashuvchanlik sozlamalari** . U hech qachon `quota_exhausted` (yarim tungacha qulflangan) yoki auth/not-found sabablarini kutmaydi. `comboTimeoutMs` oʻrnatilganda, bu muddatdan oldin tuga olmaydigan kutish boshlanmaydi (#18998): kombinatsiya birdaniga `COMBO_TIMEOUT` 504 oʻrniga terminal javobi bilan javob beradi.
+
+Kombo `config.comboCooldownWaitEnabled: false` bilan voz kechishi mumkin. Faqat literal `false` ushbu umumiy kombinatsiyalangan kutishlarni (jo'natishdan keyingi sovutish va jo'natishdan oldingi circuit-open/model-lock kutishlari) va ularning kutish-byudjet taymout-qavatini kengaytirishni o'chirib qo'yadi. Yo'qolgan yoki `true` global siyosatni saqlaydi; `true` global miqyosda o'chirilgan kutishni faollashtira olmaydi. Aniq `targetTimeoutMs` hali ham g'alaba qozonadi. Bu voz kechish alohida mahalliy-Kodexni burish-pin jo'natishdan oldin kutishni o'zgartirmaydi.
+
+Xuddi shu darvoza jo'natishdan oldingi holatni (#16319) qamrab oladi: har qanday urinish amalga oshirilgunga qadar kombinatning har bir nishoni o'tkazib yuborilsa, uning modeli qisqa vaqtinchalik blokirovkada o'tirsa, nolga urinish yo'li bir xil shiftlar ostida qulfni kutadi va maslahatsiz `503 ALL_TARGETS_SKIPPED` javob berish o'rniga qayta jo'natadi. Kutishga ruxsat berilmaganda (shift, urinish yoki byudjet tugagan yoki xususiyat o'chirilgan), terminal javobi eng erta vaqtinchalik blokirovka muddati tugaganidan boshlab `retry_after` / `reset_at` ko'taruvchi `429 rate_limit_error` ga yangilanadi; kvota, auth va topilmagan qulflar maslahatsiz 503 ni saqlaydi.
+
+```text
+#16319 · comboCooldownWait · pre-dispatch (attempts = 0)
+all targets skipped + transient model lockout:
+  enabled ∧ 0 < waitMs ≤ maxWaitMs ∧ attempt < maxAttempts ∧ budgetLeftMs ≥ waitMs
+    → wait → re-dispatch
+  wait = false → HTTP 429 rate_limit_error
+  retry_after / reset_at ← earliest transient lock expiry
+quota_exhausted / auth_error / not_found / not_found_local:
+  no transient hint → HTTP 503 ALL_TARGETS_SKIPPED
+```
 
 ---
 
-## 4. Kvota ulashishdagi parallellikni boshqarish (v3.8.36)
+## 5. Navbatga qabul qilishni boshqarish (v3.8.49 · masala #6593)
 
-Obuna hisoblari (GLM, MiniMax va boshqalar) ko‘pincha bir vaqtning o‘zida faqat ~1–3 ta
-so‘rovni qabul qiladi; bu chegaradan oshish 429 xatolari va kutish davrlarini keltirib chiqaradi. Bu holat
-bir nechta API kaliti bitta yuqori oqimdagi hisobni ulashadigan **quota-share** (`qtSd/…`)
-kombinatsiyalarida ayniqsa keskin. Uchta qatlam umumiy hisobning so‘rovlar bilan to‘lib ketishiga yo‘l qo‘ymaydi.
+**Qamrov**: har bir provayder+ulanish uchun lokal rate-limit navbati (`open-sse/services/rateLimitManager.ts`,
+Bottleneck'ga asoslangan), yuqoridagi uchta mexanizmdan bir qatlam pastda.
 
-### Har bir ulanish uchun parallellik chegarasi (`max_concurrent`)
+**`maxWaitMs` navbat kutishini chegaralaydi; `executionMaxWaitMs` bajarilishni chegaralaydi.**
+Ikkalasi ataylab ajratilgan va hech biri ikkinchisini oziqlantirmaydi.
 
-Har bir provayder ulanishi `max_concurrent` yuqori chegarasini belgilashi mumkin
-(`provider_connections.max_concurrent`, ulanish modal oynasi / API / DB orqali o‘rnatiladi).
-Cheklov bo‘lmasligi uchun uni bo‘sh qoldiring. Bu quyidagi ketma-ketlashtirish
-qatlamini boshqaradigan yagona sozlama — uni hisobning haqiqiy parallellik darajasiga o‘rnating (masalan, GLM ~1, MiniMax ~2).
+`resilienceSettings.requestQueue.maxWaitMs` — bu **navbatda kutish byudjeti**: u
+provayder slotini kutishni va so'ngra QUEUED holatida turishni qamrab oladi va uning taymeri
+vazifa QUEUED holatidan chiqib, bajarilishni boshlagan zahoti tozalanadi
+(`rateLimitManager.ts`, `wrappedFn`). Undan oshib ketgan so'rov hech qachon upstream'ga yetib bormaydi.
+Standart 30000ms, `src/lib/resilience/settings.ts` faylidagi `DEFAULT_REQUEST_QUEUE_MAX_WAIT_MS`
+tomonidan beriladi va `tests/unit/ratelimit-admission-control-6593.test.ts` bilan qotirilgan,
+shuning uchun uning o'zgarishi ushbu paragrafni jimgina eskirib qolishga qoldirmasdan, o'sha testni qizil qiladi.
 
-### Quota-share so‘rovlarini ketma-ketlashtirish
+`resilienceSettings.requestQueue.executionMaxWaitMs` — bu Bottleneck vazifa `expiration`i sifatida
+qabul qiladigan qiymat, uning taymeri faqat dispatch'dan keyin boshlanadi. Bu
+o'zining upstream timeout'iga ega bo'lmagan bajaruvchilar uchun zaxira to'siq bo'lib,
+agar bajaruvchining o'z fetch-start timeout'i uzunroq bo'lsa, o'sha qiymatgacha ko'tariladi,
+shuning uchun u sog'lom, davom etayotgan javobni to'xtatib qo'ya olmaydi. Standart 600000ms (10 daqiqa).
 
-Quota-share dispetcherizatsiyasi musbat `max_concurrent` qiymatini belgilagan ulanishni
-nishonga olganida, ayni **hisobga** yo‘naltirilgan parallel so‘rovlar har bir ulanishga
-tegishli semafor (`qsconn:<connectionId>` kaliti) orqali ketma-ketlashtiriladi: ortiqcha so‘rovlar
-hisobni to‘ldirish o‘rniga **navbatda kutadi**. Bu **fail-open** tamoyilida ishlaydi — to‘lgan
-navbat yoki taym-aut jo‘natilishi mumkin bo‘lgan so‘rovni rad etish o‘rniga slotsiz davom etadi.
-Buni **Settings → Resilience → Quota-share per-connection
-concurrency** (`resilienceSettings.quotaShareConcurrencyLimit.enabled`, standart
-holatda yoqilgan) orqali almashtiring. `max_concurrent` chegarasi bo‘lmasa, xatti-harakat o‘zgarmaydi.
+Navbat byudjetini `expiration`ga oziqlantirish aynan shu narsa ilgari inkremental bo'lmagan
+gateway'larni bajarilish o'rtasida o'ldirardi — ular birinchi baytlargacha qonuniy ravishda bir necha daqiqa ishlaydi —
+va shuning uchun expiration `code:
+"RATE_LIMIT_EXECUTION_TIMEOUT"` (HTTP 504) sifatida yuzaga chiqadi, navbat byudjeti esa
+navbat-timeout kodini olib yuradi. Ikkalasini ham `RATE_LIMIT_MAX_WAIT_MS` /
+`RATE_LIMIT_EXECUTION_MAX_WAIT_MS` (env) yoki dashboard orqali boshqaring
+(**Settings → Resilience**). Normalizatsiya qilinganda ikkalasi ham 1ms–24s oralig'iga cheklanadi.
 
-> Quota-share marshrutlash darvozasi (`selectQuotaShareTarget`, DRR + P2C)ning o‘zi
-> fail-open tamoyilida ishlaydi va faqat chegaraga yetgan ulanishning ustuvorligini _pasaytiradi_ —
-> bitta ulanishli pulda u qat’iy cheklov qo‘ya olmaydi, shu sababli oqimni amalda aynan
-> shu semafor nazorat qiladi.
+**Ustuvorlik, ikkalasi uchun ham:** env o'zgaruvchisi faqat _standart_ qiymatni beradi. `resilienceSettings.requestQueue`da
+saqlangan qiymat (dashboard / API patch, `key_value`da saqlanadi) undan ustun turadi, va har bir ulanish uchun
+`rateLimitOverrides.maxWaitMs` / `.executionMaxWaitMs` esa bundan ham ustun turadi. Shuning uchun
+allaqachon saqlangan qiymatga ega bo'lgan deployment'da env o'zgaruvchisini o'rnatish
+hech narsani o'zgartirmaydi — buning o'rniga saqlangan sozlamani tozalang yoki yangilang.
 
-### Kombinatsiyaning kutish davrini hisobga oluvchi qayta urinish
+Navbatda turish `maxWaitMs` bilan chegaralanadi; quyidagi `maxQueueDepth` bir vaqtning o'zida
+qancha chaqiruvchi navbatda turishi mumkinligini chegaralaydi.
 
-Har bir kombinatsiya strategiyasi uchun (yoqilganida), qisqa muddatli o‘tkinchi kutish davri sababli
-429 xatosini aniq yuzaga keltiradigan so‘rov 429 ni qaytarish o‘rniga shu davr tugashini kutadi va
-qayta jo‘natiladi — bu ko‘p modelli kombinatsiyalardagi Gemini turidagi TPM/RPM oynalarini
-(~60s retry-after), masalan, 2 modelli kombinatsiyaning har ikkala nishoni har bir modelga tegishli
-tezlik chegarasiga urilishini qamrab oladi. Bu **Settings → Resilience** ichidagi
-`comboCooldownWait` (`enabled`, `maxWaitMs`, `maxAttempts`,
-`budgetMs`) bilan cheklanadi. U `quota_exhausted` (yarim tungacha bloklangan)
-yoki autentifikatsiya/topilmadi sabablarida hech qachon kutmaydi.
-
----
-
-## 5. Soʻrovlar navbatiga qabul qilish nazorati (v3.8.49 · issue #6593)
-
-**Qamrov**: har bir provider+connection uchun mahalliy tezlikni cheklash navbati (`open-sse/services/rateLimitManager.ts`,
-Bottleneck asosida ishlaydi), yuqoridagi uchta mexanizmdan bir pogʻona pastda.
-
-**`maxWaitMs` navbatda kutishni cheklaydi; `executionMaxWaitMs` bajarilishni cheklaydi.**
-Bu ikkalasi ataylab alohida qilingan va hech biri boshqasiga taʼsir qilmaydi.
-
-`resilienceSettings.requestQueue.maxWaitMs` — **navbatda kutish byudjeti**:
-u provider slotini kutish va keyin QUEUED holatida turish vaqtini qamrab oladi; vazifa
-QUEUED holatidan chiqib, bajarilishni boshlashi bilanoq uning taymeri tozalanadi
-(`rateLimitManager.ts`, `wrappedFn`). Bu chegaradan oshgan soʻrov upstreamʼga
-hech qachon yetib bormaydi. Standart qiymat 30000ms boʻlib,
-`src/lib/resilience/settings.ts` ichidagi `DEFAULT_REQUEST_QUEUE_MAX_WAIT_MS`
-orqali beriladi va `tests/unit/ratelimit-admission-control-6593.test.ts`
-tomonidan mustahkamlangan; shu sababli uni oʻzgartirish bu paragrafning sezdirmay
-eskirib qolishiga emas, balki testning xato bilan yakunlanishiga olib keladi.
-
-`resilienceSettings.requestQueue.executionMaxWaitMs` — Bottleneck vazifaning
-`expiration` qiymati sifatida qabul qiladigan parametr boʻlib, uning taymeri
-faqat yuborilgandan keyin ishga tushadi. U oʻz upstream kutish vaqti chekloviga
-ega boʻlmagan ijrochilar uchun zaxira himoya vazifasini bajaradi va ijrochining
-fetch boshlanishi uchun oʻz kutish vaqti uzoqroq boʻlsa, shu qiymatgacha
-oshiriladi; shu sababli u bajarilayotgan sogʻlom javobni muddatidan oldin
-toʻxtata olmaydi. Standart qiymat 600000ms (10 daqiqa).
-
-Navbat byudjetini `expiration` qiymatiga uzatish avval inkremental boʻlmagan
-gatewayʼlarni bajarilish oʻrtasida toʻxtatib qoʻyar edi — ular dastlabki baytlar
-kelgunicha qonuniy ravishda bir necha daqiqa ishlashi mumkin — va aynan shu
-sababli amal qilish muddati tugashi `code:
-"RATE_LIMIT_EXECUTION_TIMEOUT"` (HTTP 504) sifatida koʻrsatiladi, navbat byudjeti
-esa navbat kutish vaqti tugashi kodini olib yuradi. Istalgan birini
-`RATE_LIMIT_MAX_WAIT_MS` / `RATE_LIMIT_EXECUTION_MAX_WAIT_MS` (env) yoki boshqaruv
-panelidagi (**Settings → Resilience**) sozlama orqali qayta belgilang. Har ikkisi
-normallashtirish vaqtida 1ms–24h oraligʻiga cheklanadi.
-
-**Har ikkisi uchun ustuvorlik tartibi:** env var faqat _standart_ qiymatni beradi.
-`resilienceSettings.requestQueue` ichida saqlab qoʻyilgan qiymat (boshqaruv
-paneli / API patch orqali, `key_value` ichida saqlanadi) undan ustun keladi,
-har bir ulanishga xos `rateLimitOverrides.maxWaitMs` /
-`.executionMaxWaitMs` esa undan ham ustun keladi. Shu sababli allaqachon saqlab
-qoʻyilgan qiymatga ega deploymentʼda env varʼni oʻrnatish hech narsani
-oʻzgartirmaydi — buning oʻrniga saqlangan sozlamani tozalang yoki yangilang.
-
-Navbatda turish vaqti `maxWaitMs` bilan cheklanadi; quyidagi `maxQueueDepth` esa
-bir vaqtning oʻzida qancha chaqiruvchi navbatga qoʻyilishi mumkinligini cheklaydi.
+**Javob tanasida ko'rsatilgan qayta urinishlar: pacing va lockout.** 429 javob tanasi o'zining kutish vaqtini
+nomlashi mumkin (Gemini `RetryInfo.retryDelay`, "retry after Ns" matni), buni
+`updateFromResponseBody` o'qiydi. Ulanishning `maxWaitMs`iga mos keladigan kutish — bu pacing: limiter
+o'sha vaqt davomida o'z rezervuarini bo'shatadi va navbatdagi chaqiruvlar u qayta to'lganda dispatch qilinadi.
+`maxWaitMs`dan uzunroq kutish esa navbat o'tirib kuta olmaydigan narsadir — Gemini tugagan kunlik kvotaga
+`retryDelay: "86399s"` bilan javob qaytaradi. Qayta qurilgan 429'dagi uzatilgan `Retry-After` (#16528)
+allaqachon fallback dvigatelining modelni o'sha oyna uchun bloklashiga olib keladi, ammo limiterni ham
+shu sababdan pauza qilish kalitga erta yetib kelgan har qanday chaqiruvni (masalan, resilience reset'dan keyin)
+butun `maxWaitMs` davomida to'xtatib qo'yar edi. Bunday kutish tiplashtirilgan Google `RetryInfo`
+detalidan (`google_rpc_retry_info` kelib chiqishi) kelib chiqqanda va kalitning limiteri allaqachon modelga
+chegaralangan bo'lsa (qarang `getLimiterKey`), 429 o'sha ulanishda model lockout'iga aylanadi
+(`open-sse/services/rateLimitManager/bodyRetryPause.ts` faylidagi `lockModelForLongBodyRetry`, maksimal 24 soat),
+va limiter pauza qilinmagan holda qoldiriladi. Akkaunt tanlash bu lock'ni `isModelLocked()` orqali o'tkazib yuboradi,
+ulanishga bog'langan maqsadlar uchun combo pre-dispatch gate ham shunday qiladi. Antigravity'da, uning limiteri
+har bir kvota oilasi uchun bo'lsa, lock uning boshqa kvota lock'lari kabi aniq modelga qo'yiladi. Alias uni o'sha modelga
+hal qilgan bo'lsa, mijoz so'ragan nom ham lock qilinadi, chunki bu tekshiruvlar so'ralgan nomdan foydalanadi;
+u aniq (`lockExactModel`) lock qilinadi, shuning uchun antigravity kvota oilasini yoki codex qamrovini kesib o'tuvchi
+alias hech qachon o'zini lock qilmaydi. Proza ko'rinishidagi ishora, tiplashtirilmagan `retryDelay` yoki butun ulanish
+tomonidan bo'lishilgan limiter pauzani saqlab qoladi. 429 yo'li hozirgina qayta qurgan limiter haqiqatan pauza qilsa,
+qolgan navbat vaqti pauza tugashidan oldin tamom bo'ladigan chaqiruv o'sha vaqtni kutmasdan, darhol
+navbat-timeout kodi bilan qaytariladi (`checkLimiterPause`); qayd etilgan tugash limiter qurilishidan oldin,
+Bottleneck o'zining yangilash soatini boshlaydigan joyda bog'lanadi va rezervuarga keyingi har qanday o'zgarish uni unutadi.
+`tests/unit/rate-limit-long-body-retry-lockout.test.ts` va
+`tests/unit/rate-limit-body-retry-pause.test.ts` bilan qamrab olingan.
 
 **`maxQueueDepth` — ixtiyoriy qabul qilish chegarasi (yangi).** `resilienceSettings.requestQueue.maxQueueDepth`
-bir provider+connection uchun bir vaqtning oʻzida navbatda turishi mumkin
-boʻlgan (hali yuborilmagan) soʻrovlar sonini cheklaydi. Navbatda allaqachon
-`maxQueueDepth` ta soʻrov boʻlsa, yangi soʻrov `limiter.schedule()` ga yetib
-bormasidan **oldin** typed `code: "RATE_LIMIT_QUEUE_FULL"` xatosi bilan darhol
-rad etiladi — shu sababli rad etish kam resurs talab qiladi va ushbu soʻrov uchun
-har qanday keyingi promptni siqish / tarjima qilish ishlaridan oldin sodir
-boʻladi. Standart qiymat `0` = oʻchirilgan, bu mavjud cheklanmagan navbat
-xatti-harakatini saqlab qoladi; diapazon 0–100000 bilan cheklangan.
+bir vaqtning o'zida bitta provayder+ulanish uchun qancha so'rov navbatda (hali dispatch qilinmagan) turishi mumkinligini chegaralaydi.
+Navbat allaqachon `maxQueueDepth` so'rovni ushlab turganda, yangi so'rov `limiter.schedule()`ga yetib borishidan **oldin**
+tiplashtirilgan `code: "RATE_LIMIT_QUEUE_FULL"` xatosi bilan tez rad etiladi
+— shuning uchun rad etish arzon bo'lib, o'sha so'rov uchun har qanday quyi oqimdagi
+prompt-compression / tarjima ishlaridan oldin sodir bo'ladi. Standart `0` =
+o'chirilgan, mavjud chegaralanmagan navbat xatti-harakatini saqlab qoladi; chegaralangan 0–100000.
 `RATE_LIMIT_MAX_QUEUE_DEPTH` (env) yoki
-`resilienceSettings.requestQueue.maxQueueDepth` (boshqaruv paneli/API patch)
-orqali qayta belgilang.
+`resilienceSettings.requestQueue.maxQueueDepth` (dashboard/API patch) orqali boshqaring.
 
-Qabul qilish tekshiruvining oʻzi sof funksiya
-(`open-sse/services/rateLimitManager/admission.ts::checkQueueAdmission`) boʻlib,
-uni haqiqiy Bottleneck limiterʼisiz unit-test qilish mumkin.
+Qabul qilish tekshiruvining o'zi sof funksiya
+(`open-sse/services/rateLimitManager/admission.ts::checkQueueAdmission`), shuning uchun uni haqiqiy Bottleneck limiter'isiz
+unit-test qilish mumkin.
 
-> #6593ʼni boshlagan RFC hujjatida `bypassCompressionOnRateLimit`
-> flag ham taklif qilingan. Ushbu repoʼdagi `open-sse/services/compression/`
-> pipelineʼi sintez qilingan 429 javob tanalaridagi HTTP javobini siqish emas,
-> balki chiquvchi LLM soʻrovidagi prompt/context siqish mexanizmidir (`chatCore.ts`,
-> `resolveCompressionSettings`/`selectCompressionStrategy` bloki atrofida);
-> literal bypass flag uchun mos kod yoʻli mavjud emas. Hozirda ushbu
-> promptni siqish bosqichi soʻrov pipelineʼida `withRateLimit()`dan _oldin_
-> bajariladi, shuning uchun navbat toʻliqligi sababli rad etilganda uni oʻtkazib
-> yuborish uchun tartibni oʻzgartirish ushbu issue qamrovidan alohida va kattaroq
-> oʻzgarishdir; bu yerda u ataylab amalga oshirilmadi va protsessor resurslarini
-> tejash foydasi tartibni oʻzgartirish xavfiga arziydigan boʻlsa, keyingi vazifa
-> sifatida qoldirildi.
+> #6593 ni ochgan RFC shuningdek `bypassCompressionOnRateLimit`
+> bayrog'ini ham taklif qilgan edi. Bu repodagi `open-sse/services/compression/`
+> pipeline'i chiquvchi LLM so'rovida prompt/kontekst siqilishi (`chatCore.ts`,
+> `resolveCompressionSettings`/`selectCompressionStrategy` bloki atrofida),
+> sintez qilingan 429 tanalarida HTTP javob siqilishi emas — so'zma-so'z
+> bypass bayrog'i uchun mos keladigan kod yo'li mavjud emas. Bu prompt siqish
+> qadami hozirda so'rov pipeline'ida `withRateLimit()` dan _oldin_ ishlaydi,
+> shuning uchun navbat to'lgan holda rad etilganda uni o'tkazib yuborish uchun
+> qayta tartibga solish — bu issue doirasidan tashqaridagi alohida, kattaroq
+> o'zgarishdir; u ataylab bu yerda **amalga oshirilmadi** va CPU tejash foydasi
+> qayta tartibga solish xavfiga arziydigan bo'lsa, keyingi ish sifatida
+> qoldirildi.
 
----
+### Rate-limit avtomatik yoqish xavfsizlik tarmog'i va ulanish himoyasi (`rateLimitProtection`)
 
-## 6. Sekin oqim o‘tkazuvchanligi nazoratchisi (#9709)
+**Avtomatik yoqish xavfsizlik tarmog'i** (`resilienceSettings.requestQueue.autoEnableApiKeyProviders`, standart `true`):
+Standart holatda OmniRoute barcha faol API-kalit provayder ulanishlari uchun rate-limit navbat himoyasini avtomatik ravishda yoqadi (`getProviderCategory(provider) === "apikey"`). Bu so'rov tezligiga sezgir yuqori oqim API kalitlariga kiruvchi so'rovlar yuqori oqim 429 xatolariga o'z-o'zidan portlash o'rniga Bottleneck orqali navbatga qo'yilishi va cheklanishini ta'minlaydi. Xavfsizlik tarmog'ini `RATE_LIMIT_AUTO_ENABLE` muhit o'zgaruvchisi orqali bekor qilish mumkin (`false`/`0`/`off` o'chiradi, `true`/`1`/`on` majburiy yoqadi), bu esa saqlangan dashboard sozlamasidan ustun turadi (**Sozlamalar → Chidamlilik** / `PATCH /api/resilience`).
 
-Ixtiyoriy `resilienceSettings.streamRecovery.throughputWatchdog` himoya mexanizmi
-yuqori oqim hali ham bo‘laklarni yuborayotgan, ammo sozlangan foydali chiqish
-tezligidan past darajada assistent chiqishini ishlab chiqarayotgan holatni aniqlaydi.
-U ataylab bo‘sh turish taym-autidan alohida qilingan: heartbeat va metama’lumotlar
-hech bir taymerni qayta o‘rnatmaydi va jarayon siljishi sifatida hisoblanmaydi. U,
-shuningdek, chiqish sifatidan qat’i nazar mutlaq xavfsizlik chegarasi bo‘lib qoladigan
-urinishning qat’iy muddatidan (#9153) ham alohida.
+**Har bir ulanish uchun `rateLimitProtection` semantikasi:**
+Har bir ulanish uchun rate-limit himoyasi provayder ulanishlaridagi `rateLimitProtection` boolean maydoni orqali kuzatiladi (SQLite'da `rate_limit_protection` sifatida saqlanadi):
 
-Nazoratchi urinishni to‘xtatishidan oldin qizdirish davri va undan keyin to‘liq
-sirpanma oyna o‘tishini talab qiladi. U Chat Completions va Responses API chiqish
-hodisalaridagi matn deltalarini hisoblaydi (UTF-8 baytlarining konservativ
-proksi-o‘lchovi), faqat foydalanish ma’lumotlarini o‘z ichiga olgan va bo‘sh
-hodisalarni e’tiborsiz qoldiradi hamda tool-call yoki reasoning hodisalari
-bajarilayotgan paytda baholashni to‘xtatib turadi. U sukut bo‘yicha o‘chirilgan
-va `STREAM_THROUGHPUT_WATCHDOG_ENABLED=true` orqali yoqilishi mumkin; oyna,
-qizdirish davri, minimal tezlik va o‘lchanadigan minimal chiqish odatiy
-resilience-settings normallashtirish qatlami tomonidan chegaralanadi.
+- **Aniq yoqilgan (`rateLimitProtection === true`)**: Ushbu ulanish uchun rate-limit himoyasi provayder toifasidan yoki avtomatik yoqish xavfsizlik tarmog'i yoqilgan-yoqmaganidan qat'i nazar, aniq yoqilgan.
+- **Aniq o'chirilgan (`rateLimitProtection === false`)**: Aniq himoyani o'chiradi, lekin faol API-kalit ulanishini global avtomatik yoqish xavfsizlik tarmog'idan **chiqarmaydi**. `reconcileEnabledConnections` da (`open-sse/services/rateLimitManager.ts`) `false` va `undefined` teng: faqat `rateLimitProtection === true` aniq bekor qilish (override) sifatida qabul qilinadi. Agar `rateLimitProtection` `false` bo'lsa (yoki o'rnatilmagan bo'lsa), faol API-kalit ulanishi hali ham avtomatik yoqish shartiga mos keladi va rate-limit himoyasida qolaveradi.
+- **Har bir ulanish uchun alohida chiqish imkoniyati yo'q**: Operator hozirda boshqalar uchun avtomatik yoqishni faol saqlagan holda "ushbu yagona faol API-kalit ulanishi rate-limit navbat himoyasisiz ishlashi kerak" degan holatni ifodalay olmaydi. API-kalit ulanishlarini rate-limit navbatlarisiz to'liq ishlatish uchun xavfsizlik tarmog'i global ravishda o'chirilishi kerak (`RATE_LIMIT_AUTO_ENABLE=false` yoki `resilienceSettings.requestQueue.autoEnableApiKeyProviders = false`).
 
-Yoqilganda, nazoratchining to‘xtatishi faqat faol yuqori oqim urinishiga qo‘llanadi.
-Mijozga ko‘rinadigan biror bayt yuborilishidan oldin mavjud bir xil hisob qaydnomasi
-doirasidagi erta tiklash yo‘li urinishni qayta ochishi mumkin. Tasdiqlashdan keyin
-oqim hech qachon ko‘r-ko‘rona qayta ijro etilmaydi; faqat mavjud xavfsiz o‘rta-oqim
-davom ettirish shartnomasi suffiksni ulashi mumkin. Yakunlash bir martalik bo‘lib
-qoladi, shuning uchun foydalanishni hisobga olish va semaforni bo‘shatish
-takrorlanmaydi.
+**Qo'llab-quvvatlanadigan yozish yo'llari:**
+
+- **`POST /api/rate-limits`**: Ulanish uchun `rateLimitProtection` ni almashtirishning qo'llab-quvvatlanadigan boshqaruv yozish yo'li (`{ connectionId: string, enabled: boolean }`). Buni `enabled: true` bilan chaqirish aniq himoyani yoqadi; `enabled: false` bilan chaqirish esa aniq himoyani olib tashlaydi (garchi avtomatik yoqish yoqilgan bo'lsa, faol API-kalit ulanishlari global xavfsizlik tarmog'i ostida qolsa-da).
+- **`PUT /api/providers/[id]`**: Ataylab `rateLimitProtection` ni qabul qilmaydi va o'zgartirmaydi (#11278). `PUT /api/providers/[id]` orqali provayder ulanishi metama'lumotlarini yangilash hech qachon saqlangan rate-limit himoyasi holatini o'zgartirmaydi.
 
 ---
 
-## 7. Yuqori oqim statusini qayta belgilash (noto‘g‘ri ko‘rsatilgan kvota xatolari)
+## 6. Sekin oqim o'tkazuvchanligi kuzatuvchisi (#9709)
 
-**Qamrov:** vaqtinchalik kvota tugashini noto‘g‘ri HTTP statusi bilan bildiradigan bitta yuqori oqim shlyuzi.
+Ixtiyoriy `resilienceSettings.streamRecovery.throughputWatchdog` himoyasi yuqori oqimni aniqlaydi, u hali ham bo‘laklarni jo‘natadi, lekin sozlangan foydali chiqish tezligidan pastroq yordamchi mahsulot chiqaradi. U bo'sh vaqtdan ataylab farq qiladi: yurak urishi va metadata na taymerni tiklamaydi va na progress deb hisoblanmaydi. Bu, shuningdek, qattiq urinish muddatidan (#9153) ajralib turadi, bu chiqish sifatiga qaramasdan mutlaq xavfsizlik shiftini saqlab qoladi.
 
-**Maqsad:** tasniflashdan OLDIN chalg‘ituvchi statusni tuzatish, shunda quyi oqim iste’molchilari (fallback engine, combo aggregation, mijozga yo‘naltirilgan javob) xatoning aslida qayta urinish mumkin bo‘lgan tabiatini ko‘radi.
+Qo'riqchi to'xtatilishidan oldin isinish davrini, so'ngra to'liq aylanma oynani talab qiladi. U Chatni yakunlash va javoblarni API chiqish hodisalari (konservativ UTF-8 bayt proksi-server) dan matn deltalarini hisoblaydi, faqat foydalanish va bo'sh hodisalarni e'tiborsiz qoldiradi va vosita chaqiruvi yoki mulohaza yuritish hodisalari parvoz paytida hukmni to'xtatadi. U sukut bo'yicha o'chirib qo'yilgan va `STREAM_THROUGHPUT_WATCHDOG_ENABLED=true` bilan yoqilishi mumkin (bu env qiymati faqat birlamchi — saqlangan `resilienceSettings.streamRecovery.throughputWatchdog.enabled` boolean yutadi; ushbu qo'llanmaning yuqori qismidagi env-vs-dashboard ustunlik eslatmasiga qarang); oyna, isinish, minimal tezlik va minimal o'lchash mumkin bo'lgan chiqish normal moslashuvchanlik-sozlamalarni normallashtirish qatlami bilan chegaralanadi.
 
-Ayrim shlyuzlar VAQTINCHALIK kvota tugashini qayta urinish mumkin bo‘lmagan HTTP
-statusi bilan bildiradi. `agentrouter.org` standart `429` o‘rniga xitoycha matnli
-(`用户额度不足` / `额度不足`) `403` (ba’zan `400`) qaytaradi. Claude Code kabi
-mijozlar `403` statusini doimiy deb hisoblab, sessiyani to‘xtatadi; tuzatishsiz
+Yoqilganda, kuzatuvni bekor qilish faqat faol yuqori oqimga urinish uchun qo'llaniladi. Mijoz tomonidan ko'rinadigan baytlardan oldin, mavjud bir xil hisobni erta tiklash yo'li urinishni qayta ochishi mumkin. Amalga oshirilgandan so'ng, oqim hech qachon ko'r-ko'rona takrorlanmaydi; faqat mavjud xavfsiz mid-stream davom shartnoma qo'shimchasini tikish mumkin. Yakunlash bir martalik bo'lib qoladi, shuning uchun foydalanish hisobi va semaforni chiqarish takrorlanmaydi.
+
+---
+
+## 7. Upstream holatini qayta belgilash (noto‘g‘ri ko‘rsatilgan kvota xatolari)
+
+**Qo‘llanish doirasi:** vaqtinchalik kvota tugaganini noto‘g‘ri HTTP holati bilan bildiradigan bitta upstream gateway.
+
+**Maqsad:** tasniflashdan OLDIN chalg‘ituvchi holatni tuzatish, shunda quyi oqim iste’molchilari (fallback engine, combo aggregation, client-facing response) xatoning qayta urinish mumkin bo‘lgan haqiqiy xususiyatini ko‘radi.
+
+Ba’zi gateway’lar VAQTINCHALIK kvota tugaganini qayta urinish mumkin bo‘lmagan HTTP
+holati bilan bildiradi. `agentrouter.org` standart `429` o‘rniga xitoycha matn
+(`用户额度不足` / `额度不足`) bilan `403` (ba’zan `400`) qaytaradi. Claude
+Code kabi mijozlar `403` ni doimiy xato deb hisoblab, sessiyani to‘xtatadi va tuzatishsiz
 fallback engine uni kvota hodisasi o‘rniga `AUTH_ERROR` sifatida tasniflaydi.
 
 **Amalga oshirish:**
 
-- Reyestr + moslashtiruvchi: `open-sse/config/upstreamStatusRestatement.ts` —
-  har bir provayder uchun qoidalar ro‘yxati (`{id, fromStatuses, toStatus, textMarkers,
-excludeMarkers, defaultRetryAfterMs}`), `applyStatusRestatement()` orqali
-  moslashtiriladi.
-- Chaqiruv joyi: `open-sse/handlers/chatCore.ts` faylidagi `providerFailure:`
-  bloki (taxminan 3654-qator), `parseUpstreamError()` xato HTTP statusiga ega
-  yuqori oqim javobini (`!providerResponse.ok`) tahlil qilganidan keyin va har
-  qanday tasniflash bajarilishidan oldin, shunda barcha quyi oqim iste’molchilari
-  tuzatilgan statusni ko‘radi. `200` SSE oqimi ichiga joylangan xatolar alohida,
-  keyinroq bajariladigan oqimni tahlil qilish yo‘lidan o‘tadi va bugungi kunda
-  bu hook tomonidan **qamrab olinmaydi** — bu ma’lum cheklov bo‘lib, hozircha
-  agentrouter’ning noto‘g‘ri statusi uchun kerak emas (chunki u xato HTTP
-  statusi sifatida yuzaga chiqadi).
+- Registry + matcher: `open-sse/config/upstreamStatusRestatement.ts` — har bir provider uchun qoidalar ro‘yxati (`{id, fromStatuses, toStatus, textMarkers,
+excludeMarkers, defaultRetryAfterMs}`), `applyStatusRestatement()` orqali moslashtiriladi.
+- Chaqiruv nuqtasi: `open-sse/handlers/chatCore.ts` dagi `providerFailure:` bloki
+  (taxminan 3654-qator), `parseUpstreamError()` upstream javobini xato HTTP holati bilan (`!providerResponse.ok`) tahlil qilganidan so‘ng darhol va har qanday tasniflash ishga tushishidan oldin joylashgan; shu sababli barcha quyi oqim iste’molchilari tuzatilgan holatni ko‘radi. `200` SSE oqimiga joylashtirilgan xatolar alohida, keyinroq amalga oshiriladigan oqim tahlili yo‘lidan o‘tadi va bugun ushbu hook qamroviga kirmaydi — bu ma’lum cheklov bo‘lib, agentrouter’ning xato holati bilan yuzaga chiqadigan noto‘g‘ri statusi uchun hozircha talab etilmaydi.
 - Qayta urinishga yaroqlilik: `429` `RETRY_AFTER_ELIGIBLE_STATUSES`
-  (`open-sse/services/combo/unavailableRetryGate.ts`) tarkibiga kiradi, shuning
-  uchun qayta belgilangan xato o‘lik `403` sifatida ko‘rinish o‘rniga haqiqiy
-  qayta urinish oynasiga ega bo‘ladi.
-- Sun’iy `60s` `defaultRetryAfterMs` (`upstreamStatusRestatement.ts`) faqat
-  qayta belgilangan javob **mijozga** bildiradigan qiymatdir; u ulanishning ichki
-  sovush/bloklanish davomiyligi emas — bu qayta belgilangan xatoni amalda qayta
-  ishlaydigan mexanizm tomonidan alohida boshqariladi (Connection Cooldown’ning
-  bosqichma-bosqich ortuvchi kechikishi, §2, API kaliti provayderlari uchun
-  asosiy qiymat `3s`; yoki agentrouter kabi har bir model kvotasiga ega
-  provayderlar uchun Model Lockout, §3). Router mijozga e’lon qilgan 60s
-  oynadan ertaroq ichki qayta urinishga yaroqli bo‘lishi mumkin — bu ataylab
-  qoldirilgan zaxira, xato emas.
+  (`open-sse/services/combo/unavailableRetryGate.ts`) tarkibida mavjud, shuning uchun qayta belgilangan xato ishlamaydigan `403` sifatida yuzaga chiqish o‘rniga haqiqiy qayta urinish oynasini olib yuradi.
+- Sintetik `60s` `defaultRetryAfterMs` (`upstreamStatusRestatement.ts`)
+  faqat qayta belgilangan javob **mijozga** bildiradigan qiymatdir; u ulanishning ichki cooldown/lockout davomiyligi emas — bu alohida ravishda qayta belgilangan xatoni amalda boshqaradigan mexanizmga bog‘liq (Connection Cooldown’ning bosqichma-bosqich backoff’i, §2, API-key provider’lari uchun bazaviy `3s`; yoki agentrouter kabi har bir model kvotasi bo‘yicha provider’lar uchun Model Lockout, §3). Router ichki qayta urinishga mijozga e’lon qilgan 60 soniyalik oynadan oldinroq tayyor bo‘lishi mumkin — bu qasddan qoldirilgan zaxira vaqt, xato emas.
 
-Doimiy xatolar (agentrouter’ning `无权访问模型` — bu modeldan foydalanish huquqi
-yo‘q) HECH QACHON qayta belgilanmaydi: `textMarkers` mos kelganida ham
-`excludeMarkers` qoidani bekor qiladi, shuning uchun xato o‘zining asl statusini
-saqlab qoladi va hech narsa uni cheksiz qayta urinmaydi. Mos keluvchi provayder
-tasniflash qoidasi
-(`open-sse/config/providerErrorRules.ts` ichidagi `agentrouter-model-access-denied`:
-`reason: "auth_error"`, `scope: "model"`, e’lon qilingan asosiy sovush muddati
-`6h`) `checkFallbackError` (`open-sse/services/accountFallback.ts`) tomonidan
-umumiy apikey toifasidagi `FORBIDDEN` erta qaytarilishidan _oldin_ tekshiriladi;
-bu `honorsRuleLockScope(provider)` bilan cheklangan (#10334 — hozirda
-`providerErrorRules.ts` ichidagi `HONORS_RULE_LOCK_SCOPE_PROVIDERS` ruxsat
-ro‘yxati orqali faqat agentrouter uchun). Qoidada e’lon qilingan 6h sovush
-muddati `fallbackResult.baseCooldownMs` sifatida uzatiladi, ammo u baribir
-avvaldan mavjud har bir model kvotasi uchun bloklash yo‘liga
-(`lockModelIfPerModelQuota()` / `recordModelLockoutFailure()`, sovush muddati
-manbasidan tashqari #10334 bilan o‘zgartirilmagan) beriladi: u boshqa barcha
-model bloklashlari kabi operatorning `mlSettings.maxCooldownMs` qiymatigacha
-(sukut bo‘yicha `1_800_000ms` / 30min) pasaytirib cheklanadi va _saqlanadigan
-bloklash sababi_ qoidaning `"auth_error"` qiymati emas, avvaldan mavjud
-qattiq kodlangan `"forbidden"` bo‘lib qoladi — boshidan oxirigacha faqat sovush
-davomiyligiga amal qilinadi, sabab satriga emas. Ulanishning o‘zi faol qoladi;
-shu ulanishdagi boshqa modellar ta’sirlanmaydi.
+Doimiy xatolar (`agentrouter`ning `无权访问模型` — bu modelga kirish huquqi yo‘q) HECH
+QACHON qayta belgilanmaydi: `excludeMarkers` `textMarkers` mos kelgan taqdirda ham qoidani bekor qiladi, shuning uchun xato o‘zining dastlabki holatini saqlab qoladi va hech narsa cheksiz qayta urinmaydi. Mos provider tasniflash qoidasi
+(`open-sse/config/providerErrorRules.ts` dagi `agentrouter-model-access-denied`:
+`reason: "auth_error"`, `scope: "model"`, e’lon qilingan bazaviy cooldown `6h`) `checkFallbackError` (`open-sse/services/accountFallback.ts`) tomonidan umumiy apikey-kategoriyadagi `FORBIDDEN` erta qaytarilishidan _oldin_, `honorsRuleLockScope(provider)` (#10334 — hozirda `providerErrorRules.ts` ichidagi `HONORS_RULE_LOCK_SCOPE_PROVIDERS` allowlist’i orqali faqat agentrouter’ga xos) sharti asosida tekshiriladi. Qoidada e’lon qilingan 6 soatlik cooldown `fallbackResult.baseCooldownMs` orqali uzatiladi, ammo u baribir avvaldan mavjud bo‘lgan har bir model kvotasi uchun lockout yo‘liga (`lockModelIfPerModelQuota()` /
+`recordModelLockoutFailure()`) yuboriladi (#10334 bu yo‘lni cooldown manbasidan tashqari o‘zgartirmaydi): u operatorning `mlSettings.maxCooldownMs` qiymatigacha (standart `1_800_000ms` / 30 daqiqa) qisqartiriladi, boshqa barcha model lockout’lari kabi, va _saqlanadigan lockout sababi_ qoidaning `"auth_error"` qiymati emas, avvaldan qattiq kodlangan `"forbidden"` bo‘lib qoladi — boshidan oxirigacha faqat cooldown davomiyligi hisobga olinadi, sabab satri emas. Ulanishning o‘zi faol qoladi; ayni ulanishdagi qo‘shni modellar bundan ta’sirlanmaydi.
 
-Qayta ifodalangan kvota xatolari (`额度不足`) production muhitida provayder qoidasiga mos keladi
+Qayta belgilangan kvota xatolari (`额度不足`) production muhitida provider qoidasiga yetib boradi
 (`agentrouter-user-quota-exhausted`: `reason: "quota_exhausted"`, `scope:
-"connection"`, o‘ziga tegishli e’lon qilingan cooldown yo‘q — persistence qatlamining
-masshtablangan backoff standart qiymati qo‘llanadi). #10334 dan boshlab,
-`ProviderErrorRuleMatch` dagi `scope` boshidan oxirigacha qo‘llanadi, ammo
-**faqat** `HONORS_RULE_LOCK_SCOPE_PROVIDERS` ruxsat ro‘yxatidagi provayderlar uchun
-(`providerErrorRules.ts` — hozircha faqat `"agentrouter"`,
-`honorsRuleLockScope()` orqali boshqariladi). Boshqa barcha provayderlar uchun
-`scope` xuddi #10334 dan oldingidek faqat axborot xususiyatiga ega bo‘lib qoladi.
-`checkFallbackError` mos kelgan qoidaning scope qiymatini
-`fallbackResult.ruleScope` sifatida taqdim etadi;
-`isAgentrouterConnectionQuotaScope()`
-(`src/sse/services/auth.ts`) esa `ruleScope` qiymatini butun ulanishga
-taalluqli, o‘z-o‘zidan tiklanadigan signal sifatida qo‘llash haqiqatan ham
-xavfsizligini tasdiqlovchi umumiy guard hisoblanadi (`scope` `"connection"`,
-reason `quota_exhausted`, hech qachon `permanent` emas, hech qachon
-`creditsExhausted` emas — bu kelajakdagi biror qoida `"connection"` scope qiymatini
-doimiy akkaunt holati bilan bog‘lashiga qarshi himoya). Uni ikki iste’molchi chaqiradi:
+"connection"`, o‘ziga tegishli e’lon qilingan cooldown mavjud emas — persistence layer’ning masshtablangan backoff standarti qo‘llanadi). #10334 dan beri `ProviderErrorRuleMatch` dagi `scope` boshidan oxirigacha ISHLATILADI, ammo **faqat** `HONORS_RULE_LOCK_SCOPE_PROVIDERS` allowlist’iga kiritilgan provider’lar uchun (`providerErrorRules.ts` — bugungi kunda faqat `"agentrouter"`, `honorsRuleLockScope()` orqali boshqariladi). Boshqa har qanday provider uchun `scope` #10334 dan avvalgidek axborot xarakterida qoladi.
+`checkFallbackError` mos kelgan qoidaning scope qiymatini `fallbackResult.ruleScope` sifatida taqdim etadi; `isAgentrouterConnectionQuotaScope()`
+(`src/sse/services/auth.ts`) — `ruleScope` qiymatini ulanish bo‘yicha, o‘zini o‘zi tiklaydigan signal sifatida qo‘llash haqiqatan xavfsiz ekanini tasdiqlovchi umumiy himoya tekshiruvi (scope `"connection"`, reason `quota_exhausted`, hech qachon `permanent` emas, hech qachon `creditsExhausted` emas — bu kelajakdagi qoidada scope `"connection"` doimiy account holati bilan juftlanishidan himoya qiladi). Undan ikki iste’molchi foydalanadi:
 
-- **Persistence** (`markAccountUnavailable()`, `src/sse/services/auth.ts`):
-  passthrough-provayderning **har bir model uchun alohida** bloklash
-  tarmog‘iga tushish o‘rniga (agentrouter’da `passthroughModels: true` →
-  `hasPerModelQuota()` `true` qaytaradi), u **vaqtinchalik ulanish cooldown’i**ni
-  qo‘llaydi — `testStatus: "unavailable"` + `rateLimitedUntil`, hech qachon
-  terminal holat (`credits_exhausted`/`banned`/`expired`) emas — shu sababli
-  ulanish cooldown muddati tugagach, hisob ma’lumotlarini qo‘lda tiklashni talab
-  qilmasdan o‘z-o‘zidan tiklanadi. `disableCooling: true` bo‘lgan ulanishlar uchun
-  o‘tkazib yuboriladi (#2997): bu opt-out o‘rniga har bir model uchun alohida
-  bloklashga o‘tadi (hujjatlashtirilgan murosa — tarmoq ustidagi kod izohiga qarang).
-- **Ayni so‘rov doirasidagi combo marshrutlash** (`applyComboTargetExhaustion()`,
-  `open-sse/services/combo/targetExhaustion.ts`): xuddi shu guard ulanishni
-  `${provider}:${connectionId}` kaliti bilan xotiradagi `exhaustedConnections`
-  to‘plamida belgilaydi. Bu faqat o‘z target obyektida aynan shu
-  `connectionId` mavjud bo‘lgan qolgan AYNI-SO‘ROV target’ini o‘tkazib yuboradi
-  (`getExhaustedTargetSkipReason()`,
-  `open-sse/services/combo/comboPredicates.ts`, `exhaustedConnections`
-  tekshiruvidan oldin `if (provider &&
-connectionId)`) — oddiy model-ro‘yxat combo’sida qo‘shni target’larning o‘zida
-  biriktirilgan `connectionId` bo‘lmaydi va u har bir dispatch uchun faqat
-  javobdagi `X-OmniRoute-Selected-Connection-Id` header’idan aniqlanadi, shuning
-  uchun bunday combo hech qachon ushbu kalitga mos kelmaydi. Bu keng tarqalgan
-  holatda qolgan leg’ning hozirgina limiti tugagan akkauntni qayta ishlatishidan
-  haqiqiy himoya ushbu Set EMAS — bu yuqoridagi persistence qatlami
-  (ulanishning `rateLimitedUntil` qiymati endi kelajakdagi vaqtni ko‘rsatadi)
-  hamda shu guard’ning xatolik uchun `transientRateLimitedProviders` qiymatini
-  bostirishi kombinatsiyasidir ("Ikki bosqichli dizayn" va
-  `targetExhaustion.ts` dagi `isAgentrouterConnectionQuotaScope` tarmog‘idagi
-  kod izohiga qarang): ushbu Set belgilanmay qolgani sababli, `combo.ts` dagi
-  `allowRateLimitedConnection` orqali majburiy ruxsat berish
-  (`open-sse/services/combo.ts:1005-1013`, `:2734-2738`) provayderning qolgan
-  leg’lari uchun ishga tushmaydi, shu bois hisob ma’lumotlarini tanlashdagi
-  `rateLimitedUntil` filtri (`src/sse/services/auth.ts:1238`) odatdagidek
-  hisobga olinadi va qolgan leg agentrouter’ning boshqa, hali ham foydalanish
-  mumkin bo‘lgan ulanishini tanlaydi yoki foydalanish mumkin bo‘lgan hisob
-  ma’lumotlari yo‘qligi sababli muvaffaqiyatsiz tugaydi — u ushbu tarmoq hozirgina
-  cooldown qo‘llagan ulanishga majburan qaytmaydi.
+- **Saqlash** (`markAccountUnavailable()`, `src/sse/services/auth.ts`):
+  passthrough-provider **har bir model uchun** bloklash tarmog‘iga tushish o‘rniga (agentrouter’da `passthroughModels: true` → `hasPerModelQuota()` `true` qaytaradi), **vaqtinchalik ulanish sovish davri**ni qo‘llaydi —
+  `testStatus: "unavailable"` + `rateLimitedUntil`, hech qachon terminal holat emas
+  (`credits_exhausted`/`banned`/`expired`) — shuning uchun ulanish sovish davri tugagach, hisob ma’lumotlarini qo‘lda tiklashni talab qilmasdan o‘z-o‘zidan tiklanadi.
+  `disableCooling: true` bo‘lgan ulanishlar uchun o‘tkazib yuboriladi (#2997): bu istisno per-model bloklashga o‘tadi (hujjatlashtirilgan murosa — tarmoq ustidagi kod izohiga qarang).
+- **Bir xil so‘rovdagi combo marshrutlash** (`applyComboTargetExhaustion()`,
+  `open-sse/services/combo/targetExhaustion.ts`): xuddi shu himoya ulanishni xotiradagi `exhaustedConnections` to‘plamiga `${provider}:${connectionId}` kaliti bilan belgilaydi. Bu faqat o‘z target obyektida aynan shu `connectionId` ko‘rsatilgan, qolgan SAME-REQUEST targetni o‘tkazib yuboradi (`getExhaustedTargetSkipReason()`,
+  `open-sse/services/combo/comboPredicates.ts`, `exhaustedConnections` qidiruvidan oldingi `if (provider &&
+connectionId)`) — oddiy model-ro‘yxat combo’sida qo‘shni targetlarda o‘ziga biriktirilgan `connectionId` bo‘lmaydi va ulanish har bir dispatch uchun javobdagi `X-OmniRoute-Selected-Connection-Id` headeridan yechiladi, shuning uchun bu kalit mosligi hech qachon yuz bermaydi. Bunday keng tarqalgan holatda qolgan qadamning hozirgina tugatilgan hisobni qayta ishlatishiga qarshi haqiqiy himoya bu Set emas — yuqoridagi saqlash qatlami (`rateLimitedUntil` endi kelajakdagi vaqtga o‘rnatilgan) hamda shu himoyaning xato uchun `transientRateLimitedProviders`ni bostirishi ( `targetExhaustion.ts` dagi `isAgentrouterConnectionQuotaScope` tarmog‘iga berilgan kod izohidagi “Two-stage design” bo‘limiga qarang): Set belgilanmagan holda qolsa, `combo.ts` dagi `allowRateLimitedConnection` majburiy ruxsati (`open-sse/services/combo.ts:1005-1013`, `:2734-2738`) provayderning qolgan qadamlariga ishga tushmaydi, shuning uchun credential tanlashdagi `rateLimitedUntil` filtri (`src/sse/services/auth.ts:1238`) odatdagidek hisobga olinadi va qolgan qadam boshqa, hali ham yaroqli agentrouter ulanishini tanlaydi yoki mavjud credentiallar bo‘lmagani sababli muvaffaqiyatsiz tugaydi — u bu tarmoq hozirgina sovitgan ulanishga majburan qaytmaydi.
 
-### Ikki bosqichli dizayn: statusni qayta ifodalash, so‘ng tasniflash
+### Ikki bosqichli dizayn: statusni qayta ifodalash, keyin tasniflash
 
-Statusni qayta ifodalash (`upstreamStatusRestatement.ts`) va provayderni
-tasniflash qoidalari (`open-sse/config/providerErrorRules.ts`,
-`providerRuleRegistry`) provayder id’si va matn markerlari bo‘yicha kalitlanadigan
-alohida registrlardir, ammo ular turli joylarda ishlaydi va turli maqsadlarga
-xizmat qiladi: qayta ifodalash `chatCore.ts` ichida HTTP statusini erta bosqichda
-qayta yozadi; tasniflash qoidalari esa `checkFallbackError()` ichida
-fallback `reason` va lock `scope` qiymatini
-(`model` / `provider` / `connection`) tanlaydi
-(`open-sse/services/accountFallback.ts`).
+Statusni qayta ifodalash (`upstreamStatusRestatement.ts`) va provayderni tasniflash qoidalari (`open-sse/config/providerErrorRules.ts`,
+`providerRuleRegistry`) provayder identifikatori va matn markerlari asosida ishlaydigan alohida registrlardir, biroq ular turli joylarda bajariladi va turli maqsadlarga xizmat qiladi: qayta ifodalash `chatCore.ts`da HTTP statusini erta qayta yozadi;
+tasniflash qoidalari esa `checkFallbackError()` ichida zaxira `reason`ni tanlaydi va `scope`ni
+(`model` / `provider` / `connection`) belgilaydi (`open-sse/services/accountFallback.ts`).
 
-Tasniflash qoidalari to‘liq xato **matni**ni (`额度不足` kabi body markerlariga
-mos kelish uchun zarur) faqat `providerErrorRules.ts` dagi
-`FULL_TEXT_RULE_PROVIDERS` ruxsat ro‘yxatiga kiritilgan provayderlar uchun
-ko‘radi — hozircha faqat `"agentrouter"`. Boshqa har bir **ichki katalog**
-provayderi uchun `checkFallbackError` `getProviderErrorRuleMatch` ga faqat
-strukturaviy xatoni (`{code, type}`) uzatadi; bu header/status/code asosidagi
-qoidalar uchun yetarli, ammo body matnidagi markerlarni ko‘rmaydi.
-`resolveRuleMatchBody()` yordamchi funksiyasi ushbu tanlovni amalga oshiradi:
-ruxsat ro‘yxatidagi provayderlar uchun to‘liq xato matni, aks holda strukturaviy
-xato. **Ichki** provayderni `FULL_TEXT_RULE_PROVIDERS` ro‘yxatiga qo‘shish har bir
-provayder uchun aniq opt-in hisoblanadi — bu ro‘yxatda bo‘lmagan har bir provayder
-uchun standart yo‘l baytma-bayt o‘zgarishsiz qolishi uchun mavjud.
+Tasniflash qoidalari faqat `providerErrorRules.ts`dagi `FULL_TEXT_RULE_PROVIDERS` ruxsat etilgan ro‘yxatida ko‘rsatilgan provayderlar uchun to‘liq xato **matnini** ko‘radi (`额度不足` kabi body markerlarini moslashtirish uchun kerak) — hozircha faqat `"agentrouter"`. Boshqa barcha **o‘rnatilgan katalog** provayderlari uchun `checkFallbackError` `getProviderErrorRuleMatch`ga faqat strukturalangan xatoni (`{code, type}`) uzatadi; bu header/status/code asosidagi qoidalar uchun yetarli, biroq body matnidagi markerlarni ko‘rmaydi.
+`resolveRuleMatchBody()` yordamchisi shu tanlovni amalga oshiradi: ruxsat etilgan provayderlar uchun to‘liq xato matni, aks holda strukturalangan xato. **O‘rnatilgan** provayderni `FULL_TEXT_RULE_PROVIDERS`ga qo‘shish provayder bo‘yicha aniq yoqish hisoblanadi — bu ro‘yxatda bo‘lmagan har bir provayder uchun standart yo‘l baytma-bayt o‘zgarmasligini ta’minlash uchun mavjud.
 
-Qoidaning `scope` qiymati (`model` / `provider` / `connection`)
-`FULL_TEXT_RULE_PROVIDERS` dan alohida opt-in hisoblanadi:
-`checkFallbackError` uni faqat `fallbackResult.ruleScope` sifatida taqdim etadi,
-downstream iste’molchilar esa uni axborot yorlig‘idan boshqa ma’noda faqat shu
-fayldagi `HONORS_RULE_LOCK_SCOPE_PROVIDERS` ruxsat ro‘yxatiga kiritilgan
-provayderlar uchun qo‘llaydi (`honorsRuleLockScope()` orqali boshqariladi —
-hozircha faqat `"agentrouter"`). Provayder ushbu ruxsat ro‘yxatiga kiritilgach,
-`scope: "connection"` mosligi amalda nima qilishini bilish uchun yuqoridagi
-"Qayta ifodalangan kvota xatolari" bo‘limiga qarang.
+Qoidaning `scope`i (`model` / `provider` / `connection`) `FULL_TEXT_RULE_PROVIDERS`dan alohida yoqiladigan imkoniyatdir: `checkFallbackError` uni faqat `fallbackResult.ruleScope` sifatida ko‘rsatadi, quyi darajadagi iste’molchilar esa uni bir xil fayldagi `HONORS_RULE_LOCK_SCOPE_PROVIDERS` ruxsat etilgan ro‘yxatida ko‘rsatilgan provayderlar uchungina axborot yorlig‘idan boshqa narsa sifatida hisobga oladi (`honorsRuleLockScope()` orqali nazorat qilinadi — hozircha faqat `"agentrouter"`). Provayder ushbu ruxsat etilgan ro‘yxatda bo‘lgach, `scope: "connection"` mosligi amalda nima qilishini yuqoridagi “Restated quota
+errors” bo‘limidan ko‘ring.
 
-**#11104 — operator tomonidan eʼlon qilingan qoidalar ikkala ruxsat roʻyxatini ham chetlab oʻtadi.** Operator
-ushbu faylni tahrirlamasdan, ish vaqtida `settings.providerErrorRules`
-(`open-sse/config/providerErrorRules.ts::setOperatorProviderErrorRules`)
-orqali har bir provayder uchun qoida eʼlon qilishi mumkin. Operator qoidasini
-`FULL_TEXT_RULE_PROVIDERS`/`HONORS_RULE_LOCK_SCOPE_PROVIDERS` ortida cheklash — bu
-ruxsat roʻyxatlari ichki katalog qoidalarining **standart** xatti-harakatini
-himoya qilishga moʻljallangan — sozlamalar mexanizmini u yerda allaqachon
-koʻrsatilgan provayderlardan tashqari barcha provayderlar uchun ishlamaydigan
-qilib qoʻyar edi, chunki qoidani eʼlon qilishning oʻzi operatorning aniq
-roziligidir. `resolveRuleMatchBody()` va `honorsRuleLockScope()` avval
-`hasOperatorRuleForProvider()`ni tekshiradi: operator qoidasiga ega provayder
-xom xato matnini oladi va uning eʼlon qilingan `scope` qiymati, provayder
-ruxsat roʻyxatlaridan birortasida mavjud yoki mavjud emasligidan qatʼi nazar,
-inobatga olinadi.
+**#11104 — operator e’lon qilgan qoidalar ikkala ruxsat etilgan ro‘yxatni ham chetlab o‘tadi.** Operator faylni tahrirlamasdan, `settings.providerErrorRules` orqali ish vaqtida provayder bo‘yicha qoida e’lon qilishi mumkin (`open-sse/config/providerErrorRules.ts::setOperatorProviderErrorRules`). Operator qoidasini `FULL_TEXT_RULE_PROVIDERS`/`HONORS_RULE_LOCK_SCOPE_PROVIDERS` orqali cheklash — o‘rnatilgan katalog qoidalarining **standart** xatti-harakatini himoyalash uchun mo‘ljallangan ruxsat etilgan ro‘yxatlar — sozlamalar mexanizmini ushbu ro‘yxatlarda allaqachon mavjud bo‘lgan provayderlardan tashqari barcha provayderlar uchun ishlamas holga keltirgan bo‘lardi, chunki qoidani e’lon qilishning o‘zi operatorning aniq roziligidir. `resolveRuleMatchBody()` va `honorsRuleLockScope()` avval `hasOperatorRuleForProvider()`ni tekshiradi: operator qoidasi mavjud bo‘lgan provayder xom xato matnini oladi va e’lon qilingan `scope`ini, ikkala ruxsat etilgan ro‘yxatning birortasida bo‘lish-bo‘lmasligidan qat’i nazar, hisobga oldiradi.
 
-**Maʼlum kamchilik — HTTP 400 uchun `providerRuleRegistry` hech qachon tekshirilmaydi.**
-`checkFallbackError`ning `BAD_REQUEST` tarmogʻi 400 statusini toʻliq
-oʻzining andoza massivlari (`MODEL_ACCESS_DENIED_PATTERNS`,
-`CONTEXT_OVERFLOW_PATTERNS` va `accountFallback.ts`dagi boshqalar) orqali
-tasniflaydi va undan yuqoridagi `configuredRule`/`getProviderErrorRuleMatch`
-tarmogʻiga yetib borishdan oldin natijani qaytaradi. `status: 400`ga ega ichki
-katalog qoidasi (yoki operator qoidasi) sintaktik jihatdan toʻgʻri, ammo hech
-qachon ishga tushmaydi. Hozirda mavjud qoidalardan hech biri 400ni nishonga
-olmaydi, shuning uchun ishlab turgan muhitdagi hech narsaga taʼsir qilmaydi —
-ammo kelajakdagi 400 qoidasi avval ushbu tarmoqqa oʻzgartirish kiritishni
-talab qiladi; bu shunchaki qoida qoʻshishdan kattaroq oʻzgarishdir (u andoza
-massivlariga asoslangan xatti-harakatga tayanayotgan har bir provayder uchun
-400ni qayta tasniflaydi) va bitta provayder qoidasini qoʻshish doirasidan
-tashqarida.
+**Operator e’lon qilgan qoidalar** (`OperatorProviderErrorRule`): har bir qoidada ixtiyoriy `status` va ixtiyoriy `match` mavjud (`match` xato matnidagi oddiy, katta-kichik harflarga sezgir bo‘lmagan qism satridir, hech qachon RegExp emas, shuning uchun ReDoSga sabab bo‘la olmaydi) va ulardan kamida bittasi o‘rnatilishi shart. Ikkalasi ham o‘rnatilgan bo‘lsa, ular AND sharti bilan bog‘lanadi; o‘tkazib yuborilgan maydon istalgan qiymatga mos keladi, shuning uchun `{match: "insufficient_quota"}` ushbu kodni o‘z ichiga olgan istalgan statusga mos keladi. Birinchi mos kelgan qoida g‘olib bo‘ladi. `cooldownMs` ko‘pi bilan 30 kungacha qabul qilinadi; jami qoidalar soni 50 tadan oshmaydi.
 
-### Kvotani notoʻgʻri ifodalovchi yangi shlyuzni qoʻshish
+**Barcha holatlar uchun standart sozlamalar** (`settings.providerErrorDefaults`, ixtiyoriy, `setOperatorProviderErrorDefaults` orqali o‘rnatiladi): `{[provider]: {cooldownMs, scope?, reason?}}`
+`cooldownMs` qiymati 1 daqiqadan 30 kungacha bo‘lishi mumkin. Standart sozlama faqat operator qoidasi ham, ichki katalog qoidasi ham mos kelmaganda va faqat 402, 403, 408, 429 hamda 5xx xatolariga nisbatan qo‘llanadi. So‘rov shakliga oid xatolar (400, 404, 409, 413, 422) va alohida kelgan 401 xatolari o‘zlarining amaldagi qayta ishlanish usulini saqlab qoladi. Aniq `reason` ko‘rsatilmagan bo‘lsa, sabab statusdan olinadi — `classifyError` qanday ishlasa, xuddi shunday. Standart sozlamani e’lon qilish `hasOperatorRuleForProvider()` uchun operator qoidasi hisoblanadi, shuning uchun uning `scope` qiymati (standart qiymat `"connection"`) inobatga olinadi. Standart sozlamaning amaldagi kutish muddati uning `cooldownMs` qiymati va provayderning o‘z qayta urinish ko‘rsatmasidan (`Retry-After`, `x-ratelimit-reset` yoki tanadagi reset ko‘rsatmasi; ulanishni kutish sozlamasida "use upstream retry hints" yoqilganda dvigatel aynan shu ko‘rsatmani inobatga oladi) kattarog‘i bo‘ladi. Shu sababli standart sozlama qisqa upstream ko‘rsatmasini uzaytirishi mumkin, ammo haqiqiy reset muddatini hech qachon qisqartirmaydi. Aniq operator qoidasi o‘zining belgilangan `cooldownMs` qiymatini saqlaydi. Na qoida, na standart sozlama `markAccountUnavailable` ichidagi ulanishni kutish himoyalarini chetlab o‘tadi: faol va uzoqroq kutish muddati hech qachon qisqartirilmaydi, terminal status esa hech qachon ustidan yozilmaydi. `checkFallbackError` ichida oldinroq ishlaydigan ichki matn aniqlagichlar (kreditlar tugagan, kunlik kvota, akkaunt faolsizlantirilgan) o‘zlariga tegishli iboralar uchun hamon ustuvor hisoblanadi.
 
-1. `statusRestatementRegistry`da bitta qoida massivini roʻyxatdan oʻtkazing
-   (`open-sse/config/upstreamStatusRestatement.ts`). `textMarkers`ni
-   provayderga xos holda saqlang; `CREDITS_EXHAUSTED_SIGNALS`
-   (`open-sse/services/accountFallback.ts`) bilan toʻqnashadigan umumiy
-   inglizcha iboralarni hech qachon qayta ishlatmang.
-2. Toʻgʻri bloklash doirasini tanlash uchun ixtiyoriy ravishda
-   `open-sse/config/providerErrorRules.ts` (`providerRuleRegistry`)da
-   tasniflash qoidalarini roʻyxatdan oʻtkazing (`connection` — hisob boʻylab
-   amal qiladigan kvota uchun, `model` — har bir modelga xos xatolar uchun).
-   Bu qadam ishlab turgan muhitda faqat qoidalari xatoning toʻliq matniga
-   (tana markerlariga) muhtoj boʻlgan provayderlar uchun kuchga kiradi:
-   provayder identifikatorini shu fayldagi `FULL_TEXT_RULE_PROVIDERS`ga
-   qoʻshing — aks holda `checkFallbackError` qoidaga faqat tuzilmaviy
-   `{code, type}` xatosini uzatadi va tana matniga asoslangan qoida real
-   trafikda hech qachon mos kelmaydi. Faqat `status`/`headers` boʻyicha mos
-   keladigan qoidalar (Opencode yoki Minimax qoidalari kabi) bu rozilikni
-   talab qilmaydi. Bundan tashqari, agar qoida `scope: "connection"`ni eʼlon
-   qilsa va maqsad shunchaki axborot yorligʻi emas, balki haqiqiy ulanish
-   miqyosidagi sovitish davri hamda ayni soʻrovdagi kombinatsiyani oʻtkazib
-   yuborish boʻlsa, provayder identifikatorini shu fayldagi
-   `HONORS_RULE_LOCK_SCOPE_PROVIDERS`ga qoʻshing — aynan shu narsa
-   `markAccountUnavailable()` (`src/sse/services/auth.ts`) va
-   `applyComboTargetExhaustion()`
-   (`open-sse/services/combo/targetExhaustion.ts`) ichidagi
-   `isAgentrouterConnectionQuotaScope()` uslubidagi foydalanishni cheklaydi;
-   busiz `scope` hali ham `fallbackResult.ruleScope` orqali uzatiladi, ammo
-   hech narsa unga muvofiq harakat qilmaydi.
-3. `tests/unit/upstream-status-restatement.test.ts` va
-   `tests/unit/agentrouter-error-rules.test.ts`ga oʻxshash birlik testlarini
-   qoʻshing (jumladan, not-permanent / not-creditsExhausted himoya
-   tekshiruvlari va — agar provayderga ruxsat roʻyxati kerak boʻlsa —
-   `resolveRuleMatchBody()` toʻliq matnni faqat shu provayder uchun
-   qaytarishini tasdiqlovchi test).
+**Ma’lum bo‘shliq — `providerRuleRegistry` HTTP 400 uchun hech qachon tekshirilmaydi.**
+`checkFallbackError` funksiyasining `BAD_REQUEST` tarmog‘i 400 statusini to‘liq o‘zining pattern massivlari (`MODEL_ACCESS_DENIED_PATTERNS`, `CONTEXT_OVERFLOW_PATTERNS` va boshqalar `accountFallback.ts` ichida) orqali tasniflaydi va yuqoridagi `configuredRule`/`getProviderErrorRuleMatch` tarmog‘iga yetib bormasdan qaytadi. `status: 400` bo‘lgan ichki katalog qoidasi (yoki operator qoidasi) sintaktik jihatdan to‘g‘ri bo‘lsa-da, hech qachon ishga tushmaydi. Hozircha mavjud qoidalarning hech biri 400 ni nishonga olmaydi, shuning uchun ishlab chiqarishdagi hech narsa ta’sirlanmaydi — ammo kelajakdagi 400 qoidasi uchun avval shu tarmoqni o‘zgartirish kerak bo‘ladi. Bu qoida qo‘shishdan ko‘ra kattaroq o‘zgarishdir, chunki u pattern-massiv xatti-harakatiga allaqachon tayanayotgan har bir provayder uchun 400 tasnifini qayta belgilaydi va bitta provayderga qoida qo‘shish doirasiga kirmaydi.
 
-`chatCore.ts`, `classifyError` yoki kombinatsiyaga hech qanday oʻzgartirish
-kiritish shart emas.
+### Kvotani noto‘g‘ri ko‘rsatuvchi yangi gateway qo‘shish
 
-#### Chiquvchi trafik boʻyicha guruhlangan bloklash (#10880)
+1. `statusRestatementRegistry` ichida bitta qoida massivini ro‘yxatdan o‘tkazing
+   (`open-sse/config/upstreamStatusRestatement.ts`). `textMarkers` qiymatlarini provayderga xos saqlang; `CREDITS_EXHAUSTED_SIGNALS` (`open-sse/services/accountFallback.ts`) bilan to‘qnashadigan umumiy inglizcha iboralarni hech qachon qayta ishlatmang.
+2. To‘g‘ri bloklash doirasini tanlash uchun `open-sse/config/providerErrorRules.ts` (`providerRuleRegistry`) ichida tasniflash qoidalarini ixtiyoriy ravishda ro‘yxatdan o‘tkazing (`connection` — akkaunt miqyosidagi kvota uchun, `model` — modelga xos xatolar uchun). Bu qadam ishlab chiqarishda faqat qoidalari to‘liq xato matniga (body markerlariga) muhtoj bo‘lgan provayderlar uchun amal qiladi: shu fayldagi `FULL_TEXT_RULE_PROVIDERS` ga provayder identifikatorini qo‘shing — aks holda `checkFallbackError` qoidaga faqat tuzilgan `{code, type}` xatosini uzatadi va body matniga asoslangan qoida haqiqiy trafikda hech qachon mos kelmaydi.
+   Faqat `status`/`headers` asosida mos keladigan qoidalar (masalan, Opencode yoki Minimax qoidalari) uchun bu ixtiyoriy ruxsat kerak emas. Bundan tashqari, agar qoida `scope: "connection"` ni e’lon qilsa va maqsad haqiqiy ulanish miqyosidagi kutish muddati hamda ayni so‘rovdagi kombinatsiyali o‘tkazib yuborish bo‘lsa (shunchaki ma’lumot yorlig‘i emas), shu fayldagi `HONORS_RULE_LOCK_SCOPE_PROVIDERS` ga provayder identifikatorini qo‘shing — aynan shu narsa `markAccountUnavailable()` (`src/sse/services/auth.ts`) ichidagi `isAgentrouterConnectionQuotaScope()` uslubidagi iste’molni va `applyComboTargetExhaustion()` (`open-sse/services/combo/targetExhaustion.ts`) ni boshqaradi; busiz `scope` baribir `fallbackResult.ruleScope` orqali uzatiladi, ammo undan hech narsa foydalanmaydi.
+3. `tests/unit/upstream-status-restatement.test.ts` va `tests/unit/agentrouter-error-rules.test.ts` dagi testlarga o‘xshash unit testlar qo‘shing (jumladan, not-permanent / not-creditsExhausted himoyalari va — agar provayderga allowlist kerak bo‘lsa — `resolveRuleMatchBody()` faqat shu provayder uchun to‘liq matn qaytarishini tasdiqlovchi test).
 
-`EGRESS_BUCKETED_LOCK_PROVIDERS`dagi provayderlar (opencode oilasi) IP boʻyicha
-guruhlangan yuqori oqim sifatida koʻriladi (opencode bepul tarifi hisob
-boʻyicha emas, IP boʻyicha guruhlangan — #9611ga qarang): `quota_exhausted`
-**yoki** `rate_limit_exceeded` sifatida tasniflangan 429 statusi, rotatsiya
-ularni sinab koʻrishidan oldin, oxirgi maʼlum chiquvchi IP manzili xato bergan
-ulanishnikiga mos keladigan ruxsat berilgan oiladagi barcha ulanishlar uchun
-sovitish davrini ishga tushiradi
-— bu N-1 ta kafolatlangan muvaffaqiyatsiz yuqori oqim chaqiruvining oldini
-oladi (#10460/#10525 bilan bir xil shakl).
-`rate_limit_exceeded` ataylab kiritilgan: `markAccountUnavailable` yoʻlida
-opencodega xos qoidalar hech qachon mos kelmaydi (`checkFallbackError`ga
-sarlavhalar/tana uzatilmaydi, opencode esa `FULL_TEXT_RULE_PROVIDERS`da emas),
-shu sababli tanasida obuna kvotasi matni ("monthly usage limit reached")
-mavjud boʻlgan 429, `status_429` qoidasiga yetib borishdan oldin, kvota
-matniga asoslangan zaxira mexanizmi (`buildSubscriptionQuotaFallback`,
-`accountFallback.ts`; 1 soatlik sovitish davri) tomonidan `quota_exhausted`
-sifatida tasniflanadi — kvota matni boʻlmagan 429 esa (oddiy tezlik
-cheklovi) `status_429` qoidasi orqali `rate_limit_exceeded` sifatida
-tasniflanadi va baribir IP oilasi uchun sovitish davrini ishga tushiradi.
-Ruxsat roʻyxatidagi provayder uchun IP boʻyicha guruhlangan tezlik cheklovi
-tugagan kvota bilan bir xil signaldir. Amaldagi cheklovlar:
+`chatCore.ts`, `classifyError` yoki combo uchun hech qanday o‘zgarish kerak emas.
 
-- **Imkon qadar**: blokirovka ulanishning oxirgi maʼlum `egress_ip`
-  qiymatini `proxy_logs` dan aniqlaydi (24 soatlik oyna, sinxron, keshsiz). Sovuq
-  kesh (`egress` IP hech qachon tekshirilmagan) yoki satr yoʻqligi → xatoga uchragan
-  ulanish ushbu tarmoq tomonidan baribir sovitiladi (hozirgidek qayd etiladi),
-  faqat birorta ham turdosh ulanish bloklanmaydi.
-- **Hech qachon terminal holat emas**: sovitish — yangilanib turuvchi kvota oynasi
-  (`testStatus: "unavailable"`); IP darajasidagi signaldan hech qachon doimiy
-  holat chiqarilmaydi. `disableCooling` ulanishlari bu tarmoqni butunlay chetlab
-  oʻtadi.
-- **Ruxsat etilgan oilada blokirovka donadorligi oʻzgaradi**: bu faqat turdosh
-  ulanishlarni optimallashtirish emas, balki qamrov oʻzgarishidir. opencode —
-  `passthroughModels` provayderi, shu sabab bu tarmoqdan oldin 429 har bir MODEL
-  uchun alohida blokirovka hosil qilardi; endi esa u ulanishning sovitilishini
-  keltirib chiqaradi — bu hatto hech qanday turdosh ulanishsiz bitta ulanishni
-  ishlatayotgan operatorga ham taalluqli. Aynan shu donadorlik opencode qoidalari
-  jadvalida allaqachon toʻgʻri deb belgilangan (`scope: "connection"`,
-  `providerErrorRules.ts`), biroq opencode `HONORS_RULE_LOCK_SCOPE_PROVIDERS`
-  tarkibida boʻlmagani sababli hozirgacha unga amal qilinmagan. Bu tarmoq
-  ulanish doirasidagi agentrouter tarmogʻiga taqlid qilib, xatoga uchragan
-  ulanishning sovitilishi + `backoffLevel` qiymatini oʻzi yozadi va qaytadi —
-  quyidagi har bir model uchun blok va umumiy yoʻlga hech qachon yetib
-  borilmaydi.
-- **Combo ham kiritilgan**: agentrouter tarmogʻidagi kabi, bu qamrov combo
-  chaqiruvchisi 429 ga qoʻllaydigan `persistUnavailableState`/`isCombo`
-  pasaytirishini ataylab eʼtiborsiz qoldiradi. Har bir model uchun blokirovka
-  ushbu qamrovning kuchsizroq shakli emas, balki notoʻgʻri birlikdir: u limiti
-  tugagan IP haqida hech narsa bildirmaydi, shu sabab combo rotatsiyasi har bir
-  turdosh ulanish uchun kafolatlangan tarzda muvaffaqiyatsiz tugaydigan bittadan
-  chaqiruvni behuda sarflashda davom etardi.
-- **Turdosh ulanishlar xavfsizligi**: allaqachon terminal holatdagi
-  (banned/credits_exhausted) yoki uzoqroq sovitish davrida boʻlgan turdosh
-  ulanish hech qachon qayta yozilmaydi.
-- **Eksklyuziv ruxsat roʻyxati**: `EGRESS_BUCKETED_LOCK_PROVIDERS` ni kengaytirish
-  — egasining aniq qarori; umumiy ulash qoʻllanilmaydi (#10334/#10419 andozasi).
-  Turdosh ulanishlar soʻrovi ham aynan shu ruxsat roʻyxatini SQL literali
-  sifatida takrorlash oʻrniga unga bogʻlanadi, shu sabab uni kengaytirish bir
-  qatorlik oʻzgarish boʻlib qoladi.
-- **Egress IP rotatsiyasi, har ikki yoʻnalishda**: qidiruv oynasi (24 soat)
-  egress-IP keshi TTL qiymatidan (5 min) ancha keng, shu sabab «oxirgi maʼlum
-  IP» joriy holat emas, balki tarixdir. Agar ulanish proksisi shu oyna ichida
-  rotatsiya qilingan boʻlsa, blokirovka haqiqatan ham umumiy boʻlgan IP ni
-  **oʻtkazib yuborishi** mumkin (qayd etilgan IP — yangi, limiti tugamagan IP)
-  — va aksincha, u limiti tugagan IP dan keyinchalik boshqa IP ga rotatsiya
-  qilingan **turdosh ulanishni sovitishi** mumkin. Ikkinchi holat turdosh
-  ulanishga bitta sovitish oynasiga tushadi; ikkala holat ham tarixga
-  asoslangan qidiruvning «imkon qadar» ishlash cheklovlari sifatida qabul
-  qilinadi.
-- **Xarajat**: `proxy_logs` boʻylab ikkita chegaralangan skanerlash (oyna boʻyicha
+#### Chiqish bucketlariga bo‘lingan bloklash (#10880)
+
+`EGRESS_BUCKETED_LOCK_PROVIDERS` dagi provayderlar (opencode oilasi) IP-bucketlangan upstream sifatida ko‘riladi (opencode bepul tarifi akkaunt bo‘yicha emas, IP bo‘yicha bucketlanadi — #9611 ga qarang): 429 statusi `quota_exhausted` **yoki** `rate_limit_exceeded` sifatida tasniflanganda, rotatsiya ularni sinab ko‘rishidan oldin oxirgi ma’lum chiqish IP manzili ishlamay qolgan ulanish IP manziliga mos keladigan allowlistdagi oilaga mansub barcha ulanishlar kutish holatiga o‘tkaziladi
+— bu N-1 ta muvaffaqiyatsiz bo‘lishi aniq upstream chaqiruvlarining oldini oladi (#10460/#10525 bilan bir xil ko‘rinish). `rate_limit_exceeded` ataylab kiritilgan: `markAccountUnavailable` yo‘lida opencode’ga xos qoidalar hech qachon mos kelmaydi (`checkFallbackError` ga header/body uzatilmaydi, opencode `FULL_TEXT_RULE_PROVIDERS` ro‘yxatida yo‘q), shuning uchun tanasida obuna kvotasi matni ("monthly usage limit reached") bo‘lgan 429 `status_429` qoidasiga yetib borishdan oldin kvota matniga asoslangan fallback (`buildSubscriptionQuotaFallback`, `accountFallback.ts`; 1 soatlik kutish) orqali `quota_exhausted` sifatida tasniflanadi — kvota matni bo‘lmagan 429 (oddiy rate limiting) esa `status_429` qoidasi orqali `rate_limit_exceeded` sifatida tasniflanadi va IP oilasini baribir kutish holatiga o‘tkazadi. Allowlistdagi provayder uchun IP-bucketlangan rate limit tugagan kvota bilan bir xil signal hisoblanadi. Haqiqiy cheklovlar:
+
+- **Eng yaxshi harakat**: lock ulanishning oxirgi ma’lum `egress_ip` qiymatini
+  `proxy_logs` dan (24 soatlik oyna, sinxron, keshsiz) aniqlaydi. Sovuq kesh
+  (egress IP hech qachon tekshirilmagan) yoki qator mavjud bo‘lmasa → xato bergan
+  ulanish baribir branch orqali sovitiladi (bugungidek qayd etiladi), faqat
+  qo‘shni ulanishlarning hech biri lock qilinmaydi.
+- **Hech qachon terminal holatga o‘tmaydi**: sovitish yangilanadigan kvota oynasi
+  (`testStatus: "unavailable"`) hisoblanadi; doimiy holat hech qachon IP
+  darajasidagi signal asosida hosil qilinmaydi. `disableCooling` ulanishlari
+  branch’ni butunlay o‘tkazib yuboradi.
+- **Ruxsat berilgan oila uchun lock granulyarligi o‘zgaradi**: bu faqat qo‘shni
+  ulanishlarni optimallashtirish emas, balki qamrov o‘zgarishidir. opencode
+  `passthroughModels` provider’i bo‘lgani sababli, bu branch’dan oldin 429 har bir
+  MODEL uchun lockout hosil qilardi; endi esa u ulanishni sovitadi — hatto
+  qo‘shni ulanishlari umuman mavjud bo‘lmagan yagona ulanishni ishga tushirgan
+  operator uchun ham. Bu opencode qoidasidagi jadval allaqachon to‘g‘ri deb
+  e’lon qilgan granulyarlikdir (`scope: "connection"`,
+  `providerErrorRules.ts`); bunga qadar u hech qachon amal qilinmagan, chunki
+  opencode `HONORS_RULE_LOCK_SCOPE_PROVIDERS` ichida yo‘q. Branch xato bergan
+  ulanishning sovitish holati va `backoffLevel` qiymatini connection-scoped
+  agentrouter branch’iga taqlid qilgan holda o‘zi yozadi va qaytadi — har bir
+  model uchun block hamda quyidagi umumiy yo‘lga hech qachon yetib borilmaydi.
+- **Combo ham qamrab olingan**: agentrouter branch’iga o‘xshab, qamrov combo
+  chaqiruvchisi 429 uchun qo‘llaydigan
+  `persistUnavailableState`/`isCombo` pasaytirishini ataylab e’tiborsiz qoldiradi.
+  Har bir model uchun lockout bu qamrovning kuchsizroq shakli emas, balki noto‘g‘ri
+  birlikdir: u tugagan IP haqida hech narsa demaydi, shuning uchun combo
+  rotatsiyasi har bir qo‘shni ulanish uchun albatta muvaffaqiyatsiz bo‘ladigan
+  bittadan chaqiruvni bajarishda davom etadi.
+- **Qo‘shni ulanishlar xavfsizligi**: allaqachon terminal holatda
+  (banned/credits_exhausted) bo‘lgan yoki allaqachon uzoqroq sovitish davrida
+  turgan qo‘shni ulanishning holati hech qachon ustiga yozilmaydi.
+- **Faqat ruxsat berilganlar ro‘yxati**: `EGRESS_BUCKETED_LOCK_PROVIDERS` ni
+  kengaytirish owner’ning aniq qaroridir; umumiy ulash mavjud emas
+  (pattern #10334/#10419). Qo‘shni ulanishlar so‘rovi o‘sha ruxsat berilganlar
+  ro‘yxatini SQL literal sifatida takrorlash o‘rniga unga bog‘lanadi, shuning
+  uchun uni kengaytirish bir qatorli o‘zgarish bo‘lib qoladi.
+- **Egress IP rotatsiyasi, har ikki yo‘nalishda**: qidiruv oynasi (24 soat)
+  egress-IP keshining TTL qiymatidan (5 daqiqa) ancha keng, shuning uchun
+  “oxirgi ma’lum IP” joriy holat emas, balki tarixdir. Agar ulanish proxy’si
+  oyna ichida rotatsiyalangan bo‘lsa, lock haqiqatan ham umumiy bo‘lgan IP’ni
+  **o‘tkazib yuborishi** mumkin (qayd etilgan IP yangi va hali tugamagan IP
+  bo‘ladi) — va aksincha, tugagan IP’dan keyin rotatsiyalangan qo‘shni ulanishni
+  **sovitishi** ham mumkin. Ikkinchi holat ushbu qo‘shni ulanishga bitta
+  sovitish oynasi xarajat qiladi; ikkalasi ham tarixga asoslangan qidiruvning
+  qabul qilingan eng yaxshi-harakat cheklovlaridir.
+- **Xarajat**: `proxy_logs` bo‘yicha ikkita chegaralangan skan (oyna
   `idx_pl_timestamp` orqali filtrlanadi), faqat 429 chastotasida. Yangi indeks
-  yoʻq (134-migratsiya YAGNI). Oʻrtacha oʻlchamdagi real trafik maʼlumotlar
-  bazasi nusxasida oʻlchangan; yuqori oʻtkazuvchanlikka ega instansiya ayni
-  oyna ichida mutanosib ravishda koʻproq satr saqlaydi.
+  yo‘q (migration 134 YAGNI). O‘rtacha hajmdagi, real trafikdan olingan DB
+  nusxasida o‘lchangan; yuqori o‘tkazuvchanlikka ega instansiya xuddi shu oynada
+  mutanosib ravishda ko‘proq qatorni saqlaydi.
 
----
+## Boshqa chidamlilik xususiyatlari
 
-## Boshqa barqarorlik xususiyatlari
-
-- **19 ta marshrutlash strategiyasi** (ustuvorlik, vaznli, navbatma-navbat, kontekstni uzatish, avval toʻldirish, p2c, tasodifiy, eng kam ishlatilgan, xarajat boʻyicha optimallashtirilgan, tiklanishni hisobga oluvchi, tiklanish oynasi, zaxira sigʻimi, qatʼiy tasodifiy, avtomatik, lkgp, kontekst boʻyicha optimallashtirilgan, kesh boʻyicha optimallashtirilgan, birlashtirish, konveyer) — [AUTO-COMBO.md](../routing/AUTO-COMBO.md) ga qarang.
-- **Tiklanishni hisobga oluvchi marshrutlash** (v3.8.0) — ulanishlarni kvota tiklanish vaqtiga qarab ustuvorlashtiradi.
-- **Fon rejimining soddalashtirilishi** — Responses API uchun `background: true` ogohlantirish bilan sinxron rejimga soddalashtiriladi.
-- **Vositalar limitini dinamik aniqlash** — vositalar soni limitiga yetilganda provayderlardan foydalanishni kamaytiradi.
-- **Favqulodda zaxira variantiga oʻtish** — `OMNIROUTE_EMERGENCY_FALLBACK` orqali boshqariladi; operatorlar uni qayta ishga tushirmasdan Feature Flags sahifasidan oʻzgartirishi mumkin.
+- **22 marshrutlash strategiyasi** (prioritet, vaznli, round-robin, kontekst-rele, to'ldirish-birinchi, p2c, tasodifiy, eng kam foydalanilgan, xarajat optimallashtirilgan, qayta o'rnatish, qayta o'rnatish-oyna, muddati-birinchi, bosh maydoni, kvotada o'lchangan, qat'iy-tasodifiy, auto, lkgp, kontekst-optimallashtirilgan, jegav-optimallashtirilgan, jegav-optimallashtirilgan) — [AUTO-COMBO.md](../routing/AUTO-COMBO.md)
+- **Qayta tiklashdan xabardor marshrutizatsiya** (v3.8.0) — ulanishlarni kvotani tiklash vaqti bo'yicha birinchi o'ringa qo'yadi.
+- **Fon rejimining buzilishi** — Javoblari API `background: true` ogohlantirish bilan sinxronlash uchun buzilgan.
+- **Dinamik asboblar chegarasini aniqlash** Asboblar soni chegaralanganda — provayderlarni o'chirib qo'yadi.
+- **Favqulodda tiklanish** `OMNIROUTE_EMERGENCY_FALLBACK` tomonidan boshqariladigan — ; operatorlar uni Feature Flags sahifasidan qayta ishga tushirmasdan bekor qilishi mumkin.
 
 ---
 
 ## Nosozliklarni tuzatish
 
-- Vaznli kombinatsiya `503 all_targets_cooling_down` javobini qaytaradi (`Retry-After` o‘rnatilgan, `diagnostics.excluded` esa har bir nishonni `model_lockout` / `circuit_open` / `provider_cooldown` / `unavailable` bilan ro‘yxatlaydi) → pul sozlangan va ulangan, ammo har bir nishon barqarorlik taymeri sababli chiqarib tashlangan; `[COMBO] Weighted selection: every target excluded before dispatch — …` ogohlantirishi sabablar va qolgan soniyalarni ko‘rsatadi. Xuddi shu kombinatsiyadan kelgan `404 no_executable_targets` hech qanday barqarorlik taymeri qatnashmaganini anglatadi (ishga tushiradigan hech narsa yo‘q yoki barcha hisoblar mavjudlik tekshiruvidan o‘ta olmagan). Bu `targetResolution.ts` ichida to‘plangan chiqarib tashlashlar asosida `open-sse/services/combo/pinRecovery.ts` ichida tuzilgan.
-- Provayderning barcha kalitlari o‘tkazib yuborildi → uzgich holatini HAMDA har bir ulanishning `rateLimitedUntil`/`testStatus` qiymatini tekshiring.
-- Provayder tiklash oynasidan keyin ham doimiy ravishda chiqarib tashlanmoqda → kod `getStatus()`/`canExecute()` o‘rniga bevosita `state` qiymatini o‘qimoqda.
-- Bitta kalit ishlamaydi, boshqalari esa ishlashi kerak → uzgich o‘rniga ulanishning sovish davrini afzal ko‘ring.
-- Faqat bitta model ishlamaydi → ulanishning sovish davri o‘rniga model blokirovkasini afzal ko‘ring.
-- Holat o‘z-o‘zidan tiklanishi kerak, ammo tiklanmayapti → kelajak vaqt tamg‘asi va muddati o‘tgan holatni yangilaydigan o‘qish yo‘lini tekshiring. Doimiy holatlar qo‘lda o‘zgartirishni talab qiladi.
+- Weighted combo `503 all_targets_cooling_down` javobini qaytaradi (`Retry-After` o'rnatilgan, `diagnostics.excluded` har bir targetni `model_lockout` / `circuit_open` / `provider_cooldown` / `unavailable` bilan sanaydi) → pool sozlangan va ulangan, har bir target shunchaki chidamlilik taymeri tomonidan istisno qilingan; `[COMBO] Weighted selection: every target excluded before dispatch — …` ogohlantirishi sabablarni va qolgan soniyalarni ko'rsatadi. Xuddi shu kombodan olingan `404 no_executable_targets` hech qanday chidamlilik taymeri ishtirok etmaganini anglatadi (ishga tushiradigan hech narsa yo'q yoki har bir akkaunt mavjudlik tekshiruvidan o'tolmagan). `targetResolution.ts` da yig'ilgan istisnolardan `open-sse/services/combo/pinRecovery.ts` da qurilgan.
+- Provayderning barcha kalitlari o'tkazib yuborildi → circuit breaker holatini VA har bir ulanishning `rateLimitedUntil`/`testStatus` qiymatini tekshiring.
+- Provayder reset oynasidan keyin doimiy istisno qilingan → kod `getStatus()`/`canExecute()` o'rniga xom `state` ni o'qiyapti.
+- Bitta kalit ishlamayapti, boshqalari ishlashi kerak → circuit breaker o'rniga connection cooldown ni afzal ko'ring.
+- Faqat bitta model ishlamayapti → connection cooldown o'rniga model lockout ni afzal ko'ring.
+- Holat o'z-o'zidan tiklanishi kerak edi, lekin tiklanmayapti → kelajakdagi timestamp hamda muddati o'tgan holatni yangilaydigan o'qish yo'lini tekshiring. Doimiy holatlar qo'lda o'zgartirishni talab qiladi.
 
 ---
 
-## TLS barmoq izi va yashirinlik
+## Runtime holati — agent uchun tezkor ma'lumotnoma
 
-Provayderga xos yashirinlik (JA3/JA4, CCH, obfuskatsiya) alohida hujjatlashtirilgan — `docs/security/STEALTH_GUIDE.md` ga qarang (git ichida; `/docs` tarkibiga kompilyatsiya qilinmaydi).
+> Agent qo'llanmasi 40k kontekst byudjetidan oshmasligi uchun `AGENTS.md` → "Resilience
+> Runtime State" bo'limidan (PR #12743) so'zma-so'z ko'chirildi. Bu yuqoridagi bo'limlarning
+> ixcham, agentga mo'ljallangan ko'rinishi; raqamlangan bo'limlar to'liq ma'lumotnoma bo'lib qoladi.
+
+OmniRoute da bir-biri bilan bog'liq, lekin alohida uchta vaqtinchalik xato mexanizmi mavjud. Marshrutlash xatti-harakatida nosozlikni qidirganda ularning qamrovini alohida saqlang. Bir qarashda tushunish uchun [3 qatlamli chidamlilik diagrammasi](../diagrams/exported/resilience-3layers.svg) ga qarang (manba: [diagrams/resilience-3layers.mmd](../diagrams/resilience-3layers.mmd)).
+
+### Provayder Circuit Breaker
+
+**Qamrov**: butun provayder, masalan `glm`, `openai`, `anthropic`.
+
+**Maqsad**: upstream/xizmat darajasida qayta-qayta xato berayotgan provayderga trafik yuborishni to'xtatish, shunda bitta nosog'lom provayder har bir so'rovni sekinlashtirmaydi.
+
+**Amalga oshirish**:
+
+- Asosiy klass: `src/shared/utils/circuitBreaker.ts`
+- Chat gate/ijro ulanishi: `src/sse/handlers/chatHelpers.ts`, `src/sse/handlers/chat.ts`
+- Runtime holati API si: `src/app/api/monitoring/health/route.ts`
+- Umumiy wrapperlar: `open-sse/services/accountFallback.ts`
+- Doimiy saqlanadigan holat jadvali: `domain_circuit_breakers`
+
+**Holatlar** (4 ta — `src/shared/utils/circuitBreaker.ts`):
+
+- `CLOSED`: normal trafik ruxsat etiladi.
+- `DEGRADED`: erta ogohlantirish zonasi — xatolar degradatsiya chegarasidan oshdi, lekin hali uzgich chegarasidan oshmadi; trafik davom etadi, dashboardlar ogohlantirishni ko'rsatadi. Yaroqli ulanish testi yoki yangi xatosiz sokin oyna uni `CLOSED` holatiga qaytaradi (oyna `docs/architecture/RESILIENCE_GUIDE.md` da keltirilgan).
+- `OPEN`: provayder vaqtincha bloklangan; chaqiruvchilar provider-circuit-open javobini oladi yoki combo marshrutlash boshqa targetga o'tadi.
+- `HALF_OPEN`: reset timeout muddati o'tgan; sinov so'roviga ruxsat beriladi. Muvaffaqiyat uzgichni yopadi, xato uni qayta ochadi.
+
+**Standart qiymatlar** (`open-sse/config/constants.ts` → `PROVIDER_PROFILES`, `src/lib/resilience/settings.ts` dagi `DEFAULT_RESILIENCE_SETTINGS.providerBreaker` orqali ishlatiladi → `src/sse/handlers/chatHelpers.ts` dagi `getCircuitBreaker(provider, …)`). Butun provayder uzgichi `circuitBreakerThreshold` / `circuitBreakerReset` asosida ishlaydi:
+
+| Profil     | degradatsiya | ochilish (`circuitBreakerThreshold`) | tiklash (`circuitBreakerReset`) |
+| ---------- | -----------: | -----------------------------------: | ------------------------------: |
+| OAuth      |          `5` |                                  `8` |                           `60s` |
+| API kaliti |          `7` |                                 `12` |                           `30s` |
+| Lokal      |     (hosila) |                                  `2` |                           `15s` |
+
+`PROVIDER_PROFILES` shuningdek `providerFailureThreshold` (10/15/2), `providerFailureWindowMs` (15/30/5 daq) va `providerCooldownMs` (5/10/1 daq) ni ham belgilaydi: bular **ixtiyoriy global Provider Cooldown ning oyna darvozasi**ni ta'minlaydi (`PROVIDER_COOLDOWN_ENABLED`, standart holda o'chiq) — `open-sse/services/providerCooldownTracker.ts` dagi provayder darajasidagi yozuv faqat `providerFailureWindowMs` ichida `providerFailureThreshold` ta xatodan keyin sovush deb hisoblanadi va keyin `providerCooldownMs` davomida sovuydi. Ular faol uzgichning chegaralari EMAS — ularni uzgich xatti-harakatini kutib sozlamang. Har bir standart qiymatni `OMNIROUTE_PROVIDER_BREAKER_*` va `OMNIROUTE_CIRCUIT_BREAKER_*` muhit o'zgaruvchilari orqali bekor qilish mumkin; runtime uchun aniq ma'lumotnoma jadvali `docs/architecture/RESILIENCE_GUIDE.md` da joylashgan.
+
+Faqat provayder darajasidagi xato holatlari provayder uzgichini ishga tushirishi kerak:
+
+```ts
+(408, 500, 502, 503, 504);
+```
+
+Ko'pchilik `401`, `403` yoki `429` holatlari kabi oddiy akkaunt/kalit/model xatolari uchun butun provayder uzgichini ishga tushirmang. Ular odatda connection cooldown yoki model lockout ga tegishli. Umumiy API-kalit provayderining `403` holati terminal provayder/akkaunt xatosi deb tasniflanmagan taqdirda tiklanadigan bo'lishi kerak.
+
+Breaker fon taymeridan emas, balki dangasa (lazy) tiklashdan foydalanadi. `OPEN` muddati
+tugaganda, `getStatus()`, `canExecute()` va `getRetryAfterMs()` kabi o'qishlar holatni
+`HALF_OPEN` ga yangilaydi, shuning uchun dashboardlar va combo nomzod yaratuvchilar muddati
+o'tgan provayderni abadiy chetda qoldirmaydi.
+
+### Ulanish cooldowni
+
+**Qamrov**: bitta provayder ulanishi/akkaunti/kaliti.
+
+**Maqsad**: bir provayderning boshqa ulanishlari so'rovlarga xizmat ko'rsatishda davom
+etishi uchun, bitta nosoz kalit/akkauntni vaqtincha o'tkazib yuborish.
+
+**Amalga oshirish**:
+
+- Yozish/yangilash yo'li: `src/sse/services/auth.ts::markAccountUnavailable()`
+- Akkauntni tanlash/filtrlash: `src/sse/services/auth.ts::getProviderCredentials...`
+- Cooldown hisoblash: `open-sse/services/accountFallback.ts::checkFallbackError()`
+- Sozlamalar: `src/lib/resilience/settings.ts`
+
+Provayder ulanishlaridagi muhim maydonlar:
+
+```ts
+rateLimitedUntil;
+testStatus: "unavailable";
+lastError;
+lastErrorType;
+errorCode;
+backoffLevel;
+```
+
+Akkaunt tanlash paytida ulanish quyidagi holatda o'tkazib yuboriladi:
+
+```ts
+new Date(rateLimitedUntil).getTime() > Date.now();
+```
+
+Cooldownlar ham dangasa ishlaydi: `rateLimitedUntil` o'tmishda qolganda, ulanish yana
+tanlashga mos bo'ladi. Muvaffaqiyatli foydalanilganda, `clearAccountError()` `testStatus`,
+`rateLimitedUntil`, xato maydonlari va `backoffLevel` qiymatlarini tozalaydi.
+
+Standart ulanish cooldown xatti-harakati:
+
+- OAuth asosiy cooldowni: `5s`.
+- API-kalit asosiy cooldowni: `3s`.
+- API-kalit uchun `429` javobida upstream qayta urinish ko'rsatmalariga (`Retry-After`,
+  reset sarlavhalari yoki tahlil qilinadigan reset matni) mavjud bo'lganda ustunlik
+  berish kerak.
+- Takrorlanuvchi tiklanadigan xatolar eksponensial backoffdan foydalanadi:
+
+```ts
+baseCooldownMs * 2 ** failureIndex;
+```
+
+Thundering-herdga qarshi himoya bir xil ulanishda bir vaqtda yuzaga keladigan xatolarning
+cooldownni qayta-qayta uzaytirishi yoki `backoffLevel`ni ikki marta oshirib yuborishining
+oldini oladi.
+
+Yakuniy holatlar cooldown emas. `banned`, `expired` (u faqat `EXPIRED_RETRY_MAX` orqali
+N ta cheklangan qayta urinishdan keyin yakuniy holatga aylanadi) va `credits_exhausted`
+ma'lumotlar/sozlamalar o'zgartirilguncha yoki operator ularni qayta o'rnatguncha mavjud
+bo'lmasligi uchun mo'ljallangan. Yakuniy holatlarning ustiga vaqtinchalik cooldown
+holatini yozmang.
+
+### Model bloklanishi
+
+**Qamrov**: provayder + ulanish + model.
+
+**Maqsad**: ushbu ulanish uchun faqat bitta model mavjud bo'lmasa yoki kvota bilan
+cheklangan bo'lsa, butun ulanishni o'chirib qo'ymaslik.
+
+Misollar:
+
+- Har bir model bo'yicha kvota qo'llab, `429` qaytaradigan provayderlar.
+- Bitta topilmayotgan model uchun `404` qaytaradigan mahalliy provayderlar.
+- Tanlangan Grok rejimlari kabi provayderga xos rejim/model ruxsat xatolari.
+
+Model bloklanishi `open-sse/services/accountFallback.ts` da joylashgan bo'lib, bir xil
+ulanishga boshqa modellarga xizmat ko'rsatishda davom etish imkonini beradi.
+
+### Nosozliklarni tuzatish bo'yicha ko'rsatmalar
+
+- Agar provayderning barcha kalitlari o'tkazib yuborilsa, provayder breaker holatini va
+  har bir ulanishning `rateLimitedUntil`/`testStatus` qiymatlarini tekshiring.
+- Agar provayder qayta o'rnatish oynasidan keyin ham doimiy ravishda chiqarib
+  yuborilgandek ko'rinsa, kod `getStatus()`/`canExecute()` dan foydalanish o'rniga xom
+  `state`ni o'qiyotganligini tekshiring.
+- Agar bitta provayder kaliti ishlamasa, lekin boshqalari ishlashi kerak bo'lsa, provayder
+  breakeri o'rniga ulanish cooldownini afzal ko'ring.
+- Agar faqat bitta model ishlamasa, ulanish cooldowni o'rniga model bloklanishini afzal
+  ko'ring.
+- Agar holat o'z-o'zidan tiklanishi kerak bo'lsa, unda kelajakdagi vaqt belgisi/qayta
+  o'rnatish taymauti hamda muddati o'tgan holatni yangilaydigan o'qish yo'li bo'lishi
+  kerak. Doimiy holatlar qo'lda ma'lumot yoki konfiguratsiya o'zgarishlarini talab qiladi.
 
 ---
 
-## Barqarorlikni sinash (8-bosqich · C bloki)
+## TLS Fingerprinting va yashirinlik
 
-Barqarorlik mantigʻi uchun modul testlaridan tashqari, uchta test ish muhitini
-haqiqiy yuklama/nosozlik sharoitlarida tekshiradi (barchasi integratsion/tungi — hech biri PRlarni bloklamaydi):
+Provayderga xos yashirinlik (JA3/JA4, CCH, obfuskatsiya) alohida hujjatlashtirilgan — qarang `docs/security/STEALTH_GUIDE.md` (git; `/docs` ichiga kompilyatsiya qilinmagan).
 
-| Test                     | Nima tekshiriladi                                                                                                                                                                                                                   | Ishga tushirish                        |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| Xaos                     | Soxta yuqori oqim tuguni haqiqiy kechikish/tiklanish/taym-aut/503 holatlarini kiritadi; avtomatik uzgich ochilishi/tiklanishini va `checkFallbackError` 503 holatini tiklanadigan zaxira oʻtishi sifatida tasniflashini tekshiradi. | `RUN_CHAOS_INT=1 npm run test:chaos`   |
-| Hip oʻsishi              | `--expose-gc` bilan har bir `createSSEStream` uchun ~500 ta oqim; agar hip belgilangan chegaradan oshsa, test muvaffaqiyatsiz tugaydi (OOM himoyasi #3069).                                                                         | `npm run test:heap`                    |
-| k6 davomiy yuklama testi | `/api/monitoring/health` uchun uzluksiz yuklama; p95/xatolik chegaralari.                                                                                                                                                           | `k6 run tests/load/k6-soak.js` (tungi) |
+---
 
-`.github/workflows/nightly-resilience.yml` orqali boshqariladi (cron + qoʻlda ishga tushirish). Standart
-`test:integration` rejimida xaos va hip testlari oʻz-oʻzidan oʻtkazib yuboriladi (`RUN_CHAOS_INT`/`--expose-gc` boʻlmasa).
+## Barqarorlik testlari (8-bosqich · C-blok)
+
+Barqarorlik logikasi uchun unit testlardan tashqari, uchta test runtime-ni
+haqiqiy stress/muvaffaqiyatsizlik sharoitlarida sinovdan o'tkazadi (barchasi integratsiya/nightly — hech biri PR-larni bloklamaydi):
+
+| Test        | Nima qiladi                                                                                                                                                                                                  | Ishga tushirish                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| Chaos       | Soxta-upstream tuguni haqiqiy latency/reset/timeout/503 holatlarini kiritadi; circuit breaker ochilishi/tiklanishini va `checkFallbackError` 503 ni tiklanadigan fallback sifatida tasniflashini tekshiradi. | `RUN_CHAOS_INT=1 npm run test:chaos`       |
+| Heap-growth | `--expose-gc` ostida har bir `createSSEStream` uchun ~500 ta oqim; heap chegaradan oshib ketsa muvaffaqiyatsiz bo'ladi (OOM guard #3069).                                                                    | `npm run test:heap`                        |
+| k6 soak     | `/api/monitoring/health` ga uzluksiz yuk; p95/xato chegaralari.                                                                                                                                              | `k6 run tests/load/k6-soak.js` (har kecha) |
+
+`.github/workflows/nightly-resilience.yml` tomonidan boshqariladi (cron + dispatch). Standart
+`test:integration` da chaos va heap o'z-o'zini o'tkazib yuboradi (`RUN_CHAOS_INT`/`--expose-gc` bo'lmasa).
 
 ---
 
 ## Shuningdek qarang
 
-- [Arxitektura qoʻllanmasi](./ARCHITECTURE.md) — Tizim arxitekturasi va ichki tuzilishi
-- [Foydalanuvchi qoʻllanmasi](../guides/USER_GUIDE.md) — Provayderlar, kombinatsiyalar, CLI integratsiyasi
-- [Avtomatik kombinatsiya mexanizmi](../routing/AUTO-COMBO.md) — 16 omilli baholash, rejim paketlari
+- [Arxitektura qo'llanmasi](./ARCHITECTURE.md) — Tizim arxitekturasi va ichki tuzilishi
+- [Foydalanuvchi qo'llanmasi](../guides/USER_GUIDE.md) — Provayderlar, kombolar, CLI integratsiyasi
+- [Auto-Combo dvigateli](../routing/AUTO-COMBO.md) — 16 faktorli baholash, rejim paketlari

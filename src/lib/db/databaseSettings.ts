@@ -2,9 +2,20 @@ import fs from "node:fs";
 
 import { DEFAULT_DATABASE_SETTINGS, type DatabaseSettings } from "@/types/databaseSettings";
 
-import { backupDbFile } from "./backup";
+import { setDbBackupMaxFiles } from "./backup";
+import { toBooleanSetting, toStrictBooleanSetting } from "./booleanSetting";
 import { DATA_DIR, SQLITE_FILE, applyDatabaseOptimizationSettings, getDbInstance } from "./core";
 import { invalidateDbCache } from "./readCache";
+import { getCallLogRetentionDays } from "../logEnv";
+import { registerDbStateResetter } from "./stateReset";
+import {
+  CACHE_SECRET_MASK,
+  decryptCacheSecrets,
+  encryptCacheValue,
+  isCacheSecret,
+  assertCacheCredentialEndpoint,
+  encryptLegacyCacheSecretCopies,
+} from "./cacheSecrets";
 import { getDatabaseStats } from "./stats";
 import { getState as getVacuumSchedulerState, refreshVacuumScheduler } from "./vacuumScheduler";
 
@@ -102,17 +113,6 @@ function parseStoredValue(rawValue: unknown): unknown {
   }
 }
 
-function toBooleanSetting(value: unknown): boolean | null {
-  if (typeof value === "boolean") return value;
-  if (typeof value === "number") return !Number.isNaN(value) && value !== 0;
-  if (typeof value !== "string") return null;
-
-  const normalized = value.trim().toLowerCase();
-  if (["1", "true", "yes", "on"].includes(normalized)) return true;
-  if (["0", "false", "no", "off"].includes(normalized)) return false;
-  return null;
-}
-
 function normalizeOptimizationSettings(settings: UserDatabaseSettings) {
   const fallback = DEFAULT_DATABASE_SETTINGS.optimization.cacheSize;
   const numericCacheSize = Number(settings.optimization.cacheSize);
@@ -159,9 +159,12 @@ function mergeTopLevelSections(target: UserDatabaseSettings, values: Record<stri
 }
 
 function mergeRuntimeLogSettings(target: UserDatabaseSettings, values: Record<string, unknown>) {
-  const pipelineEnabled = toBooleanSetting(values.call_log_pipeline_enabled);
-  if (pipelineEnabled !== null) {
-    target.logs.callLogPipelineEnabled = pipelineEnabled;
+  // The panel reads the toggle through the same strict parser as the request
+  // path. A stored value the parser rejects therefore shows as off, instead of
+  // displaying a truthy string as on while requests capture nothing.
+  if (values.call_log_pipeline_enabled !== undefined) {
+    target.logs.callLogPipelineEnabled =
+      toStrictBooleanSetting(values.call_log_pipeline_enabled) === true;
   }
 
   const legacyDetailedEnabled = toBooleanSetting(values.detailed_logs_enabled);
@@ -226,17 +229,201 @@ function getFreelistCount(): number {
   }
 }
 
-function getIntegrityCheck(): "ok" | "error" | null {
+const INTEGRITY_CHECK_KEY = "integrity.lastCheck";
+
+export type StoredIntegrityCheck = {
+  integrityCheck: "ok" | "error" | null;
+  lastIntegrityCheckAt: string | null;
+};
+
+function isStoredIntegrityStatus(value: unknown): value is "ok" | "error" {
+  return value === "ok" || value === "error";
+}
+
+export function readLastIntegrityCheck(): StoredIntegrityCheck {
+  const fallback: StoredIntegrityCheck = { integrityCheck: null, lastIntegrityCheckAt: null };
+  let raw: string | null = null;
+  try {
+    const row = getDbInstance()
+      .prepare("SELECT value FROM key_value WHERE namespace = ? AND key = ? LIMIT 1")
+      .get(DATABASE_SETTINGS_NAMESPACE, INTEGRITY_CHECK_KEY) as { value: string } | undefined;
+    raw = row?.value ?? null;
+  } catch {
+    return fallback;
+  }
+  if (raw === null) return fallback;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    console.warn("[DB] Ignoring malformed stored integrity result.");
+    return fallback;
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) return fallback;
+  const record = parsed as Record<string, unknown>;
+  if (!isStoredIntegrityStatus(record.status)) return fallback;
+  if (typeof record.checkedAt !== "string" || !Number.isFinite(Date.parse(record.checkedAt))) {
+    return fallback;
+  }
+  return { integrityCheck: record.status, lastIntegrityCheckAt: record.checkedAt };
+}
+
+export function runIntegrityCheck(): StoredIntegrityCheck {
+  let status: "ok" | "error";
   try {
     const result = getDbInstance().pragma("quick_check", { simple: true }) as string;
-    return result === "ok" ? "ok" : "error";
+    status = result === "ok" ? "ok" : "error";
+  } catch {
+    status = "error";
+  }
+  const checkedAt = new Date().toISOString();
+  // Concurrent explicit checks resolve last-writer-wins: the scan is
+  // idempotent and short, so no lock or 409 is needed.
+  try {
+    getDbInstance()
+      .prepare("INSERT OR REPLACE INTO key_value (namespace, key, value) VALUES (?, ?, ?)")
+      .run(DATABASE_SETTINGS_NAMESPACE, INTEGRITY_CHECK_KEY, JSON.stringify({ status, checkedAt }));
+  } catch (error) {
+    console.warn("[DB] Failed to persist integrity result:", (error as Error)?.message ?? error);
+    throw error;
+  }
+  return { integrityCheck: status, lastIntegrityCheckAt: checkedAt };
+}
+
+function toPersistedRetentionDays(value: unknown): number | null {
+  if (typeof value !== "number") return null;
+  return Number.isInteger(value) && value > 0 ? value : null;
+}
+
+type PersistedRetentionRow = { namespace: string; key: string; value: string | null };
+
+function parseRetentionRowValue(row: PersistedRetentionRow): unknown | null {
+  if (row.value === null || row.value === undefined) return null;
+  try {
+    return JSON.parse(row.value);
   } catch {
     return null;
   }
 }
 
+function readNestedSettingsRetention(parsed: unknown): number | null {
+  if (!isRecord(parsed)) return null;
+  const retention = parsed.retention;
+  if (!isRecord(retention)) return null;
+  return toPersistedRetentionDays(retention.callLogs);
+}
+
+function updatePersistedRetention(
+  found: { nested: number | null; settings: number | null; flat: number | null },
+  row: PersistedRetentionRow,
+  parsed: unknown
+): void {
+  if (row.namespace === "databaseSettings" && row.key === "retention.callLogs") {
+    const days = toPersistedRetentionDays(parsed);
+    if (days !== null) found.nested = days;
+  } else if (row.namespace === "databaseSettings" && row.key === "callLogs") {
+    const days = toPersistedRetentionDays(parsed);
+    if (days !== null) found.flat = days;
+  } else if (row.namespace === "settings" && row.key === "databaseSettings") {
+    const days = readNestedSettingsRetention(parsed);
+    if (days !== null) found.settings = days;
+  }
+}
+
+function collectPersistedRetention(rows: PersistedRetentionRow[]): {
+  nested: number | null;
+  settings: number | null;
+  flat: number | null;
+} {
+  const found = {
+    nested: null as number | null,
+    settings: null as number | null,
+    flat: null as number | null,
+  };
+
+  for (const row of rows) {
+    const parsed = parseRetentionRowValue(row);
+    if (parsed === null) continue;
+    updatePersistedRetention(found, row, parsed);
+  }
+
+  return found;
+}
+/** Migration 046 seeds the flat `callLogs` key with this value. It is not an operator choice. */
+const CALL_LOG_RETENTION_SEED_DAYS = 90;
+
+/**
+ * Reads the dashboard-persisted request log retention without applying defaults.
+ *
+ * Unlike getUserDatabaseSettings() (which always merges DEFAULT_DATABASE_SETTINGS),
+ * this returns null when the operator never saved a value, so the rotation's
+ * fallback stays the explicit variable or 7 days (#4363 precedence, dashboard
+ * level restricted to persisted keys). Migration 046 seeds the legacy flat
+ * `callLogs` key (90) on fresh installs, so the flat form only counts when it
+ * differs from that seed — same guard as backupRetention (#13308).
+ *
+ * The rotation reads this on every pass, so the value is cached in memory for a
+ * short window: a dashboard edit takes effect within the TTL, while repeated
+ * passes cost at most one settings read per window instead of one per call.
+ * Writes through updateDatabaseSettings() and any DB reset clear the entry, so
+ * the cache holds a single entry and cannot grow.
+ */
+const PERSISTED_CALL_LOG_RETENTION_TTL_MS = 60_000;
+
+type PersistedCallLogRetentionCache =
+  { expiresAt: number; hasValue: false } | { expiresAt: number; hasValue: true; value: number };
+
+let persistedCallLogRetentionCache: PersistedCallLogRetentionCache | null = null;
+
+function getCachedPersistedCallLogRetentionDays(): number | null | undefined {
+  const cached = persistedCallLogRetentionCache;
+  if (!cached) return undefined;
+  if (Date.now() > cached.expiresAt) {
+    persistedCallLogRetentionCache = null;
+    return undefined;
+  }
+  return cached.hasValue ? cached.value : null;
+}
+
+function setCachedPersistedCallLogRetentionDays(value: number | null): void {
+  persistedCallLogRetentionCache =
+    value === null
+      ? { expiresAt: Date.now() + PERSISTED_CALL_LOG_RETENTION_TTL_MS, hasValue: false }
+      : { expiresAt: Date.now() + PERSISTED_CALL_LOG_RETENTION_TTL_MS, hasValue: true, value };
+}
+
+function clearPersistedCallLogRetentionCache(): void {
+  persistedCallLogRetentionCache = null;
+}
+
+registerDbStateResetter(clearPersistedCallLogRetentionCache);
+
+export function getPersistedCallLogRetentionDays(): number | null {
+  const cached = getCachedPersistedCallLogRetentionDays();
+  if (cached !== undefined) return cached;
+
+  const db = getDbInstance();
+  const rows = db
+    .prepare(
+      "SELECT namespace, key, value FROM key_value WHERE (namespace = 'databaseSettings' AND key IN ('retention.callLogs', 'callLogs')) OR (namespace = 'settings' AND key = 'databaseSettings')"
+    )
+    .all() as PersistedRetentionRow[];
+
+  const found = collectPersistedRetention(rows);
+  let resolved: number | null = null;
+  if (found.nested !== null) resolved = found.nested;
+  else if (found.settings !== null) resolved = found.settings;
+  else if (found.flat !== null && found.flat !== CALL_LOG_RETENTION_SEED_DAYS)
+    resolved = found.flat;
+  setCachedPersistedCallLogRetentionDays(resolved);
+  return resolved;
+}
+
 export function getUserDatabaseSettings(): UserDatabaseSettings {
   const settings = cloneDefaultSettings();
+  // Until the operator saves an age, request-log rotation uses CALL_LOG_RETENTION_DAYS or 7 days
+  // (resolveCallLogRetentionDays). Show and clean up with that same age.
+  settings.retention.callLogs = getCallLogRetentionDays();
   const mainSettings = readNamespace("settings");
   const databaseSettingsValue = mainSettings[DATABASE_SETTINGS_NAMESPACE];
 
@@ -245,16 +432,49 @@ export function getUserDatabaseSettings(): UserDatabaseSettings {
   }
 
   mergeTopLevelSections(settings, mainSettings);
-  mergeDatabaseSettingsNamespace(settings, readNamespace(DATABASE_SETTINGS_NAMESPACE));
+  const databaseSettingsRows = readNamespace(DATABASE_SETTINGS_NAMESPACE);
+  // The migration seed is not a saved value; rotation ignores it too (#13308 guard).
+  if (databaseSettingsRows.callLogs === CALL_LOG_RETENTION_SEED_DAYS) {
+    delete databaseSettingsRows.callLogs;
+  }
+  mergeDatabaseSettingsNamespace(settings, databaseSettingsRows);
   mergeRuntimeLogSettings(settings, mainSettings);
   normalizeOptimizationSettings(settings);
+  decryptCacheSecrets(settings.cache as unknown as Record<string, unknown>);
 
   return settings;
+}
+
+/**
+ * Every chat request asks whether the semantic cache is on. Answering through
+ * getUserDatabaseSettings() clones all defaults, runs two namespace SELECTs and decrypts the
+ * cache secrets just to read one boolean, so the answer is kept in memory. The window matches
+ * the settings read cache (5 s). updateDatabaseSettings() and any DB reset clear it at once,
+ * so a disabled cache takes effect on the next request. A miss uses the full resolver, so the
+ * precedence between the settings namespaces is unchanged.
+ */
+const SEMANTIC_CACHE_FLAG_TTL_MS = 5_000;
+
+let semanticCacheFlagCache: { value: boolean; expiresAt: number } | null = null;
+
+function clearSemanticCacheFlagCache(): void {
+  semanticCacheFlagCache = null;
+}
+
+registerDbStateResetter(clearSemanticCacheFlagCache);
+
+export function isSemanticCacheDbEnabled(): boolean {
+  const cached = semanticCacheFlagCache;
+  if (cached && Date.now() <= cached.expiresAt) return cached.value;
+  const value = getUserDatabaseSettings().cache.semanticCacheEnabled !== false;
+  semanticCacheFlagCache = { value, expiresAt: Date.now() + SEMANTIC_CACHE_FLAG_TTL_MS };
+  return value;
 }
 
 export function getDatabaseSettings(): DatabaseSettings {
   const dbStats = getDatabaseStats();
   const vacuumState = getVacuumSchedulerState();
+  const lastCheck = readLastIntegrityCheck();
 
   return {
     ...getUserDatabaseSettings(),
@@ -271,7 +491,8 @@ export function getDatabaseSettings(): DatabaseSettings {
       lastVacuumAt:
         vacuumState.lastRunAt !== null ? new Date(vacuumState.lastRunAt).toISOString() : null,
       lastOptimizationAt: null,
-      integrityCheck: getIntegrityCheck(),
+      integrityCheck: lastCheck.integrityCheck,
+      lastIntegrityCheckAt: lastCheck.lastIntegrityCheckAt,
       autoVacuumDrift: vacuumState.autoVacuumDrift,
       lastReclaimedPages: vacuumState.lastReclaimedPages,
     },
@@ -282,11 +503,19 @@ export function updateDatabaseSettings(
   updates: Partial<UserDatabaseSettings>
 ): UserDatabaseSettings {
   const nextSettings = getUserDatabaseSettings();
+  assertCacheCredentialEndpoint(nextSettings.cache, updates.cache);
   const optimizationUpdated = updates.optimization !== undefined;
 
   for (const section of DATABASE_SETTINGS_SECTIONS) {
     if (updates[section] !== undefined) {
-      mergeSectionObject(nextSettings, section, updates[section]);
+      const sectionUpdate: Record<string, unknown> = { ...updates[section] };
+      if (section === "cache") {
+        for (const key of Object.keys(sectionUpdate)) {
+          if (isCacheSecret(key) && sectionUpdate[key] === CACHE_SECRET_MASK)
+            delete sectionUpdate[key];
+        }
+      }
+      mergeSectionObject(nextSettings, section, sectionUpdate);
     }
   }
   normalizeOptimizationSettings(nextSettings);
@@ -303,22 +532,40 @@ export function updateDatabaseSettings(
   const pipelineEnabled = requestedLogs?.callLogPipelineEnabled;
   const detailedEnabled = requestedLogs?.detailedLogsEnabled;
 
+  const requestedBackup = updates.backup as Partial<UserDatabaseSettings["backup"]> | undefined;
+  if (requestedBackup?.keepLastNBackups !== undefined) {
+    setDbBackupMaxFiles(nextSettings.backup.keepLastNBackups);
+  }
+
+  // The inherited call-log age (CALL_LOG_RETENTION_DAYS or 7) is not a saved choice. Persist it
+  // only when this update sends it or one is already saved, so a later env override still applies.
+  const persistCallLogAge =
+    updates.retention?.callLogs !== undefined || getPersistedCallLogRetentionDays() !== null;
+
   const tx = db.transaction(() => {
     for (const section of DATABASE_SETTINGS_SECTIONS) {
       const sectionValues = nextSettings[section] as Record<string, unknown>;
 
       for (const [key, value] of Object.entries(sectionValues)) {
-        insert.run(DATABASE_SETTINGS_NAMESPACE, `${section}.${key}`, JSON.stringify(value ?? null));
+        if (section === "retention" && key === "callLogs" && !persistCallLogAge) continue;
+        const stored = section === "cache" ? encryptCacheValue(key, value) : value;
+        insert.run(
+          DATABASE_SETTINGS_NAMESPACE,
+          `${section}.${key}`,
+          JSON.stringify(stored ?? null)
+        );
       }
     }
 
     if (pipelineEnabled !== undefined) {
       settingsInsert.run("call_log_pipeline_enabled", JSON.stringify(Boolean(pipelineEnabled)));
     }
+    encryptLegacyCacheSecretCopies(db);
   });
   tx();
 
-  backupDbFile("pre-write");
+  clearPersistedCallLogRetentionCache();
+  clearSemanticCacheFlagCache();
   invalidateDbCache("settings");
   if (optimizationUpdated) {
     applyDatabaseOptimizationSettings(nextSettings.optimization);

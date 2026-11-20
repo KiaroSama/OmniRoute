@@ -26,33 +26,33 @@
 
 ---
 
-## Muundo wa Ngazi ya Juu
+## Muundo wa Kiwango cha Juu
 
 ```
 open-sse/
 ├── index.ts              # Sehemu ya kuingilia ya umma
-├── types.d.ts            # Hamisho za aina za umma
+├── types.d.ts            # Uhamishaji wa aina za umma
 ├── package.json          # @omniroute/open-sse
 ├── config/               # Mipangilio ya watoa huduma, thamani zisizobadilika, sajili
-├── executors/            # Vitekelezaji vya HTTP kwa kila mtoa huduma (67 + base.ts/index.ts)
+├── executors/            # Vitekelezaji vya HTTP vya kila mtoa huduma (moduli 150 + base.ts/index.ts)
 ├── handlers/             # Vishughulikiaji vya maombi (chatCore, responses, n.k.)
-├── lib/                  # Zana za ndani
+├── lib/                  # Zana za matumizi ya ndani
 ├── mcp-server/           # Seva ya Model Context Protocol
-├── services/             # Takribani moduli 298 za huduma
-├── transformer/          # Kigeuzi cha umbizo la Responses API
-├── translator/           # Utafsiri wa umbizo (OpenAI ↔ Claude ↔ Gemini)
-└── utils/                # Zana zinazoshirikiwa (uwekaji kumbukumbu, hitilafu, mtiririko, n.k.)
+├── services/             # Takriban moduli 298 za huduma
+├── transformer/          # Kigeuzaji cha umbizo la Responses API
+├── translator/           # Tafsiri ya umbizo (OpenAI ↔ Claude ↔ Gemini)
+└── utils/                # Zana za matumizi zinazoshirikiwa (uwekaji kumbukumbu, hitilafu, mtiririko, n.k.)
 ```
 
 ### Idadi ya Moduli
 
-| Saraka | Faili | Kusudi |
-| `executors/` | 167 | Vitekelezaji vya HTTP kwa kila mtoa huduma (vilivyounganishwa kupitia kiwanda cha DefaultExecutor) |
+| Saraka | Faili | Madhumuni |
+| `executors/` | 167 | Vitekelezaji vya HTTP vya kila mtoa huduma (vilivyounganishwa kupitia kiwanda cha DefaultExecutor) |
 | `handlers/` | 157 | Sehemu za kuingilia za maombi (chatCore, responses, embeddings) |
 | `services/` | ~536 | Uelekezaji, uhifadhi wa muda, udhibiti wa kiwango, uonyeshaji upya, n.k. |
-| `translator/` | 56 | Ugeuzaji wa umbizo (OpenAI ↔ Claude ↔ Gemini) |
-| `mcp-server/` | 44 | Zana na usafirishaji wa MCP |
-| `utils/` | ~108 | Zana zinazohusika na maeneo mbalimbali (uwekaji kumbukumbu, hitilafu, mtiririko) |
+| `translator/` | 56 | Ubadilishaji wa umbizo (OpenAI ↔ Claude ↔ Gemini) |
+| `mcp-server/` | 44 | Zana na njia za usafirishaji za MCP |
+| `utils/` | ~108 | Zana za matumizi zinazohusisha sehemu mbalimbali (uwekaji kumbukumbu, hitilafu, mtiririko) |
 | `config/` | ~339 | Mipangilio ya watoa huduma, thamani zisizobadilika, sajili |
 
 ---
@@ -165,30 +165,30 @@ Vielelezo vya kumbukumbu za miito (ikiwa vimewezeshwa) huandikwa kwenye `${DATA_
 
 ---
 
-## Uchambuzi wa Kina wa Faili Muhimu
+## Faili muhimu Deep-Dive
 
 ### chatCore.ts (mistari 5977)
 
-**Kishughulikiaji kikuu cha maombi**. Licha ya ukubwa wake, kina muundo ulio wazi:
+The** msimamizi mkuu wa ombi** . Licha ya ukubwa wake, ina muundo wazi:
 
 ```ts
-// Muundo wa mfano wa chatCore.ts
+// Pseudo-structure of chatCore.ts
 export async function handleChat(request: NextRequest) {
-  // 1. Uthibitishaji + CORS
+  // 1. Auth + CORS
   await authenticateRequest(request);
   applyCorsHeaders(response);
 
-  // 2. Uthibitishaji wa mwili wa ombi
+  // 2. Body validation
   const body = await parseRequestBody(request);
 
-  // 3. Utambuzi wa umbizo + utafsiri
+  // 3. Format detection + translation
   const sourceFormat = detectFormat(request);
   const targetFormat = getTargetFormat(providerId);
   if (needsTranslation(sourceFormat, targetFormat)) {
     body = translateRequest(body, sourceFormat, targetFormat);
   }
 
-  // 4. Uelekezaji wa mchanganyiko
+  // 4. Combo routing
   const targets = await resolveComboTargets(comboId, body);
   for (const target of targets) {
     try {
@@ -196,20 +196,20 @@ export async function handleChat(request: NextRequest) {
       await recordUsage(result);
       return result;
     } catch (err) {
-      // Endelea hadi lengo linalofuata
+      // Continue to next target
     }
   }
 
-  // 5. Njia mbadala ya dharura
+  // 5. Emergency fallback
   return await emergencyFallback(body);
 }
 ```
 
-Licha ya kuwa kitendakazi kimoja kikubwa, kimepangwa katika **sehemu zenye maoni** zinazolingana na mchakato wa hatua 5.
+Licha ya kuwa kazi moja kubwa, imepangwa kuwa** sehemu za maoni** ramani hiyo kwa bomba la hatua 5.
 
-### combo.ts (mistari 4456 ya msimbo)
+### combo.ts (4456 LOC)
 
-**Injini ya uelekezaji** inayotafsiri mchanganyiko kuwa malengo yaliyopangwa kwa mpangilio.
+The** injini ya uelekezaji** ambayo hutatua mseto kwa malengo yaliyoagizwa.
 
 ```ts
 // services/combo.ts
@@ -226,46 +226,51 @@ export async function handleComboChat(body, comboId): Promise<ChatResult> {
 }
 ```
 
-Inatumia **mikakati 19 ya uelekezaji** (angalia `src/shared/constants/routingStrategies.ts`):
+Inasaidia** Mikakati 22 ya uelekezaji** (tazama `src/shared/constants/routingStrategies.ts`):
 
-| Mkakati             | Tabia                                                                    |
-| ------------------- | ------------------------------------------------------------------------ |
-| `priority`          | Orodha iliyopangwa kwa lengo la kwanza                                   |
-| `weighted`          | Uwezekano kulingana na uzito wa kila lengo                               |
-| `round-robin`       | Zunguka katika malengo kwa mpangilio                                     |
-| `context-relay`     | Hamisha muktadha kati ya malengo                                         |
-| `fill-first`        | Jaza kikomo kabla ya kuhamia lengo linalofuata                           |
-| `p2c`               | Nguvu ya chaguo mbili                                                    |
-| `random`            | Uteuzi nasibu wenye uwezekano sawa                                       |
-| `least-used`        | Chagua lenye matumizi machache zaidi ya hivi karibuni                    |
-| `cost-optimized`    | Lengo lenye afya na gharama ya chini kwanza                              |
-| `reset-aware`       | Inafahamu vipindi vya uwekaji upya vya mtoa huduma                       |
-| `reset-window`      | Uelekezaji kulingana na kipindi cha uwekaji upya                         |
-| `headroom`          | Nafasi kubwa zaidi ya kikomo iliyosalia kwanza                           |
-| `strict-random`     | Uwezekano sawa kabisa (hakuna uzani wa ubora)                            |
-| `auto`              | Tumia ukadiriaji wa vipengele 16 (`autoCombo/`)                          |
-| `lkgp`              | Mtoa huduma wa mwisho aliyejulikana kufanya kazi vizuri kwanza           |
-| `context-optimized` | Bora zaidi kwa maombi ya muktadha mrefu                                  |
-| `fusion`            | Sambaza kwa jopo sambamba, kisha unganisha kupitia mwamuzi (`fusion.ts`) |
+| Mkakati             | Tabia                                                                                                                  |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `priority`          | Orodha ya walengwa wa kwanza walioagizwa                                                                               |
+| `weighted`          | Uwezekano kwa uzito unaolengwa                                                                                         |
+| `round-robin`       | Pindua malengo kwa mpangilio                                                                                           |
+| `context-relay`     | Sahihisha muktadha kwenye malengo                                                                                      |
+| `fill-first`        | Jaza kiasi kabla ya kuhamia inayofuata                                                                                 |
+| `p2c`               | Nguvu ya chaguzi mbili                                                                                                 |
+| `random`            | Sare nasibu                                                                                                            |
+| `least-used`        | Chagua iliyo na matumizi machache ya hivi majuzi                                                                       |
+| `cost-optimized`    | Lengo la afya bora kwanza                                                                                              |
+| `reset-aware`       | Inafahamu madirisha ya mtoa huduma ya kuweka upya                                                                      |
+| `reset-window`      | Weka upya uelekezaji unaotegemea dirisha                                                                               |
+| `expiry-first`      | Tumia akaunti ambayo mgawo wake utaisha bila kutumiwa kwanza                                                           |
+| `headroom`          | Sehemu kubwa iliyosalia ya nafasi ya kwanza kwanza                                                                     |
+| `quota-weighted`    | Ruka akaunti ambazo zimechoka, kisha chora kwa kiasi kilichosalia cha ÷ ndani ya ndege                                 |
+| `strict-random`     | Sare ya kweli (hakuna uzani wa ubora)                                                                                  |
+| `auto`              | Tumia alama 16 (`autoCombo/`)                                                                                          |
+| `lkgp`              | Mtoa huduma bora anayejulikana mwisho kwanza                                                                           |
+| `context-optimized` | Bora kwa maombi ya muktadha mrefu                                                                                      |
+| `cache-optimized`   | Bandika kila kiambishi awali cha papo hapo kinachoweza kutumika tena kwa akaunti sawa (vibonge vya akiba ya papo hapo) |
+| `fusion`            | Fanya shabiki kwenye paneli sambamba, kisha usanisi kupitia jaji (`fusion.ts`)                                         |
+| `pipeline`          | Hatua za mnyororo — kila pato la lengwa hulisha linalofuata                                                            |
+| `jev`               | Jijumuishe: TypeSafe Jev anakubali ni maingizo gani yaliyoorodheshwa; vinginevyo agizo lako                            |
 
-### base.ts (mistari 1170 ya msimbo)
+### base.ts (1170 LOC)
 
-**Kitekelezaji dhahania** ambacho vitekelezaji vyote 107 vinakirithi. Kina:
+The** mtekelezaji wa kufikirika** kwamba kila darasa la mtekelezaji linaenea (moja kwa moja au kupitia `DefaultExecutor` na madaraja mengine). Ina:
 
-- `buildUrl()` — uundaji chaguomsingi wa URL (madarasa tanzu huubatilisha kwa mahitaji maalum)
-- `buildHeaders()` — vichwa chaguomsingi (uthibitishaji, aina ya maudhui)
-- `transformRequest()` — hupitisha bila mabadiliko kwa chaguomsingi
-- `execute()` — kitanzi kikuu cha HTTP chenye kujaribu tena/kusubiri kwa muda unaoongezeka/kivunja mzunguko
+- `buildUrl()` — ujenzi chaguo-msingi wa URL (madaraja madogo yanabatilisha kwa desturi)
+- `buildHeaders()` — vichwa chaguo-msingi (auth, aina ya maudhui)
+- `transformRequest()` — kupita kwa chaguo-msingi
+- `execute()` — kitanzi kikuu cha HTTP chenye retry/backoff/breaker
 
 ```ts
 // open-sse/executors/default.ts
 export class DefaultExecutor extends BaseExecutor {
-  // Hushughulikia watoa huduma wote wanaooana na OpenAI/Anthropic
-  // Watoa huduma husajili usanidi (URL, uthibitishaji, vichwa) lakini hushiriki mantiki ya kitekelezaji
+  // Handles all OpenAI/Anthropic-compatible providers
+  // Providers register configurations (URL, auth, headers) but share executor logic
 }
 ```
 
-Tabia mahususi kwa kila mtoa huduma (vichwa vya uthibitishaji, URL msingi, vichwa vya toleo) husanidiwa kupitia sajili ya watoa huduma, si kupitia madarasa tofauti ya vitekelezaji.
+Tabia mahususi ya mtoaji (vijajuu vya uandishi, msingi URL, vichwa vya matoleo) husanidiwa kupitia sajili ya mtoa huduma, si madarasa tofauti ya watekelezaji.
 
 ````
 
@@ -273,88 +278,88 @@ Tabia mahususi kwa kila mtoa huduma (vichwa vya uthibitishaji, URL msingi, vichw
 
 ## Huduma (moduli 117)
 
-Huduma ni **moduli mahususi zenye kusudi moja** ambazo vidhibiti huunganisha. Makundi makuu:
+Huduma zipo** moduli zilizolenga, zenye kusudi moja** ambayo washughulikiaji hutunga. Makundi makubwa:
 
-### Uelekezaji na Combo
+### Uelekezaji na Mchanganyiko
 
-- `combo.ts` — sehemu ya kuingilia kwa maombi yanayoelekezwa kwa combo
-- `services/autoCombo/` — ukadiriaji wa vipengele 16, mikakati 8 ya uelekezaji otomatiki
-- `wildcardRouter.ts` — hulinganisha njia zenye vibadala (`gpt-*`)
-- `modelFamilyFallback.ts` — njia mbadala ya T5 ndani ya familia
+- `combo.ts` — mahali pa kuingilia kwa maombi yaliyounganishwa
+- `services/autoCombo/` — bao la vipengele 16, mikakati 8 ya kuelekeza otomatiki
+- `wildcardRouter.ts` — inalingana na njia za kadi-mwitu (`gpt-*`)
+- `modelFamilyFallback.ts` — T5 kurudi nyuma kwa familia
 
-### Uzuiaji wa Kiwango na Mgao
+### Kupunguza Viwango na Kiwango
 
-- `rateLimitManager.ts` — ndoo ya tokeni kwa kila ufunguo+mtoa huduma
+- `rateLimitManager.ts` — tokeni ndoo kwa kila mtoaji + muhimu
 - `usage.ts` — kurekodi matumizi
-- `quotaCache.ts` — vijipicha vya mgao vilivyo kwenye kumbukumbu
+- `quotaCache.ts` — muhtasari wa sehemu ya kumbukumbu
 
 ### Akaunti na Tokeni
 
-- `tokenRefresh.ts` — uonyeshaji upya wa OAuth wakati wa 401
-- `accountFallback.ts` — kubadilisha hadi akaunti mbadala
-- `sessionManager.ts` — hali ya kipindi chenye zamu nyingi
+- `tokenRefresh.ts` — OAuth onyesha upya kwenye 401
+- `accountFallback.ts` — badilisha hadi akaunti mbadala
+- `sessionManager.ts` — hali ya vipindi vya zamu nyingi
 
-### Uerevu
+### Akili
 
-- `intentClassifier.ts` — kuainisha nia ya ombi
-- `taskAwareRouter.ts` — kuelekeza kulingana na aina ya kazi
-- `thinkingBudget.ts` — kugawa tokeni za kufikiri
-- `contextManager.ts` — kuingiza muktadha wa uelekezaji
+- `intentClassifier.ts` — ainisha dhamira ya ombi
+- `taskAwareRouter.ts` — njia kwa aina ya kazi
+- `thinkingBudget.ts` — tenga ishara za kufikiria
+- `contextManager.ts` — ingiza muktadha wa uelekezaji
 
 ### Ustahimilivu
 
-- `resilience.ts` — uratibu wa kujaribu tena, kusubiri kwa muda unaoongezeka, na kikatiza mzunguko
-- `emergencyFallback.ts` — njia mbadala ya mwisho kabisa
-- `modelDeprecation.ts` — kuelekeza kiotomatiki kwenye modeli zinazorithi zilizopitwa na wakati
+- `resilience.ts` — jaribu tena, backoff, orchestration ya kivunja
+- `emergencyFallback.ts` — njia mbadala ya mapumziko ya mwisho
+- `modelDeprecation.ts` — njia ya kiotomatiki kwa mifano inayofuata
 
-### Hali
+### Jimbo
 
-- `signatureCache.ts` — kuondoa nakala kulingana na sahihi ya ombi
-- `volumeDetector.ts` — kupunguza mzigo
-- `contextHandoff.ts` — usawazishaji wa kipindi
+- `signatureCache.ts` — imetolewa kwa saini ya ombi
+- `volumeDetector.ts` — mzigo wa kumwaga
+- utayarishaji wa kipindi cha `contextHandoff.ts` —
 
 ### Mfinyazo
 
-- `compression/` (sarakasi ndogo) — mchakato kamili wa mfinyazo
-- Faili 39 zinazohusu injini, vifurushi vya sheria na vioanishi
+- `compression/` (saraka ndogo) — bomba kamili la mgandamizo
+- Faili 39 zinazofunika injini, pakiti za sheria, adapta
 
 ### Ujuzi
 
-- (imeelezwa katika [SKILLS.md](./SKILLS.md))
+- (imefunikwa kwa [SKILLS.md](./SKILLS.md) )
 
 ### Kumbukumbu
 
-- (imeelezwa katika [MEMORY.md](./MEMORY.md))
+- (imefunikwa kwa [MEMORY.md](./MEMORY.md) )
 
 ---
 
-## Vitekelezaji (faili 75+)
+## Watekelezaji (moduli 150)
 
-Faili moja kwa kila mtoa huduma. Vyote hurithi `BaseExecutor` na hubatilisha kinachotofautiana.
+Mara nyingi faili moja kwa kila mtoaji. Madarasa ya wasii wote huongeza `BaseExecutor` na kubatilisha yale yanayotofautiana; moduli zingine ni wasaidizi wa kila mtoaji (schema za zana, adapta fetch/TTS, washughulikiaji wa quirk).
 
-### Mifumo ya Kawaida
+### Miundo ya Kawaida
 
-Watoa huduma hupatikana kupitia `getExecutor(providerId)`, ambayo hurejesha kitekelezaji kilichosanidiwa. Watoa huduma wanaooana na OpenAI/Anthropic hutumia `DefaultExecutor` (`executors/default.ts`). Tabia mahususi kwa mtoa huduma (URL msingi, vichwa vya uthibitishaji, toleo la API) husanidiwa katika `open-sse/config/providers/`, huku mageuzi ya sehemu kuu ya ombi yakishughulikiwa katika `open-sse/translator/`.
+Watoa huduma hutatuliwa kupitia `getExecutor(providerId)`, ambayo hurejesha mtekelezaji aliyesanidiwa. watoa huduma OpenAI/Anthropic-compatible hutumia `DefaultExecutor` (`executors/default.ts`). Tabia mahususi ya mtoaji (base URL, vichwa vya maandishi, toleo la API ) imesanidiwa `open-sse/config/providers/`, huku mabadiliko ya ombi yanashughulikiwa `open-sse/translator/`.
 
-**URL maalum** huwekwa kupitia usanidi wa mtoa huduma:
+**URL maalum** imewekwa kupitia usanidi wa mtoaji:
 
 ```ts
-// Usanidi wa mtoa huduma katika open-sse/config/providers/
+// Provider config in open-sse/config/providers/
 export default {
   id: "together",
   baseURL: "https://api.together.xyz/v1/chat/completions",
 }
 ````
 
-**Uthibitishaji maalum** hushughulikiwa kupitia usanidi wa uthibitishaji wa sajili ya watoa huduma (ufunguo wa API, OAuth, wasifu wa vichwa).
+**Uthibitishaji maalum** inashughulikiwa kupitia usanidi wa uthibitishaji wa usajili wa mtoaji (API key, OAuth, wasifu wa kichwa).
 
-Mageuzi ya **sehemu kuu maalum ya ombi** (k.m., Anthropic kutenganisha `system` na `messages`) husajiliwa kwa kila mtoa huduma katika `open-sse/translator/`.
+**Mwili wa ombi maalum** mabadiliko (kwa mfano, Anthropic kutenganisha `system` kutoka `messages`) yamesajiliwa kwa kila mtoa huduma katika `open-sse/translator/`.
 
 ````
 
-### Kiwanda cha Vitekelezaji
+### The Executor Factory
 
-`executors/index.ts` husafirisha `getExecutor(providerId)`:
+`executors/index.ts` exports `getExecutor(providerId)`:
 
 ```ts
 import { getExecutor } from "@omniroute/open-sse/executors";
@@ -366,7 +371,7 @@ const result = await executor.execute({
 });
 ````
 
-Utatuzi hupitia `ExecutorRegistry` (`executors/registry.ts`): kila kitekelezaji maalum hutangazwa katika jedwali jengewa-ndani la `executors/index.ts` na kusajiliwa kupitia `registerExecutor(alias, instance)` wakati wa kupakia moduli; `getExecutor()` hukagua sajili na kutumia `DefaultExecutor` iliyohifadhiwa kwa kila mtoa huduma asiye na ingizo maalum. Uhusishaji kamili wa lakabu → kitekelezaji umebainishwa na jaribio la dhahabu `tests/unit/executor-map-golden.test.ts`.
+Azimio linapitia `ExecutorRegistry` (`executors/registry.ts`): kila mtekelezaji maalumu anatangazwa katika jedwali lililojengewa ndani la `executors/index.ts` na kusajiliwa kupitia `registerExecutor(alias, instance)` kwa upakiaji wa moduli; `getExecutor()` hutafuta sajili na kurudi kwenye `DefaultExecutor` iliyohifadhiwa kwa mtoa huduma yeyote bila ingizo maalum. Lakabu kamili ya kuchora ramani ya mtekelezaji → ina sifa ya jaribio la dhahabu `tests/unit/executor-map-golden.test.ts`.
 
 ---
 
@@ -481,17 +486,17 @@ Hiki hushughulikia:
 
 ## Usanidi
 
-`open-sse/config/` huhifadhi safu ya usanidi:
+`open-sse/config/` inashikilia safu ya usanidi:
 
-| Faili                             | Madhumuni                                                     |
-| --------------------------------- | ------------------------------------------------------------- |
-| `providerRegistry.ts`             | Sajili ya modeli za gumzo juu ya katalogi ya watoa huduma 352 |
-| `providerModels.ts`               | Majina mbadala ya modeli, ulinganishaji wa miundo             |
-| `constants.ts`                    | Vikomo vya muda, vikomo, misimbo ya hali                      |
-| `defaultThinkingSignature.ts`     | Sahihi chaguomsingi ya kufikiri ya Claude                     |
-| `modelStrip.ts` (katika services) | Uondoaji wa sehemu kulingana na mtoa huduma                   |
+| Faili                           | Kusudi                                                         |
+| ------------------------------- | -------------------------------------------------------------- |
+| `providerRegistry.ts`           | Usajili wa muundo wa gumzo juu ya katalogi ya watoa huduma 394 |
+| `providerModels.ts`             | Lakabu za mfano, uchoraji wa ramani                            |
+| `constants.ts`                  | Muda umeisha, vikomo, misimbo ya hali                          |
+| `defaultThinkingSignature.ts`   | Sahihi chaguo-msingi Claude ya kufikiria                       |
+| `modelStrip.ts` (katika huduma) | Uvunaji wa uga wa kila mtoaji                                  |
 
-### Schema ya Sajili ya Watoa Huduma
+### Schema ya Usajili wa Mtoa Huduma
 
 ```ts
 interface ProviderConfig {
@@ -506,7 +511,7 @@ interface ProviderConfig {
 }
 ```
 
-Uthibitishaji wa Zod wakati wa kupakia moduli huhakikisha usanidi wote wa watoa huduma ni halali.
+uthibitishaji Zod katika upakiaji wa moduli huhakikisha usanidi wote wa mtoaji ni halali.
 
 ---
 
