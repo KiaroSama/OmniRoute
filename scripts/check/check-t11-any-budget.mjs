@@ -98,7 +98,7 @@ const budget = [
   { file: "open-sse/translator/helpers/geminiHelper.ts", maxAny: 0 },
   { file: "open-sse/translator/helpers/openaiHelper.ts", maxAny: 0 },
   { file: "open-sse/translator/helpers/responsesApiHelper.ts", maxAny: 0 },
-  { file: "open-sse/translator/request/claude-to-gemini.ts", maxAny: 0 },
+  { file: "open-sse/translator/request/claude-to-gemini.ts", maxAny: 1 }, // 1 = string literal "any" (Claude tool_choice value, not a TS type) — #19405
   { file: "open-sse/translator/request/gemini-to-openai.ts", maxAny: 0 },
   { file: "open-sse/translator/request/openai-to-claude.ts", maxAny: 1 }, // 1 = string literal "any" (Claude tool_choice value, not a TS type) — #1072
   { file: "open-sse/translator/request/openai-to-cursor.ts", maxAny: 0 },
@@ -133,6 +133,9 @@ for (const item of budget) {
   // Remove block and line comments to avoid false positives with the word "any" in comments
   let cleanContent = content.replace(/\/\*[\s\S]*?\*\//g, "");
   cleanContent = cleanContent.replace(/\/\/.*$/gm, "");
+  // A property access (including AbortSignal.any) is an identifier, not a type.
+  // Leave type annotations and the existing string-literal budgets unchanged.
+  cleanContent = cleanContent.replace(/(?<!\.)\.\s*any\b/g, "");
   const matches = cleanContent.match(anyRegex);
   const count = matches ? matches.length : 0;
   const status = count <= item.maxAny ? "OK" : "FAIL";

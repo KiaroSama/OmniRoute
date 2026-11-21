@@ -26,6 +26,18 @@
 //   • gen-contributors only reads lines that start with "- ", so fragment bullets are collapsed
 //     to a single line (pre-existing section bullets are left verbatim).
 //
+// Lessons baked in (v3.8.52 reconciliation, 2026-10-18):
+//   • a bullet that cites the ISSUE a PR closes (`closingIssuesReferences`) does NOT cover that
+//     PR — only the PR's own primary ref does. The old "closes a cited issue" shortcut hid the own
+//     bullet of nine external PRs (#15113 #15415 #15423 #15703 #15754 #15772 #16091 #16269
+//     #16445) and dropped one author from the Contributors table; it is gone, not behind a flag;
+//   • the fragment inventory is the WORKING TREE (`changelog.d/**` on disk), never a git ref: a
+//     second pass with the first pass's deletions still uncommitted re-read 969 fragments from
+//     HEAD and duplicated ~990 bullets (and `--drop-fragment` for all of them produced 457 spurious
+//     "uncovered" bullets instead). A fragment deleted on disk is consumed; the commit it came from
+//     stays covered through the `([#N](…/pull/N))` link the first pass appended to its bullet.
+//     Only the ORIGIN of a fragment (the commit that added it) still comes from git history.
+//
 // Usage:
 //   node scripts/release/reconcile-changelog.mjs [--version 3.8.51] [--base <ref>] [--head <ref>]
 //        [--release-branch release/v3.8.51] [--credit 12255=backryun] [--carrier 11938]
@@ -42,6 +54,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveCycleBase } from "./list-uncovered-commits.mjs";
+import { queuePrByCommit } from "../merge-queue/history-map.mjs";
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 export const MAINTAINER = "diegosouzapw";
@@ -263,11 +276,15 @@ export function otherSectionsText(changelog, version) {
   return changelog.slice(0, r.start) + changelog.slice(r.end);
 }
 
-/** Commits covered by the bullets: own PR is a primary ref (or closes a cited issue); no-PR commits by any ref. */
+/**
+ * Commits covered by the bullets: a PR commit only when its OWN PR is a primary ref (a bullet
+ * citing the issue that PR closes is not coverage — v3.8.52 lesson); no-PR commits by any ref or
+ * a documented `direct commit` hash.
+ */
 export function computeCoverage(
   rows,
   bullets,
-  { closingPrs = new Set(), originHashes = new Set(), skipHashes = new Set() } = {}
+  { originHashes = new Set(), skipHashes = new Set() } = {}
 ) {
   const cited = new Set();
   const hashes = [];
@@ -280,22 +297,48 @@ export function computeCoverage(
   const uncovered = rows.filter((r) => {
     const h = r.hash.slice(0, 9);
     if (skipHashes.has(h) || originHashes.has(h)) return false;
-    if (r.pr) return !(cited.has(r.pr) || closingPrs.has(r.pr));
+    if (r.pr) return !cited.has(r.pr);
     return !(documentedHash(r.hash) || r.refs.some((x) => cited.has(x)));
   });
   return { cited, uncovered };
 }
 
-/** Rank authors by commits; key = GitHub login of the merged PR when known, else the mailmap name. */
+/**
+ * Landings in the cycle: one per commit, except that a PR landed by omni-queue (merge-ff keeps
+ * every contributor commit, where a squash leaves one) counts once. Keeps the numbers comparable
+ * with squash-only cycles.
+ */
+export function landingUnits(rows) {
+  const queuePrs = new Set();
+  let count = 0;
+  for (const r of rows) {
+    if (!r.queue) count++;
+    else if (!queuePrs.has(r.queue.pr)) {
+      queuePrs.add(r.queue.pr);
+      count++;
+    }
+  }
+  return { count, queuePrs: queuePrs.size };
+}
+
+/**
+ * Rank authors by commits; key = GitHub login of the merged PR when known, else the mailmap name.
+ * A PR landed by omni-queue counts as one commit (see landingUnits).
+ */
 export function rankAuthors(rows, limit = 25) {
   const counts = {};
   const names = {};
+  const countedQueuePrs = new Set();
   for (const r of rows) {
     if (BOT_RE.test(r.authorName)) continue;
     const k = r.prAuthor || r.authorName;
-    counts[k] = (counts[k] || 0) + 1;
     names[k] ??= {};
     names[k][r.authorName] = (names[k][r.authorName] || 0) + 1;
+    if (r.queue) {
+      if (countedQueuePrs.has(r.queue.pr)) continue;
+      countedQueuePrs.add(r.queue.pr);
+    }
+    counts[k] = (counts[k] || 0) + 1;
   }
   const display = (k) => Object.entries(names[k]).sort((a, b) => b[1] - a[1])[0][0];
   return {
@@ -342,6 +385,12 @@ export function renderSection({
   }
   const humans = rows.filter((r) => !BOT_RE.test(r.authorName));
   const people = new Set([...Object.keys(ranking.counts), ...handles].map((x) => x.toLowerCase()));
+  // Squash-only cycles render exactly as before; with omni-queue landings a PR counts once.
+  const units = landingUnits(rows);
+  const queued = units.queuePrs > 0;
+  const commitsRow = queued
+    ? `| 📝 Commits in the cycle (a PR landed by omni-queue counts once) | **${fmt(units.count)}** |`
+    : `| 📝 Commits in the cycle | **${fmt(rows.length)}** |`;
   const lines = [
     `## [${version}] — ${dateSuffix}`,
     ``,
@@ -352,7 +401,8 @@ export function renderSection({
     `| | |`,
     `| --- | ---: |`,
     `| 👥 People who contributed | **${fmt(people.size)}** |`,
-    `| 📝 Commits in the cycle | **${fmt(rows.length)}** |`,
+    commitsRow,
+    ...(queued ? [`| 🚦 Pull requests landed by omni-queue | **${fmt(units.queuePrs)}** |`] : []),
     `| 🔀 Pull requests referenced | **${fmt(prRefs.size)}** |`,
     `| 📋 Changelog entries | **${fmt(bullets.length)}** |`,
     `| 🙌 Contributors credited in entries | **${fmt(handles.size)}** |`,
@@ -368,7 +418,7 @@ export function renderSection({
     ``,
     `### 🏆 Top 25 contributors this cycle`,
     ``,
-    `_By commits in \`${baseTip}..${headTip}\`, author identities consolidated via \`.mailmap\` and the merged PR's GitHub login. Bots excluded._`,
+    `_By commits in \`${baseTip}..${headTip}\`, author identities consolidated via \`.mailmap\` and the merged PR's GitHub login. Bots excluded.${queued ? " A PR landed by omni-queue counts as one commit." : ""}_`,
     ``,
     `| # | Contributor | Commits |`,
     `| ---: | --- | ---: |`,
@@ -390,11 +440,25 @@ const gh = (args) => execFileSync("gh", args, { encoding: "utf8", maxBuffer: 1 <
 export function repoSlug(cwd = ROOT) {
   const url = git(["remote", "get-url", "origin"], cwd);
   const m = url.match(/github\.com[:/]([^/]+\/[^/.]+)/);
-  return m ? m[1] : "diegosouzapw/OmniRoute";
+  return m ? m[1] : "cheaper-inference/OmniRoute";
 }
 
-/** Non-merge commits in `base..head` with mailmap identities, PR number and co-author trailers. */
-export function readCommits(base, head, cwd = ROOT) {
+/**
+ * Non-merge commits in `base..head` with mailmap identities, PR number and co-author trailers.
+ *
+ * PR number: the `(#N)` suffix of a squash subject, or — for the original commits an omni-queue
+ * merge-ff landing brought in (no `(#N)`) — the PR of the queue merge commit that carries them
+ * (`prByCommit`, scripts/merge-queue/history-map.mjs). Such rows also get `queue` = {pr, author,
+ * title, mergeSha, subjectPr}; a squash-only history maps nothing and reads exactly as before.
+ * `subjectPr` keeps a `(#N)` suffix of a mapped commit: reconcile() restores it as the row's PR
+ * when N is a real merged PR (a foreign squash the contributor merged into their branch).
+ */
+export function readCommits(
+  base,
+  head,
+  cwd = ROOT,
+  prByCommit = queuePrByCommit({ range: `${base}..${head}`, cwd })
+) {
   const raw = git(
     [
       "log",
@@ -414,6 +478,10 @@ export function readCommits(base, head, cwd = ROOT) {
       const [hash, date, authorName, authorEmail, subject, coa] = r.split("\x1f");
       const refs = refsIn(subject);
       const prMatch = subject.match(/\(#(\d+)\)\s*$/);
+      // the queue merge knows which PR brought the commit in (a contributor `(#N)` may be an
+      // issue); the suffix is kept as `queue.subjectPr` for reconcile()'s foreign-squash check
+      const q = prByCommit?.get(hash) ?? null;
+      const subjectPr = prMatch ? Number(prMatch[1]) : null;
       return {
         hash,
         date,
@@ -421,8 +489,19 @@ export function readCommits(base, head, cwd = ROOT) {
         authorEmail,
         subject,
         refs,
-        pr: prMatch ? Number(prMatch[1]) : null,
+        pr: q ? q.pr : subjectPr,
         prAuthor: null,
+        ...(q
+          ? {
+              queue: {
+                pr: q.pr,
+                author: q.author,
+                title: q.title,
+                mergeSha: q.mergeSha,
+                subjectPr,
+              },
+            }
+          : {}),
         coauthors: (coa || "")
           .split("\x1e")
           .map((s) => s.trim())
@@ -462,7 +541,7 @@ export function fetchPr(repo, n) {
           "--repo",
           repo,
           "--json",
-          "number,title,author,body,closingIssuesReferences",
+          "number,title,author,body,closingIssuesReferences,state,mergedAt",
         ],
         {
           encoding: "utf8",
@@ -512,60 +591,67 @@ export function fragmentOrigins(cwd = ROOT, dirs = Object.keys(SECTION_HEADINGS)
   return origins;
 }
 
-/** Read several `ref:path` blobs in one `git cat-file --batch` call → Map(path → text). */
-function readBlobs(ref, paths, cwd = ROOT) {
-  const texts = new Map();
-  if (!paths.length) return texts;
-  const out = execFileSync("git", ["cat-file", "--batch"], {
-    cwd,
-    encoding: "utf8",
-    maxBuffer: 1 << 28,
-    input: paths.map((p) => `${ref}:${p}`).join("\n") + "\n",
-  });
-  let pos = 0;
-  for (const p of paths) {
-    const nl = out.indexOf("\n", pos);
-    const header = out.slice(pos, nl);
-    pos = nl + 1;
-    if (header.endsWith(" missing")) continue;
-    const size = Number(header.split(" ")[2]);
-    texts.set(p, out.slice(pos, pos + size));
-    pos += size + 1; // trailing newline after each object
-  }
-  return texts;
-}
-
-/** Fragment files at `ref` + the commit that ADDED each one (definitive origin of the credit). */
-export function readFragments(ref = "HEAD", cwd = ROOT) {
+/**
+ * Fragment files present in the WORKING TREE under `cwd` + the commit that ADDED each one (the
+ * definitive origin of the credit, from git history). The inventory is deliberately read from disk,
+ * not from a ref: a fragment the previous pass unlinked (deletion not yet committed) is consumed.
+ */
+export function readFragments(cwd = ROOT, prByCommit = null) {
   const out = [];
   const origins = fragmentOrigins(cwd);
   for (const dir of Object.keys(SECTION_HEADINGS)) {
-    let files = "";
-    try {
-      files = git(["ls-tree", "--name-only", ref, `changelog.d/${dir}/`], cwd);
-    } catch {
-      continue;
-    }
-    const paths = files
-      .split("\n")
-      .filter((x) => x && !/README\.md$|\.gitkeep$/.test(x))
+    const abs = path.join(cwd, "changelog.d", dir);
+    if (!fs.existsSync(abs)) continue;
+    const paths = fs
+      .readdirSync(abs)
+      .filter((x) => x.endsWith(".md") && !/README\.md$|\.gitkeep$/.test(x))
+      .map((x) => `changelog.d/${dir}/${x}`)
       .sort();
-    const texts = readBlobs(ref, paths, cwd);
     for (const f of paths) {
       const origin = origins.get(f) || { hash: "", subject: "" };
       const om = origin.subject.match(/\(#(\d+)\)\s*$/);
+      // merge-ff landing: the adding commit has no `(#N)`; its queue merge names the PR
+      const q = origin.hash ? (prByCommit?.get(origin.hash) ?? null) : null;
+      const qPr = q?.pr ?? null;
       const pm = f.match(/\/(\d{4,6})-/);
       out.push({
         path: f,
         section: dir,
-        text: (texts.get(f) ?? "").trim(),
+        text: fs.readFileSync(path.join(cwd, f), "utf8").trim(),
         originHash: origin.hash ? origin.hash.slice(0, 9) : null,
-        originPr: om ? Number(om[1]) : null,
+        originPr: qPr ?? (om ? Number(om[1]) : null),
         prefixPr: pm ? Number(pm[1]) : null,
+        // the adding commit's own `(#N)`, for reconcile()'s foreign-squash check (merge-ff only)
+        // + the queue author, the credit when gh has no metadata for the queue PR
+        ...(qPr !== null
+          ? { originSubjectPr: om ? Number(om[1]) : null, originQueueAuthor: q.author ?? null }
+          : {}),
       });
     }
   }
   return out;
+}
+
+/**
+ * PRs missing from the merged-PR list: every row PR (fetched as before), plus each merge-ff
+ * `(#N)` subject (row `queue.subjectPr`, fragment `originSubjectPr`) that is a MERGED PR — the
+ * only kind reconcile() may treat as a foreign squash. `fetchPr(n)` is injected for tests.
+ */
+export function collectExtraPrs({ rows, fragments = [], known, fetchPr: fetch }) {
+  const extra = new Map();
+  for (const n of new Set(rows.map((r) => r.pr).filter((n) => n && !known.has(n)))) {
+    const p = fetch(n);
+    if (p) extra.set(n, p);
+  }
+  const subjects = [
+    ...rows.map((r) => r.queue?.subjectPr),
+    ...fragments.map((f) => f.originSubjectPr),
+  ].filter((n) => n && !known.has(n) && !extra.has(n));
+  for (const n of new Set(subjects)) {
+    const p = fetch(n);
+    if (p && (p.state === "MERGED" || p.mergedAt)) extra.set(n, p);
+  }
+  return extra;
 }
 
 // ───────────────────────────── the reconciliation itself ─────────────────────────────
@@ -592,7 +678,19 @@ export function reconcile({
   const prBy = new Map(prs.map((p) => [p.number, p]));
   for (const [n, p] of extraPrs) if (!prBy.has(n)) prBy.set(n, p);
   const prAuthor = (n) => prBy.get(n)?.author?.login || null;
-  for (const r of rows) r.prAuthor = r.pr ? prAuthor(r.pr) : null;
+  // merge-ff rows: a `(#N)` subject naming a REAL merged PR other than the queue PR is a foreign
+  // squash the contributor merged into their branch; it keeps its own PR (row, credit, bullet).
+  // An N that is not a merged PR (an issue number) leaves the queue PR in place.
+  const foreignPr = (subjectPr, queuePr) =>
+    subjectPr && subjectPr !== queuePr && prBy.has(subjectPr) ? subjectPr : null;
+  for (const r of rows) {
+    const own = r.queue ? foreignPr(r.queue.subjectPr, r.queue.pr) : null;
+    if (own) {
+      r.pr = own;
+      delete r.queue;
+    }
+  }
+  for (const r of rows) r.prAuthor = r.pr ? prAuthor(r.pr) || r.queue?.author || null : null;
   const issueToPrs = new Map();
   for (const p of prs)
     for (const ci of p.closingIssuesReferences || []) {
@@ -646,8 +744,12 @@ export function reconcile({
       if (frag) {
         const refs0 = refsIn(normalizeLinks(b));
         const override = fragmentPr[frag.path];
-        const oPr = frag.originPr;
+        const oPr = foreignPr(frag.originSubjectPr, frag.originPr) || frag.originPr;
         const fPr = frag.prefixPr;
+        // merge-ff: the queue merge already validated the origin PR, gh metadata or not
+        const queueOrigin = oPr && oPr === frag.originPr && frag.originQueueAuthor !== undefined;
+        const authorOf = (n) =>
+          prAuthor(n) || (queueOrigin && n === oPr ? frag.originQueueAuthor : null);
         let defPrs = override
           ? [override]
           : oPr && prBy.has(oPr) && !carriers.has(oPr)
@@ -656,7 +758,9 @@ export function reconcile({
               ? [fPr]
               : oPr && prBy.has(oPr)
                 ? [oPr]
-                : [];
+                : queueOrigin
+                  ? [oPr]
+                  : [];
         if (!defPrs.length)
           for (const n of refs0) for (const pr of issueToPrs.get(n) || []) defPrs.push(pr);
         defPrs = [...new Set(defPrs)];
@@ -674,8 +778,8 @@ export function reconcile({
         for (const n of defPrs) {
           const before = b;
           b = appendLink(b, repo, n);
-          b = addCredit(b, [prAuthor(n), ...(credits[n] || [])]);
-          if (b !== before) patched.push(`${frag.path} → #${n} @${prAuthor(n)}`);
+          b = addCredit(b, [authorOf(n), ...(credits[n] || [])]);
+          if (b !== before) patched.push(`${frag.path} → #${n} @${authorOf(n)}`);
         }
         if (!override && !(oPr && carriers.has(oPr)) && frag.originHash)
           originHashes.add(frag.originHash);
@@ -688,31 +792,30 @@ export function reconcile({
   const allExisting = Object.values(blocks)
     .flat()
     .filter((b) => b.startsWith("- "));
-  const closingPrs = new Set();
-  const citedIssues = new Set(allExisting.flatMap((b) => refsIn(normalizeLinks(b))));
-  for (const p of prs)
-    for (const ci of p.closingIssuesReferences || [])
-      if (citedIssues.has(ci.number)) closingPrs.add(p.number);
-  const { uncovered } = computeCoverage(rows, allExisting, {
-    closingPrs,
-    originHashes,
-    skipHashes,
-  });
+  const { uncovered } = computeCoverage(rows, allExisting, { originHashes, skipHashes });
 
   const gen = { features: [], fixes: [], maintenance: [] };
   const deps = [];
+  // merge-ff landings keep every contributor commit: one generated bullet per queue PR, titled
+  // after the PR (the merge commit), not one per "wip"/"fix typo" commit
+  const queueBulleted = new Set();
   for (const r of [...uncovered].sort(
     (a, b) => (a.pr || 0) - (b.pr || 0) || a.date.localeCompare(b.date)
   )) {
-    if (BOT_RE.test(r.authorName)) {
+    if (r.queue) {
+      if (queueBulleted.has(r.pr)) continue;
+      queueBulleted.add(r.pr);
+    }
+    // a collapsed queue PR is bot or human by its PR author, not by its first commit
+    if (BOT_RE.test(r.queue ? prAuthor(r.pr) || r.queue.author || r.authorName : r.authorName)) {
       deps.push(r);
       continue;
     }
-    const c = bulletFromSubject(r.subject, special);
+    const c = bulletFromSubject(r.queue?.title || r.subject, special);
     let bullet = `- ${c.text}`;
     bullet += r.pr ? ` (${prLink(repo, r.pr)})` : ` (direct commit \`${r.hash.slice(0, 10)}\`)`;
     bullet = addCredit(bullet, [
-      r.pr ? prAuthor(r.pr) : null,
+      r.pr ? prAuthor(r.pr) || r.queue?.author || null : null,
       ...(r.pr ? credits[r.pr] || [] : []),
     ]);
     gen[sectionForType(c.type)].push(bullet);
@@ -722,7 +825,7 @@ export function reconcile({
       `- **deps:** ${deps.length} Dependabot bumps — ${deps
         .map(
           (r) =>
-            `${r.subject.replace(/^deps(\([^)]*\))?:\s*/, "").replace(/\s*\(#\d+\)\s*$/, "")} (${prLink(repo, r.pr)})`
+            `${(r.queue?.title || r.subject).replace(/^deps(\([^)]*\))?:\s*/, "").replace(/\s*\(#\d+\)\s*$/, "")} (${prLink(repo, r.pr)})`
         )
         .join("; ")}`
     );
@@ -819,17 +922,14 @@ export function main(argv = process.argv.slice(2)) {
     console.log(`[reconcile-changelog] base = parent of the ${source} commit ${open.slice(0, 10)}`);
   }
   const repo = repoSlug();
-  const rows = readCommits(base, head);
+  const queueMap = queuePrByCommit({ range: `${base}..${head}`, cwd: ROOT });
+  const rows = readCommits(base, head, ROOT, queueMap);
   const prs = o.prs
     ? JSON.parse(fs.readFileSync(o.prs, "utf8"))
     : fetchMergedPrs(repo, releaseBranch);
   const known = new Set(prs.map((p) => p.number));
-  const extraPrs = new Map();
-  for (const n of new Set(rows.filter((r) => r.pr && !known.has(r.pr)).map((r) => r.pr))) {
-    const p = fetchPr(repo, n);
-    if (p) extraPrs.set(n, p);
-  }
-  const fragments = readFragments(head);
+  const fragments = readFragments(ROOT, queueMap);
+  const extraPrs = collectExtraPrs({ rows, fragments, known, fetchPr: (n) => fetchPr(repo, n) });
   const changelog = fs.readFileSync(path.join(ROOT, "CHANGELOG.md"), "utf8");
   const baseTip = git(["rev-parse", "--short=10", base]);
   const headTip = git(["rev-parse", "--short=10", head]);

@@ -4,577 +4,630 @@
 
 ---
 
-> **Kiekvieno katalogo ir šakninio failo vienos eilutės aprašymas.**
-> Paskutinį kartą atnaujinta: 2026-06-28 — OmniRoute v3.8.40
+> **Čia pateikti visi sekami aukščiausio lygio katalogai ir šakniniai failai, o jų paskirtis aprašyta viena eilute.**
+> Atnaujinta 2026-11-13 (OmniRoute v3.8.54)
 >
-> Naudokite šį žemėlapį, kad galėtumėte greitai naršyti kodo bazėje. Norėdami įsigilinti, sekite nuorodas į specializuotą dokumentaciją.
+> Šis žemėlapis padės susiorientuoti kodo bazėje. Išsamesnius aprašymus rasite atitinkamose nuorodose.
+> Failų skaičius tą dieną nustatytas naudojant `git ls-files`. Jis keičiasi beveik su kiekvienu
+> leidimu, todėl pateikti skaičiai nurodo apytikslį mastą.
 
 ## Aukščiausio lygio medis
 
 ```
 OmniRoute/
-├── src/                  # Next.js 16 programa (NS + API maršrutai + bibliotekos + domenas + serveris)
-├── open-sse/             # Srautinio perdavimo variklio darbo sritis (apdorojimo programos, vykdyklės, vertimo priemonė, MCP serveris)
-├── electron/             # Darbalaukio apvalkalas (Electron 41 + electron-builder 26.10)
-├── bin/                  # CLI pradinis taškas ir komandų apdorojimo programos
-├── scripts/              # Kompiliavimo, tikrinimo, sinchronizavimo ir vienkartiniai scenarijai
-├── docs/                 # Viešoji dokumentacija (esate čia)
-├── tests/                # Visi testų rinkiniai (vienetų, integraciniai, e2e, protokolų klientų)
-├── public/               # Next.js statiniai ištekliai, PWA manifestas, tarnybinė programa, piktogramos
-├── config/               # Statinė konfigūracija + kokybės vartų būsena (i18n, payloadRules, quality/)
-├── images/               # Rinkodaros / README vaizdų ištekliai
-├── @omniroute/           # Publikuojami papildomi paketai (opencode-plugin, opencode-provider)
-├── skills/               # CLI / agentų įgūdžių paketai (cli-* + omni-* + config-codex-cli)
-├── examples/             # Papildinių pavyzdžiai + omniroute-cmd-hello pradinis šablonas
-├── contrib/              # Bendruomenės indėliai (podman/)
-├── .source/              # Fumadocs šaltinio konfigūracija (source.config.mjs + server/browser/dynamic)
-├── .github/              # GitHub Actions darbo eigos + problemų šablonai + PR šablonas
-├── .husky/               # Git kabliukai (pre-commit, pre-push)
-├── .claude/              # Claude Code pasvirojo brūkšnio komandos (projekto apimties)
-├── .agents/              # Codex / bendrosios agentų darbo eigos + įgūdžiai (.claude/ kopija)
-├── .vscode/              # VS Code darbo srities nustatymai
-├── _ideia/               # Planavimo pastabos (neformalios; nepristatoma)
-├── _mono_repo/           # Istoriniai paprojekčiai (cloud, site, vscode-extension)
-├── _references/          # Tik skaitomos susijusių OSS projektų etaloninės kopijos
-├── _tasks/               # Atskirų leidimų užduočių stebėjimo failai (neformalūs)
-├── .build/ .worktrees/ dist/   # vietinės kompiliavimo / git-worktree / kompiliavimo išvesties laikinosios sritys (gitignored)
-├── .issues/              # Vietinė problemų podėlio kopija (gitignored)
-├── .playwright-mcp/      # Playwright MCP testų artefaktai
-├── coverage/             # c8 aprėpties išvestis (gitignored)
-├── logs/                 # Vykdymo žurnalai (gitignored)
-├── node_modules/         # Priklausomybės (gitignored)
-├── package/              # npm pack parengimo sritis (kompiliavimo artefaktas)
-├── .next/                # Next.js kompiliavimo išvestis (gitignored)
-└── (šakniniai failai — žr. toliau)
+├── src/              # Next.js 16 app: dashboard, /api and /v1 routes, server libs, domain, i18n
+├── open-sse/         # Streaming engine workspace (@omniroute/open-sse): handlers, executors, translator, services, MCP server
+├── packages/         # npm workspaces: ui-kit (vendored Keak CI UI Kit) and browser-pool
+├── @omniroute/       # Separately published npm packages (OpenCode plugins and provider)
+├── bin/              # Published `omniroute` CLI, MCP/bridge entry points, self-host ops scripts (*.sh)
+├── electron/         # Desktop app (Electron main/preload + helpers + icons)
+├── public/           # Static assets served by Next.js (provider logos, PWA icons, sw.js, openapi.yaml copy)
+├── skills/           # Agent Skills (SKILL.md) served by /api/agent-skills, MCP and A2A
+├── tests/            # All test suites: unit, integration, e2e, homolog, fixtures, snapshots
+├── scripts/          # Build, quality gates, i18n, release, ops, perf and one-off scripts (allow-listed subfolders)
+├── config/           # Versioned config: i18n, payload rules, CLI manifest, quality-gate baselines, release inventories
+├── changelog.d/      # Per-PR changelog fragments, aggregated into CHANGELOG.md at release time
+├── docs/             # Public documentation (served at /docs via Fumadocs) + translated mirrors in docs/i18n/
+├── examples/         # Example plugins and quickstart clients
+├── deploy/           # Kubernetes deployment: Helm chart + Kustomize base/overlays
+├── docker/           # Auxiliary container images (not the main image, which is the root Dockerfile)
+├── contrib/          # Community recipes: Podman quadlets, VPS compose, Windows launchers, session-sync note
+├── .github/          # GitHub Actions workflows, composite actions, issue/PR templates, CODEOWNERS, labels
+├── .husky/           # Tracked git hooks: commit-msg, pre-commit, pre-push
+├── .vale/            # Vale prose-lint vocabulary (styles/Vocab/OmniRoute/accept.txt)
+├── .vscode/          # Shared VS Code workspace settings (settings.json)
+└── (root files — see below)
+```
+
+Vietiniai, sukurti arba privatūs keliai (visi ignoruojami, niekada neįpareigoti, toliau neaprašyti):
+
+```
+node_modules/            # npm dependencies
+.build/                  # Next.js build output (default distDir .build/next, see next.config.mjs)
+dist/                    # npm staging directory assembled by scripts/build/prepublish.ts
+.source/                 # fumadocs-mdx output that feeds the /docs viewer
+.husky/_/                # Husky runtime generated on install (core.hooksPath target)
+coverage/ logs/ test-results/ playwright-report/   # coverage, runtime logs, Playwright output
+.env                     # local secrets generated from .env.example
+_*/                      # private local-only folders (anchored /_* ignore); never tracked
+.claude/ .agents/        # local AI-assistant state and skills; never tracked
 ```
 
 ---
 
 ## Šakniniai failai
 
-| Failas                                      | Paskirtis                                                                                                  |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| **README.md**                               | Rinkodaros pradinis puslapis + greitoji pradžia + funkcijų matrica (taip pat žr. `llm.txt`)                |
-| **CHANGELOG.md**                            | Kiekvienos laidos pakeitimų žurnalas (automatiškai generuojamas naudojant `/version-bump-cc` įgūdį)        |
-| **LICENSE**                                 | MIT licencijos tekstas                                                                                     |
-| **CLAUDE.md**                               | Projekto taisyklės Claude Code agentams (griežtos taisyklės, susitarimai, scenarijai)                      |
-| **AGENTS.md**                               | Tas pats kaip CLAUDE.md, bet ne Claude DI agentams (Codex, Cursor ir kt.)                                  |
-| **GEMINI.md**                               | Glaustos taisyklės Gemini pagrindu veikiantiems agentams (CLAUDE.md poaibis)                               |
-| **CONTRIBUTING.md**                         | Pagalbininkų vadovas: sąranka, sutartiniai commit pranešimai, testavimas, PR eiga                          |
-| **SECURITY.md**                             | Pažeidžiamumų pranešimo politika, palaikomos versijos, grėsmių modelis                                     |
-| **CODE_OF_CONDUCT.md**                      | Contributor Covenant — bendruomenės elgesio lūkesčiai                                                      |
-| **llm.txt**                                 | Paprastojo teksto pradinis puslapis, optimizuotas LLM tikrintuvams (SEO DI asistentams)                    |
-| **package.json**                            | npm manifestas, scenarijai, priklausomybės, varikliai, c8 aprėpties slenkstis                              |
-| **package-lock.json**                       | Užfiksuotas priklausomybių medis                                                                           |
-| **tsconfig.json**                           | Šakninis TypeScript konfigūracijos failas                                                                  |
-| **tsconfig.typecheck-core.json**            | `src/` branduolio tipų tikrinimo konfigūracija                                                             |
-| **tsconfig.typecheck-noimplicit-core.json** | Griežtas (`noImplicitAny`) tipų tikrinimas                                                                 |
-| **tsconfig.tsbuildinfo**                    | TS prieauginio komponavimo podėlis (neįtraukiamas į git)                                                   |
-| **next.config.mjs**                         | Next.js 16 komponavimo konfigūracija (autonominė išvestis)                                                 |
-| **next-env.d.ts**                           | Next.js automatiškai sugeneruoti aplinkos tipai                                                            |
-| **eslint.config.mjs**                       | ESLint plokščioji konfigūracija (taisyklės pagal projekto sritį)                                           |
-| **prettier.config.mjs**                     | Prettier formatavimo taisyklės                                                                             |
-| **postcss.config.mjs**                      | PostCSS konfigūracija, skirta Tailwind/CSS konvejeriui                                                     |
-| **playwright.config.ts**                    | Playwright E2E testų konfigūracija                                                                         |
-| **vitest.config.ts**                        | Vitest konfigūracija (numatytasis testų rinkinys)                                                          |
-| **vitest.mcp.config.ts**                    | Vitest konfigūracija, skirta MCP serverio / autoCombo / podėlio testų rinkiniams                           |
-| **sonar-project.properties**                | SonarQube/SonarCloud konfigūracija (kodo kokybė)                                                           |
-| **Dockerfile**                              | Daugiapakopis Docker komponavimas (builder → runner-base → runner-cli)                                     |
-| **docker-compose.yml**                      | Kūrimo compose konfigūracija su 4 profiliais (base, cli, host, cliproxyapi) ir redis pagalbine tarnyba     |
-| **docker-compose.prod.yml**                 | Produkcinė compose konfigūracija (prievadas 20130, redis, vardiniai tomai)                                 |
-| **.dockerignore**                           | Failai, neįtraukiami į Docker kontekstą                                                                    |
-| **fly.toml**                                | Fly.io diegimo konfigūracija (regionas `sin`, prievadas 20128, /data tomas)                                |
-| **.env.example**                            | Aplinkos failo šablonas (pirmą kartą diegiant automatiškai nukopijuojamas į `.env`)                        |
-| **.gitignore**                              | Git ignoravimo šablonai                                                                                    |
-| **.npmignore**                              | npm publikavimo išimčių sąrašas                                                                            |
-| **.npmrc**                                  | npm konfigūracija (registras, užrakinimo failo politika)                                                   |
-| **.node-version**                           | Užfiksuota Node versija (naudojama su nvm suderinamų įrankių)                                              |
-| **.nvmrc**                                  | Užfiksuota Node versija, skirta nvm                                                                        |
-| **eslint.complexity.config.mjs**            | ESLint konfigūracija sudėtingumo kartelės mechanizmui (`scripts/check/check-complexity.mjs --config`)      |
-| **eslint.sonarjs.config.mjs**               | ESLint konfigūracija SonarJS taisyklėms (kognityvinis sudėtingumas / dubliavimas)                          |
-| **source.config.ts**                        | Fumadocs `defineDocs` šaltinio konfigūracija (teikia duomenis `.source/`)                                  |
-| **knip.json**                               | Knip konfigūracija — nenaudojami failai / eksportai / priklausomybės (naudojama neaktyvaus kodo patikroje) |
-| **stryker.conf.json**                       | Stryker mutacinio testavimo konfigūracija                                                                  |
-| **.size-limit.json**                        | size-limit paketo dydžio biudžeto konfigūracija                                                            |
-| **promptfooconfig.yaml**                    | promptfoo vertinimo konfigūracija                                                                          |
-| **.gitleaks.toml**                          | gitleaks paslapčių nuskaitymo taisyklių rinkinys                                                           |
-| **.zizmor.yml**                             | zizmor GitHub-Actions saugumo analizės konfigūracija                                                       |
-| **socket.yml**                              | Socket.dev tiekimo grandinės konfigūracija                                                                 |
-| **news.json**                               | Lokalizuotas v2 pranešimų srautas; Radar paleidimo elementas pateikiamas neaktyvus                         |
-| **flake.nix** / **flake.lock**              | Nix kūrimo aplinkos apibrėžtis ir užrakto failas                                                           |
-| **.env**                                    | Vietinės paslaptys (git ignoruojamas — sugeneruotas iš `.env.example`)                                     |
+Visi sekami failai saugyklos šaknyje (`git ls-files | grep -v /`), sugrupuoti pagal funkcijas.
 
-> **Pašalinta iš šakninio katalogo v3.8.26 versijoje (struktūrai supaprastinti):**
->
-> - **→ `config/quality/`:** `quality-baseline.json`, `complexity-baseline.json`, `duplication-baseline.json`, `file-size-baseline.json`, `test-discovery-baseline.json`, `dependency-allowlist.json`, `.license-allowlist.json` ir sugeneruotas `quality-metrics.json` (git ignoruojamas). Žr. [`## config/`](#config--static-configs--quality-gate-state).
+### Projekto dokumentacija
+
+| Failas                   | Tikslas                                                                               |
+| ------------------------ | ------------------------------------------------------------------------------------- |
+| `README.md`              | Nukreipimo puslapis: funkcijų apžvalga, greita pradžia, diegimo metodai               |
+| `CHANGELOG.md`           | Vieno leidimo pakeitimų žurnalas (čia sulankstyti fragmentai iš `changelog.d/` )      |
+| `ROADMAP.md`             | Viešasis planas                                                                       |
+| `LICENSE`                | MIT licencija                                                                         |
+| `THIRD_PARTY_NOTICES.md` | Pastabos apie susietą trečiosios šalies kodą (pvz., wreq-js įrišimus)                 |
+| `CONTRIBUTING.md`        | Pagalbos vadovas: sąranka, įprastiniai įsipareigojimai, testavimo matrica, PR srautas |
+| `SECURITY.md`            | Pranešimų apie pažeidžiamumą politika                                                 |
+| `CODE_OF_CONDUCT.md`     | Bendruomenės elgesio lūkesčiai                                                        |
+| `llm.txt`                | Paprasto teksto projekto santrauka, skirta LLM robotams ir asistentams                |
+
+### AI asistento instrukcijos
+
+| Failas      | Tikslas                                                                                            |
+| ----------- | -------------------------------------------------------------------------------------------------- |
+| `AGENTS.md` | Vienas tiesos šaltinis kiekvienam AI asistentui: susitarimai, kokybiški vartai, griežtos taisyklės |
+| `CLAUDE.md` | Claude Code specifinės deltos; importuoja `AGENTS.md`                                              |
+| `GEMINI.md` | Dvyniams būdingos deltos; rodo atgal į `AGENTS.md`                                                 |
+
+Šalia juose aprašomo kodo taip pat yra įdėtieji vadovai: `open-sse/services/AGENTS.md` ir `src/lib/db/AGENTS.md`.
+
+### Paketo aprašai ir mazgo įrankių grandinė
+
+| Failas                     | Tikslas                                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------- |
+| `package.json`             | npm manifestas: scenarijai, priklausomybės, `engines`, `workspaces`, paskelbtas `files`     |
+| `package-lock.json`        | Užrakintas priklausomybės medis                                                             |
+| `pnpm-workspace.yaml`      | pnpm darbo sričių sąrašas (`packages/*`, `open-sse`) ir savosios kūrimo leidžiamųjų sąrašas |
+| `.npmrc` / `.npmignore`    | npm konfigūruoti ir paskelbti išskyrimus                                                    |
+| `.node-version` / `.nvmrc` | Mazgo versijos kaiščiai versijų tvarkytojams                                                |
+| `flake.nix` / `flake.lock` | Nix dev apvalkalas ir jo užraktas                                                           |
+| `Makefile`                 | `make` spartieji klavišai, perduodantys npm scenarijus                                      |
+
+### TypeScript, Next.js ir docs build
+
+| Failas                                    | Tikslas                                                                                   |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `tsconfig.json`                           | Pagrindinė TypeScript konfigūracija ir kelių slapyvardžiai (`@/*`, `@omniroute/open-sse`) |
+| `tsconfig.typecheck-core.json`            | `npm run typecheck:core` gabalas                                                          |
+| `tsconfig.typecheck-noimplicit-core.json` | `npm run typecheck:noimplicit:core` (griežtas `noImplicitAny`) gabalas                    |
+| `tsconfig.typecheck-api.json`             | API maršruto tipo tikrinimo dalis (`scripts/check/check-api-typecheck.mjs`)               |
+| `tsconfig.typecheck-dashboard.json`       | Prietaisų skydelio tipo patikros dalis (`npm run check:dashboard-typecheck`)              |
+| `tsconfig.build.json`                     | Gamybos tipo patikra (`npm run typecheck:build`, `check:build-typecheck`)                 |
+| `tsconfig.mitm.json`                      | MITM build konfigūracija, kurią naudoja `scripts/build/buildMitm.mjs`                     |
+| `next.config.mjs`                         | Next.js 16 konfigūracija (atskira išvestis, kūrimo profilio slapyvardžiai)                |
+| `source.config.ts`                        | Fumadocs `defineDocs` konfigūracija: kurios `docs/` sekcijos sukompiliuojamos į `/docs`   |
+| `postcss.config.mjs`                      | PostCSS / Tailwind dujotiekis                                                             |
+
+### Pūkeliai ir formatavimas
+
+| Failas                                    | Tikslas                                                                                                         |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `eslint.config.mjs`                       | Pagrindinė ESLint plokščia konfigūracija (`npm run lint`, su `config/quality/eslint-suppressions.json`)         |
+| `eslint.complexity-ratchets.config.mjs`   | Atskira konfigūracija, naudojama sudėtingumo ir pažinimo sudėtingumo reketams viename ESLint įraše              |
+| `eslint.complexity.config.mjs`            | Atskira konfigūracija su tik pagrindiniu `complexity` + `max-lines-per-function` (naudojama atliekant bandymus) |
+| `prettier.config.mjs` / `.prettierignore` | Prettier taisyklės ir išimtys                                                                                   |
+| `.editorconfig`                           | Numatytieji redaktoriaus nustatymai (2 tarpų įtrauka)                                                           |
+| `.markdownlint.json`                      | Patariamasis sumažinimo pūkas (`npm run lint:md`)                                                               |
+| `.vale.ini`                               | Patariamoji prozos pūkelė (`npm run lint:prose`), žodynas `.vale/`                                              |
+
+### Testai, vertinimas ir aprėptis
+
+| Failas                        | Tikslas                                                                                                      |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `vitest.config.ts`            | jsdom Vitest rinkinys: `npm run test:vitest:ui` (prietaisų skydelis `.tsx`, kabliukai, memory/skills testai) |
+| `vitest.mcp.config.ts`        | Mazgų Vitest rinkinys: `npm run test:vitest` (MCP serveris, autoCombo, kombinuotas, API `.spec.ts`)          |
+| `vitest.quarantine.config.ts` | Vykdo karantine esančius failus, išvardytus `config/quality/vitest-exclusions.json`                          |
+| `vitest.e2e-live.config.ts`   | Tiesioginio serverio Vitest rinkiniai (`tests/e2e/ecosystem.test.ts`, `tests/e2e/protocol-clients.test.ts`)  |
+| `playwright.config.ts`        | Playwright E2E (`tests/e2e/**/*.spec.ts`, `npm run test:e2e`)                                                |
+| `stryker.conf.mjs`            | Stryker mutacijų testavimas (`npm run test:mutation`; apskaičiuoja `tap.testFiles` iš `mutate`)              |
+| `stryker.disablebail.mjs`     | Stryker variantas be užstato, testiniam-redundancijos matavimui                                              |
+| `promptfooconfig.yaml`        | promptfoo LLM saugos rinkinys                                                                                |
+| `codecov.yml`                 | Codecov pataisų aprėpties nustatymai                                                                         |
+
+### Docker ir dislokavimas
+
+| Failas                            | Tikslas                                                                                                             |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `Dockerfile`                      | Daugiapakopis vaizdas (`builder` → `runner-base` → `runner-web` / `runner-cli*`)                                    |
+| `Dockerfile.bun`                  | Alternatyvus Bun vykdymo laiko vaizdas (sukūrė `docker-publish.yml`)                                                |
+| `docker-compose.yml`              | Numatytasis kūrimas naudojant profilius (bazė, žiniatinklis, klipas, priegloba, atmintis, klipų apibrėžimas ir kt.) |
+| `docker-compose.prod.yml`         | Atskiras gamybos momentinės nuotraukos pavyzdys prievade 20130                                                      |
+| `docker-compose.selfhost.yml`     | Vienos komandos kilpos savaiminis priegloba (poros su `.env.selfhost.example`)                                      |
+| `docker-compose.ollama-local.yml` | Docker OmniRoute kalbasi su pagrindinio kompiuterio Ollama                                                          |
+| `.dockerignore`                   | Docker kūrimo konteksto išskyrimai                                                                                  |
+| `fly.toml`                        | Fly.io programos konfigūracija (20128 prievadas, `/data` tomas)                                                     |
+
+### Saugumo, tiekimo grandinės ir saugyklų robotai
+
+| Failas                                       | Tikslas                                                                                |
+| -------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `.gitleaks.toml`                             | gitleaks slapto nuskaitymo taisyklės ir leidžiami sąrašai                              |
+| `.trivyignore`                               | Sudėtinio vaizdo nuskaitymo priimtinos rizikos slopinimas                              |
+| `.zizmor.yml`                                | zizmor GitHub Veiksmų saugos audito konfig                                             |
+| `socket.yml`                                 | Socket.dev programos konfigūracija (kelio nepaisoma; ne CI vartai)                     |
+| `sonar-project.properties`                   | SonarQube/SonarCloud projekto konfigūracija                                            |
+| `knip.json`                                  | Knip nepanaudota files/exports/deps konfigūracija (tiekiama `npm run check:dead-code`) |
+| `.size-limit.json`                           | Rinkinio dydžio biudžetai                                                              |
+| `.mergify.yml`                               | Sujungti sujungimo eilės konfigūraciją                                                 |
+| `.coderabbit.yaml`                           | CodeRabbit peržiūros konfig                                                            |
+| `.cbmignore`                                 | Ignoruoti kodų bazės-memory-mcp kodo indekso sąrašą                                    |
+| `.gitignore` / `.gitattributes` / `.mailmap` | Nepaisykite taisyklių, scenarijų eilučių LF galūnių, kanoninių autorių tapatybių       |
+
+### Aplinkos šablonai, būsena ir sklaidos kanalai
+
+| Failas                      | Tikslas                                                                            |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| `.env.example`              | Šablonas nukopijuotas į `.env` pirmą kartą įdiegus; nuorodų sąrašas env vars       |
+| `.env.selfhost.example`     | `docker-compose.selfhost.yml` šablonas                                             |
+| `.env.homolog.example`      | Šablonas homologacijos bėgikui (`npm run homolog`)                                 |
+| `.env.devin-bridge.example` | Devin tilto sąrankos env failo pavyzdys                                            |
+| `.i18n-state.json`          | Prieauginio vertimo būsena (šaltinio maišos pagal dokumentą ir lokalę)             |
+| `news.json`                 | Lokalizuotas pranešimų sklaidos kanalas (schema v2), skaitomas prietaisų skydelyje |
 
 ---
 
 ## `src/` — Next.js programa
 
+Apie 4550 sekamų failų. Kelio slapyvardis `@/*` → `src/*`.
+
 ```
 src/
-├── app/                 # App Router (puslapiai + API maršrutai + būsenos puslapiai + nukreipimo puslapis)
-├── lib/                 # Pagrindinės bibliotekos / domeno moduliai (80 pakatalogių + ~70 aukščiausio lygio failų)
-├── domain/              # Grynoji domeno logika (politikos variklis, atsarginis mechanizmas, sąnaudos, blokavimas, comboResolver, vertinimas)
-├── server/              # Tik serveriui skirti moduliai (autorizavimo seka, cors, autentifikavimo tarpinė programinė įranga) — jų negalima importuoti kliento pusėje
-├── shared/              # Kai saugu, bendrinama tarp serverio ir kliento (konstantos, tipai, validavimas, kontraktai, pagalbinės priemonės)
-├── i18n/                # next-intl konfigūracija + kiekvienos lokalės pranešimų JSON (42 lokalės)
-├── middleware/          # Next.js tarpinė programinė įranga (užklausų papildymas, lokalės aptikimas)
-├── mitm/                # MITM tarpinio serverio branduolys: sertifikatų generavimas / diegimas, apdorojimo komponentai, paskirties objektai, inspektorius, šablonai, tiesioginis perdavimas
-│   ├── handlers/        # 9 IDE agentų apdorojimo klasės, išplečiančios MitmHandlerBase (antigravity, kiro, copilot, codex, cursor, zed, claudeCode, openCode, trae)
-│   └── inspector/       # Srauto fiksavimo sluoksnis: buferis (atmintyje saugomas žiedinis buferis), sseMerger, conversationNormalizer, kindDetector, contextKey, httpProxyServer, systemProxyConfig
-├── models/              # Modelių adapterių jungiamoji logika (senstelėjęs suderinamumo sluoksnis)
-├── scripts/             # Projekto vidiniai priežiūros scenarijai (pvz., backfillAggregation)
-├── sse/                 # Senstelėję SSE apdorojimo komponentai / paslaugos (chat.ts, chatHelpers.ts, services/auth.ts)
-├── store/               # Senstelėjusi atmintyje saugoma duomenų saugykla (palaipsniui keičiama į src/lib/db)
-├── types/               # Bendrinami TS tipų failai
-├── instrumentation.ts   # Next.js telemetrijos kabliukas (naršyklei + edge aplinkai)
-├── instrumentation-node.ts  # Tik Node skirta instrumentacija
-└── proxy.ts             # HTTP tarpinio serverio įvesties suderinamumo sluoksnis
+├── app/                  # App Router: pages, layouts and route handlers (file-convention loaded)
+│   ├── (dashboard)/      # Route group for the dashboard: dashboard/<section>/ pages + home widgets
+│   ├── api/              # HTTP routes: v1/ (OpenAI-compatible), v1beta/ (Gemini-style), management routes
+│   ├── docs/             # Embedded docs viewer (lib/openapi.generated.ts is generated)
+│   ├── a2a/ .well-known/ # A2A JSON-RPC entry point and Agent Card discovery
+│   ├── healthz/ livez/ readyz/ status/   # Health probes and status page
+│   ├── landing/ login/ auth/ authorize/ callback/ connect/   # Public, auth and OAuth pages
+│   ├── miniapp/          # Telegram Mini App page
+│   └── 400/ … 503/       # Static HTTP error pages
+├── lib/                  # Server-side libraries and domain modules (largest folder)
+├── shared/               # Code shared by server and client: components, constants, validation, utils
+├── sse/                  # Next.js side of the SSE pipeline: handlers/ (chat*), services/ (auth, leases, quotas)
+├── mitm/                 # MITM / TPROXY capture: cert/, dns/, handlers/, targets/, inspector/, tproxy/ (C addon)
+├── server/               # Server-only: authz/ (route guard pipeline), auth/, cors/, origin/, ws/
+├── domain/               # Policy engine, fallback, cost rules, lockout, quota cache, assessment/
+├── i18n/                 # next-intl: messages/ (67 locales), global-error-messages/ (generated), routeNamespaces.generated.json
+├── store/                # Zustand client stores (theme, notifications, …)
+├── hooks/                # Client hooks (live dashboard, compression preview, breaker health)
+├── types/                # Ambient and shared type declarations
+├── models/               # Compatibility barrel re-exporting db functions
+├── middleware/           # promptInjectionGuard.ts (facade over the guardrail system)
+├── scripts/              # backfillAggregation.ts (`npm run backfill-aggregation`)
+├── proxy.ts              # Next.js 16 proxy: headless gate + authz pipeline for dashboard, /api and /v1-style paths
+├── instrumentation.ts    # Next.js instrumentation hook (delegates Node-only work)
+└── instrumentation-node.ts   # Node-only startup work
 ```
 
-### `src/app/` — App Router (Next.js 16)
+### `src/app/` — App Router
 
-| Kelias                                                                       | Paskirtis                                                                                                                                                                                                                                                                                                                    |
-| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/v1/`                                                                | Vieša su OpenAI suderinama API (~25 antriniai maršrutai: pokalbiai, užbaigimai, įterpiniai, failai, paketai, garsas, vaizdai, vaizdo įrašai, muzika, perrikiavimas, moderavimas, paieška, ws, agentai, paskyros, teikėjai ir kt.)                                                                                            |
-| `app/api/v1beta/`                                                            | Gemini stiliaus API galiniai taškai                                                                                                                                                                                                                                                                                          |
-| `app/api/playground/`                                                        | Playground Studio maršrutai: `improve-prompt/` (POST — LLM užklausos perrašymo priemonė), `presets/` (GET sąrašas / POST kūrimas), `presets/[id]/` (GET / PUT / DELETE) — žr. `docs/frameworks/PLAYGROUND_STUDIO.md`                                                                                                         |
-| `app/api/` (ne v1)                                                           | Valdymo / administravimo maršrutai (~60 katalogų: teikėjai, deriniai, nustatymai, mcp, a2a, vertinimai, atmintis, įgūdžiai, saityno iškvietos, atitiktis, atsparumas, stebėsena, tuneliai, CLI įrankiai ir kt.)                                                                                                              |
-| `app/api/tools/agent-bridge/`                                                | AgentBridge REST API — 12 maršrutų (serverio valdymas, agento būsena / DNS / susiejimai, apėjimas, sertifikatas, aukštesnio lygmens CA). LOCAL_ONLY + SPAWN_CAPABLE. Žr. `docs/frameworks/AGENTBRIDGE.md §7`.                                                                                                                |
-| `app/api/tools/traffic-inspector/`                                           | Traffic Inspector REST + WS API — daugiau nei 16 maršrutų (užklausos, seansai, pagrindiniai kompiuteriai, fiksavimo režimai, eksportas, ws). LOCAL_ONLY + SPAWN_CAPABLE. Žr. `docs/frameworks/TRAFFIC_INSPECTOR.md §8`.                                                                                                      |
-| `app/a2a/`                                                                   | A2A JSON-RPC 2.0 įėjimo taškas (`POST /a2a`)                                                                                                                                                                                                                                                                                 |
-| `app/.well-known/agent.json/`                                                | A2A agento kortelė (aptikimui)                                                                                                                                                                                                                                                                                               |
-| `app/(dashboard)/dashboard/`                                                 | Skydelio UI puslapiai (daugiau nei 50 skyrių, ~118 page.tsx failų: teikėjai, deriniai, nustatymai, atmintis, įgūdžiai, saityno iškvietos, vertinimai, auditas, paketai, podėlis, sąnaudos, būklė, sistema, veikla ir kt.)                                                                                                    |
-| `app/(dashboard)/dashboard/search-tools/`                                    | Search Tools Studio UI (3 skirtukai: paieška / duomenų išgavimas / palyginimas + SearchConceptCard + ProviderCatalog) — žr. `docs/frameworks/SEARCH_TOOLS_STUDIO.md`                                                                                                                                                         |
-| `app/(dashboard)/dashboard/memory/`                                          | Memory Studio (21 planas): `page.tsx` (3 skirtukų karkasas), `components/` (MemoryConceptCard, MemoryEngineStatus, EmbeddingSourceSelector, EditMemoryModal, RetrievePreview, QdrantConfigCard, RerankConfigCard), `components/tabs/` (MemoriesTab, PlaygroundTab, EngineTab), `hooks/` (useEngineStatus, useMemorySettings) |
-| `app/(dashboard)/dashboard/tools/agent-bridge/`                              | AgentBridge skydelio puslapis — serverio kortelė, 9 agentų kortelės, sąrankos vediklis, modelių susiejimas, apėjimo sąrašas. i18n PT-BR + EN. Žr. `docs/frameworks/AGENTBRIDGE.md`.                                                                                                                                          |
-| `app/(dashboard)/dashboard/tools/traffic-inspector/`                         | Traffic Inspector skydelio puslapis — DevTools padalytasis rodinys, 7 išsamios informacijos skirtukai, 4 fiksavimo režimų perjungikliai, seansų įrašymo priemonė, kontekstinis spalvinimas. i18n PT-BR + EN. Žr. `docs/frameworks/TRAFFIC_INSPECTOR.md`.                                                                     |
-| `app/(dashboard)/dashboard/activity/`                                        | Veiklos srauto puslapis (B grupė): `page.tsx` (serverio) + `ActivityFeedClient.tsx` + `components/{ActivityFeed,ActivityItem,DayHeader,EventTypeFilter}.tsx` — žr. `docs/architecture/MONITORING_SECTIONS.md`                                                                                                                |
-| `app/(dashboard)/dashboard/costs/quota-share/`                               | Kvotų bendrinimo puslapis (B grupė): `QuotaSharePageClient.tsx` + `components/{PoolCard,DimensionBar,AllocationTable,BurnRateChart,QuotaConceptCard,CreatePoolModal,EditAllocationsModal}.tsx` + `hooks/{usePools,usePoolUsage,useLocalStoragePoolMigration}.ts`                                                             |
-| `app/(dashboard)/dashboard/costs/quota-share/plans/`                         | Teikėjo plano konfigūracijos puslapis (B grupė): `page.tsx` + `ProviderPlanConfigClient.tsx` — kiekvienam ryšiui taikomas kvotos dimensijų perrašymas                                                                                                                                                                        |
-| `app/docs/`                                                                  | Integruota dokumentacijos peržiūros priemonė (atvaizduoja `docs/*.md`)                                                                                                                                                                                                                                                       |
-| `app/landing/`                                                               | Rinkodaros nukreipimo puslapis                                                                                                                                                                                                                                                                                               |
-| `app/login/`, `forgot-password/`, `forbidden/`                               | Su autentifikavimu susiję puslapiai                                                                                                                                                                                                                                                                                          |
-| `app/{400,401,403,408,429,500,502,503}/`                                     | HTTP klaidų puslapiai                                                                                                                                                                                                                                                                                                        |
-| `app/maintenance/`, `offline/`, `status/`, `privacy/`, `terms/`, `callback/` | Statiniai / būsenos puslapiai                                                                                                                                                                                                                                                                                                |
-| `app/layout.tsx`, `page.tsx`, `manifest.ts`, `globals.css`                   | Šakninis išdėstymas, pradžios puslapis, PWA manifestas, visuotinis CSS                                                                                                                                                                                                                                                       |
-| `app/error.tsx`, `global-error.tsx`, `not-found.tsx`, `loading.tsx`          | Klaidų ribos                                                                                                                                                                                                                                                                                                                 |
+| Kelias                                                              | Tikslas                                                                                                                                                                                                               |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/api/v1/`                                                       | Viešas su OpenAI suderinamas API: pokalbiai, užbaigimai, atsakymai, pranešimai, įterpimai, vaizdai, garso įrašas, vaizdo įrašai, muzika, pervertinimas, moderavimas, paieška, failai, paketai, ws, modeliai,…         |
+| `app/api/v1beta/`                                                   | Dvynių stiliaus galiniai taškai                                                                                                                                                                                       |
+| `app/api/` (kiti aplankai)                                          | Valdymo ir administratoriaus maršrutai: teikėjai, deriniai, nustatymai, raktai, naudojimas, žurnalai, mcp, a2a, acp, atmintis, įgūdžiai, evals, žiniatinklio kabliukai, tuneliai, papildiniai, radaras, įrankiai, ... |
+| `app/api/tools/agent-bridge/`                                       | AgentBridge REST API — žr [AGENTBRIDGE.md](../frameworks/AGENTBRIDGE.md)                                                                                                                                              |
+| `app/api/tools/traffic-inspector/`                                  | Eismo inspektorius REST API — žr [TRAFFIC_INSPECTOR.md](../frameworks/TRAFFIC_INSPECTOR.md)                                                                                                                           |
+| `app/(dashboard)/dashboard/`                                        | Vienas aplankas prietaisų skydelio skiltyje (teikėjai, deriniai, žurnalai, naudojimas, išlaidos, talpykla, glaudinimas, atmintis, žaidimų aikštelė, paieškos įrankiai, nustatymai, įrankiai ir kt.)                   |
+| `app/(dashboard)/home/`                                             | Pagrindinis ekranas ir jo valdikliai                                                                                                                                                                                  |
+| `app/docs/`                                                         | Dokumentų peržiūros priemonė, perteikianti `source.config.ts` nurodytas Fumadocs skyrius                                                                                                                              |
+| `app/layout.tsx`, `page.tsx`, `manifest.ts`, `globals.css`          | Šakninis išdėstymas, šakninis įrašas (peradresavimai), PWA manifestas, visuotinis CSS                                                                                                                                 |
+| `app/error.tsx`, `global-error.tsx`, `not-found.tsx`, `loading.tsx` | Klaidų ribos ir atsargos                                                                                                                                                                                              |
 
-### `src/lib/` — Pagrindinės bibliotekos (~50 modulių)
+API maršrutai seka `Route → CORS → Zod validation → optional auth → policy → handler`; žr. [ARCHITECTURE.md](ARCHITECTURE.md) ir [API_REFERENCE.md](../reference/API_REFERENCE.md).
 
-| Modulis                                  | Paskirtis                                                                                                                                                                                                                                                                                                                   |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `a2a/`                                   | A2A protokolo užduočių tvarkytuvė, gebėjimai (5), srautinis perdavimas                                                                                                                                                                                                                                                      |
-| `acp/`                                   | CLI agentų registras (vietinių CLI aptikimas — žr. `docs/frameworks/AGENT_PROTOCOLS_GUIDE.md`)                                                                                                                                                                                                                              |
-| `api/`                                   | Bendrinami API pagalbiniai įrankiai (`requireManagementAuth`, validavimas)                                                                                                                                                                                                                                                  |
-| `auth/`                                  | Sesija, slaptažodžių maiša, prieigos raktų validavimas                                                                                                                                                                                                                                                                      |
-| `batches/`                               | OpenAI Batches API apdorojimo moduliai                                                                                                                                                                                                                                                                                      |
-| `catalog/`                               | Teikėjų katalogo Zod validavimas + galimybių nustatymas                                                                                                                                                                                                                                                                     |
-| `cloudAgent/`                            | Debesijos agentai (Codex Cloud, Devin, Jules) — žr. `docs/frameworks/CLOUD_AGENT.md`                                                                                                                                                                                                                                        |
-| `combos/`                                | Derinių nustatymo ir pertvarkymo pagalbiniai įrankiai                                                                                                                                                                                                                                                                       |
-| `audit/`                                 | Veiklos srauto pagalbiniai įrankiai: `highLevelActions.ts` (leidžiamųjų sąrašas + `isHighLevelAction()`), `activityIcons.ts` (veiksmo → piktogramos / veiksmažodžio susiejimas), `timeline.ts` (groupByDay/relativeTime) — žr. `docs/architecture/MONITORING_SECTIONS.md`                                                   |
-| `compliance/`                            | Audito žurnalas + teikėjų auditas — žr. `docs/security/COMPLIANCE.md`                                                                                                                                                                                                                                                       |
-| `compression/`                           | Glaudinimo variklio sąsajos sluoksnis (varikliai yra `open-sse/services/compression/`)                                                                                                                                                                                                                                      |
-| `config/`                                | Vykdymo aplinkos konfigūracijos pagalbiniai įrankiai                                                                                                                                                                                                                                                                        |
-| `db/`                                    | Daugiau nei 120 sričių DB modulių + 168 migracijos (dirbdami su SQLite visada naudokite šį modulį)                                                                                                                                                                                                                          |
-| `quota/`                                 | Kvotų bendrinimo variklis: `dimensions.ts` (tipai / Zod), `types.ts` (QuotaStore sąsaja), `sqliteQuotaStore.ts`, `redisQuotaStore.ts`, `storeFactory.ts`, `fairShare.ts`, `burnRate.ts`, `planResolver.ts`, `planRegistry.ts`, `saturationSignals.ts`, `enforce.ts`, `spendRecorder.ts` — žr. `docs/routing/QUOTA_SHARE.md` |
-| `radar/`                                 | „Radar“ nemokamų modelių katalogo klientas: `feedSchema.ts`, `pinnedKeys.ts`, `verify.ts`, `sync.ts`, `applyFeed.ts`, `index.ts` (`getRadarCatalog()`) — žr. `docs/frameworks/RADAR.md`                                                                                                                                     |
-| `display/`                               | Naudotojo sąsajos formatavimo pagalbinės priemonės (kaina, delsa ir kt.)                                                                                                                                                                                                                                                    |
-| `embeddings/`                            | Įterpinių paslaugos pagalbinės priemonės                                                                                                                                                                                                                                                                                    |
-| `env/`                                   | Aplinkos kintamųjų analizavimas ir tikrinimas                                                                                                                                                                                                                                                                               |
-| `evals/`                                 | Vertinimo sistema (rinkiniai, vykdyklė, vykdymo aplinka) — žr. `docs/frameworks/EVALS.md`                                                                                                                                                                                                                                   |
-| `guardrails/`                            | Asmens identifikavimo informacijos maskuoklis, užklausų injekcijos apsauga, vaizdų tiltas — žr. `docs/security/GUARDRAILS.md`                                                                                                                                                                                               |
-| `jobs/`                                  | Foninės užduotys (panašios į „cron“)                                                                                                                                                                                                                                                                                        |
-| `memory/`                                | Pokalbių atmintis („SQLite FTS5“ + „sqlite-vec“ hibridinis RRF + „Qdrant“ 2 lygmuo) — žr. `docs/frameworks/MEMORY.md`                                                                                                                                                                                                       |
-| `memory/embedding/`                      | Kelių šaltinių įterpinių sluoksnis: `index.ts` (sprendiklis), `remote.ts`, `staticPotion.ts`, `transformersLocal.ts`, `cache.ts`, `types.ts` (21 planas)                                                                                                                                                                    |
-| `memory/vectorStore.ts`                  | „sqlite-vec“ v0.1.9 apvalkalas — KNN pilnoji paieška + hibridinis RRF (FTS5 + vektorius, k=60). Atidėtoji inicializacija; jei „sqlite-vec“ nepasiekiamas, veikimas palaipsniui supaprastinamas. (21 planas)                                                                                                                 |
-| `memory/reindex.ts`                      | `runReindexBatch()` — fone apdoroja atminties įrašus, kurių `needs_reindex=1`; iškviečiama per `POST /api/memory/reindex` ir atidėtojo retrospektyvaus užpildymo kelią. (21 planas)                                                                                                                                         |
-| `monitoring/`                            | Būklės patikros, metrikų siuntimas                                                                                                                                                                                                                                                                                          |
-| `oauth/`                                 | OAuth / importavimo procesai, skirti 22 teikėjų moduliams (agy, antigravity, claude, cline, codebuddy-cn, codex, cursor, devin-desktop, ghe-copilot, github, gitlab-duo, grok-cli-oauth, grok-cli, kilocode, kimi-coding, kiro, openference, qoder, trae, xai-oauth, zed-hosted, zed)                                       |
-| `plugins/`                               | Papildinių registras                                                                                                                                                                                                                                                                                                        |
-| `promptCache/`                           | „Anthropic“ stiliaus užklausų podėlio kontroliniai taškai                                                                                                                                                                                                                                                                   |
-| `skills/`                                | Įgūdžių sistema (integruoti įgūdžiai + prekyvietė + SkillsSH) — žr. `docs/frameworks/SKILLS.md`                                                                                                                                                                                                                             |
-| `playground/`                            | Bendrinami „Playground Studio“ pagalbiniai moduliai: `codeExport.ts` (curl/Python/TS generatorius), `promptImprover.ts` (metaužklausų kūrimo priemonė), `streamMetrics.ts` (grynieji TTFT/TPS), `types.ts` (kainodaros lentelė) — žr. `docs/frameworks/PLAYGROUND_STUDIO.md`                                                |
-| `webhookDispatcher.ts`                   | HMAC žiniatinklio kabliukų pristatymas — žr. `docs/frameworks/WEBHOOKS.md`                                                                                                                                                                                                                                                  |
-| `cloudflaredTunnel.ts`, `ngrokTunnel.ts` | Tunelių tvarkytuvės — žr. `docs/ops/TUNNELS_GUIDE.md`                                                                                                                                                                                                                                                                       |
-| `cloudSync.ts`, `initCloudSync.ts`       | Pasirinktinis būsenos sinchronizavimas su debesija                                                                                                                                                                                                                                                                          |
-| `localDb.ts`                             | Pakartotinio eksportavimo jungiamasis modulis, skirtas db moduliams (be logikos — tik pakartotinis eksportavimas)                                                                                                                                                                                                           |
-| `cacheLayer.ts`, `idempotencyLayer.ts`   | Užklausų podėlis + idempotentiškumas                                                                                                                                                                                                                                                                                        |
-| (~30 kitų aukščiausio lygio failų)       | Specializuoti pagalbiniai moduliai (logEnv, modelsDevSync, piiSanitizer ir kt.)                                                                                                                                                                                                                                             |
+### `src/lib/` — serverio bibliotekos
 
-### `src/lib/db/` — Duomenų bazė (137 moduliai + 193 migracijos)
+Maždaug 90 poaplankių ir apie 90 aukščiausio lygio modulių. Pagrindinės grupės:
 
-| Pakatalogis               | Paskirtis                                                                                                                                                                                        |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `db/core.ts`              | Vienetinis `getDbInstance()` egzempliorius su WAL žurnalizavimu                                                                                                                                  |
-| `db/migrations/`          | Versijuojami SQL failai (idempotentiniai, transakciniai). `073_memory_vec.sql` prideda `memory_vec_meta` + stulpelį `needs_reindex` (21 planas).                                                 |
-| `db/playgroundPresets.ts` | CRUD modulis, skirtas „Playground Studio“ išankstinėms parinktims (`listPlaygroundPresets`, `getPlaygroundPreset`, `createPlaygroundPreset`, `updatePlaygroundPreset`, `deletePlaygroundPreset`) |
-| `db/memoryVec.ts`         | CRUD, skirtas `memory_vec_meta` (active_dim, embedding_signature, last_reset_at, vec_loaded) + `markMemoryNeedsReindex`, `getMemoryReindexQueue` ir kt. (21 planas)                              |
-| `db/<domain>.ts`          | Po vieną modulį kiekvienai sričiai: providers, combos, apiKeys, users, sessions, usage, audit*log, webhooks, skills, memory_entries, cloud_agent_tasks, evals*\*, reasoning_cache ir kt.         |
+| Plotas                         | Aplankai / failai                                                                                                   | Gilus nardymas                                                                                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Duomenų bazė                   | `db/` — domeno moduliai, `migrations/`, `adapters/`, `repositories/`, `migrationRunner/`                            | [`src/lib/db/AGENTS.md`](../../src/lib/db/AGENTS.md), [DATABASE_GUIDE.md](../ops/DATABASE_GUIDE.md)                                            |
+| Naudojimas, kvota ir išlaidos  | `usage/`, `quota/`, `spend/`                                                                                        | [QUOTA_SHARE.md](../routing/QUOTA_SHARE.md), [COST_TRACKING.md](../guides/COST_TRACKING.md)                                                    |
+| Tiekėjai ir modeliai           | `providers/`, `providerModels/`, `modelValidation/`, `catalog/`, `radar/`, `freeProxyProviders/`                    | [RADAR.md](../frameworks/RADAR.md), [MODEL-VALIDATION.md](../guides/MODEL-VALIDATION.md)                                                       |
+| OAuth ir kredencialai          | `oauth/` (teikėjai/, paslaugos/, komunalinės paslaugos/), `zed-oauth/`, `copilot/`, `cursor/`, `credentialHealth/`  | `resolvePublicCred()` (operatoriaus dokumentas, neteikiamas viešai)                                                                            |
+| Sauga ir valdymas              | `guardrails/`, `compliance/`, `pii/`, `security/`                                                                   | [GUARDRAILS.md](../security/GUARDRAILS.md), [COMPLIANCE.md](../security/COMPLIANCE.md)                                                         |
+| Agento savybės                 | `a2a/`, `acp/`, `cloudAgent/`, `memory/`, `skills/`, `agentSkills/`                                                 | [AGENT_PROTOCOLS_GUIDE.md](../frameworks/AGENT_PROTOCOLS_GUIDE.md), [MEMORY.md](../frameworks/MEMORY.md), [SKILLS.md](../frameworks/SKILLS.md) |
+| Papildiniai ir paslaugos       | `plugins/`, `services/` (įterptųjų paslaugų montuotojai ir prižiūrėtojas)                                           | [PLUGINS.md](../frameworks/PLUGINS.md), [EMBEDDED-SERVICES.md](../frameworks/EMBEDDED-SERVICES.md)                                             |
+| Maršrutas ir atsparumas        | `combos/`, `routing/`, `resilience/`, `reasoningRouting/`, `promptCache/`                                           | [RESILIENCE_GUIDE.md](RESILIENCE_GUIDE.md)                                                                                                     |
+| Tarpiniai serveriai ir tinklai | `proxyHealth/`, `proxySubscription/`, `proxyRelay/`, `proxyEvents/`, tunelio moduliai                               | [PROXY_GUIDE.md](../ops/PROXY_GUIDE.md), [TUNNELS_GUIDE.md](../ops/TUNNELS_GUIDE.md)                                                           |
+| Darbai ir tvarkaraštis         | `jobs/`, `jobRegistry/`, `warmupScheduler/`                                                                         |                                                                                                                                                |
+| Stebimumas ir eksportas        | `monitoring/`, `logExport/`, `webhooks/`, `audit/`, `events/`                                                       | [LOG-EXPORT.md](../frameworks/LOG-EXPORT.md), [WEBHOOKS.md](../frameworks/WEBHOOKS.md)                                                         |
+| CLI ir IDE integracija         | `cliTools/`, `cli-helper/`, `vscode/`, `inspector/`, `versionManager/`                                              | [CLI-TOOLS.md](../reference/CLI-TOOLS.md), [VSCODE-COPILOT.md](../guides/VSCODE-COPILOT.md)                                                    |
+| Konteksto šaltiniai            | `localCorpus/`, `notion/`, `obsidian/`                                                                              | [LOCAL_CORPUS_CONTEXT.md](../frameworks/LOCAL_CORPUS_CONTEXT.md)                                                                               |
+| Kitos funkcijos                | `evals/`, `playground/`, `gamification/`, `telegram/`, `conductor/`, `batches/`, `deploy/`, `transfer/`, `sync/`, … | [EVALS.md](../frameworks/EVALS.md), [PLAYGROUND_STUDIO.md](../frameworks/PLAYGROUND_STUDIO.md)                                                 |
 
-### `src/domain/`
+Aukščiausio lygio moduliai, kuriuos verta žinoti:
 
-| Modulis                | Paskirtis                                         |
-| ---------------------- | ------------------------------------------------- |
-| `policy.ts`            | Politikų variklis                                 |
-| `fallbackPolicy.ts`    | Atsarginio sprendimo medis                        |
-| `costRules.ts`         | Sąnaudų skaičiavimo taisyklės                     |
-| `lockoutPolicy.ts`     | Modelio / ryšio blokavimo politika                |
-| `tagRouter.ts`         | Žymomis pagrįstas maršruto parinkimas             |
-| `comboResolver.ts`     | Derinio nustatymas (naudojamas derinių variklio)  |
-| `modelAvailability.ts` | Kiekvieno modelio pasiekiamumo patikra            |
-| `assessment/`          | Modelio vertinimas (RFC-AUTO-ASSESSMENT 1 etapas) |
+| Failas                                                         | Tikslas                                                                   |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `cacheLayer.ts`, `idempotencyLayer.ts`, `semanticCache.ts`     | Atsakymų kaupimas talpykloje ir idempotencija                             |
+| `webhookDispatcher.ts`                                         | HMAC pasirašytas „Webhook“ pristatymas                                    |
+| `cloudflaredTunnel.ts`, `ngrokTunnel.ts`, `tailscaleTunnel.ts` | Tunelio valdytojai                                                        |
+| `tokenHealthCheck*.ts`, `tokenRefreshCircuit.ts`               | Fono kredencialų sveikatos patikrinimai ir atnaujinimo grandinė           |
+| `streamingPiiTransform.ts`, `streamingCredentialTransform.ts`  | Srautinio atsako dezinfekavimo priemonės                                  |
+| `gracefulShutdown.ts`, `serverLifecycle.ts`                    | Proceso gyvavimo ciklas                                                   |
+| `*.stub.ts`                                                    | Konstrukcijos profilio skiltys pakeistos slapyvardžiais `next.config.mjs` |
 
-### `src/server/`
+### `src/lib/db/` — duomenų bazė
 
-| Modulis  | Paskirtis                                                                                             |
-| -------- | ----------------------------------------------------------------------------------------------------- |
-| `authz/` | Autorizavimo konvejeris: `classify` → `policies` → `enforce` — žr. `docs/architecture/AUTHZ_GUIDE.md` |
-| `cors/`  | CORS konfigūracija                                                                                    |
-| `auth/`  | Sesijos tarpinė programinė įranga                                                                     |
+| Kelias                | Tikslas                                                                                                                    |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `db/core.ts`          | `getDbInstance()` singleton (WAL žurnalas)                                                                                 |
+| `db/migrations/`      | Sunumeruotos, idempotentinės `.sql` migracijos (rašymo metu 236 failai; `check-migration-numbering.mjs` saugos numeracija) |
+| `db/migrationRunner/` | Migracijos bėgikas                                                                                                         |
+| `db/adapters/`        | SQLite tvarkyklės adapteriai (better-sqlite3, mazgas:sqlite, bun:sqlite, sql.js)                                           |
+| `db/repositories/`    | SQLite saugyklos diegimas (kombinacijos, žaidimų aikštelės išankstiniai nustatymai, maršruto parinkimo konfigūracija)      |
+| `db/<domain>.ts`      | Apie 175 domeno moduliai (tiekėjai, deriniai, apiKeys, nustatymai, naudojimas ir kt.) — visada importuoja juos tiesiogiai  |
 
-### `src/shared/`
+### `src/domain/`, `src/server/`, `src/shared/`
 
-| Modulis                          | Paskirtis                                                                                     |
-| -------------------------------- | --------------------------------------------------------------------------------------------- |
-| `constants/providers.ts`         | **355 teikėjai** su Zod validacija (pagrindinis tiesos šaltinis)                              |
-| `constants/cliTools.ts`          | Išorinių CLI įrankių registras                                                                |
-| `constants/routingStrategies.ts` | **19 maršruto parinkimo strategijų** su prioritetais                                          |
-| `constants/publicApiRoutes.ts`   | Maršrutai, kuriems reikalingas Bearer (o ne valdymo) autentifikavimas                         |
-| `constants/upstreamHeaders.ts`   | Antraščių draudimų sąrašas siunčiant užklausas aukštesnio lygio serveriui                     |
-| `validation/schemas.ts`          | ~80 Zod schemų (vienintelis API sutarčių tiesos šaltinis)                                     |
-| `validation/helpers.ts`          | Zod validavimo pagalbinės priemonės (`validateBody` ir kt.)                                   |
-| `types/`                         | Bendrinami TS tipai                                                                           |
-| `contracts/`                     | Viešosios API sutartys (naudojamos per `files:` faile `package.json`)                         |
-| `utils/circuitBreaker.ts`        | Teikėjo grandinės pertraukiklis (žr. `docs/architecture/RESILIENCE_GUIDE.md`)                 |
-| `utils/apiAuth.ts`               | API rakto tikrinimas, prieigos sričių tikrinimas                                              |
-| `utils/fetchTimeout.ts`          | Skirtojo laiko / nutraukimo apvalkalai aukštesnio lygio užklausoms                            |
-| `utils/releaseNotes.ts`          | Užbaigtų v2 / ankstesnių versijų pranešimų analizatorius, lokalizavimas ir atmetimas pagal ID |
+| Kelias                                                         | Tikslas                                                                                                                                                  |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain/policyEngine.ts`                                       | Politikos variklis                                                                                                                                       |
+| `domain/fallbackPolicy.ts`, `lockoutPolicy.ts`, `costRules.ts` | Atsarginiai sprendimai, blokavimo politika, išlaidų taisyklės                                                                                            |
+| `domain/quotaCache*.ts`, `quotaSnapshot*.ts`                   | Kvotos talpyklos ir momentinių nuotraukų išlikimas                                                                                                       |
+| `domain/assessment/`                                           | Modelio vertinimas (vertintojas, kategorizuotojas, savigydytojas)                                                                                        |
+| `server/authz/`                                                | Leidimo vamzdynas ir maršruto apsauga (`routeGuard.ts`) — žr. [AUTHZ_GUIDE.md](AUTHZ_GUIDE.md), [ROUTE_GUARD_TIERS.md](../security/ROUTE_GUARD_TIERS.md) |
+| `server/origin/`, `server/cors/`                               | Public/MCP/WS kilmės skiriamoji geba ir CORS — žr [CORS.md](../security/CORS.md)                                                                         |
+| `server/ws/`                                                   | Tiesioginis prietaisų skydelio WebSocket serveris                                                                                                        |
+| `shared/components/`                                           | Prietaisų skydelio komponentai ir adapteriai per `packages/ui-kit` — žr [.DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)                                            |
+| `shared/constants/`                                            | Teikėjų katalogas (`providers.ts`), maršruto parinkimo strategijos, CLI įrankiai, piktogramų žemėlapis, antraštės prieš srovę atmetimo sąrašas,…         |
+| `shared/validation/`                                           | Zod schemos ir patvirtinimo pagalbininkai                                                                                                                |
+| `shared/utils/`                                                | Grandinės pertraukiklis, API rakto autentifikavimas, gavimo skirtasis laikas, funkcijų vėliavėlės,…                                                      |
+| `shared/middleware/`, `network/`, `services/`, `hooks/`        | Pokalbių priėmimo tarpinė programinė įranga, tinklo pagalbininkai, klientų aptarnavimas, React kabliukai                                                 |
 
 ---
 
-## `open-sse/` — Srautinio apdorojimo variklio darbo sritis
+## `open-sse/` — srautinio perdavimo variklio darbo sritis
 
-Atskira npm darbo sritis (`@omniroute/open-sse`). Apdoroja užklausas ir vykdo teikėjų operacijas.
+npm darbo sritis `@omniroute/open-sse` (apie 2390 sekamų failų). Ji apdoroja užklausą ir vykdo teikėją. Apžvalga: [OPEN_SSE_ARCHITECTURE.md](../frameworks/OPEN_SSE_ARCHITECTURE.md).
 
 ```
 open-sse/
-├── handlers/            # 16 failų (12 apdorojimo programų + 4 pagalbiniai moduliai): chatCore, responsesHandler, embeddings, audio, image, video, music, rerank, moderations, search ir kt.
-├── executors/           # 67 konkretiems teikėjams skirtos vykdymo programos (išplečia BaseExecutor)
-├── translator/          # Formatų keitikliai (9 užklausų, 9 atsakymų, 9 pagalbiniai)
-├── transformer/         # Responses API ↔ Chat Completions (TransformStream)
-├── services/            # ~80+ paslaugų modulių (combo, accountFallback, autoCombo, reasoningCache, claude code/chatgpt stealth, modelDeprecation, taskAwareRouter, workflowFSM ir kt.)
-├── mcp-server/          # MCP serveris (110 įrankių, 3 perdavimo būdai, 33 aprėptys)
-├── config/              # Teikėjų / modelių registrai, antraščių konfigūracija, modelių alternatyvūs pavadinimai
-├── utils/               # TLS klientas, proxy užklausų vykdymas / dispečeris, tinklo pagalbiniai moduliai
-├── index.ts             # Darbo srities pradinis taškas
-├── package.json         # Darbo srities manifestas
-├── tsconfig.json        # Darbo srities TS konfigūracija
-└── types.d.ts           # Darbo srities tipų deklaracijos
+├── handlers/       # Request handlers: chatCore.ts + chatCore/, responses, embeddings, audio, imageGeneration/,
+│                   #   videoGeneration/, search/, fal/, mediaGeneration/, sseParser/, responseSanitizer/, …
+├── executors/      # Provider-specific HTTP dispatch, registered in executors/registry.ts; base/ holds shared recovery helpers
+├── translator/     # Format conversion: request/, response/, helpers/, image/, registry.ts, bootstrap.ts
+├── transformer/    # responsesTransformer.ts (Responses API ↔ Chat Completions TransformStream)
+├── services/       # Combo routing, rate limits, fallback, caching, usage, token refresh, compression (see below)
+├── config/         # Provider registry (config/providers/registry/<id>/), constants, model/media registries
+├── mcp-server/     # MCP server: tools/, schemas/, toolSearch/, transports, audit, scopes, __tests__/
+├── utils/          # Stream, error, TLS, proxy-fetch and logging utilities
+├── vendor/         # codex-chatgpt-web/ — vendored adapter (provenance in vendor.json)
+├── lib/            # DeepSeek proof-of-work worker and hash
+├── shared/         # zedAuth.ts
+├── index.ts        # Workspace entry
+└── package.json · tsconfig.json · types.d.ts
 ```
+
+### `open-sse/services/`
+
+| Kelias                                                                                         | Tikslas                                                                                                                                                               |
+| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `combo.ts` + `combo/`                                                                          | Kombinuotos maršruto parinkimo strategijos — žr. [AUTO-COMBO.md](../routing/AUTO-COMBO.md)                                                                            |
+| `autoCombo/`                                                                                   | „Auto-Combo“ taškų ir režimų paketai                                                                                                                                  |
+| `accountFallback.ts` + `accountFallback/`                                                      | Ryšio vėsinimas ir modelio blokavimas — žr. [RESILIENCE_GUIDE.md](RESILIENCE_GUIDE.md)                                                                                |
+| `rateLimitManager.ts` + `rateLimitManager/`                                                    | Normos apribojimo stebėjimas ir antraštės analizavimas                                                                                                                |
+| `compression/`                                                                                 | Kompresiniai varikliai (`engines/`), taisyklių paketai (`rules/`), `eval/`, `harness/`, `riskGate/` — žr. [COMPRESSION_GUIDE.md](../compression/COMPRESSION_GUIDE.md) |
+| `tokenRefresh/`, `usage/`, `cache/`, `admission/`, `sessionPool/`, `codexAccount/`, `routing/` | Žetonų atnaujinimas, naudojimo apskaita, talpyklos kaupimas, priėmimo juostos, seansų telkiniai, Codex paskyros, maršruto parinkimo pagalbininkai                     |
+| `__tests__/`                                                                                   | Vienoje vietoje esantys Vitest komplektai (surinkti Vitest konfigūracijose)                                                                                           |
+| `AGENTS.md`                                                                                    | Šio aplanko agento vadovas                                                                                                                                            |
+
+Šablonas: didelis modulis `X.ts` šalia aplanko `X/` reiškia, kad modulis buvo padalintas į mažesnius failus (`handlers/chatCore.ts` + `handlers/chatCore/`, `services/combo.ts` + `services/combo/`).
 
 ### `open-sse/mcp-server/`
 
-| Kelias                      | Paskirtis                                                                 |
-| --------------------------- | ------------------------------------------------------------------------- |
-| `server.ts`                 | MCP serverio gyvavimo ciklas (stdio + HTTP perdavimo būdai)               |
-| `httpTransport.ts`          | HTTP Streamable + SSE perdavimo būdai (`/api/mcp/sse`, `/api/mcp/stream`) |
-| `audit.ts`                  | Audito įrašymas į `mcp_tool_audit` lentelę                                |
-| `scopeEnforcement.ts`       | Kiekvieno įrankio aprėpties tikrinimas                                    |
-| `runtimeHeartbeat.ts`       | Veikimo būklės signalas į `DATA_DIR/runtime/mcp-heartbeat.json`           |
-| `descriptionCompressor.ts`  | Įrankių aprašų metaduomenų glaudinimas siekiant taupyti kontekstą         |
-| `schemas/tools.ts`          | 36 bazinių įrankių apibrėžtys + aprėptys                                  |
-| `tools/advancedTools.ts`    | Išplėstinių įrankių realizacijos                                          |
-| `tools/memoryTools.ts`      | 3 atminties įrankiai (paieška / pridėjimas / išvalymas)                   |
-| `tools/skillTools.ts`       | 4 įgūdžių įrankiai (sąrašas / įjungimas / vykdymas / vykdymai)            |
-| `tools/compressionTools.ts` | 5 glaudinimo įrankiai                                                     |
-| `README.md`                 | Vidinis MCP serverio README (susietas su `docs/frameworks/MCP-SERVER.md`) |
+| Kelias                | Tikslas                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------ |
+| `server.ts`           | MCP serverio gyvavimo ciklas                                                                     |
+| `httpTransport.ts`    | Srautinis HTTP ir SSE transportavimas                                                            |
+| `scopeEnforcement.ts` | Patikrinimai pagal įrankį                                                                        |
+| `audit.ts`            | Įrankio skambučių audito registravimas                                                           |
+| `schemas/`            | Įrankių apibrėžimai ir taikymo sritys                                                            |
+| `tools/`              | Įrankių diegimas (atmintis, įgūdžiai, glaudinimas ir kt.)                                        |
+| `toolSearch/`         | Įrankio paieška                                                                                  |
+| `README.md`           | Vidinės architektūros pastabos; visas katalogas yra [MCP-SERVER.md](../frameworks/MCP-SERVER.md) |
 
 ---
 
-## `electron/` — Darbalaukio aplankas
+## `packages/` — npm darbo vietos
 
-| Failas           | Paskirtis                                                                                                            |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `main.js`        | Pagrindinis Electron procesas (BrowserWindow, įtaisytasis Next.js serveris, sistemos dėklas, automatinis naujinimas) |
-| `preload.js`     | IPC tiltas (contextBridge → `window.omniroute`)                                                                      |
-| `package.json`   | electron-builder konfigūracija + Electron 41 + electron-builder 26.10 priklausomybės                                 |
-| `assets/`        | Programos piktogramos (Windows .ico, macOS .icns, Linux .png)                                                        |
-| `dist-electron/` | Kompiliavimo išvestis (neįtraukiama į git)                                                                           |
-| `types.d.ts`     | Atvaizdavimo proceso tilto tipų deklaracijos                                                                         |
-| `README.md`      | Vidinis Electron README (taip pat žr. `docs/guides/ELECTRON_GUIDE.md`)                                               |
+| Kelias                   | Tikslas                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/ui-kit/`       | `@omniroute/ui-kit`: parduodamas Keak CI UI rinkinio momentinis vaizdas, naudojamas kaip šaltinis. `UPSTREAM.md` prisega prieš srovę vykdomą įvykdymą, `PATCHES.md` pateikia vietinių pataisų sąrašą. `src/` sinchronizuoja tik `scripts/dev/sync-ui-kit.sh` ir saugo `npm run check:ui-kit-snapshot`. Žr. [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) |
+| `packages/browser-pool/` | `@omniroute/browser-pool`: naršyklės baseino sąsajos ir įgyvendinimas (`packages/browser-pool/src/index.ts`, `packages/browser-pool/src/interfaces.ts`). Sąrašas `workspaces`; šliuzo naudojamas vykdymo laiko naršyklės telkinys yra `open-sse/services/`                                                                                      |
 
----
+## `@omniroute/` — atskirai skelbiami paketai
 
-## `bin/` — CLI
+Tai nėra npm darbo vietos. Kiekvienas turi savo `package.json` ir užrakinimo failą; aplankas pristatomas `omniroute` tarball (`files: ["@omniroute/"]`).
 
-| Failas                                                                                                      | Paskirtis                                                                                                                                  |
-| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `omniroute.mjs`                                                                                             | Pagrindinis CLI įėjimo taškas — `omniroute serve`, `omniroute setup`, `omniroute doctor`, `omniroute providers`, `omniroute combos` ir kt. |
-| `reset-password.mjs`                                                                                        | Atskira slaptažodžio nustatymo iš naujo CLI priemonė                                                                                       |
-| `cli/commands/setup.mjs`                                                                                    | Interaktyvus ir neinteraktyvus sąrankos vediklis                                                                                           |
-| `cli/commands/doctor.mjs`                                                                                   | Sistemos būklės diagnostika (8+ patikros)                                                                                                  |
-| `cli/commands/providers.mjs`                                                                                | Teikėjų sąrašas / testavimas / tikrinimas                                                                                                  |
-| `cli/{args,data-dir,encryption,io,provider-catalog,provider-store,provider-test,settings-store,sqlite}.mjs` | CLI pagalbiniai moduliai                                                                                                                   |
-| `cli/tray/tray.ts`                                                                                          | Integracija su sistemos dėklu (keliose platformose: NotifyIcon sistemoje Windows, systray2 sistemose macOS/Linux)                          |
-| `cli/tray/tray.ps1`                                                                                         | PowerShell NotifyIcon posistemė (Windows, be naujų dvejetainių failų)                                                                      |
-| `cli/tray/autostart.ts`                                                                                     | Kelių platformų automatinis paleidimas (LaunchAgent / .desktop / registras)                                                                |
-| `cli/runtime/sqliteRuntime.mjs`                                                                             | 5 žingsnių SQLite tvarkyklės parinkimo grandinė (įtraukta → vykdymo aplinka → atidėtasis diegimas → node:sqlite → sql.js)                  |
-| `cli/runtime/magicBytes.mjs`                                                                                | Dvejetainių failų magiškųjų baitų tikrinimas (ELF / Mach-O / Mach-O fat / PE)                                                              |
-| `cli/runtime/index.mjs`                                                                                     | `warmUpRuntimes()` — iš anksto parenka tvarkykles vykdant postinstall / pirmą kartą paleidžiant                                            |
-| `nodeRuntimeSupport.mjs`                                                                                    | Diegiant patikrina palaikomą Node.js versiją                                                                                               |
+| Kelias                           | Tikslas                                                                                                                                  |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `@omniroute/opencode-plugin/`    | OpenCode įskiepis (modelio atradimas, `/connect` auth); naudojo `omniroute setup-opencode` — žr [OPENCODE.md](../frameworks/OPENCODE.md) |
+| `@omniroute/opencode-plugin-v2/` | OpenCode įskiepis, skirtas v2 Promise API — žr [OPENCODE-V2-PLUGIN.md](../guides/OPENCODE-V2-PLUGIN.md)                                  |
+| `@omniroute/opencode-provider/`  | Statinis konfigūracijos generatorius; pažymėta pasenusi savo `package.json` naudai `opencode-plugin`                                     |
 
 ---
 
-## `skills/` — Viešieji agentų įgūdžiai
+## `bin/` — CLI ir ops scenarijus
 
-| Failas                       | Paskirtis                                                                         |
-| ---------------------------- | --------------------------------------------------------------------------------- |
-| `skills/omniroute*/SKILL.md` | 10 įgūdžių aprašų išoriniams DI agentams (Claude Desktop, ChatGPT, Cursor, Cline) |
+| Kelias                                                                      | Tikslas                                                                                                                     |
+| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `omniroute.mjs`                                                             | Pagrindinis CLI įrašas (`omniroute serve`, `setup`, `doctor`, `providers`, `combo`, …)                                      |
+| `reset-password.mjs`                                                        | `omniroute-reset-password` dvejetainis                                                                                      |
+| `mcp-server.mjs`                                                            | MCP stdio įėjimo taškas                                                                                                     |
+| `antigravity-bridge.mjs`, `chatgpt-web-codex-mcp.mjs`                       | Pagalbinis tiltas / MCP įėjimo taškai                                                                                       |
+| `aliasResolver.mjs`, `aliasResolverHook.mjs`                                | ESM Solution Hook, kuris susieja tsconfig kelio slapyvardžius visuotiniams diegimams                                        |
+| `nodeRuntimeSupport.mjs`                                                    | Palaikoma Node.js versijos patikra                                                                                          |
+| `snapshot-data.sh`, `restore-data.sh`, `restore-policies.sh`, `rollback.sh` | Savarankiško prieglobos incidentų atkūrimo scenarijai (bendrinti `_ops-common.sh`)                                          |
+| `cold-start-bench.sh`                                                       | Šalto paleidimo etalonas — žr. [PERF_BASELINE.md](../ops/PERF_BASELINE.md)                                                  |
+| `cli/commands/`                                                             | Vienas modulis vienai CLI komandai (apie 100, įskaitant `setup-*` integracijas)                                             |
+| `cli/api-commands/`                                                         | Iš `docs/openapi.yaml` sugeneravo — `npm run build:cli-api`                                                                 |
+| `cli/locales/`                                                              | CLI pranešimų katalogai (67 lokalės)                                                                                        |
+| `cli/tui/`, `cli/tui-components/`                                           | Terminalas UI                                                                                                               |
+| `cli/tray/`                                                                 | Sistemos dėklas ir automatinis paleidimas (Windows PowerShell backend, systray on macOS/Linux)                              |
+| `cli/runtime/`                                                              | Natūrali vykdymo laiko skiriamoji geba (`sqliteRuntime.mjs`, `magicBytes.mjs`), proceso vadovas                             |
+| `cli/*.mjs`                                                                 | Bendrinami pagalbininkai (args, API klientas, duomenų katalogas, šifravimas, teikėjo parduotuvė, nustatymų saugykla ir kt.) |
+| `cli/README.md`, `cli/CONVENTIONS.md`                                       | CLI vidinės dalys ir susitarimai                                                                                            |
 
----
+Žr. [CLI-TOOLS.md](../reference/CLI-TOOLS.md) ir [CLI-COMPANION.md](../guides/CLI-COMPANION.md).
 
-## `scripts/` — Kompiliavimo ir tikrinimo scenarijai
+## `electron/` — darbalaukio programa
 
-| Scenarijus                          | Paskirtis                                                                                         |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `run-next.mjs`                      | Kūrimo / paleidimo vykdyklė su aplinkos kintamųjų užpildymu                                       |
-| `build-next-isolated.mjs`           | Autonominis kompiliavimas (Next.js 16 autonominis režimas)                                        |
-| `prepublish.ts`                     | Paketo paruošimas prieš `npm pack`                                                                |
-| `postinstall.mjs`                   | Automatinis `.env` sukūrimas iš `.env.example` pirmojo diegimo metu                               |
-| `sync-env.mjs`                      | Pakartotinis `.env` raktų sinchronizavimas su `.env.example`                                      |
-| `check-cycles.mjs`                  | Ciklinių priklausomybių aptikimas                                                                 |
-| `check-route-validation.mjs`        | Tikrinimas, ar visuose API maršrutuose naudojama Zod validacija                                   |
-| `check-t11-any-budget.mjs`          | Aiškiai nurodyto `any` limito kiekviename faile užtikrinimas                                      |
-| `check-docs-sync.mjs`               | Dokumentacijos versijų sinchronizavimo tikrinimas (esamas prieš patvirtinimą)                     |
-| **`check-env-doc-sync.mjs`**        | NAUJA: aplinkos kintamųjų kode, `.env.example` ir `ENVIRONMENT.md` kryžminis tikrinimas           |
-| **`check-docs-counts-sync.mjs`**    | NAUJA: tikrinimas, ar skaičiai (vykdyklių, strategijų, OAuth, A2A įgūdžių) atitinka dokumentaciją |
-| **`check-deprecated-versions.mjs`** | NAUJA: pasenusių versijų / datų dokumentacijoje žymėjimas                                         |
-| `check-supported-node-runtime.ts`   | Tikrinimas, ar dabartinė Node versija yra palaikoma                                               |
-| `check-pr-test-policy.mjs`          | Taisyklės „gamybinio kodo pakeitimams būtini testai“ užtikrinimas                                 |
-| **`gen-provider-reference.ts`**     | NAUJA: automatinis `docs/reference/PROVIDER_REFERENCE.md` generavimas iš katalogo                 |
-| `i18n/generate-multilang.mjs`       | UI eilučių ir dokumentacijos vertimas naudojant Google Translate                                  |
-| `i18n_autotranslate.py`             | LLM pagrįstas dokumentacijos vertimo konvejeris                                                   |
-| `validate_translation.py`           | Kiekvienos lokalės vertimo validacija                                                             |
-| `check_translations.py`             | Kodo i18n raktų tikrinimas                                                                        |
-| `run-playwright-tests.mjs`          | Playwright E2E testų vykdyklė                                                                     |
-| `run-protocol-clients-tests.mjs`    | MCP / A2A E2E testų vykdyklė                                                                      |
-| `run-ecosystem-tests.mjs`           | Ekosistemos (teikėjų integracijos) testai                                                         |
-| `test-report-summary.mjs`           | Aprėpties suvestinės generavimas Markdown formatu                                                 |
-| `smoke-electron-packaged.mjs`       | Supakuotos Electron versijos bazinis patikrinimas                                                 |
-| `native-binary-compat.mjs`          | Tikrinimas, ar vietinės priklausomybės (`better-sqlite3`) atitinka Electron naudojamą Node        |
-| `validate-pack-artifact.ts`         | `npm pack` išvesties validacija                                                                   |
-| `responses-ws-proxy.mjs`            | WebSocket tiltas, skirtas Codex Responses API                                                     |
-| `v1-ws-bridge.mjs`                  | WebSocket tiltas, skirtas `/api/v1/ws` galiniam taškui                                            |
-| `standalone-server-ws.mjs`          | Autonominio WS serverio vykdyklė                                                                  |
-| `system-info.mjs`                   | Sistemos / vykdymo aplinkos informacijos išvedimas techninei pagalbai                             |
-| `healthcheck.mjs`                   | Vienkartinis būklės patikrinimas (naudojamas Docker HEALTHCHECK)                                  |
-| `uninstall.mjs`                     | Švaraus pašalinimo scenarijus                                                                     |
+| Kelias                                                     | Tikslas                                                                                                 |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `main.js`                                                  | Electron pagrindinis procesas (langas, įdėtasis serveris, dėklas, naujinimai)                           |
+| `preload.js`                                               | IPC tiltas veikiamas atvaizduotojo                                                                      |
+| `lib/`                                                     | Lango gyvavimo ciklas, serverio parengtis, sveikatos priežiūros funkcija, nuotolinio serverio nuostatos |
+| `remoteServerPrompt*.js`, `assets/remoteServerPrompt.html` | Nuotolinio serverio raginimo langas                                                                     |
+| `processTree.js`, `sqlite-inspection.js`                   | Vaiko procesų valymo ir SQLite patikrinimo pagalbininkai                                                |
+| `package.json` / `package-lock.json`                       | elektronų kūrimo priemonės konfigūracijos ir Electron priklausomybės                                    |
+| `assets/`                                                  | Programos ir dėklo piktogramos (`.ico`, `.icns`, `.png`)                                                |
+| `README.md`                                                | Vidinės pastabos — žr. [ELECTRON_GUIDE.md](../guides/ELECTRON_GUIDE.md)                                 |
 
----
+## `public/` — statinis turtas
 
-## `docs/` — Viešoji dokumentacija (7 šakniniai failai + 17 pakatalogių)
+| Kelias                                      | Tikslas                                                                                                            |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `providers/`                                | Teikėjų logotipai įkelti pagal id (`/providers/<id>.svg`); kilmė `config/quality/provider-assets-provenance.jsonl` |
+| `favicon.*`, `apple-touch-icon.*`, `icon-*` | Naršyklė ir PWA piktogramos                                                                                        |
+| `sw.js`                                     | Aptarnaujantis darbuotojas — žr. [PWA_GUIDE.md](../guides/PWA_GUIDE.md)                                            |
+| `openapi.yaml`                              | `docs/openapi.yaml` kopija, sukurta `npm run gen:public-openapi`                                                   |
+| `images/`, `sponsors/`, `deyin.svg`         | Pakopų srauto diagramos, rėmėjo reklamjuostė, README meno kūriniai                                                 |
 
-### Aukščiausio lygio vadovai
+## `skills/` — agento įgūdžiai
 
-| Dokumentas                  | Paskirtis                                                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `ARCHITECTURE.md`           | Aukšto lygio architektūra, posistemių žemėlapis, valdymo skydelio sąsaja                                     |
-| `CODEBASE_DOCUMENTATION.md` | Inžinerinis žinynas: katalogai, moduliai, susitarimai                                                        |
-| `FEATURES.md`               | Funkcijų matrica su svarbiausiais v3.8 pakeitimais                                                           |
-| `USER_GUIDE.md`             | Galutinio naudotojo vadovas (sąranka, modeliai, deriniai, CLI, garsas ir kt.)                                |
-| `API_REFERENCE.md`          | API galinių taškų žinynas su autentifikavimo modeliu                                                         |
-| `openapi.yaml`              | OpenAPI 3.0 specifikacija (121 kelias)                                                                       |
-| `SETUP_GUIDE.md`            | Diegimo būdai (npm, npx, Docker, Electron, Termux, iš šaltinio kodo)                                         |
-| `ENVIRONMENT.md`            | Visi aplinkos kintamieji (~800 dokumentuotų, ~3 050 eilučių `.env.example`)                                  |
-| `TROUBLESHOOTING.md`        | Dažnos klaidos + žinomos v3.8.0 problemos                                                                    |
-| `RELEASE_CHECKLIST.md`      | Visa leidimo eiga (įgūdžiai, husky, sutartiniai įsipareigojimai, diegimas)                                   |
-| `COVERAGE_PLAN.md`          | Aprėpties tikslai ir dabartinė būsena                                                                        |
-| `FREE_TIERS.md`             | Atrinkti nemokamų planų teikėjai (48+ nemokami + 11 OAuth)                                                   |
-| `CLI-TOOLS.md`              | Išorinės CLI integracijos + vidinė OmniRoute CLI                                                             |
-| `I18N.md`                   | i18n architektūra, kalbos pridėjimas, 42 lokalės                                                             |
-| `UNINSTALL.md`              | Švaraus pašalinimo veiksmai                                                                                  |
-| `PROVIDER_REFERENCE.md`     | **Automatiškai sugeneruotas** 355 teikėjų katalogas (generavimas iš naujo: `npm run gen:provider-reference`) |
-
-### Išsami posistemių apžvalga
-
-| Dokumentas                                 | Paskirtis                                                                                      |
-| ------------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| `MCP-SERVER.md`                            | MCP serveris: 110 įrankių, 3 transportai, 33 sritys, REST galiniai taškai                      |
-| `A2A-SERVER.md`                            | A2A v0.3: JSON-RPC, 6 įgūdžiai, REST pagalbinės priemonės, agento kortelė                      |
-| `AGENT_PROTOCOLS_GUIDE.md`                 | Bendras vadovas: A2A ir ACP bei debesijos agentų palyginimas                                   |
-| `CLOUD_AGENT.md`                           | Codex Cloud / Devin / Jules orkestravimas                                                      |
-| `SKILLS.md`                                | Įgūdžių sistema (įtaisytieji + prekyvietė + SkillsSH + izoliuota aplinka)                      |
-| `RADAR.md`                                 | Radar nemokamų modelių katalogo perdanga (`RADAR_ENABLED`, pagal numatytąją nuostatą išjungta) |
-| `MEMORY.md`                                | Atminties sistema (SQLite FTS5 + Qdrant)                                                       |
-| `EVALS.md`                                 | Vertinimo sistema (rinkiniai, vykdymai, vertinimo kriterijai)                                  |
-| `GUARDRAILS.md`                            | PII maskavimas, raginimų injekcija, vaizdinės informacijos tiltas                              |
-| `COMPLIANCE.md`                            | Audito žurnalas, saugojimas, `noLog` atsisakymo parinktis                                      |
-| `WEBHOOKS.md`                              | HMAC pasirašytų webhook pristatymas                                                            |
-| `REASONING_REPLAY.md`                      | Hibridinė atminties / SQLite podėlio sistema, skirta `reasoning_content`                       |
-| `AUTHZ_GUIDE.md`                           | Autorizavimo konvejeris (`classify` → `policies` → `enforce`)                                  |
-| `RESILIENCE_GUIDE.md`                      | Grandinės pertraukiklis + atvėsimo laikotarpis + modelio blokavimas                            |
-| `docs/security/STEALTH_GUIDE.md` (tik git) | TLS kontrolinių atspaudų nustatymas (JA3/JA4), Claude Code CCH, MITM sertifikatas              |
-| `AUTO-COMBO.md`                            | Auto Combo variklis (16 veiksnių vertinimas, 6 režimų paketai, virtuali gamykla)               |
-
-### Glaudinimas
-
-| Dokumentas                      | Paskirtis                                  |
-| ------------------------------- | ------------------------------------------ |
-| `COMPRESSION_GUIDE.md`          | Glaudinimo režimų apžvalga + gairės        |
-| `COMPRESSION_ENGINES.md`        | Caveman + RTK varikliai, registro sutartis |
-| `COMPRESSION_RULES_FORMAT.md`   | Caveman taisyklių paketo JSON schema       |
-| `COMPRESSION_LANGUAGE_PACKS.md` | Atskirų kalbų taisyklių paketų sąrašas     |
-| `RTK_COMPRESSION.md`            | RTK deklaratyvusis konvejeris (49 filtrai) |
-
-### Diegimas
-
-| Dokumentas                   | Paskirtis                                                                                |
-| ---------------------------- | ---------------------------------------------------------------------------------------- |
-| `DOCKER_GUIDE.md`            | Docker komponavimas, profiliai (base/cli/host/cliproxyapi), Redis pagalbinis konteineris |
-| `VM_DEPLOYMENT_GUIDE.md`     | Bendras VM/VPS diegimas (Ubuntu/Debian + nginx + systemd)                                |
-| `FLY_IO_DEPLOYMENT_GUIDE.md` | Fly.io diegimas (šiuo metu tik kinų kalba)                                               |
-| `TERMUX_GUIDE.md`            | Android veikimas be grafinės sąsajos naudojant Termux                                    |
-| `PWA_GUIDE.md`               | Progresyviosios žiniatinklio programos diegimas + tarnybinė programa                     |
-| `ELECTRON_GUIDE.md`          | Darbalaukio programos komponavimas + pasirašymas + platinimas                            |
-| `TUNNELS_GUIDE.md`           | Cloudflared + ngrok + Tailscale Funnel                                                   |
-| `PROXY_GUIDE.md`             | 4 lygių išeinantysis tarpinis serveris + 1proxy prekyvietė                               |
-
-### Pakatalogiai
-
-| Pakatalogis           | Paskirtis                                                                                                                                                                                                                        |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/i18n/`          | Lokalizuoti dokumentacijos vertimai (41 lokalė)                                                                                                                                                                                  |
-| `docs/screenshots/`   | Vadovams skirti vaizdų ištekliai                                                                                                                                                                                                 |
-| `_tasks/superpowers/` | „superpowers“ planai / specifikacijos (`writing-plans` / `brainstorming`) ir tyrimai — izoliuota, atskirai versijuojama saugykla, kurią pagrindinis medis ignoruoja per „git“. Žr. CLAUDE.md → „Planavimo ir tyrimų artefaktai“. |
+46 įgūdžiai, po vieną aplanką su `SKILL.md` (`cli-*`, `omni-*`, `config-codex-cli`, `ponytail`), plius `skills/README.md`. `src/lib/agentSkills/catalog.ts` nuskaito juos vykdymo metu ir atskleidžia juos per `/api/agent-skills`, MCP ir A2A. Daugumą manifestų generuoja `src/lib/agentSkills/generator.ts` (`scripts/skills/generate-agent-skills.mjs`; `npm run check:agent-skills-sync` tikrina, ar nėra nukrypimų). Žiūrėkite [AGENT-SKILLS.md](../frameworks/AGENT-SKILLS.md).
 
 ---
 
-## `tests/` — Testų rinkiniai
+## `scripts/` — konstrukcija, vartai ir įrankiai
 
-| Pakatalogis                          | Tipas                                     | Vykdymo priemonė                                         |
-| ------------------------------------ | ----------------------------------------- | -------------------------------------------------------- |
-| `tests/unit/`                        | Modulių testai (~4 800 failų, greičiausi) | Integruota Node testų vykdymo priemonė                   |
-| `tests/integration/`                 | Kelių modulių ir DB integraciniai testai  | Integruota Node testų vykdymo priemonė (lygiagretumas 1) |
-| `tests/e2e/`                         | UI ir darbo eigos E2E testai              | Playwright                                               |
-| `tests/e2e/protocol-clients.test.ts` | MCP ir A2A realių klientų E2E testai      | Specialiai sukurtos protokolų klientų priemonės          |
-| `tests/e2e/ecosystem.test.ts`        | Teikėjų integracija (naudojanti tinklą)   | Integruota Node testų vykdymo priemonė                   |
+Apie 435 sekami failai. Nauji scenarijai patenka į vieną iš poaplankių, kuriuos leidžia `AGENTS.md`; vienkartinis kodas patenka į `scripts/ad-hoc/`.
 
----
+```
+scripts/
+├── check-permissions.sh   # Container ENTRYPOINT (copied to /app by the Dockerfile)
+├── postinstall.mjs        # Native-runtime warm-up run after scripts/build/postinstall.mjs
+├── start-ws-server.mjs    # Starts the live-dashboard WebSocket server as a separate process
+├── build/                 # Build, standalone assembly, npm pack/publish, postinstall, MITM, Electron prep
+├── check/                 # Quality gates behind most `npm run check:*` scripts; lib/ holds shared helpers
+├── quality/               # Ratchets, gate manifest, impact map, mutation tooling, release acceptance
+├── ci/                    # Steps invoked only by workflows (Docker publish, Release-Green, scanners)
+├── dev/                   # Dev runners (run-next, Playwright/protocol/ecosystem runners) and runtime helpers shipped in the package
+├── docs/                  # README SVG/diagram generators, OpenAPI module, provider reference, wiki sync
+├── i18n/                  # UI and docs translation pipeline, coverage checks, glossary/, lib/
+├── release/               # Changelog aggregation, contributors, merge train, LTS cut, publish verification
+├── ops/                   # Canary deploy, OpenCode free relay, runner janitor, allowlist sync
+├── perf/                  # Benchmarks and one-off performance A/B scripts
+├── cli/                   # CLI tooling (API-command generator, SSO, CLI smoke tests, media MCP)
+├── homolog/               # Homologation against a running instance + promptfoo config generation
+├── features/              # Feature-triage engine and its lib/
+├── router-eval/           # Offline router evaluation (`npm run eval:router*`)
+├── compression/           # Compression benchmark (`npm run bench:compression`, runs on Bun)
+├── compression-eval/      # Compression quality evaluation (`npm run eval:compression`)
+├── devin-bridge/          # Shell entry points for the Devin bridge (build, launch, tests)
+├── docker/                # Base-path patching for the standalone server inside containers
+├── integrations/          # MarkItDown MCP launchers — see docs/integrations/MARKITDOWN_MCP.md
+├── launchers/             # Double-click launchers and desktop-shortcut creators (Windows/macOS/Linux)
+├── packs/                 # Optional-pack manifest and installer (shipped in the npm package)
+├── test/                  # Live smoke scripts (combo-live, OpenCode/ChatGPT Web)
+├── sre/                   # On-call rotation, log redaction, TCP close analyzer
+├── vps/                   # Start/stop the release runner
+├── skills/                # Agent Skills generator CLI
+├── research/              # Free-tier budget card SVG generator
+└── ad-hoc/                # One-shot diagnostics and migrations
+```
 
-## `public/` — Statiniai ištekliai
+Dažnai naudojami įėjimo taškai:
 
-| Kelias              | Paskirtis                                                                             |
-| ------------------- | ------------------------------------------------------------------------------------- |
-| `public/` (šaknis)  | Svetainės piktogramos, robots.txt, manifestas, paslaugų vykdiklis, rinkodaros vaizdai |
-| `public/providers/` | Teikėjų logotipai PNG/SVG formatu (naudojami valdymo skydelyje)                       |
+| Scenarijus                                                          | Tikslas                                                                                         |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `dev/run-next.mjs`                                                  | `npm run dev` / `npm start` bėgikas                                                             |
+| `build/build-next-isolated.mjs`                                     | `npm run build` (atskira Next.js konstrukcija)                                                  |
+| `build/prepublish.ts`                                               | `npm run build:cli`: surenka npm `dist/`                                                        |
+| `build/postinstall.mjs`                                             | npm `postinstall` kabliukas                                                                     |
+| `build/publicOpenApi.mjs`                                           | `npm run gen:public-openapi`                                                                    |
+| `docs/gen-provider-reference.ts`                                    | `npm run gen:provider-reference` (atkuria PROVIDER_REFERENCE.md)                                |
+| `docs/gen-openapi-module.mjs`                                       | `prebuild:docs` (generuoja `src/app/docs/lib/openapi.generated.ts`)                             |
+| `i18n/run-translation.mjs`                                          | `npm run i18n:run` (dokumentų veidrodžiai)                                                      |
+| `i18n/generate-route-namespaces.mjs`                                | `npm run gen:i18n-routes`                                                                       |
+| `release/aggregate-changelog.mjs`                                   | Sulenkia `changelog.d/` fragmentus į `CHANGELOG.md`                                             |
+| `check/check-fabricated-docs.mjs`                                   | `npm run check:fabricated-docs` (dok. tikslumo vartai)                                          |
+| `check/check-tracked-artifacts.mjs`                                 | `npm run check:tracked-artifacts` (blokuoja sekamus šaknies `_*` kelius)                        |
+| `quality/check-quality-ratchet.mjs`                                 | `npm run quality:ratchet` (metrinis reketas prieš `config/quality/`)                            |
+| `dev/run-playwright-tests.mjs`                                      | `npm run test:e2e`                                                                              |
+| `dev/run-protocol-clients-tests.mjs`, `dev/run-ecosystem-tests.mjs` | `npm run test:protocols:e2e`, `npm run test:ecosystem`                                          |
+| `dev/new-worktree.sh`                                               | Sukuria izoliuotą kūrimo darbo medį — žr. [WORKTREE_ISOLATION.md](../ops/WORKTREE_ISOLATION.md) |
+| `dev/sync-ui-kit.sh`                                                | Sinchronizuoja `packages/ui-kit/src` su prisegtu išankstiniu įsipareigojimu                     |
 
----
+Vartų inventorius ir taisyklės: [QUALITY_GATES.md](QUALITY_GATES.md).
 
-## `config/` — Statinės konfigūracijos ir kokybės patikros būsena
+## `config/` — versijų konfigūracija ir vartų būsena
 
-Platinami konfigūracijos šablonai ir į saugyklą įtrauktos kokybės patikros bazinės reikšmės
-(perkeltos čia iš saugyklos šaknies v3.8.26 versijoje, kad šaknis išliktų neperkrauta).
+| Kelias                                   | Tikslas                                                                                                                               |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `i18n.json` / `i18n-schema.json`         | Palaikomos lokalės (lokalių skaičiaus šaltinis) ir jų schema                                                                          |
+| `payloadRules.json`                      | Naudingosios apkrovos taisyklės (`open-sse/services/payloadRules.ts`)                                                                 |
+| `cli-tools-manifest.json`                | Integruojamų CLI įrankių manifestas (`bin/cli/cli-manifest.mjs`)                                                                      |
+| `alibaba-free-tier-allowlist.json`       | Alibaba laisvos pakopos modelių leistinas sąrašas                                                                                     |
+| `ci/toolchain.json`                      | CI įrankių grandinės versijos                                                                                                         |
+| `quality/quality-baseline.json`          | Daugiametrinė reketo bazinė linija (aprėptis, įspėjimai, dubliavimas ir kt.)                                                          |
+| `quality/*-baseline.json`                | Užfiksuotos atskirų vartų pradinės linijos (sudėtingumas, dubliavimas, failo dydis, tipo tikrinimo skiltys, bandymo atradimas ir kt.) |
+| `quality/*-allowlist.json`               | Leidžiamų vartų sąrašai (priklausomybės, licencijos, AI priskyrimas, užmirštų brolių ir seserų testai ir kt.)                         |
+| `quality/eslint-suppressions.json`       | Užšaldyti ESLint slopinimai, taikomi `npm run lint`                                                                                   |
+| `quality/gate-manifest.json`             | Vartų manifestą patikrino `scripts/quality/gate-manifest.mjs`                                                                         |
+| `quality/vitest-exclusions.json`         | `vitest.quarantine.config.ts` karantino inventorius                                                                                   |
+| `quality/skill-templates/`               | Kanoninius SKILL.md šablonus patikrino `scripts/quality/check-skill-contract.mjs`                                                     |
+| `quality/release-acceptance.schema.json` | Išleidimo-priėmimo įrodymų schema — žr. [QUALITY_EVIDENCE_CONTRACT.md](QUALITY_EVIDENCE_CONTRACT.md)                                  |
+| `release/`                               | Pakeitimų žurnalo suderinimai ir wreq-js vietinis manifestas, licencijų inventorius ir pranešimai                                     |
 
-| Kelias                                        | Paskirtis                                                                                        |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `config/i18n.json`                            | Lokalių sąrašas ir metaduomenys (kanoninis 42 lokalių skaičiaus šaltinis)                        |
-| `config/i18n-schema.json`                     | JSON schema, tikrinanti `i18n.json`                                                              |
-| `config/payloadRules.json`                    | Iš aukštesnio lygmens gaunamų duomenų naudingosios apkrovos valymo taisyklės                     |
-| `config/quality/quality-baseline.json`        | Kelių metrikų kartelės bazinė reikšmė (`scripts/quality/check-quality-ratchet.mjs`)              |
-| `config/quality/complexity-baseline.json`     | Fiksuota ESLint sudėtingumo bazinė reikšmė (`check-complexity.mjs`)                              |
-| `config/quality/duplication-baseline.json`    | Fiksuota jscpd dubliavimo bazinė reikšmė (`check-duplication.mjs`)                               |
-| `config/quality/file-size-baseline.json`      | Fiksuota kiekvieno failo dydžio bazinė reikšmė (`check-file-size.mjs`)                           |
-| `config/quality/test-discovery-baseline.json` | Fiksuota neaptiktų testų bazinė reikšmė (`check-test-discovery.mjs`)                             |
-| `config/quality/dependency-allowlist.json`    | Patvirtintų priklausomybių leidžiamųjų sąrašas (`check-deps.mjs`)                                |
-| `config/quality/.license-allowlist.json`      | SPDX licencijų leidžiamųjų sąrašas (`check-licenses.mjs`)                                        |
-| `config/quality/quality-metrics.json`         | Laikinos surinktos metrikos (generuojamos naudojant `collect-metrics.mjs`; **git ignoruojamos**) |
+## `changelog.d/` — pakeitimų žurnalo fragmentai
 
----
-
-## `.github/` — „GitHub“ integracija
-
-| Kelias                             | Paskirtis                                                                 |
-| ---------------------------------- | ------------------------------------------------------------------------- |
-| `.github/workflows/`               | „GitHub Actions“ CI/CD darbo eigos (lint, testavimas, aprėptis, leidimas) |
-| `.github/ISSUE_TEMPLATE/`          | Klaidų / funkcijų užklausų šablonai                                       |
-| `.github/pull_request_template.md` | PR šablonas                                                               |
-| `.github/dependabot.yml`           | Priklausomybių naujinimo konfigūracija                                    |
-
----
-
-## `.husky/` — „Git“ kabliai
-
-| Failas       | Paskirtis                                                                        |
-| ------------ | -------------------------------------------------------------------------------- |
-| `pre-commit` | Vykdo `lint-staged + check-docs-sync + check:any-budget:t11`                     |
-| `pre-push`   | Šiuo metu išjungta (užkomentuota). Paleiskite `npm run test:unit` rankiniu būdu. |
-| `_/`         | Vidiniai „Husky“ failai                                                          |
-
----
-
-## `.claude/` — „Claude Code“ pasvirojo brūkšnio komandos
-
-| Failas                                              | Paskirtis                                                                 |
-| --------------------------------------------------- | ------------------------------------------------------------------------- |
-| `commands/version-bump-cc.md`                       | `/version-bump-cc` — versijos pakėlimas ir automatinis pakeitimų žurnalas |
-| `commands/generate-release-cc.md`                   | `/generate-release-cc` — visa leidimo darbo eiga                          |
-| `commands/deploy-vps-{local,akamai,both}-cc.md`     | Diegimas į VPS                                                            |
-| `commands/capture-release-evidences-cc.md`          | Naujų funkcijų įrašymas naršyklėje WebP formatu                           |
-| `commands/review-{prs,discussions}-cc.md`           | „GitHub“ PR ir diskusijų skirstymas                                       |
-| `commands/{review-issues,implement-features}-cc.md` | Užklausų darbo eigos                                                      |
-| `settings.local.json`                               | Konkretaus projekto „Claude Code“ nustatymai                              |
-
----
-
-## `.agents/` — bendrosios agentų darbo eigos („Codex“ / „Cursor“ / kt.)
-
-| Kelias                   | Paskirtis                                          |
-| ------------------------ | -------------------------------------------------- |
-| `workflows/*-ag.md`      | 11 darbo eigų aprašų (`.claude/commands/` kopijos) |
-| `skills/<name>/SKILL.md` | 9 įgūdžių aprašai su „Codex“ vykdymo pastabomis    |
-
-> **Pastaba:** Šiuo metu darbo eigos ir komandos yra identiškos baitas į baitą. Jei `.agents/` skirta kitai agento vykdymo aplinkai („Codex“), variantai turi prasmingai skirtis.
-
----
-
-## `_ideia/`, `_mono_repo/`, `_references/`, `_tasks/` — už pagrindinio medžio ribų
-
-Šiuose pabraukimo ženklu prasidedančiuose kataloguose laikomas į platinamą paketą neįtraukiamas turinys:
-
-- **`_ideia/`** — projektavimo pastabos (defer / notfit / viable kategorijos)
-- **`_mono_repo/`** — istoriniai antriniai projektai (omnirouteCloud, omnirouteSite, vscode-extension)
-- **`_references/`** — tik skaitymui skirtos susijusių OSS projektų kopijos (LiteLLM, 9router, ClawRouter, CLIProxyAPI, modelrelay, new-api ir kt.), naudojamos kryžminėms nuorodoms kūrimo metu
-- **`_tasks/`** — kiekvieno leidimo užduočių stebėjimo failai (neformalūs)
-
-Neįtraukiama į `npm pack` išvestį. Žr. `.npmignore`.
+PR vietoj `CHANGELOG.md` redagavimo prideda vieną fragmentą: `features/`, `fixes/` arba `maintenance/`, pavadintą `<PR-number>-<slug>.md`. Išleidimo metu `scripts/release/aggregate-changelog.mjs` sulanksto juos į `CHANGELOG.md` ir ištrina; `npm run check:changelog-integrity` juos patvirtina. Išsami informacija `changelog.d/README.md`.
 
 ---
 
-## Sugeneruota / ignoruojama Git
+## `docs/` — vieša dokumentacija
 
-| Kelias                 | Paskirtis                              |
-| ---------------------- | -------------------------------------- |
-| `node_modules/`        | npm priklausomybės                     |
-| `.next/`               | Next.js kompiliavimo išvestis          |
-| `coverage/`            | c8 testų aprėpties ataskaitos          |
-| `logs/`                | Vykdymo žurnalai                       |
-| `package/`             | npm paketo paruošimo sritis            |
-| `.playwright-mcp/`     | Playwright MCP testų artefaktai        |
-| `.issues/`             | Vietinė problemų talpykla              |
-| `tsconfig.tsbuildinfo` | TS inkrementinio kompiliavimo talpykla |
+Skiltys, išvardytos `source.config.ts` kompiliuojamos į `/docs` svetainę (išskyrus kelis tik operatoriui skirtus saugos puslapius); `docs/meta.json` nustato šoninės juostos tvarką. Pradėkite nuo [README.md](../README.md).
+
+| Kelias                   | Turinys                                                                                                                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getting-started/`       | Greita pradžia, savarankiškas priegloba, teikėjai, nemokamos pakopos, automatinio derinimo ir žiniatinklio slapukų vadovai                                                       |
+| `guides/`                | Operatoriaus ir kūrėjo vadovai: sąranka, Docker, Electron, PWA, Termux, CLIs, i18n, trikčių šalinimas, vartotojo vadovas                                                         |
+| `architecture/`          | Architektūra, kodų bazės nuoroda, modifikacijų receptai, autentiškumas, atsparumas, kokybės vartai, projektavimo sistema, šis žemėlapis                                          |
+| `reference/`             | API nuoroda, aplinkos kintamieji, funkcijų vėliavėlės, CLI įrankiai, nemokamos pakopos, sugeneruota teikėjo nuoroda, pašalinti teikėjai                                          |
+| `frameworks/`            | MCP, A2A, ACP, įgūdžiai, atmintis, papildiniai, debesų agentai, žiniatinklio kabliukai, evals, žurnalų eksportavimas, radaras, žaidimų aikštelė, ...                             |
+| `routing/`               | Automatinis derinimas, replay/routing samprotavimas, kvotos dalis, prenumeratos kopėčios, griežtas nulinis mokestis,…                                                            |
+| `security/`              | Apsauginiai turėklai, klaidų valymas, CORS, SSO, išėjimo politika, maršruto apsaugos pakopos, tiekimo grandinė,…                                                                 |
+| `compression/`           | Suspaudimo vadovas, varikliai, RTK, taisyklių formatas, kalbos paketai, konteksto redagavimas                                                                                    |
+| `ops/`                   | Išleidimo srautas, išsišakojimas, sujungimo traukinys, diegimas (VM, Fly.io, Kubernetes), duomenų bazė, tarpiniai serveriai, darbo medžiai, išsami griežtų taisyklių informacija |
+| `providers/`             | Tiekėjo vadovai (Claude Code, ChatGPT Web, Cursor, GitHub Copilot, …)                                                                                                            |
+| `comparison/`            | OmniRoute palyginti su alternatyvomis                                                                                                                                            |
+| `integrations/`          | Integravimo pastabos (fal.ai gimtoji, MarkItDown MCP); nesudaryta į `/docs`                                                                                                      |
+| `openapi.yaml`           | OpenAPI šaltinis; maitina `src/app/docs/lib/openapi.generated.ts`, `public/openapi.yaml` ir `bin/cli/api-commands/`                                                              |
+| `diagrams/`              | Undinės šaltiniai (`.mmd`), pateikti SVGs (`exported/`) ir README SVGs iš `scripts/docs/gen-readme-*`                                                                            |
+| `assets/`                | Kalbos vėliavėlė SVGs ir kiti README turtai                                                                                                                                      |
+| `screenshots/`           | README ir vadovų naudojamos ekrano kopijos                                                                                                                                       |
+| `i18n/`                  | Išversti veidrodžiai: vienas aplankas lokale (66) su šakniniais dokumentais ir `docs/` poaibiu; sukūrė `npm run i18n:run` — žr [I18N.md](../guides/I18N.md)                      |
+| aukščiausio lygio `*.md` | `README.md` (doc index), `DEVELOPER-ENVIRONMENT.md` ir keletas atskirų užrašų                                                                                                    |
+
+Pagrindiniai įėjimo taškai: [ARCHITECTURE.md](ARCHITECTURE.md), [CODEBASE_DOCUMENTATION.md](CODEBASE_DOCUMENTATION.md), [MODIFICATION_SCENARIOS.md](MODIFICATION_SCENARIOS.md), [ENVIRONMENT.md](../reference/ENVIRONMENT.md), [PROVIDER_REFERENCE.md](../reference/PROVIDER_REFERENCE.md) (sugeneruota `npm run gen:provider-reference`).
 
 ---
 
-## Naršymo patarimai
+## `tests/` — testų rinkiniai
 
-- **Naujas projekto dalyvis?** Perskaitykite `CONTRIBUTING.md` → `CLAUDE.md` → `docs/architecture/ARCHITECTURE.md` → `docs/architecture/CODEBASE_DOCUMENTATION.md`.
-- **Pridedate teikėją?** Vadovaukitės `docs/architecture/ARCHITECTURE.md § Adding a New Provider` ir sutikrinkite su `docs/reference/PROVIDER_REFERENCE.md`.
-- **Pridedate maršrutą?** Žr. `docs/architecture/ARCHITECTURE.md § Adding a New API Route` ir `src/shared/validation/schemas.ts`.
-- **Pridedate MCP įrankį?** Žr. `docs/frameworks/MCP-SERVER.md § Adding a Tool`.
-- **Pridedate A2A gebėjimą?** Žr. `docs/frameworks/A2A-SERVER.md § Adding a New Skill`.
-- **Paleidžiate vietoje?** Žr. `docs/guides/SETUP_GUIDE.md`.
-- **Diegiate?** Žr. `docs/guides/DOCKER_GUIDE.md` / `docs/ops/VM_DEPLOYMENT_GUIDE.md` / `docs/ops/FLY_IO_DEPLOYMENT_GUIDE.md`.
-- **Išleidžiate versiją?** Žr. `docs/ops/RELEASE_CHECKLIST.md` (ir Claude Code gebėjimą `/generate-release-cc`).
+Apie 9 670 sekamų failų. Bandomieji failai priklauso čia, o ne projekto šaknyje. Išimtys: kartu esantys `__tests__/` aplankai `src/` ir `open-sse/`, kuriuos renka Vitest konfigūracijos.
+
+| Kelias                                                 | Turinys                                                                                                                                                                                             | Bėgikas                                                                                 |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `tests/unit/`                                          | Vienetų testai (daugiau nei 9 000 failų): daugelis aukščiausio lygio, taip pat domenų aplankai (`ui/`, `compression/`, `build/`, `guardrails/`, `db/`, `cli/`, `api/`, `dashboard/`, `combo/`, ...) | Mazgo bandomasis bėgikas (`npm run test:unit`); `*.tsx` per `test:vitest:ui`            |
+| `tests/unit/serial/`                                   | CPU jautrumo testai vykdomi su 1 lygiagretumu                                                                                                                                                       | `npm run test:unit:serial`                                                              |
+| `tests/unit/autoCombo/`, `tests/unit/api/**/*.spec.ts` | Vitest apartamentai vienetų medyje                                                                                                                                                                  | `npm run test:vitest`                                                                   |
+| `tests/integration/`                                   | Kelių modulių ir DB integracijos testai; `combo-matrix/`, `combo-live/`, `services/`                                                                                                                | `npm run test:integration`, `test:combo:matrix`, `test:combo:live`, `test:services:int` |
+| `tests/e2e/`                                           | Playwright `*.spec.ts` + gyvi apartamentai `ecosystem.test.ts`, `protocol-clients.test.ts`                                                                                                          | `npm run test:e2e`, `test:ecosystem`, `test:protocols:e2e`                              |
+| `tests/boundary/`                                      | `*.live.test.ts` prieš veikiantį egzempliorių                                                                                                                                                       | `npm run test:boundary:live`                                                            |
+| `tests/homolog/`                                       | Homologavimo rinkiniai (`api/`, `ui/` su savo Playwright konfigūracija)                                                                                                                             | `npm run homolog` — žr [HOMOLOGATION.md](../ops/HOMOLOGATION.md)                        |
+| `tests/load/`                                          | Scenarijų įkėlimas ir įtraukimas (k6)                                                                                                                                                               | Naktinė atsparumo darbo eiga                                                            |
+| `tests/_setup/`                                        | `--import` / sąrankos failai (izoliuotas duomenų katalogas, išėjimo apsauga, Vitest UI polifills)                                                                                                   | Pakrautas bėgikų                                                                        |
+| `tests/_helpers/`, `tests/helpers/`                    | Bendrinami bandymų pagalbininkai (auksinės nuotraukos, valdymo sesija ir kt.)                                                                                                                       | Importuota atlikus testus                                                               |
+| `tests/fixtures/`                                      | Armatūros duomenys ir vaikų procesų įrenginiai                                                                                                                                                      | Importuota atlikus testus                                                               |
+| `tests/snapshots/`                                     | Auksiniai failai, skirti `tests/helpers/goldenSnapshot.ts`                                                                                                                                          | Importuota atlikus testus                                                               |
+| `tests/manual/`                                        | `.http` failai rankiniams REST skambučiams                                                                                                                                                          | vadovas                                                                                 |
+| `tests/security/`                                      | Apsaugos apvalkalo scenarijai                                                                                                                                                                       | Rankiniai / vienetiniai bandymo įrenginiai                                              |
+| `tests/types/`                                         | Tipo lygio sutarčių įranga                                                                                                                                                                          | —                                                                                       |
+
+Visa matrica: `CONTRIBUTING.md` → „Vykdomi testai“ ir [COVERAGE_PLAN.md](../ops/COVERAGE_PLAN.md).
+
+---
+
+## `deploy/` — Kubernetes
+
+| Kelias                                             | Tikslas                                                                                                            |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `deploy/helm/omniroute/`                           | Vairo diagrama (`Chart.yaml`, `values.yaml`, diegimo, aptarnavimo, įėjimo, PVC, slaptumo, konfigūracijos šablonai) |
+| `deploy/kubernetes/base/`                          | Kustomize bazė (vardų erdvė, diegimas, paslauga, PVC, konfigūracijos žemėlapis, `secret.example.yaml`)             |
+| `deploy/kubernetes/overlays/k3s/`, `overlays/k8s/` | Konkrečių grupių perdangos (įėjimas, saugojimo klasė, ištekliai, zondai)                                           |
+
+Žr. [KUBERNETES_DEPLOYMENT_GUIDE.md](../ops/KUBERNETES_DEPLOYMENT_GUIDE.md).
+
+## `docker/` — pagalbiniai vaizdai
+
+| Kelias                              | Tikslas                                                                                                                                           |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docker/chatgpt-web-codex-browser/` | Naršyklės vaizdas be galvos su CDP tarpiniu serveriu, skirtas ChatGPT žiniatinklio vykdytojui — žr [.CHATGPT_WEB.md](../providers/CHATGPT_WEB.md) |
+| `docker/devin-bridge/`              | Devin tilto vaizdas, failo sudarymas, pašaipiai ir tinklo apsauga                                                                                 |
+| `docker/vnc-browser/`               | „Chromium“ su VNC, skirta interaktyvioms naršyklės sesijoms                                                                                       |
+
+Pagrindinis vaizdas yra šaknis `Dockerfile`; žr. [DOCKER_GUIDE.md](../guides/DOCKER_GUIDE.md).
+
+## `contrib/` — bendruomenės receptai (oficialiai nepalaikomi)
+
+| Kelias                  | Tikslas                                                                                                                                      |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contrib/podman/`       | „Podman“ keturkampiai (konteineris, tūris, tinklas, Redis)                                                                                   |
+| `contrib/vps/`          | VPS `compose.yaml` + `.env.example`                                                                                                          |
+| `contrib/windows/`      | `.bat` paleidimo įrenginiai, skirti paleisti iš Windows kasos                                                                                |
+| `contrib/session-sync/` | README dėl trečiosios šalies seanso sinchronizavimo naršyklės plėtinio — žr [SESSION-SYNC-EXTENSION.md](../guides/SESSION-SYNC-EXTENSION.md) |
+
+## `examples/`
+
+| Kelias                          | Tikslas                                                                      |
+| ------------------------------- | ---------------------------------------------------------------------------- |
+| `examples/omniroute-cmd-hello/` | Minimalus komandų papildinys — žr. [PLUGINS.md](../frameworks/PLUGINS.md)    |
+| `examples/plugins/`             | Įskiepių pavyzdžiai: langfuse, request-logger, theme-manager, welcome-banner |
+| `examples/quickstart/`          | Kliento fragmentai: curl, Node.js (axios), PHP, Python                       |
+
+---
+
+## `.github/` — GitHub integracija
+
+| Kelias                                                       | Tikslas                                                                                                                                                                                                                                                                              |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `.github/workflows/`                                         | CI (`ci.yml`, `quality.yml`, `build.yml`), saugos nuskaitymai (`codeql.yml`, `semgrep.yml`, `scorecard.yml`, `dast-smoke.yml`), suplanuoti `nightly-*.yml` rinkiniai, leidyba (`npm-publish.yml`, `docker-publish.yml`, `electron-release.yml`), išleidimo ir priežiūros darbo eigos |
+| `.github/actions/npm-ci-retry/`                              | Sudėtinis veiksmas: `npm ci` su talpykla ir bandykite dar kartą                                                                                                                                                                                                                      |
+| `.github/actions/prepare-unit-storage/`                      | Sudėtinis veiksmas: atlaisvinama vietos diske, tada įdiegiamos priklausomybės                                                                                                                                                                                                        |
+| `.github/ISSUE_TEMPLATE/`                                    | Klaidų, funkcijų ir bandymų aprėpties problemų formos                                                                                                                                                                                                                                |
+| `.github/pull_request_template.md`, `PULL_REQUEST_TEMPLATE/` | Numatytasis PR šablonas ir bugfix/feature variantai                                                                                                                                                                                                                                  |
+| `.github/CODEOWNERS`, `FUNDING.yml`, `dependabot.yml`        | Kodo savininkai, rėmimo nuorodos, priklausomybės atnaujinimai                                                                                                                                                                                                                        |
+| `.github/labels.yml`                                         | `npm run labels:sync` taikomi etikečių apibrėžimai                                                                                                                                                                                                                                   |
+| `.github/copilot-instructions.md`                            | GitHub Copilot instrukcijos (agento-instrukcijos paviršius)                                                                                                                                                                                                                          |
+
+CI darbo žemėlapis: [QUALITY_GATES.md](QUALITY_GATES.md).
+
+## `.husky/` — git kabliukai
+
+| Failas       | Tikslas                                                                                                                                                                                  |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pre-commit` | „Git“ tapatybės patikra, „lint“ pakopos, vartų aprašas, dokumentų sinchronizavimas, bet kokio biudžeto, tipo skalės reketas, sekami artefaktai ir „UI-kit“ momentinių nuotraukų patikros |
+| `commit-msg` | `scripts/check/check-ai-attribution.mjs` įsipareigojimo pranešime                                                                                                                        |
+| `pre-push`   | Tyčia šviesa: PATH/npm sveiko proto patikrinimas, kuris baigiasi 0                                                                                                                       |
+
+Kablio vykdymo laikas `.husky/_/` sugeneruojamas diegiant ir nėra stebimas.
+
+---
+
+## Navigacijos patarimai
+
+- **Naujas bendradarbis?** `CONTRIBUTING.md` → `AGENTS.md` → [ARCHITECTURE.md](ARCHITECTURE.md) → [CODEBASE_DOCUMENTATION.md](CODEBASE_DOCUMENTATION.md).
+- **Keisti kažką bendro** (tiekėjas, maršrutas, DB modulis, MCP įrankis, A2A įgūdžiai)? Sekite [MODIFICATION_SCENARIOS.md](MODIFICATION_SCENARIOS.md).
+- **Pridėti teikėją?** Pirmiausia patikrinkite [REMOVED_PROVIDERS.md](../reference/REMOVED_PROVIDERS.md), tada kryžminį patikrinimą [PROVIDER_REFERENCE.md](../reference/PROVIDER_REFERENCE.md).
+- **Ar veikia vietoje?** [SETUP_GUIDE.md](../guides/SETUP_GUIDE.md).
+- **Diegimas?** [DOCKER_GUIDE.md](../guides/DOCKER_GUIDE.md), [SELF_HOST_GUIDE.md](../getting-started/SELF_HOST_GUIDE.md), [VM_DEPLOYMENT_GUIDE.md](../ops/VM_DEPLOYMENT_GUIDE.md), [FLY_IO_DEPLOYMENT_GUIDE.md](../ops/FLY_IO_DEPLOYMENT_GUIDE.md), [KUBERNETES_DEPLOYMENT_GUIDE.md](../ops/KUBERNETES_DEPLOYMENT_GUIDE.md).
+- **Išleidžia?** [RELEASE_CHECKLIST.md](../ops/RELEASE_CHECKLIST.md).
+- **Sugedo kokybiški vartai?** [QUALITY_GATES.md](QUALITY_GATES.md) ir [QUALITY_GATE_PLAYBOOK.md](../ops/QUALITY_GATE_PLAYBOOK.md).

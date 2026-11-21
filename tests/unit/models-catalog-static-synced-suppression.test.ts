@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { getSettledModelCatalogResponse } from "../_setup/modelCatalogFixture.ts";
 
 const TEST_DATA_DIR = fs.mkdtempSync(
   path.join(os.tmpdir(), "omniroute-model-catalog-static-synced-suppression-")
@@ -45,9 +46,7 @@ async function seedConnection(provider: string, name: string) {
 }
 
 async function getCatalogIds(): Promise<Set<string>> {
-  const response = await catalog.getUnifiedModelsResponse(
-    new Request("http://localhost/api/v1/models")
-  );
+  const response = await getSettledModelCatalogResponse(catalog);
   const body = (await response.json()) as { data: Array<{ id: string }> };
 
   assert.equal(response.status, 200);
@@ -83,25 +82,27 @@ test("static registry remains fallback when active connection has no live catalo
   assert.equal(ids.has(`nvidia/${staticNvidiaModel}`), true);
 });
 
+// #14779: bare glm now opts out of authoritative gating (no live discovery), so xai
+// (real live discovery, default-authoritative) carries this regression.
 test("authoritative live catalog suppresses static effort-tier variants on sync", async () => {
-  const connection = await seedConnection("glm", "glm-authoritative-effort-suppression");
-  const glmStaticModel = REGISTRY.glm?.models?.find(
+  const connection = await seedConnection("xai", "xai-authoritative-effort-suppression");
+  const staticModel = REGISTRY.xai?.models?.find(
     (model) =>
       Array.isArray(model.supportedThinkingEfforts) && model.supportedThinkingEfforts.length > 0
   );
-  assert.ok(glmStaticModel, "glm must define an effort-tier static model for this regression test");
-  const effort = glmStaticModel.supportedThinkingEfforts?.[0];
-  assert.ok(effort, "glm static model must declare at least one effort tier");
+  assert.ok(staticModel, "xai must define an effort-tier static model for this regression test");
+  const effort = staticModel.supportedThinkingEfforts?.[0];
+  assert.ok(effort, "xai static model must declare at least one effort tier");
 
-  await modelsDb.replaceSyncedAvailableModelsForConnection("glm", connection.id as string, [
-    { id: "glm-5-synced", name: "GLM 5 Synced", source: "imported" },
+  await modelsDb.replaceSyncedAvailableModelsForConnection("xai", connection.id as string, [
+    { id: "xai-synced", name: "xAI Synced", source: "imported" },
   ]);
 
   const ids = await getCatalogIds();
 
-  assert.equal(ids.has("glm/glm-5-synced"), true);
-  assert.equal(ids.has(`glm/${glmStaticModel.id}`), false);
-  assert.equal(ids.has(`glm/${glmStaticModel.id}-${effort}`), false);
+  assert.equal(ids.has("xai/xai-synced"), true);
+  assert.equal(ids.has(`xai/${staticModel.id}`), false);
+  assert.equal(ids.has(`xai/${staticModel.id}-${effort}`), false);
 });
 
 test("partial discovery provider preserves uncovered static models when synced", async () => {

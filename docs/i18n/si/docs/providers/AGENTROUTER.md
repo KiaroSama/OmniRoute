@@ -47,7 +47,7 @@ docker run -d --name omniroute \
   -p 20128:20128 \
   -v omniroute-data:/app/data \
   -e ENABLE_CC_COMPATIBLE_PROVIDER=true \
-  diegosouzapw/omniroute:latest
+  cheaperinference/omniroute:latest
 ```
 
 නැවත ආරම්භ කිරීමෙන් පසු, පවතින OpenAI-compatible සහ Anthropic-compatible flows වලට අමතරව dashboard එකෙහි **Add Claude Code Compatible** විකල්පයක් පෙන්වයි.
@@ -104,7 +104,7 @@ database එකේ සහ combo වින්යාසය තුළ දිස්�
 | Header                                             | අගය                                                                                                        |
 | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | `Authorization`                                    | `Bearer <api-key>`                                                                                         |
-| `User-Agent`                                       | `claude-cli/2.1.258 (external, sdk-cli)`                                                                   |
+| `User-Agent`                                       | `claude-cli/2.1.280 (external, sdk-cli)`                                                                   |
 | `anthropic-version`                                | `2023-06-01`                                                                                               |
 | `anthropic-beta`                                   | `claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24`                                   |
 | එක් connection එකකට redact-thinking beta toggle එක | විශේෂයෙන් redacted thinking streams අවශ්ය කරන upstream සඳහා `redact-thinking-2026-02-12` එක් කරයි          |

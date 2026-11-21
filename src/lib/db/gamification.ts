@@ -91,6 +91,7 @@ interface StatementLike<TRow = unknown> {
 
 interface DbLike {
   prepare: <TRow = unknown>(sql: string) => StatementLike<TRow>;
+  transaction: <T>(fn: () => T) => () => T;
 }
 
 function db(): DbLike {
@@ -185,6 +186,24 @@ export function addXp(apiKeyId: string, action: string, amount: number, metadata
      DO UPDATE SET total_xp = total_xp + excluded.total_xp, updated_at = datetime('now')`
     )
     .run(apiKeyId, amount, calculateLevel(amount));
+}
+
+/**
+ * One award = the XP rows of addXp plus the leaderboard credit for each scope, in a single commit.
+ * Run as separate autocommits, an award cost one commit per statement and a failure part-way left
+ * XP without a score (or the reverse).
+ */
+export function awardXp(
+  apiKeyId: string,
+  action: string,
+  amount: number,
+  metadata: string | undefined,
+  scopes: readonly string[]
+): void {
+  db().transaction(() => {
+    addXp(apiKeyId, action, amount, metadata);
+    for (const scope of scopes) updateScore(apiKeyId, scope, amount);
+  })();
 }
 
 export function getXp(apiKeyId: string): UserLevelRow | null {
@@ -421,13 +440,15 @@ export function transferTokens(
 }
 
 export function getBalance(apiKeyId: string): number {
-  const received = db()
-    .prepare(`SELECT COALESCE(SUM(amount), 0) AS total FROM token_ledger WHERE to_api_key_id = ?`)
-    .get(apiKeyId) as { total: number };
-  const sent = db()
-    .prepare(`SELECT COALESCE(SUM(amount), 0) AS total FROM token_ledger WHERE from_api_key_id = ?`)
-    .get(apiKeyId) as { total: number };
-  return received.total - sent.total;
+  const row = db()
+    .prepare(
+      `SELECT
+         COALESCE((SELECT SUM(amount) FROM token_ledger WHERE to_api_key_id = ?), 0)
+         - COALESCE((SELECT SUM(amount) FROM token_ledger WHERE from_api_key_id = ?), 0)
+         AS balance`
+    )
+    .get(apiKeyId, apiKeyId) as { balance: number };
+  return row.balance;
 }
 
 export function getHistory(apiKeyId: string, limit: number): TokenLedgerEntry[] {
@@ -435,7 +456,7 @@ export function getHistory(apiKeyId: string, limit: number): TokenLedgerEntry[] 
     .prepare(
       `SELECT * FROM token_ledger
      WHERE from_api_key_id = ? OR to_api_key_id = ?
-     ORDER BY created_at DESC LIMIT ?`
+     ORDER BY created_at DESC, id DESC LIMIT ?`
     )
     .all(apiKeyId, apiKeyId, limit) as Array<{
     id: number;

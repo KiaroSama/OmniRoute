@@ -4,228 +4,233 @@
 
 ---
 
-> **অবস্থা:** রেফারেন্স — এখানে বর্ণিত মানসম্মতকরণ **বাস্তবায়িত হয়েছে** (পর্যায় 1–6: গ্রিড ওয়ালপেপার, প্রিমিটিভসমূহ, স্ট্যাটাস-কালার কেন্দ্রীকরণ, mono টোকেন, DataTable টোকেন মাইগ্রেশন, focus-ring → accent, Checkbox/Textarea প্রিমিটিভ, `cn()` → tailwind-merge, প্রতিটি স্বতন্ত্র স্ক্রিনে গ্রিড, ফ্লুইড 4K কনটেন্ট শেল, অস্বচ্ছ data-table সারফেস)। এই ডকুমেন্টটি ড্যাশবোর্ডের ডিজাইন টোকেন, কম্পোনেন্ট এবং রীতিনীতির প্রামাণ্য বিবরণ; প্রতিটি সিদ্ধান্তের যৌক্তিকতা হিসেবে নিচের পর্যায়ভিত্তিক কাঠামোটি রাখা হয়েছে।
-> **পরিধি:** OmniRoute ড্যাশবোর্ড (`src/`) এবং মার্কেটিং সাইট (`_mono_repo/omnirouteSite/`) **একটি অভিন্ন ভিজ্যুয়াল পরিচয়** ব্যবহার করে — একই গ্রাফ-পেপার গ্রিড ব্যাকগ্রাউন্ড (32px), একই কালার টোকেন এবং মানসম্মত কম্পোনেন্ট।
->
-> রক্ষণাবেক্ষণকারীদের জন্য ব্যবহারিক নোট:
->
-> - অবশিষ্ট কয়েকটি হার্ডকোড করা hex মান **ইচ্ছাকৃত** (সর্বদা-ডার্ক কনসোল টার্মিনাল, ReactFlow SVG স্ট্রোক) এবং এগুলোকে **কখনোই** টোকেনে স্থানান্তর করা যাবে না।
-> - চলমান কোনো ইনস্ট্যান্সে "বড়" গ্রিড দেখা গেলে সেটি কোডের সমস্যা নয়, বরং একটি পুরোনো বিল্ড — গ্রিডের আকার 32px, সাইটের সঙ্গে অভিন্ন।
-> - ডার্ক থিমের `--table-*` মানগুলো মাইগ্রেশনের আগের হার্ডকোড করা rgba মানের সঙ্গে বাইট-পর্যায়ে অভিন্ন; লাইট থিমটি সংশোধন করা হয়েছে (অকার্যকর `var()` ফলব্যাকের কারণে সেটি ত্রুটিপূর্ণভাবে সবসময় ডার্ক ছিল)।
+> **অবস্থা:** ড্যাশবোর্ডটি **Keak CI UI Kit** (`@keak/cheaper-inference-ui-kit`)-এর ওপর নির্মিত, যা
+> ওয়ার্কস্পেস `packages/ui-kit` (`@omniroute/ui-kit`) হিসেবে ভেন্ডর করা হয়েছে; আপস্ট্রিম স্ন্যাপশটটি
+> `packages/ui-kit/UPSTREAM.md`-এ পিন করা এবং `npm run check:ui-kit-snapshot` দ্বারা সুরক্ষিত। Light হলো ক্যানোনিক্যাল
+> থিম; ডিফল্ট পছন্দ `system`। ডিফল্ট প্যালেটটি কিটের **Editions** রূপ
+> (উষ্ণ কাগজসদৃশ নিরপেক্ষ রং এবং কপার অ্যাকসেন্ট `#e5ac82`, `packages/ui-kit/src/ci-editions.css`); সেটিংস →
+> রূপ → রঙের প্যালেটে **Classic** বিকল্পটি রয়েছে, যা লাইম অ্যাকসেন্টসহ কিটের বেস টোকেন ব্যবহার করে। UI, ডিসপ্লে এবং কোড টেক্সটের
+> একমাত্র ফন্ট ফ্যামিলি হলো Switzer (`--ci-font-ui`; `--ci-font-display` এবং
+> `--ci-font-mono` এটিতেই রেজলভ হয়), যা কিট নিজেই সেলফ-হোস্ট করে (`packages/ui-kit/src/ci-fonts.css`,
+> `ci-tokens.css` দ্বারা ইমপোর্ট করা)। Switzer-এ অনুপস্থিত লিপিগুলোর জন্য গ্লিফ ধরে ধরে ফলব্যাক প্রয়োগ করা হয় (`src/app/globals.css`):
+> সিরিলিক, গ্রিক ও ভিয়েতনামির জন্য Inter এবং কেবল `html[dir="rtl"]`-এর অধীনে আরবি লিপির জন্য Vazirmatn।
+> প্রতিটি আইকনই একটি Lucide গ্লিফ।
 
----
+## 1. জিনিসগুলো কোথায় থাকে
 
-## 1. উদ্দেশ্য
+- **কিট।** `packages/ui-kit/src` হল সেই কমিটে upstream-এর `src/`-এর byte-for-byte কপি, যা
+  `packages/ui-kit/UPSTREAM.md`-এ নির্দিষ্ট করা আছে (এখানেই লাইসেন্স অনুমোদনও নথিভুক্ত); `PATCHES.md`-এ স্থানীয়
+  প্যাচের তালিকা আছে (কোনোটিই নেই)। এটি কোনো বিল্ড ছাড়াই source হিসেবে ব্যবহৃত হয়: `next.config.mjs` এটিকে
+  transpile করে, এবং `tsconfig.json` `@omniroute/ui-kit` → `packages/ui-kit/src` ও
+  `@omniroute/ui-kit/*` → `packages/ui-kit/src/*` ম্যাপ করে (`vitest.config.ts` এবং `vitest.mcp.config.ts`-এও
+  একই alias রয়েছে)। কিটের কোনো component তার subpath দিয়ে import করুন (`@omniroute/ui-kit/table`,
+  `@omniroute/ui-kit/page-header`…), কখনো `@omniroute/ui-kit` barrel-এর মাধ্যমে নয়: barrel প্রতিটি importer-এর
+  মধ্যে প্রতিটি component (date picker-সহ) টেনে আনে। কিটের stylesheet `src/app/globals.css`-এর মাধ্যমে প্রবেশ করে
+  (`@import "../../packages/ui-kit/src/ci-styles.css"`; এটি সম্পূর্ণ sheet: core `ci-ui.css` এবং প্রতিটি pattern
+  family)।
+- **টোকেন।** `packages/ui-kit/src/ci-tokens.css`-এ `--ci-*` token ঘোষণা করা হয়েছে; `src/app/globals.css`
+  এগুলোকে পুরোনো OmniRoute নামগুলোর সঙ্গে সংযুক্ত করে (`--color-*`, `--radius-*`, `--font-sans`/`--font-mono`,
+  `--table-*`, `--orch-status-*`, `--color-fd-*`), ফলে বিদ্যমান `var(--color-*)` read এবং Tailwind
+  utility-গুলো কাজ করতে থাকে। নতুন code-এ Tailwind utility (`bg-surface`, `text-text-muted`,
+  `border-border`, `text-success`, `bg-success-bg`, `bg-chart-1`…) অথবা kit class ব্যবহার করুন — কখনো কোনো
+  hex value নয় (`tests/unit/design-kit-bridge.test.ts` এই bridge প্রয়োগ নিশ্চিত করে)। `text-primary`
+  `--text-color-primary`-এর মাধ্যমে `--color-primary-ink`-এ resolve হয়, তাই primary text পাঠযোগ্য থাকে,
+  আর `bg-primary`/`border-primary` accent surface বজায় রাখে: Editions-এর অধীনে এটি কিটের
+  `--ci-color-accent-active` (light-এ গাঢ় copper `#99562f`, dark-এ copper accent); Classic-এর অধীনে
+  light-এ lime-800 এবং dark-এ lime accent। Chart series-গুলো `--color-chart-1` … `--color-chart-8` ব্যবহার করে,
+  প্রতিটির সঙ্গে text-safe `--color-chart-N-ink` এবং opaque `--color-chart-N-subtle` chip tint রয়েছে, যা কিটের
+  series order (`ciChartSeriesOrder`) অনুযায়ী নির্ধারিত।
+- **থিম।** `<html className="ci-theme">` (`src/app/layout.tsx`) document-কে কিট theme-এ যুক্ত করে।
+  preference হল `light`, `dark` অথবা `system` (`src/shared/constants/appConfig.ts`-এ
+  `THEME_CONFIG.defaultTheme = "system"`); `system` `prefers-color-scheme` অনুসরণ করে।
+  `src/store/themeStore.ts`-এর `applyTheme()` (`src/app/layout.tsx`-এ inline করা `THEME_BOOT_SCRIPT` দ্বারাও
+  mirror করা হয়, যা hydration-এর আগে চলে) একই সঙ্গে `data-theme="dark"|"light"` সেট করে এবং `<html>`-এ
+  `.dark` class toggle করে। কিটের dark token set `data-theme="dark"`-এর ওপর নির্ভর করে
+  (`packages/ui-kit/src/ci-tokens.css`); OmniRoute-এর নিজস্ব dark override (`globals.css`-এর `.dark` block)
+  এবং পুরোনো Tailwind `dark:` utility `.dark` class-এর ওপর নির্ভর করে। কোনো accent color preset নেই: accent
+  সবসময় কিট থেকেই আসে, এবং পুরোনো build থেকে সংরক্ষিত preset store load হওয়ার সময় বাদ দেওয়া হয়।
+- **প্যালেট।** দুটি, দুটিই কিট থেকে (`src/shared/constants/appearancePalette.ts`): default `editions` এবং
+  `classic`। Editions হল `<html>`-এর কিটের `data-ci-appearance="editions"` attribute, যা
+  `ci-editions.css` (`ci-ui.css` দ্বারা imported) `data-theme`-এর সঙ্গে মিলিয়ে প্রয়োগ করে; Classic হল
+  attribute-এর অনুপস্থিতি। Root layout server-side-এ attribute render করে, তাই কোনো stored preference না থাকা
+  visitor (অথবা JavaScript না থাকলেও) প্রতিটি surface-এ — dashboard, login, `/status`, error page, `/docs` এবং
+  PWA-তে — Editions পায়। পছন্দটি theme-এর পাশে একই `theme` store-এ সংরক্ষিত হয় (`palette`,
+  `setPalette()`, `applyPalette()` `src/store/themeStore.ts`-এ) এবং `THEME_BOOT_SCRIPT`-এর মাধ্যমে paint-এর
+  আগে প্রয়োগ করা হয় (`src/shared/utils/themeBootScript.ts`, layout-এর `<head>`-এ inline করা), যা stored
+  palette `"classic"` হলেই কেবল attribute সরিয়ে দেয়; root layout-এর বাইরে থাকা
+  `src/app/global-error.tsx` একই store থেকে এটি প্রয়োগ করে। অন্য কোনো element-এ `data-ci-appearance` বসাবেন
+  না: কিট এটি `html:root:has([data-ci-appearance="editions"])` দিয়ে match করে, তাই একটি descendant-ই পুরো
+  document বদলে দেবে। Editions-এর `data-ci-editions-variant="landing"` variant marketing page-এর জন্য,
+  dashboard-এর জন্য নয়। Browser chrome: server default, Editions, `viewport.themeColor`-এ (প্রতি
+  `prefers-color-scheme`-এর জন্য একটি tag) এবং web manifest-এ render করে —
+  `src/shared/constants/pwaThemeColors.ts`-এর `PWA_THEME_COLORS`, যা Editions-এর
+  `--ci-color-background` (`#f3f1e9` / `#11120f`)-এর একমাত্র mirror এবং
+  `tests/unit/pwa-theme-colors.test.ts` দ্বারা `ci-editions.css`-এ pinned। এরপর live
+  `<meta name="theme-color">` stored palette ও mode অনুসরণ করে: `THEME_BOOT_SCRIPT` paint-এর আগে tag-গুলো
+  rewrite করে এবং theme store-এর action-গুলো প্রতিটি পরিবর্তনে তা করে
+  (`src/shared/utils/themeColorMeta.ts`-এর `resolveThemeColor()` / `applyThemeColor()`, যেখানে
+  `CLASSIC_PAGE_BACKGROUND` কিটের `ciTokens` থেকে read করা হয়)। স্পষ্টভাবে নির্ধারিত light/dark theme প্রতিটি
+  tag-কে সেই mode-এ সেট করে; `system` প্রতি scheme-এর জন্য একটি করে রং বজায় রাখে। Manifest Editions-ই
+  থাকে: এটি প্রতি install-এ একবার fetch করা হয়, preference ছাড়াই। Monaco একটি probe থেকে নিজের রং read করে
+  (`monacoKitTheme.ts`); Editions-এর অধীনে probe read এক synchronous pass-এর জন্য root-এর `data-theme`
+  flip করে, কারণ কিট root থেকে Editions light/dark resolve করে।
+- **Components (adapters)।** `src/shared/components/index.tsx` OmniRoute component API বজায় রাখে (একই নাম,
+  default export এবং props), আর এর পেছনের primitive-গুলো কিটের ওপর তৈরি adapter: form
+  (`Button`, `Input`, `Textarea`, `Checkbox`, `Select`, `Toggle`, `Badge`, `Card`), overlay এবং feedback
+  (`Modal`/`ConfirmModal`, `Tooltip`/`InfoTooltip`, `NotificationToast`, `EmptyState`, `Loading`),
+  structure (`Collapsible`, `CollapsibleSection`, `SegmentedControl`, `Breadcrumbs`, `Avatar`) এবং table
+  (`DataTable`, `FilterBar`, `ColumnToggle`, `FilterPills`, `PresetSlider`)। একটি adapter subpath দিয়ে kit
+  component import করে এবং legacy props-কে তার ওপর ম্যাপ করে — যেমন `Button variant="primary"` হল kit-এর
+  `default` button (`--ci-button-primary-*`: light-এ inverse surface, dark-এ তার
+  `--ci-color-accent-foreground` ink-সহ accent), `danger` হল `destructive`, এবং `warning` হল kit-এর
+  `warning` button। `Badge` status variant-গুলো kit tone, এবং `<option>` child-সহ `Select` kit-এর
+  `NativeSelect` render করে।
+  দুটি adapter index থেকে নয়, path দিয়ে import করা হয়: `InteractiveTableRow`
+  (`src/shared/components/InteractiveTableRow.tsx`), একটি kit `TableRow` যা `onActivate` এবং
+  `selected` গ্রহণ করে এবং Tab, Enter ও Space-এর প্রতিক্রিয়া জানায়; এবং `CodePreview`
+  (`src/shared/components/CodePreview.tsx`), copy label-গুলো অনূদিত থাকা kit code block।
+  `tests/unit/ui/adapters/*.test.tsx` প্রতিটি adapter-এর আচরণ নির্দিষ্ট করে।
+- **শেল।** `src/app/(dashboard)/layout.tsx` `DashboardLayout` রেন্ডার করে, যা
+  `src/shared/components/layouts/DashboardShell.tsx` রেন্ডার করে: কিটের `SidebarProvider` / `Sidebar` /
+  `SidebarInset` (`packages/ui-kit/src/sidebar.tsx`), যেখানে OmniRoute-এর নেভিগেশন লজিক রয়েছে
+  `src/shared/components/Sidebar.tsx`-এ। `#main-content`-এ যাওয়ার একটি "skip to content" লিংক প্রথম ফোকাসযোগ্য
+  এলিমেন্ট। `src/shared/components/Header.tsx`-এ কিটের `SidebarTrigger` (শেলের একমাত্র sidebar
+  টগল), Keak-এর `ProductSwitcher` এবং command-palette opener রয়েছে; `#main-content`-এর ভেতরে কোনো
+  কিট `PageHeader` (`.ci-page-header`) মাউন্ট না থাকা অবস্থাতেই এটি route title দেখায়, তাই নিজস্ব
+  `PageHeader` থাকা একটি পেজে একটি মাত্র `h1` থাকে। `src/shared/components/CommandPalette.tsx` একটি কিটের `Dialog`।
+- **আইকন।** `<Icon name="material_name">` (`src/shared/components/Icon.tsx`) `ICON_MAP`-এর মাধ্যমে
+  নামটি (স্ক্রিনগুলোতে ব্যবহৃত Material Symbols vocabulary) একটি Lucide glyph-এ রূপান্তর করে
+  (`src/shared/constants/iconMap.ts`)। Material Symbols font এবং package সরিয়ে ফেলা হয়েছে: map-এ
+  অনুপস্থিত কোনো নাম একটি নিরপেক্ষ placeholder glyph (`data-icon-missing="true"`) রেন্ডার করে এবং
+  production-এর বাইরে console warning লগ করে। `npm run gen:icon-map` ব্যবহৃত কিন্তু map-এ অনুপস্থিত নামগুলো
+  প্রিন্ট করে (`tests/unit/icon-map-coverage.test.ts` কোনো নামের জন্য Lucide icon না থাকলে ব্যর্থ হয়;
+  `tests/unit/icon-map-object-values.test.ts` lookup object-এ সংরক্ষিত নামগুলো কভার করে);
+  `scripts/dev/codemod-material-icons.mjs <dir|file>... [--write]` আক্ষরিক
+  `<span className="material-symbols-outlined">` span-গুলোকে `<Icon>`-এ পুনর্লিখন করে।
+- **ব্র্যান্ড।** `src/shared/components/OmniRouteLogo.tsx` কিটকে wrap করে: ডিফল্ট export `OmniRouteLogo`
+  `ProductIcon product="omniroute" variant="glyph"` রেন্ডার করে (inline SVG, `basePath`-safe) এবং
+  `OmniRouteLockup` `ProductLockup product="omniroute"` (accessible name "Keak OmniRoute") রেন্ডার করে অথবা,
+  white-label operator-দের জন্য, তাদের নিজস্ব `name`/`logoSrc` রেন্ডার করে। Product-switcher destination-গুলো
+  `src/shared/constants/keakProducts.ts`-এ রয়েছে (`KEAK_PRODUCT_LINKS`, `KEAK_ACTIVE_PRODUCT`)। স্বতন্ত্র
+  screen-গুলো — `src/app/login/page.tsx`, `src/app/status/page.tsx`, `src/app/maintenance/page.tsx`,
+  `src/app/offline/page.tsx`, `src/app/not-found.tsx` এবং `src/shared/components/ErrorPageScaffold.tsx`
+  — lockup দেখায়; `tests/unit/brand-pages-static.test.ts` এটি নিশ্চিত করে।
 
-মার্কেটিং সাইট (`viral.omniroute.online`, `why.omniroute.online`, `omniroute.online`) এবং প্রোডাক্ট ড্যাশবোর্ডকে যেন **একটি অভিন্ন প্রোডাক্টের** মতো দেখায়। সাইটটি ইতিমধ্যেই ড্যাশবোর্ড থেকে এর প্যালেট নিয়েছে — এমনকি এর `css/tokens.css`-এ বলা আছে, _"প্যালেটটি OmniRoute ড্যাশবোর্ডের (src/app/globals.css) অনুরূপ"।_ ফলে রঙের স্তরে দুটো ইতিমধ্যেই প্রায় 80% সামঞ্জস্যপূর্ণ। ড্যাশবোর্ডে যা অনুপস্থিত:
+## ২. নিয়ম
 
-1. সাইটের প্রতিটি পেজে ব্যবহৃত **গ্রাফ-পেপার গ্রিড ওয়ালপেপার**।
-2. সাইটে থাকা কিন্তু ড্যাশবোর্ডে অনুপস্থিত কয়েকটি **শেয়ার্ড ডিজাইন টোকেন** (রেডিয়াস স্কেল, ব্র্যান্ড গ্রেডিয়েন্ট, `surface-2`, mono ফন্ট)।
-3. **কম্পোনেন্ট-স্তরের সামঞ্জস্য** — ড্যাশবোর্ডের বেশ কিছু কম্পোনেন্ট হার্ডকোড করা hex/rgba ব্যবহার করে থিম টোকেনগুলোকে পাশ কাটায়।
+1. টোকেন, কখনো লিটারেল নয়। ইচ্ছাকৃতভাবে রাখা ব্যতিক্রম: সর্বদা-অন্ধকার কনসোল টার্মিনাল এবং
+   `STATUS_HEX` (`src/shared/constants/statusColors.ts`), যা লিটারেল হেক্স প্রয়োজন এমন কলারদের জন্য
+   কিট স্ট্যাটাস প্যালেটের resolved-hex প্রতিরূপ। ক্যাটেগরিক্যাল প্যালেটগুলোও আর ব্যতিক্রম নয়:
+   এগুলো কিটের আটটি চার্ট টোকেনের (`--color-chart-1..8`, সঙ্গে `-ink`/`-subtle`) ওপর নির্ভর করে,
+   কিট সিরিজের ক্রমে, `src/shared/utils/categoricalPalette.ts` এবং রাউটিং কৌশলগুলোর জন্য
+   `src/app/(dashboard)/dashboard/combos/strategyPalette.ts`-এর মাধ্যমে; ReactFlow edge এবং orchestration
+   canvas থিম-সচেতন `--orch-status-*` ভেরিয়েবল পড়ে (`src/shared/components/flow/edgeStyles.ts`)।
+2. `packages/ui-kit/src` কখনো হাতে প্যাচ করবেন না: `scripts/dev/sync-ui-kit.sh <commit>` দিয়ে সিঙ্ক করুন;
+   প্রি-কমিট গেট `npm run check:ui-kit-snapshot` (`.husky/pre-commit`) pinned upstream commit থেকে
+   আলাদা যেকোনো byte-তে ব্যর্থ হয় (upstream clone,
+   `UI_KIT_CLONE` বা `_references/cheaper-inference-ui-kit` অনুপস্থিত হলে সতর্কবার্তা দিয়ে এটি এড়িয়ে যায়)। কিটে
+   কোনো কিছু না থাকলে adapter বা screen-এ workaround করুন এবং upstream-কে সেটির জন্য অনুরোধ করুন।
+3. কিটের text default ইংরেজি (`label = "Loading"`, `loadingLabel = "Loading table"`…) — কোনো কিট
+   component text render করলে `useTranslations(...)` থেকে অনূদিত string পাঠান।
+4. Tailwind utility কিট component class-এর ওপর প্রাধান্য পায় (কিট
+   `@layer theme, base, components, utilities` ঘোষণা করে এবং এর rule-গুলো `components`-এ থাকে) — spacing
+   ও layout-এর জন্য utility ব্যবহার করুন, কিট component-এর রং পরিবর্তনের জন্য নয়। Typography ব্যতিক্রম:
+   `packages/ui-kit/src/ci-typography.css` কোনো layer-এর বাইরে import করা হয়, তাই এর tag rule-গুলো
+   utility-কে ছাড়িয়ে যায়। `h1`–`h6`-এ weight, `tracking-*` এবং `leading-*` class-এর কোনো প্রভাব নেই,
+   table cell-এ weight এবং `tracking-*`-এর কোনো প্রভাব নেই, এবং button-এ weight-এর কোনো প্রভাব নেই
+   (`tests/unit/dead-typography-classes.test.ts` সেখানে এগুলো প্রত্যাখ্যান করে); `th`, `td`, `button`, `input`
+   এবং `textarea`-এ `font-mono`-এর কোনো প্রভাব নেই। Size, colour এবং `uppercase` utility এখনও প্রযোজ্য।
+5. Headings: page এবং section title-এর জন্য `.ci-heading`; error-page status code-এর মতো বড়, sparse
+   display text-এর জন্যই শুধু `.ci-dashboard-display`। দুটিই Switzer ব্যবহার করে।
+6. `tests/unit/dashboard-kit-sweep.test.ts` কিট গ্রহণ নিশ্চিত করে: `src/app` বা `src/shared/components`-এর
+   অধীনে কোনো Material ligature span নয়; dashboard tree-তে (`src/app/(dashboard)` এবং
+   `src/shared/components`) কোনো raw `<select>`, `<textarea>` বা `<table>` নয় এবং তালিকাভুক্ত ব্যতিক্রম
+   (`Select` adapter-এর native branch,
+   `RequestLoggerDetail`) ছাড়া হাতে তৈরি কোনো `role="dialog"` নয়; সেখানে প্রতিটি raw `<button>` বা `<input>`-এর
+   সর্বোচ্চ ৩ লাইন ওপরে কারণসহ `kit-exception:` থাকা comment প্রয়োজন; palette hue এবং `dark:` variant
+   কেবল test-এ তালিকাভুক্ত file-গুলোতেই থাকতে পারে।
+7. PR-এর আগে উভয় theme এবং 390 px viewport যাচাই করুন (screenshot); `tests/e2e/a11y.spec.ts` axe
+   চালায়।
+8. একটি colour utility-কে `src/app/globals.css`-এর `@theme` block-এর কোনো token-এর নাম উল্লেখ করতে হবে:
+   সেখানে নেই এমন নাম (`text-text`, `bg-bg-muted`, `text-danger`…) কোনো CSS তৈরি করে না এবং element-টি
+   inherited colour ধরে রাখে (`tests/unit/theme-color-classes.test.ts`)। কোনো `card` class নেই:
+   `Card` adapter ব্যবহার করুন (`tests/unit/no-bare-card-class.test.ts`)। Chart colour-এ text-এর জন্য
+   `text-chart-N-ink` ব্যবহার করুন; `text-chart-N` icon এবং stroke-এর জন্য
+   (`tests/unit/chart-ink-for-text.test.ts`)। একটি translucent colour `color-mix` দিয়ে তৈরি করতে হবে,
+   এমন কোনো value-তে hex alpha যুক্ত করে নয় যা `var()` হতে পারে
+   (`tests/unit/color-alpha-concatenation.test.ts`)।
+9. Tables: প্রতিটি কিট `Table`-এ `scrollLabel`, তার scroll region-এর নাম, এবং persistent scrollbar
+   আঁকার সময় `scrollbarLabel` পাঠাতে হবে
+   (`tests/unit/kit-tables-have-accessible-name.test.ts`)। Clickable row হলো `onActivate`-সহ
+   `InteractiveTableRow`, কখনো `<TableRow onClick>` নয়
+   (`tests/unit/table-row-click-needs-keyboard.test.ts`)। কোনো card-এর ভেতরে, অথবা bordered box-এর
+   ভেতরে থাকা table নিজের frame বাদ দেবে `containerClassName="rounded-none border-0"` দিয়ে
+   (`tests/unit/datatable-not-framed-inside-card.test.ts`)।
+10. Amount দেখানো bar হলো কিট `Progress`, অথবা kit bar সেটি আঁকতে না পারলে নাম ও value-সহ
+    `role="progressbar"` বহন করবে (`tests/unit/progress-bars-have-semantics.test.ts`)। Menu,
+    popover এবং tooltip কিট থেকেই আসবে (`Popover`, `SearchableSelect`, `Tooltip` adapter), local state
+    দিয়ে খোলা কোনো absolutely positioned panel থেকে নয়
+    (`tests/unit/hand-positioned-overlays.test.ts`)।
+11. `Input` adapter-এ `className` field wrapper-এর style নির্ধারণ করে; control-এর জন্য নির্ধারিত class
+    `inputClassName`-এ দিতে হবে (`tests/unit/input-adapter-classname-destination.test.ts`)।
 
-এই ডকুমেন্টে বিশ্লেষণ এবং পরিকল্পনা তুলে ধরা হয়েছে।
+## ৩. একটি স্ক্রিন যোগ করা
 
----
+1. কিটের `PageHeader` (`@omniroute/ui-kit/page-header`, ড্যাশবোর্ডের মধ্যে `compact`) ব্যবহার করে পেজটি খুলুন — শিরোনাম, বিবরণ এবং `actions`। এরপর শেল হেডার তার নিজস্ব শিরোনাম সরিয়ে দেয় এবং ১০২৪ px-এর নিচে এটি লুকানো থাকে, তাই `PageHeader` ছাড়া কোনো রুটে ফোনে শিরোনাম থাকে না
+   (`tests/unit/dashboard-page-header-coverage.test.ts`)। যে পাথ সেগমেন্টের নিজস্ব কোনো পেজ নেই, সেটি `src/shared/utils/breadcrumbTrail.ts`-এর `ROUTE_PREFIXES_WITHOUT_PAGE`-এ যোগ করুন, যাতে তার ক্রাম্ব মৃত লিংক না হয়ে টেক্সট হয় (`tests/unit/breadcrumb-trail-routes.test.ts`)।
+2. `@/shared/components` (অ্যাডাপ্টারগুলো) থেকে কন্ট্রোল তৈরি করুন এবং যেখানে কোনো অ্যাডাপ্টার নেই, সেখানে সাবপাথ ব্যবহার করে কিট কম্পোনেন্ট নিন (`Table`/`TableScrollArea`/`DataTableShell`, `Field`, `Alert`, `Tabs`, `RadioGroup`, `Slider`…)।
+3. আইকন: `<Icon name="…" />`। নতুন কোনো নাম `ICON_MAP`-এ অর্থের সঙ্গে মেলে এমন Lucide কম্পোনেন্টসহ যোগ করুন; এখনও অনুপস্থিত নামগুলোর তালিকা পেতে `npm run gen:icon-map` চালান।
+4. রং: সেম্যান্টিক ইউটিলিটি (`text-success`, `bg-warning-bg`, `border-border`…) এবং চার্ট সিরিজের জন্য `var(--color-chart-N)` ব্যবহার করুন; কোনো হেক্স মান ব্যবহার করবেন না এবং এমন `dark:` ভ্যারিয়েন্ট ব্যবহার করবেন না যা শুধু একই রং পুনরাবৃত্তি করে।
+5. টেক্সট: কিট কম্পোনেন্টে পাস করা লেবেলসহ প্রতিটি স্ট্রিং `useTranslations` থেকে আসবে। নতুন কী শুধু `src/i18n/messages/en.json`-এ যোগ করুন; রিলিজ রিফ্রেশের সময় অন্যান্য লোকেল পূরণ হয়ে যাবে (`tests/_helpers/localeParityMode.ts`-এ দুটি মোডের বর্ণনা রয়েছে)। কোনো টেস্ট যখন সত্যিকারের অ-ইংরেজি ক্যাটালগ মাউন্ট করে, তখন এটি রানটাইমের মতো `src/i18n/request.ts`-এর `deepMergeFallback` দিয়ে মেসেজ তৈরি করে, তাই শুধু ইংরেজিতে থাকা কোনো কী ত্রুটি না দিয়ে ফলব্যাক হিসেবে ব্যবহৃত হবে।
+6. PR-এর আগে গার্ডগুলো চালান: `tests/unit/dashboard-kit-sweep.test.ts`,
+   `tests/unit/icon-map-coverage.test.ts`, `tests/unit/icon-map-object-values.test.ts`,
+   `npm run check:dashboard-typecheck` (`iconMap.ts`-এ ডুপ্লিকেটেড ইমপোর্ট ধরতে পারে এমন একমাত্র চেক),
+   `npm run check:ui-icu`, নিয়ম ৪ এবং ৮–১১-এ নামযুক্ত গার্ডগুলো এবং স্ক্রিনটির নিজস্ব টেস্ট।
 
-## 2. মূলনীতি
+## 4. অ্যাডাপ্টার যোগ বা পরিবর্তন করা
 
-- **সত্যের একক উৎস = `src/app/globals.css`।** সাইট ড্যাশবোর্ডকে অনুসরণ করবে, উল্টোটা কখনোই নয়। নতুন টোকেন প্রথমে `globals.css`-এ যোগ হবে।
-- **লিটারেল নয়, সর্বদা টোকেন।** কম্পোনেন্টগুলো কাঁচা `#hex`-এর পরিবর্তে সেমান্টিক টোকেন (`bg-surface`, `text-primary`, `border-border`) ব্যবহার করবে।
-- **সূক্ষ্ম, উচ্চকিত নয়।** গ্রিডটি হলো কনটেন্টের পেছনে থাকা একটি মৃদু ওয়ালপেপার — এটি কখনোই টেক্সটের কনট্রাস্ট কমাবে না বা UI-এর সঙ্গে দৃশ্যত প্রতিযোগিতা করবে না।
-- **থিম-সচেতন।** সবকিছু `.dark` (প্রোডাক্টটির স্বতন্ত্র পরিচিতিমূলক রূপ) এবং লাইট—উভয় থিমেই কাজ করবে।
-- **সুনির্দিষ্ট রোলআউট।** প্রথমে গ্রিড + টোকেন প্রকাশ করতে হবে (কম ঝুঁকি, উচ্চ দৃশ্যমানতা), এরপর ধাপে ধাপে কম্পোনেন্ট পরিচ্ছন্ন করতে হবে।
+1. `src/shared/components/index.tsx`-এর পাবলিক API অপরিবর্তিত রাখুন: একই এক্সপোর্ট নাম, ডিফল্ট এক্সপোর্ট এবং
+   গৃহীত props। অ্যাডাপ্টারের ভেতরে লিগ্যাসি props-কে কিটে ম্যাপ করুন (দেখুন `Button.tsx`: `VARIANT_TO_KIT`,
+   `SIZE_TO_KIT`)।
+2. সাবপাথ দিয়ে কিট ইমপোর্ট করুন (`@omniroute/ui-kit/<component>`)।
+3. কিটের ঘাটতির ওয়ার্কঅ্যারাউন্ড অ্যাডাপ্টারে থাকে (অথবা সমাধানটি যদি স্টাইল হয় তাহলে `globals.css`-এর
+   `@layer components`-এ), কখনোই `packages/ui-kit/src`-এ নয়।
+4. `tests/unit/ui/adapters/<name>.test.tsx` যোগ বা আপডেট করুন। অনেক কলারওয়ালা অ্যাডাপ্টারের ক্ষেত্রে,
+   পরিবর্তনের আগে ও পরের রেন্ডার হওয়া মার্কআপ তুলনা করুন — প্যাডিং বা র্যাপারের পরিবর্তন প্রতিটি স্ক্রিনে ছড়িয়ে পড়ে।
 
----
+## 5. কিট আপডেট করা হচ্ছে
 
-## 3. বর্তমান অবস্থা — কোনগুলো ইতিমধ্যেই সামঞ্জস্যপূর্ণ এবং কোনগুলো নয়
+`npm run check:ui-kit-upstream` আপস্ট্রিম রেপোর নতুন `v*` ট্যাগের সাথে `packages/ui-kit/UPSTREAM.md` এ পিন করা সংস্করণটিকে তুলনা করে এবং যখন একটি রিলিজ বের হয় তখন সিঙ্ক কমান্ড প্রিন্ট করে।
 
-### 3.1 রং — ইতিমধ্যেই একীভূত ✅
+দৈনিক `UI Kit upstream watch` ওয়ার্কফ্লো (`.github/workflows/ui-kit-upstream-watch.yml`) একই চেক চালায়। পিনটি পিছনে থাকাকালীন, `scripts/ci/ui-kit-sync-pr.sh` একটি সিঙ্ক PR সর্বোচ্চ `release/vX.Y.Z` শাখার বিপরীতে, ঘূর্ণায়মান শাখা `chore/ui-kit-sync-latest` এ খোলা রাখে। এটি কখনই একত্রিত হয় না: প্রতিটি কিট প্রকাশের এখনও স্থানীয় VPS এ একটি ভিজ্যুয়াল চেক প্রয়োজন। একটি নতুন রিলিজ বের হলে এবং অন্যথায় একা রেখে দিলে শাখাটি পুনর্নির্মাণ করা হয়। হাত দ্বারা ঠেলে কমিট সহ একটি খোলা PR ওভাররাইট করা হয় না, এবং একটি সংস্করণের জন্য একটি PR যা একটি রক্ষণাবেক্ষণকারী বন্ধ অবিকৃত একটি নতুন প্রকাশ না হওয়া পর্যন্ত বন্ধ থাকে।
 
-প্রতিটি ব্র্যান্ড রং এবং সারফেস ইতিমধ্যেই **মানের দিক থেকে** সাইটের সঙ্গে মিলে যায় (শুধু নামগুলো আলাদা — ড্যাশবোর্ডে `--color-` প্রিফিক্স ব্যবহৃত হয়)। `src/app/globals.css:30-128`-এ যাচাই করা হয়েছে:
+যখন কোন PR খোলা যায় না (টার্গেট রিলিজ হিমায়িত করা হয়েছে, PR হাত দিয়ে ঠেলে কমিট করেছে, PR বন্ধ ছিল, বা কোন PR টোকেন সেট করা নেই) ওয়ার্কফ্লো একটি ট্র্যাকিং সমস্যা খোলা রাখে যা বলে কেন।
 
-| ধারণা                      | সাইট টোকেন (`tokens.css`)                   | ড্যাশবোর্ড টোকেন (`globals.css`) | মিল             |
-| -------------------------- | ------------------------------------------- | -------------------------------- | --------------- |
-| প্রাইমারি                  | `--primary #e54d5e`                         | `--color-primary #e54d5e`        | ✅              |
-| প্রাইমারি-হোভার            | `--primary-hover #c93d4e`                   | `--color-primary-hover #c93d4e`  | ✅              |
-| অ্যাকসেন্ট                 | `--accent #6366f1`                          | `--color-accent #6366f1`         | ✅              |
-| অ্যাকসেন্ট-2               | `--accent-2 #8b5cf6`                        | `--color-accent-hover #8b5cf6`   | ✅ (নাম বদলানো) |
-| অ্যাকসেন্ট-3               | `--accent-3 #a855f7`                        | `--color-accent-light #a855f7`   | ✅ (নাম বদলানো) |
-| সাফল্য / সতর্কতা / ত্রুটি  | `#22c55e / #f59e0b / #ef4444`               | অভিন্ন                           | ✅              |
-| ট্রাফিক লাইট               | `#ff5f56 / #ffbd2e / #27c93f`               | অভিন্ন                           | ✅              |
-| ডার্ক bg / সারফেস / বর্ডার | `#0b0e14 / #161b22 / rgba(255,255,255,.08)` | অভিন্ন                           | ✅              |
-| লাইট bg / সারফেস / টেক্সট  | `#f9f9fb / #fff / #1a1a2e`                  | অভিন্ন                           | ✅              |
+কর্মপ্রবাহ দুটি গোপন ব্যবহার করে:
 
-**উপসংহার:** কোনো কালার মাইগ্রেশন করার প্রয়োজন নেই। পরিচয়টি ইতিমধ্যেই অভিন্ন; আমরা এটি নতুন করে তৈরি করছি না, বরং _সম্পূর্ণ_ করছি।
+- `secrets.UI_KIT_READ_TOKEN`: ব্যক্তিগত আপস্ট্রিম রেপোর জন্য একটি পঠনযোগ্য টোকেন। যখন ওয়ার্কফ্লো আপস্ট্রিম পড়তে পারে না (কোন টোকেন, একটি টোকেন যা কাজ করা বন্ধ করে দেয়, বা GitHub পৌঁছানো যায় না) রানটি সবুজ থাকে কিন্তু একটি সতর্কতা লেখে এবং একটি পৃথক সমস্যা খোলা রাখে, যা পরে আবার আপস্ট্রিম পড়তে পারে একবার নিজেই বন্ধ হয়ে যায়।
+- `secrets.UI_KIT_SYNC_PR_TOKEN`: একটি সূক্ষ্ম দানাদার টোকেন এই রিপোজিটরিতে বিষয়বস্তু এবং পুল রিকোয়েস্ট লেখার অ্যাক্সেস সহ। ডিফল্ট `GITHUB_TOKEN` এখানে PRs তৈরি করতে পারে না, এবং এটি খোলা একটি PR CI ট্রিগার করবে না। এই টোকেন ছাড়া কর্মপ্রবাহ শুধুমাত্র শাখা ধাক্কা.
 
-### 3.2 ঘাটতি — ড্যাশবোর্ডে যা অনুপস্থিত
+`scripts/dev/sync-ui-kit.sh <commit|latest> [clone]` সেই প্রতিশ্রুতিতে আপস্ট্রিম `src/` কপি করে (`latest` = নতুন `v*` ট্যাগ) `packages/ui-kit/src` এ, একক অনুমোদিত রূপান্তর প্রয়োগ করে (এটি আপেক্ষিক আমদানি থেকে `.js` প্রত্যয়টি ড্রপ করে), এবং `packages/ui-kit/package.json` এবং `package-lock.json` তে ওয়ার্কস্পেস সংস্করণ আপস্ট্রিমে সেট করে। তারপর: `git diff packages/ui-kit` পর্যালোচনা করুন, উভয় থিমে সরবরাহকারী, সেটিংস, কম্বোস, ব্যবহার এবং এন্ডপয়েন্টের উপর একটি ভিজ্যুয়াল পাস করুন, `npm run check:ui-kit-snapshot` এবং `npm run test:vitest:ui` চালান এবং আপস্ট্রিম চেঞ্জলগ দিয়ে PR খুলুন।
 
-| ঘাটতি                      | সাইটে রয়েছে                                                                   | ড্যাশবোর্ডে                                                          | পদক্ষেপ               |
-| -------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------- | --------------------- |
-| **গ্রিড ওয়ালপেপার**       | `body::before` গ্রাফ-পেপার, `--grid-line`, `--grid-size 32px`, `--section-alt` | **✅ যোগ করা হয়েছে (পর্যায় ১)**                                    | **অংশ A**             |
-| **ব্যাসার্ধ স্কেল**        | `--radius 14px`, `--radius-sm 9px`                                             | `--radius 14px` যোগ করা হয়েছে; `-sm` + কম্পোনেন্ট পুনর্নির্দেশ বাকি | **অংশ B / পর্যায় ২** |
-| **ব্র্যান্ড গ্রেডিয়েন্ট** | `--grad-brand 135deg primary→accent-3`                                         | **✅ টোকেন যোগ করা হয়েছে (পর্যায় ১)**; পর্যায় ২-এ ব্যবহৃত হবে     | **অংশ B**             |
-| **নেস্টেড সারফেস**         | `--surface-2 #1c2230`                                                          | **✅ যোগ করা হয়েছে (পর্যায় ১)**                                    | **অংশ B**             |
-| **মনো ফন্ট**               | `--font-mono` (ui-monospace স্ট্যাক)                                           | বাকি আছে (পর্যায় ৪, ব্যবহারকারীদের সঙ্গে)                           | **অংশ B**             |
-| **`text-muted` (ডার্ক)**   | `#8b8b9e`                                                                      | `#a1a1aa` (zinc-400)                                                 | সমন্বয় — **অংশ B**   |
+## ৬. README ডায়াগ্রাম
 
-### ৩.৩ থিমিংয়ের কার্যপ্রণালী (যাতে আমরা কিছু নষ্ট না করি)
+রুট `README.md` যে বারোটি ডায়াগ্রাম (`docs/diagrams/*.svg`) এম্বেড করে, সেগুলো একটি স্ট্যাটিক ছবিতে প্রয়োগ করা কিট এবং হাতে এঁকে তৈরি করা নয়: `scripts/docs/gen-readme-*.mjs`-এ থাকা ১৩টি জেনারেটর ফাইল (বারোটি ডায়াগ্রাম এবং `gen-readme-diagrams.mjs` ড্রাইভার) এবং `tests/unit/docs/readme-*-svg.test.ts`-এ থাকা ১২টি stale-ness টেস্ট, প্রতি ডায়াগ্রামের জন্য একটি করে, প্রতিটিই কমিট করা ফাইলের সঙ্গে তার জেনারেটরের আউটপুট byte-তুলনা করে (job `test-unit`)।
 
-- **Tailwind v4, CSS-first** (কোনো `tailwind.config.*` নেই)। টোকেনগুলো `:root`/`.dark`-এ সংজ্ঞায়িত এবং `@theme inline`-এর মাধ্যমে ইউটিলিটিগুলোর জন্য উন্মুক্ত করা হয়েছে (`globals.css:130-179`)।
-- **`<html>`-এ `.dark` ক্লাসের মাধ্যমে ডার্ক মোড** (`globals.css:22`-এ `@custom-variant dark`), যা একটি কাস্টম Zustand স্টোর (`src/store/themeStore.ts`) দ্বারা টগল করা হয়; ডিফল্ট থিম = `system` (`src/shared/constants/appConfig.ts:11`)। এর পরিবর্তে সাইটটি `html[data-theme="light"]` ব্যবহার করে — **কার্যপ্রণালীগুলো আলাদা, তবে কখনো পরস্পরের সংস্পর্শে আসে না** (পৃথক অরিজিন), তাই কোনো দ্বন্দ্ব নেই। আমরা ড্যাশবোর্ডের `.dark` কার্যপ্রণালীই রাখি।
-- **রানটাইম প্রাইমারি ওভাররাইড** রয়েছে (`themeStore.ts:85-97`, `COLOR_THEMES`-এ প্রিসেট) — ব্যবহারকারীরা `--color-primary` পরিবর্তন করতে পারেন। `--color-primary`-কে রেফারেন্স করা যেকোনো নতুন টোকেন (গ্রেডিয়েন্ট ইত্যাদি) স্বয়ংক্রিয়ভাবে সেই ওভাররাইডগুলো উত্তরাধিকারসূত্রে পায়। ✅
-- **Tailwind v4-এর সংরক্ষিত ব্যাসার্ধ নাম:** `--radius-sm/md/lg/...` হলো `rounded-*` ইউটিলিটিগুলোর ভিত্তি। এগুলো পুনরায় সংজ্ঞায়িত করলে বিদ্যমান প্রতিটি `rounded-*` পূর্ববর্তী প্রভাবসহ পরিবর্তিত হয় (যেমন, `rounded-sm` ১২টি ফাইলে ব্যবহৃত হয়েছে)। তাই ছোট ব্যাসার্ধের মান এবং কম্পোনেন্ট পুনর্নির্দেশ ইচ্ছাকৃতভাবে পর্যায় ২ পর্যন্ত স্থগিত রাখা হয়েছে, যেখানে ব্যবহারকারীগুলো একসঙ্গে পরিবর্তিত হবে।
+- **টোকেন।** `scripts/docs/readme-diagram-theme.mjs` Editions palette (ডিফল্ট চেহারা) `packages/ui-kit/src/ci-editions.css` থেকে কপি করে (`tests/unit/docs/readme-diagram-theme.test.ts` ফাইলটির বিপরীতে এটিকে pinned রাখে; একই সঙ্গে উভয় scheme-এ প্রতিটি surface-এর প্রতিটি text colour-এর জন্য WCAG AA-ও পরীক্ষা করে; একমাত্র ব্যতিক্রম, light `warn`, যা কিটের warning-কে ১০ % গাঢ় করে তৈরি, কারণ canvas-এ কিটের মান 4.46:1) এবং কিটের type scale (`ci-tokens.css`)-এ text role-গুলো নির্ধারণ করে: কিটের weight (400/500/600, display-এর জন্য 500) ও tracking-সহ সবকিছুর জন্য Switzer, তবে code role-গুলো (`.cmd`, `.term`, `.term-lg`, `.mono`, `.mono-sm`, `.mono-xs`) IBM Plex Mono, এবং এগুলো শুধু command, URL, identifier ও terminal screen-এর জন্য। Light value-গুলো ফাইলের `:root`-এ থাকে, আর dark value-গুলো ফাইলের ভেতরে `prefers-color-scheme: dark`-এর আড়ালে থাকে, তাই GitHub-এ প্রতিটি image viewer-এর scheme অনুসরণ করে।
+- **ফন্ট।** GitHub Markdown কোনো CSS বহন করে না এবং camo proxy প্রতিটি external fetch আটকে দেয়, তাই kit type-কে ফাইলের ভেতরেই থাকতে হয়। প্রতিটি generator-এর শেষ ধাপ `scripts/docs/readme-outline.mjs`, যা HarfBuzz দিয়ে Switzer role-গুলো shape করে এবং vector outline (`<defs>` path ও `<use>`) হিসেবে আঁকে; Switzer-এ অনুপস্থিত arrow ও geometric symbol-গুলো তার নিজস্ব metrics ব্যবহার করে আঁকা হয়। Embedded font নয়, outline: Switzer-এর licence (`packages/ui-kit/src/fonts/FFL.txt`) লিখিত সম্মতি ছাড়া subsetting ও format conversion নিষিদ্ধ করে এবং vector drawing-এর অনুমতি দেয়, তাই Switzer `@font-face` বা `data:` URI পুনরায় প্রবর্তন করবেন না। কোনো ফাইলে থাকা একমাত্র font হলো প্রকৃত code text হিসেবে থেকে যাওয়া অংশের জন্য OFL IBM Plex Mono subset (`scripts/docs/readme-fonts.mjs`), যা ওই character-গুলো থেকে তৈরি; এটি embed করতে না-পারা যেকোনো glyph-এর ক্ষেত্রে error ছোড়ে।
+- **পুনরায় তৈরি।** `npm run docs:readme-diagrams` README-এর ক্রমে সব বারোটি ফাইল পুনর্লিখে এবং প্রতিটি ফাইলের size-সহ এক লাইন মুদ্রণ করে। একটি একক generator-ও নিজে চালানো যায় (`node scripts/docs/gen-readme-<name>.mjs`; `free-tier-budget`-এর ক্ষেত্রে `node --import tsx/esm` প্রয়োজন, কারণ এর figure-গুলো `open-sse/config/freeModelCatalog.ts`-এর live catalog loader থেকে আসে; catalog পরিবর্তনের CI পরিণতি `docs/architecture/QUALITY_GATES.md` → `docs-sync-strict`-এ রয়েছে)। Generator ও SVG একসঙ্গে commit করুন। Release mode-এ stale SVG ব্যর্থ হয়; feature PR-এ `npm run check:generated-artifacts` কেবল PR-এ সম্পাদিত SVG-কে বিচার করে (`docs/architecture/QUALITY_GATES.md` → "Generated files and derived baselines")।
+- **প্রমাণ।** `scripts/docs/readme-svg-shots.mjs <file.svg> <outdir>` GitHub যেভাবে file serve করে সেভাবে সেটি render করে (একটি `<img>` tag, camo-এর `Content-Security-Policy`, `image/svg+xml`), light ও dark frame ধারণ করে এবং page-টি যে external font request করেছে তা জানায় (অবশ্যই 0 হতে হবে)।
+- **বাজেট।** প্রতি file 200 KB-এর নিচে (প্রতিটি stale-ness test এটি assert করে); যেকোনো README image-এর জন্য 500 KB হলো hard cap (SVG studio validator-এর rule)।
+- **পরিবর্তনহীনভাবে কপি, gate থেকে count।** Rebrand type ও palette পরিবর্তন করেছে, শব্দ নয়: প্রতিটি generator তার diagram-এর copy একটি `*_COPY` constant-এ বহন করে (অথবা live catalog থেকে এটি তৈরি করে), যা একই সঙ্গে আঁকা text এবং outlining step-এর input। Canonical figure-গুলো `<text>` node-এ থাকে (outline করার পর অদৃশ্য, `fill-opacity:0`), `check:docs-counts` (`scripts/check/check-docs-counts-sync.mjs`) সেগুলো পড়ে; যে diagram-গুলোর gate read করে, সেগুলোর stale-ness test-ও generated file-এ তার validator চালায়, তাই code থেকে সরে যাওয়া কোনো figure test ব্যর্থ করে — generator-এর number কখনো ঠিক করবেন না, gate যে source পড়ে সেটি ঠিক করুন।
 
----
+## 7. রেফারেন্স সূচক
 
-## 4. অংশ A — গ্রাফ-পেপার গ্রিড ব্যাকগ্রাউন্ড (প্রধান অনুরোধ) — বাস্তবায়িত (পর্যায় 1)
-
-### 4.1 এটি কী
-
-সাইটের (`_mono_repo/omnirouteSite/css/base.css`) হুবহু রেসিপি: একটি **স্থির, সম্পূর্ণ-ভিউপোর্ট সিউডো-এলিমেন্ট**, যা দুটি 1px লাইন গ্রেডিয়েন্ট আঁকে এবং সব কনটেন্টের পেছনে `z-index:-1`-এ অবস্থান করে।
-
-```css
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
-  background-size: var(--grid-size) var(--grid-size);
-}
-```
-
-**`body`-তে অস্বচ্ছ `background-color` থাকা সত্ত্বেও এটি কেন কাজ করে:** `z-index:-1`-সহ একটি `::before`, এলিমেন্টটির নিজস্ব ব্যাকগ্রাউন্ডের _উপরে_ কিন্তু এর ইন-ফ্লো কনটেন্টের _নিচে_ আঁকা হয়। তাই `--color-bg` হলো বেস ফিল, গ্রিডটি এর ওপর স্তর হিসেবে থাকে এবং অ্যাপটি গ্রিডের ওপরে রেন্ডার হয়।
-
-### 4.2 কোডবেসে ইতোমধ্যে থাকা নজির
-
-`src/app/landing/page.tsx:16-26`-এ **ইতোমধ্যেই প্রতি-পেজে একই গ্রিড বাস্তবায়ন করা হয়েছে** — তবে **লাল** লাইন (`#E54D5E`, অস্বচ্ছতা `0.06`) দিয়ে **50px** ব্যবধানে, সঙ্গে অ্যানিমেটেড অর্ব রয়েছে। তাই প্যাটার্নটি প্রোডাক্টে পরীক্ষিত; এই কাজ এটিকে একটি **গ্লোবাল, থিম-সচেতন** ওয়ালপেপারে উন্নীত করে।
-
-### 4.3 যোগ করা টোকেনসমূহ (`globals.css`-এ)
-
-```css
-:root {
-  /* লাইট — সাইটের 0.045 থেকে গ্রিডের অস্বচ্ছতা বাড়িয়ে সমন্বয় করা হয়েছে, যাতে ঘন
-     ড্যাশবোর্ডে ওয়ালপেপারটি সত্যিই দৃশ্যমান হয় (কার্ড/ক্রোম ভিউপোর্টের অধিকাংশ ঢেকে রাখে) */
-  --grid-line: rgba(0, 0, 0, 0.07);
-  --grid-size: 32px;
-  --section-alt: rgba(0, 0, 0, 0.022);
-}
-.dark {
-  /* ডার্ক — একই কারণে 0.035 থেকে বাড়িয়ে সমন্বয় করা হয়েছে */
-  --grid-line: rgba(255, 255, 255, 0.06);
-  --section-alt: rgba(255, 255, 255, 0.018);
-}
-```
-
-### 4.4 একমাত্র বাধা — অপসারণ করা হয়েছে
-
-গ্রিডটি গঠনগতভাবেই গ্লোবাল (এটি প্যানেল, `auth`/`login`, এরর পেজ—প্রতিটি রুট—একসঙ্গে কভার করে)। প্যানেলের ভেতরে ঠিক **একটি** এলিমেন্ট এটিকে আড়াল করেছিল:
-
-- `src/shared/components/layouts/DashboardLayout.tsx` — বাইরের র্যাপারটি একটি অস্বচ্ছ `bg-bg` আঁকত। এর নিচের সবকিছু ইতোমধ্যেই স্বচ্ছ (`<main>`, স্ক্রল কনটেইনার, ভেতরের `max-w-7xl`), তাই **`bg-bg` অপসারণ করলে** বডির গ্রিড কনটেন্ট এরিয়ার ভেতর দিয়ে দেখা যায় (বডির `--color-bg` বেস ফিল হিসেবেই থাকে)।
-
-  ```diff
-  - <div className="flex h-dvh min-h-0 w-full overflow-hidden bg-bg">
-  + <div className="flex h-dvh min-h-0 w-full overflow-hidden">
-  ```
-
-### 4.5 ক্রোমের সঙ্গে ইন্টারঅ্যাকশন (সাইডবার / হেডার)
-
-- `Header` (`Header.tsx:207`, `bg-bg`) এবং `Sidebar` (`Sidebar.tsx:430`, `bg-sidebar`) **অস্বচ্ছই** থাকে → গ্রিডটি **শুধু কনটেন্ট এরিয়ায়** দেখা যায়, যার চারপাশে সলিড ক্রোম ফ্রেম তৈরি করে। শান্ত ডিফল্ট বিন্যাস, সাইটটি যেভাবে ক্রোমকে ক্যানভাস থেকে আলাদা করে তার সঙ্গে সামঞ্জস্যপূর্ণ (সিদ্ধান্ত D3 = সলিড)।
-
-### 4.6 লগইন / অথ / এরর পেজ
-
-এগুলো সরাসরি `<body>`-এর অধীনে রেন্ডার হয় (কোনো প্যানেল ক্রোম নেই), তাই গ্লোবাল গ্রিডটি স্বয়ংক্রিয়ভাবে এগুলোর পেছনে দেখা যাওয়ার কথা। **পর্যায় 5 — সম্পন্ন:** স্বতন্ত্র ফুল-স্ক্রিন র্যাপারগুলো আসলেই অস্বচ্ছ ছিল (`min-h-screen … bg-bg`, যেখানে `bg-bg` হলো `<body>`-এর মতো একই সলিড ফিল), যা শুধু লগইন নয়—প্রতিটি নন-ড্যাশবোর্ড স্ক্রিনে গ্রিডটি আড়াল করত। এখন এগুলো সবই স্বচ্ছ, ফলে শেয়ার করা ওয়ালপেপারটি দৃশ্যমান হয়: `login`, `forgot-password`, `callback`, `maintenance`, `offline`, `status`, `terms`, `privacy`, `onboarding`, এবং `ErrorPageScaffold` (`400`/`401` কভার করে)। এটি **D4** সম্পন্ন করে (শুধু লগইন থেকে প্রতিটি স্বতন্ত্র স্ক্রিন পর্যন্ত সম্প্রসারিত)। `tests/unit/design-grid-background.test.ts` দ্বারা সুরক্ষিত।
-
-### 4.7 ল্যান্ডিং পেজ
-
-`landing/page.tsx` তার আরও সমৃদ্ধ অ্যানিমেটেড ব্যাকগ্রাউন্ড (অর্ব + ভিনিয়েট) বজায় রাখে—এটি তার নিজস্ব মার্কেটিং স্প্ল্যাশ (সিদ্ধান্ত D5 = যেমন আছে তেমনই রাখুন)।
-
----
-
-## ৫. অংশ B — টোকেন একীভূতকরণ
-
-পর্যায় ১ নিষ্ক্রিয়, সংঘর্ষমুক্ত আইডেন্টিটি টোকেন (`--surface-2`/`--color-surface-2`, `--grad-brand`, `--radius`) যোগ করে। পর্যায় ২ Tailwind-এর সঙ্গে রেডিয়াস স্কেল সংযুক্ত করে এবং কম্পোনেন্টগুলোকে নতুন মানের দিকে পুনর্নির্দেশ করে; পর্যায় ৪ এর ব্যবহারকারীদের সঙ্গে `--font-mono` যোগ করে।
-
-| টোকেন                      | কেন                                                                                      | পর্যায়                               |
-| -------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------- |
-| `--radius` / `--radius-sm` | বিচ্ছিন্ন 6/8/12-এর পরিবর্তে একটি রেডিয়াস স্কেল (14/9)                                  | ১ (মান) / ২ (সংযুক্তি + পুনর্নির্দেশ) |
-| `--grad-brand`             | প্রাথমিক CTA-গুলোর জন্য ব্র্যান্ড গ্রেডিয়েন্ট (লাল→বেগুনি), সাইটের সঙ্গে সামঞ্জস্যপূর্ণ | ১ (টোকেন) / ২ (Button)                |
-| `--surface-2`              | নেস্টেড প্যানেল / টেবিল হেডার / ইনসেট সারি                                               | ১                                     |
-| `--font-mono`              | কোড ব্লক, টার্মিনাল, ID, এন্ডপয়েন্ট                                                     | ৪                                     |
-| `--text-muted` সমন্বয়     | সাইট↔প্যানেলের জন্য একটি মান বেছে নেওয়া (`#a1a1aa` প্রস্তাবিত)                          | ২                                     |
-
-**D2 (text-muted):** সাইটের `#8b8b9e` বনাম ড্যাশবোর্ডের `#a1a1aa`। **ড্যাশবোর্ডের `#a1a1aa`** বজায় রেখে মিলানোর জন্য _সাইট_ আপডেট করার পরামর্শ দেওয়া হচ্ছে। এটি প্রসাধনমূলক।
-
----
-
-## ৬. অংশ C — কম্পোনেন্ট মানসম্মতকরণ (পর্যায় ২–৪)
-
-কাস্টম কম্পোনেন্ট (shadcn/Radix ছাড়া), Tailwind v4, সেমান্টিক টোকেন **অধিকাংশ ক্ষেত্রেই** গৃহীত (১৯৫টি ফাইল শেয়ার্ড ব্যারেল ইমপোর্ট করে)। কাজটি হলো **বাইপাসগুলো** অপসারণ করা। অবস্থান: `src/shared/components/`।
-
-| #   | আইটেম                                           | ফাইল                                                                                                                       | সমস্যা → লক্ষ্য                                                                                                                                         | পর্যায় |
-| --- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
-| C1  | **রেডিয়াস সামঞ্জস্য**                          | `Button.tsx:14-18`, `Card.tsx:39`, `Modal.tsx`, `Input.tsx`, `Select.tsx`                                                  | মিশ্র 6/8/12px → `--radius`/`--radius-sm` (14/9)                                                                                                        | ২       |
-| C2  | **Button গ্রেডিয়েন্ট + `accent` ভ্যারিয়েন্ট** | `Button.tsx:5-12`                                                                                                          | প্রাইমারি বর্তমানে সমতল লাল→লাল; `--grad-brand`-এর সঙ্গে সামঞ্জস্য করা; অনুপস্থিত `accent` ভ্যারিয়েন্ট যোগ করা। ~১৯৫টি ইমপোর্টার — সর্বোচ্চ দৃশ্যমানতা | ২       |
-| C3  | **টেবিল**                                       | `DataTable.tsx:122-176`, `logTableStyles.ts`, `globals.css:405-414`                                                        | ১০০% ইনলাইন হার্ডকোড করা rgba + অস্তিত্বহীন ভ্যারিয়েবল; টোকেনে স্থানান্তর এবং বিচ্যুত স্টাইলগুলো অবসরে পাঠানো                                          | ৩       |
-| C4  | **স্ট্যাটাসের রং কেন্দ্রীভূত করা**              | `flow/edgeStyles.ts`, `TokenHealthBadge.tsx`, `DegradationBadge.tsx`, `ProviderCascadeNode.tsx`, `Badge.tsx` + ৫টি হেল্পার | একই hex-এর ৬+টি কপি → `--color-success/warning/error`-নির্ভর একটি মডিউল                                                                                 | ৩       |
-| C5  | **Card বর্ডার**                                 | `Card.tsx:39`                                                                                                              | `border-white/5` → ব্র্যান্ড `/8`                                                                                                                       | ২       |
-| C6  | **ফোকাস রিং সমন্বয়** ✅ সম্পন্ন                | `globals.css`-এর `--focus-ring` (accent) বনাম ফর্ম কন্ট্রোলগুলোর `ring-primary/30`                                         | গ্লোবাল রিংয়ের সঙ্গে সামঞ্জস্য রাখতে এবং লাল এরর রিং থেকে আলাদা করতে **accent (বেগুনি)**-এ একীভূত; এরর লালই থাকবে                                      | ৪       |
-| C7  | **`Checkbox` + `Textarea` যোগ করা**             | ইনলাইন `accentColor:#6366f1`-সহ কাঁচা `<input>`/`<textarea>`                                                               | টোকেন-চালিত প্রিমিটিভ                                                                                                                                   | ৪       |
-| C8  | **হার্ডকোডেড-hex পর্যালোচনা**                   | `ConsoleLogViewer.tsx:240`, `ComboLiveStudio.tsx:306`, Modal ডট, ~১৪টি চার্ট ফাইল                                          | লিটারেল → টোকেন                                                                                                                                         | ৪       |
-| C9  | **`cn()` → clsx + tailwind-merge**              | `src/shared/utils/cn.ts`                                                                                                   | পরস্পরবিরোধী ক্লাস জমা হয়; C1 ওভাররাইডের জন্য প্রয়োজনীয়                                                                                              | ২       |
-
-**ইতিমধ্যেই ব্র্যান্ড-সামঞ্জস্যপূর্ণ (টোকেন-চালিত, শুধু রেডিয়াস প্রয়োজন):** `Badge`, `Toggle`, `SegmentedControl`, `Input`, `Select`।
-
----
-
-## 7. রোলআউট পরিকল্পনা
-
-- **ধাপ 1 — গ্রিড + আইডেন্টিটি টোকেন (এই PR)।** `globals.css`-এর গ্রিড + `--surface-2`/`--grad-brand`/`--radius` টোকেন; `body::before` ওয়ালপেপার; `bg-bg` ব্লকার অপসারণ; স্ট্যাটিক গার্ড টেস্ট। ঝুঁকি কম, একটি কমিটেই ফিরিয়ে নেওয়া যাবে।
-- **ধাপ 2 — প্রিমিটিভ (C1, C2, C5) — এই PR-এ সম্পন্ন।** `@theme`-এর মাধ্যমে সেমান্টিক রেডিয়াস ইউটিলিটি `rounded-card` (14px) / `rounded-control` (9px) যোগ করা হয়েছে (কাস্টম নাম, তাই ডিফল্ট `rounded-sm/md/lg/xl` অপরিবর্তিত রয়েছে — 400টি ফাইলে ব্যাপক পরিবর্তন নেই); Card/Modal → 14px, Button/Input/Select → 9px; Button-এর primary → `--grad-brand` (লাল→বেগুনি) + নতুন `accent` ভ্যারিয়েন্ট; Card-এর বর্ডার → `border-border` টোকেন (0.08)। **স্থগিত:** `cn()`→tailwind-merge (C9)-এর জন্য নতুন ডিপেন্ডেন্সি প্রয়োজন; তাৎক্ষণিকভাবে ব্যবহৃত `rounded-lg`-এর বিস্তৃত পরিবর্তন (326টি ফাইল) আপাতত আগের মতোই রাখা হয়েছে, কারণ সারফেসের অধিকাংশই প্রিমিটিভগুলো বহন করে।
-- **ধাপ 3 — স্ট্যাটাস কালার + টেবিল (C3, C4) — এই PR-এ সম্পন্ন।** ✅ **C4** (`src/shared/constants/statusColors.ts` — `STATUS_HEX` একক সোর্স; `flow/edgeStyles.ts` + `TokenHealthBadge`-কে এতে পুনর্নির্দেশ করা হয়েছে, যথাযথ/একই hex)। ✅ **`--font-mono`** টোকেন। ✅ **C3 (DataTable)** — প্রতিটি ইনলাইন rgba এবং অকার্যকর `var(--bg-table-header)` / `var(--text-secondary)` ফলব্যাককে একটি `--table-*` টোকেন সেট (`--table-header-bg/-row-zebra/-row-hover/-cell-border/-row-selected`) দিয়ে প্রতিস্থাপন করা হয়েছে, যার **ডার্ক ভ্যালুগুলো পুরোনো হার্ডকোড করা rgba-এর হুবহু সমান** (ডার্ক মোডে বাইট-অভিন্ন) এবং লাইট ভ্যালুগুলো আগে সবসময়-ডার্ক থাকা লাইট থিম ঠিক করে। Header-এর বর্ডার → `--color-border`, সেকেন্ডারি টেক্সট → `--color-text-muted`। **মার্জের আগে একটি ভিজ্যুয়াল পাস প্রয়োজন।** (স্পর্শ করা হয়নি: `logTableStyles.ts` এবং লিগ্যাসি Ant `.ant-table` রুলগুলো — আলাদা, কম অগ্রাধিকারের।)
-- **ধাপ 4 — পরিচ্ছন্নকরণ (C6, C7, C9 সম্পন্ন; C8 বাকি)।** ✅ **C9** `cn()` → `twMerge(clsx(...))` (clsx + tailwind-merge ডিপেন্ডেন্সি হিসেবে যোগ করা হয়েছে) — এখন কলারের `className` কোনো প্রিমিটিভের সঙ্গে সাংঘর্ষিক ক্লাসকে স্তূপীকৃত না করে সঠিকভাবে _প্রতিস্থাপন_ করে। ✅ **C7** নতুন `Checkbox` + `Textarea` প্রিমিটিভ (টোকেন-চালিত, ব্যারেল থেকে এক্সপোর্ট করা; সংযোজনমূলক — 32টি কাঁচা checkbox / 41টি কাঁচা textarea ধাপে ধাপে গ্রহণ করা যাবে)। ✅ **C6** ফোকাস-রিং সমন্বয় — ফর্ম কন্ট্রোলগুলো (`Input`/`Select`/`Textarea`/`Toggle`/`Checkbox`) এখন গ্লোবাল `--focus-ring`-এর সঙ্গে সামঞ্জস্য রাখতে এবং লাল এরর রিংয়ের সঙ্গে সংঘর্ষ এড়াতে **accent (বেগুনি)** রিংয়ে ফোকাস করে; লাল এরর স্টেট অপরিবর্তিত। ⏳ **C8 hex-sweep অন্ধভাবে find/replace করা হবে না** — নিশ্চিতভাবে চিহ্নিত যেসব ব্যবহার _ইচ্ছাকৃত_ এবং অবশ্যই রাখতে হবে: `ConsoleLogViewer.tsx:240` (সবসময়-ডার্ক টার্মিনাল), `TokenHealthBadge` পপওভার, ReactFlow SVG স্ট্রোক। কেবল থিম-সচেতন হওয়ার উদ্দেশ্যে ব্যবহৃত hex-ই মাইগ্রেট করতে হবে।
-
-প্রতিটি ধাপে: `npm run lint` + `npm run typecheck:core` + একটি ভিজ্যুয়াল পাস।
-
----
-
-## 8. অনিষ্পন্ন সিদ্ধান্তসমূহ (সুপারিশ)
-
-- **D1 — Button primary:** লাল→লাল রাখা হবে, নাকি **লাল→বেগুনি `--grad-brand`**-এ পরিবর্তন করা হবে? সুপারিশ: **লাল→বেগুনি** (ধাপ 2)।
-- **D2 — গ্রিড লাইনের রং:** **নিরপেক্ষ** (সাইটের স্টাইল) — নির্বাচিত — বনাম ব্র্যান্ড-লাল। আকার **32px** (মালিকের প্রতিক্রিয়ার ভিত্তিতে মূল 46px থেকে ~30% ছোট করা হয়েছে — ড্যাশবোর্ড লেআউটে 46px সেলগুলো খুব বড় দেখাচ্ছিল)।
-- **D3 — ক্রোমের প্রাণবন্ততা:** sidebar/header **সলিড** — নির্বাচিত।
-- **D4 — Auth/login গ্রিড:** ✅ **সম্পন্ন (ধাপ 5)** — শুধু login নয়, প্রতিটি স্বতন্ত্র ফুল-স্ক্রিন র্যাপার থেকে অস্বচ্ছ `bg-bg` অপসারণ করা হয়েছে, ফলে সব স্ক্রিনেই গ্রিড দেখা যায়। §4.6 দেখুন।
-- **D5 — ল্যান্ডিং পেজ:** অ্যানিমেটেড স্প্ল্যাশ আগের মতোই রাখুন। নির্বাচিত।
-- **D6 — পুরো প্রোডাক্টে 14/9 রেডিয়াস:** সুপারিশ: হ্যাঁ (ধাপ 2)।
-- **D7 — ধাপ 1 প্রথমে শিপ হবে:** নির্বাচিত।
-- **D8 — লেআউটের প্রস্থ (ধাপ 5):** ড্যাশবোর্ডের কনটেন্ট শেল `max-w-7xl` (1280px)-এ সীমাবদ্ধ ছিল, ফলে বড় মনিটরে এটি মাঝখানে অবস্থান করত এবং দুই পাশে বিস্তৃত ফাঁকা গাটার থাকত। ✅ **সম্পন্ন** — এটিকে ফ্লুইড `max-w-[3840px]` (প্রকৃত 4K)-এ উন্নীত করা হয়েছে: এখন কনটেন্ট ~4K পর্যন্ত ভিউপোর্ট অনুসরণ করে এবং কেবল এর চেয়ে বেশি হলে মাঝখানে অবস্থান করে (`DashboardLayout.tsx`)। ইচ্ছাকৃতভাবে সরু রাখা পেজগুলো ডিজাইন অনুযায়ী সরুই রয়েছে (`ProviderOnboardingWizard` max-w-5xl, `Rtk`/`CavemanContextPageClient` max-w-6xl)।
-- **D9 — অস্বচ্ছ ডেটা টেবিল (ধাপ 6):** ড্যাশবোর্ডের কনটেন্ট এলাকা এখন স্বচ্ছ হওয়ায় (যাতে গ্রিড ওয়ালপেপার দেখা যায়, ধাপ 5), যেসব ডেটা টেবিলের কনটেইনার অস্বচ্ছ সারফেস ছিল না, সেগুলোর স্বচ্ছ জোড়-সারি / কম-আলফা জেব্রার মধ্য দিয়ে গ্রিড দেখা যাচ্ছিল। ✅ **সম্পন্ন** — প্রতিটি Card-বিহীন টেবিল এখন `bg-surface` পেইন্ট করে (অথবা `<DataTable>` প্রিমিটিভের ক্ষেত্রে এর স্ক্রল কনটেইনারে `background: var(--color-surface)`)। ঠিক করা হয়েছে: `DataTable` (প্রিমিটিভ), `ProxyLogger`/`RequestLoggerV2` (তাদের `<Card>`-এর `bg-black/5 dark:bg-black/20` টিন্ট tailwind-merge-এর মাধ্যমে Card-এর `bg-surface`-এর ওপর প্রাধান্য পাচ্ছিল → ~95% স্বচ্ছ), `BatchListTab`/`FilesListTab`/`CacheEntriesTab`/`ReasoningCacheTab`/`cache page`/`FreePoolTab`/`ModelMappingTable`/`HeaderTable`, পাশাপাশি cache ভিউগুলোর দুটি CSS-grid "টেবিল" (`bg-surface/35` → `bg-surface`)। ইতিমধ্যে কোনো `<Card>`/Modal-এর ভেতরে থাকা টেবিলগুলো অস্বচ্ছ কিনা যাচাই করা হয়েছে এবং ইচ্ছাকৃতভাবে অপরিবর্তিত রাখা হয়েছে (সেখানে bg-surface অপ্রয়োজনীয় ও কার্যত নিষ্ক্রিয়)। গ্রিডটির নিজস্ব **কোনো পরিবর্তন প্রয়োজন হয়নি** — ড্যাশবোর্ডের `body::before` সাইটটির সঙ্গে বাইট-অভিন্ন (`--grid-size: 32px`); চলমান কোনো ইনস্ট্যান্সে দেখা "আরও বড় গ্রিড" কোডের কারণে নয়, সেটি `#4143`-এর আগের একটি পুরোনো বিল্ড। `tests/unit/design-grid-background.test.ts` (ধাপ 6 ব্লক) দ্বারা সুরক্ষিত।
-
----
-
-## 9. আওতার বাইরে / ঝুঁকি
-
-- **প্যালেটে কোনো পরিবর্তন নেই** — রংগুলো ইতিমধ্যেই মিলে যায়; আমরা শুধু অনুপস্থিত টোকেন যোগ করি। প্রোডাক্টের রং পরিবর্তিত হওয়ার ঝুঁকি শূন্য।
-- **থিম ইঞ্জিনে কোনো পরিবর্তন নেই** — `.dark` + Zustand store বজায় রাখুন।
-- **ব্যাসার্ধের পরিবর্তন (Phase 2) বিস্তৃত** — এটি প্রতিটি কার্ড/বাটন/ইনপুটকে প্রভাবিত করে; মার্জ করার আগে ব্যস্ত স্ক্রিনগুলো (টেবিল, মোডাল) চোখে দেখে যাচাই করুন।
-- **টেবিলগুলোতে (C3)** সবচেয়ে বেশি হার্ডকোড করা স্টাইলিং এবং রিগ্রেশনের সর্বোচ্চ ঝুঁকি রয়েছে — এগুলোকে নিজস্ব PR-এ আলাদা রাখুন।
-
----
-
-## 10. রেফারেন্স সূচি
-
-| ক্ষেত্র                                     | পাথ                                                                                                                  |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| ড্যাশবোর্ড টোকেন                            | `src/app/globals.css` (`:root`, `.dark`, `@theme inline`, `body`, `body::before`)                                    |
-| থিম স্টোর                                   | `src/store/themeStore.ts`, `src/shared/components/ThemeProvider.tsx`, `src/shared/constants/appConfig.ts:9-11`       |
-| প্যানেল শেল (এখানে গ্রিড আনব্লক করা হয়েছে) | `src/shared/components/layouts/DashboardLayout.tsx`                                                                  |
-| ক্রোম                                       | `src/shared/components/Header.tsx:207`, `src/shared/components/Sidebar.tsx:430`                                      |
-| গ্রিডের পূর্বদৃষ্টান্ত                      | `src/app/landing/page.tsx:16-26`                                                                                     |
-| প্রিমিটিভগুলো                               | `src/shared/components/{Button,Card,Input,Select,Badge,Modal,Toggle,SegmentedControl,Loading,Tooltip,DataTable}.tsx` |
-| স্ট্যাটাস-রঙের সোর্স                        | `flow/edgeStyles.ts`, `TokenHealthBadge.tsx`, `DegradationBadge.tsx`, `logTableStyles.ts`                            |
-| `cn` ইউটিলিটি                               | `src/shared/utils/cn.ts`                                                                                             |
-| Phase 1 গার্ড টেস্ট                         | `tests/unit/design-grid-background.test.ts`                                                                          |
-| সাইট রেফারেন্স                              | `_mono_repo/omnirouteSite/css/tokens.css`, `css/base.css`                                                            |
+- `src/app/globals.css` — টোকেন ব্রিজ, `.dark` ওভাররাইড, OmniRoute `@layer components` এক্সটেনশন
+- `packages/ui-kit/UPSTREAM.md` — পিনড আপস্ট্রিম কমিট এবং লাইসেন্স অনুমোদন; `packages/ui-kit/PATCHES.md`
+- `packages/ui-kit/src/ci-tokens.css`, `packages/ui-kit/src/ci-editions.css`, `packages/ui-kit/src/ci-ui.css`, `packages/ui-kit/src/keak-brand.tsx`
+- `src/shared/components/index.tsx` এবং এর পাশের অ্যাডাপ্টারগুলি; `src/shared/components/layouts/DashboardShell.tsx`, `src/shared/components/Sidebar.tsx`, `src/shared/components/Header.tsx`, `src/shared/components/CommandPalette.tsx`
+- `src/shared/components/Icon.tsx`, `src/shared/constants/iconMap.ts`, `scripts/dev/gen-icon-map.mjs`, `scripts/dev/codemod-material-icons.mjs`
+- `src/shared/components/OmniRouteLogo.tsx`, `src/shared/constants/keakProducts.ts`
+- `src/store/themeStore.ts`, `src/shared/utils/themeBootScript.ts`, `src/shared/constants/appearancePalette.ts`, `src/shared/constants/pwaThemeColors.ts`, `src/shared/constants/appConfig.ts`, `src/shared/constants/statusColors.ts`
+- `tests/unit/design-kit-bridge.test.ts`, `tests/unit/dashboard-kit-sweep.test.ts`, `tests/unit/icon-map-coverage.test.ts`, `tests/unit/icon-map-object-values.test.ts`, `tests/unit/brand-pages-static.test.ts`, `tests/unit/ui/adapters/*.test.tsx`

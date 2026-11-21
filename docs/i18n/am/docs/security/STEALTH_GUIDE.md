@@ -20,36 +20,61 @@ OmniRoute ኦፊሴላዊ ያልሆኑ ደንበኞችን በንቃት የሚለ
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-ዘላቂ `wreq-js` ክፍለ-ጊዜዎች ለእያንዳንዱ የመለያ ወሰንና ለተፈታው ፕሮክሲ በፍላጎት ጊዜ ይፈጠራሉ። የሂደቱ አጠቃላይ `TlsClient` በCloudflare ጀርባ ላሉ የላይኛው አቅራቢዎች **በmacOS ላይ Chrome 124ን** የሚመስሉ እስከ 128 ክፍለ-ጊዜዎችን ይይዛል። ቤተኛው runtime በማይገኝበት ጊዜ `TlsClient.fetch()` ጥያቄውን በደህንነት ይከለክላል፤ ጠሪው ከዚህ wrapper ውጭ አማራጭ ዘዴን በግልጽ ሊመርጥ ይችላል።
+ቋሚ የ`wreq-js` ክፍለ-ጊዜዎች ለእያንዳንዱ የመለያ ወሰን እና ለተወሰነው ፕሮክሲ እንደ አስፈላጊነቱ ይፈጠራሉ። በመላው
+ሂደት የሚሠራው `TlsClient` በCloudflare ጀርባ ላሉ የላይኛው ዥረት አገልግሎቶች **Chrome 124 on macOS**ን
+የሚያስመስሉ ቢበዛ 128 ክፍለ-ጊዜዎችን ያከማቻል። ቤተኛው runtime በማይገኝበት ጊዜ `TlsClient.fetch()`
+በደህንነት ሁኔታ ይዘጋል፤ ጠሪው ከዚህ wrapper ውጭ fallbackን በግልጽ ሊመርጥ ይችላል።
 
 - የክፍለ-ጊዜ መገለጫ፦ `browser: "chrome_124", os: "macos"`
-- የፕሮክሲ ፍቺ (በቅድሚያ)፦ `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (በትንሽ ፊደላት የተጻፉትንም ጨምሮ)
+- የፕሮክሲ መወሰን (በቅድሚያ)፦ `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (በትንሽ ፊደላት የተጻፉትም ጭምር)
 - የጊዜ ገደብ፦ `TLS_CLIENT_TIMEOUT_MS` (ከ`FETCH_TIMEOUT_MS` ይወርሳል፣ ነባሪው 600000)
-- የ`wreq-js` Response ከfetch ጋር ተኳኋኝ ነው (`headers`፣ `text()`፣ `json()`፣ `clone()`፣ `body`)።
-- የመጀመሪያ-ባይት ተቆጣጣሪ (`open-sse/utils/tlsFirstByteWatchdog.ts`፣ #12656)፦ `TlsClient.fetch()` ከላይኛው አቅራቢ ራስጌዎች እንደደረሱ ውጤት ይመልሳል፤ ስለዚህ `TLS_CLIENT_TIMEOUT_MS` ብቻውን የመጀመሪያ ባይት ፈጽሞ የማያወጣን አካል መገደብ አይችልም። `guardTlsFirstByte()` የአካሉን የመጀመሪያ `read()` ከ`TLS_FIRST_BYTE_WATCHDOG_MS` (ነባሪ `10000`፣ `0` ያሰናክለዋል) ጋር ያወዳድራል፤ ጤናማ አካል አይነካም፣ የቆመ አካል ግን wreq readerን ይሰርዛል እና የ`proxyFetch` ነባሩ TLS-fallback አመክንዮ ወደ ቀጥታ/ፕሮክሲ dispatcher እንዲያልፍ ያደርገዋል (እንደ አካል ያለው POST ያለ በድጋሚ-ማጫወት ደህንነት የሌለው ጥያቄ፣ በድብቅ በድጋሚ ከመሞከር ይልቅ አሁንም ስህተት ይጥላል)።
+- የ`wreq-js` Response ከfetch ጋር ተኳሃኝ ነው (`headers`, `text()`, `json()`, `clone()`, `body`)።
+- የመጀመሪያ-ባይት ተቆጣጣሪ (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656)፦ `TlsClient.fetch()`
+  የላይኛው ዥረት headers እንደደረሱ ይፈታል፣ ስለዚህ `TLS_CLIENT_TIMEOUT_MS` ብቻውን የመጀመሪያ
+  ባይት ፈጽሞ የማያቀርብ የምላሽ አካልን ሊገድብ አይችልም። `guardTlsFirstByte()` የአካሉን የመጀመሪያ `read()`
+  ከ`TLS_FIRST_BYTE_WATCHDOG_MS` ጋር ያወዳድራል (ነባሪ `10000`፣ `0` ያሰናክለዋል)፤ ጤናማ አካል
+  አይነካም፣ የቆመ አካል ግን የwreq readerን በመሰረዝ የ`proxyFetch` ነባር
+  የTLS-fallback ሎጂክ ወደ ቀጥታ/ፕሮክሲ dispatcher እንዲያልፍ ያደርጋል (እንደ አካል ያለው
+  POST ያለ በደህንነት የማይደገም ጥያቄ በድብቅ እንደገና ከመሞከር ይልቅ አሁንም ስህተት ይጥላል)።
 
-### የድር-ኩኪ አቅራቢ ትራንስፖርት — wreq-js 3.2.0
+### የድር-ኩኪ አቅራቢ ማጓጓዣ — wreq-js 3.2.0
 
-`open-sse/services/tlsClientBase.ts` ከታች ላሉት አምስት ልዩ የድር-ኩኪ ትራንስፖርቶች የጋራ adapter ነው። እያንዳንዱ ቀላል የአቅራቢ wrapper የአሳሽ/OS መገለጫ ይመርጣል። adapterው በመገለጫ + OS + በተፈታ ፕሮክሲ ቁልፍ የተደረገውን ነጠላ wreq runtime loader እና በ`open-sse/utils/tlsClient.ts` ውስጥ ያለውን የትራንስፖርት pool ይጠቀማል፤ እያንዳንዱ ጥያቄ ደግሞ `cookieMode: "ephemeral"`ን ይጠቀማል። ስለዚህ መለያዎችና ጥያቄዎች በትራንስፖርት ደረጃ ያሉ ግንኙነቶችን ይጋራሉ፣ ነገር ግን wreq ክፍለ-ጊዜን ወይም የኩኪ ማከማቻን ፈጽሞ አይጋሩም።
+`open-sse/services/tlsClientBase.ts` ከታች ላሉት አምስት ልዩ
+የድር-ኩኪ ማጓጓዣዎች የጋራ adapter ነው። እያንዳንዱ ቀላል የአቅራቢ wrapper የbrowser/OS መገለጫን ይመርጣል። adapterው
+በ`open-sse/utils/tlsClient.ts` ውስጥ ያለውን አንድ የwreq runtime loader እና የማጓጓዣ pool ይጠቀማል፤ ቁልፉም
+መገለጫ + OS + የተወሰነ ፕሮክሲ ሲሆን፣ እያንዳንዱ ጥያቄ `cookieMode: "ephemeral"`ን ይጠቀማል። ስለዚህ መለያዎች እና
+ጥያቄዎች በማጓጓዣ ደረጃ ያሉ ግንኙነቶችን ይጋራሉ፣ ነገር ግን የwreq ክፍለ-ጊዜን ወይም የኩኪ ማከማቻን ፈጽሞ አይጋሩም።
 
-| አቅራቢ       | መገለጫ          | የተመሰለ OS | የStream EOF ፖሊሲ                |
-| ---------- | ------------- | -------- | ------------------------------ |
-| Claude     | `chrome_146`  | Linux    | `[DONE]`ን ያካትታል                |
-| Perplexity | `firefox_148` | macOS    | `event: end_of_stream`ን ያካትታል  |
-| Grok       | `chrome_146`  | Linux    | `[DONE]`ን አያካትትም               |
-| Notion     | `chrome_146`  | Windows  | `[DONE]`ን ያካትታል                |
-| LMArena    | `chrome_146`  | Windows  | sentinel የለም፤ በቤተኛ EOF ላይ ይዘጋል |
+| አቅራቢ       | መገለጫ          | የተመሰለ OS | የዥረት EOF መመሪያ                 |
+| ---------- | ------------- | -------- | ----------------------------- |
+| Claude     | `chrome_146`  | Linux    | `[DONE]`ን ያካትታል               |
+| Perplexity | `firefox_151` | macOS    | `event: end_of_stream`ን ያካትታል |
+| Grok       | `chrome_146`  | Linux    | `[DONE]`ን አያካትትም              |
+| Notion     | `chrome_146`  | Windows  | `[DONE]`ን ያካትታል               |
+| LMArena    | `chrome_146`  | Windows  | የመጨረሻ ምልክት የለም፤ በቤተኛ EOF ይዘጋል |
 
-- Streaming ቤተኛውን የምላሽ `ReadableStream` በቀጥታ ይጠቀማል፤ ጊዜያዊ ፋይል ወይም sidecar አይፈጠርም።
-- stream ከመቅረቡ በፊት እስከ 256 የመጀመሪያ ባይቶች ይመረመራሉ። የSSE አቅራቢዎች SSE ያልሆኑ ስህተቶችን በbuffer ይይዛሉ፤ Grok/LMArena የCloudflare ፈተናዎችን ወደ `403`፣ የHTML መካከለኛ ገጾችን ደግሞ ወደ `502` ይመድባሉ።
-- የቤተኛው ጥያቄ የጊዜ ገደብ በፍጹም የJS ከፍተኛ የጊዜ ገደብ መጠቅለያ ውስጥ ይቆያል። መቆም የተጎዳውን የመገለጫ/OS/ፕሮክሲ ትራንስፖርት ብቻ ዋጋ አልባ አድርጎ ይዘጋል፤ ቀጣዩ ጥያቄ ከመቅረቡ በፊትም እንደገና ይፈጥረዋል።
-- የፕሮክሲ ፍቺ ቅድሚያ ለእያንዳንዱ ጥሪ `proxyUrl` → በጥያቄ ወሰን ያለ የመለያ/dashboard አውድ → `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (በትንሽ ፊደላት የተጻፉ ልዩነቶችንም ጨምሮ) ነው። የፍቺ ስህተቶች ቀጥተኛ ግንኙነት እንዳያፈትሉ ጥያቄውን በደህንነት ይከለክላሉ። LMArena ሆን ብሎ ከ`arena.ai` አንጻር ይፈታል።
-- `byteResponse` ያለ UTF-8 ብልሹነት በይዘት ዓይነት የተመደበ `data:` URL ይመልሳል።
-- ስህተቶቹ `TlsClientUnavailableError` (package/addon አይገኝም)፣ `TlsClientHangError` (የጊዜ ገደብ አልፏል) እና ሁሉም 128 የተገደቡ የመገለጫ/OS/ፕሮክሲ ቦታዎች ንቁ ወይም በመዘጋት ላይ ሲሆኑ `WreqTransportCapacityError` (የጋራ የክፍለ-ጊዜ አቅም ስህተት ኮድ) ናቸው።
+- ዥረት ማስተላለፍ ቤተኛውን የምላሽ `ReadableStream` በቀጥታ ይጠቀማል፤ ጊዜያዊ ፋይል ወይም sidecar
+  አይፈጠርም።
+- ዥረት ከመቅረቡ በፊት እስከ 256 የመጀመሪያ ባይቶች ይመረመራሉ። የSSE አቅራቢዎች SSE ያልሆኑ
+  ስህተቶችን buffer ያደርጋሉ፤ Grok/LMArena የCloudflare ፈተናዎችን ወደ `403`፣ የHTML መሀል-ገጾችን ደግሞ ወደ `502` ያመለክታሉ።
+- ቤተኛው የጥያቄ ጊዜ ገደብ አሁንም በፍጹም የJS ጠንካራ የመጨረሻ ጊዜ ገደብ ይጠቀለላል። መቆም
+  ቀጣዩ ጥያቄ እንደገና ከመፍጠሩ በፊት የተጎዳውን መገለጫ/OS/ፕሮክሲ ማጓጓዣ ብቻ
+  ዋጋ አልባ አድርጎ ይዘጋዋል።
+- የፕሮክሲ መወሰኛ ቅድሚያ ለእያንዳንዱ ጥሪ `proxyUrl` → በጥያቄ የተወሰነ የመለያ/dashboard አውድ →
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (በትንሽ ፊደላት የተጻፉ ልዩነቶችንም ጨምሮ) ነው። የመወሰን ስህተቶች
+  ቀጥተኛ ግንኙነት እንዳያፈስሱ በደህንነት ሁኔታ ይዘጋሉ። LMArena ሆን ብሎ ከ`arena.ai` አንጻር ይወስናል።
+- `byteResponse` ያለ UTF-8 ብልሹነት የይዘት ዓይነት የተገለጸለትን `data:` URL ይመልሳል።
+- ስህተቶቹ `TlsClientUnavailableError` (package/addon አይገኝም)፣ `TlsClientHangError`
+  (የመጨረሻ ጊዜ ገደብ አልፏል)፣ እና ሁሉም 128 የተገደቡ የመገለጫ/OS/ፕሮክሲ ቦታዎች ንቁ ወይም በመዘጋት ላይ ሲሆኑ
+  `WreqTransportCapacityError` (የጋራው የክፍለ-ጊዜ አቅም ስህተት ኮድ) ናቸው።
 
-ከላይ ያለው አጠቃላይ `TlsClient` በአሳሽ ለሚደገፍ ዘላቂ የኩኪ ሁኔታ የተለየ ሆኖ ይቆያል። ሁለቱም መንገዶች አንድ የተሸጎጠ wreq module loader እና የሂደት lifecycle hook እንደገና ይጠቀማሉ፤ የኩኪ ዕድሜዎቻቸው ሆን ተብሎ የተለያዩ ስለሆኑ ግን poolsዎቻቸው ተለያይተው ይቆያሉ።
+ከላይ ያለው አጠቃላይ `TlsClient` በbrowser የሚደገፍ ቋሚ የኩኪ
+ሁኔታ ላይ ልዩ ሆኖ ይቆያል። ሁለቱም መንገዶች አንድ cached የwreq module loader እና የሂደት lifecycle hookን እንደገና
+ይጠቀማሉ፤ የኩኪ የሕይወት ጊዜያቸው ሆን ተብሎ የተለያየ በመሆኑ poolsዎቻቸው ተለያይተው ይቆያሉ።
 
-መገለጫዎቹ በተወሰነው package የሚደገፉ ቢሆኑም፣ ትክክለኛው የWAF ተቀባይነት ከአካባቢያዊ contract tests ለብቻው ሊለወጥ ይችላል። ከላይኛው አሳሽ ጋር እኩልነት አለ ብለው ከመግለጽዎ በፊት የአሻራ ለውጦችን በግልጽ ፈቃድ በተሰጠው የቀጥታ መለያ ላይ ያረጋግጡ።
+መገለጫዎቹ በተወሰነው package የሚደገፉ ቢሆንም፣ እውነተኛ የWAF ተቀባይነት ከአካባቢያዊ contract tests
+በተናጠል ሊለወጥ ይችላል። ከአንድ የላይኛው ዥረት browser ጋር እኩልነት አለ ብሎ ከመግለጽ በፊት የአሻራ መለያ ለውጦችን በግልጽ ፈቃድ በተሰጠው ንቁ መለያ ላይ
+ያረጋግጡ።
 
 ---
 
@@ -98,7 +123,7 @@ aider, continue.dev, copilot, avante, codecompanion
 
 “እውነተኛ Claude Code” ትራፊክን ብቻ ለሚቀበሉ የሦስተኛ ወገን Anthropic ማስተላለፊያዎች፦
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - በነባሪ `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"`
@@ -115,41 +140,63 @@ aider, continue.dev, copilot, avante, codecompanion
 
 ---
 
-## Antigravity ስውርነት
+## Antigravity Stealth
 
-የAntigravity ጥያቄዎች የጠሪውን ጽሑፍ ባይት-በ-ባይት እንዳለ ያቆያሉ። OmniRoute የIDE ደንበኛን ለመምሰል በprompt ውስጥ ዜሮ-ስፋት ያላቸውን ቁምፊዎች አያስገባም፣ ወይም መሣሪያዎችን እንደገና አይሰይም/አያስገባም።
+Antigravity ጠይቋል የደዋይ ጽሑፍ ባይት-ባይት እንዲቆይ። OmniRoute የ IDE ደንበኛን ለመምሰል ዜሮ-ስፋት ቁምፊዎችን ወደ ጥያቄዎች ወይም rename/inject መሳሪያዎች ውስጥ አያስገባውም።
 
 ### `antigravityHeaderScrub.ts`
 
-ከማስተላለፉ በፊት የStainless SDK ምልክቶችን (`x-stainless-lang`፣ `x-stainless-package-version`፣ `x-stainless-os`፣ `x-stainless-arch`፣ `x-stainless-runtime`፣ `x-stainless-runtime-version`፣ `x-stainless-timeout`፣ `x-stainless-retry-count`፣ `x-stainless-helper-method`) ያስወግዳል።
+ስቴፕስ የማይዝግ SDK ማርከሮች (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) ከማስተላለፋችን በፊት።
 
-### ⚠️ አደጋ፦ `ANTIGRAVITY_CREDITS=always` (መለያ ለእገዳ በከፍተኛ ሁኔታ የተጋለጠበት ነጥብ)
+### ⚠️ ስጋት `ANTIGRAVITY_CREDITS=always` (የመለያ የተከለከለ ትኩስ ቦታ)
 
-`ANTIGRAVITY_CREDITS=always` (በ`open-sse/executors/antigravity.ts` ጥቅም ላይ የሚውል) የGoogle ነፃ-ደረጃ ኮታ እንዲገድባቸው ከመፍቀድ ይልቅ **እያንዳንዱን** ጥያቄ በAntigravity AI Credit Overages (የሚከፈልባቸው የGoogle ክሬዲቶች) በኩል ያስተላልፋል። ይህ እንደ ባህሪ ተመዝግቧል፣ ነገር ግን ይህ **በብዛት የምናየው ብቸኛው የToS ጥሰት ሪፖርት ነው** — በርካታ የGoogle Ultra መለያዎች `=always`ን ተጠቅመው ለጥቂት ሰዓታት ከሠሩ በኋላ `403 / "service disabled for ToS violation" / insufficient_quota` በሚል ታግደዋል።
+`ANTIGRAVITY_CREDITS=always` (በ `open-sse/executors/antigravity.ts` የሚበላ) መንገዶች** እያንዳንዱ** የ Google ነፃ ደረጃ የኮታ በር ነገሮችን ከመፍቀድ ይልቅ በ Antigravity AI ክሬዲት Overages (የተከፈለ Google ክሬዲት) ይጠይቁ። ይህ እንደ ባህሪ ተመዝግቧል፣ ግን ነው።** የምናየው ብቸኛው በጣም የተለመደው የ ToS ጥሰት ሪፖርት** — multiple Google Ultra መለያዎች በ `403 / "service disabled for ToS violation" / insufficient_quota` ለጥቂት ሰዓታት ከሮጡ በኋላ በ `=always` ታግደዋል።
 
-የወደላይ አገልግሎት ማስፈጸሚያው በ**Google በኩል** ነው፤ OmniRoute ሊከላከለው የሚችለው ነገር አይደለም። የenv var ስሙ እና ነባር ሰነዶቹ ለማብራት አስተማማኝ ቅንብር እንደሆነ ያስመስሉታል፤ ግን አይደለም።
+ወደላይ ያለው ማስፈጸሚያ በርቷል።**Google ጎን** , OmniRoute ምንም ነገር መከላከል አይችልም. የ env var ስም እና አሁን ያሉት ሰነዶች ለመገልበጥ ደህንነቱ የተጠበቀ ኖብ እንዲመስል ያደርጉታል; አይደለም.
 
-**ይህ ከነፃ-ደረጃ-ብቻ አጠቃቀም ይልቅ የብልሹ አጠቃቀም ማወቂያን በበለጠ ጥብቅነት የሚቀሰቅሰው ለምንድን ነው፦**
+**ይህ ለምንድነው ከነጻ-ደረጃ-ብቻ አጠቃቀም ይልቅ አላግባብ መጠቀምን ፈልጎ ማግኘትን ይበልጥ ጨካኝ ያደርገዋል፡**
 
-- በአንድ የGoogle መለያ ላይ የሚደረግ ቀጣይነት ያለው ራስ-ሰር ወጪ፣ የነፃ ደረጃ ኮታውን ደርሶ ከሚቆም አጠቃቀም በተለየ ሁኔታ ምልክት ይደረግበታል።
-- የክሬዲት ትርፍ አጠቃቀም የተመን ጣሪያ የለውም፤ ስለዚህ በስህተት የተዋቀረ ደንበኛ በደቂቃዎች ውስጥ በርካታ መቶ USD ሊያወጣ እና የAPI-key ዳግም ሽያጭ ወይም የbot ትራፊክ ሊመስል ይችላል።
-- ከተመሳሳይ ውጫዊ IP በትይዩ የክሬዲት ትርፍ አጠቃቀምን የሚጠቀሙ በርካታ የOmniRoute ተጠቃሚዎች ምልክቱን ያጠናክራሉ።
+- ቀጣይነት ያለው አውቶማቲክ ወጪ በአንድ Google መለያ ባንዲራዎች ላይ ከነጻ-ደረጃ ሂት-ኮታ-እና-ማቆሚያዎች በተለየ።
+- የክሬዲት ኦቨርጅኖች ምንም የጣራ ጣሪያ የላቸውም፣ ስለዚህ የተሳሳተ ውቅረት ያለው ደንበኛ በደቂቃ ውስጥ በብዙ መቶ USD ውስጥ ሊቃጠል እና የኤፒአይ-ቁልፍ ዳግም ሽያጭ ወይም የቦት ትራፊክ ሊመስል ይችላል።
+- በርካታ OmniRoute ተጠቃሚዎች ከተመሳሳይ ውጫዊ IP በትይዩ ከመጠን ያለፈ ክሬዲቶችን ሲመቱ ምልክቱን ያዋህዳል።
 
-**የሚመከር አቋም፦**
+**የሚመከር አቀማመጥ፡-**
 
-1. ኦፕሬተሩ የሚከፈልበትን ክሬዲት እና የመለያ ማስፈጸሚያ አደጋ በግልጽ ካልተቀበለ በስተቀር፣ ነባሪውን `ANTIGRAVITY_CREDITS=off` እንዳለ ያቆዩ። `retry` መጀመሪያ መደበኛውን ጥያቄ ይልካል፣ እና ብቁ የኮታ 429 ከተመለሰ በኋላ ቢበዛ አንድ ጊዜ ክሬዲቶችን ያስገባል፤ `always` ደግሞ በመጀመሪያው ጥያቄ ላይ ክሬዲቶችን ያስገባል።
-2. አንድን የAntigravity መለያ ከማጨናነቅ ይልቅ **ጭነቱን በAuto-Combo በኩል በአቅራቢዎች መካከል ያሰራጩ** (`model: "auto"` ወይም `kr/glm/etc`-combo)።
-3. **ለእያንዳንዱ ግንኙነት የRPM ገደቦችን ያዘጋጁ**፤ ይህን በAntigravity አቅራቢው ማስተካከያ ገጽ ውስጥ ያድርጉ (Dashboard → Providers → Antigravity → ግንኙነት → የተመን ገደብ)። ለቀጣይነት ያለው አጠቃቀም 30–60 RPM ሊደገፍ የሚችል ከፍተኛ ገደብ ነው።
-4. **የተረጋጋ፣ በኦፕሬተሩ የሚቆጣጠር የወደላይ አገልግሎት አውታረ መረብን ይጠቀሙ**፣ እና አንድን መለያ ተዛማጅነት በሌላቸው ተጠቃሚዎች ወይም የሥራ ጭነቶች መካከል ከማጋራት ይቆጠቡ።
-5. **ከታገዱ**፦ Google የላከውን ትክክለኛ `quota_exceeded` / `service disabled` ምላሽ አካል በመጠቀም፣ በ`support.google.com` → "Restore Workspace/Account access" በኩል ይግባኝ ይጠይቁ። መለያው እንደሚመለስ ዋስትና የለም።
+1. ኦፕሬተሩ የተከፈለ የብድር እና የመለያ ማስፈጸሚያ አደጋን በግልጽ ካልተቀበለ በስተቀር ነባሪውን `ANTIGRAVITY_CREDITS=off` አቆይ። `retry` በመጀመሪያ መደበኛውን ጥያቄ ይልካል እና ከተገቢው ኮታ 429 በኋላ ክሬዲቶችን በአንድ ጊዜ ያስገባል። `always` በመጀመሪያው ጥያቄ ላይ ክሬዲቶችን ያስገባል።
+2. **በራስ-ኮምቦ በኩል ጭነት በአቅራቢዎች ላይ ያሰራጩ** (`model: "auto"` ወይም `kr/glm/etc` -combo) ነጠላ Antigravity መለያ ከማሟላት ይልቅ።
+3. **በግንኙነት RPM ገደቦችን ያቀናብሩ** በ Antigravity አቅራቢው አርትዕ ገጽ (ዳሽቦርድ → አቅራቢዎች → Antigravity → ግንኙነት → ተመን ገደብ)። 30–60 RPM ለዘለቄታው ጥቅም ላይ ሊውል የሚችል ከፍተኛ ገደብ ነው።
+4. **የተረጋጋ፣ በዋኝ ቁጥጥር የሚደረግበት የላይኛው አውታረ መረብ ተጠቀም** እና በማይዛመዱ ተጠቃሚዎች ወይም የስራ ጫናዎች ላይ አንድ መለያ ከማጋራት ይቆጠቡ።
+5. **ከተከለከለ** ይግባኝ በ `support.google.com` → " Workspace/Account መዳረሻን እነበረበት መልስ" በትክክለኛው `quota_exceeded` / `service disabled` ምላሽ አካል Google ተልኳል። መልሶ ማቋቋም ዋስትና የለውም።
 
-የአካባቢ ማጣቀሻው የእያንዳንዱን የክሬዲት ሁነታ የመለያ እና የወጪ አንድምታዎች ይመዘግባል።
+የአካባቢ ማመሳከሪያ ሂሳቡን ይመዘግባል እና የእያንዳንዱን የክሬዲት ሁነታ አንድምታ ያሳልፋል።
 
-የሚነኩ ነጥቦች፦
+#### `=always` ብቻ አይደለም Antigravity OAuth ራውቲንግ በአጠቃላይ
 
-- `open-sse/executors/antigravity.ts` — `process.env.ANTIGRAVITY_CREDITS`ን ያነባል
-- `src/lib/oauth/providers/antigravity.ts` — የማረጋገጫ መረጃ ማገናኛ
-- የመጀመሪያው የክስተት ሪፖርት፦ ውይይት [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
+እገዳዎቹ በክሬዲት ትርፍ ላይ ብቻ የተገደቡ አይደሉም። በኖቬምበር 2026 (#19223, #19266) ውስጥ ያሉ ሪፖርቶች በ `antigravity` እና `agy` (Antigravity CLI) አቅራቢዎች በኩል በሚዘዋወሩበት ጊዜ የታገዱ በርካታ Google መለያዎችን ይገልፃሉ፡-
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+ሁለቱም አቅራቢዎች በ Antigravity ምርት OAuth ክፍለ ጊዜ ያረጋግጣሉ፣ይህም የዳሽቦርዱ ስጋት ማስታወቂያ ("ይህ አቅራቢ የእርስዎን ይፋዊ ምርት session/OAuth ይጠቀማል፣ ለ proxy/router አጠቃቀም ያልተፈቀደ) ግንኙነት ከመጨመሩ በፊት ያስጠነቅቃል። ከላይ ከተጠቀሱት ምክሮች ውስጥ የትኛውም ቢሆን ያንን አጠቃቀም አይፈቀድም; አንድ መለያ ምን ያህል ትራፊክ እንደሚቀንስ ብቻ ይቀንሳሉ.
+
+**ለ Gemini ሞዴሎች የተፈቀደ API በይነገጾች** Google እንደ ተራ የኤፒአይ ቁልፍ አቅራቢዎች በሚደግፈው APIs በኩል OmniRoute Gemini ፕሮግራማዊ መዳረሻን ይሰጣል
+
+| የአቅራቢ መታወቂያ | ዳሽቦርድ ስም                | ምስክርነት                                                                 |
+| ----------- | ----------------------- | ---------------------------------------------------------------------- |
+| `gemini`    | Gemini (Google AI ስቱዲዮ) | Gemini API ቁልፍ ከ Google AI ስቱዲዮ (ነፃ ደረጃ ይገኛል)                          |
+| `vertex`    | Vertex AI               | የአገልግሎት መለያ JSON፣ OAuth መዳረሻ token ወይም Vertex Express API ቁልፍ (Gemini) |
+
+እነዚህ አቅራቢዎች ከ Antigravity ምርት ክፍለ ጊዜ በተለየ የ Google ጉዳዮችን ለ API መዳረሻ ይጠቀማሉ። እያንዳንዱን አጠቃቀሙን አያሟሉም ወይም የማስፈጸም አደጋን አያስወግዱም: እያንዳንዱ በራሱ ደንቦች የሚመራ ነው, ይህም ኦፕሬተሩ መሰማራታቸውን ማረጋገጥ አለበት. ለምሳሌ፣ [Gemini API ተጨማሪ የአገልግሎት ውል](https://ai.google.dev/gemini-api/terms) የሚፈቅደው API ደንበኞች በአውሮፓ የኢኮኖሚ አካባቢ፣ ስዊዘርላንድ ወይም ዩናይትድ ኪንግደም ላሉ ተጠቃሚዎች ሲደርሱ የሚከፈልባቸው አገልግሎቶችን ብቻ ነው፣ እና ወደ ላልተከፈለ አገልግሎት የተላከ ይዘት Google ምርቶችን ለማሻሻል ጥቅም ላይ ሊውል ይችላል። Vertex AI በምትኩ በ Google ክላውድ ውል ስር ነው የሚወድቀው ( [አገልግሎት ልዩ ውሎች](https://cloud.google.com/terms/service-terms) )። የዋጋ አሰጣጥ እና ኮታዎች ከ Antigravity የደንበኝነት ምዝገባ ይልቅ እነዚያን API ውሎች ይከተላሉ።
+
+ከላይ የተገለጹትን Antigravity እገዳዎች ለማስወገድ የሚፈልጉ ኦፕሬተሮች አጠቃቀማቸው ከአገልግሎት አቅራቢው ጋር የሚስማማ መሆኑን ካረጋገጡ በኋላ በ `antigravity` / `agy` ፈንታ ከእነዚህ አቅራቢዎች በአንዱ በኩል Gemini ትራፊክን ማምራት አለባቸው።
+
+የንክኪ ነጥቦች፡-
+
+- `open-sse/executors/antigravity.ts` — `process.env.ANTIGRAVITY_CREDITS`
+- `src/lib/oauth/providers/antigravity.ts` — ምስክርነት የቧንቧ
+- ዋናው የክስተት ዘገባ፡ የውይይት [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
 
@@ -218,19 +265,18 @@ interface CliFingerprint {
 
 ---
 
-## User-Agent መሻሪያዎች — env vars (`.env.example` ክፍል 12)
+## የተጠቃሚ-ወኪል — env varsን ይሽራል (`.env.example` ክፍል 12)
 
-| ተለዋዋጭ                    | ነባሪ                                                             |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| ተለዋዋጭ               | ነባሪ                                           |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-በ`open-sse/executors/base.ts::buildHeaders()` በተለዋዋጭ ፍለጋ በኩል ጥቅም ላይ ይውላሉ። **አቅራቢዎች አዲስ የCLI ስሪቶችን ሲለቁ እነዚህን ያዘምኑ** — ጊዜ ያለፈባቸው የUA ሕብረቁምፊዎች እንደ ጊዜ ያለፈባቸው ደንበኞች ውድቅ መደረግ ይጀምራሉ።
+በተለዋዋጭ ፍለጋ በ `open-sse/executors/base.ts::buildHeaders()` የተበላ።** አቅራቢዎች አዲስ CLI ስሪቶችን ሲለቁ እነዚህን ያጥፉ** — የቆዩ UA ሕብረቁምፊዎች ጊዜ ያለፈባቸው ደንበኞች ውድቅ መደረግ ይጀምራሉ።
 
 ## የCLI ተኳኋኝነት ሁነታ መቀያየሪያዎች (`.env.example` ክፍል 13)
 

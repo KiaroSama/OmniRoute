@@ -41,6 +41,26 @@ export const updateModelAliasSchema = z.object({
 export const intelligenceSyncRequestSchema = z
   .object({
     dryRun: z.boolean().optional(),
+    rebuildTier: z.boolean().optional().default(false),
+    syncArenaElo: z.boolean().optional().default(false),
+  })
+  .strict();
+
+export const INTELLIGENCE_CATEGORIES = [
+  "coding",
+  "review",
+  "planning",
+  "analysis",
+  "debugging",
+  "documentation",
+  "default",
+] as const;
+
+export const intelligenceOverrideRequestSchema = z
+  .object({
+    model: z.string().trim().min(1, "model is required"),
+    category: z.enum(INTELLIGENCE_CATEGORIES),
+    score: z.number().min(0, "score must be >= 0").max(1, "score must be <= 1"),
   })
   .strict();
 
@@ -87,6 +107,8 @@ export const updateTaskRoutingSchema = z
     taskModelMap: taskRoutingModelMapSchema.optional(),
     detectionEnabled: z.boolean().optional(),
     patternOverrides: taskPatternOverridesSchema.optional(),
+    targetModels: z.array(z.string().trim().min(1).max(200)).max(100).optional(),
+    excludedModels: z.array(z.string().trim().min(1).max(200)).max(100).optional(),
   })
   .strict()
   .superRefine((value, ctx) => {
@@ -94,7 +116,9 @@ export const updateTaskRoutingSchema = z
       value.enabled === undefined &&
       value.taskModelMap === undefined &&
       value.detectionEnabled === undefined &&
-      value.patternOverrides === undefined
+      value.patternOverrides === undefined &&
+      value.targetModels === undefined &&
+      value.excludedModels === undefined
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

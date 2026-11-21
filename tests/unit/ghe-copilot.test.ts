@@ -4,6 +4,10 @@ import { GheCopilotExecutor } from "../../open-sse/executors/ghe-copilot.ts";
 import { gheCopilotProvider } from "../../open-sse/config/providers/registry/ghe-copilot/index.ts";
 import { GHE_COPILOT_TARGET } from "../../src/mitm/targets/ghe-copilot.ts";
 import type { ProviderCredentials } from "../../open-sse/executors/base.ts";
+import { getModelTargetFormat } from "../../open-sse/config/providerModels.ts";
+import { resolveChatCoreTargetFormat } from "../../open-sse/handlers/chatCore/targetFormat.ts";
+import { translateRequest } from "../../open-sse/translator/index.ts";
+import { GithubExecutor } from "../../open-sse/executors/github.ts";
 
 test("GHE Copilot registry exposes Claude Opus 5", () => {
   const opus5 = gheCopilotProvider.models.find((model) => model.id === "claude-opus-5");
@@ -11,6 +15,9 @@ test("GHE Copilot registry exposes Claude Opus 5", () => {
   assert.deepStrictEqual(opus5, {
     id: "claude-opus-5",
     name: "Claude Opus 5",
+    // contract changed by #15478: GHE Copilot Claude models declare the Claude target
+    // format so chatCore dispatches them through the Messages translator.
+    targetFormat: "claude",
     contextLength: 1000000,
     maxOutputTokens: 64000,
     // #14732 declared the thinking-effort tiers on the first-party Claude registries
@@ -73,6 +80,142 @@ test("buildUrl uses responses endpoint for gpt-5.4-mini and gpt-5.6-sol", () => 
   assert.strictEqual(
     executor.buildUrl("ghe-copilot/gpt-5.6-sol", true, 0, credentials),
     "https://ghe.company.com/responses"
+  );
+});
+
+test("buildUrl routes unregistered GPT-6 models to the Responses endpoint", () => {
+  const executor = new GheCopilotExecutor({
+    gheUrl: "https://ghe.company.com",
+    clientId: "test-client",
+    clientSecret: "test-secret",
+  });
+  const credentials: ProviderCredentials = {
+    providerSpecificData: { gheUrl: "https://ghe.company.com" },
+  };
+
+  assert.strictEqual(
+    executor.buildUrl("ghe-copilot/gpt-6-luna", true, 0, credentials),
+    "https://ghe.company.com/responses"
+  );
+});
+
+test("buildUrl routes gpt-5.5+ and gpt-6.x ids, registered or not, to the Responses endpoint", () => {
+  const executor = new GheCopilotExecutor({
+    gheUrl: "https://ghe.company.com",
+    clientId: "test-client",
+    clientSecret: "test-secret",
+  });
+  const credentials: ProviderCredentials = {
+    providerSpecificData: { gheUrl: "https://ghe.company.com" },
+  };
+
+  for (const model of ["gpt-5.5", "gpt-6.1-terra", "ghe-copilot/gpt-6.1-sol", "gpt-7-nova"]) {
+    assert.strictEqual(
+      executor.buildUrl(model, true, 0, credentials),
+      "https://ghe.company.com/responses",
+      model
+    );
+  }
+  // Ids outside the family stay on Chat Completions.
+  assert.strictEqual(
+    executor.buildUrl("gpt-4o", true, 0, credentials),
+    "https://ghe.company.com/chat/completions"
+  );
+});
+
+// Ids the PR's buildUrl regex (`^gpt-6`) sends to /responses. Unregistered, so
+// they have no catalog targetFormat — the body must still be Responses-shaped.
+const UNREGISTERED_GPT6_MODELS = [
+  "ghe-copilot/gpt-6-luna",
+  "gpt-6-sol",
+  "gpt-6-astra",
+  "gpt-6-luna-high",
+];
+
+function outboundBody(
+  executor: GheCopilotExecutor,
+  model: string,
+  credentials: ProviderCredentials
+): Record<string, unknown> {
+  const bare = model.startsWith("ghe-copilot/") ? model.slice("ghe-copilot/".length) : model;
+  const { targetFormat } = resolveChatCoreTargetFormat({
+    provider: "ghe-copilot",
+    resolvedModel: bare,
+    apiFormat: undefined,
+    sourceFormat: "openai",
+    customModelTargetFormat: undefined,
+    providerSpecificData: credentials.providerSpecificData,
+  });
+  const translated = translateRequest(
+    "openai",
+    targetFormat,
+    bare,
+    {
+      model: bare,
+      messages: [{ role: "user", content: "hi" }],
+      max_tokens: 16,
+    },
+    true,
+    credentials,
+    "ghe-copilot"
+  );
+  return executor.transformRequest(model, translated, true, credentials) as Record<string, unknown>;
+}
+
+test("GPT-6 requests routed to /responses send a Responses body, not chat completions", () => {
+  const executor = new GheCopilotExecutor({
+    gheUrl: "https://ghe.company.com",
+    clientId: "test-client",
+    clientSecret: "test-secret",
+  });
+  const credentials: ProviderCredentials = {
+    providerSpecificData: { gheUrl: "https://ghe.company.com" },
+  };
+
+  for (const model of UNREGISTERED_GPT6_MODELS) {
+    assert.strictEqual(
+      executor.buildUrl(model, true, 0, credentials),
+      "https://ghe.company.com/responses",
+      `${model} URL`
+    );
+    const sent = outboundBody(executor, model, credentials);
+    assert.ok(
+      Array.isArray(sent.input),
+      `${model} must send Responses input, got keys ${Object.keys(sent).join(",")}`
+    );
+    assert.equal(sent.messages, undefined, `${model} must not send chat-completions messages`);
+    assert.equal(sent.max_tokens, undefined, `${model} must not send chat-completions max_tokens`);
+    assert.equal(sent.max_output_tokens, 16);
+  }
+});
+
+test("models this PR did not move keep chat-completions bodies and URLs", () => {
+  const executor = new GheCopilotExecutor({
+    gheUrl: "https://ghe.company.com",
+    clientId: "test-client",
+    clientSecret: "test-secret",
+  });
+  const credentials: ProviderCredentials = {
+    providerSpecificData: { gheUrl: "https://ghe.company.com" },
+  };
+
+  for (const model of ["gpt-4o", "gemini-3.7-flash"]) {
+    assert.strictEqual(
+      executor.buildUrl(model, true, 0, credentials),
+      "https://ghe.company.com/chat/completions"
+    );
+    const sent = outboundBody(executor, model, credentials);
+    assert.ok(Array.isArray(sent.messages), `${model} must keep chat-completions messages`);
+    assert.equal(sent.input, undefined, `${model} must not be rewritten to Responses input`);
+  }
+
+  // github.com Copilot did not gain the gpt-6 URL regex. Its body stays chat.
+  assert.equal(getModelTargetFormat("gh", "gpt-6-luna"), null);
+  assert.equal(getModelTargetFormat("github", "gpt-6-luna"), null);
+  const github = new GithubExecutor();
+  assert.equal(
+    github.buildUrl("gpt-6-luna", true, 0, { apiKey: "test-token" }),
+    "https://api.githubcopilot.com/chat/completions"
   );
 });
 
@@ -236,6 +379,159 @@ test("GheCopilotExecutor.execute does not trigger identity fallback on 403", asy
     assert.deepEqual(seenIntegrationIds, ["copilot-developer-cli"]);
     const res = result as { response: Response };
     assert.equal(res.response.status, 403);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("GheCopilotExecutor.refreshCopilotToken falls back to /api/v3/copilot_internal/user on 404 (GHE data residency)", async () => {
+  const executor = new GheCopilotExecutor({
+    gheUrl: "https://msft.ghe.com",
+    clientId: "test-client",
+    clientSecret: "test-secret",
+  });
+  const originalFetch = globalThis.fetch;
+  const calledUrls: string[] = [];
+
+  globalThis.fetch = async (url) => {
+    const urlStr = String(url);
+    calledUrls.push(urlStr);
+    if (urlStr.endsWith("/api/v3/copilot_internal/v2/token")) {
+      return new Response(JSON.stringify({ message: "Not Found" }), { status: 404 });
+    }
+    if (urlStr.endsWith("/api/v3/copilot_internal/user")) {
+      return new Response(
+        JSON.stringify({
+          endpoints: {
+            api: "https://copilot-api.msft.ghe.com",
+            proxy: "https://copilot-proxy.msft.ghe.com",
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    return new Response("unexpected", { status: 500 });
+  };
+
+  try {
+    const credentials: ProviderCredentials = {
+      accessToken: "gho_ghe_data_residency_token",
+      providerSpecificData: { gheUrl: "https://msft.ghe.com" },
+    };
+
+    const refreshed = await executor.refreshCredentials(credentials, null);
+    assert.deepEqual(calledUrls, [
+      "https://msft.ghe.com/api/v3/copilot_internal/v2/token",
+      "https://msft.ghe.com/api/v3/copilot_internal/user",
+    ]);
+    assert.ok(refreshed, "refreshCredentials should succeed via copilot_internal/user fallback");
+    assert.equal(refreshed.copilotToken, "gho_ghe_data_residency_token");
+    assert.equal(
+      (refreshed.providerSpecificData as Record<string, unknown>)?.copilotApiUrl,
+      "https://copilot-api.msft.ghe.com"
+    );
+    assert.equal(
+      (refreshed.providerSpecificData as Record<string, unknown>)?.copilotProxyUrl,
+      "https://copilot-proxy.msft.ghe.com"
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("gheCopilot OAuth postExchange falls back to /api/v3/copilot_internal/user when /v2/token returns 404", async () => {
+  const { gheCopilot } = await import("../../src/lib/oauth/providers/ghe-copilot.ts");
+  const originalFetch = globalThis.fetch;
+  const calledUrls: string[] = [];
+
+  globalThis.fetch = async (url) => {
+    const urlStr = String(url);
+    calledUrls.push(urlStr);
+    if (urlStr.endsWith("/api/v3/copilot_internal/v2/token")) {
+      return new Response(JSON.stringify({ message: "Not Found" }), { status: 404 });
+    }
+    if (urlStr.endsWith("/api/v3/copilot_internal/user")) {
+      return new Response(
+        JSON.stringify({
+          endpoints: {
+            api: "https://copilot-api.msft.ghe.com",
+            proxy: "https://copilot-proxy.msft.ghe.com",
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    if (urlStr.endsWith("/api/v3/user")) {
+      return new Response(JSON.stringify({ login: "corpuser", email: "corpuser@example.com" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    return new Response("unexpected", { status: 500 });
+  };
+
+  try {
+    const tokens = { access_token: "gho_ghe_oauth_token" };
+    const extra = await gheCopilot.postExchange(tokens, { gheUrl: "https://msft.ghe.com" });
+    const mapped = gheCopilot.mapTokens(tokens, extra);
+
+    assert.deepEqual(calledUrls, [
+      "https://msft.ghe.com/api/v3/copilot_internal/v2/token",
+      "https://msft.ghe.com/api/v3/copilot_internal/user",
+      "https://msft.ghe.com/api/v3/user",
+    ]);
+    assert.equal(mapped.providerSpecificData.copilotToken, "gho_ghe_oauth_token");
+    assert.equal(mapped.providerSpecificData.copilotApiUrl, "https://copilot-api.msft.ghe.com");
+    assert.equal(mapped.providerSpecificData.copilotProxyUrl, "https://copilot-proxy.msft.ghe.com");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("refreshCopilotToken service falls back to /copilot_internal/user on 404 for GHE baseUrl", async () => {
+  const { refreshCopilotToken } =
+    await import("../../open-sse/services/tokenRefresh/providers/copilot.ts");
+  const originalFetch = globalThis.fetch;
+  const calledUrls: string[] = [];
+
+  globalThis.fetch = async (url) => {
+    const urlStr = String(url);
+    calledUrls.push(urlStr);
+    if (urlStr.endsWith("/api/v3/copilot_internal/v2/token")) {
+      return new Response(JSON.stringify({ message: "Not Found" }), { status: 404 });
+    }
+    if (urlStr.endsWith("/api/v3/copilot_internal/user")) {
+      return new Response(
+        JSON.stringify({
+          endpoints: {
+            api: "https://copilot-api.msft.ghe.com",
+            proxy: "https://copilot-proxy.msft.ghe.com",
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    return new Response("unexpected", { status: 500 });
+  };
+
+  try {
+    const result = await refreshCopilotToken(
+      "gho_ghe_healthcheck_token",
+      null,
+      null,
+      "https://msft.ghe.com/api/v3"
+    );
+
+    assert.deepEqual(calledUrls, [
+      "https://msft.ghe.com/api/v3/copilot_internal/v2/token",
+      "https://msft.ghe.com/api/v3/copilot_internal/user",
+    ]);
+    assert.equal(result.token, "gho_ghe_healthcheck_token");
+    assert.ok(typeof result.expiresAt === "number" && result.expiresAt > 0);
+    assert.deepEqual(result.endpoints, {
+      api: "https://copilot-api.msft.ghe.com",
+      proxy: "https://copilot-proxy.msft.ghe.com",
+    });
   } finally {
     globalThis.fetch = originalFetch;
   }

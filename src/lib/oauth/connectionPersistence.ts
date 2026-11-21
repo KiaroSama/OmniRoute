@@ -14,11 +14,13 @@ import {
 } from "@/models";
 import { getConsistentMachineId } from "@/shared/utils/machineId";
 import { syncToCloud } from "@/lib/cloudSync";
+import { sameM365Account, m365MetadataAfterSignIn } from "@/lib/providers/m365Identity";
 import {
   antigravityDegradedProjectState,
   antigravityPersistStatus,
   type AntigravityDegradedProjectState,
 } from "@/lib/oauth/antigravityProjectGate";
+import { hasActiveCooldown } from "@/lib/usage/providerLimits";
 
 /**
  * Constant-time string comparison to prevent timing-oracle attacks (CWE-208).
@@ -98,6 +100,17 @@ export function findExistingOAuthConnectionMatch(
   tokenData: Record<string, any>,
   connectionId?: string
 ): Record<string, any> | undefined {
+  if (provider === "copilot-m365-web") {
+    if (connectionId) {
+      const target = existing.find((row) => safeEqual(row.id, connectionId));
+      if (!target) throw new Error("Microsoft 365 connection not found");
+      if (!sameM365Account(target, tokenData)) {
+        throw new Error("Microsoft 365 sign-in belongs to a different account identity");
+      }
+      return target;
+    }
+    return existing.find((row) => row.authType === "oauth" && sameM365Account(row, tokenData));
+  }
   return existing.find((c) => {
     if (c.id && safeEqual(connectionId, c.id)) return true;
     // Email dedup only when the payload actually carries an email. Without this
@@ -149,6 +162,67 @@ export function buildOAuthConnectionCreatePayload(
   };
 }
 
+/**
+ * Replace token-lifetime metadata when a user signs in again.
+ *
+ * If the connection is currently cooling down from a real upstream rate-limit / quota
+ * exhaustion (#20067, Codex review), rotating or renewing OAuth credentials does NOT
+ * replenish the upstream quota. In that case, preserving rateLimitedUntil and backoffLevel
+ * prevents dispatching traffic straight back into the exhausted window, and preserving
+ * the error metadata (lastErrorType, errorCode, lastErrorAt) ensures that observed quota
+ * resets (e.g. Claude #17043) can subsequently recognize and release the cooldown.
+ *
+ * When there is no active cooldown, all error metadata and backoff state are cleanly reset.
+ */
+export function buildOAuthTokenUpdate(
+  tokenData: Record<string, unknown>,
+  expiresAt: string | null,
+  existingConnection?: Record<string, unknown> | null,
+  now: number = Date.now()
+) {
+  const activeCooldown =
+    existingConnection != null &&
+    hasActiveCooldown(existingConnection as { rateLimitedUntil?: string | null }, now);
+
+  return {
+    ...tokenData,
+    expiresAt,
+    tokenExpiresAt: expiresAt,
+    ...(activeCooldown
+      ? {}
+      : {
+          testStatus: "active",
+          lastError: null,
+          lastErrorAt: null,
+          lastErrorType: null,
+          lastErrorSource: null,
+          errorCode: null,
+          rateLimitedUntil: null,
+          backoffLevel: 0,
+        }),
+  };
+}
+
+/** Preserve the selected M365 row's label while replacing legacy credentials and metadata. */
+function m365ConnectionUpdate(
+  provider: string,
+  match: Record<string, unknown>,
+  tokenData: Record<string, unknown>
+) {
+  if (provider !== "copilot-m365-web") return {};
+  return {
+    authType: "oauth",
+    apiKey: null,
+    idToken: tokenData.idToken ?? null,
+    refreshToken: tokenData.refreshToken ?? null,
+    name: match?.name ?? tokenData.name,
+    providerSpecificData: m365MetadataAfterSignIn(
+      match?.providerSpecificData,
+      tokenData.providerSpecificData
+    ),
+  };
+}
+
 async function syncToCloudIfEnabled(): Promise<void> {
   try {
     const cloudEnabled = await isCloudEnabled();
@@ -181,15 +255,15 @@ export async function persistOAuthConnection(
   // top-level email. Some providers (e.g. GitHub Copilot) keep identity under
   // providerSpecificData, so gating dedup on tokenData.email alone created a
   // duplicate connection on every refresh (#8059).
-  if (connectionId || tokenData.email) {
+  if (connectionId || tokenData.email || provider === "copilot-m365-web") {
     const existing = await getProviderConnections({ provider });
     const match = findExistingOAuthConnectionMatch(existing, provider, tokenData, connectionId);
     const matchId = typeof match?.id === "string" ? match.id : null;
     if (matchId) {
       connection = await updateProviderConnection(matchId, {
-        ...tokenData,
-        expiresAt,
-        ...antigravityPersistStatus(degradedProject),
+        ...buildOAuthTokenUpdate(tokenData, expiresAt, match),
+        ...m365ConnectionUpdate(provider, match, tokenData),
+        ...(degradedProject ? antigravityPersistStatus(degradedProject) : {}),
         isActive: true,
       });
     }

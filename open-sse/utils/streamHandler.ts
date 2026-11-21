@@ -1,3 +1,7 @@
+import { getEmptyTurnDiagnostics, hasTrustedEmptyTurn } from "./emptyTurnPolicy.ts";
+import { createCompletionDrain } from "./streamCompletionDrain.ts";
+import { createClientTerminalWatcher } from "./streamTerminal.ts";
+import type { StreamControllerOptions } from "./streamControllerTypes.ts";
 import { trackPendingRequest } from "@/lib/usageDb";
 import { STREAM_ACTIVE_TIMEOUT_MS, STREAM_IDLE_TIMEOUT_MS } from "../config/constants.ts";
 import { FORMATS } from "../translator/formats.ts";
@@ -6,6 +10,13 @@ import { PENDING_REQUEST_CLEARED_MARKER } from "./stream.ts";
 import { createCompletedResponsesToolHandoffWatcher } from "./responsesToolHandoff.ts";
 import { createStreamContentWatcher, type StreamContentWatcher } from "./streamReadiness.ts";
 import { hasOpenReasoning } from "./emptyTurnRetry.ts";
+import { createStallWatchdog } from "./streamStallWatchdog.ts";
+import {
+  buildSyntheticResponsesFailureId,
+  SYNTHETIC_RESPONSES_SEQUENCE_NUMBER,
+  withResponsesFailureContext,
+  type ResponsesStreamContext,
+} from "./responsesSequence.ts";
 
 // Stream handler with disconnect detection - shared for all providers
 
@@ -18,31 +29,9 @@ import { hasOpenReasoning } from "./emptyTurnRetry.ts";
 // the watchdog must track upstream byte activity instead. Ported from
 // decolua/9router#1243.
 const DEFAULT_STREAM_STALL_TIMEOUT_MS = STREAM_IDLE_TIMEOUT_MS;
-
-type StreamDisconnectEvent = {
-  reason: string;
-  duration: number;
-};
-
-type StreamErrorEvent = {
-  error: unknown;
-  message: string;
-  statusCode: number;
-  duration: number;
-};
-
-type StreamControllerOptions = {
-  onDisconnect?: (event: StreamDisconnectEvent) => boolean | void;
-  onError?: (event: StreamErrorEvent) => boolean | void;
-  provider?: string;
-  model?: string;
-  connectionId?: string | null;
-  pendingRequestId?: string | null;
-  clientResponseFormat?: string | null;
-  clientAbortSignal?: AbortSignal | null;
-  allowCompletedToolHandoffGrace?: boolean;
-  clientDisconnectGracePeriodMs?: number;
-};
+const SSE_EVENT_BOUNDARY = new TextEncoder().encode("\n\n");
+/** How long a withheld terminal waits for the upstream to end before it is released. */
+const HELD_TERMINAL_GRACE_MS = 1000;
 
 type StreamController = ReturnType<typeof createStreamController>;
 
@@ -133,12 +122,8 @@ function encodeSseEvent(
 
 // Get HH:MM:SS timestamp
 function getTimeString() {
-  return new Date().toLocaleTimeString("en-US", {
-    hour12: false,
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  const d = new Date();
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
 }
 
 function isPendingRequestClearedError(error: unknown): boolean {
@@ -199,36 +184,6 @@ function isDeadlineAbortReason(reason: unknown): reason is Error {
     reason instanceof Error &&
     (reason.name === "TimeoutError" || reason.name === "BodyTimeoutError")
   );
-}
-
-function hasClientTerminalSseMarker(text: string, clientResponseFormat?: string | null): boolean {
-  if (/(?:^|\r?\n)data:\s*\[DONE\]\s*(?:\r?\n|$)/.test(text)) {
-    return true;
-  }
-
-  if (isResponsesClientFormat(clientResponseFormat)) {
-    return (
-      /(?:^|\r?\n)event:\s*response\.completed\s*(?:\r?\n|$)/.test(text) ||
-      /"type"\s*:\s*"response\.completed"/.test(text)
-    );
-  }
-
-  if (clientResponseFormat === FORMATS.CLAUDE) {
-    return (
-      /(?:^|\r?\n)event:\s*message_stop\s*(?:\r?\n|$)/.test(text) ||
-      /"type"\s*:\s*"message_stop"/.test(text)
-    );
-  }
-
-  // OpenAI chat completions: some providers omit `data: [DONE]` (already
-  // matched above) and terminate with a finish_reason chunk instead. A
-  // non-null finish_reason value is that terminal signal — a bare
-  // `finish_reason: null` delta chunk must NOT count (#10443).
-  if (clientResponseFormat === FORMATS.OPENAI) {
-    return /"finish_reason"\s*:\s*"[^"]+"/.test(text);
-  }
-
-  return false;
 }
 
 /**
@@ -305,6 +260,14 @@ export function createStreamController({
     cleanupClientAbortSignal = null;
   };
 
+  const releaseRequestCallbacks = (preserveHandoffDrain = false) => {
+    // A completed Response may outlive its request. These callbacks capture
+    // chatCore's provider wire body and multimodal input through their context.
+    onDisconnect = undefined;
+    onError = undefined;
+    if (!preserveHandoffDrain) completedToolHandoffDrain = null;
+  };
+
   const getClientAbortReason = () => {
     const reason = clientAbortSignal?.reason;
     if (typeof reason === "string" && reason.trim().length > 0) {
@@ -322,10 +285,14 @@ export function createStreamController({
 
     isConnected: () => !disconnected,
 
+    clearPendingRequest,
+
     // Call when client disconnects
     handleDisconnect: (reason = "client_closed") => {
       if (disconnected) return;
       if (clientTerminalSeen) {
+        // Start the drain before completion releases its registered callback.
+        if (clientDisconnectGracePeriodMs > 0) completedToolHandoffDrain?.();
         controller.handleComplete();
         return;
       }
@@ -349,11 +316,16 @@ export function createStreamController({
         abortController.abort(reason);
       }
 
-      onDisconnect?.({ reason, duration: Date.now() - startTime });
+      try {
+        onDisconnect?.({ reason, duration: Date.now() - startTime });
+      } finally {
+        releaseRequestCallbacks(deferUpstreamAbort);
+      }
     },
 
     // Call when stream completes normally
     handleComplete: () => {
+      releaseRequestCallbacks();
       if (disconnected) return;
       disconnected = true;
       cleanupClientAbortListener();
@@ -370,7 +342,7 @@ export function createStreamController({
     },
 
     registerCompletedToolHandoffDrain: (drain: () => void) => {
-      completedToolHandoffDrain = drain;
+      if (!disconnected && !abortController.signal.aborted) completedToolHandoffDrain = drain;
     },
 
     shouldDeferCompletedToolHandoff: () =>
@@ -389,6 +361,7 @@ export function createStreamController({
       // the upstream connection unavailable.
       if (disconnected || isClientDisconnectError(error)) {
         clearPendingRequest(error);
+        releaseRequestCallbacks();
         logStream(disconnected ? "client_disconnect (post-abort)" : "client_disconnect");
         return;
       }
@@ -414,6 +387,7 @@ export function createStreamController({
       } else {
         pendingRequestCleared = true;
       }
+      releaseRequestCallbacks();
 
       if (error instanceof Error && error.name === "AbortError") {
         logStream("aborted");
@@ -430,6 +404,7 @@ export function createStreamController({
     abort: () => {
       cleanupClientAbortListener();
       abortController.abort();
+      releaseRequestCallbacks();
     },
     clientResponseFormat,
     clientDisconnectGracePeriodMs,
@@ -464,7 +439,8 @@ export function createStreamController({
 export function buildStreamErrorChunks(
   errorMsg: string,
   statusCode: number,
-  clientResponseFormat?: string | null
+  clientResponseFormat?: string | null,
+  responsesContext: ResponsesStreamContext = {}
 ) {
   const statusMapping = getStreamErrorStatusMapping(statusCode);
   const publicErrorMessage = getPublicErrorMessage(errorMsg, statusCode);
@@ -472,8 +448,17 @@ export function buildStreamErrorChunks(
   if (isResponsesClientFormat(clientResponseFormat)) {
     const errorEvent = {
       type: "response.failed",
+      // #15202: synthesized response.failed frames must satisfy the Responses event
+      // union — a string `response.id` and a numeric `sequence_number`. The 3.8.51
+      // fix set both fields on the other synthetic sites but left this one as
+      // `id: null` with no sequence, so a strict decoder aborts here too.
+      sequence_number: SYNTHETIC_RESPONSES_SEQUENCE_NUMBER,
       response: {
-        id: null,
+        id: buildSyntheticResponsesFailureId(),
+        object: "response",
+        created_at: Math.floor(Date.now() / 1000),
+        model: "unknown",
+        output: [],
         status: "failed",
         error: {
           message: publicErrorMessage,
@@ -483,7 +468,9 @@ export function buildStreamErrorChunks(
       },
     };
 
-    return encodeSseEvent(errorEvent, { event: "response.failed" });
+    return encodeSseEvent(withResponsesFailureContext(errorEvent, responsesContext), {
+      event: "response.failed",
+    });
   }
 
   if (clientResponseFormat === FORMATS.CLAUDE) {
@@ -601,6 +588,7 @@ function resolveSilentCloseOutcome(input: {
   clientTerminalSeen: boolean;
   clientResponseFormat?: string | null;
   contentWatcher: StreamContentWatcher;
+  permitsEmptyTurn?: () => boolean;
 }): SilentCloseOutcome | null {
   if (!input.bytesWereForwarded) return null;
 
@@ -639,7 +627,11 @@ function resolveSilentCloseOutcome(input: {
   const watcher = input.contentWatcher;
   if (watcher.sawError()) return null;
   if (watcher.sawSseFrame() && !watcher.sawContent() && !watcher.sawLegitEmptyTerminal()) {
-    return { kind: "error", reason: "Provider returned empty content" };
+    // A translated/client stop is insufficient: the executed native protocol
+    // must also have supplied an ordinary terminal on a trusted origin.
+    if (!(input.clientTerminalSeen && input.permitsEmptyTurn?.())) {
+      return { kind: "error", reason: "Provider returned empty content" };
+    }
   }
 
   return null;
@@ -648,48 +640,52 @@ function resolveSilentCloseOutcome(input: {
 export function createDisconnectAwareStream(
   transformStream,
   streamController,
-  options: { highWaterMark?: number } = {}
+  options: {
+    highWaterMark?: number;
+    permitsEmptyTurn?: () => boolean;
+    emptyTurnDiagnostics?: () => ReturnType<typeof getEmptyTurnDiagnostics>;
+  } = {}
 ) {
   const reader = transformStream.readable.getReader();
   const writer = transformStream.writable.getWriter();
   const terminalDecoder = new TextDecoder();
+  const terminalWatcher = createClientTerminalWatcher(streamController.clientResponseFormat);
   const contentDecoder = new TextDecoder();
   const contentWatcher = createStreamContentWatcher();
   const completedToolHandoffWatcher = createCompletedResponsesToolHandoffWatcher();
   const toolHandoffDecoder = new TextDecoder();
-  let terminalTail = "";
   let clientTerminalSeen = false;
   let bytesWereForwarded = false;
-  let completedToolHandoffDrainStarted = false;
+  // The client terminal frame withheld while the stream has produced nothing
+  // useful. `resolveSilentCloseOutcome` can only judge the stream once the reader
+  // reports `done`, and a terminal already forwarded by then is invisible to a
+  // client that stops reading at it (`data: [DONE]` for the `openai` SDK,
+  // `event: message_stop`, `event: response.completed`). That ordering is how an
+  // empty Gemini stream reached production as a clean `finish_reason: "stop"`
+  // with the generated error frame stranded behind `[DONE]`: the client recorded
+  // an empty but successful turn and never retried. Released when the stream is
+  // judged, dropped when the verdict is a failure.
+  let heldTerminalChunk: Uint8Array | null = null;
+  const completionDrain = createCompletionDrain(reader, writer, streamController, () =>
+    clientTerminalSeen ? "terminal_stream_grace_expired" : "completed_tool_handoff_grace_expired"
+  );
+  streamController.registerCompletedToolHandoffDrain?.(completionDrain.start);
 
-  const drainCompletedToolHandoff = () => {
-    if (completedToolHandoffDrainStarted) return;
-    completedToolHandoffDrainStarted = true;
-    const gracePeriodMs = Math.max(0, Number(streamController.clientDisconnectGracePeriodMs) || 0);
-    const timeoutReason = "completed_tool_handoff_grace_expired";
-    const timeout = setTimeout(() => {
-      streamController.abort();
-      void Promise.allSettled([reader.cancel(timeoutReason), writer.abort(timeoutReason)]);
-    }, gracePeriodMs);
-
-    void (async () => {
-      try {
-        while (true) {
-          const { done } = await reader.read();
-          if (done) break;
-        }
-        streamController.handleComplete();
-      } catch (error) {
-        streamController.handleError(error);
-      } finally {
-        clearTimeout(timeout);
-      }
-    })();
+  /** Release the withheld terminal, if any. A dropped one is never replayed. */
+  const flushHeldTerminal = (controller: { enqueue: (chunk: Uint8Array) => void }) => {
+    const held = heldTerminalChunk;
+    if (!held) return;
+    heldTerminalChunk = null;
+    controller.enqueue(held);
+    streamController.markClientTerminalSeen?.();
   };
-  streamController.registerCompletedToolHandoffDrain?.(drainCompletedToolHandoff);
 
-  const noteClientChunk = (chunk: unknown) => {
-    if (!(chunk instanceof Uint8Array)) return;
+  /**
+   * Observe a client-bound chunk. Returns `false` when the chunk is the withheld
+   * terminal and must not be forwarded yet.
+   */
+  const noteClientChunk = (chunk: unknown): boolean => {
+    if (!(chunk instanceof Uint8Array)) return true;
     bytesWereForwarded = true;
     // Runs past clientTerminalSeen: the frame that carries the terminal marker
     // can carry the only content too, and #8649 needs the whole stream scanned.
@@ -700,21 +696,66 @@ export function createDisconnectAwareStream(
     ) {
       streamController.markCompletedToolHandoffSeen?.();
     }
-    if (clientTerminalSeen) return;
+    if (clientTerminalSeen) return true;
 
-    terminalTail += terminalDecoder.decode(chunk, { stream: true });
-    // Scan before bounding retained state: a compaction terminal frame can
-    // exceed the tail budget because encrypted_content is carried inline.
-    clientTerminalSeen = hasClientTerminalSseMarker(
-      terminalTail,
-      streamController.clientResponseFormat
-    );
-    if (terminalTail.length > 4096) {
-      terminalTail = terminalTail.slice(-4096);
+    const boundaryBefore = terminalWatcher.atBoundary();
+    clientTerminalSeen = terminalWatcher.note(terminalDecoder.decode(chunk, { stream: true }));
+    if (!clientTerminalSeen) return true;
+    // Hold only a self-contained event — both ends on an event boundary — so no
+    // other byte is ever delayed or reordered, and only while the stream still
+    // looks empty: content, an in-band error or a legitimate empty terminal all
+    // make the clean terminal the right answer, so it goes out untouched.
+    if (
+      boundaryBefore &&
+      terminalWatcher.atBoundary() &&
+      !contentWatcher.sawContent() &&
+      !contentWatcher.sawError() &&
+      !contentWatcher.sawLegitEmptyTerminal() &&
+      options.permitsEmptyTurn?.() !== true
+    ) {
+      heldTerminalChunk = chunk;
+      return false;
     }
-    if (clientTerminalSeen) {
-      streamController.markClientTerminalSeen?.();
+    // The controller learns about the terminal only once the client can see it.
+    streamController.markClientTerminalSeen?.();
+    return true;
+  };
+
+  /**
+   * Read the next upstream chunk. While a terminal is withheld the upstream gets a
+   * short grace to end. One that stays open after its terminal (a keep-alive
+   * socket) gets the terminal released exactly as before this hold-back existed,
+   * so the client is never left waiting for a terminal it would already have had.
+   */
+  const readNextChunk = async (controller: {
+    enqueue: (chunk: Uint8Array) => void;
+  }): Promise<ReadableStreamReadResult<Uint8Array>> => {
+    const read = reader.read();
+    if (!heldTerminalChunk) return read;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const graceExpired = new Promise<null>((resolve) => {
+      timer = setTimeout(() => resolve(null), HELD_TERMINAL_GRACE_MS);
+    });
+    try {
+      const first = await Promise.race([read, graceExpired]);
+      if (first) return first;
+    } finally {
+      clearTimeout(timer);
     }
+    flushHeldTerminal(controller);
+    return read;
+  };
+
+  /** Forward a chunk unless it is the terminal being withheld. */
+  const admitClientChunk = (
+    controller: { enqueue: (chunk: Uint8Array) => void },
+    value: Uint8Array
+  ): boolean => {
+    // Anything that follows a withheld terminal must stay behind it.
+    flushHeldTerminal(controller);
+    if (!noteClientChunk(value)) return false;
+    controller.enqueue(value);
+    return true;
   };
 
   const highWaterMark = options.highWaterMark ?? 16384;
@@ -725,12 +766,13 @@ export function createDisconnectAwareStream(
         if (!streamController.isConnected()) {
           // Closing our side alone leaves the upstream body being pulled by the
           // transform pipe. Cancel it so the provider stops generating for a
-          // client that is gone. Not on a completed stream (clientTerminalSeen)
-          // nor while a completed tool handoff is still draining the reader.
-          if (
-            !clientTerminalSeen &&
-            streamController.shouldDeferCompletedToolHandoff?.() !== true
-          ) {
+          // client that is gone. A completed terminal stream with a grace window
+          // hands the inner reader to the bounded drain so late usage can flush.
+          if (clientTerminalSeen && !heldTerminalChunk) {
+            if (Number(streamController.clientDisconnectGracePeriodMs) > 0) {
+              completionDrain.start();
+            }
+          } else if (streamController.shouldDeferCompletedToolHandoff?.() !== true) {
             const reason = "client_disconnected";
             void Promise.allSettled([reader.cancel(reason), writer.abort(reason)]);
           }
@@ -739,14 +781,32 @@ export function createDisconnectAwareStream(
         }
 
         try {
-          const { done, value } = await reader.read();
-          if (done) {
+          // A withheld terminal enqueues nothing, and ReadableStream does not
+          // call pull() again after a pull that enqueued nothing: keep reading
+          // until a chunk is forwarded or the upstream ends.
+          let result = await readNextChunk(controller);
+          while (!result.done && !admitClientChunk(controller, result.value)) {
+            result = await readNextChunk(controller);
+          }
+          if (heldTerminalChunk && !streamController.isConnected()) {
+            // The client left while the terminal was withheld: it never saw an
+            // ending, and the upstream's end is not the provider's verdict.
+            heldTerminalChunk = null;
+            try {
+              controller.close();
+            } catch {
+              // Expected: downstream may have already closed
+            }
+            return;
+          }
+          if (result.done) {
             contentWatcher.finish();
             const silentClose = resolveSilentCloseOutcome({
               bytesWereForwarded,
               clientTerminalSeen,
               clientResponseFormat: streamController.clientResponseFormat,
               contentWatcher,
+              permitsEmptyTurn: options.permitsEmptyTurn,
             });
 
             if (silentClose?.kind === "truncated") {
@@ -756,6 +816,9 @@ export function createDisconnectAwareStream(
               // Anthropic SDK / Claude Code don't report a mid-response break.
               streamController.handleComplete();
               try {
+                // Defensive: a truncation verdict requires a MISSING terminal, so
+                // nothing can be held here. Kept so no withheld byte can be lost.
+                flushHeldTerminal(controller);
                 for (const chunk of buildGracefulTruncationChunks(
                   streamController.clientResponseFormat
                 )) {
@@ -765,14 +828,31 @@ export function createDisconnectAwareStream(
                 // downstream may have closed; stream already marked complete
               }
             } else if (silentClose) {
+              // Drop the withheld terminal instead of delivering it: handing the
+              // client the clean stop first is exactly what made this failure
+              // invisible. Every frame still ends on an event boundary, so the
+              // error frames below stand on their own.
+              heldTerminalChunk = null;
+              console.warn(
+                `[STREAM] detector=post-translation reason=${
+                  silentClose.reason === "Provider returned empty content"
+                    ? "empty-content"
+                    : "missing-terminal"
+                } native=${JSON.stringify(
+                  options.emptyTurnDiagnostics?.() ?? { nativeExecutionObserved: false }
+                )}`
+              );
               streamController.handleError(
                 Object.assign(new Error(silentClose.reason), { statusCode: 502 })
               );
               try {
+                // Isolate generated failure from any unfinished provider data.
+                if (!terminalWatcher.atBoundary()) controller.enqueue(SSE_EVENT_BOUNDARY);
                 for (const chunk of buildStreamErrorChunks(
                   silentClose.reason,
                   502,
-                  streamController.clientResponseFormat
+                  streamController.clientResponseFormat,
+                  terminalWatcher.responsesContext()
                 )) {
                   controller.enqueue(chunk);
                 }
@@ -780,6 +860,13 @@ export function createDisconnectAwareStream(
                 // downstream may have closed; original error already recorded
               }
             } else {
+              try {
+                // Content arrived after the terminal was withheld, or the empty
+                // turn is permitted: the terminal is the correct ending after all.
+                flushHeldTerminal(controller);
+              } catch {
+                // downstream may have closed; the verdict is already recorded
+              }
               streamController.handleComplete();
             }
             try {
@@ -789,10 +876,12 @@ export function createDisconnectAwareStream(
             }
             return;
           }
-          controller.enqueue(value);
-          noteClientChunk(value);
         } catch (error) {
           if (!streamController.isConnected()) {
+            // A pending pull can lose enqueue to cancellation after the drain takes ownership.
+            if (!completionDrain.isStarted()) {
+              reader.cancel(new Error("Downstream disconnected")).catch(() => {});
+            }
             try {
               controller.close();
             } catch {
@@ -802,7 +891,15 @@ export function createDisconnectAwareStream(
           }
 
           if (clientTerminalSeen) {
+            try {
+              // An error after the terminal keeps meaning a completed stream
+              // (stream-handler.test.ts): release the withheld terminal as is.
+              flushHeldTerminal(controller);
+            } catch {
+              // downstream may have closed
+            }
             streamController.handleComplete();
+            reader.cancel(new Error("Client terminal seen")).catch(() => {});
             try {
               controller.close();
             } catch {
@@ -814,15 +911,16 @@ export function createDisconnectAwareStream(
           streamController.handleError(error);
 
           // T35: Encapsulate mid-stream errors as SSE events instead of abruptly aborting
-          // This prevents TransferEncodingError on the client side
           const errorMsg = getErrorMessage(error);
           const statusCode = getErrorStatusCode(error);
 
           try {
+            if (!terminalWatcher.atBoundary()) controller.enqueue(SSE_EVENT_BOUNDARY);
             for (const chunk of buildStreamErrorChunks(
               errorMsg,
               statusCode,
-              streamController.clientResponseFormat
+              streamController.clientResponseFormat,
+              terminalWatcher.responsesContext()
             )) {
               controller.enqueue(chunk);
             }
@@ -842,7 +940,13 @@ export function createDisconnectAwareStream(
       async cancel(reason) {
         const deferCompletedToolHandoff =
           streamController.shouldDeferCompletedToolHandoff?.() === true;
-        if (clientTerminalSeen) {
+        // A withheld terminal never reached the client: this is a disconnect.
+        if (clientTerminalSeen && !heldTerminalChunk) {
+          if (Number(streamController.clientDisconnectGracePeriodMs) > 0) {
+            completionDrain.start();
+            streamController.handleComplete();
+            return;
+          }
           streamController.handleComplete();
         } else {
           streamController.handleDisconnect(reason || "cancelled");
@@ -907,11 +1011,14 @@ export function pipeWithDisconnect(
     return createDisconnectAwareStream(
       { readable: transformedBody, writable: createNoopAbortWritable() },
       streamController,
-      { highWaterMark: opts.highWaterMark }
+      {
+        highWaterMark: opts.highWaterMark,
+        permitsEmptyTurn: () => hasTrustedEmptyTurn(providerResponse),
+        emptyTurnDiagnostics: () => getEmptyTurnDiagnostics(providerResponse),
+      }
     );
   }
 
-  let stallTimer: ReturnType<typeof setTimeout> | null = null;
   let activeTimer: ReturnType<typeof setTimeout> | null = null;
   // Erroring the upstream tap unblocks a downstream reader suspended on the
   // transform pipe; aborting the controller alone does not always do that.
@@ -919,10 +1026,11 @@ export function pipeWithDisconnect(
   let stallFired = false;
   let activeFired = false;
 
-  const clearStall = () => {
-    if (stallTimer) clearTimeout(stallTimer);
-    stallTimer = null;
-  };
+  // Per-chunk timer by default; one interval with SSE_STALL_WATCHDOG=interval.
+  const stallWatchdog = createStallWatchdog(stallEnabled ? stallTimeoutMs : 0, () =>
+    triggerWatchdog("stall")
+  );
+  const clearStall = stallWatchdog.clear;
   const clearActive = () => {
     if (activeTimer) clearTimeout(activeTimer);
     activeTimer = null;
@@ -954,11 +1062,7 @@ export function pipeWithDisconnect(
       console.debug(`[STREAM-HANDLER] ${kind} watchdog abort failed:`, e);
     }
   };
-  const armStall = () => {
-    if (!stallEnabled) return;
-    clearStall();
-    stallTimer = setTimeout(() => triggerWatchdog("stall"), stallTimeoutMs);
-  };
+  const armStall = stallWatchdog.arm;
   const armActive = () => {
     if (!activeEnabled) return;
     clearActive();
@@ -981,9 +1085,12 @@ export function pipeWithDisconnect(
   // sometimes 120s, sometimes 900s depending on the calling task, always
   // slower and less informative than OmniRoute failing this attempt itself
   // with a clear error the client's own retry/fallback logic can react to
-  // immediately. Armed ONCE at stream start (not re-armed by lifecycle-only
-  // bytes, unlike armStall above) and cleared permanently the first time
-  // real content is observed -- reuses the exact classifier
+  // immediately. Armed at stream start, never re-armed by lifecycle-only
+  // bytes (unlike armStall above), restarted by reasoning-progress frames
+  // (a model thinking for minutes before its first token is not stalled)
+  // and by Responses remote-compaction progress frames (#17826 — compaction
+  // is upstream work with no visible output), and cleared permanently the
+  // first time real content is observed -- reuses the exact classifier
   // (createStreamContentWatcher) createDisconnectAwareStream already trusts
   // for its own end-of-stream #8649 empty-content check.
   let contentStallTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1069,7 +1176,7 @@ export function pipeWithDisconnect(
     }
   };
   const armContentStall = () => {
-    if (contentStallTimeoutMs <= 0) return;
+    if (contentStallTimeoutMs <= 0 || contentStallFired) return;
     contentStallTimer = setTimeout(() => {
       contentStallTimer = null;
       contentStallFired = true;
@@ -1096,17 +1203,30 @@ export function pipeWithDisconnect(
     }, contentStallTimeoutMs);
   };
 
+  // A request-signal abort calls the inner controller directly (bound in
+  // createStreamController), which skips the wrapper below. Watch the same signal so
+  // that path clears the timers too; every normal terminal path detaches the listener.
+  const abortSignal = streamController.signal;
+  const clearOnAbort = () => {
+    clearWatchdogs();
+    clearContentStall();
+  };
+  const detachAbortWatch = () => abortSignal?.removeEventListener?.("abort", clearOnAbort);
+  abortSignal?.addEventListener?.("abort", clearOnAbort, { once: true });
+
   // Wrap controller so every termination path clears all watchdog timers.
   // Without this, abort/complete/error/disconnect paths leave a timer armed
   // and a stale abort could fire after the request has already ended.
   const wrappedController: StreamController = {
     ...streamController,
     handleComplete: () => {
+      detachAbortWatch();
       clearWatchdogs();
       clearContentStall();
       streamController.handleComplete();
     },
     handleError: (e: unknown) => {
+      detachAbortWatch();
       clearWatchdogs();
       clearContentStall();
       // A watchdog already fired its own handleError — the inner pull()
@@ -1116,11 +1236,13 @@ export function pipeWithDisconnect(
       streamController.handleError(e);
     },
     handleDisconnect: (reason?: string) => {
+      detachAbortWatch();
       clearWatchdogs();
       clearContentStall();
       streamController.handleDisconnect(reason);
     },
     abort: () => {
+      detachAbortWatch();
       clearWatchdogs();
       clearContentStall();
       streamController.abort();
@@ -1131,13 +1253,20 @@ export function pipeWithDisconnect(
   // and (independently) clears the content-stall timer the first time a
   // chunk carries real output. Sits between the provider body and the SSE
   // transform so reasoning models that buffer many raw bytes into a single
-  // emitted event do not look stalled to either watchdog.
+  // emitted event do not look stalled to either watchdog. Reasoning frames
+  // with no visible output (Claude thinking/signature deltas, Responses
+  // reasoning items) and Responses remote-compaction progress frames
+  // (#17826) restart the content-stall budget instead of clearing it:
+  // the model is still working, but a turn that stops reasoning or
+  // compacting and only sends heartbeats afterwards must still be caught.
   const upstreamTap = new TransformStream<Uint8Array, Uint8Array>({
     start(controller) {
       upstreamTapController = controller;
       armStall();
       armActive();
       armContentStall();
+      // The request may already be aborted: the abort event fired before the listener.
+      if (abortSignal?.aborted) clearOnAbort();
     },
     transform(chunk, controller) {
       armStall();
@@ -1147,12 +1276,23 @@ export function pipeWithDisconnect(
         const decoded = upstreamContentDecoder.decode(chunk, { stream: true });
         stallBytes += chunk.byteLength;
         noteStallText(decoded);
+        const reasoningBefore = upstreamContentWatcher.reasoningProgress();
+        const compactionBefore = upstreamContentWatcher.compactionProgress();
         upstreamContentWatcher.note(decoded);
-        if (upstreamContentWatcher.sawContent()) clearContentStall();
+        if (upstreamContentWatcher.sawContent()) {
+          clearContentStall();
+        } else if (
+          upstreamContentWatcher.reasoningProgress() > reasoningBefore ||
+          upstreamContentWatcher.compactionProgress() > compactionBefore
+        ) {
+          clearContentStall();
+          armContentStall();
+        }
       }
       controller.enqueue(chunk);
     },
     flush() {
+      detachAbortWatch();
       clearWatchdogs();
       clearContentStall();
     },
@@ -1164,6 +1304,10 @@ export function pipeWithDisconnect(
   return createDisconnectAwareStream(
     { readable: transformedBody, writable: createNoopAbortWritable() },
     wrappedController,
-    { highWaterMark: opts.highWaterMark }
+    {
+      highWaterMark: opts.highWaterMark,
+      permitsEmptyTurn: () => hasTrustedEmptyTurn(providerResponse),
+      emptyTurnDiagnostics: () => getEmptyTurnDiagnostics(providerResponse),
+    }
   );
 }

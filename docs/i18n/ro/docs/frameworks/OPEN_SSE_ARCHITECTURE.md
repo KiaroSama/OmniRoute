@@ -30,17 +30,17 @@
 
 ```
 open-sse/
-├── index.ts              # Punct de intrare public
+├── index.ts              # Punct public de intrare
 ├── types.d.ts            # Exporturi publice de tipuri
 ├── package.json          # @omniroute/open-sse
 ├── config/               # Configurații ale furnizorilor, constante, registre
-├── executors/            # Executori HTTP pentru fiecare furnizor (67 + base.ts/index.ts)
-├── handlers/             # Gestionare solicitări (chatCore, responses etc.)
+├── executors/            # Executori HTTP pentru fiecare furnizor (150 de module + base.ts/index.ts)
+├── handlers/             # Gestionare cereri (chatCore, responses etc.)
 ├── lib/                  # Utilitare interne
 ├── mcp-server/           # Server Model Context Protocol
-├── services/             # Aproximativ 298 de module de servicii
-├── transformer/          # Transformator de format pentru Responses API
-├── translator/           # Traducerea formatelor (OpenAI ↔ Claude ↔ Gemini)
+├── services/             # ~298 de module de servicii
+├── transformer/          # Transformator pentru formatul Responses API
+├── translator/           # Conversie între formate (OpenAI ↔ Claude ↔ Gemini)
 └── utils/                # Utilitare partajate (jurnalizare, erori, fluxuri etc.)
 ```
 
@@ -48,10 +48,10 @@ open-sse/
 
 | Director | Fișiere | Scop |
 | `executors/` | 167 | Executori HTTP pentru fiecare furnizor (unificați prin fabrica DefaultExecutor) |
-| `handlers/` | 157 | Puncte de intrare pentru solicitări (chatCore, responses, embeddings) |
+| `handlers/` | 157 | Puncte de intrare pentru cereri (chatCore, responses, embeddings) |
 | `services/` | ~536 | Rutare, memorare în cache, limitarea ratei, reîmprospătare etc. |
-| `translator/` | 56 | Conversia formatelor (OpenAI ↔ Claude ↔ Gemini) |
-| `mcp-server/` | 44 | Instrumente și transporturi MCP |
+| `translator/` | 56 | Conversie între formate (OpenAI ↔ Claude ↔ Gemini) |
+| `mcp-server/` | 44 | Instrumente și mecanisme de transport MCP |
 | `utils/` | ~108 | Utilitare transversale (jurnalizare, erori, fluxuri) |
 | `config/` | ~339 | Configurații ale furnizorilor, constante, registre |
 
@@ -165,30 +165,30 @@ Artefactele jurnalului de apeluri (dacă sunt activate) sunt scrise în `${DATA_
 
 ---
 
-## Analiză aprofundată a fișierelor cheie
+## Fișiere cheie Deep-Dive
 
-### chatCore.ts (5977 de linii)
+### chatCore.ts (5977 linii)
 
-**Gestionarul principal de cereri**. În ciuda dimensiunii sale, are o structură clară:
+The** operatorul principal de solicitare** . În ciuda dimensiunii sale, are o structură clară:
 
 ```ts
-// Pseudo-structura fișierului chatCore.ts
+// Pseudo-structure of chatCore.ts
 export async function handleChat(request: NextRequest) {
-  // 1. Autentificare + CORS
+  // 1. Auth + CORS
   await authenticateRequest(request);
   applyCorsHeaders(response);
 
-  // 2. Validarea corpului
+  // 2. Body validation
   const body = await parseRequestBody(request);
 
-  // 3. Detectarea formatului + traducere
+  // 3. Format detection + translation
   const sourceFormat = detectFormat(request);
   const targetFormat = getTargetFormat(providerId);
   if (needsTranslation(sourceFormat, targetFormat)) {
     body = translateRequest(body, sourceFormat, targetFormat);
   }
 
-  // 4. Rutarea combo
+  // 4. Combo routing
   const targets = await resolveComboTargets(comboId, body);
   for (const target of targets) {
     try {
@@ -196,20 +196,20 @@ export async function handleChat(request: NextRequest) {
       await recordUsage(result);
       return result;
     } catch (err) {
-      // Continuă cu următoarea țintă
+      // Continue to next target
     }
   }
 
-  // 5. Mecanism de rezervă de urgență
+  // 5. Emergency fallback
   return await emergencyFallback(body);
 }
 ```
 
-Deși este o singură funcție uriașă, aceasta este organizată în **secțiuni comentate** care corespund fluxului în 5 etape.
+În ciuda faptului că este o funcție uriașă, este organizată în** secțiuni comentate** acea hartă către conducta în 5 etape.
 
 ### combo.ts (4456 LOC)
 
-**Motorul de rutare** care transformă un combo într-o listă ordonată de ținte.
+The** motor de rutare** care rezolvă un combo la ținte ordonate.
 
 ```ts
 // services/combo.ts
@@ -226,46 +226,51 @@ export async function handleComboChat(body, comboId): Promise<ChatResult> {
 }
 ```
 
-Acceptă **19 strategii de rutare** (consultați `src/shared/constants/routingStrategies.ts`):
+Sprijină** 22 de strategii de rutare** (vezi `src/shared/constants/routingStrategies.ts`):
 
-| Strategie           | Comportament                                                                           |
-| ------------------- | -------------------------------------------------------------------------------------- |
-| `priority`          | Listă ordonată cu prioritate pentru prima țintă                                        |
-| `weighted`          | Selecție probabilistică în funcție de ponderea fiecărei ținte                          |
-| `round-robin`       | Parcurge ciclic țintele, în ordine                                                     |
-| `context-relay`     | Transferă contextul între ținte                                                        |
-| `fill-first`        | Epuizează cota înainte de a trece la următoarea țintă                                  |
-| `p2c`               | Puterea alegerii dintre două opțiuni                                                   |
-| `random`            | Selecție aleatorie uniformă                                                            |
-| `least-used`        | O alege pe cea cu cele mai puține utilizări recente                                    |
-| `cost-optimized`    | Cea mai ieftină țintă funcțională este aleasă prima                                    |
-| `reset-aware`       | Ține cont de ferestrele de resetare ale furnizorului                                   |
-| `reset-window`      | Rutare bazată pe fereastra de resetare                                                 |
-| `headroom`          | Mai întâi, ținta cu cea mai mare cotă disponibilă rămasă                               |
-| `strict-random`     | Cu adevărat uniformă (fără ponderare în funcție de calitate)                           |
-| `auto`              | Utilizează punctajul cu 16 factori (`autoCombo/`)                                      |
-| `lkgp`              | Ultimul furnizor cunoscut ca fiind funcțional este ales primul                         |
-| `context-optimized` | Cea mai bună opțiune pentru cererile cu un context lung                                |
-| `fusion`            | Distribuie în paralel către un grup, apoi sintetizează printr-un arbitru (`fusion.ts`) |
+| Strategie           | Comportament                                                                               |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| `priority`          | Lista ordonată pentru prima țintă                                                          |
+| `weighted`          | Probabilistic prin greutatea pe țintă                                                      |
+| `round-robin`       | Parcurgeți ținte în ordine                                                                 |
+| `context-relay`     | Transmite contextul între ținte                                                            |
+| `fill-first`        | Completați cota înainte de a trece la următoarea                                           |
+| `p2c`               | Puterea a două alegeri                                                                     |
+| `random`            | Uniform aleatoriu                                                                          |
+| `least-used`        | Alegeți cel cu cele mai puține utilizări recente                                           |
+| `cost-optimized`    | Cel mai ieftin obiectiv sănătos mai întâi                                                  |
+| `reset-aware`       | Conștient de ferestrele de resetare ale furnizorului                                       |
+| `reset-window`      | Resetați rutarea bazată pe ferestre                                                        |
+| `expiry-first`      | Cheltuiți mai întâi contul a cărui cotă ar expira neutilizată                              |
+| `headroom`          | În primul rând, cea mai mare cotă rămasă                                                   |
+| `quota-weighted`    | Omiteți conturile epuizate, apoi extrageți din cota rămasă ÷ încărcătură în zbor           |
+| `strict-random`     | Cu adevărat uniformă (fără ponderare a calității)                                          |
+| `auto`              | Utilizați scorul cu 16 factori (`autoCombo/`)                                              |
+| `lkgp`              | Ultimul furnizor bun cunoscut mai întâi                                                    |
+| `context-optimized` | Cel mai bun pentru solicitări în context lung                                              |
+| `cache-optimized`   | Fixați fiecare prefix de prompt reutilizabil în același cont (accesări în cache-ul prompt) |
+| `fusion`            | Ventilați către un panel în paralel, apoi sintetizați printr-un judecător (`fusion.ts`)    |
+| `pipeline`          | Lanțul de pași — rezultatul fiecărei ținte îl alimentează pe următorul                     |
+| `jev`               | Opt-in: TypeSafe Jev admite ce intrări clasate rulează; altfel comanda ta                  |
 
 ### base.ts (1170 LOC)
 
-**Executorul abstract** pe care îl extind toate cele 107 executări. Acesta conține:
+The** executor abstract** pe care fiecare clasă de executor se extinde (direct sau prin `DefaultExecutor` și alte subclase). Acesta conține:
 
-- `buildUrl()` — construirea implicită a URL-ului (subclasele o suprascriu pentru personalizare)
-- `buildHeaders()` — antetele implicite (autentificare, tip de conținut)
-- `transformRequest()` — transmitere nemodificată în mod implicit
-- `execute()` — bucla HTTP principală, cu reîncercare/backoff/întrerupător
+- `buildUrl()` — construcție URL implicită (subclasele înlocuiesc pentru personalizare)
+- anteturi implicite `buildHeaders()` — (auth, content-type)
+- `transformRequest()` — pass-through în mod implicit
+- `execute()` — bucla principală HTTP cu retry/backoff/breaker
 
 ```ts
 // open-sse/executors/default.ts
 export class DefaultExecutor extends BaseExecutor {
-  // Gestionează toți furnizorii compatibili cu OpenAI/Anthropic
-  // Furnizorii înregistrează configurații (URL, autentificare, antete), dar folosesc în comun logica executorului
+  // Handles all OpenAI/Anthropic-compatible providers
+  // Providers register configurations (URL, auth, headers) but share executor logic
 }
 ```
 
-Comportamentul specific furnizorului (antetele de autentificare, URL-ul de bază, antetele de versiune) este configurat prin registrul furnizorilor, nu prin clase de executori separate.
+Comportamentul specific furnizorului (anteturi de autorizare, URL de bază, anteturi de versiune) este configurat prin intermediul registrului furnizorului, nu prin clasele de executare separate.
 
 ````
 
@@ -273,88 +278,88 @@ Comportamentul specific furnizorului (antetele de autentificare, URL-ul de bază
 
 ## Servicii (117 module)
 
-Serviciile sunt **module specializate, cu un singur scop**, pe care gestionarii le compun. Categoriile principale:
+Serviciile sunt** module concentrate, cu un singur scop** pe care manipulatorii compun. Marile categorii:
 
-### Rutare și Combo
+### Rutare și combinație
 
-- `combo.ts` — punct de intrare pentru cererile rutate prin combo
-- `services/autoCombo/` — punctaj bazat pe 16 factori, 8 strategii de rutare automată
-- `wildcardRouter.ts` — identifică rutele cu metacaractere (`gpt-*`)
-- `modelFamilyFallback.ts` — mecanism de rezervă T5 în cadrul aceleiași familii
+- `combo.ts` — punct de intrare pentru cererile cu rutare combinată
+- `services/autoCombo/` — punctaj în 16 factori, 8 strategii de rutare automată
+- `wildcardRouter.ts` — se potrivește cu rutele wildcard (`gpt-*`)
+- `modelFamilyFallback.ts` — T5 alternativă intra-familială
 
 ### Limitarea ratei și cota
 
-- `rateLimitManager.ts` — găleată de jetoane pentru fiecare combinație cheie+furnizor
-- `usage.ts` — înregistrarea utilizării
-- `quotaCache.ts` — instantanee ale cotelor în memorie
+- găleată de jetoane `rateLimitManager.ts` — per furnizor de cheie +
+- înregistrarea utilizării `usage.ts` —
+- `quotaCache.ts` — instantanee de cotă în memorie
 
-### Cont și jeton
+### Cont și Token
 
-- `tokenRefresh.ts` — reîmprospătare OAuth la răspunsul 401
-- `accountFallback.ts` — comutare la un cont alternativ
-- `sessionManager.ts` — starea sesiunilor cu mai multe schimburi
+- `tokenRefresh.ts` — OAuth reîmprospătare pe 401
+- `accountFallback.ts` — comuta la cont alternativ
+- `sessionManager.ts` — starea sesiunii multi-turn
 
-### Inteligență
+### Inteligența
 
-- `intentClassifier.ts` — clasifică intenția cererii
-- `taskAwareRouter.ts` — rutează după tipul sarcinii
-- `thinkingBudget.ts` — alocă jetoanele de raționament
+- `intentClassifier.ts` — clasifica intentia cererii
+- `taskAwareRouter.ts` — traseu după tipul sarcinii
+- `thinkingBudget.ts` — alocă jetoane de gândire
 - `contextManager.ts` — injectează contextul de rutare
 
 ### Reziliență
 
-- `resilience.ts` — orchestrarea reîncercărilor, a temporizării progresive și a disjunctorului
-- `emergencyFallback.ts` — mecanism de rezervă de ultimă instanță
+- `resilience.ts` — reîncercare, backoff, orchestrare întrerupător
+- `emergencyFallback.ts` — alternativă de ultimă soluție
 - `modelDeprecation.ts` — rutare automată către modelele succesoare
 
-### Stare
+### Stat
 
-- `signatureCache.ts` — deduplicare după semnătura cererii
-- `volumeDetector.ts` — reducerea încărcării
-- `contextHandoff.ts` — serializarea sesiunii
+- `signatureCache.ts` — dedup prin semnătura cererii
+- `volumeDetector.ts` — debarasare
+- Serializarea sesiunii `contextHandoff.ts` —
 
-### Compresie
+### Comprimare
 
-- `compression/` (subdirector) — flux complet de compresie
-- 39 de fișiere care acoperă motoare, pachete de reguli și adaptoare
+- `compression/` (subdirector) — conductă de compresie completă
+- 39 de fișiere care acoperă motoare, pachete de reguli, adaptoare
 
 ### Abilități
 
-- (prezentate în [SKILLS.md](./SKILLS.md))
+- (acoperit în [SKILLS.md](./SKILLS.md) )
 
 ### Memorie
 
-- (prezentată în [MEMORY.md](./MEMORY.md))
+- (acoperit în [MEMORY.md](./MEMORY.md) )
 
 ---
 
-## Executori (peste 75 de fișiere)
+## Executori (150 module)
 
-Câte un fișier pentru fiecare furnizor. Toți extind `BaseExecutor` și suprascriu elementele care diferă.
+În mare parte, un fișier pentru fiecare furnizor. Clasele executorii extind toate `BaseExecutor` și suprascriu ceea ce diferă; celelalte module sunt ajutoare pentru fiecare furnizor (scheme de instrumente, adaptoare fetch/TTS, gestionatori de ciudatenii).
 
-### Tipare comune
+### Modele comune
 
-Furnizorii sunt rezolvați prin `getExecutor(providerId)`, care returnează executorul configurat. Furnizorii compatibili cu OpenAI/Anthropic utilizează `DefaultExecutor` (`executors/default.ts`). Comportamentul specific furnizorului (URL-ul de bază, anteturile de autentificare, versiunea API) este configurat în `open-sse/config/providers/`, iar transformările corpului cererii sunt gestionate în `open-sse/translator/`.
+Furnizorii sunt rezolvați prin `getExecutor(providerId)`, care returnează executantul configurat. Furnizorii OpenAI/Anthropic-compatible folosesc `DefaultExecutor` (`executors/default.ts`). Comportamentul specific furnizorului ( URL de bază, anteturi de autentificare, versiunea API ) este configurat în `open-sse/config/providers/`, în timp ce transformările corpului cererii sunt gestionate în `open-sse/translator/`.
 
-**URL-ul personalizat** este stabilit prin configurația furnizorului:
+**URL personalizat** este setat prin configurarea furnizorului:
 
 ```ts
-// Configurația furnizorului în open-sse/config/providers/
+// Provider config in open-sse/config/providers/
 export default {
   id: "together",
   baseURL: "https://api.together.xyz/v1/chat/completions",
 }
 ````
 
-**Autentificarea personalizată** este gestionată prin configurația de autentificare din registrul furnizorilor (cheie API, OAuth, profiluri de antet).
+**Autentificare personalizată** este gestionat prin configurația de autentificare a registrului furnizorului ( cheie API, OAuth, profiluri antet).
 
-Transformările **personalizate ale corpului cererii** (de exemplu, separarea de către Anthropic a `system` de `messages`) sunt înregistrate pentru fiecare furnizor în `open-sse/translator/`.
+**Corpul cererii personalizate** transformările (de exemplu, Anthropic care separă `system` de `messages`) sunt înregistrate pe furnizor în `open-sse/translator/`.
 
 ````
 
-### Fabrica de executori
+### The Executor Factory
 
-`executors/index.ts` exportă `getExecutor(providerId)`:
+`executors/index.ts` exports `getExecutor(providerId)`:
 
 ```ts
 import { getExecutor } from "@omniroute/open-sse/executors";
@@ -366,7 +371,7 @@ const result = await executor.execute({
 });
 ````
 
-Rezolvarea se face prin `ExecutorRegistry` (`executors/registry.ts`): fiecare executor specializat este declarat în tabelul încorporat din `executors/index.ts` și înregistrat prin `registerExecutor(alias, instance)` la încărcarea modulului; `getExecutor()` consultă registrul și revine la un `DefaultExecutor` memorat pentru orice furnizor fără o intrare specializată. Maparea completă alias → executor este descrisă de testul de referință `tests/unit/executor-map-golden.test.ts`.
+Rezoluția trece prin `ExecutorRegistry` (`executors/registry.ts`): fiecare executant specializat este declarat în tabelul încorporat al `executors/index.ts` și înregistrat prin `registerExecutor(alias, instance)` la încărcarea modulului; `getExecutor()` consultă registrul și revine la un `DefaultExecutor` memorat pentru orice furnizor fără o intrare specializată. Maparea completă a aliasului → executor este caracterizată de testul de aur `tests/unit/executor-map-golden.test.ts`.
 
 ---
 
@@ -481,17 +486,17 @@ Acesta gestionează:
 
 ## Configurare
 
-`open-sse/config/` conține stratul de configurare:
+`open-sse/config/` deține stratul de configurare:
 
-| Fișier                        | Scop                                                            |
-| ----------------------------- | --------------------------------------------------------------- |
-| `providerRegistry.ts`         | Registru de modele de chat pentru catalogul cu 352 de furnizori |
-| `providerModels.ts`           | Aliasuri de modele, maparea formatelor                          |
-| `constants.ts`                | Timpi de expirare, limite, coduri de stare                      |
-| `defaultThinkingSignature.ts` | Semnătura implicită de raționament Claude                       |
-| `modelStrip.ts` (în servicii) | Eliminarea câmpurilor pentru fiecare furnizor                   |
+| Fişier                        | Scop                                                          |
+| ----------------------------- | ------------------------------------------------------------- |
+| `providerRegistry.ts`         | Registrul de model de chat prin catalogul de 394 de furnizori |
+| `providerModels.ts`           | Aliasuri de model, mapare a formatului                        |
+| `constants.ts`                | Timeouts, limite, coduri de stare                             |
+| `defaultThinkingSignature.ts` | Semnătură implicită de gândire Claude                         |
+| `modelStrip.ts` (în servicii) | Eliminarea câmpului per furnizor                              |
 
-### Schema registrului de furnizori
+### Schema registrului furnizorului
 
 ```ts
 interface ProviderConfig {
@@ -506,7 +511,7 @@ interface ProviderConfig {
 }
 ```
 
-Validarea Zod la încărcarea modulului asigură faptul că toate configurațiile furnizorilor sunt valide.
+Validarea Zod la încărcarea modulului asigură că toate configurațiile furnizorului sunt valide.
 
 ---
 

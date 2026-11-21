@@ -16,40 +16,52 @@
 
 ---
 
-## TLS Fingerprinting ස්තරය
+## TLS ඇඟිලි සලකුණු ස්තරය
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-ස්ථිර `wreq-js` sessions, එක් එක් ගිණුම් scope එක සහ resolve කළ proxy එක අනුව අවශ්ය වූ විට නිර්මාණය කෙරේ. process පුරා පවතින `TlsClient`, Cloudflare පිටුපස ඇති upstreams සඳහා **macOS මත Chrome 124** ලෙස පෙනී සිටින sessions උපරිම 128ක් pool කරයි. native runtime එක නොමැති විට `TlsClient.fetch()` ආරක්ෂිතව අසාර්ථක වේ; caller කෙනෙකුට මෙම wrapper එකෙන් පිටත fallback එකක් පැහැදිලිව තෝරාගත හැක.
+ස්ථාවර `wreq-js` සැසි, එක් එක් ගිණුම් විෂය පථය සහ නිරාකරණය කළ ප්රොක්සිය අනුව අවශ්ය වූ විට පමණක් සාදනු ලැබේ. ක්රියාවලි-ව්යාප්ත `TlsClient` එක, Cloudflare පිටුපස ඇති upstream සඳහා **macOS මත Chrome 124** ලෙස පෙනී සිටින සැසි උපරිම වශයෙන් 128ක් pool කරයි. ස්වදේශීය runtime එක නොමැති විට `TlsClient.fetch()` ආරක්ෂිතව අසාර්ථක වේ; මෙම wrapper එකෙන් පිටත fallback එකක් caller කෙනෙකුට පැහැදිලිව තෝරාගත හැක.
 
-- Session profile එක: `browser: "chrome_124", os: "macos"`
-- Proxy resolution (ප්රමුඛතාව): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (කුඩා අකුරු ප්රභේද ද ඇතුළුව)
-- Timeout එක: `TLS_CLIENT_TIMEOUT_MS` (`FETCH_TIMEOUT_MS` වෙතින් උරුම වේ, පෙරනිමිය 600000)
-- `wreq-js` Response එක fetch සමඟ ගැළපේ (`headers`, `text()`, `json()`, `clone()`, `body`).
-- පළමු-byte watchdog එක (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): upstream headers පැමිණි විගස `TlsClient.fetch()` resolve වන බැවින්, කිසිදා පළමු byte එකක් ලබා නොදෙන body එකක් `TLS_CLIENT_TIMEOUT_MS` මඟින් පමණක් සීමා කළ නොහැක. `guardTlsFirstByte()` විසින් body එකේ පළමු `read()` එක `TLS_FIRST_BYTE_WATCHDOG_MS` සමඟ race කරයි (පෙරනිමිය `10000`, `0` මඟින් එය අක්රිය කරයි); සෞඛ්ය සම්පන්න body එකකට බලපෑමක් නොවන අතර, stalled body එකක් wreq reader එක අවලංගු කර `proxyFetch` හි පවතින TLS-fallback logic එකට direct/proxy dispatcher එක වෙත ඉදිරියට යාමට ඉඩ දෙයි (body එකක් සහිත POST එකක් වැනි replay කිරීමට අනාරක්ෂිත request එකක්, නිහඬව නැවත උත්සාහ කිරීම වෙනුවට තවමත් throw කරයි).
+- සැසි profile එක: `browser: "chrome_124", os: "macos"`
+- ප්රොක්සි නිරාකරණය (ප්රමුඛතාව): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (කුඩා අකුරු ප්රභේද ද ඇතුළුව)
+- කල් ඉකුත්වීම: `TLS_CLIENT_TIMEOUT_MS` (`FETCH_TIMEOUT_MS` වෙතින් උරුම වේ, පෙරනිමිය 600000)
+- `wreq-js` Response එක fetch සමඟ අනුකූල වේ (`headers`, `text()`, `json()`, `clone()`, `body`).
+- පළමු-byte watchdog එක (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): upstream headers පැමිණි වහාම `TlsClient.fetch()`
+  නිරාකරණය වන බැවින්, කිසිදා පළමු byte එක ලබා නොදෙන body එකක් `TLS_CLIENT_TIMEOUT_MS` මඟින් පමණක් සීමා කළ නොහැක.
+  `guardTlsFirstByte()` මඟින් body එකේ පළමු `read()` එක `TLS_FIRST_BYTE_WATCHDOG_MS` (පෙරනිමිය `10000`, `0` එය අක්රිය කරයි) සමඟ
+  තරග කරවයි; සෞඛ්ය සම්පන්න body එකකට බලපෑමක් නොවන අතර, ඇණහිටි body එකක් wreq reader එක අවලංගු කර
+  `proxyFetch` හි පවතින TLS-fallback තර්කනයට සෘජු/ප්රොක්සි dispatcher එක වෙත ඉදිරියට යාමට ඉඩ සලසයි
+  (නැවත ධාවනයට ආරක්ෂිත නොවන request එකක්, උදා. body එකක් සහිත POST එකක්, නිහඬව නැවත උත්සාහ කිරීම වෙනුවට තවමත් exception එකක් නිකුත් කරයි).
 
-### Web-cookie සැපයුම්කරු transport එක — wreq-js 3.2.0
+### Web-cookie සපයන්නාගේ ප්රවාහනය — wreq-js 3.2.0
 
-`open-sse/services/tlsClientBase.ts` යනු පහත දැක්වෙන විශේෂිත web-cookie transports පහ සඳහා වන හවුල් adapter එකයි. සෑම සැහැල්ලු සැපයුම්කරු wrapper එකක්ම browser/OS profile එකක් තෝරයි. adapter එක, profile + OS + resolve කළ proxy අනුව key කර ඇති `open-sse/utils/tlsClient.ts` හි තනි wreq runtime loader එක සහ transport pool එක භාවිත කරයි; ඒ අතරතුර සෑම request එකක්ම `cookieMode: "ephemeral"` භාවිත කරයි. එබැවින් ගිණුම් සහ requests transport-මට්ටමේ connections බෙදාගන්නා නමුත්, කිසිවිටෙක wreq session එකක් හෝ cookie jar එකක් බෙදා නොගනී.
+`open-sse/services/tlsClientBase.ts` යනු පහත විශේෂිත web-cookie ප්රවාහන පහ සඳහා පොදු adapter එකයි. සෑම සරල provider wrapper එකක්ම browser/OS profile එකක් තෝරයි. Adapter එක, profile + OS + නිරාකරණය කළ ප්රොක්සිය අනුව key කර ඇති `open-sse/utils/tlsClient.ts` තුළ ඇති තනි wreq runtime loader එක සහ transport pool එක භාවිත කරයි; ඒ අතර සෑම request එකක්ම `cookieMode: "ephemeral"` භාවිත කරයි. එබැවින් ගිණුම් සහ requests ප්රවාහන-මට්ටමේ connections බෙදාගන්නා නමුත්, කිසිවිටෙකත් wreq session එකක් හෝ cookie jar එකක් බෙදා නොගනී.
 
-| සැපයුම්කරු | Profile එක    | අනුකරණය කළ OS | Stream EOF ප්රතිපත්තිය                 |
+| සපයන්නා    | Profile       | අනුකරණය කළ OS | Stream EOF ප්රතිපත්තිය                 |
 | ---------- | ------------- | ------------- | -------------------------------------- |
 | Claude     | `chrome_146`  | Linux         | `[DONE]` ඇතුළත් කරන්න                  |
-| Perplexity | `firefox_148` | macOS         | `event: end_of_stream` ඇතුළත් කරන්න    |
-| Grok       | `chrome_146`  | Linux         | `[DONE]` ඉවත් කරන්න                    |
+| Perplexity | `firefox_151` | macOS         | `event: end_of_stream` ඇතුළත් කරන්න    |
+| Grok       | `chrome_146`  | Linux         | `[DONE]` බැහැර කරන්න                   |
 | Notion     | `chrome_146`  | Windows       | `[DONE]` ඇතුළත් කරන්න                  |
 | LMArena    | `chrome_146`  | Windows       | sentinel එකක් නැත; native EOF හි වසන්න |
 
-- Streaming කිරීම native response `ReadableStream` එක සෘජුවම පරිභෝජනය කරයි; temp file එකක් හෝ sidecar එකක් නිර්මාණය නොකෙරේ.
-- stream එකක් නිරාවරණය කිරීමට පෙර ආරම්භක bytes 256ක් දක්වා පරීක්ෂා කෙරේ. SSE සැපයුම්කරුවෝ SSE නොවන errors buffer කරති; Grok/LMArena විසින් Cloudflare challenges `403` වෙතත් HTML interstitials `502` වෙතත් map කරයි.
-- native request timeout එක තවමත් නිරපේක්ෂ JS hard deadline එකකින් wrap කර ඇත. hang වීමකදී, ඊළඟ request එක එය නැවත නිර්මාණය කිරීමට පෙර බලපෑමට ලක් වූ profile/OS/proxy transport එක පමණක් invalidate කර වසා දමයි.
-- Proxy resolution ප්රමුඛතාව වන්නේ එක් එක් call එකේ `proxyUrl` → request-scope කළ account/dashboard context එක → `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (කුඩා අකුරු ප්රභේද ඇතුළුව) යන්නයි. direct connection එකක් leak කිරීම වෙනුවට resolution errors ආරක්ෂිතව අසාර්ථක වේ. LMArena හිතාමතාම `arena.ai` සම්බන්ධයෙන් resolve කරයි.
-- `byteResponse`, UTF-8 දූෂණයකින් තොර content-typed `data:` URL එකක් ලබා දෙයි.
-- සියලුම සීමා කළ profile/OS/proxy slots 128 සක්රියව හෝ වැසෙමින් පවතින විට errors ලෙස `TlsClientUnavailableError` (package/addon එක නොමැත), `TlsClientHangError` (deadline එක ඉක්මවා ඇත), සහ `WreqTransportCapacityError` (හවුල් session-capacity error code එක) ලැබේ.
+- Streaming ක්රියාවලිය native response `ReadableStream` එක සෘජුවම පරිභෝජනය කරයි; තාවකාලික file එකක් හෝ sidecar එකක්
+  සාදනු නොලැබේ.
+- Stream එකක් නිරාවරණය කිරීමට පෙර ආරම්භක bytes 256ක් දක්වා පරීක්ෂා කරනු ලැබේ. SSE providers, SSE නොවන
+  errors buffer කරයි; Grok/LMArena මඟින් Cloudflare challenges `403` වෙතත් HTML interstitials `502` වෙතත් සිතියම්ගත කරයි.
+- Native request timeout එක තවමත් නිරපේක්ෂ JS hard deadline එකකින් ආවරණය කර ඇත. Hang එකක් සිදු වූ විට,
+  ඊළඟ request එක එය නැවත සෑදීමට පෙර බලපෑමට ලක් වූ profile/OS/proxy transport එක පමණක් අවලංගු කර වසා දමයි.
+- ප්රොක්සි නිරාකරණ ප්රමුඛතාව එක් එක් call එක සඳහා `proxyUrl` → request-විෂය පථ ගිණුම්/dashboard context එක →
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (කුඩා අකුරු ප්රභේද ඇතුළුව) වේ. සෘජු connection එකක් කාන්දු කිරීම වෙනුවට නිරාකරණ errors
+  ආරක්ෂිතව අසාර්ථක වේ. LMArena හිතාමතාම `arena.ai` ට එරෙහිව නිරාකරණය කරයි.
+- `byteResponse` UTF-8 දූෂණයකින් තොරව content type එක සඳහන් කළ `data:` URL එකක් ආපසු ලබා දෙයි.
+- Errors ලෙස `TlsClientUnavailableError` (package/addon එක නොමැති වීම), `TlsClientHangError`
+  (deadline ඉක්මවා යාම), සහ සීමා කළ profile/OS/proxy slots 128ම සක්රියව හෝ වැසෙමින් පවතින විට
+  `WreqTransportCapacityError` (හවුල් session-capacity error code එක) ලැබේ.
 
-ඉහත generic `TlsClient` session එක ස්ථිර browser-backed cookie state සඳහා විශේෂීකරණය වී පවතී. මාර්ග දෙකම cache කළ එකම wreq module loader එක සහ process lifecycle hook එක නැවත භාවිත කරයි; ඒවායේ cookie ජීවිතකාල හිතාමතාම වෙනස් බැවින් ඒවායේ pools වෙන වෙනම පවතී.
+ඉහත generic `TlsClient` session එක ස්ථාවර browser-backed cookie තත්ත්වය සඳහා විශේෂිතව පවතී. මාර්ග දෙකම cache කළ එක් wreq module loader එකක් සහ process lifecycle hook එකක් නැවත භාවිත කරයි; ඒවායේ cookie ආයුකාල හිතාමතාම වෙනස් බැවින් ඒවායේ pools වෙන වෙනම පවතී.
 
-profiles pinned package එක මඟින් සහාය දක්වනු ලබන නමුත්, සැබෑ WAF පිළිගැනීම දේශීය contract tests වලින් ස්වාධීනව වෙනස් විය හැක. upstream browser එකක් සමඟ parity ඇති බව ප්රකාශ කිරීමට පෙර, පැහැදිලිව අවසර ලත් සජීවී ගිණුමකට එරෙහිව fingerprint වෙනස්කම් වලංගු කරන්න.
+Profiles, pin කළ package එක මඟින් සහාය දක්වන නමුත්, සැබෑ WAF පිළිගැනීම දේශීය contract tests වලින් ස්වාධීනව වෙනස් විය හැක. Upstream browser එකක් සමඟ සමානත්වය ඇති බව ප්රකාශ කිරීමට පෙර, පැහැදිලිව අවසර දී ඇති live account එකකට එරෙහිව fingerprint වෙනස්කම් වලංගු කරන්න.
 
 ---
 
@@ -98,7 +110,7 @@ aider, continue.dev, copilot, avante, codecompanion
 
 "සැබෑ Claude Code" ගමනාගමනය පමණක් පිළිගන්නා තෙවන පාර්ශ්ව Anthropic රිලේ සඳහා:
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - පෙරනිමියෙන් `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"`
@@ -115,40 +127,62 @@ aider, continue.dev, copilot, avante, codecompanion
 
 ---
 
-## Antigravity රහස්යතාව
+## Antigravity රහසිගතව
 
-Antigravity ඉල්ලීම් ඇමතුම්කරුගේ පෙළ byte-එකට-byte ලෙසම සුරකියි. IDE සේවාදායකයක් අනුකරණය කිරීම සඳහා OmniRoute විසින් prompts තුළට ශුන්ය-පළල අක්ෂර ඇතුළත් කිරීම හෝ මෙවලම් නැවත නම් කිරීම/එන්නත් කිරීම සිදු නොකරයි.
+Antigravity ඉල්ලීම් ඇමතුම්කරු පෙළ byte-for-byte සංරක්ෂණය කරයි. OmniRoute IDE සේවාලාභියෙකු අනුකරණය කිරීම සඳහා විමසුම් හෝ rename/inject මෙවලම් වෙත ශුන්‍ය පළල අක්ෂර ඇතුළත් නොකරයි.
 
 ### `antigravityHeaderScrub.ts`
 
-ඉදිරියට යැවීමට පෙර Stainless SDK සලකුණු (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) ඉවත් කරයි.
+ඉදිරියට යැවීමට පෙර මල නොබැඳෙන SDK සලකුණු තීරු (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`)
 
-### ⚠️ අවදානම: `ANTIGRAVITY_CREDITS=always` (ගිණුම් තහනම් වීමේ ප්රධාන අවදානම් ස්ථානය)
+### ⚠️ අවදානම: `ANTIGRAVITY_CREDITS=always` (ගිණුම් තහනම් උණුසුම් ස්ථානය)
 
-`ANTIGRAVITY_CREDITS=always` (`open-sse/executors/antigravity.ts` විසින් භාවිත කරනු ලැබේ) Google හි නොමිලේ-ස්ථර quota එකෙන් ඉල්ලීම් සීමා කිරීමට ඉඩ දීම වෙනුවට, **සෑම** ඉල්ලීමක්ම Antigravity AI Credit Overages (ගෙවීම් සහිත Google credits) හරහා යොමු කරයි. මෙය විශේෂාංගයක් ලෙස ලේඛනගත කර ඇති නමුත්, එය **අපට ලැබෙන වඩාත්ම පොදු ToS උල්ලංඝන වාර්තාවයි** — `=always` සමඟ පැය කිහිපයක් ධාවනය කිරීමෙන් පසු Google Ultra ගිණුම් කිහිපයක් `403 / "service disabled for ToS violation" / insufficient_quota` සමඟ තහනම් කර ඇත.
+`ANTIGRAVITY_CREDITS=always` ( `open-sse/executors/antigravity.ts` විසින් පරිභෝජනය කරන ලද) මාර්ග** සෑම** Google හි නිදහස්-ස්ථර කෝටා ගේට් දේවල් වලට ඉඩ දීම වෙනුවට Antigravity AI ණය වැඩි කිරීම් (ගෙවුම් Google ණය) හරහා ඉල්ලන්න. මෙය විශේෂාංගයක් ලෙස ලේඛනගත කර ඇත, නමුත් එය වේ** අපි දකින වඩාත්ම පොදු ToS-උල්ලංඝන වාර්තාව** — බහු Google Ultra ගිණුම් `=always` සමඟ පැය කිහිපයක් ධාවනය කිරීමෙන් පසු `403 / "service disabled for ToS violation" / insufficient_quota` සමඟ තහනම් කර ඇත.
 
-ඉහළ ධාරාවේ බලාත්මක කිරීම සිදුවන්නේ **Google පාර්ශ්වයේය**; එය OmniRoute හට වැළැක්විය හැකි දෙයක් නොවේ. env var නාමය සහ පවතින ලේඛන අනුව මෙය ආරක්ෂිතව මාරු කළ හැකි සැකසුමක් ලෙස පෙනේ; නමුත් එය එසේ නොවේ.
+උඩුගං බලාත්මක කිරීම ක්‍රියාත්මකයි**Google ගේ පැත්ත** OmniRoute කිසිවක් වැළැක්විය නොහැක. env var නම සහ පවතින ලේඛන එය පෙරළීමට ආරක්ෂිත බොත්තමක් මෙන් ශබ්ද කරයි; එය නොවේ.
 
-**මෙය නොමිලේ-ස්ථරයට පමණක් සීමා වූ භාවිතයට වඩා දැඩි ලෙස අපයෝජන හඳුනාගැනීම අවුලුවන්නේ ඇයි:**
+**මෙය නිදහස්-ස්ථර-පමණි භාවිතයට වඩා ආක්‍රමණශීලී ලෙස අපයෝජන අනාවරණය කර ගන්නේ ඇයි:**
 
-- එක් Google ගිණුමකින් අඛණ්ඩව සිදු වන ස්වයංක්රීය වියදම, නොමිලේ ස්ථරය quota සීමාවට ළඟා වී නතර වීමට වඩා වෙනස් ආකාරයකින් සලකුණු වේ.
-- Credit overages සඳහා වේග සීමාවක් නොමැති බැවින්, වැරදි ලෙස වින්යාස කළ සේවාදායකයකට මිනිත්තු කිහිපයකින් USD සිය ගණනක් වැය කළ හැකි අතර එය API-key නැවත විකිණීමක් හෝ bot ගමනාගමනයක් ලෙස දිස් විය හැක.
-- එකම බාහිර IP එකෙන් OmniRoute පරිශීලකයන් කිහිපදෙනෙකු සමාන්තරව overage credits භාවිත කිරීමෙන් එම සංඥාව තවත් ශක්තිමත් වේ.
+- තනි Google ගිණුමක් සඳහා තිරසාර ස්වයංක්‍රීය වියදම් නිදහස්-ස්ථර පහර-කෝටා-සහ-නැවතුම්වලට වඩා වෙනස්.
+- ණය වැඩි කිරීම්වලට අනුපාත සීමාවක් නොමැත, එබැවින් වැරදි ලෙස වින්‍යාස කරන ලද සේවාලාභියෙකුට මිනිත්තු කිහිපයකින් USD සිය ගණනක් පුළුස්සා API-key resale හෝ bot Traffic ලෙස දිස්විය හැක.
+- බහු OmniRoute භාවිතා කරන්නන් එකම බාහිර IP වෙතින් සමාන්තරව අධික බැර කිරීම් සංඥාව සංයෝග කරයි.
 
-**නිර්දේශිත ක්රියාමාර්ගය:**
+**නිර්දේශිත ඉරියව්ව:**
 
-1. ක්රියාකරු ගෙවීම් සහිත credit සහ ගිණුම් බලාත්මක කිරීමේ අවදානම පැහැදිලිව පිළිගන්නේ නම් හැර, පෙරනිමි `ANTIGRAVITY_CREDITS=off` තබා ගන්න. `retry` පළමුව සාමාන්ය ඉල්ලීම යවන අතර, සුදුසු quota 429 ප්රතිචාරයකින් පසුව උපරිම වශයෙන් එක් වරක් credits ඇතුළත් කරයි; `always` පළමු ඉල්ලීමේදීම credits ඇතුළත් කරයි.
-2. එක් Antigravity ගිණුමක් උපරිමයට පත් කිරීම වෙනුවට **Auto-Combo හරහා සැපයුම්කරුවන් අතර බර බෙදාහරින්න** (`model: "auto"` හෝ `kr/glm/etc`-combo).
-3. Antigravity සැපයුම්කරුගේ සංස්කරණ පිටුවෙහි **සම්බන්ධතාවයකට වෙන්ව RPM සීමා සකසන්න** (Dashboard → Providers → Antigravity → connection → rate limit). අඛණ්ඩ භාවිතය සඳහා 30–60 RPM යනු සාධාරණව ආරක්ෂා කළ හැකි ඉහළ සීමාවකි.
-4. **ස්ථාවර, ක්රියාකරු විසින් පාලනය කරන ඉහළ ධාරා ජාලකරණය භාවිත කරන්න** සහ සම්බන්ධයක් නොමැති පරිශීලකයන් හෝ workloads අතර එක් ගිණුමක් බෙදාගැනීමෙන් වළකින්න.
-5. **තහනම් කළහොත්**: Google විසින් එවූ නිශ්චිත `quota_exceeded` / `service disabled` ප්රතිචාර body එක සමඟ `support.google.com` → "Restore Workspace/Account access" හරහා අභියාචනය කරන්න. ප්රතිස්ථාපනය සහතික කර නැත.
+1. ක්‍රියාකරු පැහැදිලිවම ගෙවූ-ණය සහ ගිණුම්-බලාත්මක කිරීමේ අවදානම පිළිගන්නේ නම් මිස පෙරනිමි `ANTIGRAVITY_CREDITS=off` තබා ගන්න. `retry` ප්‍රථමයෙන් සාමාන්‍ය ඉල්ලීම යවන අතර සුදුසුකම් ලත් කෝටාව 429 ට පසුව වැඩිම වාර ගණනක් ණය එන්නත් කරයි; `always` පළමු ඉල්ලීම මත ණය එන්නත් කරයි.
+2. **ඔටෝ-කොම්බෝ හරහා සැපයුම්කරුවන් හරහා පැටවීම පතුරුවන්න** (`model: "auto"` හෝ `kr/glm/etc` -combo) තනි Antigravity ගිණුමක් සංතෘප්ත කිරීම වෙනුවට.
+3. **එක් සම්බන්ධතාවයකට RPM සීමාවන් සකසන්න** Antigravity සපයන්නාගේ සංස්කරණ පිටුවෙහි (උපකරණ පුවරුව → සපයන්නන් → Antigravity → සම්බන්ධතා → අනුපාත සීමාව). 30-60 RPM යනු තිරසාර භාවිතය සඳහා ආරක්ෂිත ඉහළ සීමාවකි.
+4. **ස්ථාවර, ක්‍රියාකරු-පාලිත උඩු ප්‍රවාහ ජාලකරණය භාවිතා කරන්න** සහ සම්බන්ධයක් නැති පරිශීලකයන් හෝ වැඩ බර හරහා එක් ගිණුමක් බෙදා ගැනීමෙන් වළකින්න.
+5. **තහනම් නම්** : `support.google.com` → හරහා ආයාචනා කරන්න " Workspace/Account ප්‍රවේශය ප්‍රතිසාධනය කරන්න" යවන ලද නියම `quota_exceeded` / `service disabled` ප්‍රතිචාරය Google සමඟ. ප්රතිෂ්ඨාපනය සහතික නොවේ.
 
-පරිසර යොමුව සෑම credits mode එකකම ගිණුම් සහ වියදම් බලපෑම් ලේඛනගත කරයි.
+පාරිසරික යොමුව ගිණුම ලේඛනගත කරන අතර එක් එක් ණය මාදිලියේ ඇඟවුම් කරයි.
 
-ස්පර්ශ වන ස්ථාන:
+#### `=always` පමණක් නොවේ : Antigravity OAuth routing පොදුවේ
+
+අත්හිටුවීම් ණය වැඩිකිරීම් වලට සීමා නොවේ. 2026 නොවැම්බර් වාර්තා (#19223, #19266) `antigravity` සහ `agy` (Antigravity CLI) සපයන්නන් හරහා මාර්ගගත කිරීමේදී අත්හිටුවන ලද Google ගිණුම් කිහිපයක් විස්තර කරයි:
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+සැපයුම්කරුවන් දෙදෙනාම Antigravity නිෂ්පාදන OAuth සැසිය සමඟ සත්‍යාපනය කරයි, එය උපකරණ පුවරුවේ අවදානම් දැන්වීම ("මෙම සැපයුම්කරු proxy/router භාවිතය සඳහා අවසර නොලබන ඔබේ නිල නිෂ්පාදනය session/OAuth භාවිතා කරයි") සම්බන්ධතාවයක් එක් කිරීමට පෙර අනතුරු අඟවයි. ඉහත නිර්දේශ කිසිවක් එම භාවිතයට අවසර ලබා නොදේ; ඔවුන් එක් ගිණුමක් ගෙන යන ගමනාගමනය අඩු කරයි.
+
+**Gemini මාදිලි සඳහා බලයලත් API අතුරුමුහුණත්.** Google එහි APIs හරහා Gemini වෙත ක්‍රමලේඛන ප්‍රවේශය ලබා දෙයි, සාමාන්‍ය API-යතුරු සපයන්නන් ලෙස OmniRoute සහාය දක්වයි:
+
+| සපයන්නාගේ හැඳුනුම්පත | උපකරණ පුවරුවේ නම               | අක්තපත්ර                                                                 |
+| -------------------- | ------------------------------ | ------------------------------------------------------------------------ |
+| `gemini`             | Gemini (Google AI චිත්‍රාගාරය) | Gemini API යතුර Google AI Studio වෙතින් (නොමිලේ ස්ථර තිබේ)               |
+| `vertex`             | Vertex AI                      | සේවා ගිණුම JSON, OAuth ප්‍රවේශ ටෝකනය හෝ Vertex Express API යතුර (Gemini) |
+
+මෙම සපයන්නන් API ප්‍රවේශය සඳහා අක්තපත්‍ර Google ගැටළු භාවිතා කරයි, Antigravity නිෂ්පාදන සැසිය මෙන් නොව. ඔවුන් සෑම භාවිතයක්ම අනුකූල නොකරයි හෝ බලාත්මක කිරීමේ අවදානම ඉවත් නොකරයි: සෑම එකක්ම තමන්ගේම නියමයන් මගින් පාලනය වන අතර, ක්‍රියාකරු විසින් ඒවා යෙදවීම සඳහා පරීක්ෂා කළ යුතුය. උදාහරණයක් ලෙස, [Gemini API අමතර සේවා නියමයන්](https://ai.google.dev/gemini-api/terms) API සේවාලාභීන් යුරෝපීය ආර්ථික ප්‍රදේශයේ, ස්විට්සර්ලන්තයේ හෝ එක්සත් රාජධානියේ පරිශීලකයින්ට ලබා දී ඇති විට ගෙවුම් සේවා සඳහා පමණක් ඉඩ ලබා දෙන අතර, නොගෙවූ සේවා වෙත යවන ලද අන්තර්ගතය Google හි නිෂ්පාදන වැඩිදියුණු කිරීමට භාවිතා කළ හැක. Vertex AI වෙනුවට Google Cloud නියමයන් යටතේ වැටේ ( [සේවා විශේෂිත නියමයන්](https://cloud.google.com/terms/service-terms) ). මිලකරණය සහ කෝටා Antigravity දායකත්වයකට වඩා එම API නියමයන් අනුගමනය කරයි.
+
+ඉහත විස්තර කර ඇති Antigravity අත්හිටුවීම් මඟහරවා ගැනීමට අවශ්‍ය ක්‍රියාකරුවන් `antigravity` / `agy` වෙනුවට මෙම සැපයුම්කරුවන්ගෙන් එක් අයෙකු හරහා Gemini ගමනාගමනය යොමු කළ යුතුය, ඔවුන්ගේ භාවිතය සැපයුම්කරුගේ නියමයන්ට ගැළපේදැයි පරීක්ෂා කිරීමෙන් පසුව.
+
+ස්පර්ශ ස්ථාන:
 
 - `open-sse/executors/antigravity.ts` — `process.env.ANTIGRAVITY_CREDITS` කියවයි
-- `src/lib/oauth/providers/antigravity.ts` — අක්තපත්ර සම්බන්ධකරණය
+- `src/lib/oauth/providers/antigravity.ts` — අක්තපත්‍ර ජලනල
 - මුල් සිද්ධි වාර්තාව: සාකච්ඡාව [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
@@ -218,19 +252,18 @@ interface CliFingerprint {
 
 ---
 
-## User-Agent අභිබවා යෙදීම් — env vars (`.env.example` හි 12 වන කොටස)
+## පරිශීලක නියෝජිතයා — env vars අභිබවා යයි (`.env.example` කොටස 12)
 
-| විචල්යය                  | පෙරනිමිය                                                        |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| විචල්ය              | පෙරනිමිය                                      |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-ගතික සෙවීම හරහා `open-sse/executors/base.ts::buildHeaders()` විසින් භාවිත කරයි. **සපයන්නන් නව CLI අනුවාද නිකුත් කරන විට මේවා යාවත්කාලීන කරන්න** — කල් ඉකුත් වූ UA තන්තු යල් පැන ගිය සේවාලාභීන් ලෙස ප්රතික්ෂේප වීමට පටන් ගනී.
+ගතික සෙවීම හරහා `open-sse/executors/base.ts::buildHeaders()` විසින් පරිභෝජනය කරයි.** සපයන්නන් නව CLI අනුවාද නිකුත් කරන විට මේවා බම්ප් කරන්න** — පරණ UA තන්තු යල් පැන ගිය සේවාදායකයින් ලෙස ප්‍රතික්ෂේප වීමට පටන් ගනී.
 
 ## CLI අනුකූලතා මාදිලියේ ටොගල (`.env.example` කොටස 13)
 

@@ -57,28 +57,19 @@ OpenRouter bağlantıları Qabaqcıl Parametrlərdə hər bağlantı üçün ayr
 
 ---
 
-## 🎨 Kombinasiyalar
+## 🎨 Combos
 
-19 açıq strategiya ilə model marşrutlaşdırma kombinasiyaları yaradın: prioritet, çəkili, növbəli, kontekst ötürmə, əvvəlcə doldurma, p2c (iki seçim qüvvəsi), təsadüfi, ən az istifadə olunan, xərc baxımından optimallaşdırılmış, sıfırlanmanı nəzərə alan, sıfırlama pəncərəsi, ehtiyat tutumu, ciddi təsadüfi, avtomatik, lkgp (son məlum olan işlək provayder), kontekst baxımından optimallaşdırılmış, keş baxımından optimallaşdırılmış, **fusion** (model panelinə paralel sorğular göndərir, sonra hakim vasitəsilə vahid cavab sintez edir) və **pipeline**. Hər kombinasiya avtomatik ehtiyat keçidi ilə bir neçə modeli zəncirləyir və sürətli şablonlar ilə hazırlıq yoxlamalarını əhatə edir.
+22 ictimai strategiya ilə model marşrutlaşdırma kombinləri yaradın: prioritet, çəkili, dairəvi sistem, kontekst-rele, birinci doldurun, p2c (iki seçimin gücü), təsadüfi, ən az istifadə edilən, xərc optimallaşdırılıb, sıfırlama xəbərdarlığı, sıfırlama pəncərəsi, ilk istifadə müddəti, boşluq, kvota-çəkili, avtonom-çəkili seçim (son tanınmış-yaxşı-provayder), kontekst üçün optimallaşdırılmış, keş-optimallaşdırılmış,** birləşmə** (paralel olaraq modellər panelinə çıxın, sonra hakim vasitəsilə bir cavabı sintez edin),** boru kəməri** , və** jev** (sizin reytinq siyahısına daxil olmaq üçün TypeSafe Jev qəbulu). Hər bir kombinasiya avtomatik geri qaytarma ilə çoxsaylı modelləri birləşdirir və sürətli şablonlar və hazırlıq yoxlamalarını ehtiva edir.
 
-Kombinasiyalar üzrə son təkmilləşdirmələr:
+Son kombinasiya təkmilləşdirmələri:
 
-- **Strukturlaşdırılmış kombinasiya qurucusu** — provayderi, modeli və dəqiq hesabı/bağlantını seçərək hər addımı yaradın
-- **Təkrarlanan provayder dəstəyi** — `(provider, model, connection)` korteji unikal olduğu müddətdə eyni provayderdən bir kombinasiyada bir neçə dəfə istifadə edin
-- **Kombinasiya hədəfinin vəziyyəti** — analitika və sistem vəziyyəti ekranları artıq hər şeyi model sətirlərində birləşdirmək əvəzinə ayrı-ayrı kombinasiya hədəflərini/addımlarını fərqləndirir
-- **Kompozit səviyyə sıralaması** — `defaultTier -> fallbackTier` artıq yuxarı səviyyəli kombinasiya addımlarının icra zamanı yerinə yetirilmə/ehtiyat keçid ardıcıllığına təsir göstərir
-- **Sistem göstərişi şablonları** — kombinasiyanın `system_message` sahəsi server tərəfində
-  `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` və `{{FINGERPRINT}}`
-  yer tutucularını dəstəkləyir; bunlar göndərilməzdən dərhal əvvəl faktiki marşrutlaşdırılmış hədəfin məlumatları ilə əvəzlənir.
-  Yalnız icazə verilmiş siyahıdakı yer tutucular dəstəklənir və əvəzetmə rekursiv deyil; naməlum yer tutucular olduğu kimi qalır, boş dəyərlər
-  boş mətnə çevrilir; müştərinin sistem göstərişləri heç vaxt yenidən yazılmır. `{{FINGERPRINT}}`
-  yalnız sabitlənmiş və ya avtomatik rotasiya olunan barmaq izinə malik, barmaq izi əsaslı pulsuz provayderlər üçün müəyyən edilir — digər hallarda (məsələn,
-  tək barmaq izli bağlantılarda və fp istifadə etməyən provayderlərdə) boş mətnə çevrilir. Əvəzetmə
-  standart göndərmə dövrünü, növbəli marşrutlaşdırmanı və sabitlənmiş kontekst-keş sessiyalarını əhatə edir;
-  fusion, chaos, pipeline və iç-içə execute strategiyaları hələlik
-  yer tutucuları əvəzləmir.
+- **Strukturlaşdırılmış kombo qurucusu** — provayder, model və dəqiq account/connection seçməklə hər bir addım yaradın
+- **Təkrarlanan provayder dəstəyi** — eyni provayderi bir kombinasiyada dəfələrlə təkrar istifadə edin, çünki `(provider, model, connection)` tuple unikaldır
+- **Kombo hədəf sağlamlıq** — analitikası və sağlamlıq səthləri indi hər şeyi model sətirlərinə çökdürmək əvəzinə fərdi kombinasiya targets/steps fərqləndirir
+- **Kompozit səviyyəli sifariş** — `defaultTier -> fallbackTier` indi yüksək səviyyəli kombin addımlar üçün icra müddəti execution/fallback sırasına təsir edir
+- **Sistem xəbərdarlığı şablonları** — combo `system_message` göndərilməzdən dərhal əvvəl faktiki yönləndirilmiş hədəfdən genişləndirilmiş server tərəfi `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` və `{{FINGERPRINT}}` yer tutucularını dəstəkləyir. İcazə verilən və rekursiv olmayan; naməlum yer tutucular hərfi olaraq qalır; boş dəyərlər boşluğa qədər genişlənir; müştəri sisteminin göstərişləri heç vaxt yenidən yazılmır. `{{FINGERPRINT}}` yalnız bərkidilmiş və ya avtomatik fırlanan barmaq izi olan barmaq izinə əsaslanan pulsuz provayderlər üçün həll edilir — başqa yerdə boşalmağa genişlənir (məsələn, tək barmaq izi bağlantıları, fp olmayan provayderlər). Genişlənmə standart dispetçer dövrəsini, dəyirmi-robin və bərkidilmiş kontekst-keş seanslarını əhatə edir; birləşmə, xaos, boru kəməri və iç-içə icra strategiyaları yer tutucuları hələ genişləndirmir.
 
-![Kombinasiyalar İdarəetmə Paneli](../screenshots/02-combos.png)
+![Combos Dashboard](../screenshots/02-combos.png)
 
 ---
 
@@ -199,23 +190,23 @@ Ekran görüntülərini paylaşarkən və ya demo qeydə alarkən təsadüfi aç
 
 ---
 
-## 👁️ Model Görünməsi Keçidi _(v3.5.6+)_
+## 👁️ Model Görünüşünün Dəyişdirilməsi _(v3.5.6 +)_
 
-Provayder səhifəsindəki model siyahısına indi bunlar daxildir:
+Provayder səhifəsi model siyahısına indi daxildir:
 
-- **Real vaxt rejimində axtarış/filtr paneli** — Konkret modelləri sürətlə tapın
-- **Hər model üçün görünmə keçidi** (👁 işarəsi) — Gizli modellər boz rəngdə göstərilir və `/v1/models` kataloquna daxil edilmir
-- **Aktiv say nişanı** (`N/M aktiv`) — Neçə modelin aktiv olduğunu və ümumi model sayını bir baxışda göstərir
+- **Real vaxt rejimində search/filter bar** — Xüsusi modelləri tez tapın
+- **Hər model üçün görünürlük keçidi** (👁 icon) — Gizli modellər boz rəngdədir və `/v1/models` kataloqundan çıxarılıb
+- **Aktiv sayma nişanı** (`N/M active`) — cəmi ilə neçə modelin aktiv olduğunu bir baxışda göstərir
 
 ---
 
-## 🔧 OAuth Mühitinin Bərpası _(v3.6.1+)_
+## 🔧 OAuth Env Təmiri _(v3.6.1 +)_
 
-OAuth provayderləri üçün çatışmayan mühit dəyişənlərini bərpa edən və pozulmuş autentifikasiya vəziyyətini düzəldən bir kliklik "Mühiti bərpa et" əməliyyatı. `İdarəetmə paneli → Provayderlər → [OAuth Provayderi] → Mühiti bərpa et` yolu ilə əlçatandır. Aşağıdakıları avtomatik aşkarlayır və düzəldir:
+Çatışmayan mühit dəyişənlərini bərpa edən və pozulmuş auth vəziyyətini düzəldən OAuth provayderləri üçün bir kliklə "Env təmiri" əməliyyatı. `Dashboard → Providers → [OAuth Provider] → Repair env` dən əldə edilə bilər. Avtomatik olaraq aşkar edir və təmir edir:
 
-- Çatışmayan OAuth müştəri giriş məlumatları
-- Zədələnmiş mühit faylı qeydləri
-- Ehtiyat nüsxə yolunun təmizlənməsi
+- OAuth müştəri etimadnaməsi çatışmır
+- Zədələnmiş env fayl girişləri
+- Ehtiyat yolunun sanitarlaşdırılması
 
 ---
 
@@ -295,15 +286,15 @@ OmniRoute artıq `/v1/ws` təkmilləşdirmə son nöqtəsi vasitəsilə **OpenAI
 
 ---
 
-## 🔑 Sinxronlaşdırma Tokenləri və Konfiqurasiya Paketi _(v3.6.6+)_
+## 🔑 Sinxronizasiya Tokenləri və Konfiqurasiya Paketi _(v3.6.6+)_
 
-Artıq **əhatə dairəsi məhdudlaşdırılmış sinxronlaşdırma tokenləri** vasitəsilə bir neçə cihazdan və xarici operator tərəfindən giriş mümkündür:
+Çoxsaylı cihazlardan və xarici operatorlar tərəfindən giriş artıq **əhatə dairəsi məhdudlaşdırılmış sinxronizasiya tokenləri** vasitəsilə mümkündür:
 
-- **`POST /api/sync/tokens`** — Yeni sinxronlaşdırma tokeni yaradın (əhatə dairəsi məhdudlaşdırılmış, istəyə bağlı etibarlılıq müddəti ilə)
+- **`POST /api/sync/tokens`** — Yeni sinxronizasiya tokeni yaradın (əhatə dairəsi məhdudlaşdırılmış, istəyə bağlı etibarlılıq müddəti ilə)
 - **`DELETE /api/sync/tokens/:id`** — Tokeni ləğv edin
-- **`GET /api/sync/bundle`** — Bütün qeyri-həssas parametrlərin versiyalaşdırılmış və ETag açarlı JSON ani görüntüsünü endirin (parollar gizlədilir)
+- **`GET /api/sync/bundle`** — Konfiqurasiyanın versiyalaşdırılmış və ETag açarlı JSON anlıq surətini endirin (yalnız sinxronizasiya tokeni ilə autentifikasiya olunur). İdarəetmə panelinin parolu kimi autentifikasiya parametrləri çıxarılır, lakin provayder giriş məlumatları və API açarları daxil edilir; buna görə faylı məxfi məlumat kimi qoruyun
 
-Konfiqurasiya paketi `src/lib/sync/bundle.ts` tərəfindən yaradılır. İstehlakçılar bütün faydalı yükü yenidən endirmədən dəyişiklikləri aşkar etmək üçün `ETag` cavab başlığını müqayisə edirlər.
+Konfiqurasiya paketi `src/lib/sync/bundle.ts` tərəfindən yaradılır. İstehlakçılar tam faydalı yükü yenidən endirmədən dəyişiklikləri aşkarlamaq üçün `ETag` cavab başlığını müqayisə edirlər. CLI vasitəsilə `omniroute sync bundle <outPath> --token <syncToken>` (və ya `OMNIROUTE_SYNC_TOKEN`) onu yalnız sahibinin giriş icazəsi olan faylda saxlayır.
 
 ---
 
@@ -315,14 +306,14 @@ Konfiqurasiya paketi `src/lib/sync/bundle.ts` tərəfindən yaradılır. İstehl
 
 ---
 
-## 🛡️ Təhlükəsiz Xarici Sorğular və SSRF Qoruması _(v3.6.6+)_
+## 🛡️ Təhlükəsiz xarici sorğular və SSRF qoruması _(v3.6.6+)_
 
-Bütün provayder doğrulama və model aşkarlama çağırışları artıq ikiqat xarici bağlantı qorumasından keçir:
+Bütün provayder doğrulama və model aşkarlama çağırışları indi ikiqat xarici sorğu qorumasından keçir:
 
-1. **URL qoruması** (`src/shared/network/outboundUrlGuard.ts`) — Soket açılmazdan əvvəl özəl, geridöngə və lokal bağlantı IP diapazonlarını bloklayır.
-2. **Təhlükəsiz fetch örtüyü** (`src/shared/network/safeOutboundFetch.ts`) — URL qorumasını tətbiq edir, vaxt aşımlarını normallaşdırır və keçici xətalar zamanı eksponensial gecikmə ilə yenidən cəhd edir.
+1. **URL qoruması** (`src/shared/network/outboundUrlGuard.ts`) — Əvvəlcə hədəfin hostname-ini və ya IP literalını yazıldığı formada yoxlayır; yalnız ictimai şəbəkə rejimində təhlükəsiz sorğu örtüyü həmçinin adı rezolv edir və özəl ünvanlara uyğun gələn nəticələri rədd edir. Defolt olaraq bulud metadata son nöqtələrini — bütün 169.254.0.0/16 diapazonunu və məlum metadata hostname-lərini bloklayır; `OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS=false` özəl və loopback hostlarını da bloklayır; `OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS=true` (və ya köhnə `OUTBOUND_SSRF_GUARD_ENABLED=false`) yoxlamaları söndürür. Bayrağın idarəetmə panelindəki keçid vasitəsilə yadda saxlanılmış dəyər onun dəyişənindən daha yüksək prioritetə malikdir və daxili lokal provayderlər açar doğrulaması zamanı qorumanı ötür. Baxın: `docs/reference/ENVIRONMENT.md`.
+2. **Təhlükəsiz sorğu örtüyü** (`src/shared/network/safeOutboundFetch.ts`) — URL qorumasını tətbiq edir, taymautları normallaşdırır və müvəqqəti xətalar baş verdikdə eksponensial gecikmə ilə yenidən cəhd edir.
 
-Qoruma qaydalarının pozulması HTTP 422 (`URL_GUARD_BLOCKED`) kimi göstərilir və `providerAudit.ts` vasitəsilə uyğunluq audit jurnalına yazılır.
+Qoruma pozuntuları `URL_GUARD_BLOCKED` kimi təqdim olunur — `getSafeOutboundFetchErrorStatus` vasitəsilə HTTP 503 (model aşkarlama marşrutunda 400) — və doğrulama zamanı baş verən real SSRF bloklamaları audit jurnalına `provider.validation.ssrf_blocked` hadisələri kimi yazılır.
 
 ---
 

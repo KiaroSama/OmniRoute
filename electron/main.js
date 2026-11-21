@@ -42,7 +42,8 @@ const {
   writeRemoteServerUrl,
   writeCloseBehavior,
 } = require("./lib/remoteServerPreferences");
-const { buildReadinessUrl, waitForServer } = require("./lib/serverReadiness");
+const { buildReadinessUrl, probeServer, waitForServer } = require("./lib/serverReadiness");
+const { shouldRestartHealthCheck } = require("./lib/healthWatchdog");
 const { shouldStartHidden, showOrCreateWindow } = require("./lib/windowLifecycle");
 const {
   CLOSE_BEHAVIOR_KEEP_LOADED,
@@ -214,21 +215,49 @@ function tightenServerEnv(dataDir, serverEnvPath) {
   }
 }
 
+// Mirrors src/lib/dataPaths.ts::getDefaultDataDir (and scripts/build/bootstrap-env.mjs).
+// Electron's main process is CJS and cannot import those ESM modules, so the order is
+// copied verbatim: explicit DATA_DIR → an EXISTING legacy ~/.omniroute → %APPDATA%
+// (Windows) → $XDG_CONFIG_HOME (when set) → ~/.omniroute. Without the legacy check the
+// desktop app persisted server.env under $XDG_CONFIG_HOME while the server it spawns
+// opened ~/.omniroute/storage.sqlite.
 function resolveDataDir(overridePath, env = process.env) {
   if (overridePath && overridePath.trim()) return path.resolve(overridePath);
 
   const configured = env.DATA_DIR?.trim();
   if (configured) return path.resolve(configured);
 
-  if (process.platform === "win32") {
-    const appData = env.APPDATA || path.join(require("os").homedir(), "AppData", "Roaming");
-    return path.join(appData, "omniroute");
+  // Preserve an existing legacy dir so an upgrade never splits secrets from the database,
+  // unless the platform dir holds the database and the legacy dir does not.
+  const legacyDir = path.join(require("os").homedir(), ".omniroute");
+  let legacyIsDir = false;
+  try {
+    legacyIsDir = fs.statSync(legacyDir).isDirectory();
+  } catch {
+    // absent or unreadable — fall through to the platform default
   }
 
-  const xdg = env.XDG_CONFIG_HOME?.trim();
-  if (xdg) return path.join(path.resolve(xdg), "omniroute");
+  let platformDir = null;
+  if (process.platform === "win32") {
+    const appData = env.APPDATA || path.join(require("os").homedir(), "AppData", "Roaming");
+    platformDir = path.join(appData, "omniroute");
+  } else {
+    const xdg = env.XDG_CONFIG_HOME?.trim();
+    if (xdg) platformDir = path.join(path.resolve(xdg), "omniroute");
+  }
 
-  return path.join(require("os").homedir(), ".omniroute");
+  if (legacyIsDir && !(platformDir && !hasDatabase(legacyDir) && hasDatabase(platformDir))) {
+    return legacyDir;
+  }
+  return platformDir ?? legacyDir;
+}
+
+function hasDatabase(dir) {
+  try {
+    return fs.statSync(path.join(dir, "storage.sqlite")).isFile();
+  } catch {
+    return false;
+  }
 }
 
 function getPreferredEnvFilePath(env = process.env) {
@@ -933,6 +962,63 @@ function stopNextServer() {
   }
 }
 
+// ── Health Watchdog ─────────────────────────────────────────
+// The embedded server can die on its own (OOM kill, user SIGTERM, port stolen by a
+// stale process) and never come back — the tray keeps running with a dead backend
+// and every dashboard call fails. Probe the cheap /api/health/ping on a LOW frequency
+// (5 min — not a hot loop) and restart the server only after N consecutive misses,
+// so one slow/loaded response can never trigger a restart. Remote mode and dev are
+// skipped: the server isn't ours to respawn.
+const HEALTH_WATCHDOG_INTERVAL_MS = 5 * 60 * 1000;
+let healthWatchdogTimer = null;
+let healthWatchdogFailures = 0;
+let lastHealthRestartAt = 0;
+
+async function runHealthWatchdogTick() {
+  if (app.isQuitting || isServerStopped || isDev || remoteServerUrl) return;
+
+  if (await probeServer(getServerReadinessUrl())) {
+    healthWatchdogFailures = 0;
+    return;
+  }
+
+  healthWatchdogFailures += 1;
+  if (
+    !shouldRestartHealthCheck(
+      { consecutiveFailures: healthWatchdogFailures, lastRestartAt: lastHealthRestartAt },
+      { now: Date.now() }
+    )
+  ) {
+    return;
+  }
+  healthWatchdogFailures = 0;
+  lastHealthRestartAt = Date.now();
+
+  console.warn("[Electron] Health check failed — restarting embedded server");
+  sendToRenderer("server-status", { status: "restarting", port: serverPort });
+
+  const serverToStop = nextServer;
+  stopNextServer();
+  await waitForServerExit(serverToStop);
+  startNextServer();
+
+  const ready = await waitForServer(getServerReadinessUrl());
+  sendToRenderer("server-status", {
+    status: ready ? "running" : "error",
+    port: serverPort,
+  });
+  if (ready && mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.reload();
+  }
+}
+
+function startHealthWatchdog() {
+  if (healthWatchdogTimer) return;
+  healthWatchdogTimer = setInterval(() => {
+    void runHealthWatchdogTick();
+  }, HEALTH_WATCHDOG_INTERVAL_MS);
+}
+
 // Linux-specific autostart helpers using standard .desktop entry placement
 function enableLinuxDesktopAutostart() {
   try {
@@ -1132,6 +1218,13 @@ app.whenReady().then(async () => {
   // Fix #15: Set up CSP before any content loads
   setupContentSecurityPolicy();
 
+  // Creator credit in the native About panel ("About OmniRoute" in the macOS app menu).
+  // `credits` is read on macOS/Windows, `authors` on Linux.
+  app.setAboutPanelOptions({
+    credits: "Created by Diego Souza (https://github.com/diegosouzapw)",
+    authors: ["Diego Souza (https://github.com/diegosouzapw)"],
+  });
+
   // Headless mode check: supports running without any UI windows or tray icons
   const isHeadless =
     process.argv.includes("--headless") ||
@@ -1166,6 +1259,7 @@ app.whenReady().then(async () => {
 
   setupIpcHandlers();
   setupAutoUpdater();
+  startHealthWatchdog();
 
   // If readiness timed out (e.g. very long first-launch migrations), don't leave the
   // window stuck on a hanging connection — keep polling and reload once it responds (#2460).
@@ -1209,6 +1303,12 @@ app.on("window-all-closed", () => {
 
 // Clean up before quit
 app.on("before-quit", async (event) => {
+  app.isQuitting = true;
+  if (healthWatchdogTimer) {
+    clearInterval(healthWatchdogTimer);
+    healthWatchdogTimer = null;
+  }
+
   if (nextServer && !isServerStopped) {
     event.preventDefault(); // Stop immediate quit
     app.isQuitting = true;

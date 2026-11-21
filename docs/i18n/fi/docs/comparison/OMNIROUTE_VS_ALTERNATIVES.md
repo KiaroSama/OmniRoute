@@ -4,46 +4,45 @@
 
 ---
 
-Objektiivinen ominaisuusvertailu suosittuihin avoimen lähdekoodin tekoälyreitittimiin.
+Objektiivinen ominaisuuksien vertailu suosittuihin avoimen lähdekoodin AI reitittimiin.
 
-> **Menetelmä**: Julkiset repositoriot auditoitu vuoden 2026 toisella neljänneksellä. Versiot ovat taulukossa ilmoitettuja.
-> Lähetä korjaukset PR:nä — haluamme tietojen olevan paikkansapitäviä.
+> **Metodologia** : Julkiset repot tarkastettu 2026-Q2. Luettelon mukaiset versiot. Lähetä korjaukset PR — kautta. Haluamme tämän olevan oikein.
 
-| Ominaisuus                                                          |                 OmniRoute 3.8                 |      LiteLLM 1.x      | OpenRouter (SaaS) |    Portkey     |
-| ------------------------------------------------------------------- | :-------------------------------------------: | :-------------------: | :---------------: | :------------: |
-| **Palveluntarjoajat**                                               |                    **329**                    |         ~100          |        ~50        |      ~30       |
-| **Ilmaiset / ilman tunnistautumista toimivat luettelokohteet**      |                    **155**                    |        ei sov.        |    läpivienti     |    ei sov.     |
-| **Itse ylläpidettävissä**                                           |                      ✅                       |          ✅           |        ❌         | ⚠ maksullinen  |
-| **OAuth-luettelokohteet**                                           |                    **23**                     |      osittainen       |        ❌         |       ❌       |
-| **Automaattisen varajärjestelyn yhdistelmät**                       |               **19 strategiaa**               | prioriteettipohjainen |   tasopohjainen   |   painotettu   |
-| **Fuusio (rinnakkainen paneeli + tuomarisynteesi)**                 |                      ✅                       |          ❌           |        ❌         |       ❌       |
-| **Tasojen 1/2/3 varajärjestely (tilaus→halpa→ilmainen)**            |              ✅ + käyttöliittymä              |      manuaalinen      |      ei sov.      |  manuaalinen   |
-| **Tokenien pakkaus**                                                | 12 moottorin pino (RTK + Caveman + LLMLingua) |       ei mitään       |     ei mitään     |   ei mitään    |
-| **Multimodaalinen generointi (puhe/musiikki/video)**                |                      ✅                       |          ❌           |    läpivienti     |       ❌       |
-| **Sisäänrakennettu MCP-palvelin**                                   |       ✅ 110 työkalua, 33 käyttöaluetta       |          ❌           |        ❌         |       ❌       |
-| **A2A-protokolla**                                                  |                  ✅ 6 taitoa                  |          ❌           |        ❌         |       ❌       |
-| **Muisti (FTS5 + vektori)**                                         |                      ✅                       |          ❌           |        ❌         |       ❌       |
-| **Suojaukset (henkilötiedot, injektiot, konenäkö)**                 |                      ✅                       |      osittainen       |        ❌         | ✅ maksullinen |
-| **Pilviagentti-integraatiot**                                       |          Codex, Cursor, Devin, Jules          |          ❌           |        ❌         |       ❌       |
-| **Palveluntarjoajakohtainen katkaisija**                            |        ✅ 3 tilaa, laiska palautuminen        |       perustaso       |        ❌         |       ✅       |
-| **TLS-sormenjäljen peittäminen (JA3/JA4)**                          |                  ✅ wreq-js                   |          ❌           |        ❌         |       ❌       |
-| **Arviointikehys**                                                  |              ✅ sisäänrakennettu              |          ❌           |        ❌         | ⚠ maksullinen  |
-| **MITM-välityspalvelin (sieppaa Cursorin/Antigravityn liikenteen)** |               ✅ monialustainen               |          ❌           |        ❌         |       ❌       |
-| **CLI ja ilmaisinaluekuvake (ei Electronia)**                       |                      ✅                       |          ❌           |      ei sov.      |    ei sov.     |
-| **CLI:n automaattinen tunnistautuminen konetunnuksella**            |                      ✅                       |          ❌           |      ei sov.      |    ei sov.     |
-| **Hallintapaneeli**                                                 |                  Next.js 16                   |       perustaso       |     suljettu      |    suljettu    |
-| **i18n**                                                            |              **42 maa-asetusta**              |          ❌           |        ❌         |       ⚠        |
-| **Julkiset agenttitaidot (SKILL.md)**                               |                     ✅ 45                     |          ❌           |        ❌         |       ❌       |
-| **Tunnelituki (Cloudflared, Tailscale, Ngrok)**                     |                      ✅                       |          ❌           |      ei sov.      |    ei sov.     |
-| **Lisenssi**                                                        |                      MIT                      |          MIT          |     suljettu      |    suljettu    |
+| Ominaisuus                                             |                  OmniRoute 3.8                  |      LiteLLM 1.x      | OpenRouter (SaaS) |   Portavain   |
+| ------------------------------------------------------ | :---------------------------------------------: | :-------------------: | :---------------: | :-----------: |
+| **Palveluntarjoajat**                                  |                     **329**                     |         ~100          |        ~50        |      ~30      |
+| **Free/no-auth -luettelomerkinnät**                    |                     **155**                     |          n/a          |     läpikulku     |      n/a      |
+| **Itsenäinen isäntä**                                  |                       ✅                        |          ✅           |        ❌         |   ⚠ maksoi    |
+| **OAuth -luettelomerkinnät**                           |                     **23**                      |      osittainen       |        ❌         |      ❌       |
+| **Automaattiset varayhdistelmät**                      |                **22 strategiaa**                | prioriteettipohjainen |   tasopohjainen   |  painotettu   |
+| **Fuusio (rinnakkaispaneeli + tuomari synteesi)**      |                       ✅                        |          ❌           |        ❌         |      ❌       |
+| **Varatason 1/2/3 (tilaus → halvalla → ilmaiseksi)**   |                     ✅ + UI                     |      manuaalinen      |        n/a        |  manuaalinen  |
+| **Tokenin pakkaus**                                    | 12-moottorinen pino (RTK + Caveman + LLMLingua) |       ei yhtään       |     ei yhtään     |   ei yhtään   |
+| **Multimodaalinen sukupolvi (speech/music/video)**     |                       ✅                        |          ❌           |     läpikulku     |      ❌       |
+| **Sisäänrakennettu MCP -palvelin**                     |       ✅ 110 työkalut, 33 kiikaritähtäin        |          ❌           |        ❌         |      ❌       |
+| **A2A protokolla**                                     |                  ✅ 6 -taidot                   |          ❌           |        ❌         |      ❌       |
+| **Muisti (FTS5 + vektori)**                            |                       ✅                        |          ❌           |        ❌         |      ❌       |
+| **Suojakaiteet (PII, injektio, näkö)**                 |                       ✅                        |      osittainen       |        ❌         |   ✅ maksoi   |
+| **Pilviagenttiintegraatiot**                           |           Codex, Cursor, Devin, Jules           |          ❌           |        ❌         |      ❌       |
+| **Katkaisija palveluntarjoajan mukaan**                |         ✅ 3-tila, laiska palautuminen          |         perus         |        ❌         |      ✅       |
+| **TLS sormenjälkien salailu (JA3/JA4)**                |                   ✅ wreq-js                    |          ❌           |        ❌         |      ❌       |
+| **Eval puitteet**                                      |               ✅ sisäänrakennettu               |          ❌           |        ❌         |   ⚠ maksoi    |
+| **MITM -välityspalvelin (sieppaa Cursor/Antigravity)** |                ✅ cross-platform                |          ❌           |        ❌         |      ❌       |
+| **CLI ilmaisinalueella (ei Electron)**                 |                       ✅                        |          ❌           |        n/a        |      n/a      |
+| **CLI konetunnuksen automaattinen todennus**           |                       ✅                        |          ❌           |        n/a        |      n/a      |
+| **Kojelauta**                                          |                   Next.js 16                    |         perus         |   omistusoikeus   | omistusoikeus |
+| **i18n**                                               |                 **67 paikkaa**                  |          ❌           |        ❌         |       ⚠       |
+| **Julkisen agentin taidot (SKILL.md)**                 |                      ✅ 45                      |          ❌           |        ❌         |      ❌       |
+| **Tunnelituki (Cloudflared, Tailscale, Ngrok)**        |                       ✅                        |          ❌           |        n/a        |      n/a      |
+| **Lisenssi**                                           |                       MIT                       |          MIT          |   omistusoikeus   | omistusoikeus |
 
-## Milloin OmniRoute kannattaa valita
+## Milloin valita OmniRoute
 
-- Ylläpidät palvelua itse ja haluat **mahdollisimman kattavan palveluntarjoajatuen** (329 palveluntarjoajaa, 155 ilmaista tai ilman tunnistautumista toimivaa luettelokohdetta)
-- Tarvitset **sisäänrakennetun MCP-palvelimen** (LLM-työkalut, muisti ja taidot tarjolla työkaluina)
-- Tarvitset **A2A-protokollan** agenttien välisiin työnkulkuihin
-- Haluat **sormenjäljen peittämisen** (JA3/JA4), jotta ylemmän tason CAPTCHA-järjestelmät eivät tunnista liikennettä
-- Tarvitset **yritystason ominaisuuksia** (suojaukset, arvioinnit ja kirjausketju) ilman SaaS-laskua
+- Isäntät itse ja haluat** palveluntarjoajan enimmäiskattavuus** (394 palveluntarjoajaa, 155 free/no-auth -luettelomerkintää)
+- Tarvitset a** sisäänrakennettu MCP -palvelin** (LLM työkalut, muisti, työkaluina näkyvät taidot)
+- Tarvitset**A2A protokolla** agenttien välisiä työnkulkuja varten
+- Haluat** sormenjälkien salailu** (JA3/JA4) välttääksesi ylävirran CAPTCHAs havaitsemisen
+- Tarvitset** yrityksen ominaisuuksia** (suojakaiteet, evals, kirjausketju) ilman SaaS -laskua
 
 ## Milloin LiteLLM kannattaa valita
 

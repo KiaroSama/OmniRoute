@@ -4,577 +4,627 @@
 
 ---
 
-> **Bayanin layi ɗaya ga kowane kundin adireshi da fayil na tushe.**
-> Sabuntawa ta ƙarshe: 2026-06-28 — OmniRoute v3.8.40
+> **Abin da ke rayuwa a inda: kowane babban fayil na babban matakin sa ido da tushen fayil, tare da manufar layi ɗaya.** An sabunta ta ƙarshe: 2026-11-13 (OmniRoute v3.8.54)
 >
-> Yi amfani da wannan taswira don kewaya tushen lambar cikin sauri. Don zurfafa bincike, bi hanyoyin haɗi zuwa takardun bayani na musamman.
+> Yi amfani da wannan taswirar don nemo hanyarku a kusa da codebase, sannan ku bi hanyoyin haɗin kai zuwa takaddun kwazo. An auna kididdigar fayil da `git ls-files` a ranar da ke sama. Suna canzawa tare da kusan kowane saki, don haka ɗaukar su azaman umarni na girma.
 
-## Tsarin matakin sama
+## Itace babba
 
 ```
 OmniRoute/
-├── src/                  # Manhajar Next.js 16 (UI + hanyoyin API + ɗakunan karatu + yanki + sabar)
-├── open-sse/             # Wurin aikin injin yaɗawa (masu sarrafawa, masu aiwatarwa, mai fassara, sabar MCP)
-├── electron/             # Kundin manhajar tebur (Electron 41 + electron-builder 26.10)
-├── bin/                  # Mashigar CLI da masu sarrafa umarni
-├── scripts/              # Rubutun ginawa, dubawa, daidaitawa, da ayyuka na lokaci guda
-├── docs/                 # Takardun bayani na jama'a (kana nan)
-├── tests/                # Duk rukunin gwaje-gwaje (na ɓangare, haɗin kai, e2e, abokan cinikin yarjejeniya)
-├── public/               # Kadarorin tsaye na Next.js, bayanin PWA, ma'aikacin sabis, gumaka
-├── config/               # Tsayayyen saiti + matsayin ƙofar inganci (i18n, payloadRules, quality/)
-├── images/               # Kadarorin hotuna na talla / README
-├── @omniroute/           # Kunshin haɗin gwiwa da za a iya bugawa (opencode-plugin, opencode-provider)
-├── skills/               # Kunshin ƙwarewar CLI/wakili (cli-* + omni-* + config-codex-cli)
-├── examples/             # Samfuran fulogin + tushen farawa na omniroute-cmd-hello
-├── contrib/              # Gudummawar al'umma (podman/)
-├── .source/              # Saitin tushen Fumadocs (source.config.mjs + server/browser/dynamic)
-├── .github/              # Tsarukan aikin GitHub Actions + samfuran matsala + samfurin PR
-├── .husky/               # Maƙalun Git (pre-commit, pre-push)
-├── .claude/              # Umarnin slash na Claude Code (na wannan aikin)
-├── .agents/              # Tsarukan aiki + ƙwarewar Codex / wakili na gama-gari (kwafin .claude/)
-├── .vscode/              # Saitunan filin aikin VS Code
-├── _ideia/               # Bayanan tsarawa (marasa tsari; ba a haɗa su a fitarwa)
-├── _mono_repo/           # Tsoffin ƙananan ayyuka (cloud, site, vscode-extension)
-├── _references/          # Kwafin nuni na karantawa kawai daga ayyukan OSS masu alaƙa
-├── _tasks/               # Fayilolin bibiyar ayyuka na kowace fitarwa (marasa tsari)
-├── .build/ .worktrees/ dist/   # Wurin wucin gadi na ginawa / git-worktree / sakamakon ginawa na gida (gitignored)
-├── .issues/              # Ma'ajiyar matsaloli ta gida (gitignored)
-├── .playwright-mcp/      # Kayan sakamakon gwajin Playwright MCP
-├── coverage/             # Sakamakon ɗaukar gwaji na c8 (gitignored)
-├── logs/                 # Rajistan lokacin aiki (gitignored)
-├── node_modules/         # Dogararru (gitignored)
-├── package/              # Wurin shirya npm pack (kayan sakamakon ginawa)
-├── .next/                # Sakamakon ginawa na Next.js (gitignored)
-└── (fayilolin tushe — duba ƙasa)
+├── src/              # Next.js 16 app: dashboard, /api and /v1 routes, server libs, domain, i18n
+├── open-sse/         # Streaming engine workspace (@omniroute/open-sse): handlers, executors, translator, services, MCP server
+├── packages/         # npm workspaces: ui-kit (vendored Keak CI UI Kit) and browser-pool
+├── @omniroute/       # Separately published npm packages (OpenCode plugins and provider)
+├── bin/              # Published `omniroute` CLI, MCP/bridge entry points, self-host ops scripts (*.sh)
+├── electron/         # Desktop app (Electron main/preload + helpers + icons)
+├── public/           # Static assets served by Next.js (provider logos, PWA icons, sw.js, openapi.yaml copy)
+├── skills/           # Agent Skills (SKILL.md) served by /api/agent-skills, MCP and A2A
+├── tests/            # All test suites: unit, integration, e2e, homolog, fixtures, snapshots
+├── scripts/          # Build, quality gates, i18n, release, ops, perf and one-off scripts (allow-listed subfolders)
+├── config/           # Versioned config: i18n, payload rules, CLI manifest, quality-gate baselines, release inventories
+├── changelog.d/      # Per-PR changelog fragments, aggregated into CHANGELOG.md at release time
+├── docs/             # Public documentation (served at /docs via Fumadocs) + translated mirrors in docs/i18n/
+├── examples/         # Example plugins and quickstart clients
+├── deploy/           # Kubernetes deployment: Helm chart + Kustomize base/overlays
+├── docker/           # Auxiliary container images (not the main image, which is the root Dockerfile)
+├── contrib/          # Community recipes: Podman quadlets, VPS compose, Windows launchers, session-sync note
+├── .github/          # GitHub Actions workflows, composite actions, issue/PR templates, CODEOWNERS, labels
+├── .husky/           # Tracked git hooks: commit-msg, pre-commit, pre-push
+├── .vale/            # Vale prose-lint vocabulary (styles/Vocab/OmniRoute/accept.txt)
+├── .vscode/          # Shared VS Code workspace settings (settings.json)
+└── (root files — see below)
+```
+
+Hanyoyi na gida, da aka ƙirƙira ko masu zaman kansu (duk waɗanda ba a san su ba, ba a taɓa yin su ba, ba a fayyace su ba):
+
+```
+node_modules/            # npm dependencies
+.build/                  # Next.js build output (default distDir .build/next, see next.config.mjs)
+dist/                    # npm staging directory assembled by scripts/build/prepublish.ts
+.source/                 # fumadocs-mdx output that feeds the /docs viewer
+.husky/_/                # Husky runtime generated on install (core.hooksPath target)
+coverage/ logs/ test-results/ playwright-report/   # coverage, runtime logs, Playwright output
+.env                     # local secrets generated from .env.example
+_*/                      # private local-only folders (anchored /_* ignore); never tracked
+.claude/ .agents/        # local AI-assistant state and skills; never tracked
 ```
 
 ---
 
-## Fayilolin tushe
+## Tushen fayiloli
 
-| Fayil                                       | Manufa                                                                                          |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| **README.md**                               | Shafin gabatarwa na talla + farawa cikin sauri + jadawalin fasaloli (duba kuma `llm.txt`)       |
-| **CHANGELOG.md**                            | Tarihin sauye-sauye na kowace fitarwa (`/version-bump-cc` skill ne ke samar da shi ta atomatik) |
-| **LICENSE**                                 | Rubutun lasisin MIT                                                                             |
-| **CLAUDE.md**                               | Dokokin aikin don wakilan Claude Code (dokoki masu tsauri, ƙa'idoji, yanayi)                    |
-| **AGENTS.md**                               | Daidai da CLAUDE.md amma don wakilan AI da ba na Claude ba (Codex, Cursor, da sauransu)         |
-| **GEMINI.md**                               | Taƙaitattun dokoki don wakilai masu amfani da Gemini (wani ɓangare na CLAUDE.md)                |
-| **CONTRIBUTING.md**                         | Jagorar masu ba da gudummawa: saiti, conventional commits, gwaji, tsarin PR                     |
-| **SECURITY.md**                             | Manufofin bayar da rahoton rauni, nau'ikan da ake tallafawa, samfurin barazana                  |
-| **CODE_OF_CONDUCT.md**                      | Contributor Covenant — abubuwan da ake tsammani game da halayen al'umma                         |
-| **llm.txt**                                 | Shafin gabatarwa na rubutu zalla da aka inganta don masu rarrafe na LLM (SEO don mataimakan AI) |
-| **package.json**                            | Bayanin npm, scripts, dependencies, engines, ƙofar ɗaukar gwaji ta c8                           |
-| **package-lock.json**                       | Bishiyar dependencies da aka kulle                                                              |
-| **tsconfig.json**                           | Babban saitin TypeScript                                                                        |
-| **tsconfig.typecheck-core.json**            | Saitin duba nau'i don ainihin `src/`                                                            |
-| **tsconfig.typecheck-noimplicit-core.json** | Tsauraran (`noImplicitAny`) dubawa ta nau'i                                                     |
-| **tsconfig.tsbuildinfo**                    | Ma'ajiyar wucin gadi ta ginin ƙari na TS (gitignored)                                           |
-| **next.config.mjs**                         | Saitin ginin Next.js 16 (fitowar standalone)                                                    |
-| **next-env.d.ts**                           | Nau'ikan env da Next.js ya samar ta atomatik                                                    |
-| **eslint.config.mjs**                       | Saitin flat na ESLint (dokoki bisa yankin aiki)                                                 |
-| **prettier.config.mjs**                     | Dokokin tsara rubutu na Prettier                                                                |
-| **postcss.config.mjs**                      | Saitin PostCSS don tsarin sarrafa Tailwind/CSS                                                  |
-| **playwright.config.ts**                    | Saitin gwajin E2E na Playwright                                                                 |
-| **vitest.config.ts**                        | Saitin Vitest (rukunin gwaji na asali)                                                          |
-| **vitest.mcp.config.ts**                    | Saitin Vitest don uwar garken MCP / autoCombo / rukunin cache                                   |
-| **sonar-project.properties**                | Saitin SonarQube/SonarCloud (ingancin lamba)                                                    |
-| **Dockerfile**                              | Ginin Docker mai matakai da yawa (builder → runner-base → runner-cli)                           |
-| **docker-compose.yml**                      | Compose na haɓakawa mai profiles 4 (base, cli, host, cliproxyapi) + redis sidecar               |
-| **docker-compose.prod.yml**                 | Compose na samarwa (port 20130, redis, named volumes)                                           |
-| **.dockerignore**                           | Fayilolin da aka cire daga mahallin Docker                                                      |
-| **fly.toml**                                | Saitin turawa na Fly.io (yankin `sin`, port 20128, /data volume)                                |
-| **.env.example**                            | Samfurin fayil ɗin env (ana kwafe shi ta atomatik zuwa `.env` a shigarwa ta farko)              |
-| **.gitignore**                              | Tsarukan yin watsi na Git                                                                       |
-| **.npmignore**                              | Jerin abubuwan da ba za a haɗa a wallafar npm ba                                                |
-| **.npmrc**                                  | Saitin npm (registry, manufar lockfile)                                                         |
-| **.node-version**                           | Ƙayyadadden nau'in Node (kayan aikin da suka dace da nvm ke amfani da shi)                      |
-| **.nvmrc**                                  | Ƙayyadadden nau'in Node don nvm                                                                 |
-| **eslint.complexity.config.mjs**            | Saitin ESLint don complexity ratchet (`scripts/check/check-complexity.mjs --config`)            |
-| **eslint.sonarjs.config.mjs**               | Saitin ESLint don dokokin SonarJS (cognitive complexity / duplication)                          |
-| **source.config.ts**                        | Saitin tushen `defineDocs` na Fumadocs (yana ciyar da `.source/`)                               |
-| **knip.json**                               | Saitin Knip — fayiloli/exports/deps marasa amfani (yana ciyar da ƙofar dead-code)               |
-| **stryker.conf.json**                       | Saitin gwajin mutation na Stryker                                                               |
-| **.size-limit.json**                        | Saitin kasafin girman bundle na size-limit                                                      |
-| **promptfooconfig.yaml**                    | Saitin kimantawa na promptfoo                                                                   |
-| **.gitleaks.toml**                          | Dokokin binciken sirri na gitleaks                                                              |
-| **.zizmor.yml**                             | Saitin binciken tsaro na zizmor don GitHub-Actions                                              |
-| **socket.yml**                              | Saitin sarkar samarwa na Socket.dev                                                             |
-| **news.json**                               | Jerin sanarwar v2 da aka keɓance bisa yanki; an fitar da abun ƙaddamar da Radar a kashe         |
-| **flake.nix** / **flake.lock**              | Bayanin dev-shell na Nix + fayil ɗin kullewa                                                    |
-| **.env**                                    | Sirrin cikin gida (gitignored — an samar da shi daga `.env.example`)                            |
+Duk fayilolin da aka bibiya a tushen ma'ajiya (`git ls-files | grep -v /`), an haɗa su ta hanyar aiki.
 
-> **An fitar da su daga tushen a v3.8.26 (don rage cunkoso):**
->
-> - **→ `config/quality/`:** `quality-baseline.json`, `complexity-baseline.json`, `duplication-baseline.json`, `file-size-baseline.json`, `test-discovery-baseline.json`, `dependency-allowlist.json`, `.license-allowlist.json`, da kuma `quality-metrics.json` da aka samar (gitignored). Duba [`## config/`](#config--static-configs--quality-gate-state).
+### Takardun aikin
+
+| Fayil                    | Manufar                                                                           |
+| ------------------------ | --------------------------------------------------------------------------------- |
+| `README.md`              | Shafin saukowa: fasalin fasalin, farawa mai sauri, hanyoyin shigar                |
+| `CHANGELOG.md`           | Sakin-saki canji (ana naɗe gutsuttsura daga `changelog.d/` a nan)                 |
+| `ROADMAP.md`             | Taswirar hanya ta jama'a                                                          |
+| `LICENSE`                | lasisin MIT                                                                       |
+| `THIRD_PARTY_NOTICES.md` | Sanarwa don haɗa lambar ɓangare na uku (misali wreq-js ɗaurin)                    |
+| `CONTRIBUTING.md`        | Jagorar mai ba da gudummawa: saitin, ayyuka na al'ada, matrix gwajin, kwararar PR |
+| `SECURITY.md`            | Manufar rahoton rashin lahani                                                     |
+| `CODE_OF_CONDUCT.md`     | Halayen halayen al'umma                                                           |
+| `llm.txt`                | Takaitacciyar aikin rubutu-tallafi don masu rarrafe LLM da mataimaka              |
+
+### Umarnin-taimakon AI
+
+| Fayil       | Manufar                                                                                            |
+| ----------- | -------------------------------------------------------------------------------------------------- |
+| `AGENTS.md` | Tushen gaskiya guda ɗaya ga kowane mataimaki AI : tarurruka, ƙofofi masu inganci, Dokoki masu wuya |
+| `CLAUDE.md` | Claude Code – takamaiman deltas; shigo da `AGENTS.md`                                              |
+| `GEMINI.md` | Gemini-takamaiman deltas; ya koma `AGENTS.md`                                                      |
+
+Jagororin jagororin kuma suna nan kusa da lambar da suka bayyana: `open-sse/services/AGENTS.md` da `src/lib/db/AGENTS.md`.
+
+### Kunshin ya bayyana da kuma Node Toolchain
+
+| Fayil                      | Manufar                                                                          |
+| -------------------------- | -------------------------------------------------------------------------------- |
+| `package.json`             | npm bayyananne: rubutun, dogara, `engines`, `workspaces`, buga `files`           |
+| `package-lock.json`        | Kulle itacen dogaro                                                              |
+| `pnpm-workspace.yaml`      | pnpm lissafin sararin aiki (`packages/*`, `open-sse`) da jerin izinin ginin ƙasa |
+| `.npmrc` / `.npmignore`    | npm saita kuma buga keɓancewa                                                    |
+| `.node-version` / `.nvmrc` | Sigar node fil don masu sarrafa sigar                                            |
+| `flake.nix` / `flake.lock` | Nix dev harsashi da makullin sa                                                  |
+| `Makefile`                 | gajerun hanyoyin `make` waɗanda ke ba da izini ga rubutun npm                    |
+
+### TypeScript, Next.js and docs build
+
+| Fayil                                     | Manufar                                                                      |
+| ----------------------------------------- | ---------------------------------------------------------------------------- |
+| `tsconfig.json`                           | Base TypeScript config and path aliases (`@/*`, `@omniroute/open-sse`)       |
+| `tsconfig.typecheck-core.json`            | `npm run typecheck:core` yanka                                               |
+| `tsconfig.typecheck-noimplicit-core.json` | `npm run typecheck:noimplicit:core` (m `noImplicitAny`) yanki                |
+| `tsconfig.typecheck-api.json`             | Yanke abin duban hanyar API (`scripts/check/check-api-typecheck.mjs`)        |
+| `tsconfig.typecheck-dashboard.json`       | Yanke dashboard typecheck (`npm run check:dashboard-typecheck`)              |
+| `tsconfig.build.json`                     | Nau'in samarwa (`npm run typecheck:build`, `check:build-typecheck`)          |
+| `tsconfig.mitm.json`                      | tsarin ginin MITM wanda `scripts/build/buildMitm.mjs` ke amfani dashi        |
+| `next.config.mjs`                         | tsarin Next.js 16 (fitarwa na tsaye, laƙabi na bayanan martaba)              |
+| `source.config.ts`                        | Fumadocs `defineDocs` config: wanda sassan `docs/` suka tattara zuwa `/docs` |
+| `postcss.config.mjs`                      | bututun PostCSS / Tailwind                                                   |
+
+### Lint da tsarawa
+
+| Fayil                                     | Manufar                                                                                                   |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `eslint.config.mjs`                       | Main ESLint flat config (`npm run lint`, with `config/quality/eslint-suppressions.json`)                  |
+| `eslint.complexity-ratchets.config.mjs`   | Daidaitaccen tsarin da ke tattare da sarƙaƙƙiya da fahimi-rikitattun ratchets a cikin wucewar ESLint ɗaya |
+| `eslint.complexity.config.mjs`            | Saitin tsaye tare da ainihin `complexity` + `max-lines-per-function` kawai (an yi amfani da gwaje-gwaje)  |
+| `prettier.config.mjs` / `.prettierignore` | dokokin Prettier da keɓewa                                                                                |
+| `.editorconfig`                           | Matsalolin edita (shiga cikin sarari 2)                                                                   |
+| `.markdownlint.json`                      | Shawarwari markdown lint (`npm run lint:md`)                                                              |
+| `.vale.ini`                               | Nasiha prose lint (`npm run lint:prose`), ƙamus a cikin `.vale/`                                          |
+
+### Gwaje-gwaje, kimantawa da ɗaukar hoto
+
+| Fayil                         | Manufar                                                                                             |
+| ----------------------------- | --------------------------------------------------------------------------------------------------- |
+| `vitest.config.ts`            | jsdom Vitest suite: `npm run test:vitest:ui` (dashboard `.tsx`, hooks, memory/skills tests)         |
+| `vitest.mcp.config.ts`        | Node Vitest suite: `npm run test:vitest` (MCP, autoCombo, combo, API `.spec.ts`)                    |
+| `vitest.quarantine.config.ts` | Yana gudanar da keɓaɓɓun fayilolin da aka jera a cikin `config/quality/vitest-exclusions.json`      |
+| `vitest.e2e-live.config.ts`   | Live-server Vitest suites (`tests/e2e/ecosystem.test.ts`, `tests/e2e/protocol-clients.test.ts`)     |
+| `playwright.config.ts`        | Playwright E2E (`tests/e2e/**/*.spec.ts`, `npm run test:e2e`)                                       |
+| `stryker.conf.mjs`            | Gwajin maye gurbi na Stryker (`npm run test:mutation`; yana lissafin `tap.testFiles` daga `mutate`) |
+| `stryker.disablebail.mjs`     | Bambance-bambancen Stryker ba tare da beli ba, don auna yawan gwaji                                 |
+| `promptfooconfig.yaml`        | Quickfoo LLM-security suite                                                                         |
+| `codecov.yml`                 | Codecov faci-rufe saituna                                                                           |
+
+### Docker da turawa
+
+| Fayil                             | Manufar                                                                                                           |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `Dockerfile`                      | Hoton matakai da yawa (`builder` → `runner-base` → `runner-web` / `runner-cli*`)                                  |
+| `Dockerfile.bun`                  | Madadin hoto akan lokacin gudu na Bun (wanda `docker-publish.yml` ya gina)                                        |
+| `docker-compose.yml`              | Tsohuwar tsara tare da bayanan martaba (tushe, yanar gizo, cli, mai watsa shiri, ƙwaƙwalwar ajiya, cliproxyapi,…) |
+| `docker-compose.prod.yml`         | Misali na samarwa-hoton hoto akan tashar jiragen ruwa 20130                                                       |
+| `docker-compose.selfhost.yml`     | Mai masaukin baki ɗaya-umarni (biyu tare da `.env.selfhost.example`)                                              |
+| `docker-compose.ollama-local.yml` | Docker OmniRoute magana da mai masaukin baki Ollama                                                               |
+| `.dockerignore`                   | Docker gina-yanayin keɓe                                                                                          |
+| `fly.toml`                        | Saitin app na Fly.io (tashar jiragen ruwa 20128, ƙarar `/data` )                                                  |
+
+### Tsaro, sarkar samarwa da bots na ajiya
+
+| Fayil                                        | Manufar                                                                                           |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `.gitleaks.toml`                             | gitleaks dokokin binciken sirri da lissafin izini                                                 |
+| `.trivyignore`                               | Abubuwan da aka yarda da haɗarin haɗari don duba hoton ganga                                      |
+| `.zizmor.yml`                                | zizmor GitHub Ayyukan tsaro-audit config                                                          |
+| `socket.yml`                                 | Saitin app na Socket.dev (hanyar yin watsi da ita; ba ƙofar CI ba)                                |
+| `sonar-project.properties`                   | SonarQube/SonarCloud project config                                                               |
+| `knip.json`                                  | Knip tsararrun files/exports/deps da ba a yi amfani da su ba (ciyar da `npm run check:dead-code`) |
+| `.size-limit.json`                           | Kasafin kudi masu girman daure                                                                    |
+| `.mergify.yml`                               | Haɗa saitin haɗa-kuɗin-jere-jere                                                                  |
+| `.coderabbit.yaml`                           | CodeRabbit review config                                                                          |
+| `.cbmignore`                                 | Yi watsi da lissafin don codebase-memory-mcp code index                                           |
+| `.gitignore` / `.gitattributes` / `.mailmap` | Yi watsi da ƙa'idodi, ƙarshen layin LF don rubutun rubutu, ainihin marubucin canonical            |
+
+### Samfuran muhalli, jihohi da ciyarwa
+
+| Fayil                       | Manufar                                                                        |
+| --------------------------- | ------------------------------------------------------------------------------ |
+| `.env.example`              | Samfurin da aka kwafi zuwa `.env` a farkon shigarwa; lissafin ma'anar env vars |
+| `.env.selfhost.example`     | Samfura don `docker-compose.selfhost.yml`                                      |
+| `.env.homolog.example`      | Samfura don mai gudu homologation (`npm run homolog`)                          |
+| `.env.devin-bridge.example` | Misalin fayil env don saitin gadar Devin                                       |
+| `.i18n-state.json`          | Yanayin fassarar ƙara (hashes tushen kowane doc da yanki)                      |
+| `news.json`                 | Sanarwa na cikin gida (tsari v2) wanda dashboard ya karanta                    |
 
 ---
 
-## `src/` — Manhajar Next.js
+## aikace-aikacen `src/` — Next.js
+
+Kimanin fayiloli 4,550 da aka bibiya. Hanyar da ake kira `@/*` → `src/*`.
 
 ```
 src/
-├── app/                 # App Router (shafuka + hanyoyin API + shafukan matsayi + shafin sauka)
-├── lib/                 # Muhimman ɗakunan karatu / modules na domain (ƙananan kundin adireshi 80 + kusan fayiloli 70 na matakin sama)
-├── domain/              # Tsantsar dabarun domain (injin policy, fallback, cost, lockout, comboResolver, assessment)
-├── server/              # Modules na uwar garke kawai (authz pipeline, cors, auth middleware) — ba za a iya yin import daga client ba
-├── shared/              # Abubuwan da uwar garke da client ke rabawa idan babu haɗari (constants, types, validation, contracts, utils)
-├── i18n/                # Tsarin next-intl + saƙonnin JSON na kowane locale (locales 42)
-├── middleware/          # Middleware na Next.js (ƙara bayanai ga request, gano locale)
-├── mitm/                # Jigon wakilin MITM: ƙirƙira/shigar da cert, handlers, targets, inspector, masks, passthrough
-│   ├── handlers/        # Classes 9 na handler na IDE-agent waɗanda suka faɗaɗa MitmHandlerBase (antigravity, kiro, copilot, codex, cursor, zed, claudeCode, openCode, trae)
-│   └── inspector/       # Matakin kama zirga-zirga: buffer (in-memory ring), sseMerger, conversationNormalizer, kindDetector, contextKey, httpProxyServer, systemProxyConfig
-├── models/              # Mannewar adaftan model (legacy shim)
-├── scripts/             # Scripts na kulawa da ke cikin bishiyar lamba (misali, backfillAggregation)
-├── sse/                 # Tsofaffin handlers/services na SSE (chat.ts, chatHelpers.ts, services/auth.ts)
-├── store/               # Tsohon ma'ajin in-memory (ana daina amfani da shi sannu a hankali don src/lib/db)
-├── types/               # Fayilolin type na TS da ake rabawa
-├── instrumentation.ts   # Ƙugiyar telemetry ta Next.js (browser + edge)
-├── instrumentation-node.ts  # Instrumentation na Node kawai
-└── proxy.ts             # Shim na mashigar HTTP-proxy
+├── app/                  # App Router: pages, layouts and route handlers (file-convention loaded)
+│   ├── (dashboard)/      # Route group for the dashboard: dashboard/<section>/ pages + home widgets
+│   ├── api/              # HTTP routes: v1/ (OpenAI-compatible), v1beta/ (Gemini-style), management routes
+│   ├── docs/             # Embedded docs viewer (lib/openapi.generated.ts is generated)
+│   ├── a2a/ .well-known/ # A2A JSON-RPC entry point and Agent Card discovery
+│   ├── healthz/ livez/ readyz/ status/   # Health probes and status page
+│   ├── landing/ login/ auth/ authorize/ callback/ connect/   # Public, auth and OAuth pages
+│   ├── miniapp/          # Telegram Mini App page
+│   └── 400/ … 503/       # Static HTTP error pages
+├── lib/                  # Server-side libraries and domain modules (largest folder)
+├── shared/               # Code shared by server and client: components, constants, validation, utils
+├── sse/                  # Next.js side of the SSE pipeline: handlers/ (chat*), services/ (auth, leases, quotas)
+├── mitm/                 # MITM / TPROXY capture: cert/, dns/, handlers/, targets/, inspector/, tproxy/ (C addon)
+├── server/               # Server-only: authz/ (route guard pipeline), auth/, cors/, origin/, ws/
+├── domain/               # Policy engine, fallback, cost rules, lockout, quota cache, assessment/
+├── i18n/                 # next-intl: messages/ (67 locales), global-error-messages/ (generated), routeNamespaces.generated.json
+├── store/                # Zustand client stores (theme, notifications, …)
+├── hooks/                # Client hooks (live dashboard, compression preview, breaker health)
+├── types/                # Ambient and shared type declarations
+├── models/               # Compatibility barrel re-exporting db functions
+├── middleware/           # promptInjectionGuard.ts (facade over the guardrail system)
+├── scripts/              # backfillAggregation.ts (`npm run backfill-aggregation`)
+├── proxy.ts              # Next.js 16 proxy: headless gate + authz pipeline for dashboard, /api and /v1-style paths
+├── instrumentation.ts    # Next.js instrumentation hook (delegates Node-only work)
+└── instrumentation-node.ts   # Node-only startup work
 ```
 
-### `src/app/` — App Router (Next.js 16)
+### `src/app/` — App Router
 
-| Hanya                                                                        | Manufa                                                                                                                                                                                                                                                                                                                     |
-| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/v1/`                                                                | API na jama'a mai dacewa da OpenAI (~ƙananan hanyoyi 25: hira, kammalawa, embeddings, fayiloli, batches, sauti, hotuna, bidiyoyi, kiɗa, rerank, moderations, bincike, ws, agents, accounts, providers, da sauransu.)                                                                                                       |
-| `app/api/v1beta/`                                                            | Ƙarshen hanyoyin API irin na Gemini                                                                                                                                                                                                                                                                                        |
-| `app/api/playground/`                                                        | Hanyoyin Playground Studio: `improve-prompt/` (POST — mai sake rubuta umarnin LLM), `presets/` (GET jerin / POST ƙirƙira), `presets/[id]/` (GET / PUT / DELETE) — duba `docs/frameworks/PLAYGROUND_STUDIO.md`                                                                                                              |
-| `app/api/` (wanda ba v1 ba)                                                  | Hanyoyin gudanarwa/mai gudanar da tsari (~kundin adireshi 60: providers, combos, settings, mcp, a2a, evals, memory, skills, webhooks, compliance, resilience, monitoring, tunnels, cli-tools, da sauransu.)                                                                                                                |
-| `app/api/tools/agent-bridge/`                                                | AgentBridge REST API — hanyoyi 12 (sarrafa sabar, matsayin agent/DNS/mappings, bypass, cert, upstream-CA). LOCAL_ONLY + SPAWN_CAPABLE. Duba `docs/frameworks/AGENTBRIDGE.md §7`.                                                                                                                                           |
-| `app/api/tools/traffic-inspector/`                                           | Traffic Inspector REST + WS API — hanyoyi 16+ (requests, sessions, hosts, capture-modes, export, ws). LOCAL_ONLY + SPAWN_CAPABLE. Duba `docs/frameworks/TRAFFIC_INSPECTOR.md §8`.                                                                                                                                          |
-| `app/a2a/`                                                                   | Mashigar A2A JSON-RPC 2.0 (`POST /a2a`)                                                                                                                                                                                                                                                                                    |
-| `app/.well-known/agent.json/`                                                | Katin Agent na A2A (ganowa)                                                                                                                                                                                                                                                                                                |
-| `app/(dashboard)/dashboard/`                                                 | Shafukan UI na dashboard (sassa 50+, fayilolin page.tsx kusan 118: providers, combos, settings, memory, skills, webhooks, evals, audit, batch, cache, costs, health, system, activity, da sauransu.)                                                                                                                       |
-| `app/(dashboard)/dashboard/search-tools/`                                    | UI na Search Tools Studio (shafuka 3: Search/Scrape/Compare + SearchConceptCard + ProviderCatalog) — duba `docs/frameworks/SEARCH_TOOLS_STUDIO.md`                                                                                                                                                                         |
-| `app/(dashboard)/dashboard/memory/`                                          | Memory Studio (tsari na 21): `page.tsx` (ɓawon shafuka 3), `components/` (MemoryConceptCard, MemoryEngineStatus, EmbeddingSourceSelector, EditMemoryModal, RetrievePreview, QdrantConfigCard, RerankConfigCard), `components/tabs/` (MemoriesTab, PlaygroundTab, EngineTab), `hooks/` (useEngineStatus, useMemorySettings) |
-| `app/(dashboard)/dashboard/tools/agent-bridge/`                              | Shafin dashboard na AgentBridge — katin sabar, katunan agent 9, jagoran saitawa, taswirar model, jerin bypass. i18n PT-BR + EN. Duba `docs/frameworks/AGENTBRIDGE.md`.                                                                                                                                                     |
-| `app/(dashboard)/dashboard/tools/traffic-inspector/`                         | Shafin dashboard na Traffic Inspector — rarrabuwar DevTools, shafukan bayanai 7, maɓallan kunna/kashe yanayin kamawa 4, mai rikodin session, sanya launuka bisa mahalli. i18n PT-BR + EN. Duba `docs/frameworks/TRAFFIC_INSPECTOR.md`.                                                                                     |
-| `app/(dashboard)/dashboard/activity/`                                        | Shafin jerin ayyuka (Rukuni B): `page.tsx` (sabar) + `ActivityFeedClient.tsx` + `components/{ActivityFeed,ActivityItem,DayHeader,EventTypeFilter}.tsx` — duba `docs/architecture/MONITORING_SECTIONS.md`                                                                                                                   |
-| `app/(dashboard)/dashboard/costs/quota-share/`                               | Shafin Raba Ƙayyadadden Kaso (Rukuni B): `QuotaSharePageClient.tsx` + `components/{PoolCard,DimensionBar,AllocationTable,BurnRateChart,QuotaConceptCard,CreatePoolModal,EditAllocationsModal}.tsx` + `hooks/{usePools,usePoolUsage,useLocalStoragePoolMigration}.ts`                                                       |
-| `app/(dashboard)/dashboard/costs/quota-share/plans/`                         | Shafin daidaita tsarin mai samarwa (Rukuni B): `page.tsx` + `ProviderPlanConfigClient.tsx` — maye gurbin girman ƙayyadadden kaso ga kowace haɗi                                                                                                                                                                            |
-| `app/docs/`                                                                  | Mai duba takardun bayani da aka haɗa ciki (yana nuna `docs/*.md`)                                                                                                                                                                                                                                                          |
-| `app/landing/`                                                               | Shafin sauka na tallace-tallace                                                                                                                                                                                                                                                                                            |
-| `app/login/`, `forgot-password/`, `forbidden/`                               | Shafukan da suka shafi tantancewa                                                                                                                                                                                                                                                                                          |
-| `app/{400,401,403,408,429,500,502,503}/`                                     | Shafukan kurakuran HTTP                                                                                                                                                                                                                                                                                                    |
-| `app/maintenance/`, `offline/`, `status/`, `privacy/`, `terms/`, `callback/` | Shafukan tsayayyu/matsayi                                                                                                                                                                                                                                                                                                  |
-| `app/layout.tsx`, `page.tsx`, `manifest.ts`, `globals.css`                   | Tsarin tushen shafi, shafin gida, fayil ɗin bayani na PWA, CSS na gama-gari                                                                                                                                                                                                                                                |
-| `app/error.tsx`, `global-error.tsx`, `not-found.tsx`, `loading.tsx`          | Iyakokin kurakurai                                                                                                                                                                                                                                                                                                         |
+| Hanya                                                               | Manufar                                                                                                                                                                                              |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/api/v1/`                                                       | Jama'a BuɗeAI mai jituwa API: hira, kammalawa, martani, saƙonni, haɗawa, hotuna, sauti, bidiyo, kiɗa, sakewa, daidaitawa, bincike, fayiloli, batches, ws, samfuri,…                                  |
+| `app/api/v1beta/`                                                   | Ƙarshen salon salon Gemini                                                                                                                                                                           |
+| `app/api/` (sauran manyan fayiloli)                                 | Gudanarwa da hanyoyin gudanarwa: masu samarwa, combos, saituna, maɓallai, amfani, rajistan ayyukan, mcp, a2a, acp, ƙwaƙwalwar ajiya, ƙwarewa, evals, webhooks, tunnels, plugins, radar, kayan aiki,… |
+| `app/api/tools/agent-bridge/`                                       | AgentBridge REST API — dubi [AGENTBRIDGE.md](../frameworks/AGENTBRIDGE.md)                                                                                                                           |
+| `app/api/tools/traffic-inspector/`                                  | Inspector Traffic REST API — duba [TRAFFIC_INSPECTOR.md](../frameworks/TRAFFIC_INSPECTOR.md)                                                                                                         |
+| `app/(dashboard)/dashboard/`                                        | Babban fayil ɗaya a kowane ɓangaren dashboard (masu samarwa, combos, logs, amfani, farashi, cache, matsawa, ƙwaƙwalwa, filin wasa, kayan aikin bincike, saituna, kayan aiki,…)                       |
+| `app/(dashboard)/home/`                                             | Fuskar allo da widget din sa                                                                                                                                                                         |
+| `app/docs/`                                                         | Docs Viewer yana fassara sassan Fumadocs da aka jera a cikin `source.config.ts`                                                                                                                      |
+| `app/layout.tsx`, `page.tsx`, `manifest.ts`, `globals.css`          | Tushen tushen, shigarwar tushen (juyawa), bayyana PWA, CSS na duniya                                                                                                                                 |
+| `app/error.tsx`, `global-error.tsx`, `not-found.tsx`, `loading.tsx` | Kuskuren iyakoki da koma baya                                                                                                                                                                        |
 
-### `src/lib/` — Muhimman ɗakunan karatu (~50 modules)
+hanyoyin API suna bin `Route → CORS → Zod validation → optional auth → policy → handler`; duba [ARCHITECTURE.md](ARCHITECTURE.md) da [API_REFERENCE.md](../reference/API_REFERENCE.md).
 
-| Module                                   | Manufa                                                                                                                                                                                                                                                                                                                             |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `a2a/`                                   | Manajan ayyukan yarjejeniyar A2A, ƙwarewa (5), watsa bayanai kai tsaye                                                                                                                                                                                                                                                             |
-| `acp/`                                   | Rajistar Wakilan CLI (gano CLI na cikin gida — duba `docs/frameworks/AGENT_PROTOCOLS_GUIDE.md`)                                                                                                                                                                                                                                    |
-| `api/`                                   | Mataimakan API na bai ɗaya (`requireManagementAuth`, tabbatarwa)                                                                                                                                                                                                                                                                   |
-| `auth/`                                  | Zama, hashin kalmar sirri, tabbatar da token                                                                                                                                                                                                                                                                                       |
-| `batches/`                               | Masu sarrafa OpenAI Batches API                                                                                                                                                                                                                                                                                                    |
-| `catalog/`                               | Tabbatarwar Zod ta kundin masu samarwa + tantance iyawa                                                                                                                                                                                                                                                                            |
-| `cloudAgent/`                            | Wakilan Gajimare (Codex Cloud, Devin, Jules) — duba `docs/frameworks/CLOUD_AGENT.md`                                                                                                                                                                                                                                               |
-| `combos/`                                | Tantance haɗaɗɗun tsare-tsare + mataimakan sake jere                                                                                                                                                                                                                                                                               |
-| `audit/`                                 | Mataimakan jerin ayyuka: `highLevelActions.ts` (jerin izini + `isHighLevelAction()`), `activityIcons.ts` (aiki → taswirar gunki/aikatau), `timeline.ts` (groupByDay/relativeTime) — duba `docs/architecture/MONITORING_SECTIONS.md`                                                                                                |
-| `compliance/`                            | Rajistan dubawa + duba mai samarwa — duba `docs/security/COMPLIANCE.md`                                                                                                                                                                                                                                                            |
-| `compression/`                           | Manne-haɗin injin matsawa (injunan suna cikin `open-sse/services/compression/`)                                                                                                                                                                                                                                                    |
-| `config/`                                | Mataimakan daidaitawar lokacin gudanarwa                                                                                                                                                                                                                                                                                           |
-| `db/`                                    | 120+ na kayayyakin DB na fanni + ƙaura 168 (koyaushe bi ta nan don SQLite)                                                                                                                                                                                                                                                         |
-| `quota/`                                 | Injin Raba Ƙayyadadden Amfani: `dimensions.ts` (nau'uka/Zod), `types.ts` (muhallin QuotaStore), `sqliteQuotaStore.ts`, `redisQuotaStore.ts`, `storeFactory.ts`, `fairShare.ts`, `burnRate.ts`, `planResolver.ts`, `planRegistry.ts`, `saturationSignals.ts`, `enforce.ts`, `spendRecorder.ts` — duba `docs/routing/QUOTA_SHARE.md` |
-| `radar/`                                 | Abokin hulɗar kundin samfura kyauta na Radar: `feedSchema.ts`, `pinnedKeys.ts`, `verify.ts`, `sync.ts`, `applyFeed.ts`, `index.ts` (`getRadarCatalog()`) — duba `docs/frameworks/RADAR.md`                                                                                                                                         |
-| `display/`                               | Mataimakan tsara nunin UI (farashi, jinkiri, da sauransu)                                                                                                                                                                                                                                                                          |
-| `embeddings/`                            | Mataimakan sabis na embeddings                                                                                                                                                                                                                                                                                                     |
-| `env/`                                   | Fassara + tabbatar da ingancin canje-canjen env                                                                                                                                                                                                                                                                                    |
-| `evals/`                                 | Tsarin eval (suites, runner, runtime) — duba `docs/frameworks/EVALS.md`                                                                                                                                                                                                                                                            |
-| `guardrails/`                            | Mai ɓoye PII, shigar da prompt, gadar vision — duba `docs/security/GUARDRAILS.md`                                                                                                                                                                                                                                                  |
-| `jobs/`                                  | Ayyukan bango (irin cron)                                                                                                                                                                                                                                                                                                          |
-| `memory/`                                | Ƙwaƙwalwar tattaunawa (haɗaɗɗen RRF na SQLite FTS5 + sqlite-vec + Qdrant mataki na 2) — duba `docs/frameworks/MEMORY.md`                                                                                                                                                                                                           |
-| `memory/embedding/`                      | Shimfiɗar embedding mai tushe da yawa: `index.ts` (resolver), `remote.ts`, `staticPotion.ts`, `transformersLocal.ts`, `cache.ts`, `types.ts` (tsari na 21)                                                                                                                                                                         |
-| `memory/vectorStore.ts`                  | Murfin sqlite-vec v0.1.9 — KNN brute-force + haɗaɗɗen RRF (FTS5 + vector, k=60). Farawa lokacin da ake buƙata, yana ci gaba cikin sauƙi idan babu sqlite-vec. (tsari na 21)                                                                                                                                                        |
-| `memory/reindex.ts`                      | `runReindexBatch()` — yana sarrafa memories masu `needs_reindex=1` a bango; ana kiransa ta `POST /api/memory/reindex` da hanyar lazy-backfill. (tsari na 21)                                                                                                                                                                       |
-| `monitoring/`                            | Binciken lafiya, fitar da ma'aunai                                                                                                                                                                                                                                                                                                 |
-| `oauth/`                                 | Hanyoyin OAuth/shigo da bayanai don provider modules guda 22 (agy, antigravity, claude, cline, codebuddy-cn, codex, cursor, devin-desktop, ghe-copilot, github, gitlab-duo, grok-cli-oauth, grok-cli, kilocode, kimi-coding, kiro, openference, qoder, trae, xai-oauth, zed-hosted, zed)                                           |
-| `plugins/`                               | Rijistar plugin                                                                                                                                                                                                                                                                                                                    |
-| `promptCache/`                           | Wuraren yanke cache na prompt irin na Anthropic                                                                                                                                                                                                                                                                                    |
-| `skills/`                                | Tsarin skills (na ciki + kasuwar yanar gizo + SkillsSH) — duba `docs/frameworks/SKILLS.md`                                                                                                                                                                                                                                         |
-| `playground/`                            | Mataimakan da Playground Studio ke amfani da su tare: `codeExport.ts` (mai samar da curl/Python/TS), `promptImprover.ts` (mai gina meta-prompt), `streamMetrics.ts` (tsantsar TTFT/TPS), `types.ts` (jadawalin farashi) — duba `docs/frameworks/PLAYGROUND_STUDIO.md`                                                              |
-| `webhookDispatcher.ts`                   | Isar da webhook ta HMAC — duba `docs/frameworks/WEBHOOKS.md`                                                                                                                                                                                                                                                                       |
-| `cloudflaredTunnel.ts`, `ngrokTunnel.ts` | Masu sarrafa tunnel — duba `docs/ops/TUNNELS_GUIDE.md`                                                                                                                                                                                                                                                                             |
-| `cloudSync.ts`, `initCloudSync.ts`       | Daidaita state da cloud na zaɓi                                                                                                                                                                                                                                                                                                    |
-| `localDb.ts`                             | Barrel na sake fitarwa don modules na db (babu logic — sake fitarwa kawai)                                                                                                                                                                                                                                                         |
-| `cacheLayer.ts`, `idempotencyLayer.ts`   | Adana request a cache + idempotency                                                                                                                                                                                                                                                                                                |
-| (~30 more top-level files)               | Mataimaka na musamman (logEnv, modelsDevSync, piiSanitizer, da sauransu)                                                                                                                                                                                                                                                           |
+### dakunan karatu na uwar garken `src/lib/` —
 
-### `src/lib/db/` — Database (modules 137 + migrations 193)
+Kusan manyan manyan fayiloli 90 da kusan manyan manyan kayayyaki 90. Manyan kungiyoyi:
 
-| Subdir                    | Manufa                                                                                                                                                                                    |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `db/core.ts`              | Singleton na `getDbInstance()` mai WAL journaling                                                                                                                                         |
-| `db/migrations/`          | Fayilolin SQL masu version (idempotent, transactional). `073_memory_vec.sql` yana ƙara `memory_vec_meta` + column na `needs_reindex` (tsari na 21).                                       |
-| `db/playgroundPresets.ts` | Module na CRUD don presets na Playground Studio (`listPlaygroundPresets`, `getPlaygroundPreset`, `createPlaygroundPreset`, `updatePlaygroundPreset`, `deletePlaygroundPreset`)            |
-| `db/memoryVec.ts`         | CRUD don `memory_vec_meta` (active_dim, embedding_signature, last_reset_at, vec_loaded) + `markMemoryNeedsReindex`, `getMemoryReindexQueue`, da sauransu (tsari na 21)                    |
-| `db/<domain>.ts`          | Module ɗaya ga kowane domain: providers, combos, apiKeys, users, sessions, usage, audit*log, webhooks, skills, memory_entries, cloud_agent_tasks, evals*\*, reasoning_cache, da sauransu. |
+| Yanki                        | Fayiloli / fayiloli                                                                                                 | Nitsewa mai zurfi                                                                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Database                     | `db/` — module modules, `migrations/`, `adapters/`, `repositories/`, `migrationRunner/`                             | [`src/lib/db/AGENTS.md`](../../src/lib/db/AGENTS.md), [DATABASE_GUIDE.md](../ops/DATABASE_GUIDE.md)                                            |
+| Amfani, ƙididdiga da ciyarwa | `usage/`, `quota/`, `spend/`                                                                                        | [QUOTA_SHARE.md](../routing/QUOTA_SHARE.md), [COST_TRACKING.md](../guides/COST_TRACKING.md)                                                    |
+| Masu bayarwa da samfuri      | `providers/`, `providerModels/`, `modelValidation/`, `catalog/`, `radar/`, `freeProxyProviders/`                    | [RADAR.md](../frameworks/RADAR.md), [MODEL-VALIDATION.md](../guides/MODEL-VALIDATION.md)                                                       |
+| OAuth and credentials        | `oauth/` (masu bayarwa/, ayyuka/, kayan aiki/), `zed-oauth/`, `copilot/`, `cursor/`, `credentialHealth/`            | `resolvePublicCred()` (doc na aiki, ba a yi aiki a bainar jama'a ba)                                                                           |
+| Tsaro da mulki               | `guardrails/`, `compliance/`, `pii/`, `security/`                                                                   | [GUARDRAILS.md](../security/GUARDRAILS.md), [COMPLIANCE.md](../security/COMPLIANCE.md)                                                         |
+| Siffofin wakili              | `a2a/`, `acp/`, `cloudAgent/`, `memory/`, `skills/`, `agentSkills/`                                                 | [AGENT_PROTOCOLS_GUIDE.md](../frameworks/AGENT_PROTOCOLS_GUIDE.md), [MEMORY.md](../frameworks/MEMORY.md), [SKILLS.md](../frameworks/SKILLS.md) |
+| Plugins da ayyuka            | `plugins/`, `services/` (masu shigar da sabis da mai kulawa)                                                        | [PLUGINS.md](../frameworks/PLUGINS.md), [EMBEDDED-SERVICES.md](../frameworks/EMBEDDED-SERVICES.md)                                             |
+| Hanya da juriya              | `combos/`, `routing/`, `resilience/`, `reasoningRouting/`, `promptCache/`                                           | [RESILIENCE_GUIDE.md](RESILIENCE_GUIDE.md)                                                                                                     |
+| Proxies da sadarwar sadarwa  | `proxyHealth/`, `proxySubscription/`, `proxyRelay/`, `proxyEvents/`, tunnel modules                                 | [PROXY_GUIDE.md](../ops/PROXY_GUIDE.md), [TUNNELS_GUIDE.md](../ops/TUNNELS_GUIDE.md)                                                           |
+| Ayyuka da tsarawa            | `jobs/`, `jobRegistry/`, `warmupScheduler/`                                                                         |                                                                                                                                                |
+| Abun lura da fitarwa         | `monitoring/`, `logExport/`, `webhooks/`, `audit/`, `events/`                                                       | [LOG-EXPORT.md](../frameworks/LOG-EXPORT.md), [WEBHOOKS.md](../frameworks/WEBHOOKS.md)                                                         |
+| CLI da haɗin kai na IDE      | `cliTools/`, `cli-helper/`, `vscode/`, `inspector/`, `versionManager/`                                              | [CLI-TOOLS.md](../reference/CLI-TOOLS.md), [VSCODE-COPILOT.md](../guides/VSCODE-COPILOT.md)                                                    |
+| Tushen magana                | `localCorpus/`, `notion/`, `obsidian/`                                                                              | [LOCAL_CORPUS_CONTEXT.md](../frameworks/LOCAL_CORPUS_CONTEXT.md)                                                                               |
+| Wasu siffofi                 | `evals/`, `playground/`, `gamification/`, `telegram/`, `conductor/`, `batches/`, `deploy/`, `transfer/`, `sync/`, … | [EVALS.md](../frameworks/EVALS.md), [PLAYGROUND_STUDIO.md](../frameworks/PLAYGROUND_STUDIO.md)                                                 |
 
-### `src/domain/`
+Manyan kayayyaki masu daraja da ya kamata a sani:
 
-| Module                 | Manufa                                               |
-| ---------------------- | ---------------------------------------------------- |
-| `policy.ts`            | Injin policy                                         |
-| `fallbackPolicy.ts`    | Bishiyar yanke shawarar fallback                     |
-| `costRules.ts`         | Dokokin ƙididdige kuɗi                               |
-| `lockoutPolicy.ts`     | Policy na kulle model/connection                     |
-| `tagRouter.ts`         | Routing bisa tag                                     |
-| `comboResolver.ts`     | Warware combo (combo engine yana amfani da shi)      |
-| `modelAvailability.ts` | Duba samuwar kowane model                            |
-| `assessment/`          | Tantance model (Mataki na 1 na RFC-AUTO-ASSESSMENT ) |
+| Fayil                                                          | Manufar                                                                |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `cacheLayer.ts`, `idempotencyLayer.ts`, `semanticCache.ts`     | Response caching da idempotency                                        |
+| `webhookDispatcher.ts`                                         | Isar da ƙugiya mai sa hannun HMA                                       |
+| `cloudflaredTunnel.ts`, `ngrokTunnel.ts`, `tailscaleTunnel.ts` | Manajojin rami                                                         |
+| `tokenHealthCheck*.ts`, `tokenRefreshCircuit.ts`               | Binciken bayanan bayanan lafiya da sabunta kewaye                      |
+| `streamingPiiTransform.ts`, `streamingCredentialTransform.ts`  | Sanitizers amsa yawo                                                   |
+| `gracefulShutdown.ts`, `serverLifecycle.ts`                    | Tsari tsarin rayuwa                                                    |
+| `*.stub.ts`                                                    | Gine-ginen bayanan martaba da aka musanya su a cikin `next.config.mjs` |
 
-### `src/server/`
+### `src/lib/db/` — database
 
-| Module   | Manufa                                                                                              |
-| -------- | --------------------------------------------------------------------------------------------------- |
-| `authz/` | Tsarin authorization: `classify` → `policies` → `enforce` — duba `docs/architecture/AUTHZ_GUIDE.md` |
-| `cors/`  | Saitunan CORS                                                                                       |
-| `auth/`  | Middleware na session                                                                               |
+| Hanya                 | Manufar                                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `db/core.ts`          | `getDbInstance()` singleton (WAL journaling)                                                                                   |
+| `db/migrations/`      | An ƙidaya, ƙauran `.sql` masu ƙarfi (fayilolin 236 a lokacin rubutawa; lambar masu gadin `check-migration-numbering.mjs` )     |
+| `db/migrationRunner/` | Mai gudun hijira                                                                                                               |
+| `db/adapters/`        | adaftar direban SQLite (better-sqlite3, node:sqlite, bun:sqlite, sql.js)                                                       |
+| `db/repositories/`    | aiwatar da ma'ajiyar SQLite (combos, saitattun filin wasa, saiti na hanya)                                                     |
+| `db/<domain>.ts`      | Kimanin nau'ikan yanki guda 175 (masu samarwa, combos, apiKeys, saituna, amfani,…) — koyaushe suna shigo da waɗannan kai tsaye |
 
-### `src/shared/`
+### `src/domain/`, `src/server/`, `src/shared/`
 
-| Module                           | Manufa                                                                              |
-| -------------------------------- | ----------------------------------------------------------------------------------- |
-| `constants/providers.ts`         | **Masu samarwa 355** tare da tantancewar Zod (tushen gaskiya)                       |
-| `constants/cliTools.ts`          | Rijistar kayan aikin CLI na waje                                                    |
-| `constants/routingStrategies.ts` | **Dabarun zaɓen hanya 19** tare da matakan fifiko                                   |
-| `constants/publicApiRoutes.ts`   | Hanyoyin da ke buƙatar tantancewar Bearer (maimakon ta gudanarwa)                   |
-| `constants/upstreamHeaders.ts`   | Jerin kanun da aka hana don buƙatun upstream                                        |
-| `validation/schemas.ts`          | Tsarukan Zod kusan 80 (tushen gaskiya guda ɗaya na kwangilolin API)                 |
-| `validation/helpers.ts`          | Mataimakan tantancewar Zod (`validateBody`, da sauransu)                            |
-| `types/`                         | Nau'ikan TS da ake rabawa                                                           |
-| `contracts/`                     | Kwangilolin API na jama'a (waɗanda `files:` a cikin `package.json` ke amfani da su) |
-| `utils/circuitBreaker.ts`        | Mai katse da'irar mai samarwa (duba `docs/architecture/RESILIENCE_GUIDE.md`)        |
-| `utils/apiAuth.ts`               | Tantance maɓallin API, duba izini                                                   |
-| `utils/fetchTimeout.ts`          | Masu naɗe lokacin ƙarewa/sokewa don fetch na upstream                               |
-| `utils/releaseNotes.ts`          | Mai fassara sanarwar rufaffiyar v2/legacy, sarrafa harsuna da yin watsi da ID       |
+| Hanya                                                          | Manufar                                                                                                                                          |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `domain/policyEngine.ts`                                       | Injin siyasa                                                                                                                                     |
+| `domain/fallbackPolicy.ts`, `lockoutPolicy.ts`, `costRules.ts` | Hukunce-hukuncen koma baya, manufar kullewa, dokokin farashi                                                                                     |
+| `domain/quotaCache*.ts`, `quotaSnapshot*.ts`                   | Ma'ajiyar ƙididdiga da dagewar hoto                                                                                                              |
+| `domain/assessment/`                                           | Ƙimar ƙima (masu ƙima, categorizer, mai warkar da kai)                                                                                           |
+| `server/authz/`                                                | Bututun izini da gadin hanya (`routeGuard.ts`) — duba [AUTHZ_GUIDE.md](AUTHZ_GUIDE.md), [ROUTE_GUARD_TIERS.md](../security/ROUTE_GUARD_TIERS.md) |
+| `server/origin/`, `server/cors/`                               | ƙudurin asalin Public/MCP/WS da CORS — duba [CORS.md](../security/CORS.md)                                                                       |
+| `server/ws/`                                                   | Live dashboard WebSocket uwar garken                                                                                                             |
+| `shared/components/`                                           | Abubuwan haɗin dashboard da adaftar akan `packages/ui-kit` — duba [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)                                           |
+| `shared/constants/`                                            | Katalogin mai bayarwa (`providers.ts`), dabarun zagayawa, kayan aikin CLI, taswirar gunki, ƙin rubutun kai,…                                     |
+| `shared/validation/`                                           | Zod schemas da ingantattun mataimakan                                                                                                            |
+| `shared/utils/`                                                | Mai karya da'ira, API-key auth, demo timeouts, faffadan tutoci,…                                                                                 |
+| `shared/middleware/`, `network/`, `services/`, `hooks/`        | Admission middleware, mataimakan hanyar sadarwa, sabis na abokin ciniki, ƙugiya React                                                            |
 
 ---
 
-## `open-sse/` — Wurin Aikin Injin Yawo
+## `open-sse/` — streaming engine sarari aiki
 
-Wurin aikin npm na daban (`@omniroute/open-sse`). Yana sarrafa aiwatar da buƙatu + gudanar da masu samarwa.
+npm sararin aiki `@omniroute/open-sse` (kimanin fayilolin sa ido 2,390). Yana aiwatar da buƙatar aiki da aiwatar da mai bayarwa. Bayani: [OPEN_SSE_ARCHITECTURE.md](../frameworks/OPEN_SSE_ARCHITECTURE.md).
 
 ```
 open-sse/
-├── handlers/            # Fayiloli 16 (masu sarrafawa 12 + mataimaka 4): chatCore, responsesHandler, embeddings, audio, image, video, music, rerank, moderations, search, da sauransu.
-├── executors/           # Masu aiwatarwa 67 na musamman ga masu samarwa (suna faɗaɗa BaseExecutor)
-├── translator/          # Masu sauya tsari (buƙatu 9, amsoshi 9, mataimaka 9)
-├── transformer/         # Responses API ↔ Chat Completions (TransformStream)
-├── services/            # ~80+ rukunin sabis (combo, accountFallback, autoCombo, reasoningCache, claude code/chatgpt stealth, modelDeprecation, taskAwareRouter, workflowFSM, da sauransu.)
-├── mcp-server/          # Sabar MCP (kayan aiki 110, hanyoyin jigila 3, iyakokin izini 33)
-├── config/              # Rajistocin masu samarwa/samfura, saitin header, laƙaban samfura
-├── utils/               # Abokin cinikin TLS, proxy fetch/dispatcher, mataimakan hanyar sadarwa
-├── index.ts             # Mashigar wurin aiki
-├── package.json         # Bayanin wurin aiki
-├── tsconfig.json        # Saitin TS na wurin aiki
-└── types.d.ts           # Bayanin nau'ikan wurin aiki
+├── handlers/       # Request handlers: chatCore.ts + chatCore/, responses, embeddings, audio, imageGeneration/,
+│                   #   videoGeneration/, search/, fal/, mediaGeneration/, sseParser/, responseSanitizer/, …
+├── executors/      # Provider-specific HTTP dispatch, registered in executors/registry.ts; base/ holds shared recovery helpers
+├── translator/     # Format conversion: request/, response/, helpers/, image/, registry.ts, bootstrap.ts
+├── transformer/    # responsesTransformer.ts (Responses API ↔ Chat Completions TransformStream)
+├── services/       # Combo routing, rate limits, fallback, caching, usage, token refresh, compression (see below)
+├── config/         # Provider registry (config/providers/registry/<id>/), constants, model/media registries
+├── mcp-server/     # MCP server: tools/, schemas/, toolSearch/, transports, audit, scopes, __tests__/
+├── utils/          # Stream, error, TLS, proxy-fetch and logging utilities
+├── vendor/         # codex-chatgpt-web/ — vendored adapter (provenance in vendor.json)
+├── lib/            # DeepSeek proof-of-work worker and hash
+├── shared/         # zedAuth.ts
+├── index.ts        # Workspace entry
+└── package.json · tsconfig.json · types.d.ts
 ```
+
+### `open-sse/services/`
+
+| Hanya                                                                                          | Manufar                                                                                                                                                   |
+| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `combo.ts` + `combo/`                                                                          | Haɗuwa da dabarun tuƙi — duba [AUTO-COMBO.md](../routing/AUTO-COMBO.md)                                                                                   |
+| `autoCombo/`                                                                                   | Maki-maki ta atomatik da fakitin yanayi                                                                                                                   |
+| `accountFallback.ts` + `accountFallback/`                                                      | sanyin haɗin haɗi da ƙirar kullewa — duba [RESILIENCE_GUIDE.md](RESILIENCE_GUIDE.md)                                                                      |
+| `rateLimitManager.ts` + `rateLimitManager/`                                                    | Ƙimar-iyakan bin diddigin ƙima da tantance kai                                                                                                            |
+| `compression/`                                                                                 | Injin matsawa (`engines/`), fakitin mulki (`rules/`), `eval/`, `harness/`, `riskGate/` — duba [COMPRESSION_GUIDE.md](../compression/COMPRESSION_GUIDE.md) |
+| `tokenRefresh/`, `usage/`, `cache/`, `admission/`, `sessionPool/`, `codexAccount/`, `routing/` | Wartsakar da alamar, lissafin amfani, caching, hanyoyin shiga, wuraren waha, asusun Codex, mataimakan tuƙi                                                |
+| `__tests__/`                                                                                   | Vitest suites masu haɗin gwiwa (wanda aka tattara ta saitunan Vitest )                                                                                    |
+| `AGENTS.md`                                                                                    | Jagorar wakili na wannan babban fayil                                                                                                                     |
+
+Tsarin: babban tsarin `X.ts` kusa da babban fayil `X/` yana nufin an raba tsarin zuwa ƙananan fayiloli (`handlers/chatCore.ts` + `handlers/chatCore/`, `services/combo.ts` + `services/combo/`).
 
 ### `open-sse/mcp-server/`
 
-| Path                        | Manufa                                                                             |
-| --------------------------- | ---------------------------------------------------------------------------------- |
-| `server.ts`                 | Zagayowar rayuwar sabar MCP (hanyoyin jigilar stdio + HTTP)                        |
-| `httpTransport.ts`          | Hanyoyin jigilar HTTP Streamable + SSE (`/api/mcp/sse`, `/api/mcp/stream`)         |
-| `audit.ts`                  | Shigar da bayanan binciken sa ido cikin teburin `mcp_tool_audit`                   |
-| `scopeEnforcement.ts`       | Tabbatar da iyakar izini ga kowane kayan aiki                                      |
-| `runtimeHeartbeat.ts`       | Bugun lafiyar tsarin zuwa `DATA_DIR/runtime/mcp-heartbeat.json`                    |
-| `descriptionCompressor.ts`  | Matse metadata na bayanin kayan aiki don adana mahallin bayanai                    |
-| `schemas/tools.ts`          | Ma'anoni 36 na kayan aiki na asali + iyakokin izini                                |
-| `tools/advancedTools.ts`    | Aiwatarwar kayan aiki na ci-gaba                                                   |
-| `tools/memoryTools.ts`      | Kayan aikin ƙwaƙwalwa 3 (bincika/ƙara/share)                                       |
-| `tools/skillTools.ts`       | Kayan aikin ƙwarewa 4 (jera/kunna/aiwatar/aiwatarwa)                               |
-| `tools/compressionTools.ts` | Kayan aikin matsewa 5                                                              |
-| `README.md`                 | README na cikin gida na sabar MCP (an haɗa shi da `docs/frameworks/MCP-SERVER.md`) |
+| Hanya                 | Manufar                                                                                            |
+| --------------------- | -------------------------------------------------------------------------------------------------- |
+| `server.ts`           | MCP uwar garken rayuwa                                                                             |
+| `httpTransport.ts`    | jigilar HTTP da SSE mai gudana                                                                     |
+| `scopeEnforcement.ts` | Binciken iyakan kowane kayan aiki                                                                  |
+| `audit.ts`            | Sabis na binciken kira na kayan aiki                                                               |
+| `schemas/`            | Ma'anar kayan aiki da iyakoki                                                                      |
+| `tools/`              | Aiwatar da kayan aiki (ƙwaƙwalwa, ƙwarewa, matsawa,…)                                              |
+| `toolSearch/`         | Binciken kayan aiki                                                                                |
+| `README.md`           | Bayanan gine-gine na ciki; cikakken kundin yana cikin [MCP-SERVER.md](../frameworks/MCP-SERVER.md) |
 
 ---
 
-## `electron/` — Kundin Manhajar Tebur
+## `packages/` — npm wuraren aiki
 
-| Fayil            | Manufa                                                                                              |
-| ---------------- | --------------------------------------------------------------------------------------------------- |
-| `main.js`        | Babban tsarin Electron (BrowserWindow, sabar Next.js da aka saka ciki, tray, sabuntawa ta atomatik) |
-| `preload.js`     | Gadar IPC (contextBridge → `window.omniroute`)                                                      |
-| `package.json`   | Saitin electron-builder + Electron 41 + dogarorin electron-builder 26.10                            |
-| `assets/`        | Gumakan manhaja (Windows .ico, macOS .icns, Linux .png)                                             |
-| `dist-electron/` | Sakamakon ginawa (gitignored)                                                                       |
-| `types.d.ts`     | Bayanin nau'ikan gadar renderer                                                                     |
-| `README.md`      | README na cikin gida na Electron (duba kuma `docs/guides/ELECTRON_GUIDE.md`)                        |
+| Hanya                    | Manufar                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `packages/ui-kit/`       | `@omniroute/ui-kit`: hoton da aka siyar na Keak CI UI Kit, cinyewa azaman tushe. `UPSTREAM.md` yana ƙaddamar da ƙaddamarwa na sama, `PATCHES.md` yana lissafin faci na gida. `src/` ana daidaita shi ta `scripts/dev/sync-ui-kit.sh` kawai kuma `npm run check:ui-kit-snapshot` yana kiyaye shi. Duba [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) |
+| `packages/browser-pool/` | `@omniroute/browser-pool`: musaya-tafkin burauza da aiwatarwa (`packages/browser-pool/src/index.ts`, `packages/browser-pool/src/interfaces.ts`). An jera a cikin `workspaces`; wurin binciken lokacin da ake amfani da shi ta hanyar ƙofar yana zaune a cikin `open-sse/services/`                                                         |
 
----
+## `@omniroute/` — fakitin da aka buga daban
 
-## `bin/` — CLI
+Waɗannan ba wuraren aiki bane npm. Kowannensu yana da nasa `package.json` da makullinsa; babban fayil ɗin yana jigilar a cikin `omniroute` tarball (`files: ["@omniroute/"]`).
 
-| Fayil                                                                                                       | Manufa                                                                                                                                      |
-| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `omniroute.mjs`                                                                                             | Babban wurin shigar CLI — `omniroute serve`, `omniroute setup`, `omniroute doctor`, `omniroute providers`, `omniroute combos`, da sauransu. |
-| `reset-password.mjs`                                                                                        | CLI mai zaman kansa don sake saita kalmar sirri                                                                                             |
-| `cli/commands/setup.mjs`                                                                                    | Mayen saiti mai hulɗa + mara hulɗa                                                                                                          |
-| `cli/commands/doctor.mjs`                                                                                   | Binciken lafiyar tsarin (bincike 8+)                                                                                                        |
-| `cli/commands/providers.mjs`                                                                                | Jerin masu samarwa/gwaji/tabbatarwa                                                                                                         |
-| `cli/{args,data-dir,encryption,io,provider-catalog,provider-store,provider-test,settings-store,sqlite}.mjs` | Modulan taimako na CLI                                                                                                                      |
-| `cli/tray/tray.ts`                                                                                          | Haɗin tire na tsarin (na dandamali daban-daban: NotifyIcon a Windows, systray2 a macOS/Linux)                                               |
-| `cli/tray/tray.ps1`                                                                                         | Backend na PowerShell NotifyIcon (Windows, babu sababbin fayilolin binary)                                                                  |
-| `cli/tray/autostart.ts`                                                                                     | Farawa ta atomatik a dandamali daban-daban (LaunchAgent / .desktop / registry)                                                              |
-| `cli/runtime/sqliteRuntime.mjs`                                                                             | Jerin matakai 5 na gano direban SQLite (haɗaɗɗe → runtime → shigarwa a lokacin buƙata → node:sqlite → sql.js)                               |
-| `cli/runtime/magicBytes.mjs`                                                                                | Tabbatar da magic-byte na binary (ELF / Mach-O / Mach-O fat / PE)                                                                           |
-| `cli/runtime/index.mjs`                                                                                     | `warmUpRuntimes()` — yana riga warware direbobi a postinstall / farkon farawa                                                               |
-| `nodeRuntimeSupport.mjs`                                                                                    | Tabbatar da cewa sigar Node.js da ake tallafawa ce yayin shigarwa                                                                           |
+| Hanya                            | Manufar                                                                                                                                |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `@omniroute/opencode-plugin/`    | OpenCode plugin (gano samfurin, `/connect` auth); amfani da `omniroute setup-opencode` — duba [OPENCODE.md](../frameworks/OPENCODE.md) |
+| `@omniroute/opencode-plugin-v2/` | OpenCode plugin don v2 Alkawari API — duba [OPENCODE-V2-PLUGIN.md](../guides/OPENCODE-V2-PLUGIN.md)                                    |
+| `@omniroute/opencode-provider/`  | Jigon saitin saiti; mai alamar yankewa a cikin nasa `package.json` a madadin `opencode-plugin`                                         |
 
 ---
 
-## `skills/` — Ƙwarewar Wakilai na Jama'a
+## `bin/` — CLI da ops scripts
 
-| Fayil                        | Manufa                                                                                 |
-| ---------------------------- | -------------------------------------------------------------------------------------- |
-| `skills/omniroute*/SKILL.md` | Bayanan ƙwarewa guda 10 na wakilan AI na waje (Claude Desktop, ChatGPT, Cursor, Cline) |
+| Hanya                                                                       | Manufar                                                                                                        |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `omniroute.mjs`                                                             | Babban shigar CLI (`omniroute serve`, `setup`, `doctor`, `providers`, `combo`, …)                              |
+| `reset-password.mjs`                                                        | `omniroute-reset-password` binary                                                                              |
+| `mcp-server.mjs`                                                            | MCP stdio wurin shiga                                                                                          |
+| `antigravity-bridge.mjs`, `chatgpt-web-codex-mcp.mjs`                       | Gada mai taimako / wuraren shiga MCP                                                                           |
+| `aliasResolver.mjs`, `aliasResolverHook.mjs`                                | ESM warware ƙugiya da taswirar tsconfig hanyar laƙabi don shigarwa na duniya                                   |
+| `nodeRuntimeSupport.mjs`                                                    | Duban sigar Node.js mai goyan baya                                                                             |
+| `snapshot-data.sh`, `restore-data.sh`, `restore-policies.sh`, `rollback.sh` | Rubutun dawo da abin da ya faru-mai ɗaukar nauyin kai (raba `_ops-common.sh`)                                  |
+| `cold-start-bench.sh`                                                       | Alamar sanyi-fara — duba [PERF_BASELINE.md](../ops/PERF_BASELINE.md)                                           |
+| `cli/commands/`                                                             | Module ɗaya a kowane umarnin CLI (kimanin 100, gami da haɗin gwiwar `setup-*` )                                |
+| `cli/api-commands/`                                                         | An ƙirƙira daga `docs/openapi.yaml` ta `npm run build:cli-api` — kar a gyara                                   |
+| `cli/locales/`                                                              | catalogs na saƙon CLI ( wurare 67)                                                                             |
+| `cli/tui/`, `cli/tui-components/`                                           | Terminal UI                                                                                                    |
+| `cli/tray/`                                                                 | Tray tsarin da autostart (Windows PowerShell backend, systray on macOS/Linux)                                  |
+| `cli/runtime/`                                                              | Ƙaddamar lokaci na asali (`sqliteRuntime.mjs`, `magicBytes.mjs`), mai kula da tsari                            |
+| `cli/*.mjs`                                                                 | Rarraba mataimaka (args, API abokin ciniki, data dir, boye-boye, kantin sayar da mai badawa, kantin saituna,…) |
+| `cli/README.md`, `cli/CONVENTIONS.md`                                       | CLI internals da tarurruka                                                                                     |
 
----
+Duba [CLI-TOOLS.md](../reference/CLI-TOOLS.md) da [CLI-COMPANION.md](../guides/CLI-COMPANION.md).
 
-## `scripts/` — Rubutun Gina & Dubawa
+## `electron/` — desktop app
 
-| Rubutun                             | Manufa                                                                                        |
-| ----------------------------------- | --------------------------------------------------------------------------------------------- |
-| `run-next.mjs`                      | Mai gudanar da ci gaba/farawa tare da loda saitunan env                                       |
-| `build-next-isolated.mjs`           | Gina mai zaman kansa (Next.js 16 standalone)                                                  |
-| `prepublish.ts`                     | Shirya fakiti kafin `npm pack`                                                                |
-| `postinstall.mjs`                   | Ƙirƙirar `.env` ta atomatik daga `.env.example` a shigarwa ta farko                           |
-| `sync-env.mjs`                      | Sake daidaita maɓallan `.env` da `.env.example`                                               |
-| `check-cycles.mjs`                  | Gano dogaro mai zagayawa                                                                      |
-| `check-route-validation.mjs`        | Tabbatar cewa duk hanyoyin API suna da tantancewar Zod                                        |
-| `check-t11-any-budget.mjs`          | Tilasta ƙayyadadden kasafin `any` ga kowane fayil                                             |
-| `check-docs-sync.mjs`               | Tabbatar da daidaiton sigar takardu (pre-commit da ake da shi)                                |
-| **`check-env-doc-sync.mjs`**        | SABO: kwatanta masu canjin env a lamba da `.env.example` da `ENVIRONMENT.md`                  |
-| **`check-docs-counts-sync.mjs`**    | SABO: tabbatar da ƙididdiga (masu aiwatarwa, dabaru, OAuth, ƙwarewar A2A) sun dace da takardu |
-| **`check-deprecated-versions.mjs`** | SABO: nuna tsoffin siga/kwanakin da ke cikin takardu                                          |
-| `check-supported-node-runtime.ts`   | Tabbatar cewa ana goyon bayan sigar Node ta yanzu                                             |
-| `check-pr-test-policy.mjs`          | Tilasta dokar "ana buƙatar gwaje-gwaje" kan sauye-sauyen lambar samarwa                       |
-| **`gen-provider-reference.ts`**     | SABO: samar da `docs/reference/PROVIDER_REFERENCE.md` ta atomatik daga kundin bayanai         |
-| `i18n/generate-multilang.mjs`       | Fassara rubutun UI + takardu ta Google Translate                                              |
-| `i18n_autotranslate.py`             | Bututun fassara takardu mai amfani da LLM                                                     |
-| `validate_translation.py`           | Tabbatar da ingancin fassara ga kowane locale                                                 |
-| `check_translations.py`             | Duba maɓallan i18n a ɓangaren lamba                                                           |
-| `run-playwright-tests.mjs`          | Mai gudanar da gwajin E2E na Playwright                                                       |
-| `run-protocol-clients-tests.mjs`    | Mai gudanar da gwajin E2E na MCP/A2A                                                          |
-| `run-ecosystem-tests.mjs`           | Gwaje-gwajen muhalli (haɗin mai samarwa)                                                      |
-| `test-report-summary.mjs`           | Samar da taƙaitaccen rahoton ɗaukar gwaji a markdown                                          |
-| `smoke-electron-packaged.mjs`       | Gwajin gaggawa ga ginannen fakitin Electron                                                   |
-| `native-binary-compat.mjs`          | Tabbatar da cewa native deps (`better-sqlite3`) sun dace da Node na Electron                  |
-| `validate-pack-artifact.ts`         | Tabbatar da ingancin sakamakon npm pack                                                       |
-| `responses-ws-proxy.mjs`            | Gadar WebSocket don Codex Responses API                                                       |
-| `v1-ws-bridge.mjs`                  | Gadar WebSocket don endpoint na `/api/v1/ws`                                                  |
-| `standalone-server-ws.mjs`          | Mai gudanar da sabar WS mai zaman kanta                                                       |
-| `system-info.mjs`                   | Buga bayanan tsarin/runtime don tallafi                                                       |
-| `healthcheck.mjs`                   | Duban lafiya na sau ɗaya (Docker HEALTHCHECK ke amfani da shi)                                |
-| `uninstall.mjs`                     | Rubutun cirewa mai tsafta                                                                     |
+| Hanya                                                      | Manufar                                                                                      |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `main.js`                                                  | babban tsari na Electron (taga, uwar garken da aka saka, tire, sabuntawa)                    |
+| `preload.js`                                               | gadar IPC fallasa ga mai bayarwa                                                             |
+| `lib/`                                                     | Rayuwar taga taga, shirye-shiryen uwar garken, mai sa ido kan lafiya, zaɓin uwar garken nesa |
+| `remoteServerPrompt*.js`, `assets/remoteServerPrompt.html` | Tagar saƙo mai nisa                                                                          |
+| `processTree.js`, `sqlite-inspection.js`                   | Tsaftace tsarin yara da masu taimakawa duba SQLite                                           |
+| `package.json` / `package-lock.json`                       | saitin mai ginin lantarki da abin dogaro da Electron                                         |
+| `assets/`                                                  | Alamun app da tire (`.ico`, `.icns`, `.png`)                                                 |
+| `README.md`                                                | Bayanan ciki — duba [ELECTRON_GUIDE.md](../guides/ELECTRON_GUIDE.md)                         |
 
----
+## `public/` — a tsaye kadarorin
 
-## `docs/` — Takardun Jama'a (fayilolin tushe 7 + ƙananan kundin adireshi 17)
+| Hanya                                       | Manufar                                                                                                                   |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `providers/`                                | Tambarin mai bayarwa da aka loda ta id (`/providers/<id>.svg`); inganta `config/quality/provider-assets-provenance.jsonl` |
+| `favicon.*`, `apple-touch-icon.*`, `icon-*` | Browser da gumakan PWA                                                                                                    |
+| `sw.js`                                     | Ma'aikacin sabis — duba [PWA_GUIDE.md](../guides/PWA_GUIDE.md)                                                            |
+| `openapi.yaml`                              | Kwafin `docs/openapi.yaml` wanda `npm run gen:public-openapi` ya samar                                                    |
+| `images/`, `sponsors/`, `deyin.svg`         | Zane-zane mai gudana, banner mai tallafawa, zane-zane README                                                              |
 
-### Jagororin matakin sama
+## `skills/` — Agent Skills
 
-| Takarda                     | Manufa                                                                                             |
-| --------------------------- | -------------------------------------------------------------------------------------------------- |
-| `ARCHITECTURE.md`           | Tsarin gine-gine na gaba ɗaya, taswirar ƙananan tsare-tsare, da fuskar dashboard                   |
-| `CODEBASE_DOCUMENTATION.md` | Manazartar injiniyanci: kundin adireshi, modules, da ƙa'idoji                                      |
-| `FEATURES.md`               | Jadawalin fasaloli tare da muhimman abubuwan v3.8                                                  |
-| `USER_GUIDE.md`             | Jagorar mai amfani (saiti, models, combos, CLIs, sauti, da sauransu)                               |
-| `API_REFERENCE.md`          | Manazartar API endpoints tare da tsarin auth                                                       |
-| `openapi.yaml`              | Bayanin OpenAPI 3.0 (paths 121)                                                                    |
-| `SETUP_GUIDE.md`            | Hanyoyin girkawa (npm, npx, Docker, Electron, Termux, source)                                      |
-| `ENVIRONMENT.md`            | Duk env vars (~800 da aka rubuta bayaninsu, ~layuka 3,050 na `.env.example`)                       |
-| `TROUBLESHOOTING.md`        | Kurakurai na yau da kullum + sanannun matsalolin v3.8.0                                            |
-| `RELEASE_CHECKLIST.md`      | Cikakken tsarin fitarwa (skills, husky, conventional commits, deploy)                              |
-| `COVERAGE_PLAN.md`          | Manufofin coverage da halin da ake ciki yanzu                                                      |
-| `FREE_TIERS.md`             | Zaɓaɓɓun providers masu matakan kyauta (48+ kyauta + OAuth 11)                                     |
-| `CLI-TOOLS.md`              | Haɗin gwiwar CLI na waje + OmniRoute CLI na ciki                                                   |
-| `I18N.md`                   | Tsarin i18n, ƙara harshe, locales 42                                                               |
-| `UNINSTALL.md`              | Matakan cirewa gaba ɗaya                                                                           |
-| `PROVIDER_REFERENCE.md`     | Kundin providers 355 da aka **samar ta atomatik** (sake samarwa: `npm run gen:provider-reference`) |
-
-### Cikakken bayani kan ƙananan tsare-tsare
-
-| Takarda                                      | Manufa                                                                                  |
-| -------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `MCP-SERVER.md`                              | MCP server: kayan aiki 110, hanyoyin jigila 3, scopes 33, REST endpoints                |
-| `A2A-SERVER.md`                              | A2A v0.3: JSON-RPC, skills 6, mataimakan REST, agent card                               |
-| `AGENT_PROTOCOLS_GUIDE.md`                   | Haɗaɗɗen jagora: A2A da ACP da Cloud Agents                                             |
-| `CLOUD_AGENT.md`                             | Tsarawa da sarrafa Codex Cloud / Devin / Jules                                          |
-| `SKILLS.md`                                  | Tsarin skills (na ciki + marketplace + SkillsSH + sandbox)                              |
-| `RADAR.md`                                   | Ƙarin kundin free-model na Radar (`RADAR_ENABLED`, a kashe ta tsohuwa)                  |
-| `MEMORY.md`                                  | Tsarin memory (SQLite FTS5 + Qdrant)                                                    |
-| `EVALS.md`                                   | Tsarin eval (suites, runs, rubrics)                                                     |
-| `GUARDRAILS.md`                              | Mai ɓoye PII, prompt injection, vision bridge                                           |
-| `COMPLIANCE.md`                              | Audit log, retention, zaɓin ficewa na noLog                                             |
-| `WEBHOOKS.md`                                | Isar da webhook mai sa hannun HMAC                                                      |
-| `REASONING_REPLAY.md`                        | Cache na haɗaɗɗen memory/SQLite don `reasoning_content`                                 |
-| `AUTHZ_GUIDE.md`                             | Tsarin bi-da-bi na ba da izini (`classify` → `policies` → `enforce`)                    |
-| `RESILIENCE_GUIDE.md`                        | Circuit breaker + cooldown + kulle model                                                |
-| `docs/security/STEALTH_GUIDE.md` (git kawai) | TLS fingerprinting (JA3/JA4), Claude Code CCH, takardar shaidar MITM                    |
-| `AUTO-COMBO.md`                              | Injin Auto Combo (ƙididdiga bisa abubuwa 16, mode packs 6, masana'anta ta kama-da-wane) |
-
-### Matsawa
-
-| Takarda                         | Manufa                                       |
-| ------------------------------- | -------------------------------------------- |
-| `COMPRESSION_GUIDE.md`          | Bayanin compression modes + taswirar ci gaba |
-| `COMPRESSION_ENGINES.md`        | Injinan Caveman + RTK, yarjejeniyar registry |
-| `COMPRESSION_RULES_FORMAT.md`   | JSON schema na Caveman rule pack             |
-| `COMPRESSION_LANGUAGE_PACKS.md` | Jerin rule pack na kowane harshe             |
-| `RTK_COMPRESSION.md`            | RTK declarative pipeline (filters 49)        |
-
-### Turawa zuwa aiki
-
-| Takarda                      | Manufa                                                           |
-| ---------------------------- | ---------------------------------------------------------------- |
-| `DOCKER_GUIDE.md`            | Gina Docker, profiles (base/cli/host/cliproxyapi), Redis sidecar |
-| `VM_DEPLOYMENT_GUIDE.md`     | Turawa zuwa generic VM/VPS (Ubuntu/Debian + nginx + systemd)     |
-| `FLY_IO_DEPLOYMENT_GUIDE.md` | Turawa zuwa Fly.io (a halin yanzu da Sinanci kawai)              |
-| `TERMUX_GUIDE.md`            | Android marar GUI ta hanyar Termux                               |
-| `PWA_GUIDE.md`               | Girka Progressive Web App + service worker                       |
-| `ELECTRON_GUIDE.md`          | Gina manhajar desktop + sanya hannu + rarrabawa                  |
-| `TUNNELS_GUIDE.md`           | Cloudflared + ngrok + Tailscale Funnel                           |
-| `PROXY_GUIDE.md`             | Outbound proxy mai matakai 4 + 1proxy marketplace                |
-
-### Ƙananan kundin adireshi
-
-| Ƙaramin kundin adireshi | Manufa                                                                                                                                                                                                                                  |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/i18n/`            | Fassarar takardu zuwa harsunan yankuna daban-daban (harsuna 41)                                                                                                                                                                         |
-| `docs/screenshots/`     | Fayilolin hotuna don jagorori                                                                                                                                                                                                           |
-| `_tasks/superpowers/`   | Tsare-tsare/ƙayyadaddun bayanai daga superpowers (`writing-plans`/`brainstorming`) + bincike — keɓantaccen ma'ajin bayanai mai sigogi daban, wanda babban bishiyar ke watsi da shi ta git. Duba CLAUDE.md → "Kayan Tsarawa da Bincike". |
+Ƙwarewa 46, babban fayil ɗaya kowanne tare da `SKILL.md` (`cli-*`, `omni-*`, `config-codex-cli`, `ponytail`), da `skills/README.md`. `src/lib/agentSkills/catalog.ts` yana karanta su a lokacin gudu kuma yana fallasa su ta hanyar `/api/agent-skills`, MCP da A2A. Yawancin bayyanarwa ana haifar da su ta hanyar `src/lib/agentSkills/generator.ts` (`scripts/skills/generate-agent-skills.mjs`; `npm run check:agent-skills-sync` cak don drift). Duba [AGENT-SKILLS.md](../frameworks/AGENT-SKILLS.md).
 
 ---
 
-## `tests/` — Rukunonin Gwaji
+## `scripts/` — gini, ƙofofi da kayan aiki
 
-| Ƙaramin kundin adireshi              | Nau'i                                              | Mai gudanarwa                                         |
-| ------------------------------------ | -------------------------------------------------- | ----------------------------------------------------- |
-| `tests/unit/`                        | Gwaje-gwajen raka'a (~fayiloli 4,800, mafi sauri)  | Mai gudanar da gwaji na asali na Node                 |
-| `tests/integration/`                 | Gwaje-gwajen haɗaka na kayayyaki da yawa + DB      | Mai gudanar da gwaji na asali na Node (concurrency 1) |
-| `tests/e2e/`                         | UI + tsarin aiki na E2E                            | Playwright                                            |
-| `tests/e2e/protocol-clients.test.ts` | E2E na ainihin abokan hulɗar MCP + A2A             | Abokan hulɗar ladabi na musamman                      |
-| `tests/e2e/ecosystem.test.ts`        | Haɗakar mai samarwa (mai amfani da hanyar sadarwa) | Mai gudanar da gwaji na asali na Node                 |
+Kimanin fayiloli 435 da aka bibiya. Sabbin rubutun suna shiga ɗaya daga cikin manyan fayilolin da `AGENTS.md` ta yarda; code na kashe daya yana tafiya a cikin `scripts/ad-hoc/`.
 
----
+```
+scripts/
+├── check-permissions.sh   # Container ENTRYPOINT (copied to /app by the Dockerfile)
+├── postinstall.mjs        # Native-runtime warm-up run after scripts/build/postinstall.mjs
+├── start-ws-server.mjs    # Starts the live-dashboard WebSocket server as a separate process
+├── build/                 # Build, standalone assembly, npm pack/publish, postinstall, MITM, Electron prep
+├── check/                 # Quality gates behind most `npm run check:*` scripts; lib/ holds shared helpers
+├── quality/               # Ratchets, gate manifest, impact map, mutation tooling, release acceptance
+├── ci/                    # Steps invoked only by workflows (Docker publish, Release-Green, scanners)
+├── dev/                   # Dev runners (run-next, Playwright/protocol/ecosystem runners) and runtime helpers shipped in the package
+├── docs/                  # README SVG/diagram generators, OpenAPI module, provider reference, wiki sync
+├── i18n/                  # UI and docs translation pipeline, coverage checks, glossary/, lib/
+├── release/               # Changelog aggregation, contributors, merge train, LTS cut, publish verification
+├── ops/                   # Canary deploy, OpenCode free relay, runner janitor, allowlist sync
+├── perf/                  # Benchmarks and one-off performance A/B scripts
+├── cli/                   # CLI tooling (API-command generator, SSO, CLI smoke tests, media MCP)
+├── homolog/               # Homologation against a running instance + promptfoo config generation
+├── features/              # Feature-triage engine and its lib/
+├── router-eval/           # Offline router evaluation (`npm run eval:router*`)
+├── compression/           # Compression benchmark (`npm run bench:compression`, runs on Bun)
+├── compression-eval/      # Compression quality evaluation (`npm run eval:compression`)
+├── devin-bridge/          # Shell entry points for the Devin bridge (build, launch, tests)
+├── docker/                # Base-path patching for the standalone server inside containers
+├── integrations/          # MarkItDown MCP launchers — see docs/integrations/MARKITDOWN_MCP.md
+├── launchers/             # Double-click launchers and desktop-shortcut creators (Windows/macOS/Linux)
+├── packs/                 # Optional-pack manifest and installer (shipped in the npm package)
+├── test/                  # Live smoke scripts (combo-live, OpenCode/ChatGPT Web)
+├── sre/                   # On-call rotation, log redaction, TCP close analyzer
+├── vps/                   # Start/stop the release runner
+├── skills/                # Agent Skills generator CLI
+├── research/              # Free-tier budget card SVG generator
+└── ad-hoc/                # One-shot diagnostics and migrations
+```
 
-## `public/` — Kadarorin Tsaye
+Wuraren shigarwa da ake yawan amfani da su:
 
-| Hanya               | Manufa                                                         |
-| ------------------- | -------------------------------------------------------------- |
-| `public/` (tushe)   | Favicons, robots.txt, manifest, service worker, hotunan talla  |
-| `public/providers/` | PNG/SVG na tambarin mai samarwa (ana amfani da su a dashboard) |
+| Rubutun                                                             | Manufar                                                                                              |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `dev/run-next.mjs`                                                  | `npm run dev` / `npm start` mai gudu                                                                 |
+| `build/build-next-isolated.mjs`                                     | `npm run build` (Next.js standalone gini)                                                            |
+| `build/prepublish.ts`                                               | `npm run build:cli`: tara npm `dist/`                                                                |
+| `build/postinstall.mjs`                                             | npm `postinstall`                                                                                    |
+| `build/publicOpenApi.mjs`                                           | `npm run gen:public-openapi`                                                                         |
+| `docs/gen-provider-reference.ts`                                    | `npm run gen:provider-reference` (yana sabunta PROVIDER_REFERENCE.md)                                |
+| `docs/gen-openapi-module.mjs`                                       | `prebuild:docs` (yana haifar da `src/app/docs/lib/openapi.generated.ts`)                             |
+| `i18n/run-translation.mjs`                                          | `npm run i18n:run` (docs mirrors)                                                                    |
+| `i18n/generate-route-namespaces.mjs`                                | `npm run gen:i18n-routes`                                                                            |
+| `release/aggregate-changelog.mjs`                                   | Ninke guntun `changelog.d/` zuwa `CHANGELOG.md`                                                      |
+| `check/check-fabricated-docs.mjs`                                   | `npm run check:fabricated-docs` (doc daidaito kofa)                                                  |
+| `check/check-tracked-artifacts.mjs`                                 | `npm run check:tracked-artifacts` (toshe tushen hanyoyin `_*` )                                      |
+| `quality/check-quality-ratchet.mjs`                                 | `npm run quality:ratchet` (madaidaicin ratchet da `config/quality/`)                                 |
+| `dev/run-playwright-tests.mjs`                                      | `npm run test:e2e`                                                                                   |
+| `dev/run-protocol-clients-tests.mjs`, `dev/run-ecosystem-tests.mjs` | `npm run test:protocols:e2e`, `npm run test:ecosystem`                                               |
+| `dev/new-worktree.sh`                                               | Yana ƙirƙira keɓantaccen itacen ci gaba — duba [WORKTREE_ISOLATION.md](../ops/WORKTREE_ISOLATION.md) |
+| `dev/sync-ui-kit.sh`                                                | Yana daidaita `packages/ui-kit/src` zuwa ƙaddamarwa na sama                                          |
 
----
+Ƙofar kaya da manufofin: [QUALITY_GATES.md](QUALITY_GATES.md).
 
-## `config/` — Saitunan Tsaye + Matsayin Matakin Tabbatar da Inganci
+## `config/` — mai sigar tsari da yanayin kofa
 
-Samfuran saiti da ake turawa tare da tushen ma'aunin matakin tabbatar da inganci da aka saka cikin repo
-(an matsar da su nan daga tushen repo a v3.8.26 domin tushen ya kasance marar cunkoso).
+| Hanya                                    | Manufar                                                                                         |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `i18n.json` / `i18n-schema.json`         | Wuraren da aka goyan baya (tushen ƙidaya yankin) da tsarin su                                   |
+| `payloadRules.json`                      | Dokokin biya na sama (`open-sse/services/payloadRules.ts`)                                      |
+| `cli-tools-manifest.json`                | Bayyanar kayan aikin CLI masu haɗaka (`bin/cli/cli-manifest.mjs`)                               |
+| `alibaba-free-tier-allowlist.json`       | Alibaba free-tier model allowlist                                                               |
+| `ci/toolchain.json`                      | CI Toolchain versions                                                                           |
+| `quality/quality-baseline.json`          | Matsakaicin ratchet mai-metric da yawa (rufewa, faɗakarwa, kwafi,…)                             |
+| `quality/*-baseline.json`                | Daskararrun tushen ƙofofin guda ɗaya (haɗuwa, kwafi, girman fayil, yankan rubutu, gano gwaji,…) |
+| `quality/*-allowlist.json`               | Lissafin izini na Ƙofar (dogara, lasisi, halayen AI, gwajin ƴan uwan da aka manta,…)            |
+| `quality/eslint-suppressions.json`       | Daskararrun daskararrun ESLint da `npm run lint` ke yi                                          |
+| `quality/gate-manifest.json`             | Ƙofar bayyanuwar `scripts/quality/gate-manifest.mjs` ta duba                                    |
+| `quality/vitest-exclusions.json`         | Keɓe kayan ƙira don `vitest.quarantine.config.ts`                                               |
+| `quality/skill-templates/`               | Samfurin SKILL.md canonical wanda `scripts/quality/check-skill-contract.mjs` ya duba            |
+| `quality/release-acceptance.schema.json` | Tsarin shaidar yarda-karɓar — [QUALITY_EVIDENCE_CONTRACT.md](QUALITY_EVIDENCE_CONTRACT.md)      |
+| `release/`                               | Canje-canjen sulhu da bayyanar wreq-js na asali, lissafin lasisi da sanarwa                     |
 
-| Hanya                                         | Manufa                                                                                       |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `config/i18n.json`                            | Jerin locale + metadata (tushe na hukuma don ƙidayar locale 42)                              |
-| `config/i18n-schema.json`                     | Tsarin JSON da ke tabbatar da ingancin `i18n.json`                                           |
-| `config/payloadRules.json`                    | Dokokin tsabtace payload na upstream                                                         |
-| `config/quality/quality-baseline.json`        | Tushen ratchet mai ma'aunai da yawa (`scripts/quality/check-quality-ratchet.mjs`)            |
-| `config/quality/complexity-baseline.json`     | Tushen ESLint-complexity da aka daskarar (`check-complexity.mjs`)                            |
-| `config/quality/duplication-baseline.json`    | Tushen maimaitawar jscpd da aka daskarar (`check-duplication.mjs`)                           |
-| `config/quality/file-size-baseline.json`      | Tushen girman kowane fayil da aka daskarar (`check-file-size.mjs`)                           |
-| `config/quality/test-discovery-baseline.json` | Tushen gwaje-gwajen marasa alaƙa da aka daskarar (`check-test-discovery.mjs`)                |
-| `config/quality/dependency-allowlist.json`    | Jerin dogaro da aka amince da su (`check-deps.mjs`)                                          |
-| `config/quality/.license-allowlist.json`      | Jerin lasisin SPDX da aka amince da su (`check-licenses.mjs`)                                |
-| `config/quality/quality-metrics.json`         | Ma'aunan da aka tattara na ɗan lokaci (wanda `collect-metrics.mjs` ya samar; **gitignored**) |
+## `changelog.d/` — canza tarkace
 
----
-
-## `.github/` — Haɗin GitHub
-
-| Path                               | Manufa                                                               |
-| ---------------------------------- | -------------------------------------------------------------------- |
-| `.github/workflows/`               | Gudanarwar GitHub Actions CI/CD (lint, gwaji, ɗaukar gwaji, fitarwa) |
-| `.github/ISSUE_TEMPLATE/`          | Samfuran rahoton matsala/sabon fasali                                |
-| `.github/pull_request_template.md` | Samfurin PR                                                          |
-| `.github/dependabot.yml`           | Saitin sabunta dogaro                                                |
-
----
-
-## `.husky/` — Git Hooks
-
-| File         | Manufa                                                                                      |
-| ------------ | ------------------------------------------------------------------------------------------- |
-| `pre-commit` | Yana gudanar da `lint-staged + check-docs-sync + check:any-budget:t11`                      |
-| `pre-push`   | A halin yanzu an kashe shi (an mai da shi sharhi). Gudanar da `npm run test:unit` da hannu. |
-| `_/`         | Abubuwan cikin gida na Husky                                                                |
-
----
-
-## `.claude/` — Umarnin Slash na Claude Code
-
-| File                                                | Manufa                                                           |
-| --------------------------------------------------- | ---------------------------------------------------------------- |
-| `commands/version-bump-cc.md`                       | `/version-bump-cc` — ƙara sigar + kundin canje-canje ta atomatik |
-| `commands/generate-release-cc.md`                   | `/generate-release-cc` — cikakken tsarin fitarwa                 |
-| `commands/deploy-vps-{local,akamai,both}-cc.md`     | Turawa zuwa VPS                                                  |
-| `commands/capture-release-evidences-cc.md`          | Ɗaukar bidiyon sabbin fasaloli a burauza a matsayin WebP         |
-| `commands/review-{prs,discussions}-cc.md`           | Tantance GitHub PRs/tattaunawa                                   |
-| `commands/{review-issues,implement-features}-cc.md` | Tsarin gudanar da matsaloli                                      |
-| `settings.local.json`                               | Saitunan Claude Code na kowane aikin                             |
-
----
-
-## `.agents/` — Tsarin Gudanarwar Wakilai na Gabaɗaya (Codex / Cursor / da sauransu)
-
-| Path                     | Manufa                                                          |
-| ------------------------ | --------------------------------------------------------------- |
-| `workflows/*-ag.md`      | Ma’anonin tsarin gudanarwa guda 11 (kwafin `.claude/commands/`) |
-| `skills/<name>/SKILL.md` | Ma’anonin ƙwarewa guda 9 tare da Bayanan Gudanarwar Codex       |
-
-> **Lura:** A halin yanzu tsarin gudanarwa da umarnin daidai suke baɗi-da-baɗi. Idan an yi nufin `.agents/` ya yi aiki da wani yanayin gudanar da wakili na daban (Codex), nau’ukan suna buƙatar bambanta ta hanya mai ma’ana.
-
----
-
-## `_ideia/`, `_mono_repo/`, `_references/`, `_tasks/` — A Wajen Bishiyar Aiki
-
-Waɗannan kundin adireshi masu farawa da alamar ƙasa suna ɗauke da abubuwan da ba a haɗa su cikin abin da ake fitarwa:
-
-- **`_ideia/`** — bayanan ƙira (nau’ukan defer / notfit / viable)
-- **`_mono_repo/`** — tsofaffin ƙananan ayyuka (omnirouteCloud, omnirouteSite, vscode-extension)
-- **`_references/`** — kwafe na karantawa kawai na ayyukan OSS masu alaƙa (LiteLLM, 9router, ClawRouter, CLIProxyAPI, modelrelay, new-api, da sauransu) domin kwatance yayin haɓakawa
-- **`_tasks/`** — fayilolin bin diddigin ayyukan kowace fitarwa (na yau da kullum)
-
-Ba a haɗa su cikin sakamakon `npm pack` ba. Duba `.npmignore`.
+A PR yana ƙara juzu'i ɗaya maimakon gyara `CHANGELOG.md`: `features/`, `fixes/` ko `maintenance/`, mai suna `<PR-number>-<slug>.md`. A lokacin saki `scripts/release/aggregate-changelog.mjs` yana ninke su cikin `CHANGELOG.md` ya goge su; `npm run check:changelog-integrity` ya inganta su. Cikakkun bayanai a cikin `changelog.d/README.md`.
 
 ---
 
-## Abubuwan da Aka Samar / Git Ya Yi Watsi da Su
+## `docs/` — bayanan jama'a
 
-| Path                   | Manufa                                |
-| ---------------------- | ------------------------------------- |
-| `node_modules/`        | Dogarorin npm                         |
-| `.next/`               | Fitowar ginin Next.js                 |
-| `coverage/`            | Rahotannin coverage na c8             |
-| `logs/`                | Rajistan lokacin aiki                 |
-| `package/`             | Wurin shirya npm pack                 |
-| `.playwright-mcp/`     | Abubuwan gwajin Playwright MCP        |
-| `.issues/`             | Ma'ajiyar matsaloli ta gida           |
-| `tsconfig.tsbuildinfo` | Ma'ajiyar wucin gadi ta TS mai ƙaruwa |
+Sassan da aka jera a cikin `source.config.ts` suna tattarawa cikin rukunin yanar gizon `/docs` (tare da ƴan shafukan tsaro na ma'aikaci kawai); `docs/meta.json` yana saita odar labarun gefe. Fara daga [README.md](../README.md).
+
+| Hanya                 | Abubuwan da ke ciki                                                                                                                                                             |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getting-started/`    | Saurin farawa, mai karɓar kai, masu samarwa, matakan kyauta, Auto-Combo da jagororin kuki na yanar gizo                                                                         |
+| `guides/`             | Jagorar mai gudanarwa da haɓakawa: saitin, Docker, Electron, PWA, Termux, CLIs, i18n, gyara matsala, jagorar mai amfani                                                         |
+| `architecture/`       | Gine-gine, bayanin lamba, girke-girke na gyarawa, authz, juriya, ƙofofin inganci, tsarin ƙira, wannan taswira                                                                   |
+| `reference/`          | ambaton API, masu canjin yanayi, tutoci, kayan aikin CLI, matakan kyauta, bayanin mai samarwa, cire masu samarwa                                                                |
+| `frameworks/`         | MCP, A2A, ACP, basira, ƙwaƙwalwar ajiya, plugins, girgije jami'an, webhooks, evals, log fitarwa, Radar, Playground, ...                                                         |
+| `routing/`            | Auto-Combo, dalilin replay/routing, rabon keɓaɓɓu, tsanin biyan kuɗi, tsadar sifili,…                                                                                           |
+| `security/`           | Hanyar gadi, tsabtace kuskure, CORS, SSO, manufofin egress, matakan kiyaye hanya, sarkar samarwa,…                                                                              |
+| `compression/`        | Jagorar matsawa, injuna, RTK, tsarin mulki, fakitin harshe, gyaran mahallin                                                                                                     |
+| `ops/`                | Fitowar fitarwa, reshe, haɗin jirgin ƙasa, turawa (VM, Fly.io, Kubernetes), bayanan bayanai, wakilai, bishiyar aiki, cikakkun Dokokin Hard                                      |
+| `providers/`          | Jagorar mai bayarwa (Lambar Claude, gidan yanar gizo ChatGPT, Cursor, GitHub Copilot,…)                                                                                         |
+| `comparison/`         | OmniRoute idan aka kwatanta da madadin                                                                                                                                          |
+| `integrations/`       | Bayanan haɗin kai (fal.ai ɗan ƙasa, MarkItDown MCP); ba a haɗa su cikin `/docs` ba                                                                                              |
+| `openapi.yaml`        | tushen OpenAPI ; ciyar `src/app/docs/lib/openapi.generated.ts`, `public/openapi.yaml` da `bin/cli/api-commands/`                                                                |
+| `diagrams/`           | Tushen Mermaid (`.mmd`), da aka fassara SVGs (`exported/`) da README SVGs daga `scripts/docs/gen-readme-*`                                                                      |
+| `assets/`             | Harshe-tuta SVGs da sauran kadarorin README                                                                                                                                     |
+| `screenshots/`        | Hotunan hotunan da README da jagorori ke amfani da su                                                                                                                           |
+| `i18n/`               | Madubin da aka Fassara: babban fayil ɗaya a kowane yanki (66) tare da tushen docs da ƙaramin yanki `docs/` ; wanda `npm run i18n:run` — ya yi duba [I18N.md](../guides/I18N.md) |
+| babban matakin `*.md` | `README.md` (doc index), `DEVELOPER-ENVIRONMENT.md` da ƴan bayanin kula na tsaye                                                                                                |
+
+Mabuɗin shigarwa: [ARCHITECTURE.md](ARCHITECTURE.md), [CODEBASE_DOCUMENTATION.md](CODEBASE_DOCUMENTATION.md), [MODIFICATION_SCENARIOS.md](MODIFICATION_SCENARIOS.md), [ENVIRONMENT.md](../reference/ENVIRONMENT.md), [PROVIDER_REFERENCE.md](../reference/PROVIDER_REFERENCE.md) (wanda `npm run gen:provider-reference` ya ƙirƙira).
 
 ---
 
-## Shawarwarin kewayawa
+## `tests/` — test suites
 
-- **Sabon mai ba da gudummawa ne?** Karanta `CONTRIBUTING.md` → `CLAUDE.md` → `docs/architecture/ARCHITECTURE.md` → `docs/architecture/CODEBASE_DOCUMENTATION.md`.
-- **Kana ƙara mai samarwa?** Bi `docs/architecture/ARCHITECTURE.md § Adding a New Provider` + tabbatar da daidaito da `docs/reference/PROVIDER_REFERENCE.md`.
-- **Kana ƙara hanya?** `docs/architecture/ARCHITECTURE.md § Adding a New API Route` + `src/shared/validation/schemas.ts`.
-- **Kana ƙara kayan aikin MCP?** `docs/frameworks/MCP-SERVER.md § Adding a Tool`.
-- **Kana ƙara ƙwarewar A2A?** `docs/frameworks/A2A-SERVER.md § Adding a New Skill`.
-- **Kana gudanarwa a na'urarka?** `docs/guides/SETUP_GUIDE.md`.
-- **Kana turawa?** `docs/guides/DOCKER_GUIDE.md` / `docs/ops/VM_DEPLOYMENT_GUIDE.md` / `docs/ops/FLY_IO_DEPLOYMENT_GUIDE.md`.
-- **Kana fitar da sabon siga?** `docs/ops/RELEASE_CHECKLIST.md` (da kuma ƙwarewar Claude Code ta `/generate-release-cc`).
+Kimanin fayiloli 9,670 da aka bibiya. Fayilolin gwaji suna nan, ba cikin tushen aikin ba. Banbance: manyan fayilolin `__tests__/` masu haɗin gwiwa a cikin `src/` da `open-sse/` waɗanda Vitest ke tattarawa.
+
+| Hanya                                                  | Abubuwan da ke ciki                                                                                                                                                                         | Mai gudu                                                                                |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `tests/unit/`                                          | Gwajin raka'a (fiye da fayiloli 9,000): da yawa a matakin sama, da manyan manyan fayiloli (`ui/`, `compression/`, `build/`, `guardrails/`, `db/`, `cli/`, `api/`, `dashboard/`, `combo/`,…) | Mai gudu gwajin node (`npm run test:unit`); `*.tsx` ta hanyar `test:vitest:ui`          |
+| `tests/unit/serial/`                                   | Gwaje-gwaje-gwaje-gwaje-gwaje na CPU suna gudana tare da daidaitawa 1                                                                                                                       | `npm run test:unit:serial`                                                              |
+| `tests/unit/autoCombo/`, `tests/unit/api/**/*.spec.ts` | Vitest suites a cikin bishiyar naúrar                                                                                                                                                       | `npm run test:vitest`                                                                   |
+| `tests/integration/`                                   | Multi-module da gwajin haɗin kai DB ; `combo-matrix/`, `combo-live/`, `services/`                                                                                                           | `npm run test:integration`, `test:combo:matrix`, `test:combo:live`, `test:services:int` |
+| `tests/e2e/`                                           | Playwright `*.spec.ts` + live suites `ecosystem.test.ts`, `protocol-clients.test.ts`                                                                                                        | `npm run test:e2e`, `test:ecosystem`, `test:protocols:e2e`                              |
+| `tests/boundary/`                                      | `*.live.test.ts` da misalin gudu                                                                                                                                                            | `npm run test:boundary:live`                                                            |
+| `tests/homolog/`                                       | Homologation suites (`api/`, `ui/` tare da nasa tsarin Playwright )                                                                                                                         | `npm run homolog` — duba [HOMOLOGATION.md](../ops/HOMOLOGATION.md)                      |
+| `tests/load/`                                          | Load da jiƙa rubutun (k6)                                                                                                                                                                   | Gudun aikin juriya na dare                                                              |
+| `tests/_setup/`                                        | `--import` /fayilolin saitin (keɓaɓɓen bayanan dir, egress guard, Vitest UI polyfills)                                                                                                      | Masu gudu sun loda                                                                      |
+| `tests/_helpers/`, `tests/helpers/`                    | Mataimakan gwaji da aka raba (hotunan zinare, zaman gudanarwa,…)                                                                                                                            | Ana shigo da shi ta gwaje-gwaje                                                         |
+| `tests/fixtures/`                                      | Ƙaddamar da bayanai da ƙayyadaddun tsarin tsarin yara                                                                                                                                       | Ana shigo da shi ta gwaje-gwaje                                                         |
+| `tests/snapshots/`                                     | Fayilolin zinare don `tests/helpers/goldenSnapshot.ts`                                                                                                                                      | Ana shigo da shi ta gwaje-gwaje                                                         |
+| `tests/manual/`                                        | fayilolin `.http` don kiran REST na hannu                                                                                                                                                   | Manual                                                                                  |
+| `tests/security/`                                      | Rubutun harsashi na tsaro                                                                                                                                                                   | Kayan aikin gwajin hannu / naúrar-gwajin                                                |
+| `tests/types/`                                         | Nau'in-matakin kwangila na daidaitawa                                                                                                                                                       | —                                                                                       |
+
+Cikakken matrix: `CONTRIBUTING.md` → "Gwajin Gudu" da [COVERAGE_PLAN.md](../ops/COVERAGE_PLAN.md).
+
+---
+
+## `deploy/` — Kubernetes
+
+| Hanya                                              | Manufar                                                                                                   |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `deploy/helm/omniroute/`                           | Taswirar Helm (`Chart.yaml`, `values.yaml`, samfura don turawa, sabis, shiga, PVC, sirri, taswirar saiti) |
+| `deploy/kubernetes/base/`                          | Kustomize tushe (spacespace, turawa, sabis, PVC, configmap, `secret.example.yaml`)                        |
+| `deploy/kubernetes/overlays/k3s/`, `overlays/k8s/` | Takamaiman mai rufi (shigarwa, ajin ajiya, albarkatu, bincike)                                            |
+
+Duba [KUBERNETES_DEPLOYMENT_GUIDE.md](../ops/KUBERNETES_DEPLOYMENT_GUIDE.md).
+
+## `docker/` — hotuna masu taimako
+
+| Hanya                               | Manufar                                                                                                                                      |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docker/chatgpt-web-codex-browser/` | Hoton burauzar mara kai tare da wakilin CDP na mai aiwatar da gidan yanar gizon ChatGPT — duba [CHATGPT_WEB.md](../providers/CHATGPT_WEB.md) |
+| `docker/devin-bridge/`              | hoton gada Devin, shirya fayil, izgili da mai gadin cibiyar sadarwa                                                                          |
+| `docker/vnc-browser/`               | Chromium tare da VNC don ma'amala mai ma'amala                                                                                               |
+
+Babban hoton shine tushen `Dockerfile`; duba [DOCKER_GUIDE.md](../guides/DOCKER_GUIDE.md).
+
+## girke-girke na al'umma `contrib/` — (ba a tallafawa bisa hukuma)
+
+| Hanya                   | Manufar                                                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contrib/podman/`       | Podman quadlets (kwantena, girma, cibiyar sadarwa, Redis)                                                                                   |
+| `contrib/vps/`          | VPS `compose.yaml` + `.env.example`                                                                                                         |
+| `contrib/windows/`      | `.bat` launchers don gudu daga wurin duba Windows                                                                                           |
+| `contrib/session-sync/` | README don tsawaita ma'amala-daidaita zaman-tsaro na ɓangare na uku — duba [SESSION-SYNC-EXTENSION.md](../guides/SESSION-SYNC-EXTENSION.md) |
+
+## `examples/`
+
+| Hanya                           | Manufar                                                                |
+| ------------------------------- | ---------------------------------------------------------------------- |
+| `examples/omniroute-cmd-hello/` | Karamin umarni plugin — duba [PLUGINS.md](../frameworks/PLUGINS.md)    |
+| `examples/plugins/`             | Misali plugins: langfuse, request-logger, theme-manager, maraba-banner |
+| `examples/quickstart/`          | Client snippets: curl, Node.js (axios), PHP, Python                    |
+
+---
+
+## `.github/` — GitHub haɗin kai
+
+| Hanya                                                        | Manufar                                                                                                                                                                                                                                                             |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/`                                         | CI (`ci.yml`, `quality.yml`, `build.yml`), tsaro scans (`codeql.yml`, `semgrep.yml`, `scorecard.yml`, `dast-smoke.yml`), tsararrun `nightly-*.yml` suites, bugu (`npm-publish.yml`, `docker-publish.yml`, `electron-release.yml`), saki da kuma kiyaye ayyukan aiki |
+| `.github/actions/npm-ci-retry/`                              | Ayyukan da aka haɗa: `npm ci` tare da cache kuma sake gwadawa                                                                                                                                                                                                       |
+| `.github/actions/prepare-unit-storage/`                      | Ayyukan da aka haɗa: yana 'yantar da sarari diski mai gudu, sannan shigar da abubuwan dogaro                                                                                                                                                                        |
+| `.github/ISSUE_TEMPLATE/`                                    | Bug, fasali da nau'ikan batun ɗaukar hoto                                                                                                                                                                                                                           |
+| `.github/pull_request_template.md`, `PULL_REQUEST_TEMPLATE/` | Tsohuwar samfurin PR tare da bambance-bambancen bugfix/feature                                                                                                                                                                                                      |
+| `.github/CODEOWNERS`, `FUNDING.yml`, `dependabot.yml`        | Masu lamba, hanyoyin haɗin kai, sabuntawar dogaro                                                                                                                                                                                                                   |
+| `.github/labels.yml`                                         | Ma'anar lakabin da aka yi amfani da shi ta hanyar `npm run labels:sync`                                                                                                                                                                                             |
+| `.github/copilot-instructions.md`                            | umarnin GitHub Copilot (wani wakili-umarni surface)                                                                                                                                                                                                                 |
+
+CI aiki map: [QUALITY_GATES.md](QUALITY_GATES.md).
+
+## `.husky/` — git hooks
+
+| Fayil        | Manufar                                                                                                                                                  |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pre-commit` | Binciken shaidar Git, lint-staged, ƙofa bayyani, aiki tare da docs, kowane kasafin kuɗi, nau'in sikelin sikelin, kayan ƙira da kayan aikin ui-kit dubawa |
+| `commit-msg` | `scripts/check/check-ai-attribution.mjs` a kan aika saƙon                                                                                                |
+| `pre-push`   | Haske mai niyya: duban hankali na PATH/npm mai fita 0                                                                                                    |
+
+Ana samar da lokacin gudu na `.husky/_/` a cikin shigar kuma ba a sa ido ba.
+
+---
+
+## Tukwici na kewayawa
+
+- **Sabon mai ba da gudummawa?** `CONTRIBUTING.md` → `AGENTS.md` → [ARCHITECTURE.md](ARCHITECTURE.md) → [CODEBASE_DOCUMENTATION.md](CODEBASE_DOCUMENTATION.md).
+- **Canza wani abu gama gari** (mai bayarwa, hanya, tsarin DB, kayan aiki na MCP, gwanintar A2A )? Bi [MODIFICATION_SCENARIOS.md](MODIFICATION_SCENARIOS.md).
+- **Ƙara mai bayarwa?** Duba [REMOVED_PROVIDERS.md](../reference/REMOVED_PROVIDERS.md) farko, sa'an nan a haye-check [PROVIDER_REFERENCE.md](../reference/PROVIDER_REFERENCE.md).
+- **Gudu a gida?** [SETUP_GUIDE.md](../guides/SETUP_GUIDE.md).
+- **Ana turawa?** [DOCKER_GUIDE.md](../guides/DOCKER_GUIDE.md), [SELF_HOST_GUIDE.md](../getting-started/SELF_HOST_GUIDE.md), [VM_DEPLOYMENT_GUIDE.md](../ops/VM_DEPLOYMENT_GUIDE.md), [FLY_IO_DEPLOYMENT_GUIDE.md](../ops/FLY_IO_DEPLOYMENT_GUIDE.md), [KUBERNETES_DEPLOYMENT_GUIDE.md](../ops/KUBERNETES_DEPLOYMENT_GUIDE.md).
+- **Ana sakewa?** [RELEASE_CHECKLIST.md](../ops/RELEASE_CHECKLIST.md).
+- **Kofa mai inganci ta gaza?** [QUALITY_GATES.md](QUALITY_GATES.md) da [QUALITY_GATE_PLAYBOOK.md](../ops/QUALITY_GATE_PLAYBOOK.md).

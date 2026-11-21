@@ -88,6 +88,8 @@ export const ROUTER_STRATEGY_OPTIONS = [
   { id: "latency", label: "Latency Optimized" },
   { id: "sla-aware", label: "SLA-aware" },
   { id: "lkgp", label: "Last Known Good Provider" },
+  { id: "nadir", label: "Nadir (route by prompt complexity)" },
+  { id: "decision", label: "Decision model (a decider picks per request)" },
 ] as const;
 
 export const FACTOR_LABELS: Record<keyof IntelligentRoutingWeights, string> = {

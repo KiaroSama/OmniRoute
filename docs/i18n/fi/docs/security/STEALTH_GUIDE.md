@@ -20,57 +20,72 @@ Häiveominaisuudet ovat olemassa, jotta OmniRoute voi toimia yhteensopivuuskerro
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-Pysyvät `wreq-js`-istunnot luodaan laiskasti tilikohtaisesti ja ratkaistun välityspalvelimen mukaan. Prosessinlaajuinen `TlsClient` ylläpitää enintään 128 istunnon poolia, jotka jäljittelevät **Chrome 124:ää macOS:ssä** Cloudflaren takana oleville ylävirran palveluille. `TlsClient.fetch()` keskeyttää turvallisesti, kun natiivi suoritusympäristö ei ole käytettävissä; kutsuja voi nimenomaisesti valita varavaihtoehdon tämän kääreen ulkopuolella.
+Pysyvät `wreq-js`-istunnot luodaan laiskasti tilikohtaisesti ja ratkaistua välityspalvelinta kohden.
+Prosessinlaajuinen `TlsClient` ylläpitää enintään 128:aa istuntoa, jotka jäljittelevät
+**Chrome 124:ää macOS:llä** Cloudflaren takana olevia taustapalveluita varten.
+`TlsClient.fetch()` estää pyynnön turvallisesti, kun natiivia suoritusympäristöä ei ole saatavilla;
+kutsuja voi nimenomaisesti valita varajärjestelyn tämän kääreen ulkopuolella.
 
 - Istuntoprofiili: `browser: "chrome_124", os: "macos"`
-- Välityspalvelimen ratkaisu (prioriteettijärjestys): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (myös pienillä kirjaimilla)
+- Välityspalvelimen ratkaisu (tärkeysjärjestyksessä): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (myös pienaakkosilla)
 - Aikakatkaisu: `TLS_CLIENT_TIMEOUT_MS` (periytyy muuttujasta `FETCH_TIMEOUT_MS`, oletus 600000)
-- `wreq-js`-vastaus on fetch-yhteensopiva (`headers`, `text()`, `json()`, `clone()`, `body`).
-- Ensimmäisen tavun valvonta (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): `TlsClient.fetch()`
-  palautuu heti, kun ylävirran otsakkeet saapuvat, joten `TLS_CLIENT_TIMEOUT_MS` ei yksin voi rajata
-  rungon käsittelyaikaa, jos runko ei koskaan tuota ensimmäistä tavua. `guardTlsFirstByte()` asettaa rungon ensimmäisen `read()`-kutsun
-  kilpailemaan aikarajan `TLS_FIRST_BYTE_WATCHDOG_MS` kanssa (oletus `10000`, arvo `0` poistaa sen käytöstä); toimivaan runkoon
-  tämä ei vaikuta, kun taas pysähtynyt runko peruuttaa wreq-lukijan ja antaa `proxyFetch`-toiminnon olemassa olevan
-  TLS-varalogiikan jatkaa suoraan/välityspalvelimen kautta toimivaan välittäjään (pyyntö, jota ei voi turvallisesti toistaa, esimerkiksi
-  rungollinen POST-pyyntö, aiheuttaa edelleen poikkeuksen sen sijaan, että se yritettäisiin hiljaisesti uudelleen).
+- `wreq-js`-Response on fetch-yhteensopiva (`headers`, `text()`, `json()`, `clone()`, `body`).
+- Ensimmäisen tavun valvonta-ajastin (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656):
+  `TlsClient.fetch()` valmistuu heti, kun taustapalvelun otsakkeet saapuvat, joten pelkkä
+  `TLS_CLIENT_TIMEOUT_MS` ei voi rajoittaa vastausrunkoa, joka ei koskaan tuota ensimmäistä tavua.
+  `guardTlsFirstByte()` kilpailuttaa vastausrungon ensimmäisen `read()`-kutsun
+  `TLS_FIRST_BYTE_WATCHDOG_MS`-ajan kanssa (oletus `10000`, `0` poistaa sen käytöstä); tämä ei
+  vaikuta toimivaan vastausrunkoon, kun taas pysähtynyt vastausrunko peruuttaa wreq-lukijan ja antaa
+  `proxyFetch`-funktion olemassa olevan TLS-varajärjestelylogiikan siirtyä suoran yhteyden tai
+  välityspalvelimen välittäjään (pyyntö, jonka turvallista uudelleentoistoa ei voida taata, kuten
+  vastausrungon sisältävä POST-pyyntö, aiheuttaa silti virheen sen sijaan, että sitä yritettäisiin
+  huomaamatta uudelleen).
 
-### Web-evästeitä käyttävä palveluntarjoajasiirto — wreq-js 3.2.0
+### Verkkovästeitä käyttävien palveluntarjoajien siirtoyhteys — wreq-js 3.2.0
 
-`open-sse/services/tlsClientBase.ts` on alla olevien viiden erikoistuneen
-web-evästeitä käyttävän siirtotavan jaettu sovitin. Kukin kevyt palveluntarjoajakääre valitsee selain-/käyttöjärjestelmäprofiilin. Sovitin
-käyttää tiedostossa `open-sse/utils/tlsClient.ts` olevaa yhtä wreq-suoritusympäristön lataajaa ja siirtopoolia, jonka avaimena on
-profiili + käyttöjärjestelmä + ratkaistu välityspalvelin, ja jokainen pyyntö käyttää asetusta `cookieMode: "ephemeral"`. Tilit ja
-pyynnöt jakavat näin siirtotason yhteydet, mutta eivät koskaan wreq-istuntoa tai evästesäilöä.
+`open-sse/services/tlsClientBase.ts` on alla olevien viiden erikoistuneen verkkovästeitä käyttävän
+siirtoyhteyden jaettu sovitin. Kukin kevyt palveluntarjoajakohtainen kääre valitsee selain- ja
+käyttöjärjestelmäprofiilin. Sovitin käyttää yhtä wreq-suoritusympäristön lataajaa ja
+siirtoyhteyspoolia tiedostossa `open-sse/utils/tlsClient.ts`, ja avaimena käytetään profiilin,
+käyttöjärjestelmän ja ratkaistun välityspalvelimen yhdistelmää. Jokainen pyyntö käyttää samalla
+asetusta `cookieMode: "ephemeral"`. Tilit ja pyynnöt jakavat siten siirtoyhteystason yhteydet, mutta
+eivät koskaan wreq-istuntoa tai evästevarastoa.
 
-| Palveluntarjoaja | Profiili      | Emuloitu käyttöjärjestelmä | Virran EOF-käytäntö                          |
-| ---------------- | ------------- | -------------------------- | -------------------------------------------- |
-| Claude           | `chrome_146`  | Linux                      | sisällytä `[DONE]`                           |
-| Perplexity       | `firefox_148` | macOS                      | sisällytä `event: end_of_stream`             |
-| Grok             | `chrome_146`  | Linux                      | jätä `[DONE]` pois                           |
-| Notion           | `chrome_146`  | Windows                    | sisällytä `[DONE]`                           |
-| LMArena          | `chrome_146`  | Windows                    | ei vartioarvoa; sulje natiivissa EOF-tilassa |
+| Palveluntarjoaja | Profiili      | Emuloitu käyttöjärjestelmä | Suoratoiston EOF-käytäntö                |
+| ---------------- | ------------- | -------------------------- | ---------------------------------------- |
+| Claude           | `chrome_146`  | Linux                      | sisällytä `[DONE]`                       |
+| Perplexity       | `firefox_151` | macOS                      | sisällytä `event: end_of_stream`         |
+| Grok             | `chrome_146`  | Linux                      | jätä `[DONE]` pois                       |
+| Notion           | `chrome_146`  | Windows                    | sisällytä `[DONE]`                       |
+| LMArena          | `chrome_146`  | Windows                    | ei merkkiä; sulje natiivissa EOF-tilassa |
 
-- Suoratoisto kuluttaa natiivin vastauksen `ReadableStream`-virtaa suoraan; väliaikaistiedostoa tai
+- Suoratoisto kuluttaa natiivin vastauksen `ReadableStream`-virtaa suoraan; tilapäistiedostoa tai
   oheisprosessia ei luoda.
-- Enintään 256 ensimmäistä tavua tarkastetaan ennen virran tarjoamista. SSE-palveluntarjoajat puskuroivat muut kuin SSE-
-  virheet; Grok/LMArena muuntavat Cloudflare-haasteet tilakoodiksi `403` ja HTML-välisivut tilakoodiksi `502`.
-- Natiivin pyynnön aikakatkaisua rajoittaa lisäksi absoluuttinen JS:n kova määräaika. Jumiutuminen mitätöi
-  ja sulkee vain kyseisen profiilin/käyttöjärjestelmän/välityspalvelimen siirtoyhteyden, ennen kuin seuraava pyyntö luo sen uudelleen.
-- Välityspalvelimen ratkaisun kutsukohtainen prioriteettijärjestys on `proxyUrl` → pyyntökohtainen tili-/hallintapaneelikonteksti →
-  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (mukaan lukien pienikirjaimiset versiot). Ratkaisuvirheet keskeyttävät
-  turvallisesti sen sijaan, että suora yhteys vuotaisi. LMArena tekee ratkaisun tarkoituksellisesti kohdetta `arena.ai` vasten.
-- `byteResponse` palauttaa sisältötyypitetyn `data:`-URL:n ilman UTF-8-vaurioita.
-- Virheet ovat `TlsClientUnavailableError` (paketti/lisäosa ei ole käytettävissä), `TlsClientHangError`
-  (määräaika ylittyi) ja `WreqTransportCapacityError` (jaetun istuntokapasiteettivirheen koodi),
-  kun kaikki 128 rajattua profiili-/käyttöjärjestelmä-/välityspalvelinpaikkaa ovat aktiivisia tai sulkeutumassa.
+- Enintään 256 ensimmäistä tavua tarkastetaan ennen virran tarjoamista. SSE-palveluntarjoajat
+  puskuroivat muut kuin SSE-virheet; Grok/LMArena muuntaa Cloudflare-haasteet tilaksi `403` ja
+  HTML-välisivut tilaksi `502`.
+- Natiivin pyynnön aikakatkaisu on edelleen kääritty absoluuttiseen JavaScriptin kovaan määräaikaan.
+  Jumiutuminen mitätöi ja sulkee vain kyseisen profiilin, käyttöjärjestelmän ja välityspalvelimen
+  siirtoyhteyden, ennen kuin seuraava pyyntö luo sen uudelleen.
+- Välityspalvelimen ratkaisemisen kutsukohtainen tärkeysjärjestys on `proxyUrl` → pyynnön laajuinen
+  tili-/hallintapaneelikonteksti → `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (mukaan lukien
+  pienaakkosvariantit). Ratkaisuvirheet estävät pyynnön turvallisesti sen sijaan, että suora yhteys
+  vuotaisi läpi. LMArena tekee ratkaisun tarkoituksellisesti osoitetta `arena.ai` vasten.
+- `byteResponse` palauttaa sisältötyypitetyn `data:`-URL-osoitteen ilman UTF-8-tietojen
+  vioittumista.
+- Virhetyypit ovat `TlsClientUnavailableError` (paketti tai lisäosa ei ole saatavilla),
+  `TlsClientHangError` (määräaika ylitetty) ja `WreqTransportCapacityError` (jaettu
+  istuntokapasiteettivirheen koodi), kun kaikki 128 rajattua profiili-, käyttöjärjestelmä- ja
+  välityspalvelinpaikkaa ovat aktiivisia tai sulkeutumassa.
 
-Yllä kuvattu yleinen `TlsClient`-istunto on edelleen erikoistettu selaimen tukemaan pysyvään evästetilaan.
-Molemmat polut käyttävät uudelleen yhtä välimuistiin tallennettua wreq-moduulin lataajaa ja prosessin elinkaarikoukkua; niiden poolit pysyvät
-erillisinä, koska niiden evästeiden elinkaaret ovat tarkoituksellisesti erilaiset.
+Edellä kuvattu yleinen `TlsClient`-istunto on edelleen erikoistettu pysyvään selainpohjaiseen
+evästetilaan. Molemmat polut käyttävät uudelleen yhtä välimuistiin tallennettua wreq-moduulin
+lataajaa ja prosessin elinkaarikoukkua; niiden poolit pysyvät erillisinä, koska niiden evästeiden
+elinkaaret ovat tarkoituksellisesti erilaiset.
 
-Kiinnitetty paketti tukee profiileja, mutta todellisen WAF:n hyväksyntä voi muuttua paikallisista
-sopimustesteistä riippumatta. Validoi sormenjälkimuutokset erikseen valtuutettua aktiivista tiliä vasten,
-ennen kuin ilmoitat vastaavuudesta ylävirran selaimen kanssa.
+Lukittu paketti tukee profiileja, mutta todellisen WAF:n hyväksyntä voi muuttua paikallisista
+sopimustesteistä riippumatta. Validoi sormenjälkimuutokset erikseen hyväksytyllä aktiivisella
+tilillä, ennen kuin väität niiden vastaavan taustapalvelun selainta.
 
 ---
 
@@ -119,7 +134,7 @@ Kohteet: `system`-lohkot, kaikki `messages[].content`-sisällöt sekä `tools[].
 
 Kolmannen osapuolen Anthropic-välityspalveluille, jotka hyväksyvät vain ”aidon Claude Code” -liikenteen:
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"` oletuksena
@@ -136,41 +151,63 @@ Saman paketin rinnakkaismoduulit:
 
 ---
 
-## Antigravity-häive
+## Antigravity Stealth
 
-Antigravity-pyynnöt säilyttävät kutsujan tekstin tavu tavulta. OmniRoute ei lisää kehotteisiin nollaleveyksisiä merkkejä eikä nimeä työkaluja uudelleen tai lisää niitä jäljitelläkseen IDE-asiakasohjelmaa.
+Antigravity pyynnöt säilyttävät soittajan tekstin tavuittain. OmniRoute ei lisää nollaleveyksiä merkkejä kehotteisiin tai rename/inject työkaluihin jäljitelläkseen IDE asiakasta.
 
 ### `antigravityHeaderScrub.ts`
 
-Poistaa Stainless SDK -merkinnät (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) ennen välittämistä.
+Nauhat ruostumattomat SDK -merkit (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) ennen edelleenlähetystä.
 
-### ⚠️ Riski: `ANTIGRAVITY_CREDITS=always` (suuri tilikiellon riski)
+### ⚠️ Risk: `ANTIGRAVITY_CREDITS=always` (tilikiellon hot spot)
 
-`ANTIGRAVITY_CREDITS=always` (käytössä tiedostossa `open-sse/executors/antigravity.ts`) reitittää **jokaisen** pyynnön Antigravity AI Credit Overages -ylityslaskutuksen kautta (maksulliset Google-krediitit) sen sijaan, että Googlen maksuttoman tason kiintiön annettaisiin rajoittaa käyttöä. Tämä on dokumentoitu ominaisuutena, mutta se on **yleisin näkemämme ilmoitettu käyttöehtorikkomus** — useita Google Ultra -tilejä on estetty muutaman tunnin käytön jälkeen vastauksella `403 / "service disabled for ToS violation" / insufficient_quota`, kun käytössä on ollut `=always`.
+`ANTIGRAVITY_CREDITS=always` (kuluttaa `open-sse/executors/antigravity.ts`) -reitit** joka** pyydä Antigravity kautta AI Credit Overages (maksettu Google krediitti) sen sijaan, että antaisit Google:n vapaan tason kiintiöportin asioita. Tämä on dokumentoitu ominaisuutena, mutta se on** yleisin yksittäinen käyttöehtojen rikkomusraportti, jonka näemme** — useita Google Ultra -tilejä on estetty `403 / "service disabled for ToS violation" / insufficient_quota` kanssa muutaman tunnin käytön jälkeen `=always` kanssa.
 
-Ylävirran valvonta tapahtuu **Googlen puolella**, eikä OmniRoute voi estää sitä. Ympäristömuuttujan nimi ja nykyinen dokumentaatio saavat asetuksen vaikuttamaan turvalliselta ottaa käyttöön, mutta sitä se ei ole.
+Ylävirran valvonta on päällä**Google puolella** , mitään OmniRoute ei voi estää. env var -nimi ja olemassa olevat asiakirjat saavat sen kuulostamaan turvalliselta käänteeltä; se ei ole.
 
-**Miksi tämä käynnistää väärinkäytön tunnistuksen herkemmin kuin pelkkä maksuttoman tason käyttö:**
+**Miksi tämä tekee väärinkäytösten havaitsemisesta aggressiivisemmin kuin vain vapaan tason käyttö:**
 
-- Jatkuva automatisoitu rahankäyttö yhdellä Google-tilillä merkitään eri tavalla kuin maksuttoman tason käyttö, joka saavuttaa kiintiön ja pysähtyy.
-- Krediittien ylityskäytöllä ei ole nopeusrajoitusta, joten väärin määritetty asiakasohjelma voi kuluttaa satoja Yhdysvaltain dollareita minuuteissa ja näyttää API-avainten jälleenmyynniltä tai bottiliikenteeltä.
-- Useiden OmniRoute-käyttäjien rinnakkainen ylityskrediittien käyttö samasta ulkoisesta IP-osoitteesta voimistaa signaalia.
+- Jatkuva automaattinen kulutus yhdelle Google -tilille merkitsee eri tavalla kuin vapaan tason osumat-kiintiö-ja-pysähdykset.
+- Luoton ylityksillä ei ole korkokattoa, joten väärin määritetty asiakas voi polttaa useita satoja USD minuuteissa ja näyttää API-avaimen jälleenmyynniltä tai bot-liikenteeltä.
+- Useita OmniRoute käyttäjiä, jotka osuvat ylimääräisiin hyvityksiin rinnakkain samasta ulkoisesta IP yhdistävät signaalin.
 
-**Suositeltu toimintatapa:**
+**Suositeltu asento:**
 
-1. Säilytä oletusarvo `ANTIGRAVITY_CREDITS=off`, ellei operaattori nimenomaisesti hyväksy maksullisiin krediitteihin ja tilin valvontatoimiin liittyvää riskiä. `retry` lähettää ensin tavallisen pyynnön ja lisää krediitit enintään kerran ehdot täyttävän kiintiöön liittyvän 429-virheen jälkeen; `always` lisää krediitit jo ensimmäiseen pyyntöön.
-2. **Jaa kuorma palveluntarjoajien kesken Auto-Combolla** (`model: "auto"` tai `kr/glm/etc`-combo) sen sijaan, että kuormittaisit yhden Antigravity-tilin äärimmilleen.
-3. **Aseta yhteyskohtaiset RPM-rajat** Antigravity-palveluntarjoajan muokkaussivulla (Dashboard → Providers → Antigravity → yhteys → nopeusrajoitus). 30–60 RPM on perusteltavissa oleva yläraja jatkuvalle käytölle.
-4. **Käytä vakaata, operaattorin hallitsemaa ylävirran verkkoyhteyttä** ja vältä yhden tilin jakamista toisistaan riippumattomien käyttäjien tai työkuormien kesken.
-5. **Jos tili estetään**: tee valitus osoitteessa `support.google.com` → ”Restore Workspace/Account access” ja liitä mukaan Googlen lähettämä täsmällinen `quota_exceeded` / `service disabled` -vastausrunko. Tilin palauttamista ei taata.
+1. Säilytä oletusarvoinen `ANTIGRAVITY_CREDITS=off`, ellei operaattori nimenomaisesti hyväksy maksettujen luottojen ja tilien täytäntöönpanoriskiä. `retry` lähettää ensin normaalin pyynnön ja lisää hyvitykset enintään kerran hyväksyttävän kiintiön 429 jälkeen; `always` lisää krediittejä ensimmäisestä pyynnöstä.
+2. **Jaa kuorma palveluntarjoajille Auto-Combon avulla** (`model: "auto"` tai `kr/glm/etc` -combo) yksittäisen Antigravity -tilin kyllästämisen sijaan.
+3. **Aseta liitäntäkohtaiset RPM -rajat** Antigravity palveluntarjoajan muokkaussivulla (Dashboard → Providers → Antigravity → connection → rate limit). 30–60 RPM on puolustettava yläraja jatkuvassa käytössä.
+4. **Käytä vakaata, operaattorin ohjaamaa alkupään verkkoa** ja vältä yhden tilin jakamista asiaankuulumattomien käyttäjien tai työkuormien kesken.
+5. **Jos kielletään** : valitus `support.google.com` → kautta "Palauta Workspace/Account käyttöoikeus" ja lähetä tarkka `quota_exceeded` / `service disabled` vastausteksti Google. Palauttamista ei taata.
 
-Ympäristömuuttujien viitedokumentaatiossa kuvataan kunkin krediittitilan vaikutukset tiliin ja kuluihin.
+Ympäristöviite dokumentoi kunkin hyvitystilan tili- ja kulutusvaikutukset.
 
-Liittyvät kohdat:
+#### Ei vain `=always`: Antigravity OAuth -reititys yleensä
 
-- `open-sse/executors/antigravity.ts` — lukee arvon `process.env.ANTIGRAVITY_CREDITS`
-- `src/lib/oauth/providers/antigravity.ts` — tunnistetietojen välitys
-- Alkuperäinen tapahtumaraportti: keskustelu [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
+Jäädytykset eivät rajoitu luottojen ylittymiseen. Marraskuussa 2026 julkaistut raportit (#19223, #19266) kuvaavat useita Google tilejä, jotka on jäädytetty reititettäessä `antigravity` ja `agy` (Antigravity CLI) -palveluntarjoajien kautta:
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+Molemmat palveluntarjoajat todentavat Antigravity tuotteen OAuth istunnon avulla, josta kojelaudan riskiilmoitus ("Tämä tarjoaja käyttää virallista tuotettasi session/OAuth, jota ei ole valtuutettu proxy/router käyttöön") varoittaa ennen yhteyden lisäämistä. Mikään yllä olevista suosituksista ei salli tätä käyttöä; ne vain vähentävät yhden tilin liikennettä.
+
+**Valtuutetut API -liitännät Gemini -malleille.** Google tarjoaa ohjelmallisen pääsyn Gemini hen APIs kautta, jota OmniRoute tukee tavallisina API-avaimen tarjoajina:
+
+| Palveluntarjoajan tunnus | Kojelaudan nimi           | Valtuustiedot                                                                    |
+| ------------------------ | ------------------------- | -------------------------------------------------------------------------------- |
+| `gemini`                 | Gemini (Google AI Studio) | Gemini API -avain Google AI Studiosta (ilmainen taso saatavilla)                 |
+| `vertex`                 | Vertex AI                 | Palvelutili JSON, OAuth käyttöoikeustunnus tai Vertex Express API avain (Gemini) |
+
+Nämä palveluntarjoajat käyttävät tunnistetietojen Google ongelmia API käyttöön, toisin kuin Antigravity -tuoteistunto. Ne eivät tee jokaisesta käytöstä yhteensopivaa tai poista täytäntöönpanon riskiä: kutakin säätelevät omat ehdot, jotka operaattorin on tarkistettava niiden käyttöönottoa varten. Esimerkiksi [Gemini API -lisäpalveluehdot](https://ai.google.dev/gemini-api/terms) sallivat vain maksulliset palvelut, kun API asiakkaat asetetaan käyttäjien saataville Euroopan talousalueella, Sveitsissä tai Isossa-Britanniassa, ja Maksuttomiin palveluihin lähetettyä sisältöä voidaan käyttää Google:n tuotteiden parantamiseen. Vertex AI kuuluu sen sijaan Google Cloud -ehtojen alle ( [palvelukohtaiset ehdot](https://cloud.google.com/terms/service-terms) ). Hinnoittelu ja kiintiöt noudattavat näitä API ehtoja Antigravity tilauksen sijaan.
+
+Operaattoreiden, jotka haluavat välttää yllä kuvatut Antigravity jäädytykset, tulee reitittää Gemini -liikenne jonkin näistä palveluntarjoajista `antigravity` / `agy` sijaan tarkistettuaan, että niiden käyttö vastaa palveluntarjoajan ehtoja.
+
+Kosketuspisteet:
+
+- `open-sse/executors/antigravity.ts` — `process.env.ANTIGRAVITY_CREDITS`
+- `src/lib/oauth/providers/antigravity.ts` — valtuutettu putkisto
+- Alkuperäinen tapausraportti: Discussion [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
 
@@ -239,19 +276,18 @@ Kaikki MITM-päätepisteet edellyttävät hallinnan todennusta (`requireCliTools
 
 ---
 
-## User-Agent-ohitukset — ympäristömuuttujat (`.env.example`-osion 12)
+## User-agent ohittaa — env vars (`.env.example` osa 12)
 
-| Muuttuja                 | Oletusarvo                                                      |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| Muuttuva            | Oletus                                        |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-`open-sse/executors/base.ts::buildHeaders()` käyttää näitä dynaamisen haun kautta. **Päivitä nämä, kun palveluntarjoajat julkaisevat uusia CLI-versioita** — vanhentuneet UA-merkkijonot aletaan hylätä vanhentuneina asiakasohjelmina.
+`open-sse/executors/base.ts::buildHeaders()` kuluttaa dynaamisen haun kautta.** Tyhjennä nämä, kun palveluntarjoajat julkaisevat uusia CLI versioita** — vanhentuneet UA -merkkijonot alkavat hylätä vanhentuneina asiakkaina.
 
 ## CLI-yhteensopivuustilan valitsimet (`.env.example`, osio 13)
 

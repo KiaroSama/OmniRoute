@@ -20,7 +20,7 @@ import { getPool, listAllocationsForApiKey } from "@/lib/db/quotaPools";
 import { WINDOW_MS, dimensionKeyToString } from "./dimensions";
 import type { DimensionKey } from "./dimensions";
 import type { QuotaStore, PoolUsageSnapshot } from "./types";
-import { computeBurnRateFromWindow } from "./burnRate";
+import { buildPoolUsageSnapshot } from "./poolUsageSnapshot";
 
 // ---------------------------------------------------------------------------
 // Redis connection singleton
@@ -30,8 +30,6 @@ import { computeBurnRateFromWindow } from "./burnRate";
 let _redisClient: unknown = null; // typed as unknown; cast via RedisLike below
 
 interface RedisLike {
-  incrbyfloat(key: string, value: number): Promise<string>;
-  expire(key: string, seconds: number): Promise<number>;
   mget(...keys: string[]): Promise<Array<string | null>>;
   eval(script: string, numkeys: number, ...args: unknown[]): Promise<unknown>;
   del(...keys: string[]): Promise<number>;
@@ -75,6 +73,15 @@ function bucketKey(apiKeyId: string, dimensionKey: string, bucketIndex: number):
   return `${KEY_PREFIX}:${apiKeyId}:${dimensionKey}:${bucketIndex}`;
 }
 
+// Charge + TTL in one atomic call: a crash between INCRBYFLOAT and EXPIRE can no
+// longer leave a counter without expiry. Returns [current, previous] bucket values.
+const CONSUME_SCRIPT = `
+local curr = redis.call("INCRBYFLOAT", KEYS[1], ARGV[1])
+redis.call("EXPIRE", KEYS[1], ARGV[2])
+redis.call("EXPIRE", KEYS[2], ARGV[2])
+return { curr, redis.call("GET", KEYS[2]) or "0" }
+`;
+
 function ttlSeconds(windowMs: number): number {
   // Keep both current + previous bucket alive → 2 × window
   return Math.ceil((2 * windowMs) / 1000);
@@ -113,7 +120,7 @@ export class RedisQuotaStore implements QuotaStore {
   }
 
   /**
-   * Increment consumption by `cost` using INCRBYFLOAT (atomic) and refresh TTL.
+   * Increment consumption by `cost` and refresh TTL in one atomic Lua call.
    * Returns the new sliding-window effective value.
    */
   async consume(apiKeyId: string, dim: DimensionKey, cost: number): Promise<number> {
@@ -127,16 +134,15 @@ export class RedisQuotaStore implements QuotaStore {
     const prevKey = bucketKey(apiKeyId, dimKey, currentBucket - 1);
     const ttl = ttlSeconds(windowMs);
 
-    // Atomic increment + refresh TTL
-    const newCurrStr = await client.incrbyfloat(currKey, cost);
-    await client.expire(currKey, ttl);
-    // Also ensure prev key TTL is refreshed so it doesn't disappear prematurely
-    await client.expire(prevKey, ttl);
-
+    const [newCurrStr, prevStr] = (await client.eval(
+      CONSUME_SCRIPT,
+      2,
+      currKey,
+      prevKey,
+      cost,
+      ttl
+    )) as [string, string];
     const newCurr = parseFloat(newCurrStr) || 0;
-
-    // Read prev to compute sliding window
-    const [prevStr] = await client.mget(prevKey);
     const prev = parseFloat(prevStr ?? "0") || 0;
 
     return slidingWindowEffective(newCurr, prev, nowMs, windowMs);
@@ -251,73 +257,13 @@ export class RedisQuotaStore implements QuotaStore {
       };
     }
 
-    const { allocations } = pool;
-    const totalWeight = allocations.reduce((sum, a) => sum + a.weight, 0);
-    const dimensionSnapshots: PoolUsageSnapshot["dimensions"] = [];
-
-    for (const planDim of planDimensions) {
-      const windowMs = WINDOW_MS[planDim.window as keyof typeof WINDOW_MS];
-      if (!windowMs) continue;
-
-      let consumedTotal = 0;
-      const perKey: PoolUsageSnapshot["dimensions"][number]["perKey"] = [];
-
-      for (const alloc of allocations) {
-        const dim: DimensionKey = {
-          poolId,
-          unit: planDim.unit as DimensionKey["unit"],
-          window: planDim.window as DimensionKey["window"],
-        };
-        const consumed = await this.peek(alloc.apiKeyId, dim);
-        consumedTotal += consumed;
-
-        // Equal-split fallback, matching enforce.ts: when every allocation in the
-        // pool has weight 0, each counts as an equal share, so the snapshot
-        // describes the budget enforcement actually grants. The old ternary could
-        // not do this -- totalWeight === 0 implies every alloc.weight is 0, so both
-        // arms returned 0 -- and every key rendered as borrowing all it consumed.
-        const effectiveWeight =
-          totalWeight > 0 ? alloc.weight : allocations.length > 0 ? 100 / allocations.length : 0;
-        const fairShare = (effectiveWeight / 100) * planDim.limit;
-        const deficit = consumed - fairShare;
-        const borrowing = consumed > fairShare;
-
-        perKey.push({
-          apiKeyId: alloc.apiKeyId,
-          consumed,
-          fairShare,
-          deficit,
-          borrowing,
-        });
-      }
-
-      dimensionSnapshots.push({
-        unit: planDim.unit as PoolUsageSnapshot["dimensions"][number]["unit"],
-        window: planDim.window as PoolUsageSnapshot["dimensions"][number]["window"],
-        limit: planDim.limit,
-        consumedTotal,
-        perKey,
-      });
-    }
-
-    const tokenDim = dimensionSnapshots.find((d) => d.unit === "tokens");
-    let burnRate: PoolUsageSnapshot["burnRate"];
-    if (tokenDim && tokenDim.consumedTotal > 0) {
-      const windowMs = WINDOW_MS[tokenDim.window as keyof typeof WINDOW_MS];
-      const remaining = tokenDim.limit - tokenDim.consumedTotal;
-      const rateResult = computeBurnRateFromWindow(tokenDim.consumedTotal, windowMs, remaining);
-      burnRate = {
-        tokensPerSecond: rateResult.tokensPerSecond,
-        timeToExhaustionMs: rateResult.timeToExhaustionMs,
-      };
-    }
-
-    return {
+    return buildPoolUsageSnapshot(
       poolId,
-      generatedAt: new Date(nowMs).toISOString(),
-      dimensions: dimensionSnapshots,
-      burnRate,
-    };
+      pool.allocations,
+      planDimensions,
+      (key, dim) => this.peek(key, dim),
+      nowMs
+    );
   }
 
   /**

@@ -1,7 +1,9 @@
 import { register } from "../registry.ts";
+import { geminiMediaToOpenAI } from "../helpers/mediaContentParts.ts";
 import { FORMATS } from "../formats.ts";
 import { adjustMaxTokens } from "../helpers/maxTokensHelper.ts";
 import { createGeminiToolCallIdPairing } from "../helpers/geminiToolCallIds.ts";
+import { geminiFunctionParameters } from "../helpers/geminiFunctionParameters.ts";
 
 const newCallId = () => `call_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
@@ -26,7 +28,7 @@ export function geminiToOpenAIRequest(model, body, stream) {
     const config = body.generationConfig;
     if (config.maxOutputTokens) {
       const tempBody = { max_tokens: config.maxOutputTokens, tools: body.tools };
-      result.max_tokens = adjustMaxTokens(tempBody);
+      result.max_tokens = adjustMaxTokens(tempBody, { honorExplicitCap: true });
     }
     if (config.temperature !== undefined) {
       result.temperature = config.temperature;
@@ -70,7 +72,7 @@ export function geminiToOpenAIRequest(model, body, stream) {
             function: {
               name: func.name,
               description: func.description || "",
-              parameters: func.parameters || { type: "object", properties: {} },
+              parameters: geminiFunctionParameters(func) || { type: "object", properties: {} },
             },
           });
         }
@@ -114,8 +116,24 @@ function splitCoLocatedFunctionResponses(contents) {
   return out;
 }
 
+/**
+ * OpenAI role of a Gemini content. `function` and `tool` carry tool results sent as the user's
+ * turn. An omitted role (single-turn requests) is inferred from the parts: model-only parts
+ * (functionCall, thought) mean assistant, anything else means user. Other roles stay assistant.
+ * shortcut: no fallback to the previous turn's role for role-less text; add it if clients send
+ * role-less multi-turn text.
+ */
+function geminiTurnRole(content): "user" | "assistant" {
+  const role = typeof content.role === "string" ? content.role.trim().toLowerCase() : "";
+  if (role === "user" || role === "function" || role === "tool") return "user";
+  if (role) return "assistant";
+  const parts = Array.isArray(content.parts) ? content.parts : [];
+  return parts.some((p) => p && (p.functionCall || p.thought === true)) ? "assistant" : "user";
+}
+
+/** Convert Gemini history to OpenAI messages with its tool calls and media intact. */
 function convertGeminiContent(content, toolCallIds) {
-  const role = content.role === "user" ? "user" : "assistant";
+  const role = geminiTurnRole(content);
 
   if (!content.parts || !Array.isArray(content.parts)) {
     return null;
@@ -129,16 +147,8 @@ function convertGeminiContent(content, toolCallIds) {
       parts.push({ type: "text", text: part.text });
     }
 
-    if (part.inlineData || part.inline_data) {
-      const data = part.inlineData || part.inline_data;
-      const mimeType = data.mimeType || data.mime_type || "image/png";
-      parts.push({
-        type: "image_url",
-        image_url: {
-          url: `data:${mimeType};base64,${data.data}`,
-        },
-      });
-    }
+    const media = geminiMediaToOpenAI(part);
+    if (media) parts.push(media);
 
     if (part.functionCall) {
       toolCalls.push({
@@ -213,14 +223,14 @@ function convertGeminiContentWithReasoning(content, toolCallIds) {
     return convertGeminiContent(content, toolCallIds);
   }
 
-  const converted = convertGeminiContent({ ...content, parts: visibleParts }, toolCallIds);
+  const role = geminiTurnRole(content);
+  const converted = convertGeminiContent({ ...content, role, parts: visibleParts }, toolCallIds);
 
   if (converted && converted.role !== "tool") {
     return { ...converted, reasoning_content: reasoningContent };
   }
 
   if (!converted) {
-    const role = content.role === "user" ? "user" : "assistant";
     return { role, reasoning_content: reasoningContent };
   }
 

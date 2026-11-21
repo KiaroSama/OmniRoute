@@ -1,6 +1,8 @@
 import { BaseGuardrail, type GuardrailContext, type GuardrailResult } from "./base";
 import { processPII } from "@/shared/utils/inputSanitizer";
 import { sanitizePII, sanitizePIIResponse } from "@/lib/piiSanitizer";
+import { getPiiRuleConfig } from "@/lib/pii/piiRuleConfig";
+import { recordPiiDetections } from "@/lib/pii/piiDetectionStats";
 
 import { isFeatureFlagEnabled } from "@/shared/utils/featureFlags";
 
@@ -11,14 +13,25 @@ type PiiDetection = {
 
 type JsonRecord = Record<string, unknown>;
 
+/** Reversible-vault minter; only set when the request runs under the vault scope. */
+type Tokenize = (type: string, value: string) => string | null;
+
 function isRequestPiiMaskingEnabled() {
   // Request PII redaction is controlled by PII_REDACTION_ENABLED feature flag (DB > env > default).
   // INPUT_SANITIZER_MODE only governs prompt-injection policy (warn/block/log).
   return isFeatureFlagEnabled("PII_REDACTION_ENABLED");
 }
 
-function sanitizeStringValue(text: string, redact: boolean) {
-  const result = processPII(text, redact);
+function ruleOptions(redact: boolean, tokenize?: Tokenize) {
+  // The operator's per-type selection and custom rules only apply while masking
+  // is on; with the flag off detection stays exactly the built-in scan.
+  if (!redact) return undefined;
+  const config = getPiiRuleConfig();
+  return tokenize ? { ...config, tokenize } : config;
+}
+
+function sanitizeStringValue(text: string, redact: boolean, tokenize?: Tokenize) {
+  const result = processPII(text, redact, ruleOptions(redact, tokenize));
   return {
     detections: result.detections,
     modified: result.text !== text,
@@ -29,10 +42,11 @@ function sanitizeStringValue(text: string, redact: boolean) {
 function applyToContentValue(
   value: unknown,
   detections: PiiDetection[],
-  redact: boolean
+  redact: boolean,
+  tokenize?: Tokenize
 ): { modified: boolean; value: unknown } {
   if (typeof value === "string") {
-    const result = sanitizeStringValue(value, redact);
+    const result = sanitizeStringValue(value, redact, tokenize);
     detections.push(...result.detections);
     return {
       modified: result.modified,
@@ -44,7 +58,7 @@ function applyToContentValue(
     let modified = false;
     const nextValue = value.map((entry) => {
       if (typeof entry === "string") {
-        const result = sanitizeStringValue(entry, redact);
+        const result = sanitizeStringValue(entry, redact, tokenize);
         detections.push(...result.detections);
         modified ||= result.modified;
         return result.text;
@@ -53,7 +67,7 @@ function applyToContentValue(
       if (entry && typeof entry === "object") {
         const record = { ...(entry as JsonRecord) };
         if (typeof record.text === "string") {
-          const result = sanitizeStringValue(record.text, redact);
+          const result = sanitizeStringValue(record.text, redact, tokenize);
           detections.push(...result.detections);
           modified ||= result.modified;
           record.text = result.text;
@@ -67,7 +81,7 @@ function applyToContentValue(
         // on how deep masking goes. The payload was parsed from the request
         // body, so it is acyclic and the recursion is bounded by its nesting.
         if ("content" in record) {
-          const result = applyToContentValue(record.content, detections, redact);
+          const result = applyToContentValue(record.content, detections, redact, tokenize);
           modified ||= result.modified;
           record.content = result.value;
         }
@@ -82,7 +96,7 @@ function applyToContentValue(
   return { modified: false, value };
 }
 
-function cloneAndMaskRequestPayload(payload: unknown) {
+function cloneAndMaskRequestPayload(payload: unknown, tokenize?: Tokenize) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return { detections: [] as PiiDetection[], modified: false, payload };
   }
@@ -102,7 +116,7 @@ function cloneAndMaskRequestPayload(payload: unknown) {
     return list.map((entry) => {
       // Responses API can pass plain strings in input[]
       if (typeof entry === "string") {
-        const result = sanitizeStringValue(entry, redact);
+        const result = sanitizeStringValue(entry, redact, tokenize);
         detections.push(...result.detections);
         modified ||= result.modified;
         return result.text;
@@ -110,12 +124,12 @@ function cloneAndMaskRequestPayload(payload: unknown) {
       if (!entry || typeof entry !== "object") return entry;
       const record = { ...(entry as JsonRecord) };
       if ("content" in record) {
-        const result = applyToContentValue(record.content, detections, redact);
+        const result = applyToContentValue(record.content, detections, redact, tokenize);
         modified ||= result.modified;
         record.content = result.value;
       }
       if (typeof record.text === "string") {
-        const result = sanitizeStringValue(record.text, redact);
+        const result = sanitizeStringValue(record.text, redact, tokenize);
         detections.push(...result.detections);
         modified ||= result.modified;
         record.text = result.text;
@@ -125,7 +139,7 @@ function cloneAndMaskRequestPayload(payload: unknown) {
   };
 
   if (typeof clonedPayload.system === "string") {
-    const result = sanitizeStringValue(clonedPayload.system, redact);
+    const result = sanitizeStringValue(clonedPayload.system, redact, tokenize);
     detections.push(...result.detections);
     modified ||= result.modified;
     clonedPayload.system = result.text;
@@ -140,20 +154,22 @@ function cloneAndMaskRequestPayload(payload: unknown) {
   if (Array.isArray(clonedPayload.input)) {
     clonedPayload.input = sanitizeMessageLikeList(clonedPayload.input);
   } else if (typeof clonedPayload.input === "string") {
-    const result = sanitizeStringValue(clonedPayload.input, redact);
+    const result = sanitizeStringValue(clonedPayload.input, redact, tokenize);
     detections.push(...result.detections);
     modified ||= result.modified;
     clonedPayload.input = result.text;
   }
 
   if (typeof clonedPayload.prompt === "string") {
-    const result = sanitizeStringValue(clonedPayload.prompt, redact);
+    const result = sanitizeStringValue(clonedPayload.prompt, redact, tokenize);
     detections.push(...result.detections);
     modified ||= result.modified;
     clonedPayload.prompt = result.text;
   } else if (Array.isArray(clonedPayload.prompt)) {
     clonedPayload.prompt = sanitizeMessageLikeList(clonedPayload.prompt);
   }
+
+  if (redact) recordPiiDetections("request", detections);
 
   return {
     detections,
@@ -166,7 +182,7 @@ function maskResponsesOutput(response: JsonRecord) {
   let modified = false;
 
   if (typeof response.output_text === "string") {
-    const result = sanitizePII(response.output_text);
+    const result = sanitizePII(response.output_text, false, { recordStats: true });
     if (result.redacted) {
       response.output_text = result.text;
       modified = true;
@@ -182,7 +198,7 @@ function maskResponsesOutput(response: JsonRecord) {
           if (!part || typeof part !== "object") return part;
           const nextPart = { ...(part as JsonRecord) };
           if (typeof nextPart.text === "string") {
-            const result = sanitizePII(nextPart.text);
+            const result = sanitizePII(nextPart.text, false, { recordStats: true });
             if (result.redacted) {
               nextPart.text = result.text;
               modified = true;
@@ -198,6 +214,27 @@ function maskResponsesOutput(response: JsonRecord) {
   return modified;
 }
 
+/**
+ * Mask the request, minting reversible tokens when the request runs under the vault scope
+ * (`context.tokenVault`, set by handleChat only). The minter is passed explicitly, so other
+ * processPII callers such as the prompt-injection sanitizer never mint. Fail-closed: if the
+ * vault path throws, the request is masked again with irreversible placeholders here, because
+ * the registry fails open and would forward the original body to the provider.
+ */
+function maskWithOptionalVault(payload: unknown, context: GuardrailContext | undefined) {
+  const minter = context?.tokenVault;
+  if (!minter || typeof minter.tokenize !== "function") return cloneAndMaskRequestPayload(payload);
+  const tokenize: Tokenize = (type, value) => minter.tokenize(type, value);
+  try {
+    return cloneAndMaskRequestPayload(payload, tokenize);
+  } catch (error) {
+    context?.log?.warn?.("GUARDRAIL", "pii-masker vault minting failed; using placeholders", {
+      error: error instanceof Error ? error.name : "unknown",
+    });
+    return cloneAndMaskRequestPayload(payload);
+  }
+}
+
 export class PIIMaskerGuardrail extends BaseGuardrail {
   constructor(options: { enabled?: boolean; priority?: number } = {}) {
     super("pii-masker", {
@@ -206,8 +243,8 @@ export class PIIMaskerGuardrail extends BaseGuardrail {
     });
   }
 
-  async preCall(payload: unknown, _context: GuardrailContext): Promise<GuardrailResult<unknown>> {
-    const result = cloneAndMaskRequestPayload(payload);
+  async preCall(payload: unknown, context: GuardrailContext): Promise<GuardrailResult<unknown>> {
+    const result = maskWithOptionalVault(payload, context);
     if (!result.modified) {
       return {
         block: false,

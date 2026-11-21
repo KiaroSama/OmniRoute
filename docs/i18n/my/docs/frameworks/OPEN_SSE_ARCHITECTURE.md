@@ -30,30 +30,30 @@
 
 ```
 open-sse/
-├── index.ts              # အများသုံး entry point
+├── index.ts              # အများသုံး ဝင်ပေါက်
 ├── types.d.ts            # အများသုံး type export များ
 ├── package.json          # @omniroute/open-sse
-├── config/               # Provider config များ၊ constant များ၊ registry များ
-├── executors/            # Provider တစ်ခုချင်းစီအတွက် HTTP executor များ (67 + base.ts/index.ts)
+├── config/               # Provider configuration များ၊ ကိန်းသေများနှင့် registry များ
+├── executors/            # Provider တစ်ခုချင်းစီအတွက် HTTP executor များ (module 150 ခု + base.ts/index.ts)
 ├── handlers/             # Request handler များ (chatCore၊ responses စသည်)
 ├── lib/                  # အတွင်းပိုင်း utility များ
 ├── mcp-server/           # Model Context Protocol server
-├── services/             # service module ~298
+├── services/             # Service module ~298 ခု
 ├── transformer/          # Responses API format transformer
-├── translator/           # Format ဘာသာပြန်ပြောင်းလဲမှု (OpenAI ↔ Claude ↔ Gemini)
+├── translator/           # Format ဘာသာပြန်ပြောင်းလဲခြင်း (OpenAI ↔ Claude ↔ Gemini)
 └── utils/                # မျှဝေသုံး utility များ (logging၊ error၊ stream စသည်)
 ```
 
 ### Module အရေအတွက်များ
 
-| Directory | ဖိုင်များ | ရည်ရွယ်ချက် |
-| `executors/` | 167 | Provider တစ်ခုချင်းစီအတွက် HTTP executor များ (DefaultExecutor factory မှတစ်ဆင့် ပေါင်းစည်းထားသည်) |
-| `handlers/` | 157 | Request entry point များ (chatCore၊ responses၊ embeddings) |
+| လမ်းညွှန် | ဖိုင်များ | ရည်ရွယ်ချက် |
+| `executors/` | 167 | Provider တစ်ခုချင်းစီအတွက် HTTP executor များ (DefaultExecutor factory မှတစ်ဆင့် တစ်စုတစ်စည်းတည်း အသုံးပြုနိုင်သည်) |
+| `handlers/` | 157 | Request ဝင်ပေါက်များ (chatCore၊ responses၊ embeddings) |
 | `services/` | ~536 | Routing၊ caching၊ rate limiting၊ refresh စသည် |
 | `translator/` | 56 | Format ပြောင်းလဲခြင်း (OpenAI ↔ Claude ↔ Gemini) |
 | `mcp-server/` | 44 | MCP tool များနှင့် transport များ |
-| `utils/` | ~108 | ကဏ္ဍအများအပြားတွင် အသုံးပြုသည့် utility များ (logging၊ error၊ stream) |
-| `config/` | ~339 | Provider config များ၊ constant များ၊ registry များ |
+| `utils/` | ~108 | အစိတ်အပိုင်းများအကြား အသုံးပြုသည့် utility များ (logging၊ error၊ stream) |
+| `config/` | ~339 | Provider configuration များ၊ ကိန်းသေများနှင့် registry များ |
 
 ---
 
@@ -165,30 +165,30 @@ Streaming မဟုတ်သော response များအတွက် executor
 
 ---
 
-## အဓိကဖိုင်များကို အသေးစိတ်လေ့လာခြင်း
+## သော့ဖိုင်များကို နက်ရှိုင်းစွာ ထိုးဆင်းပါ။
 
-### chatCore.ts (5977 လိုင်း)
+### chatCore.ts (၅၉၇၇ လိုင်း)
 
-**ပင်မ request handler** ဖြစ်သည်။ အရွယ်အစားကြီးမားသော်လည်း ရှင်းလင်းသော ဖွဲ့စည်းပုံရှိသည်-
+ဟိ** ပင်မတောင်းဆိုမှုကိုင်တွယ်သူ** . ၎င်း၏အရွယ်အစားရှိသော်လည်း၊ ၎င်းတွင်ရှင်းလင်းသောဖွဲ့စည်းပုံရှိသည်။
 
 ```ts
-// chatCore.ts ၏ ဖွဲ့စည်းပုံအကြမ်း
+// Pseudo-structure of chatCore.ts
 export async function handleChat(request: NextRequest) {
-  // 1. စစ်မှန်ကြောင်းအတည်ပြုခြင်း + CORS
+  // 1. Auth + CORS
   await authenticateRequest(request);
   applyCorsHeaders(response);
 
-  // 2. Body ကို စစ်ဆေးအတည်ပြုခြင်း
+  // 2. Body validation
   const body = await parseRequestBody(request);
 
-  // 3. Format ရှာဖွေခြင်း + ဘာသာပြန်ပြောင်းလဲခြင်း
+  // 3. Format detection + translation
   const sourceFormat = detectFormat(request);
   const targetFormat = getTargetFormat(providerId);
   if (needsTranslation(sourceFormat, targetFormat)) {
     body = translateRequest(body, sourceFormat, targetFormat);
   }
 
-  // 4. Combo လမ်းကြောင်းသတ်မှတ်ခြင်း
+  // 4. Combo routing
   const targets = await resolveComboTargets(comboId, body);
   for (const target of targets) {
     try {
@@ -196,20 +196,20 @@ export async function handleChat(request: NextRequest) {
       await recordUsage(result);
       return result;
     } catch (err) {
-      // နောက် target သို့ ဆက်သွားရန်
+      // Continue to next target
     }
   }
 
-  // 5. အရေးပေါ် fallback
+  // 5. Emergency fallback
   return await emergencyFallback(body);
 }
 ```
 
-ဧရာမ function တစ်ခုတည်းဖြစ်သော်လည်း ၎င်းကို အဆင့် ၅ ဆင့်ပါ pipeline နှင့် ကိုက်ညီသော **မှတ်ချက်ရေးထားသည့် အပိုင်းများ** အဖြစ် စနစ်တကျ ဖွဲ့စည်းထားသည်။
+ကြီးမားသောလုပ်ဆောင်ချက်တစ်ခုဖြစ်သော်လည်း၊ ၎င်းကိုဖွဲ့စည်းထားသည်။** မှတ်ချက်ပေးထားသောကဏ္ဍများ** အဆင့် ၅ ပိုက်လိုင်းအတွက် မြေပုံ။
 
 ### combo.ts (4456 LOC)
 
-Combo တစ်ခုကို အစဉ်လိုက် targets များအဖြစ် ဖြေရှင်းပေးသည့် **routing engine** ဖြစ်သည်။
+ဟိ** လမ်းကြောင်းအင်ဂျင်** အမိန့်ပေးထားသောပစ်မှတ်များကို ပေါင်းစပ်ဖြေရှင်းပေးသည်။
 
 ```ts
 // services/combo.ts
@@ -226,135 +226,140 @@ export async function handleComboChat(body, comboId): Promise<ChatResult> {
 }
 ```
 
-**Routing strategy ၁၉ မျိုး**ကို ပံ့ပိုးထားသည် (`src/shared/constants/routingStrategies.ts` ကို ကြည့်ပါ)-
+ထောက်ခံပါတယ်။** လမ်းကြောင်းဗျူဟာ 22 ခု** ( `src/shared/constants/routingStrategies.ts` ကြည့်ပါ):
 
-| Strategy            | လုပ်ဆောင်ပုံ                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------- |
-| `priority`          | ပထမ target ကို ဦးစားပေးထားသော အစဉ်လိုက်စာရင်း                                               |
-| `weighted`          | Target တစ်ခုချင်းစီ၏ weight အလိုက် ဖြစ်နိုင်ခြေအခြေပြု ရွေးချယ်ခြင်း                        |
-| `round-robin`       | Targets များကို အစဉ်လိုက် လှည့်ပတ်အသုံးပြုခြင်း                                             |
-| `context-relay`     | Targets များအကြား context ကို လွှဲပြောင်းပေးခြင်း                                           |
-| `fill-first`        | နောက်တစ်ခုသို့ မရွှေ့မီ quota ကို အပြည့်အသုံးပြုခြင်း                                       |
-| `p2c`               | ရွေးချယ်စရာနှစ်ခု၏ စွမ်းအား                                                                 |
-| `random`            | အညီအမျှ ကျပန်းရွေးချယ်ခြင်း                                                                 |
-| `least-used`        | မကြာသေးမီက အသုံးပြုမှုအနည်းဆုံးတစ်ခုကို ရွေးချယ်ခြင်း                                       |
-| `cost-optimized`    | အကောင်းအတိုင်း အလုပ်လုပ်နေသည့် target များအနက် စျေးအသက်သာဆုံးတစ်ခုကို ဦးစွာရွေးချယ်ခြင်း    |
-| `reset-aware`       | Provider ၏ reset window များကို ထည့်သွင်းစဉ်းစားခြင်း                                       |
-| `reset-window`      | Reset window အခြေပြု routing                                                                |
-| `headroom`          | ကျန်ရှိသော quota headroom အများဆုံးတစ်ခုကို ဦးစွာရွေးချယ်ခြင်း                              |
-| `strict-random`     | အမှန်တကယ် အညီအမျှရွေးချယ်ခြင်း (အရည်အသွေးအလိုက် weight မပေးခြင်း)                           |
-| `auto`              | အချက် ၁၆ ချက်ပါ scoring ကို အသုံးပြုခြင်း (`autoCombo/`)                                    |
-| `lkgp`              | နောက်ဆုံး ကောင်းမွန်စွာ အလုပ်လုပ်ခဲ့ကြောင်း သိထားသည့် provider ကို ဦးစွာရွေးချယ်ခြင်း       |
-| `context-optimized` | ရှည်လျားသော context ပါသည့် requests များအတွက် အသင့်တော်ဆုံး                                 |
-| `fusion`            | Panel တစ်ခုထံ အပြိုင် ဖြန့်ပို့ပြီးနောက် judge မှတစ်ဆင့် ပေါင်းစပ်ဖန်တီးခြင်း (`fusion.ts`) |
+| ဗျူဟာ               | အနေအထိုင်                                                                                                  |
+| ------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `priority`          | ပထမပစ်မှတ်စာရင်း                                                                                           |
+| `weighted`          | ပစ်မှတ်အလေးချိန်အလိုက် ဖြစ်နိုင်ချေရှိသည်။                                                                 |
+| `round-robin`       | ပစ်မှတ်များကို စနစ်တကျ လည်ပတ်ပါ။                                                                           |
+| `context-relay`     | ပစ်မှတ်များကိုဖြတ်၍ အကြောင်းအရာကို လက်လွှတ်လိုက်ပါ။                                                        |
+| `fill-first`        | နောက်တစ်ခုသို့မရွှေ့မီ ခွဲတမ်းကိုဖြည့်ပါ။                                                                  |
+| `p2c`               | ရွေးချယ်မှုနှစ်ခု၏စွမ်းအား                                                                                 |
+| `random`            | ယူနီဖောင်း ကြုံသလို                                                                                        |
+| `least-used`        | မကြာသေးမီက အသုံးပြုမှုအနည်းဆုံးကို ရွေးပါ။                                                                 |
+| `cost-optimized`    | စျေးအသက်သာဆုံး ကျန်းမာရေးနဲ့ ညီညွတ်တဲ့ ပန်းတိုင်ကို အရင်ရောက်ပါ။                                           |
+| `reset-aware`       | ဝန်ဆောင်မှုပေးသူ ဝင်းဒိုးများကို ပြန်လည်သတ်မှတ်ခြင်းအား သတိထားပါ။                                          |
+| `reset-window`      | ဝင်းဒိုးအခြေခံလမ်းကြောင်းကို ပြန်လည်သတ်မှတ်ပါ။                                                             |
+| `expiry-first`      | အသုံးမပြုဘဲ ကုန်ဆုံးမည့် အကောင့်ကို ဦးစွာ သုံးစွဲပါ။                                                       |
+| `headroom`          | ကျန်အများစုမှာ quota headroom ကိုအရင်လုပ်ပါ။                                                               |
+| `quota-weighted`    | ကုန်ဆုံးသွားသော အကောင့်များကို ကျော်ပါ၊ ထို့နောက် လက်ကျန်ခွဲတမ်း ÷ လေယာဉ်တွင်းဝန်ဖြင့် ဆွဲပါ။              |
+| `strict-random`     | အမှန်တကယ် ယူနီဖောင်း (အရည်အသွေး အလေးချိန်မရှိ)                                                             |
+| `auto`              | 16-factor အမှတ် (`autoCombo/`) ကိုသုံးပါ                                                                   |
+| `lkgp`              | နောက်ဆုံးသိထားတဲ့ ဝန်ဆောင်မှုပေးသူကောင်းတွေကို ဦးစွာပထမ                                                    |
+| `context-optimized` | ရှည်လျားသောအကြောင်းအရာတောင်းဆိုမှုများအတွက် အကောင်းဆုံးဖြစ်သည်။                                            |
+| `cache-optimized`   | ပြန်သုံးနိုင်သော အညွှန်းရှေ့ဆက်တစ်ခုစီကို တူညီသောအကောင့်သို့ ပင်ထိုးပါ                                     |
+| `fusion`            | အပြိုင်အကန့်တစ်ခုသို့ ပန်ကာ၊ ထို့နောက် တရားသူကြီး (`fusion.ts`) မှတစ်ဆင့် ပေါင်းစပ်ဖန်တီးပါ။               |
+| `pipeline`          | ကွင်းဆက်အဆင့် — ပစ်မှတ်တစ်ခုစီ၏ အထွက်အား နောက်တစ်ခုအား ဖိဒ်ပေးသည်။                                         |
+| `jev`               | ရွေးချယ်မှု- TypeSafe Jev သည် အဆင့်သတ်မှတ်ထားသော လုပ်ဆောင်ချက်များကို အသိအမှတ်ပြုပါသည်။ တခြားမင်းရဲ့အမိန့် |
 
 ### base.ts (1170 LOC)
 
-Executor ၁၀၇ ခုလုံးက extend လုပ်ထားသည့် **abstract executor** ဖြစ်သည်။ ၎င်းတွင် အောက်ပါတို့ ပါဝင်သည်-
+ဟိ** abstract executor** executor class တိုင်းသည် (တိုက်ရိုက် သို့မဟုတ် `DefaultExecutor` နှင့် အခြားအတန်းခွဲများမှတဆင့်) တိုးချဲ့သည်။ ၎င်းတွင်ပါဝင်သည်-
 
-- `buildUrl()` — မူလ URL တည်ဆောက်မှု (စိတ်ကြိုက်လိုအပ်ပါက subclasses များက override လုပ်သည်)
-- `buildHeaders()` — မူလ headers (auth၊ content-type)
-- `transformRequest()` — မူလအားဖြင့် pass-through လုပ်သည်
-- `execute()` — retry/backoff/breaker ပါဝင်သော ပင်မ HTTP loop
+- `buildUrl()` — မူရင်း URL တည်ဆောက်မှု (စိတ်ကြိုက်အတွက် အတန်းခွဲများ ထပ်ရေးသည်)
+- `buildHeaders()` — မူရင်းခေါင်းစီးများ (auth၊ အကြောင်းအရာအမျိုးအစား)
+- `transformRequest()` — ကို မူရင်းအတိုင်း ဖြတ်သန်းပါ။
+- `execute()` — retry/backoff/breaker နှင့် ပင်မ HTTP ကွင်းဆက်ဖြစ်သည်။
 
 ```ts
 // open-sse/executors/default.ts
 export class DefaultExecutor extends BaseExecutor {
-  // OpenAI/Anthropic နှင့် တွဲဖက်အသုံးပြုနိုင်သော provider များအားလုံးကို ကိုင်တွယ်သည်
-  // Provider များသည် configurations (URL၊ auth၊ headers) ကို register လုပ်သော်လည်း executor logic ကို မျှဝေအသုံးပြုသည်
+  // Handles all OpenAI/Anthropic-compatible providers
+  // Providers register configurations (URL, auth, headers) but share executor logic
 }
 ```
 
-Provider တစ်ခုချင်းစီအလိုက် လုပ်ဆောင်ပုံ (auth headers၊ base URL၊ version headers) ကို သီးခြား executor classes များဖြင့်မဟုတ်ဘဲ provider registry မှတစ်ဆင့် configure လုပ်ထားသည်။
+ဝန်ဆောင်မှုပေးသူ၏ သီးခြားအပြုအမူ (auth headers၊ base URL၊ ဗားရှင်းခေါင်းစီးများ) ကို သီးခြား executor အတန်းအစားများမဟုတ်ဘဲ ဝန်ဆောင်မှုပေးသူစာရင်းသွင်းမှုမှတစ်ဆင့် စီစဉ်သတ်မှတ်ထားသည်။
 
 ````
 
 ---
 
-## ဝန်ဆောင်မှုများ (မော်ဂျူး 117 ခု)
+## ဝန်ဆောင်မှုများ (117 modules)
 
-ဝန်ဆောင်မှုများသည် handler များက ပေါင်းစပ်အသုံးပြုသည့် **တိကျသောတာဝန်တစ်ခုတည်းကိုသာ လုပ်ဆောင်သည့် မော်ဂျူးများ** ဖြစ်သည်။ အဓိကအမျိုးအစားများမှာ-
+ဝန်ဆောင်မှုများ** အာရုံစူးစိုက်မှု၊ ရည်ရွယ်ချက်တစ်ခုတည်း မော်ဂျူးများ** အဲဒါကို ကိုင်တွယ်သူတွေ ရေးဖွဲ့တယ်။ အကြီးစားအမျိုးအစားများ-
 
-### လမ်းကြောင်းသတ်မှတ်ခြင်းနှင့် ပေါင်းစပ်ခြင်း
+### Routing & Combo
 
-- `combo.ts` — ပေါင်းစပ်လမ်းကြောင်းဖြင့် ပေးပို့သော request များအတွက် ဝင်ပေါက်
-- `services/autoCombo/` — အချက် 16 ချက်အပေါ် အမှတ်ပေးခြင်း၊ အလိုအလျောက် လမ်းကြောင်းသတ်မှတ်နည်းဗျူဟာ 8 ခု
-- `wildcardRouter.ts` — wildcard route များ (`gpt-*`) ကို ကိုက်ညီစစ်ဆေးသည်
-- `modelFamilyFallback.ts` — T5 family အတွင်း fallback
+- ပေါင်းစပ်-လမ်းကြောင်းပြောင်းတောင်းဆိုမှုများအတွက်`combo.ts` — ဝင်ခွင့်အမှတ်
+- `services/autoCombo/` — 16-factor အမှတ်ပေးခြင်း၊ အလိုအလျောက်လမ်းကြောင်းသတ်မှတ်ခြင်းဗျူဟာ 8 ခု
+- `wildcardRouter.ts` — wildcard လမ်းကြောင်းများ (`gpt-*`) နှင့် ကိုက်ညီသည်
+- `modelFamilyFallback.ts` — T5 မိသားစုအချင်းချင်းကြားတွင် တုံ့ပြန်မှု
 
-### နှုန်းကန့်သတ်ခြင်းနှင့် ခွဲတမ်း
+### ကန့်သတ်ချက်နှင့် ပမာဏ
 
-- `rateLimitManager.ts` — key+provider တစ်စုံချင်းစီအတွက် token bucket
-- `usage.ts` — အသုံးပြုမှု မှတ်တမ်းတင်ခြင်း
-- `quotaCache.ts` — memory အတွင်းရှိ ခွဲတမ်း snapshot များ
+- `rateLimitManager.ts` — တိုကင်ပုံးပုံးသည် သော့+ ပံ့ပိုးပေးသူအတွက်
+- `usage.ts` — အသုံးပြုမှု မှတ်တမ်းတင်ခြင်း။
+- `quotaCache.ts` — မန်မိုရီခွဲတမ်း လျှပ်တစ်ပြက် ရိုက်ချက်များ
 
-### အကောင့်နှင့် Token
+### အကောင့်နှင့် တိုကင်
 
-- `tokenRefresh.ts` — 401 ဖြစ်သည့်အခါ OAuth ကို refresh လုပ်ခြင်း
-- `accountFallback.ts` — အခြားအစားထိုးအကောင့်သို့ ပြောင်းခြင်း
-- `sessionManager.ts` — အကြိမ်ပေါင်းများစွာ အပြန်အလှန်လုပ်ဆောင်သည့် session အခြေအနေ
+- `tokenRefresh.ts` — OAuth 401 တွင် ပြန်လည်စတင်ပါ။
+- `accountFallback.ts` — အခြားအကောင့်သို့ ပြောင်းပါ။
+- `sessionManager.ts` — multi-turn session အခြေအနေ
 
-### အသိဉာဏ်ပိုင်းဆိုင်ရာ
+### ထောက်လှမ်းရေး
 
-- `intentClassifier.ts` — request ၏ ရည်ရွယ်ချက်ကို အမျိုးအစားခွဲခြင်း
-- `taskAwareRouter.ts` — task အမျိုးအစားအလိုက် လမ်းကြောင်းသတ်မှတ်ခြင်း
-- `thinkingBudget.ts` — စဉ်းစားမှု token များ ခွဲဝေခြင်း
-- `contextManager.ts` — လမ်းကြောင်းသတ်မှတ်မှု context ကို ထည့်သွင်းခြင်း
+- `intentClassifier.ts` — တောင်းဆိုချက်ရည်ရွယ်ချက်ကို အမျိုးအစားခွဲပါ။
+- အလုပ်အမျိုးအစားအလိုက်`taskAwareRouter.ts` — လမ်းကြောင်း
+- `thinkingBudget.ts` — တွေးခေါ်မှုတိုကင်များကို ခွဲဝေပေးသည်။
+- `contextManager.ts` — inject routing context
 
-### ခံနိုင်ရည်ရှိမှု
+### ခံနိုင်ရည်ရှိခြင်း။
 
-- `resilience.ts` — ပြန်လည်ကြိုးစားခြင်း၊ backoff နှင့် breaker တို့ကို စီမံညှိနှိုင်းခြင်း
-- `emergencyFallback.ts` — နောက်ဆုံးအားကိုးရာ fallback
-- `modelDeprecation.ts` — ဆက်ခံ model များသို့ အလိုအလျောက် လမ်းကြောင်းပြောင်းခြင်း
+- `resilience.ts` — ပြန်လည်ကြိုးစားခြင်း၊ နောက်ပြန်ပိတ်ခြင်း၊ breaker orchestration
+- `emergencyFallback.ts` — နောက်ဆုံး-အပန်းဖြေစခန်း
+- `modelDeprecation.ts` — ဆက်ခံမည့် မော်ဒယ်များသို့ အလိုအလျောက်လမ်းကြောင်း
 
-### အခြေအနေ
+### ပြည်နယ်
 
-- `signatureCache.ts` — request signature အလိုက် ထပ်နေမှုဖယ်ရှားခြင်း
-- `volumeDetector.ts` — ဝန်အားလျှော့ချခြင်း
-- `contextHandoff.ts` — session ကို serialize လုပ်ခြင်း
+- တောင်းဆိုချက်လက်မှတ်ဖြင့်`signatureCache.ts` — dedup
+- `volumeDetector.ts` — သွန်းလောင်းခြင်း။
+- `contextHandoff.ts` — စက်ရှင် အမှတ်စဉ်
 
-### ချုံ့ခြင်း
+### နှိမ်တယ်။
 
-- `compression/` (လမ်းညွှန်ခွဲ) — အပြည့်အစုံသော ချုံ့ခြင်း pipeline
-- engine များ၊ rule pack များနှင့် adapter များကို လွှမ်းခြုံထားသည့် ဖိုင် 39 ဖိုင်
+- `compression/` (လမ်းကြောင်းခွဲ) — အပြည့်ချုံ့ပိုက်လိုင်း
+- အင်ဂျင်များ၊ စည်းကမ်းထုပ်များ၊ အဒက်တာများပါသည့် ဖိုင် ၃၉ ဖိုင်
 
-### ကျွမ်းကျင်မှုများ
+### ကျွမ်းကျင်မှု
 
-- ([SKILLS.md](./SKILLS.md) တွင် ဖော်ပြထားသည်)
+- ( [SKILLS.md](./SKILLS.md) တွင်ဖုံးလွှမ်းထားသည်)
 
-### မှတ်ဉာဏ်
+### ဉာဏ်
 
-- ([MEMORY.md](./MEMORY.md) တွင် ဖော်ပြထားသည်)
+- ( [MEMORY.md](./MEMORY.md) တွင်ဖုံးလွှမ်းထားသည်)
 
 ---
 
-## Executor များ (ဖိုင် 75+ ခု)
+## စီမံခန့်ခွဲသူများ (150 modules)
 
-Provider တစ်ခုစီအတွက် ဖိုင်တစ်ဖိုင်စီရှိသည်။ ၎င်းတို့အားလုံးသည် `BaseExecutor` ကို ဆက်ခံပြီး ကွဲပြားသည့်အပိုင်းများကို override လုပ်သည်။
+အများစုမှာ ပံ့ပိုးသူတစ်ဦးလျှင် ဖိုင်တစ်ခုဖြစ်သည်။ executor အတန်းများသည် `BaseExecutor` ချဲ့ထွင်ပြီး ကွဲပြားသည်များကို ထပ်ရေးပါ။ အခြား module များသည် per-provider helpers (tool schemas၊ fetch/TTS adapters၊ quirk handlers) ဖြစ်သည်။
 
-### အသုံးများသော ပုံစံများ
+### ဘုံပုံစံများ
 
-Provider များကို `getExecutor(providerId)` မှတစ်ဆင့် ရှာဖွေသတ်မှတ်ပြီး ၎င်းသည် ပြင်ဆင်သတ်မှတ်ထားသော executor ကို ပြန်ပေးသည်။ OpenAI/Anthropic နှင့် သဟဇာတဖြစ်သော provider များသည် `DefaultExecutor` (`executors/default.ts`) ကို အသုံးပြုသည်။ Provider အလိုက် သီးခြားအပြုအမူများ (base URL၊ auth header များ၊ API version) ကို `open-sse/config/providers/` တွင် ပြင်ဆင်သတ်မှတ်ပြီး request body ပြောင်းလဲမှုများကို `open-sse/translator/` တွင် ကိုင်တွယ်သည်။
+ပံ့ပိုးပေးသူများကို `getExecutor(providerId)` မှတစ်ဆင့် ဖြေရှင်းပြီး၊ ပြုပြင်ထားသော executor ကို ပြန်ပေးသည်။ OpenAI/Anthropic-compatible ပံ့ပိုးပေးသူများသည် `DefaultExecutor` (`executors/default.ts`) ကို အသုံးပြုသည်။ ဝန်ဆောင်မှုပေးသူ၏ သီးခြားအပြုအမူ (အခြေခံ URL၊ auth headers၊ API ဗားရှင်း) ကို `open-sse/config/providers/` တွင် ပုံစံသတ်မှတ်ထားပြီး တောင်းဆိုမှုကိုယ်ထည်ပြောင်းလဲမှုများကို `open-sse/translator/` ဖြင့် ကိုင်တွယ်နေချိန်တွင် ဖြစ်သည်။
 
-**စိတ်ကြိုက် URL** ကို provider configuration မှတစ်ဆင့် သတ်မှတ်သည်-
+**စိတ်ကြိုက် URL** ဝန်ဆောင်မှုပေးသူ ဖွဲ့စည်းမှုပုံစံမှတစ်ဆင့် သတ်မှတ်ထားသည်-
 
 ```ts
-// open-sse/config/providers/ ရှိ Provider configuration
+// Provider config in open-sse/config/providers/
 export default {
   id: "together",
   baseURL: "https://api.together.xyz/v1/chat/completions",
 }
 ````
 
-**စိတ်ကြိုက် auth** ကို provider registry ၏ auth configuration (API key၊ OAuth၊ header profile များ) မှတစ်ဆင့် ကိုင်တွယ်သည်။
+**စိတ်ကြိုက် အထောက်အထား** ဝန်ဆောင်မှုပေးသူ မှတ်ပုံတင်ခြင်း၏ စစ်မှန်သောဖွဲ့စည်းပုံ (API သော့၊ OAuth၊ ခေါင်းစီးပရိုဖိုင်များ) မှတဆင့် ကိုင်တွယ်သည်။
 
-**စိတ်ကြိုက် request body** ပြောင်းလဲမှုများ (ဥပမာ၊ Anthropic က `system` ကို `messages` မှ ခွဲထုတ်ခြင်း) ကို `open-sse/translator/` တွင် provider တစ်ခုချင်းစီအလိုက် မှတ်ပုံတင်ထားသည်။
+**စိတ်ကြိုက်တောင်းဆိုမှုကိုယ်ထည်** အသွင်ပြောင်းမှုများ (ဥပမာ Anthropic `system` `messages` မှ ခွဲထုတ်ခြင်း) ကို `open-sse/translator/` တွင် ဝန်ဆောင်မှုပေးသူ တစ်ဦးချင်းစီတွင် မှတ်ပုံတင်ထားသည်။
 
 ````
 
-### Executor Factory
+### The Executor Factory
 
-`executors/index.ts` သည် `getExecutor(providerId)` ကို export လုပ်သည်-
+`executors/index.ts` exports `getExecutor(providerId)`:
 
 ```ts
 import { getExecutor } from "@omniroute/open-sse/executors";
@@ -366,7 +371,7 @@ const result = await executor.execute({
 });
 ````
 
-ရှာဖွေသတ်မှတ်မှုသည် `ExecutorRegistry` (`executors/registry.ts`) မှတစ်ဆင့် လုပ်ဆောင်သည်- အထူးပြု executor တစ်ခုချင်းစီကို `executors/index.ts` ၏ built-in table တွင် ကြေညာထားပြီး module load လုပ်ချိန်၌ `registerExecutor(alias, instance)` မှတစ်ဆင့် မှတ်ပုံတင်သည်။ `getExecutor()` သည် registry ကို စစ်ဆေးပြီး အထူးပြု entry မရှိသည့် provider အားလုံးအတွက် memoize လုပ်ထားသော `DefaultExecutor` ကို fallback အဖြစ် အသုံးပြုသည်။ alias → executor mapping အပြည့်အစုံကို golden test ဖြစ်သည့် `tests/unit/executor-map-golden.test.ts` ဖြင့် သတ်မှတ်စစ်ဆေးထားသည်။
+Resolution သည် `ExecutorRegistry` (`executors/registry.ts`) : အထူးပြု executor တိုင်းကို `executors/index.ts` ၏ built-in ဇယားတွင်ကြေငြာပြီး module load တွင် `registerExecutor(alias, instance)` မှတဆင့် စာရင်းသွင်းသည်။ `getExecutor()` မှတ်ပုံတင်ခြင်းကို တိုင်ပင်ပြီး အထူးပြုထည့်သွင်းမှုမရှိဘဲ မည်သည့်ဝန်ဆောင်မှုပေးသူအတွက်မဆို အလွတ်ကျက်ထားသော `DefaultExecutor` သို့ ပြန်သွားပါသည်။ နာမည်အပြည့်အစုံ → executor mapping ကို ရွှေရောင်စမ်းသပ်မှု `tests/unit/executor-map-golden.test.ts` ဖြင့် သတ်မှတ်သည်။
 
 ---
 
@@ -479,19 +484,19 @@ createResponsesApiTransformStream(): TransformStream
 
 ---
 
-## ဖွဲ့စည်းသတ်မှတ်မှု
+## ဖွဲ့စည်းမှု
 
-`open-sse/config/` တွင် ဖွဲ့စည်းသတ်မှတ်မှု layer ကို ထည့်သွင်းထားသည်-
+`open-sse/config/` configuration layer ကို ကိုင်ထားသည်။
 
-| File                                 | ရည်ရွယ်ချက်                                            |
-| ------------------------------------ | ------------------------------------------------------ |
-| `providerRegistry.ts`                | Provider 352 ခုပါ catalog အပေါ်ရှိ chat-model registry |
-| `providerModels.ts`                  | Model alias များ၊ ဖော်မတ် mapping                      |
-| `constants.ts`                       | Timeout များ၊ ကန့်သတ်ချက်များ၊ status code များ        |
-| `defaultThinkingSignature.ts`        | မူလသတ်မှတ်ထားသော Claude thinking signature             |
-| `modelStrip.ts` (service များထဲတွင်) | Provider အလိုက် field များကို ဖယ်ရှားခြင်း             |
+| ဖို                                   | ရည်ရွယ်ချက်                                                 |
+| ------------------------------------- | ----------------------------------------------------------- |
+| `providerRegistry.ts`                 | 394-ပံ့ပိုးပေးသူ ကတ်တလောက်အတွက် ချတ်မော်ဒယ် မှတ်ပုံတင်ခြင်း |
+| `providerModels.ts`                   | မော်ဒယ်အမည်တူများ၊ ဖော်မတ်မြေပုံဆွဲခြင်း။                   |
+| `constants.ts`                        | အချိန်ကုန်ခြင်း၊ ကန့်သတ်ချက်များ၊ အခြေအနေကုဒ်များ           |
+| `defaultThinkingSignature.ts`         | မူရင်း Claude တွေးခေါ်မှု လက်မှတ်                           |
+| `modelStrip.ts` (ဝန်ဆောင်မှုများတွင်) | ဝန်ဆောင်မှုပေးသူ အကွက်ကို ထုတ်ယူခြင်း။                      |
 
-### Provider Registry Schema
+### ဝန်ဆောင်မှုပေးသူ မှတ်ပုံတင်ခြင်း အစီအစဉ်
 
 ```ts
 interface ProviderConfig {
@@ -506,7 +511,7 @@ interface ProviderConfig {
 }
 ```
 
-Module load ပြုလုပ်ချိန်တွင် Zod validation က provider config အားလုံး မှန်ကန်ကြောင်း သေချာစေသည်။
+module load တွင်Zod validation သည် provider configs အားလုံးကို တရားဝင်ကြောင်း သေချာစေသည်။
 
 ---
 

@@ -4,46 +4,45 @@
 
 ---
 
-Objektív funkció-összehasonlítás népszerű, nyílt forráskódú AI-routerekkel.
+Objektív funkciók összehasonlítása a népszerű nyílt forráskódú AI útválasztókkal.
 
-> **Módszertan**: A nyilvános repók auditálva 2026-Q2 során. A feltüntetett verziók alapján.
-> A javításokat PR formájában küldd be — fontos számunkra a pontosság.
+> **Módszertan** : Nyilvános repók auditált 2026-2. A felsorolt verziók. A javításokat PR — keresztül küldje be, azt szeretnénk, hogy ez pontos legyen.
 
-| Funkció                                                        |                 OmniRoute 3.8                 |  LiteLLM 1.x   | OpenRouter (SaaS) |   Portkey    |
-| -------------------------------------------------------------- | :-------------------------------------------: | :------------: | :---------------: | :----------: |
-| **Szolgáltatók**                                               |                    **329**                    |      ~100      |        ~50        |     ~30      |
-| **Ingyenes/hitelesítést nem igénylő katalógusbejegyzések**     |                    **155**                    |      n/a       |    közvetítés     |     n/a      |
-| **Saját infrastruktúrán üzemeltethető**                        |                      ✅                       |       ✅       |        ❌         |  ⚠ fizetős   |
-| **OAuth-katalógusbejegyzések**                                 |                    **23**                     |   részleges    |        ❌         |      ❌      |
-| **Automatikus tartalékmegoldás-kombinációk**                   |               **19 stratégia**                | prioritásalapú | csomagszintalapú  |  súlyozott   |
-| **Fúzió (párhuzamos panel + értékelői szintézis)**             |                      ✅                       |       ❌       |        ❌         |      ❌      |
-| **1/2/3. szintű tartalékmegoldás (előfizetés→olcsó→ingyenes)** |                    ✅ + UI                    |    manuális    |        n/a        |   manuális   |
-| **Tokenek tömörítése**                                         | 12 motoros csomag (RTK + Caveman + LLMLingua) |     nincs      |       nincs       |    nincs     |
-| **Multimodális generálás (beszéd/zene/videó)**                 |                      ✅                       |       ❌       |    közvetítés     |      ❌      |
-| **Beépített MCP-szerver**                                      |           ✅ 110 eszköz, 33 hatókör           |       ❌       |        ❌         |      ❌      |
-| **A2A protokoll**                                              |                 ✅ 6 képesség                 |       ❌       |        ❌         |      ❌      |
-| **Memória (FTS5 + vektor)**                                    |                      ✅                       |       ❌       |        ❌         |      ❌      |
-| **Védőkorlátok (PII, injektálás, képfeldolgozás)**             |                      ✅                       |   részleges    |        ❌         |  ✅ fizetős  |
-| **Felhőalapú ügynökintegrációk**                               |          Codex, Cursor, Devin, Jules          |       ❌       |        ❌         |      ❌      |
-| **Szolgáltatónkénti megszakító**                               |      ✅ 3 állapotú, lusta helyreállítás       |   alapszintű   |        ❌         |      ✅      |
-| **TLS-ujjlenyomat elrejtése (JA3/JA4)**                        |                  ✅ wreq-js                   |       ❌       |        ❌         |      ❌      |
-| **Kiértékelési keretrendszer**                                 |                 ✅ beépített                  |       ❌       |        ❌         |  ⚠ fizetős   |
-| **MITM-proxy (elfogja a Cursor/Antigravity forgalmát)**        |               ✅ többplatformos               |       ❌       |        ❌         |      ❌      |
-| **CLI rendszertálcával (Electron nélkül)**                     |                      ✅                       |       ❌       |        n/a        |     n/a      |
-| **CLI gépazonosító-alapú automatikus hitelesítése**            |                      ✅                       |       ❌       |        n/a        |     n/a      |
-| **Irányítópult**                                               |                  Next.js 16                   |   alapszintű   |   zárt forrású    | zárt forrású |
-| **i18n**                                                       |           **42 területi beállítás**           |       ❌       |        ❌         |      ⚠       |
-| **Nyilvános ügynökképességek (SKILL.md)**                      |                     ✅ 45                     |       ❌       |        ❌         |      ❌      |
-| **Alagúttámogatás (Cloudflared, Tailscale, Ngrok)**            |                      ✅                       |       ❌       |        n/a        |     n/a      |
-| **Licenc**                                                     |                      MIT                      |      MIT       |   zárt forrású    | zárt forrású |
+| Funkció                                                   |                OmniRoute 3.8                 |   LiteLLM 1.x   | OpenRouter (SaaS) |    Portkey     |
+| --------------------------------------------------------- | :------------------------------------------: | :-------------: | :---------------: | :------------: |
+| **Szolgáltatók**                                          |                   **329**                    |      ~100       |        ~50        |      ~30       |
+| **Free/no-auth katalógus bejegyzései**                    |                   **155**                    |       n/a       |     áthaladás     |      n/a       |
+| **Önálló**                                                |                      ✅                      |       ✅        |        ❌         |   ⚠ fizetett   |
+| **OAuth katalógus bejegyzései**                           |                    **23**                    |    részleges    |        ❌         |       ❌       |
+| **Automatikus tartalék kombók**                           |               **22 stratégia**               | prioritás alapú |    szint alapú    |   súlyozott    |
+| **Fúzió (párhuzamos panel + bíró szintézis)**             |                      ✅                      |       ❌        |        ❌         |       ❌       |
+| **Tier 1/2/3 tartalék (előfizetéses → olcsó → ingyenes)** |                   ✅ + UI                    |    kézikönyv    |        n/a        |   kézikönyv    |
+| **Token tömörítés**                                       | 12 motoros verem (RTK + Caveman + LLMLingua) |    egyik sem    |     egyik sem     |   egyik sem    |
+| **Multimodális generáció (speech/music/video)**           |                      ✅                      |       ❌        |     áthaladás     |       ❌       |
+| **Beépített MCP szerver**                                 |         ✅ 110 szerszámok, 33 távcső         |       ❌        |        ❌         |       ❌       |
+| **A2A protokoll**                                         |               ✅ 6 képességek                |       ❌        |        ❌         |       ❌       |
+| **Memória (FTS5 + vektor)**                               |                      ✅                      |       ❌        |        ❌         |       ❌       |
+| **Védőkorlátok (PII, injekció, látás)**                   |                      ✅                      |    részleges    |        ❌         |  ✅ fizetett   |
+| **Cloud ügynök integrációk**                              |         Codex, Cursor, Devin, Jules          |       ❌        |        ❌         |       ❌       |
+| **Megszakító szolgáltatónként**                           |        ✅ 3 állapotú, lusta felépülés        |    alapvető     |        ❌         |       ✅       |
+| **TLS ujjlenyomat-lopás (JA3/JA4)**                       |                  ✅ wreq-js                  |       ❌        |        ❌         |       ❌       |
+| **Eval keret**                                            |                 ✅ beépített                 |       ❌        |        ❌         |   ⚠ fizetett   |
+| **MITM proxy (elfogja a Cursor/Antigravity)**             |              ✅ cross-platform               |       ❌        |        ❌         |       ❌       |
+| **CLI rendszertálcával (nincs Electron)**                 |                      ✅                      |       ❌        |        n/a        |      n/a       |
+| **CLI gépazonosító automatikus hitelesítés**              |                      ✅                      |       ❌        |        n/a        |      n/a       |
+| **Műszerfal**                                             |                  Next.js 16                  |    alapvető     |  szabadalmazott   | szabadalmazott |
+| **i18n**                                                  |                 **67 hely**                  |       ❌        |        ❌         |       ⚠        |
+| **Közügynöki készségek (SKILL.md)**                       |                    ✅ 45                     |       ❌        |        ❌         |       ❌       |
+| **Alagút támogatás (Cloudflared, Tailscale, Ngrok)**      |                      ✅                      |       ❌        |        n/a        |      n/a       |
+| **Engedély**                                              |                     MIT                      |       MIT       |  szabadalmazott   | szabadalmazott |
 
-## Mikor válaszd az OmniRoute-ot?
+## Mikor válasszuk OmniRoute
 
-- Saját infrastruktúrán üzemeltetsz, és **maximális szolgáltatói lefedettséget** szeretnél (329 szolgáltató, 155 ingyenes/hitelesítést nem igénylő katalógusbejegyzés)
-- **Beépített MCP-szerverre** van szükséged (LLM-eszközök, memória és képességek eszközökként elérhetővé téve)
-- **A2A protokollra** van szükséged az ügynökök közötti munkafolyamatokhoz
-- **Ujjlenyomat-elrejtést** (JA3/JA4) szeretnél, hogy elkerüld a felsőbb szintű CAPTCHA-rendszerek általi észlelést
-- **Nagyvállalati funkciókra** (védőkorlátok, kiértékelések, auditnapló) van szükséged SaaS-számla nélkül
+- Ön házigazda és akar** maximális szolgáltatói lefedettség** (394 szolgáltató, 155 free/no-auth katalógusbejegyzés)
+- Szükséged van a** beépített MCP szerver** (LLM eszközök, memória, eszközként feltárt készségek)
+- Neked kell**A2A protokoll** ügynök-ügynök munkafolyamatokhoz
+- Azt akarod** ujjlenyomat-lopás** (JA3/JA4), hogy elkerülje az upstream CAPTCHAs észlelését
+- Neked kell** vállalati funkciók** (védőkorlát, evals, audit trail) SaaS számla nélkül
 
 ## Mikor válaszd a LiteLLM-et?
 

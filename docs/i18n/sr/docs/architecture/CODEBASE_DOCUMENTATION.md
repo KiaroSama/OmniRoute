@@ -19,109 +19,106 @@
 
 ---
 
-## 1. Tehnološki stek
+## 1. Технолошки стек
 
-| Oblast           | Izbor                                                                                                                    |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Web framework    | **Next.js 16** (App Router, standalone izlaz, bez globalnog middleware-a)                                                |
-| Jezik            | **TypeScript 6.0+** — cilj `ES2022`, `module: esnext`, `moduleResolution: bundler`, `strict: false`                      |
-| Runtime          | **Node.js** `>=22.22.2 <23` ili `>=24.0.0 <27` (obezbeđeno kroz `engines` + `SUPPORTED_NODE_RANGE`)                      |
-| Baza podataka    | **SQLite** preko `better-sqlite3` (singleton, WAL journaling)                                                            |
-| Desktop          | **Electron 41** + `electron-builder` 26.10 (poseban workspace u `electron/`)                                             |
-| Testovi          | **Node native test runner** (unit/integration), **Vitest** (MCP, autoCombo, cache), **Playwright** (e2e + protocols-e2e) |
-| Build            | Next.js standalone preko `scripts/build/build-next-isolated.mjs`                                                         |
-| Lint/format      | ESLint flat config + Prettier (`lint-staged` preko Husky pre-commit)                                                     |
-| Modularni sistem | ESM svuda (`"type": "module"`)                                                                                           |
-| Workspaces       | npm workspace — `open-sse` je jedini pod-workspace                                                                       |
+| Област                               | Избор                                                                                                                              |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Веб-оквир                            | **Next.js 16** (App Router, самостални излаз, без глобалног посредничког софтвера)                                                 |
+| Језик                                | **TypeScript 6.0+** — циљ `ES2022`, `module: esnext`, `moduleResolution: bundler`, `strict: false`                                 |
+| Окружење                             | **Node.js** `>=22.22.2 <23` или `>=24.0.0 <27` (наметнуто путем `engines` + `SUPPORTED_NODE_RANGE`)                                |
+| База података                        | **SQLite** путем `better-sqlite3` (једна инстанца, WAL вођење дневника)                                                            |
+| Десктоп                              | **Electron 41** + `electron-builder` 26.10 (засебан радни простор у `electron/`)                                                   |
+| Тестови                              | **Node изворни покретач тестова** (јединични/интеграциони), **Vitest** (MCP, autoCombo, кеш), **Playwright** (e2e + protocols-e2e) |
+| Изградња                             | Самостални Next.js путем `scripts/build/build-next-isolated.mjs`                                                                   |
+| Провера/форматирање                  | ESLint равна конфигурација + Prettier (`lint-staged` путем Husky pre-commit куке)                                                  |
+| Систем модула                        | ESM свуда (`"type": "module"`)                                                                                                     |
+| Кориснички интерфејс контролне табле | **Tailwind CSS 4** + испоручени **Keak CI UI Kit** (`packages/ui-kit`), Lucide иконе — погледајте `DESIGN_SYSTEM.md`               |
+| Радни простори                       | npm радни простори — `open-sse`, `packages/browser-pool`, `packages/ui-kit`                                                        |
 
-Aliasi za putanje (`tsconfig.json`):
+Алијаси путања (`tsconfig.json`):
 
 - `@/*` → `src/*`
 - `@omniroute/open-sse` → `open-sse/index.ts`
 - `@omniroute/open-sse/*` → `open-sse/*`
+- `@omniroute/ui-kit` → `packages/ui-kit/src`, `@omniroute/ui-kit/*` → `packages/ui-kit/src/*`
 
-Podrazumevani HTTP port: **`20128`** (API i dashboard dele isti proces). Direktorijum
-za podatke se navodi kroz `DATA_DIR` env varijablu, čija je podrazumevana vrednost `~/.omniroute/`.
+Подразумевани HTTP порт: **`20128`** (API и контролна табла деле исти процес). Директоријум
+за податке је env променљива `DATA_DIR`, чија је подразумевана вредност `~/.omniroute/`.
 
 ---
 
-## 2. Struktura repozitorijuma
+## 2. Структура репозиторијума
 
 ```
 OmniRoute/
-├── src/                  Next.js aplikacija (App Router, biblioteke, domen, server, deljeno)
-├── open-sse/             Workspace za streaming engine (@omniroute/open-sse)
-├── electron/             Desktop wrapper (Electron 41 main + preload)
-├── bin/                  CLI ulazne tačke (omniroute, reset-password)
-├── tests/                Unit, integration, e2e, protocols-e2e, translator, security, fixtures
-├── scripts/              Build, sync, check, migration i runtime helper skripte
-├── docs/                 Javna dokumentacija (ovaj direktorijum)
-├── public/               Statički resursi, PWA manifest, service worker
-├── config/               Primeri runtime konfiguracije
-├── images/               Marketing/screenshot resursi
-├── _ideia/, _references/, _mono_repo/, _tasks/   Interne beleške / planiranje (ne isporučuje se)
-├── CLAUDE.md             Pravila repozitorijuma za Claude Code
-├── AGENTS.md             Dublja arhitekturna referenca za agente
-├── package.json          v3.8.51, koren workspace-a
-└── tsconfig.json         Aliasi za putanje + osnovne opcije kompajlera
+├── src/                  Next.js апликација (App Router, библиотеке, домен, сервер, дељени ресурси)
+├── open-sse/             Радни простор механизма за стримовање (@omniroute/open-sse)
+├── packages/             Радни простори: ui-kit (укључени Keak CI UI Kit), browser-pool
+├── electron/             Омотач за десктоп (Electron 41 главни процес + preload)
+├── bin/                  Улазне тачке CLI-ја (omniroute, reset-password)
+├── tests/                Јединични, интеграциони, e2e, protocols-e2e, преводилачки и безбедносни тестови, као и тестни ресурси
+├── scripts/              Помоћне скрипте за изградњу, синхронизацију, проверу, миграцију и извршавање
+├── docs/                 Јавна документација (овај директоријум)
+├── public/               Статички ресурси, PWA манифест, сервисни радник
+├── config/               Примери конфигурације за време извршавања
+├── images/               Маркетиншки ресурси и снимци екрана
+├── _ideia/, _references/, _mono_repo/, _tasks/   Интерни радни материјали / планирање (не испоручује се)
+├── CLAUDE.md             Правила репозиторијума за Claude Code
+├── AGENTS.md             Детаљнија архитектонска референца за агенте
+├── package.json          v3.8.51, корен радног простора
+└── tsconfig.json         Алијаси путања + основне опције компајлера
 ```
 
 ---
 
-## 3. `src/` — Next.js aplikacija
+## 3. `src/` — Next.js Апликација
 
 ```
 src/
-├── app/                  App Router stranice + API rute
-├── lib/                  Osnovne biblioteke (DB, auth, OAuth, skills, memory, …)
-├── domain/               Čist domenski sloj (policy, fallback, cost, lockout, …)
-├── server/               Moduli samo za server (authz, cors, auth)
-├── shared/               Tipovi, konstante, validacija, ugovori, alati (bezbedno za deljenje između granica)
-├── mitm/                 Man-in-the-middle proxy pomoćni alati za CLI integraciju
-├── models/               Metapodaci/aliasi lokalnih modela
-├── sse/                  Zastareli SSE handleri koji se još nalaze pod src/ (ne open-sse/)
-├── store/                Skladišta stanja na klijentskoj strani
-├── middleware/           Pomoćni alati za middleware na nivou ruta (ne globalni Next.js middleware)
-├── scripts/              Skripte unutar stabla koje aplikacijski kod može importovati
-├── types/                Ambijentalni i deljeni TS tipovi
-├── i18n/                 Paketi lokalizacije
+├── app/                  App Router pages + API routes
+├── lib/                  Core libraries (DB, auth, OAuth, skills, memory, …)
+├── domain/               Pure domain layer (policy, fallback, cost, lockout, …)
+├── server/               Server-only modules (authz, cors, auth)
+├── shared/               Types, constants, validation, contracts, utils (cross-boundary safe)
+├── mitm/                 Man-in-the-middle proxy helpers for CLI integration
+├── models/               Local model metadata / aliasing
+├── sse/                  Legacy SSE handlers that still live under src/ (not open-sse/)
+├── store/                Client-side state stores
+├── middleware/           Route-level middleware utilities (not Next.js global middleware)
+├── scripts/              In-tree scripts importable by app code
+├── types/                Ambient and shared TS types
+├── i18n/                 Locale bundles
 ├── instrumentation.ts    Next.js instrumentation hook
 ├── instrumentation-node.ts
-└── proxy.ts              Pomoćna funkcija za pokretanje proxy-ja na najvišem nivou
+└── proxy.ts              Top-level proxy bootstrap helper
 ```
 
-### 3.1 `src/app/` — App Router
+### 3.1 `src/app/` — рутер апликација
 
-App Router izlaže i UI dashboard-a i javni/upravljački HTTP API.
-**Nema globalnog middleware-a** — presretanje se vrši po ruti.
+Рутер апликација открива и контролну таблу UI и public/management HTTP API. постоји** нема глобалног међувера** — пресретање се врши по рути.
 
-Segmenti najvišeg nivoa pod `src/app/`:
+Сегменти највишег нивоа под `src/app/`:
 
-| Putanja                                                                       | Namena                                         |
-| ----------------------------------------------------------------------------- | ---------------------------------------------- |
-| `api/`                                                                        | Sve HTTP API rute (vidi detaljnu podelu ispod) |
-| `a2a/`                                                                        | A2A JSON-RPC 2.0 endpoint (`POST /a2a`)        |
-| `.well-known/agent.json/`                                                     | A2A dokument za otkrivanje Agent Card-a        |
-| `(dashboard)/`                                                                | UI dashboard-a (route grupa, bez URL prefiksa) |
-| `auth/`, `login/`, `forgot-password/`, `callback/`                            | Tokovi autentifikacije                         |
-| `landing/`                                                                    | Marketing/landing stranica                     |
-| `docs/`                                                                       | Ugrađeni pregledač API dokumentacije           |
-| `status/`, `maintenance/`, `offline/`                                         | Operativne stranice                            |
-| `privacy/`, `terms/`                                                          | Pravne stranice                                |
-| `400/`, `401/`, `403/`, `408/`, `429/`, `500/`, `502/`, `503/`                | Statičke stranice za greške                    |
-| `error.tsx`, `global-error.tsx`, `not-found.tsx`, `forbidden/`, `loading.tsx` | Okviri za greške/učitavanje iz framework-a     |
-| `layout.tsx`, `page.tsx`, `globals.css`, `manifest.ts`                        | Korenska struktura (root shell)                |
+| Пут                                                                           | сврха                                             |
+| ----------------------------------------------------------------------------- | ------------------------------------------------- |
+| `api/`                                                                        | Све руте HTTP API (погледајте разделу испод)      |
+| `a2a/`                                                                        | A2A ЈСОН-РПЦ 2.0 крајња тачка (`POST /a2a`)       |
+| `.well-known/agent.json/`                                                     | A2A документ за откривање картице агента          |
+| `(dashboard)/`                                                                | Контролна табла UI (група рута, без URL префикса) |
+| `auth/`, `login/`, `forgot-password/`, `callback/`                            | Аутх фловс                                        |
+| `landing/`                                                                    | Marketing/landing паге                            |
+| `docs/`                                                                       | Уграђени API доцс прегледник                      |
+| `status/`, `maintenance/`, `offline/`                                         | Оперативне странице                               |
+| `privacy/`, `terms/`                                                          | Правне странице                                   |
+| `400/`, `401/`, `403/`, `408/`, `429/`, `500/`, `502/`, `503/`                | Странице са статичким грешкама                    |
+| `error.tsx`, `global-error.tsx`, `not-found.tsx`, `forbidden/`, `loading.tsx` | Границе оквира error/loading                      |
+| `layout.tsx`, `page.tsx`, `globals.css`, `manifest.ts`                        | Роот схелл                                        |
 
-#### 3.1.1 `src/app/(dashboard)/dashboard/` — UI stranice
+#### 3.1.1 `src/app/(dashboard)/dashboard/` — UI странице
 
-`agents`, `analytics`, `api-manager`, `audit`, `auto-combo`, `batch`, `cache`,
-`changelog`, `cli-tools`, `cloud-agents`, `combos`, `compression`, `context`,
-`costs`, `endpoint`, `health`, `limits`, `logs`, `memory`, `onboarding`,
-`playground`, `providers`, `search-tools`, `settings`, `skills`, `system`,
-`translator`, `usage`, `webhooks`, plus root `page.tsx`, `HomePageClient.tsx`,
-`BootstrapBanner.tsx`.
+`agents`, `analytics`, `api-manager`, `audit`, `auto-combo`, `batch`, `cache`, `changelog`, `cli-tools`, `cloud-agents`, `combos`, `compression`, `context`, `costs`, `endpoint`, `health`, `limits`, `logs`, `memory`, `onboarding`, `playground`, `providers` `search-tools`, `system` `settings` `skills`, `translator`, `usage` `webhooks` плус роот `page.tsx`, `HomePageClient.tsx`, `BootstrapBanner.tsx`.
 
-#### 3.1.2 `src/app/api/` — API grupe najvišeg nivoa
+#### 3.1.2 `src/app/api/` — API групе највишег нивоа
 
 ```
 src/app/api/
@@ -174,144 +171,137 @@ src/app/api/
 ├── token-health/
 ├── translator/
 ├── tunnels/
-├── services/   Upravljanje ugrađenim servisima (9router, cliproxy) — LOCAL_ONLY
+├── services/   Embedded service management (9router, cliproxy) — LOCAL_ONLY
 ├── upstream-proxy/
 ├── usage/
-├── v1/         OpenAI-kompatibilni javni API
-├── v1beta/     Gemini-stil kompatibilnosti
+├── v1/         OpenAI-compatible public API
+├── v1beta/     Gemini-style compat
 ├── version-manager/
 └── webhooks/
 ```
 
-#### 3.1.2a `src/app/api/services/` — Upravljanje ugrađenim servisima
+#### 3.1.2а `src/app/api/services/` — Управљање уграђеним услугама
 
-Rute za instalaciju, pokretanje, gašenje i praćenje 9Router i CLIProxyAPI.
-Sve putanje su klasifikovane kao **LOCAL_ONLY** (samo loopback, čvrsto pravilo #17) jer
-mogu pokretati `npm install` i kreirati child procese.
+Руте за инсталирање, покретање, заустављање и надгледање 9Роутер и CLIProxyAPI. Сви путеви су класификовани**LOCAL_ONLY** (само повратна петља, тврдо правило #17) јер могу да призову `npm install` и покрену подређене процесе.
 
 ```
 src/app/api/services/
 ├── 9router/
-│   ├── _lib.ts             getOrInitSupervisor() pomoćna funkcija
-│   ├── install/route.ts    POST — npm install putem execFile
+│   ├── _lib.ts             getOrInitSupervisor() helper
+│   ├── install/route.ts    POST — npm install via execFile
 │   ├── start/route.ts      POST — supervisor.start()
 │   ├── stop/route.ts       POST — supervisor.stop()
 │   ├── restart/route.ts    POST — supervisor.restart()
-│   ├── update/route.ts     POST — npm install novije verzije
-│   ├── rotate-key/route.ts POST — generisanje novog API ključa + restart
-│   ├── status/route.ts     GET  — status uživo + iz baze + metapodaci o verziji
-│   └── auto-start/route.ts POST — uključivanje/isključivanje auto_start opcije
+│   ├── update/route.ts     POST — npm install newer version
+│   ├── rotate-key/route.ts POST — generate new API key + restart
+│   ├── status/route.ts     GET  — live + DB status + version metadata
+│   └── auto-start/route.ts POST — toggle auto_start flag
 ├── cliproxy/
-│   ├── _lib.ts             getOrInitSupervisor() pomoćna funkcija
+│   ├── _lib.ts             getOrInitSupervisor() helper
 │   ├── install/route.ts    POST — npm install
 │   ├── start/route.ts      POST — supervisor.start()
 │   ├── stop/route.ts       POST — supervisor.stop()
 │   ├── restart/route.ts    POST — supervisor.restart()
-│   ├── update/route.ts     POST — npm install novije verzije
-│   ├── status/route.ts     GET  — status uživo + iz baze + metapodaci o verziji
-│   └── auto-start/route.ts POST — uključivanje/isključivanje auto_start opcije
+│   ├── update/route.ts     POST — npm install newer version
+│   ├── status/route.ts     GET  — live + DB status + version metadata
+│   └── auto-start/route.ts POST — toggle auto_start flag
 └── [name]/
-    └── logs/route.ts       GET  — SSE praćenje logova (deljeno za sve servise)
+    └── logs/route.ts       GET  — SSE log tail (shared by all services)
 ```
 
-Odgovarajući dashboard UI:
-`src/app/(dashboard)/dashboard/providers/services/` — stranica sa dva taba (CLIProxyAPI + 9Router).
-Reverse proxy za ugrađeni UI 9Router-a:
-`src/app/(dashboard)/dashboard/providers/services/[name]/embed/[[...path]]/route.ts`
+Одговарајућа контролна табла UI: `src/app/(dashboard)/dashboard/providers/services/` — страница са две картице (CLIProxyAPI + 9Роутер). Обрнути прокси за 9Роутер уграђен UI: `src/app/(dashboard)/dashboard/providers/services/[name]/embed/[[...path]]/route.ts`
 
-Detaljnije: `docs/frameworks/EMBEDDED-SERVICES.md`
+Дубоко роњење: `docs/frameworks/EMBEDDED-SERVICES.md`
 
-#### 3.1.3 `src/app/api/v1/` — OpenAI-kompatibilni javni API
+#### 3.1.3 `src/app/api/v1/` — Публиц API компатибилан са ОпенАИ
 
 ```
 v1/
-├── accounts/[id]/                       pretraga naloga
-├── agents/tasks/[id]/, agents/tasks/    A2A-stilizovani endpoint-i za zadatke
-├── api/                                 interne API pomoćne funkcije izložene pod v1/api
+├── accounts/[id]/                       account lookup
+├── agents/tasks/[id]/, agents/tasks/    A2A-flavored task endpoints
+├── api/                                 internal API helpers exposed under v1/api
 ├── audio/{speech, transcriptions}/      TTS + STT
 ├── batches/[id]/{cancel}, batches/      OpenAI Batches API
-├── chat/completions/                    Chat Completions (glavni endpoint)
-├── completions/                         Zastareli text completions
+├── chat/completions/                    Chat Completions (the main endpoint)
+├── completions/                         Legacy text completions
 ├── embeddings/                          Embeddings
 ├── files/[id]/, files/                  Files API
-├── _helpers/                            Deljene pomoćne funkcije za rute (nema javni URL)
-├── images/{edits, generations}/         Generisanje i izmena slika
-├── issues/                              Endpoint-i za pomoć u trijaži
-├── management/{proxies}/                Upravljačke rute unutar v1
-├── messages/{count_tokens}/             Anthropic-stil kompatibilnosti za messages
-├── models/                              Listanje modela (`route.ts`, `catalog.ts`)
-├── moderations/                         Moderacija
-├── music/                               Generisanje muzike
-├── providers/[provider]/                Operacije po provajderu
-├── quotas/{check}                       Provere kvota
-├── registered-keys/                     Administracija registrovanih ključeva
-├── rerank/                              Rerangiranje
+├── _helpers/                            Shared route helpers (no public URL)
+├── images/{edits, generations}/         Image gen + edit
+├── issues/                              Triage helper endpoints
+├── management/{proxies}/                Management-scoped routes inside v1
+├── messages/{count_tokens}/             Anthropic-style messages compat
+├── models/                              Model listing (`route.ts`, `catalog.ts`)
+├── moderations/                         Moderation
+├── music/                               Music gen
+├── providers/[provider]/                Per-provider operations
+├── quotas/{check}                       Quota probes
+├── registered-keys/                     Registered key admin
+├── rerank/                              Reranking
 ├── responses/[...path]/                 OpenAI Responses API (catch-all)
-├── search/                              Pretraga weba
-├── videos/                              Generisanje videa
-├── ws/                                  WebSocket mostovi
-└── route.ts                             Indeksni handler
+├── search/                              Web search
+├── videos/                              Video gen
+├── ws/                                  WebSocket bridge
+└── route.ts                             Index handler
 ```
 
-Svaka rutna datoteka prati isti obrazac:
+Свака датотека руте прати исти образац:
 
 ```
-Ruta → CORS preflight → Zod validacija tela → opcionalna autentifikacija
-      → primena politike API ključa → delegiranje handleru (open-sse)
+Route → CORS preflight → Zod body validation → optional auth
+      → API key policy enforcement → handler delegation (open-sse)
 ```
 
-`v1beta/` je Gemini-stil kompatibilna površina (tanak omotač koji prevodi u
-isti `open-sse/handlers/` pipeline).
+`v1beta/` је компатибилна површина у стилу Близанаца (танак омотач који се преводи у исти `open-sse/handlers/` цевовод).
 
-### 3.2 `src/lib/` — Osnovne biblioteke
+### 3.2 `src/lib/` — Основне библиотеке
 
-Uvek uvozite podatke, sinhronizaciju, OAuth, veštine, memoriju itd. kroz ove module. Tabela
-grupiše stvarne direktorijume i značajne datoteke najvišeg nivoa.
+Увек увозите податке, синхронизацију, OAuth, вештину, меморију итд. преко ових модула. Табела групише стварне директоријуме и значајне датотеке највишег нивоа.
 
-| Modul             | Namena                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `a2a/`            | A2A protokol server: `taskManager.ts`, `streaming.ts`, `taskExecution.ts`, `routingLogger.ts`, `skills/` (6 veština: analiza troškova, izveštaj o zdravlju, otkrivanje provajdera, upravljanje kvotama, pametno rutiranje, list-capabilities)                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `acp/`            | Agent-Control-Protocol: `index.ts`, `manager.ts`, `registry.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `api/`            | Interne API pomoćne funkcije: `requireManagementAuth.ts`, `requireCliToolsAuth.ts`, `errorResponse.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `auth/`           | `managementPassword.ts` (resetovanje lozinke / heširanje)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `batches/`        | OpenAI Batches API servis (`service.ts`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `catalog/`        | Sinhronizacija OpenRouter kataloga (`openrouterCatalog.ts`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `cloudAgent/`     | Registar cloud agenata: `api.ts`, `baseAgent.ts`, `db.ts`, `index.ts`, `registry.ts`, `types.ts`, `agents/{codex, devin, jules}.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `combos/`         | Pomoćne funkcije za rešavanje kombinacija                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `compliance/`     | Revizija + revizija provajdera: `index.ts`, `providerAudit.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `config/`         | Veza za konfiguraciju u toku rada                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `db/`             | SQLite domenski moduli (vidi §3.2.1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `display/`        | UI/prikazne pomoćne funkcije koje koriste API odgovori                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `embeddings/`     | Registar servisa za embedding                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `env/`            | Učitavanje i pregled env varijabli                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `evals/`          | Runtime za evaluaciju                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `guardrails/`     | `piiMasker.ts`, `promptInjection.ts`, `visionBridge.ts`, `visionBridgeHelpers.ts`, `registry.ts`, `base.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `jobs/`           | Poslovi u pozadini (`autoUpdate.ts`, …)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `memory/`         | Trajna memorija: `store.ts`, `cache.ts`, `retrieval.ts`, `summarization.ts`, `extraction.ts`, `injection.ts`, `qdrant.ts`, `settings.ts`, `verify.ts`, `schemas.ts`, `types.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `monitoring/`     | `observability.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `oauth/`          | OAuth/import moduli provajdera (22): `agy`, `antigravity`, `claude`, `cline`, `codebuddy-cn`, `codex`, `cursor`, `devin-desktop`, `ghe-copilot`, `github`, `gitlab-duo`, `grok-cli-oauth`, `grok-cli`, `kilocode`, `kimi-coding`, `kiro`, `openference`, `qoder`, `trae`, `xai-oauth`, `zed-hosted`, `zed`, plus `services/`, `utils/`, i `constants/oauth.ts`                                                                                                                                                                                                                                                                                                                     |
-| `plugins/`        | Učitavač plugin-ova (`index.ts`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `promptCache/`    | `prefixAnalyzer.ts`, `index.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `providerModels/` | Upravljani životni ciklus modela: `modelDiscovery.ts`, `managedModelImport.ts`, `managedAvailableModels.ts`, `cursorAgent.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `providers/`      | Pomoćne funkcije za provajdere: `catalog.ts`, `validation.ts`, `imageValidation.ts`, `claudeExtraUsage.ts`, `codexConnectionDefaults.ts`, `codexFastTier.ts`, `webCookieAuth.ts`, `managedAvailableModels.ts`, `requestDefaults.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `resilience/`     | `settings.ts` — podešavanja za circuit breaker, cooldown, lockout                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `runtime/`        | Detekcija runtime funkcionalnosti                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `search/`         | `executeWebSearch.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `services/`       | Framework ugrađenih servisa: `ServiceSupervisor.ts` (generički supervizor child procesa sa zaključavanjem operacija, ring bufer-om, health checker-om), `bootstrap.ts` (registracija na nivou procesa i auto-start), `registry.ts` (mapa alat → supervizor), `apiKey.ts` (skladište ključeva AES-256-GCM), `modelSync.ts` (periodična sinhronizacija modela), `ringBuffer.ts` (5 MB kružni bafer za logove), `healthCheck.ts` (HTTP health probe), `types.ts`, `embedWsProxy.ts` (WebSocket proxy), `installers/{ninerouter,cliproxy}.ts`. Vidi `docs/frameworks/EMBEDDED-SERVICES.md`                                                                                             |
-| `agentSkills/`    | Katalog Agent Skills + generator: `catalog.ts` (getCatalog/getSkillById/filterCatalog/computeCoverage), `generator.ts` (generateAgentSkills → upisuje `skills/{id}/SKILL.md`), `openapiParser.ts` (izvlači REST endpoint-e iz OpenAPI specifikacije), `cliRegistryParser.ts` (izvlači CLI podkomande iz bin/cli-registry), `schemas.ts` (Zod: AgentSkillSchema, SkillCoverageSchema, ListQuerySchema, GenerateBodySchema), `types.ts` (AgentSkill, SkillCoverage, SkillMarkdown, GeneratorReport). Koriste ga REST rute (`/api/agent-skills/*`), MCP alati (`omniroute_agent_skills_*`), i A2A veština `list-capabilities`. Vidi [AGENT-SKILLS.md](../frameworks/AGENT-SKILLS.md). |
-| `skills/`         | Framework veština: `registry.ts`, `executor.ts`, `interception.ts`, `injection.ts`, `sandbox.ts`, `custom.ts`, `hybrid.ts`, `builtins.ts`, `a2a.ts`, `providerSettings.ts`, `schemas.ts`, `skillssh.ts`, `types.ts`, plus `builtin/browser.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `spend/`          | `batchWriter.ts` (write-behind bafer)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `sync/`           | `bundle.ts`, `tokens.ts` (Cloud Sync)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `system/`         | Pomoćne funkcije na nivou sistema                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `translator/`     | Povezivanje prevodioca najvišeg nivoa (delegira u `open-sse/translator/`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `usage/`          | Obračun korišćenja: `costCalculator.ts`, `tokenAccounting.ts`, `usageHistory.ts`, `aggregateHistory.ts`, `usageStats.ts`, `callLogs.ts`, `callLogArtifacts.ts`, `fetcher.ts`, `providerLimits.ts`, `migrations.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `versionManager/` | Automatsko ažuriranje + manifest verzije                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `ws/`             | WebSocket mostovi                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `zed-oauth/`      | Tok OAuth za Zed editor                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Модул             | сврха                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `a2a/`            | A2A протокол сервер: `taskManager.ts`, `streaming.ts`, `taskExecution.ts`, `routingLogger.ts`, `skills/` (6 вештина: анализа трошкова, здравствени извештај, откривање провајдера, управљање квотама, паметно рутирање, могућности листе)                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `acp/`            | Агент-Цонтрол-Протоцол: `index.ts`, `manager.ts`, `registry.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `api/`            | Интерни API помоћници: `requireManagementAuth.ts`, `requireCliToolsAuth.ts`, `errorResponse.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `auth/`           | `managementPassword.ts` (ресетовање лозинке / хеширање)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `batches/`        | OpenAI серије API услуга (`service.ts`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `catalog/`        | OpenRouter каталошка синхронизација (`openrouterCatalog.ts`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `cloudAgent/`     | Регистар Цлоуд агента: `api.ts`, `baseAgent.ts`, `db.ts`, `index.ts`, `registry.ts`, `types.ts`, `agents/{codex, devin, jules}.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `combos/`         | Помоћници комбиноване резолуције                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `compliance/`     | Ревизија + ревизија провајдера: `index.ts`, `providerAudit.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `config/`         | Рунтиме цонфиг лепак                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `db/`             | модули SQLite домена (видети §3.2.1)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `display/`        | UI/display помоћници које користе API одговори                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `embeddings/`     | Уградња сервисног регистра                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `env/`            | Енв лоадинг + интроспекција                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `evals/`          | Евал рунтиме                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `guardrails/`     | `piiMasker.ts`, `promptInjection.ts`, `visionBridge.ts`, `visionBridgeHelpers.ts`, `registry.ts`, `base.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `jobs/`           | Позадински послови (`autoUpdate.ts`, …)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `memory/`         | Трајна меморија: `store.ts`, `cache.ts`, `retrieval.ts`, `summarization.ts`, `extraction.ts`, `injection.ts`, `qdrant.ts`, `settings.ts`, `verify.ts`, `schemas.ts`, `types.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `monitoring/`     | `observability.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `oauth/`          | модули добављача OAuth/import (22): `agy`, `antigravity`, `claude`, `cline`, `codebuddy-cn`, `codex`, `cursor`, `devin-desktop`, `ghe-copilot`, `github`, `gitlab-duo`, `grok-cli-oauth`, `grok-cli`, `kilocode`, `kimi-coding`, `kiro`, `openference`, `qoder`, `trae`, `xai-oauth`, `zed-hosted`, `zed` `services/`, `utils/` и `constants/oauth.ts`                                                                                                                                                                                                                                                                                                       |
+| `plugins/`        | Учитавач додатака (`index.ts`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `promptCache/`    | `prefixAnalyzer.ts`, `index.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `providerModels/` | Животни циклус управљаног модела: `modelDiscovery.ts`, `managedModelImport.ts`, `managedAvailableModels.ts`, `cursorAgent.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `providers/`      | Помоћници провајдера: `catalog.ts`, `validation.ts`, `imageValidation.ts`, `claudeExtraUsage.ts`, `codexConnectionDefaults.ts`, `codexFastTier.ts`, `webCookieAuth.ts`, `managedAvailableModels.ts`, `requestDefaults.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `resilience/`     | `settings.ts` — подешавања за прекидач, хлађење, закључавање                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `runtime/`        | Детекција функција током извршавања                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `search/`         | `executeWebSearch.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `services/`       | Уграђени оквир услуга: `ServiceSupervisor.ts` (генерички надзор над дете-процесом са закључавањем операције, бафером прстена, провером здравља), `bootstrap.ts` (регистрација на нивоу процеса и аутоматско покретање), `registry.ts` (мапа → супервизора алата), `apiKey.ts` (AES-256-GCM складиште кључева), `modelSync.ts` (периодична синхронизација модела), `ringBuffer.ts` (5 MB цирцулар про буффер), `healthCheck.ts` пробни бафер (HTTP ), `types.ts` `embedWsProxy.ts` (WebSocket прокси), `installers/{ninerouter,cliproxy}.ts`. Види `docs/frameworks/EMBEDDED-SERVICES.md`                                                                     |
+| `agentSkills/`    | Каталог вештина агента + генератор: `catalog.ts` (getCatalog/getSkillById/filterCatalog/computeCoverage), `generator.ts` (generateAgentSkills → пише `skills/{id}/SKILL.md`), `openapiParser.ts` (извлачи REST крајње тачке из OpenAPI спец), `cliRegistryParser.ts` (извлачи CLI подкоманде из bin/cli-registry), `schemas.ts` (Zod: AgentSkillSchema, SkillCoverageSchema, ListQuerySchema, GenerateBodySchema, `types.ts`,AgentSkillGeneratorReportSkillCoverageSkillMarkdown Потроше REST руте (`/api/agent-skills/*`), MCP алати (`omniroute_agent_skills_*`) и A2A вештина `list-capabilities`. Види [AGENT-SKILLS.md](../frameworks/AGENT-SKILLS.md). |
+| `skills/`         | Оквир вештина: `registry.ts`, `executor.ts`, `interception.ts`, `injection.ts`, `sandbox.ts`, `custom.ts`, `hybrid.ts`, `builtins.ts`, `a2a.ts`, `providerSettings.ts`, `schemas.ts`, `skillssh.ts`, `types.ts`, плус `builtin/browser.ts`                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `spend/`          | `batchWriter.ts` (бафер за писање)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `sync/`           | `bundle.ts`, `tokens.ts` (синхронизација у облаку)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `system/`         | Помоћници на нивоу система                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `translator/`     | Преводилац највишег нивоа (делегира у `open-sse/translator/`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `usage/`          | Обрачун употребе: `costCalculator.ts`, `tokenAccounting.ts`, `usageHistory.ts`, `aggregateHistory.ts`, `usageStats.ts`, `callLogs.ts`, `callLogArtifacts.ts`, `fetcher.ts`, `providerLimits.ts`, `migrations.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `versionManager/` | Аутоматско ажурирање манифеста верзије +                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `ws/`             | WebSocket бридге                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| `zed-oauth/`      | Zed едитор OAuth флов                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
-Datoteke najvišeg nivoa u `src/lib/`:
+Фајлови највишег нивоа у `src/lib/`:
 
-- Stari `localDb.ts` barrel je uklonjen — potrošači sada uvoze konkretne `src/lib/db/*` module direktno.
+- Стара `localDb.ts` цев је уклоњена. — потрошачи директно увозе специфичне `src/lib/db/*` модуле.
 - `proxyHealth.ts`, `proxyLogger.ts`, `tokenHealthCheck.ts`, `localHealthCheck.ts`
 - `apiBridgeServer.ts`, `cacheLayer.ts`, `semanticCache.ts`, `settingsCache.ts`
 - `cloudSync.ts`, `initCloudSync.ts`
@@ -325,253 +315,173 @@ Datoteke najvišeg nivoa u `src/lib/`:
 
 #### 3.2.1 `src/lib/db/`
 
-Singleton SQLite baza podataka (`getDbInstance()` u `core.ts`, WAL journaling).
-**Nikada nemojte pisati sirove SQL upite u rutama ili handlerima** — koristite ove module.
+Једна SQLite база података (`getDbInstance()` у `core.ts`, WAL дневник).** Никада немојте писати необрађени SQL у рутама или руковаоцима** — проћи кроз ове модуле.
 
-![Pregled šeme baze podataka (odabrane osnovne tabele)](../diagrams/exported/db-schema-overview.svg)
+![Database schema overview (selected core tables)](../diagrams/exported/db-schema-overview.svg)
 
-> Izvor: [diagrams/db-schema-overview.mmd](../diagrams/db-schema-overview.mmd)
+> Извор: [diagrams/db-schema-overview.mmd](../diagrams/db-schema-overview.mmd)
 
-Domenski moduli (svaki upravlja jednom ili više tabela): `apiKeys.ts`, `backup.ts`,
-`batches.ts`, `cleanup.ts`, `cliToolState.ts`, `combos.ts`,
-`commandCodeAuth.ts`, `compression.ts`, `compressionAnalytics.ts`,
-`compressionCacheStats.ts`, `compressionCombos.ts`, `compressionScheduler.ts`,
-`contextHandoffs.ts`, `core.ts`, `creditBalance.ts`, `databaseSettings.ts`,
-`detailedLogs.ts`, `domainState.ts`, `encryption.ts`, `evals.ts`, `files.ts`,
-`healthCheck.ts`, `jsonMigration.ts`, `migrationRunner.ts`,
-`modelComboMappings.ts`, `models.ts`, `oneproxy.ts`, `prompts.ts`,
-`providers.ts`, `providerLimits.ts`, `proxies.ts`, `quotaSnapshots.ts`,
-`readCache.ts`, `reasoningCache.ts`, `registeredKeys.ts`, `secrets.ts`,
-`sessionAccountAffinity.ts`, `settings.ts`, `stateReset.ts`, `stats.ts`,
-`syncTokens.ts`, `tierConfig.ts`, `upstreamProxy.ts`, `versionManager.ts`,
-`webhooks.ts`.
+Модули домена (сваки поседује једну или више табела): `apiKeys.ts`, `backup.ts`, `batches.ts`, `cleanup.ts`, `cliToolState.ts`, `combos.ts`, `commandCodeAuth.ts`, `compression.ts`, `compressionAnalytics.ts`, `compressionCacheStats.ts`, `compressionCombos.ts`, `compressionScheduler.ts`, `contextHandoffs.ts`, `core.ts`, `creditBalance.ts`, `databaseSettings.ts`, `detailedLogs.ts`, `domainState.ts` `files.ts` `encryption.ts` `evals.ts`, `healthCheck.ts`, `jsonMigration.ts`, `migrationRunner.ts`, `modelComboMappings.ts`, `models.ts`, `oneproxy.ts`, `prompts.ts`, `providers.ts`, `providerLimits.ts`, `proxies.ts` `readCache.ts` `quotaSnapshots.ts`, `reasoningCache.ts`, `registeredKeys.ts`, `secrets.ts`, `sessionAccountAffinity.ts`, `settings.ts`, `stateReset.ts`, `stats.ts`, `syncTokens.ts`, `tierConfig.ts`, `upstreamProxy.ts`, `versionManager.ts` `webhooks.ts`
 
-`migrations/` sadrži 168 verzionisanih `.sql` datoteka (idempotentnih, transakcionih) i
-izvršava ih `migrationRunner.ts` prilikom pokretanja.
+`migrations/` садржи 168 верзионисаних `.sql` датотека (идемпотентних, трансакционих) и извршава је `migrationRunner.ts` при покретању.
 
-Tabele kreirane kroz migracije (ukupno 123):
+Табеле направљене током миграција (укупно 123):
 
-`a`, `account_key_limits`, `api_keys`, `batches`, `call_logs`,
-`combo_adaptation_state`, `combos`, `command_code_auth_sessions`,
-`compression_analytics`, `compression_cache_stats`,
-`compression_combo_assignments`, `compression_combos`, `context_handoffs`,
-`daily_usage_summary`, `db_meta`, `domain_budgets`, `domain_circuit_breakers`,
-`domain_cost_history`, `domain_fallback_chains`, `domain_lockout_state`,
-`eval_cases`, `eval_runs`, `eval_suites`, `files`, `hourly_usage_summary`,
-`key_value`, `mcp_tool_audit`, `memories`, `model_combo_mappings`,
-`provider_connections`, `provider_key_limits`, `provider_nodes`,
-`proxy_assignments`, `proxy_logs`, `proxy_registry`, `quota_snapshots`,
-`reasoning_cache`, `registered_keys`, `request_detail_logs`,
-`routing_decisions`, `semantic_cache`, `session_account_affinity`,
-`skill_executions`, `skills`, `sync_tokens`, `tier_assignments`,
-`tier_config`, `upstream_proxy_config`, `usage_history`, `version_manager`,
-`webhooks` (plus FTS5 virtuelne tabele za pretragu memorije).
+`a`, `account_key_limits`, `api_keys`, `batches`, `call_logs`, `combo_adaptation_state`, `combos`, `command_code_auth_sessions`, `compression_analytics`, `compression_cache_stats`, `compression_combo_assignments`, `compression_combos`, `context_handoffs`, `daily_usage_summary`, `db_meta`, `domain_budgets`, `domain_circuit_breakers`, `domain_cost_history`, `domain_fallback_chains`, `domain_lockout_state`, `eval_cases`, `eval_runs` `eval_suites`, `key_value`, `files`, `hourly_usage_summary`, `mcp_tool_audit`, `memories`, `model_combo_mappings`, `provider_connections`, `provider_key_limits`, `provider_nodes`, `proxy_assignments`, `proxy_logs`, `proxy_registry`, `quota_snapshots`, `reasoning_cache`, `registered_keys` `request_detail_logs` `routing_decisions`, `semantic_cache`, `session_account_affinity`, `skill_executions`, `skills`, `sync_tokens`, `tier_assignments`, `tier_config`, `upstream_proxy_config`, зкбв , `usage_history`, `version_manager`, `webhooks` (плус FTS5 виртуелне табеле за претрагу меморије).
 
-### 3.3 `src/domain/` — Domenski sloj
+### 3.3 `src/domain/` — Слој домена
 
-Čista poslovna logika, bez I/O operacija. Uvoze ga rute i handleri.
+Услуге домена и уговори о процени. Неки модули се позивају путем путање захтева уживо; други остају самостални уговори. Немојте претпостављати да цео овај директоријум не садржи I/O или да промена сваког модула утиче на рутирање производње.
 
-| Datoteka                                   | Namena                                               |
-| ------------------------------------------ | ---------------------------------------------------- |
-| `policyEngine.ts`                          | Rešavač politika najvišeg nivoa                      |
-| `fallbackPolicy.ts`                        | Stablo odlučivanja za fallback                       |
-| `costRules.ts`                             | Pravila za obračun troškova                          |
-| `lockoutPolicy.ts`                         | Odluke o blokiranju modela                           |
-| `tagRouter.ts`                             | Rutiranje na osnovu tagova                           |
-| `comboResolver.ts`                         | Rešavanje kombinacija iz zahteva → lista ciljeva     |
-| `connectionModelRules.ts`                  | Filteri modela po konekciji                          |
-| `modelAvailability.ts`                     | Provera dostupnosti modela                           |
-| `degradation.ts`                           | Prelazi u degradirani režim                          |
-| `providerExpiration.ts`                    | Otkrivanje isteklih naloga/ključeva                  |
-| `quotaCache.ts`                            | Keširane odluke o kvotama                            |
-| `responses.ts`, `omnirouteResponseMeta.ts` | Pomoćne funkcije za oblik odgovora                   |
-| `configAudit.ts`                           | Revizija promena konfiguracije                       |
-| `assessment/`                              | Procena modela (prema RFC, delimično implementirano) |
-| `types.ts`                                 | Deljeni domenski tipovi                              |
+Површине живих политика су `src/shared/utils/apiKeyPolicy.ts` и `src/sse/handlers/chat/resolvedModelPolicy.ts`. Руковање комбинацијама уживо и резолуција циља користе `open-sse/services/combo.ts`. Тестирани `policyEngine.ts` и `comboResolver.ts` уговори, заједно са `src/lib/container.ts`, нису ожичење прегледане путање захтева за ћаскање. Држите их одвојено од тих активних површина када планирате промену руте.
 
-### 3.4 `src/server/` — Samo za server
+| Филе                                       | сврха                                        |
+| ------------------------------------------ | -------------------------------------------- |
+| `policyEngine.ts`                          | Резервисани уговор о процени политике        |
+| `fallbackPolicy.ts`                        | Резервно дрво одлучивања                     |
+| `costRules.ts`                             | Правила обрачуна трошкова                    |
+| `lockoutPolicy.ts`                         | Модел одлуке о закључавању                   |
+| `tagRouter.ts`                             | Рутирање засновано на ознакама               |
+| `comboResolver.ts`                         | Резервисани уговор о комбинованом избору     |
+| `connectionModelRules.ts`                  | Филтери модела по конекцији                  |
+| `modelAvailability.ts`                     | Провера доступности модела                   |
+| `degradation.ts`                           | Прелази у деградираном режиму                |
+| `providerExpiration.ts`                    | Детекција account/key истекла                |
+| `quotaCache.ts`                            | Кеширане одлуке о квотама                    |
+| `responses.ts`, `omnirouteResponseMeta.ts` | Помоћници у облику одговора                  |
+| `configAudit.ts`                           | Ревизија промене конфигурације               |
+| `assessment/`                              | Процена модела (по RFC, делимично примењено) |
+| `types.ts`                                 | Типови дељених домена                        |
 
-Ne može se uvoziti iz klijentskih komponenti.
+### 3.4 `src/server/` — Само сервер
+
+Не може се увести из клијентских компоненти.
 
 ```
 server/
 ├── auth/loginGuard.ts
 ├── authz/
-│   ├── classify.ts        Klasifikuje rute kao javne ili upravljačke
-│   ├── assertAuth.ts      Pomoćna funkcija za tvrdnje
-│   ├── context.ts         Kontekst autorizacije po zahtevu
+│   ├── classify.ts        Classifies routes as public vs management
+│   ├── assertAuth.ts      Assertion helper
+│   ├── context.ts         Per-request authz context
 │   ├── headers.ts
-│   ├── pipeline.ts        Pipeline autorizacije
-│   ├── policies/          Konkretne politike
+│   ├── pipeline.ts        Authz pipeline
+│   ├── policies/          Concrete policies
 │   └── types.ts
-└── cors/origins.ts        Dozvoljene CORS izvorne adrese
+└── cors/origins.ts        CORS origin allowlist
 ```
 
-### 3.5 `src/shared/` — Bezbedno za deljenje
+### 3.5 `src/shared/` — Сафе-то-схаре
 
-Podeljeno u ciljane poddirektorijume:
+Подели у фокусиране поддиректоријуме:
 
-- `constants/` — `providers.ts` (Zod-validirani katalog provajdera), `models.ts`,
-  `modelSpecs.ts`, `modelCompat.ts`, `pricing.ts`, `cliTools.ts`,
-  `cliCompatProviders.ts`, `routingStrategies.ts`, `comboConfigMode.ts`,
-  `headers.ts`, `upstreamHeaders.ts` (denylist), `mcpScopes.ts`,
-  `errorCodes.ts`, `publicApiRoutes.ts`, `batch.ts`, `batchEndpoints.ts`,
-  `bodySize.ts`, `colors.ts`, `appConfig.ts`, `config.ts`,
-  `sidebarVisibility.ts`, `visionBridgeDefaults.ts`.
-- `validation/` — `schemas.ts` (~80 Zod šema), `compressionConfigSchemas.ts`,
-  `providerSchema.ts`, `settingsSchemas.ts`, `helpers.ts`.
-- `contracts/` — javni API ugovori isporučeni na npm.
-- `types/` — deljeni TS tipovi.
-- `utils/` — `circuitBreaker.ts`, `apiAuth.ts`, `apiKey.ts`, `apiKeyPolicy.ts`,
-  `api.ts`, `classify429.ts`, `cliCompat.ts`, `clipboard.ts`, `cloud.ts`, `cn.ts`,
-  `cors.ts`, `featureFlags.ts`,
-  `fetchTimeout.ts`, `formatting.ts`, `inputSanitizer.ts`, `logger.ts`,
-  `machine.ts`, `machineId.ts`, `maskEmail.ts`, `modelCatalogSearch.ts`,
-  `nodeRuntimeSupport.ts`, `parseApiKeys.ts`, `providerHints.ts`,
-  `providerModelAliases.ts`, `rateLimiter.ts`, `releaseNotes.ts`,
-  `a11yAudit.ts`, plus dashboard hook-ovi/komponente pod `services/`, `network/`,
-  `middleware/`, `schemas/`, `hooks/`, `components/`.
+- `constants/` — `providers.ts` (каталог добављача потврђен Зод), `models.ts`, `modelSpecs.ts`, `modelCompat.ts`, `pricing.ts`, `cliTools.ts`, `cliCompatProviders.ts`, `routingStrategies.ts`, `comboConfigMode.ts`, `headers.ts`, `upstreamHeaders.ts` (денилист), `mcpScopes.ts`, `errorCodes.ts`, `publicApiRoutes.ts`, `batch.ts`, `batchEndpoints.ts`, `bodySize.ts`, `config.ts` `colors.ts` `appConfig.ts`, `sidebarVisibility.ts` `visionBridgeDefaults.ts`
+- `validation/` — `schemas.ts` (~ 80 Zod шема), `compressionConfigSchemas.ts`, `providerSchema.ts`, `settingsSchemas.ts`, `helpers.ts`.
+- `contracts/` — јавни API уговори испоручени у нпм.
+- `types/` — дели TS типове.
+- `utils/` — `circuitBreaker.ts`, `apiAuth.ts`, `apiKey.ts`, `apiKeyPolicy.ts`, `api.ts`, `classify429.ts`, `cliCompat.ts`, `clipboard.ts`, `cloud.ts`, `cn.ts`, `cors.ts`, `featureFlags.ts`, `fetchTimeout.ts`, `formatting.ts`, `inputSanitizer.ts`, `logger.ts`, `machine.ts`, `machineId.ts`, `maskEmail.ts`, `modelCatalogSearch.ts`, `nodeRuntimeSupport.ts`, `parseApiKeys.ts` зки , `providerHints.ts`, `providerModelAliases.ts`, `rateLimiter.ts`, `releaseNotes.ts` `a11yAudit.ts` плус контролна табла hooks/components под `services/`, `network/`, `middleware/`, `schemas/`, `hooks/`, `components/`.
+- `components/` — компонента контролне табле API (`index.tsx` барел: `Button`, `Input`, `Select`, `Modal`, `Card`, `DataTable`, …). Примитиви су адаптери преко испорученог комплета (`packages/ui-kit`, увезен путем подпутања компоненте као што је `@omniroute/ui-kit/button`), тако да екрани задржавају своје увозе док је ознака комплета. Схелл је `layouts/DashboardLayout.tsx` → `layouts/DashboardShell.tsx` (кит `SidebarProvider`/`SidebarInset`) са `Sidebar.tsx` и `Header.tsx`; иконе пролазе кроз `Icon.tsx` и `constants/iconMap.ts`. Види `docs/architecture/DESIGN_SYSTEM.md`.
 
 ---
 
-## 4. `open-sse/` — Радни простор механизма за стримовање
+## 4. `open-sse/` — Радни простор мотора за стримовање
 
-Засебан npm радни простор објављен као `@omniroute/open-sse`. Обухвата обраду
-захтева, извршиоце, преводиоце, сервисе, трансформатор и MCP сервер.
+Одвојени нпм радни простор објављен као `@omniroute/open-sse`. Поседује обраду захтева, извршиоце, преводиоце, сервисе, трансформатор и MCP сервер.
 
 ```
 open-sse/
-├── index.ts                Јавни извози
-├── package.json            Манифест радног простора
+├── index.ts                Public exports
+├── package.json            Workspace manifest
 ├── tsconfig.json
 ├── types.d.ts
-├── config/                 Регистри добављача, профили заглавља, идентитет, …
-├── handlers/               Руковаоци захтевима (ћаскање, угнежђивања, аудио, слике, …)
-├── executors/              108 HTTP извршилаца специфичних за добављаче
-├── translator/             Конверзија формата (OpenAI ↔ Claude ↔ Gemini ↔ Cursor ↔ Kiro)
-├── transformer/            Трансформатор стрима Responses API ↔ Chat Completions
-├── services/               Више од 80 сервисних модула (комбинације, резервне опције, квоте, идентитет, …)
-├── utils/                  Помоћне функције за стримовање, TLS клијент, AWS SigV4, proxy fetch, …
-└── mcp-server/             MCP сервер (3 транспорта, 33 опсега, 110 алата)
+├── config/                 Provider registries, header profiles, identity, …
+├── handlers/               Request handlers (chat, embeddings, audio, image, …)
+├── executors/              170 provider executor modules (executor classes + per-provider helpers)
+├── translator/             Format conversion (OpenAI ↔ Claude ↔ Gemini ↔ Cursor ↔ Kiro)
+├── transformer/            Responses API ↔ Chat Completions stream transformer
+├── services/               80+ service modules (combos, fallback, quotas, identity, …)
+├── utils/                  Streaming helpers, TLS client, AWS SigV4, proxy fetch, …
+└── mcp-server/             MCP server (3 transports, 33 scopes, 110 tools)
 ```
 
 ### 4.1 `open-sse/handlers/`
 
-| Руковалац               | Намена                                                                                      |
-| ----------------------- | ------------------------------------------------------------------------------------------- |
-| `chatCore.ts`           | Главни ток ћаскања (кеш, ограничење брзине, комбиновано усмеравање, прослеђивање извршиоцу) |
-| `responsesHandler.ts`   | Улазна тачка за OpenAI Responses API                                                        |
-| `embeddings.ts`         | Угнежђивања                                                                                 |
-| `imageGeneration.ts`    | Генерисање слика                                                                            |
-| `audioSpeech.ts`        | Претварање текста у говор                                                                   |
-| `audioTranscription.ts` | Претварање говора у текст                                                                   |
-| `videoGeneration.ts`    | Генерисање видео-записа                                                                     |
-| `musicGeneration.ts`    | Генерисање музике                                                                           |
-| `rerank.ts`             | Поновно рангирање                                                                           |
-| `moderations.ts`        | Модерација                                                                                  |
-| `search.ts`             | Веб-претрага                                                                                |
-| `sseParser.ts`          | Парсер SSE догађаја                                                                         |
-| `usageExtractor.ts`     | Издваја број токена из узводних стримова                                                    |
-| `responseSanitizer.ts`  | Уклања шум специфичан за добављача                                                          |
-| `responseTranslator.ts` | Спона између одговора добављача и слоја за превођење                                        |
+| Хандлер                 | сврха                                                                                              |
+| ----------------------- | -------------------------------------------------------------------------------------------------- |
+| `chatCore.ts`           | Главни цевовод за ћаскање (кеш меморија, ограничење брзине, комбиновано рутирање, слање извршиоца) |
+| `responsesHandler.ts`   | OpenAI Одговори API улазна тачка                                                                   |
+| `embeddings.ts`         | Ембеддингс                                                                                         |
+| `imageGeneration.ts`    | Генерисање слике                                                                                   |
+| `audioSpeech.ts`        | Претварање текста у говор                                                                          |
+| `audioTranscription.ts` | Претварање говора у текст                                                                          |
+| `videoGeneration.ts`    | Видео генерација                                                                                   |
+| `musicGeneration.ts`    | Музичка генерација                                                                                 |
+| `rerank.ts`             | Поновно рангирање                                                                                  |
+| `moderations.ts`        | Умереност                                                                                          |
+| `search.ts`             | Веб претрага                                                                                       |
+| `sseParser.ts`          | SSE анализатор догађаја                                                                            |
+| `usageExtractor.ts`     | Извуците бројаче токена из узводних токова                                                         |
+| `responseSanitizer.ts`  | Стрип специфична бука провајдера                                                                   |
+| `responseTranslator.ts` | Лепак између одговора провајдера и слоја преводиоца                                                |
 
 ### 4.2 `open-sse/executors/`
 
-108 извршилаца за добављаче, од којих сваки проширује `BaseExecutor` (`base.ts`):
+170 извршних модула највишег нивоа (`*.ts` минус `base.ts`, `index.ts` и тестови — цоунт `npm run check:docs-counts` мере). Свака класа извршиоца проширује `BaseExecutor` (`base.ts`), директно или преко `DefaultExecutor` или другог извршиоца; преостали модули су помоћници по добављачима (шеме алата, fetch/TTS адаптери, куирк хандлери). Извршиоци укључују:
 
-`antigravity`, `azure-openai`, `blackbox-web`, `cliproxyapi`,
-`chatgpt-web-codex`, `cloudflare-ai`, `codex`, `commandCode`, `cursor`, `default`, `devin-cli`,
-`muse-spark-web`, `nlpcloud`, `opencode`, `perplexity-web`, `petals`,
-`pollinations`, `qoder`, `vertex`, `devin-desktop`, као и `claudeIdentity.ts`
-(заједничка помоћна функција за идентитет) и `index.ts` (регистар).
+`antigravity`, `azure-openai`, `blackbox-web`, `cliproxyapi`, `chatgpt-web-codex`, `cloudflare-ai`, `codex`, `commandCode`, `cursor`, `default`, `devin-cli`, `muse-spark-web`, `nlpcloud`, `opencode`, `perplexity-web`, `petals`, `pollinations`, `qoder`, `vertex`, плус `devin-desktop`, `claudeIdentity.ts` помоћ (регистратор) `index.ts`
 
-> Напомена: добављаче који овде нису наведени опслужује `default.ts` помоћу генеричког
-> извршиоца компатибилног са OpenAI-јем. Комплетан каталог добављача (355 добављача) налази се у
-> `src/shared/constants/providers.ts`.
+> Напомена: провајдере који нису наведени овде опслужује `default.ts` користећи генерички ОпенАИ-компатибилни извршитељ. Потпуни каталог провајдера (394 провајдера) живи у `src/shared/constants/providers.ts`.
 
 ### 4.3 `open-sse/translator/`
 
-Превођење по моделу централног чворишта и кракова (OpenAI је централно чвориште).
+Превод на чвориште (OpenAI је чвориште).
 
-- **9 преводилаца захтева** (`translator/request/`):
-  `antigravity-to-openai`, `claude-to-gemini`, `claude-to-openai`,
-  `gemini-to-openai`, `openai-responses`, `openai-to-claude`,
-  `openai-to-cursor`, `openai-to-gemini`, `openai-to-kiro`.
-- **9 преводилаца одговора** (`translator/response/`):
-  `claude-to-openai`, `cursor-to-openai`, `gemini-to-claude`, `gemini-to-openai`,
-  `kiro-to-openai`, `openai-responses`, `openai-to-antigravity`,
-  `openai-to-claude`.
-- **9 помоћних модула** (`translator/helpers/`):
-  `claudeHelper`, `geminiHelper`, `geminiToolsSanitizer`, `maxTokensHelper`,
-  `openaiHelper`, `responsesApiHelper`, `schemaCoercion`, `toolCallHelper`, као и
-  тестови помоћних модула.
-- **Помоћни модули за слике** (`translator/image/sizeMapper.ts`).
-- На највишем нивоу: `bootstrap.ts`, `formats.ts`, `registry.ts`, `index.ts`.
+- **9 захтева преводиоце** (`translator/request/`): `antigravity-to-openai`, `claude-to-gemini`, `claude-to-openai`, `gemini-to-openai`, `openai-responses`, `openai-to-claude`, `openai-to-cursor`, `openai-to-gemini`, `openai-to-kiro`.
+- **9 одговорних преводилаца** (`translator/response/`): `claude-to-openai`, `cursor-to-openai`, `gemini-to-claude`, `gemini-to-openai`, `kiro-to-openai`, `openai-responses`, `openai-to-antigravity`, `openai-to-claude`.
+- **9 помагача** (`translator/helpers/`): `claudeHelper`, `geminiHelper`, `geminiToolsSanitizer`, `maxTokensHelper`, `openaiHelper`, `responsesApiHelper`, `schemaCoercion`, `toolCallHelper`, плус помоћни тестови.
+- **Помоћници слика** (`translator/image/sizeMapper.ts`).
+- Највиши ниво: `bootstrap.ts`, `formats.ts`, `registry.ts`, `index.ts`.
 
 ### 4.4 `open-sse/transformer/`
 
-- `responsesTransformer.ts` — конвертор Responses API ↔ Chat Completions заснован на
-  `TransformStream`-у (користи га свеобухватна рута `responses/`).
+- `responsesTransformer.ts` — `TransformStream` -based Одговори API ↔ Конвертор завршетка ћаскања (користи га `responses/` рута цатцх-алл).
 
 ### 4.5 `open-sse/services/`
 
-Најважније ставке (комплетна листа се налази у `open-sse/services/`):
+Најважније (цела листа под `open-sse/services/`):
 
-| Област                | Датотеке                                                                                                                                                                                                                                                 |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Combo рутирање        | `combo.ts` (19 стратегија), `comboConfig.ts`, `comboMetrics.ts`, `comboManifestMetrics.ts`, `comboAgentMiddleware.ts`                                                                                                                                    |
-| Auto Combo механизам  | `autoCombo/` — `engine.ts`, `scoring.ts`, `taskFitness.ts`, `virtualFactory.ts`, `modePacks.ts`, `autoPrefix.ts`, `persistence.ts`, `providerDiversity.ts`, `providerRegistryAccessor.ts`, `routerStrategy.ts`, `selfHealing.ts`, `index.ts`             |
-| Отпорност             | `accountFallback.ts` (период мировања + закључавање), `errorClassifier.ts`, `requestRejectedStreak.ts`, `emergencyFallback.ts`, `rateLimitManager.ts`, `rateLimitSemaphore.ts`, `accountSemaphore.ts`, `accountSelector.ts`                              |
-| Квоте                 | `quotaMonitor.ts`, `quotaPreflight.ts`, `bailianQuotaFetcher.ts`, `codexQuotaFetcher.ts`, `deepseekQuotaFetcher.ts`, `openrouterQuotaFetcher.ts`, `openrouterFreeWindow.ts`, `llmgatewayQuotaFetcher.ts`, `crofUsageFetcher.ts`, `antigravityCredits.ts` |
-| Кеширање              | `reasoningCache.ts`, `searchCache.ts`, `signatureCache.ts`, `requestDedup.ts`                                                                                                                                                                            |
-| Интелигентно рутирање | `intentClassifier.ts`, `taskAwareRouter.ts`, `backgroundTaskDetector.ts`, `volumeDetector.ts`, `wildcardRouter.ts`, `workflowFSM.ts`, `specificityDetector.ts`, `specificityRules.ts`, `specificityTypes.ts`                                             |
-| Обрада модела         | `modelCapabilities.ts`, `modelDeprecation.ts`, `modelFamilyFallback.ts`, `modelStrip.ts`, `model.ts`, `provider.ts`, `providerRequestDefaults.ts`, `providerCostData.ts`, `payloadRules.ts`                                                              |
-| Компресија            | `compression/` — комплетно повезивање механизма за компресију                                                                                                                                                                                            |
-| Токени + сесије       | `tokenRefresh.ts`, `sessionManager.ts`, `apiKeyRotator.ts`, `contextManager.ts`, `contextHandoff.ts`, `systemPrompt.ts`, `roleNormalizer.ts`, `responsesInputSanitizer.ts`, `toolSchemaSanitizer.ts`, `toolLimitDetector.ts`, `thinkingBudget.ts`        |
-| Ниво / манифест       | `tierResolver.ts`, `tierConfig.ts`, `tierDefaults.json`, `tierTypes.ts`, `manifestAdapter.ts`                                                                                                                                                            |
-| IP / мрежа            | `ipFilter.ts`, `webSearchFallback.ts`                                                                                                                                                                                                                    |
-| Пакетна обрада        | `batchProcessor.ts`                                                                                                                                                                                                                                      |
-| Коришћење             | `usage.ts`                                                                                                                                                                                                                                               |
+| Забринутост          | Фајлови                                                                                                                                                                                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Комбиновано рутирање | `combo.ts` (22 стратегије), `comboConfig.ts`, `comboMetrics.ts`, `comboManifestMetrics.ts`, `comboAgentMiddleware.ts`                                                                                                                                    |
+| Ауто Цомбо мотор     | `autoCombo/` — `engine.ts`, `scoring.ts`, `taskFitness.ts`, `virtualFactory.ts`, `modePacks.ts`, `autoPrefix.ts`, `persistence.ts`, `providerDiversity.ts`, `providerRegistryAccessor.ts`, `routerStrategy.ts`, `selfHealing.ts`, `index.ts`             |
+| Отпорност            | `accountFallback.ts` (закључавање + за хлађење), `errorClassifier.ts`, `requestRejectedStreak.ts`, `emergencyFallback.ts`, `rateLimitManager.ts`, `rateLimitSemaphore.ts`, `accountSemaphore.ts`, `accountSelector.ts`                                   |
+| Квоте                | `quotaMonitor.ts`, `quotaPreflight.ts`, `bailianQuotaFetcher.ts`, `codexQuotaFetcher.ts`, `deepseekQuotaFetcher.ts`, `openrouterQuotaFetcher.ts`, `openrouterFreeWindow.ts`, `llmgatewayQuotaFetcher.ts`, `crofUsageFetcher.ts`, `antigravityCredits.ts` |
+| Кеширање             | `reasoningCache.ts`, `searchCache.ts`, `signatureCache.ts`, `requestDedup.ts`                                                                                                                                                                            |
+| Роутинг интеллигенце | `intentClassifier.ts`, `taskAwareRouter.ts`, `backgroundTaskDetector.ts`, `volumeDetector.ts`, `wildcardRouter.ts`, `workflowFSM.ts`, `specificityDetector.ts`, `specificityRules.ts`, `specificityTypes.ts`                                             |
+| Руковање моделом     | `modelCapabilities.ts`, `modelDeprecation.ts`, `modelFamilyFallback.ts`, `modelStrip.ts`, `model.ts`, `provider.ts`, `providerRequestDefaults.ts`, `providerCostData.ts`, `payloadRules.ts`                                                              |
+| Компресија           | `compression/` — ожичење мотора са пуном компресијом                                                                                                                                                                                                     |
+| Токен + сесија       | `tokenRefresh.ts`, `sessionManager.ts`, `apiKeyRotator.ts`, `contextManager.ts`, `contextHandoff.ts`, `systemPrompt.ts`, `roleNormalizer.ts`, `responsesInputSanitizer.ts`, `toolSchemaSanitizer.ts`, `toolLimitDetector.ts`, `thinkingBudget.ts`        |
+| Ниво / манифест      | `tierResolver.ts`, `tierConfig.ts`, `tierDefaults.json`, `tierTypes.ts`, `manifestAdapter.ts`                                                                                                                                                            |
+| IP / мрежа           | `ipFilter.ts`, `webSearchFallback.ts`                                                                                                                                                                                                                    |
+| Батцхс               | `batchProcessor.ts`                                                                                                                                                                                                                                      |
+| Употреба             | `usage.ts`                                                                                                                                                                                                                                               |
 
 ### 4.6 `open-sse/mcp-server/`
 
-- **110 јединствених алата** повезаних у `server.ts` (45 канонских у `schemas/tools.ts` +
-  модули за меморију, вештине, GitHub вештине, скуп ресурса, гејмификацију, додатке, Notion, Obsidian,
-  локални корпус и компресију — унија избројана помоћу `countUniqueMcpTools`).
-- **3 транспорта**: stdio, HTTP Streamable, SSE.
-- **33 опсега** примењена током извршавања — основна листа се налази у `src/shared/constants/mcpScopes.ts`, а комплетан скуп представља унију опсега које декларише сваки модул алата.
-- Табела ревизије: `mcp_tool_audit` (попуњава је `audit.ts`).
-- Датотеке: `server.ts`, `index.ts`, `httpTransport.ts`, `audit.ts`, `scopeEnforcement.ts`,
-  `runtimeHeartbeat.ts`, `descriptionCompressor.ts`, `schemas/{tools, a2a, audit, index}.ts`,
-  `tools/{advancedTools, compressionTools, memoryTools, skillTools}.ts`,
-  као и тестови у `__tests__/`.
-- Комплетан каталог алата погледајте у [MCP-SERVER.md](../frameworks/MCP-SERVER.md).
+- **110 јединствених алата** ожичен у `server.ts` (45 канонских у `schemas/tools.ts` + меморији, вештинама, ГитХуб вештинама, базену, игрификацији, додатку, Notion, Obsidian, модулима локалног корпуса и компресије — унион броји `countUniqueMcpTools`).
+- **3 транспорта** : стдио, HTTP Стреамабле, SSE.
+- **33 домета** примењена у време извођења — базна листа у `src/shared/constants/mcpScopes.ts`, пун скуп је унија опсега декларираних од стране сваког модула алата.
+- Табела ревизије: `mcp_tool_audit` (попуњена `audit.ts`).
+- Фајлови: `server.ts`, `index.ts`, `httpTransport.ts`, `audit.ts`, `scopeEnforcement.ts`, `runtimeHeartbeat.ts`, `descriptionCompressor.ts`, `schemas/{tools, a2a, audit, index}.ts`, `tools/{advancedTools, compressionTools, memoryTools, skillTools}.ts`, плус тестови под `__tests__/`.
+- Погледајте [MCP-SERVER.md](../frameworks/MCP-SERVER.md) за цео каталог алата.
 
 ### 4.7 `open-sse/config/`
 
-Регистри добављача (`providerRegistry.ts`, `providerModels.ts`,
-`providerHeaderProfiles.ts`), регистри модела по формату (`audioRegistry.ts`,
-`embeddingRegistry.ts`, `imageRegistry.ts`, `moderationRegistry.ts`,
-`musicRegistry.ts`, `rerankRegistry.ts`, `searchRegistry.ts`, `videoRegistry.ts`),
-помоћне функције за идентитет (`codexIdentity.ts`, `codexInstructions.ts`,
-`anthropicHeaders.ts`, `antigravityUpstream.ts`, `antigravityModelAliases.ts`,
-`cliFingerprints.ts`, `toolCloaking.ts`, `defaultThinkingSignature.ts`),
-помоћне функције за акредитиве (`credentialLoader.ts`, `codexClient.ts`) и адаптери
-за облак (`azureAi.ts`, `bedrock.ts`, `datarobot.ts`, `glmProvider.ts`,
-`maritalk.ts`, `oci.ts`, `petals.ts`, `runway.ts`, `sap.ts`, `watsonx.ts`,
-`ollamaModels.ts`, `errorConfig.ts`, `constants.ts`, `registryUtils.ts`).
+Регистри добављача (`providerRegistry.ts`, `providerModels.ts`, `providerHeaderProfiles.ts`), регистри модела по формату (`audioRegistry.ts`, `embeddingRegistry.ts`, `imageRegistry.ts`, `moderationRegistry.ts`, `musicRegistry.ts`, `rerankRegistry.ts`, `searchRegistry.ts`, `videoRegistry.ts`), помоћници идентитета (`codexIdentity.ts`, `codexInstructions.ts`, `anthropicHeaders.ts`, `antigravityUpstream.ts`, `antigravityModelAliases.ts`, `defaultThinkingSignature.ts`), `toolCloaking.ts` `cliFingerprints.ts` зк помоћници акредитива (`credentialLoader.ts`, `codexClient.ts`) и адаптери за облак (`azureAi.ts`, `bedrock.ts`, `datarobot.ts`, `glmProvider.ts`, `maritalk.ts`, `oci.ts`, `petals.ts`, `runway.ts`, `sap.ts`, `watsonx.ts`, `ollamaModels.ts`, `errorConfig.ts`, `constants.ts`, `registryUtils.ts`).
 
 ### 4.8 `open-sse/utils/`
 
-Примитиви за стримовање и помоћне функције провајдера: `stream.ts`, `streamHandler.ts`,
-`streamHelpers.ts`, `streamPayloadCollector.ts`, `streamReadiness.ts`,
-`sseHeartbeat.ts`, `proxyFetch.ts`, `proxyDispatcher.ts`, `tlsClient.ts`,
-`networkProxy.ts`, `awsSigV4.ts`, `cacheControlPolicy.ts`,
-`cursorChecksum.ts`, `cursorAgentProtobuf.ts`, `cursorVersionDetector.ts`,
-`comfyuiClient.ts`, `kieTask.ts`, `bypassHandler.ts`, `aiSdkCompat.ts`,
-`thinkTagParser.ts`, `urlSanitize.ts`, `usageTracking.ts`, `requestLogger.ts`,
-`progressTracker.ts`, `cors.ts`, `error.ts`, `logger.ts`, `sleep.ts`,
-`ollamaTransform.ts`.
+Примитиви за стримовање и помоћници добављача: `stream.ts`, `streamHandler.ts`, `streamHelpers.ts`, `streamPayloadCollector.ts`, `streamReadiness.ts`, `sseHeartbeat.ts`, `proxyFetch.ts`, `proxyDispatcher.ts`, `tlsClient.ts`, `networkProxy.ts`, `awsSigV4.ts`, `cacheControlPolicy.ts`, `cursorAgentProtobuf.ts`, `cursorVersionDetector.ts`, `comfyuiClient.ts`, `kieTask.ts`, `bypassHandler.ts`, `aiSdkCompat.ts`, `thinkTagParser.ts` `urlSanitize.ts`, `usageTracking.ts`, `requestLogger.ts`, `progressTracker.ts`, `cors.ts`, `error.ts`, `logger.ts`, `sleep.ts` `ollamaTransform.ts`
 
 ---
 
@@ -656,7 +566,7 @@ Uobičajene komande:
 
 ## 8. `scripts/`
 
-Организовано у 6 потфасцикли према намени.
+Организовано је у 6 потфасцикли према намени.
 
 - **`scripts/build/`** — `build-next-isolated.mjs`, `prepublish.ts`,
   `prepare-electron-standalone.mjs`, `pack-artifact-policy.ts`,
@@ -668,7 +578,11 @@ Uobičajene komande:
   `v1-ws-bridge.mjs`, `smoke-electron-packaged.mjs`,
   `run-playwright-tests.mjs`, `run-ecosystem-tests.mjs`,
   `run-protocol-clients-tests.mjs`, `sync-env.mjs`, `healthcheck.mjs`,
-  `system-info.mjs`.
+  `system-info.mjs`, као и помоћне алатке само за читање за надгледање PR-ова:
+  `ci-discriminate.sh` (разврстава потписе неуспелих провера PR-а на сопствене / наслеђене /
+  непознате, у односу на референтни PR или пријаву за неуспешну основну грану) и `audit-worktree.sh`
+  (измењене датотеке, заштићене површине, уклоњене провере, број потискивања, преостале
+  привремене tsconfig датотеке, PR head у односу на локални HEAD — пре него што се прихвати PR извршиоца).
 - **`scripts/check/`** — `check-cycles.mjs`, `check-docs-sync.mjs`,
   `check-docs-counts-sync.mjs`, `check-env-doc-sync.mjs`,
   `check-deprecated-versions.mjs`, `check-route-validation.mjs`,
@@ -677,101 +591,94 @@ Uobičajene komande:
 - **`scripts/docs/`** — `generate-docs-index.mjs`, `gen-provider-reference.ts`.
 - **`scripts/i18n/`** — `generate-multilang.mjs`, `run-visual-qa.mjs`,
   `generate-qa-checklist.mjs`, `apply-priority-overrides.mjs`,
-  `validate_translation.py`, `check_translations.py`, `i18n_autotranslate.py`,
+  `validate_translation.py`, `check_translations.py`,
   `untranslatable-keys.json`.
 - **`scripts/ad-hoc/`** — `cursor-tap.cjs`, `sync-cursor-models.mjs`,
-  `migrate-env.mjs`, `dbsetup.js`.
+  `dbsetup.js`.
 
 ---
 
-## 9. Pipeline zahteva (rezime)
+## 9. Рекуест Пипелине (сажетак)
 
-![Pipeline zahteva (/v1/chat/completions)](../diagrams/exported/request-pipeline.svg)
+![Request pipeline (/v1/chat/completions)](../diagrams/exported/request-pipeline.svg)
 
-> Izvor: [diagrams/request-pipeline.mmd](../diagrams/request-pipeline.mmd)
+> Извор: [diagrams/request-pipeline.mmd](../diagrams/request-pipeline.mmd)
 
 ```
-Zahtev klijenta
+Client request
   → /v1/chat/completions (route.ts)
-     Provera CORS preflight-a
-     Zod validacija (chatCompletionsSchema u shared/validation/schemas.ts)
-     Autentikacija (extractApiKey + isValidApiKey ILI requireManagementAuth)
-     Mehanizam politika (src/server/authz/pipeline.ts)
-     Guardrails (PII maskiranje, zaštita od prompt injection-a, vision bridge)
+     CORS preflight check
+     Zod validation (chatCompletionsSchema in shared/validation/schemas.ts)
+     Auth (extractApiKey + isValidApiKey OR requireManagementAuth)
+     Route authorization (src/server/authz/pipeline.ts)
+     API-key policy (src/shared/utils/apiKeyPolicy.ts; enforced on the selected path)
+     Guardrails (PII masker, prompt injection, vision bridge)
   → handleChatCore() (open-sse/handlers/chatCore.ts)
-     Provera keša (semantički + read keš)
-     Ograničenje brzine (rateLimitManager, accountSemaphore)
-     Combo rutiranje (ako se model razrešava u kombinaciju)
-       comboResolver → petlja po cilju → handleSingleModel()
+     Cache check (semantic + read cache)
+     Rate limit (rateLimitManager, accountSemaphore)
+     Combo routing (if model resolves to a combo)
+       resolveComboTargets (open-sse/services/combo.ts) → per-target dispatch
      translateRequest()  (open-sse/translator/request/*)
      getExecutor(providerId).execute()  (open-sse/executors/*)
-       fetch upstream → retry/backoff preko accountFallback
+       fetch upstream → retry/backoff via accountFallback
      translateResponse() (open-sse/translator/response/*)
-     SSE stream ILI JSON odgovor
-     Ako je Responses API: TransformStream preko open-sse/transformer/responsesTransformer.ts
-  → Kontrola usklađenosti (compliance audit) (src/lib/compliance/)
-  → Odgovor klijentu
+     SSE stream OR JSON response
+     If Responses API: TransformStream via open-sse/transformer/responsesTransformer.ts
+  → Compliance audit (src/lib/compliance/)
+  → Response to client
 ```
 
-### Stanje otpornosti tokom rada (tri mehanizma)
+### Стање времена рада отпорности (три механизма)
 
-| Mehanizam                  | Obim                          | Gde                                                                                                        |
-| -------------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Circuit breaker provajdera | Ceo provajder                 | `src/shared/utils/circuitBreaker.ts`, sačuvano u `domain_circuit_breakers`                                 |
-| Cooldown konekcije         | Jedan nalog/ključ             | `markAccountUnavailable()` u `src/sse/services/auth.ts`; koristi ga `accountFallback.checkFallbackError()` |
-| Zaključavanje modela       | Provajder + konekcija + model | `open-sse/services/accountFallback.ts`, sačuvano u `domain_lockout_state`                                  |
+| Механизам             | Обим                          | Где                                                                                                       |
+| --------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Провајдерски прекидач | Цео провајдер                 | `src/shared/utils/circuitBreaker.ts`, опстао у `domain_circuit_breakers`                                  |
+| Хлађење везе          | Оне account/key               | `markAccountUnavailable()` у `src/sse/services/auth.ts`; конзумира `accountFallback.checkFallbackError()` |
+| Закључавање модела    | Провајдер + конекција + модел | `open-sse/services/accountFallback.ts`, опстао у `domain_lockout_state`                                   |
 
-Pogledajte [RESILIENCE_GUIDE.md](./RESILIENCE_GUIDE.md) i posebni odeljak u
-[CLAUDE.md](../../CLAUDE.md).
+Погледајте [RESILIENCE_GUIDE.мд](./RESILIENCE_GUIDE.md) и наменски одељак у [CLAUDE.md](../../CLAUDE.md).
 
 ---
 
-## 10. Kako doprineti
+## 10. Како допринети
 
-### Dodavanje novog provajdera
+### Додајте новог провајдера
 
-1. Registrujte se u `src/shared/constants/providers.ts` (Zod-validirano pri učitavanju).
-2. Dodajte executor u `open-sse/executors/` ako je potrebna prilagođena logika
-   (proširite `BaseExecutor`).
-3. Dodajte translator u `open-sse/translator/` ako ne govori OpenAI format.
-4. Ako je zasnovan na OAuth-u, dodajte konfiguraciju pod `src/lib/oauth/providers/` i
-   `src/lib/oauth/services/`.
-5. Registrujte modele u `open-sse/config/providerRegistry.ts` (ili u registru specifičnom
-   za format pod `open-sse/config/`).
-6. Napišite testove pod `tests/unit/`.
+1. Региструјте се у `src/shared/constants/providers.ts` (Зод валидиран при учитавању).
+2. Додајте извршиоца у `open-sse/executors/` ако је потребна прилагођена логика (проширите `BaseExecutor`).
+3. Додајте преводиоца у `open-sse/translator/` ако не говори OpenAI формат.
+4. Ако је засновано на ОАутх-у, додајте конфигурацију под `src/lib/oauth/providers/` и `src/lib/oauth/services/`.
+5. Региструјте моделе у `open-sse/config/providerRegistry.ts` (или регистру специфичном за формат под `open-sse/config/`).
+6. Напишите тестове под `tests/unit/`.
 
-### Dodavanje nove API rute
+### Додајте нову API руту
 
-1. Kreirajte `src/app/api/your-route/route.ts`.
-2. Pratite šablon: CORS → Zod validacija tela → autentikacija → delegacija handleru.
-3. Ako je u pitanju novi oblik zahteva: dodajte Zod šemu u `src/shared/validation/schemas.ts`.
-4. Ako je namenjeno samo upravljanju: dodajte putanju u `src/shared/constants/publicApiRoutes.ts`
-   (denylist za javnu površinu API-ja).
-5. Dodajte testove pod `tests/unit/`.
-6. Ažurirajte `docs/reference/API_REFERENCE.md` i `docs/openapi.yaml`.
+1. Цреате `src/app/api/your-route/route.ts`.
+2. Следите образац: CORS → Zod провера тела → аутх → делегирање руковаоца.
+3. Ако је нови облик захтева: додајте Zod шему у `src/shared/validation/schemas.ts`.
+4. Ако је само за управљање: додајте путању до `src/shared/constants/publicApiRoutes.ts` (листа забрана за јавну API површину).
+5. Додајте тестове под `tests/unit/`.
+6. Ажурирајте `docs/reference/API_REFERENCE.md` и `docs/openapi.yaml`.
 
-### Dodavanje novog DB modula
+### Додајте нови DB модул
 
-1. Kreirajte `src/lib/db/yourModule.ts` i uvezite `getDbInstance()` iz `./core.ts`.
-2. Izvezite CRUD funkcije za svoj domen.
-3. Ako su u pitanju nove tabele: dodajte migraciju pod `src/lib/db/migrations/`, numerisanu
-   sekvencijalno, idempotentnu, transakcionu.
-4. Uvoznici koriste direktne importe iz `@/lib/db/yourModule` (bez barrel fajla — stari sloj za re-eksport `localDb.ts` je uklonjen).
-5. Dodajte testove pod `tests/unit/`.
+1. Креирајте `src/lib/db/yourModule.ts` и увезите `getDbInstance()` из `./core.ts`.
+2. Извезите CRUD функције за свој домен.
+3. Ако су нове табеле: додајте миграцију са `npm run db:new-migration -- <description>` (пише `src/lib/db/migrations/YYYYMMDDHHMMSS_<description>.sql`, UTC; погледајте `docs/ops/DATABASE_GUIDE.md`), идемпотентно, трансакцијско.
+4. Увозници користе директан увоз из `@/lib/db/yourModule` (без барела — стари слој за поновни извоз `localDb.ts` је уклоњен).
+5. Додајте тестове под `tests/unit/`.
 
-### Dodavanje novog MCP alata
+### Додајте нови MCP алат
 
-1. Dodajte definiciju alata pod `open-sse/mcp-server/tools/` (ili proširite
-   `open-sse/mcp-server/schemas/tools.ts`).
-2. Dodelite odgovarajući opseg (scope) u `src/shared/constants/mcpScopes.ts`.
-3. Registrujte alat u `open-sse/mcp-server/server.ts`.
-4. Dodajte testove pod `open-sse/mcp-server/__tests__/`.
-5. Ažurirajte [MCP-SERVER.md](../frameworks/MCP-SERVER.md).
+1. Додајте дефиницију алата под `open-sse/mcp-server/tools/` (или проширите `open-sse/mcp-server/schemas/tools.ts`).
+2. Доделите одговарајући опсег(е) у `src/shared/constants/mcpScopes.ts`.
+3. Региструјте алат у `open-sse/mcp-server/server.ts`.
+4. Додајте тестове под `open-sse/mcp-server/__tests__/`.
+5. Ажурирајте [MCP-SERVER.md](../frameworks/MCP-SERVER.md).
 
-### Dodavanje nove A2A veštine
+### Додајте нову A2A вештину
 
-Pogledajte [A2A-SERVER.md § Adding a New Skill](../frameworks/A2A-SERVER.md). Veštine se nalaze u
-`src/lib/a2a/skills/` i registruju se putem A2A menadžera zadataka.
+Погледајте [A2A-SERVER.md § Додавање нове вештине](../frameworks/A2A-SERVER.md). Вештине живе у `src/lib/a2a/skills/` и регистроване су преко A2A менаџера задатака.
 
 ---
 

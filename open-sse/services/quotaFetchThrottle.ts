@@ -14,17 +14,23 @@
  * `minIntervalMs = 0` disables throttling entirely (byte-identical to before).
  */
 
+import { performance } from "node:perf_hooks";
+
 const DEFAULT_MIN_INTERVAL_MS = 250;
-const MAX_MIN_INTERVAL_MS = 5000;
+const MAX_MIN_INTERVAL_MS = 60_000;
 const DEFAULT_JITTER_MS = 120;
+const MAX_JITTER_MS = 60_000;
+/** A real timer can wake at most one loop tick before its monotonic deadline. */
+const TIMER_EARLY_WAKE_TOLERANCE_MS = 1;
 
 export interface ThrottleClock {
+  /** Monotonic milliseconds used to measure spacing inside this process. */
   now: () => number;
   sleep: (ms: number) => Promise<void>;
 }
 
 const realClock: ThrottleClock = {
-  now: () => Date.now(),
+  now: () => performance.now(),
   sleep: (ms: number) => new Promise((resolve) => setTimeout(resolve, ms)),
 };
 
@@ -46,7 +52,7 @@ export class MinIntervalThrottle {
   private readonly jitterMs: number;
   private readonly clock: ThrottleClock;
   private readonly rand: () => number;
-  private lastStart = 0;
+  private lastStart: number | null = null;
   private chain: Promise<void> = Promise.resolve();
 
   constructor(options: MinIntervalThrottleOptions) {
@@ -65,16 +71,39 @@ export class MinIntervalThrottle {
     });
     try {
       await prev;
+      // The chain is single-file here, so this read cannot race another acquire.
       const now = this.clock.now();
-      if (this.lastStart !== 0) {
-        const jitter = this.jitterMs > 0 ? Math.floor(this.rand() * this.jitterMs) : 0;
-        const wait = this.lastStart + this.minIntervalMs + jitter - now;
-        if (wait > 0) await this.clock.sleep(wait);
+      // After an idle period, restart the spacing window at the actual
+      // acquisition time. Otherwise a stale scheduled timestamp permits the
+      // next burst of requests to pass without the configured interval.
+      const startAt =
+        this.lastStart === null
+          ? now
+          : Math.max(now, this.lastStart + this.minIntervalMs + this.nextJitter());
+      const wait = startAt - now;
+      if (wait > 0) await this.clock.sleep(Math.max(1, Math.ceil(wait)));
+      // Timers fire on whole milliseconds of loop time, so a real setTimeout can
+      // wake up to one tick before the monotonic deadline. Recheck only that
+      // sub-tick shortfall; every iteration awaits a positive sleep, so this never
+      // spins. A larger shortfall means an injected clock stepped backward, and
+      // the scheduled window below already keeps the spacing.
+      let shortfall = startAt - this.clock.now();
+      while (shortfall > 0 && shortfall <= TIMER_EARLY_WAKE_TOLERANCE_MS) {
+        await this.clock.sleep(Math.max(1, Math.ceil(shortfall)));
+        shortfall = startAt - this.clock.now();
       }
-      this.lastStart = this.clock.now();
+      // Spacing is measured between real starts. A timer that wakes late (a
+      // loaded CI box, a paused process) would otherwise shorten the next gap,
+      // because the next caller computes its wait from the scheduled instant
+      // rather than from when this fetch actually began.
+      this.lastStart = Math.max(startAt, this.clock.now());
     } finally {
       release();
     }
+  }
+
+  private nextJitter(): number {
+    return this.jitterMs > 0 ? Math.floor(this.rand() * this.jitterMs) : 0;
   }
 }
 
@@ -92,6 +121,17 @@ export function resolveQuotaFetchMinIntervalMs(
   return Math.min(Math.round(n), MAX_MIN_INTERVAL_MS);
 }
 
+/** Configure additional 0..60s random spacing without altering the default. */
+export function resolveQuotaFetchJitterMs(
+  env: Record<string, string | undefined> = process.env
+): number {
+  const raw = env.OMNIROUTE_QUOTA_FETCH_JITTER_MS;
+  if (raw === undefined || raw.trim() === "") return DEFAULT_JITTER_MS;
+  const n = Number(raw.trim());
+  if (!Number.isFinite(n) || n < 0) return DEFAULT_JITTER_MS;
+  return Math.min(Math.round(n), MAX_JITTER_MS);
+}
+
 // ─── Shared process-wide instance (used by the provider quota fetchers) ───────
 
 let _sharedThrottle: MinIntervalThrottle | null = null;
@@ -101,7 +141,7 @@ export function getQuotaFetchThrottle(): MinIntervalThrottle {
   if (!_sharedThrottle) {
     _sharedThrottle = new MinIntervalThrottle({
       minIntervalMs: resolveQuotaFetchMinIntervalMs(),
-      jitterMs: DEFAULT_JITTER_MS,
+      jitterMs: resolveQuotaFetchJitterMs(),
     });
   }
   return _sharedThrottle;
@@ -115,4 +155,9 @@ export function throttleQuotaFetch(): Promise<void> {
 /** Test-only: reset the memoized shared throttle (e.g. after changing env). */
 export function resetQuotaFetchThrottle(): void {
   _sharedThrottle = null;
+}
+
+/** Test-only: install a throttle as the process-wide gate. */
+export function setQuotaFetchThrottleForTests(throttle: MinIntervalThrottle | null): void {
+  _sharedThrottle = throttle;
 }

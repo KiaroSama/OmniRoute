@@ -16,6 +16,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { settleConnectionFollowUpsAfterEachTest } from "../helpers/connectionFollowUps.ts";
+
+settleConnectionFollowUpsAfterEachTest();
 
 const routeSrc = readFileSync(
   join(import.meta.dirname, "../../src/app/api/providers/route.ts"),
@@ -37,11 +40,28 @@ const claudeProfileSyncSrc = readFileSync(
   join(import.meta.dirname, "../../src/lib/cli-helper/claudeProfileAutoSync.ts"),
   "utf8"
 );
+const profileCatalogSrc = readFileSync(
+  join(import.meta.dirname, "../../src/lib/cli-helper/profileCatalog.ts"),
+  "utf8"
+);
+
+const autoSyncHelperSrc = readFileSync(
+  join(import.meta.dirname, "../../src/lib/providerModels/autoModelSyncTrigger.ts"),
+  "utf8"
+);
+const modelSyncSchedulerSrc = readFileSync(
+  join(import.meta.dirname, "../../src/shared/services/modelSyncScheduler.ts"),
+  "utf8"
+);
 
 test("POST /api/providers auto-sync uses the trusted internal origin (not request.url) — #323", () => {
-  assert.ok(
-    routeSrc.includes("getModelSyncInternalBaseUrl()"),
-    "auto-sync self-fetch must derive its origin from getModelSyncInternalBaseUrl()"
+  // The route no longer builds the self-fetch itself; it hands the connection to
+  // the shared trigger. The origin guarantee therefore has to be checked where
+  // the URL is now built, not only where it used to be.
+  assert.match(
+    routeSrc,
+    /triggerAutoModelSync\(/,
+    "the create path must delegate its auto-sync to the shared trigger"
   );
   assert.doesNotMatch(
     routeSrc,
@@ -49,9 +69,19 @@ test("POST /api/providers auto-sync uses the trusted internal origin (not reques
     "auto-sync origin must NOT be derived from the client-controlled request.url/Host (SSRF, CodeQL js/request-forgery #323)"
   );
   assert.match(
-    routeSrc,
-    /fetchModelSyncInternal\(syncUrl,\s*\{[^}]*redirect:\s*["']error["']/s,
-    "credential-bearing auto-sync self-fetch must reject redirects"
+    autoSyncHelperSrc,
+    /getModelSyncInternalBaseUrl\(\)/,
+    "the trigger must take its origin from the trusted internal base URL"
+  );
+  assert.doesNotMatch(
+    autoSyncHelperSrc,
+    /request\s*\.\s*(url|headers)/,
+    "the trigger must not read the incoming request at all"
+  );
+  assert.match(
+    modelSyncSchedulerSrc,
+    /redirect:\s*["']error["']/,
+    "the credential-bearing auto-sync self-fetch must reject redirects"
   );
 });
 
@@ -72,8 +102,12 @@ test("POST /api/sync/initialize never forwards the client Origin to model sync",
 });
 
 test("credential-forwarding CLI profile self-fetches reject redirects", () => {
+  // The credential-forwarding catalog fetch lives in one shared helper...
+  assert.match(profileCatalogSrc, /redirect:\s*["']error["']/);
+  // ...and both profile auto-syncs must go through it instead of fetching directly.
   for (const source of [codexProfileSyncSrc, claudeProfileSyncSrc]) {
-    assert.match(source, /redirect:\s*["']error["']/);
+    assert.match(source, /loadProfileCatalog\(/);
+    assert.doesNotMatch(source, /\bfetch\w*\(/);
   }
 });
 

@@ -23,6 +23,15 @@ type GlobalWithDispatcherCache = typeof globalThis & {
   [LOCAL_RETRY_DISPATCHER_KEY]?: Dispatcher;
 };
 
+/** undici keys `Agent.stats` by `URL.origin`; a dispatch may pass a URL or a string with a path. */
+function statsOriginKey(origin: Dispatcher.DispatchOptions["origin"]): string {
+  try {
+    return new URL(String(origin)).origin;
+  } catch {
+    return String(origin);
+  }
+}
+
 /**
  * Direct upstream fan-out dispatcher.
  *
@@ -41,10 +50,37 @@ class RoundRobinDispatcher {
     this.dispatchers = dispatchers;
   }
 
+  /**
+   * Requests an agent holds right now for `origin`: running plus queued, from undici's public
+   * `stats`, which keeps one entry per origin. Each origin has its own client in the agent, so a
+   * stream to another origin does not queue this request. An agent without `stats` counts as
+   * idle, which keeps plain rotation for it.
+   */
+  private load(dispatcher: Dispatcher, origin: string): number {
+    const stats = (dispatcher as { stats?: Record<string, { running?: number; pending?: number }> })
+      .stats;
+    const entry = stats?.[origin];
+    return (entry?.running ?? 0) + (entry?.pending ?? 0);
+  }
+
   dispatch(options: Dispatcher.DispatchOptions, handler: Dispatcher.DispatchHandler): boolean {
-    const dispatcher = this.dispatchers[this.nextIndex % this.dispatchers.length];
-    this.nextIndex = (this.nextIndex + 1) % this.dispatchers.length;
-    return dispatcher.dispatch(options, handler);
+    // Least loaded agent, scanning from the one after the previous pick so equal loads still
+    // rotate. A blind rotation could send a request to the agent that holds a long SSE stream
+    // while the other agents were idle.
+    const count = this.dispatchers.length;
+    const origin = statsOriginKey(options.origin);
+    let pick = this.nextIndex % count;
+    let pickLoad = this.load(this.dispatchers[pick], origin);
+    for (let step = 1; step < count && pickLoad > 0; step++) {
+      const index = (this.nextIndex + step) % count;
+      const load = this.load(this.dispatchers[index], origin);
+      if (load < pickLoad) {
+        pick = index;
+        pickLoad = load;
+      }
+    }
+    this.nextIndex = (pick + 1) % count;
+    return this.dispatchers[pick].dispatch(options, handler);
   }
 
   close(callback?: () => void): Promise<void> | void {
@@ -149,6 +185,32 @@ export function clearDispatcherCache(): void {
   delete globalWithCache[RETRY_DISPATCHER_KEY];
   delete globalWithCache[LOCAL_DEFAULT_DISPATCHER_KEY];
   delete globalWithCache[LOCAL_RETRY_DISPATCHER_KEY];
+}
+
+/**
+ * Pool scope for a selective dispatcher eviction.
+ */
+export type DispatcherPoolScope = "local" | "cloud";
+
+/**
+ * Close and drop the slots of one pool, leaving the other pool untouched.
+ * Never throws: the failure path that calls this is already handling an
+ * error, so a failed close must not replace it. Slots are dropped even when
+ * closing fails, so a broken dispatcher is never served again.
+ */
+export function evictDispatcherPool(scope: DispatcherPoolScope): void {
+  const globalWithCache = globalThis as GlobalWithDispatcherCache;
+  const keys =
+    scope === "local"
+      ? ([LOCAL_DEFAULT_DISPATCHER_KEY, LOCAL_RETRY_DISPATCHER_KEY] as const)
+      : ([DEFAULT_DISPATCHER_KEY, RETRY_DISPATCHER_KEY] as const);
+  for (const key of keys) {
+    try {
+      closeDispatcher(globalWithCache[key]);
+    } finally {
+      delete globalWithCache[key];
+    }
+  }
 }
 
 export function __cacheProxyDispatcherForTest(key: string, dispatcher: Dispatcher): void {

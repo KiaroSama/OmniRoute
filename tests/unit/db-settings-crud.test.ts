@@ -63,7 +63,7 @@ test("getSettings exposes defaults and updateSettings persists typed values", as
     label: "task-303",
   });
 
-  assert.equal(defaults.cloudEnabled, true);
+  assert.equal(defaults.cloudEnabled, false);
   assert.equal(defaults.requireLogin, true);
   assert.deepEqual(defaults.hiddenSidebarItems, []);
   assert.deepEqual(defaults.hiddenSidebarGroupLabels, []);
@@ -82,6 +82,14 @@ test("getSettings exposes defaults and updateSettings persists typed values", as
   assert.equal(updated.antigravitySignatureCacheMode, "enabled");
   assert.equal(updated.label, "task-303");
   assert.equal(await settingsDb.isCloudEnabled(), true);
+
+  const reread = await settingsDb.getSettings();
+  assert.equal(reread.cloudEnabled, true);
+  const stored = core
+    .getDbInstance()
+    .prepare("SELECT value FROM key_value WHERE namespace = 'settings' AND key = 'cloudEnabled'")
+    .get() as { value: string };
+  assert.equal(stored.value, "true");
 });
 
 test("INITIAL_PASSWORD marks onboarding as complete on first read", async () => {
@@ -307,7 +315,7 @@ test("settings and pricing readers skip malformed rows while merging surviving l
   db.prepare = (sql) => {
     const text = String(sql);
 
-    if (text.includes("namespace = 'settings'")) {
+    if (text.includes("namespace IN ('settings', 'databaseSettings')")) {
       return {
         all: () => [
           123,
@@ -829,7 +837,8 @@ test("cache metric helpers degrade gracefully when SQLite aggregation fails", as
     const reset = await settingsDb.resetCacheMetrics();
 
     assert.equal(metrics.totalRequests, 0);
-    assert.equal(updated.totalCachedTokens, 0);
+    assert.equal(updated.totalCachedTokens, null);
+    assert.equal(updated.totalCachedTokensComplete, false);
     assert.deepEqual(trend, []);
     assert.equal(reset.requestsWithCacheControl, 0);
   } finally {
@@ -837,7 +846,7 @@ test("cache metric helpers degrade gracefully when SQLite aggregation fails", as
   }
 });
 
-test("cache metrics and trend coerce null aggregate fields to zero", async () => {
+test("cache metrics and trend preserve unknown cache aggregates", async () => {
   const db = core.getDbInstance();
   const originalPrepare = db.prepare.bind(db);
 
@@ -882,7 +891,7 @@ test("cache metrics and trend coerce null aggregate fields to zero", async () =>
       };
     }
 
-    if (text.includes("GROUP BY combo_strategy")) {
+    if (text.includes("GROUP BY COALESCE(combo_strategy, 'direct')")) {
       return {
         all: () => [
           {
@@ -922,21 +931,27 @@ test("cache metrics and trend coerce null aggregate fields to zero", async () =>
 
     assert.equal(metrics.totalRequests, 5);
     assert.equal(metrics.totalInputTokens, 0);
-    assert.equal(metrics.totalCachedTokens, 0);
-    assert.equal(metrics.totalCacheCreationTokens, 0);
+    assert.equal(metrics.totalCachedTokens, null);
+    assert.equal(metrics.totalCacheCreationTokens, null);
     assert.deepEqual(metrics.byProvider.openai, {
       requests: 1,
       totalRequests: 1,
       cachedRequests: 1,
       inputTokens: 0,
-      cachedTokens: 0,
-      cacheCreationTokens: 0,
+      estimated: false,
+      cachedTokens: null,
+      cacheCreationTokens: null,
+      cachedTokensComplete: false,
+      cacheCreationTokensComplete: false,
     });
     assert.deepEqual(metrics.byStrategy.direct, {
       requests: 2,
       inputTokens: 0,
-      cachedTokens: 0,
-      cacheCreationTokens: 0,
+      estimated: false,
+      cachedTokens: null,
+      cacheCreationTokens: null,
+      cachedTokensComplete: false,
+      cacheCreationTokensComplete: false,
     });
     assert.deepEqual(trend, [
       {
@@ -944,12 +959,17 @@ test("cache metrics and trend coerce null aggregate fields to zero", async () =>
         requests: 3,
         cachedRequests: 1,
         inputTokens: 0,
-        cachedTokens: 0,
-        cacheCreationTokens: 0,
+        estimated: false,
+        cachedTokens: null,
+        cacheCreationTokens: null,
+        cachedTokensComplete: false,
+        cacheCreationTokensComplete: false,
       },
     ]);
-    assert.equal(updated.totalCachedTokens, 0);
-    assert.equal(reset.totalCachedTokens, 0);
+    assert.equal(updated.totalCachedTokens, null);
+    assert.equal(updated.totalCachedTokensComplete, false);
+    assert.equal(reset.totalCachedTokens, null);
+    assert.equal(reset.totalCachedTokensComplete, false);
   } finally {
     db.prepare = originalPrepare;
   }

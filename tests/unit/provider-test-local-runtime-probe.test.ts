@@ -9,6 +9,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { settleConnectionFollowUpsAfterEachTest } from "../helpers/connectionFollowUps.ts";
+
+settleConnectionFollowUpsAfterEachTest();
 
 const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-jmq6-"));
 process.env.DATA_DIR = TEST_DATA_DIR;
@@ -99,7 +102,15 @@ test("all three connection-test entry points pass the caller's locality", () => 
     batch,
     /const allowLocalRuntimeProbe = getRequestPeerLocality\(request\) !== "remote";/
   );
-  assert.match(batch, /testSingleConnection\(conn\.id, undefined, \{ allowLocalRuntimeProbe \}\)/);
+  // S-01 (#15159): this call grew a second locality-gated flag for the devin
+  // cloud-agent CLI-spawn fallback, so the single-property shape this assertion
+  // used to pin no longer describes the route. Both flags must stay present —
+  // restoring the old one-property regex would re-open the spawn.
+  assert.match(batch, /const allowLocalSpawn = getRequestPeerLocality\(request\) !== "remote";/);
+  assert.match(
+    batch,
+    /testSingleConnection\(conn\.id, undefined, \{ allowLocalRuntimeProbe, allowLocalSpawn \}\)/
+  );
   assert.match(
     create,
     /testSingleConnection\(newConnection\.id, undefined, \{\s*allowLocalRuntimeProbe: getRequestPeerLocality\(request\) !== "remote",/

@@ -70,6 +70,8 @@ export interface DatabaseSettings {
     compressionCacheStats: number;
     xpAuditLog: number;
     compressionRunTelemetry: number;
+    /** Total size cap of the stored generated media, in MiB. The env MEDIA_STORE_MAX_MB wins. */
+    mediaStoreMaxMb: number;
     autoCleanupEnabled: boolean;
   };
 
@@ -98,6 +100,7 @@ export interface DatabaseSettings {
     lastVacuumAt: string | null;
     lastOptimizationAt: string | null;
     integrityCheck: "ok" | "error" | null;
+    lastIntegrityCheckAt: string | null;
     /**
      * #13432 — non-null while the configured `optimization.autoVacuumMode`
      * has not yet been applied to the live SQLite file. Cleared once the
@@ -164,6 +167,7 @@ export const DEFAULT_DATABASE_SETTINGS: Omit<DatabaseSettings, "location" | "sta
     compressionCacheStats: 30,
     xpAuditLog: 30,
     compressionRunTelemetry: 30,
+    mediaStoreMaxMb: 2048,
     autoCleanupEnabled: true,
   },
   aggregation: {

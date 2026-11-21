@@ -35,6 +35,8 @@
  */
 import { randomUUID } from "crypto";
 import { BaseExecutor, type ExecuteInput } from "./base.ts";
+import { containsMediaKind } from "../utils/mediaParts.ts";
+import { isMissingBrowserExecutable } from "./browserExecutableCheck.ts";
 import { makeExecutorErrorResult as makeErrorResult } from "../utils/error.ts";
 import { connectObscuraBrowser } from "../services/obscura.ts";
 import type { Browser, Page } from "playwright";
@@ -64,6 +66,8 @@ export interface CfChatFrame {
   error?: boolean;
   done?: boolean;
   body?: unknown;
+  seq?: number;
+  replay?: boolean;
 }
 
 /** Parse a raw WS frame. Returns null for non-JSON / unrelated frames. */
@@ -96,9 +100,24 @@ export class CfStreamParser {
   finishReason: string | null = null;
   error: { status: number; message: string } | null = null;
   private seenStart = false;
+  private maxSeq = -1;
 
   constructor(chatId: string) {
     this.chatId = chatId;
+  }
+
+  /**
+   * Cloudflare Agents resumable streams tag chunks with a per-stream `seq` and
+   * mark re-sent ones `replay: true`. Skip replayed chunks and any seq at or
+   * below the high-water mark (never dedupe by text: repeated tokens are legit).
+   */
+  private isReplayedChunk(msg: CfChatFrame, body: Record<string, unknown>): boolean {
+    if (msg.replay === true || body.replay === true) return true;
+    const seq = typeof msg.seq === "number" ? msg.seq : body.seq;
+    if (typeof seq !== "number" || !Number.isFinite(seq)) return false;
+    if (seq <= this.maxSeq) return true;
+    this.maxSeq = seq;
+    return false;
   }
 
   /** Returns the SSE-relevant event, or null when the frame is ignorable. */
@@ -125,6 +144,13 @@ export class CfStreamParser {
       return null;
     }
     if (!body || typeof body.type !== "string") return null;
+
+    if (
+      (body.type === "text-delta" || body.type === "reasoning-delta") &&
+      this.isReplayedChunk(msg, body)
+    ) {
+      return null;
+    }
 
     switch (body.type) {
       case "start":
@@ -210,6 +236,79 @@ export function toCfMessages(
   return out;
 }
 
+/**
+ * The Cloudflare Playground bridge uses text-only cf_agent chat parts. It has
+ * no image-upload frame. Do not silently strip a client's image or launch a
+ * browser for a request the bridge cannot fulfill (#16460).
+ */
+function isUnsupportedCfImagePart(value: unknown): boolean {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const part = value as Record<string, unknown>;
+  return (
+    part.type === "image_url" ||
+    part.type === "input_image" ||
+    part.type === "image" ||
+    Object.hasOwn(part, "image_url")
+  );
+}
+
+export function hasUnsupportedCfImageParts(messages: unknown): boolean {
+  // Scan only known message/content/output/input envelopes. An iterative walk
+  // catches deeply nested image parts without recursion overflow. The node
+  // budget only bounds hot-path work: exhausting it fails OPEN (a long
+  // text-only conversation is not evidence of an image), while a repeated
+  // reference (impossible in parsed JSON) still fails closed.
+  const pending: unknown[] = [messages];
+  const visited = new WeakSet<object>();
+  const maxNodes = 2048;
+  let scanned = 0;
+  while (pending.length > 0) {
+    const value = pending.pop();
+    if (!value || typeof value !== "object") continue;
+    if (visited.has(value)) return true; // cycle or non-JSON repeated reference
+    visited.add(value);
+    if (++scanned > maxNodes) return false;
+    if (Array.isArray(value)) {
+      if (value.length > maxNodes) return false;
+      for (const part of value) pending.push(part);
+      continue;
+    }
+    if (isUnsupportedCfImagePart(value)) return true;
+    const record = value as Record<string, unknown>;
+    if (Array.isArray(record.images) && record.images.length > 0) return true;
+    pending.push(record.content, record.output, record.input);
+  }
+  return false;
+}
+
+/**
+ * A missing Playwright package/browser is a local runtime configuration
+ * problem, not a transient Cloudflare upstream failure (#16460).
+ */
+export function classifyCfBrowserStartFailure(error: unknown): {
+  status: number;
+  message: string;
+  fallbackHint?: "connection_cooldown";
+} {
+  const message = error instanceof Error ? error.message : String(error);
+  if (isMissingBrowserExecutable(message)) {
+    return {
+      status: 503,
+      fallbackHint: "connection_cooldown",
+      message:
+        "Cloudflare Playground needs Playwright and its Chromium browser. " +
+        "Install the browser runtime (npm i playwright && npx playwright install chromium) " +
+        "or use an OmniRoute browser-enabled deployment.",
+    };
+  }
+  // Raw browser startup messages may contain local paths, proxy credentials,
+  // or environment values. Never return them to a client (HR #12).
+  return {
+    status: 502,
+    message: "Cloudflare Playground browser session failed. Check server logs for details.",
+  };
+}
+
 // ── Transport ────────────────────────────────────────────────────────────────
 
 export interface CfTransportConfig {
@@ -219,10 +318,12 @@ export interface CfTransportConfig {
   signal?: AbortSignal | null;
 }
 
+export type CfTransportStartResult =
+  | { ok: true }
+  | { ok: false; status: number; message: string; fallbackHint?: "connection_cooldown" };
+
 export interface CfTransport {
-  start(
-    config: CfTransportConfig
-  ): Promise<{ ok: true } | { ok: false; status: number; message: string }>;
+  start(config: CfTransportConfig): Promise<CfTransportStartResult>;
   frames(): AsyncGenerator<string>;
   close(): Promise<void>;
 }
@@ -293,9 +394,7 @@ export class PlaywrightCfTransport implements CfTransport {
     private chromeExecutablePath?: string
   ) {}
 
-  async start(
-    config: CfTransportConfig
-  ): Promise<{ ok: true } | { ok: false; status: number; message: string }> {
+  async start(config: CfTransportConfig): Promise<CfTransportStartResult> {
     try {
       // #12274: prefer the shared Obscura browser (browser-grade TLS fingerprint
       // on the WS upgrade, ~30MB) over a full Chromium per request; fall back to
@@ -350,11 +449,7 @@ export class PlaywrightCfTransport implements CfTransport {
       return { ok: true };
     } catch (error) {
       await this.close().catch(() => {});
-      return {
-        ok: false,
-        status: 502,
-        message: `Cloudflare Playground browser session failed: ${error instanceof Error ? error.message : String(error)}`,
-      };
+      return { ok: false, ...classifyCfBrowserStartFailure(error) };
     }
   }
 
@@ -432,10 +527,34 @@ export class CloudflarePlaygroundExecutor extends BaseExecutor {
     super("cloudflare-playground", { id: "cloudflare-playground", baseUrl: PLAYGROUND_URL });
   }
 
+  /** Execute Cloudflare text chat, rejecting media before opening its browser transport. */
   async execute(input: ExecuteInput) {
     const { body, signal, stream: wantStream } = input;
     const bodyObj = (body || {}) as Record<string, unknown>;
+    if (hasUnsupportedCfImageParts(bodyObj.messages) || hasUnsupportedCfImageParts(bodyObj.input)) {
+      return makeErrorResult(
+        400,
+        "Cloudflare Playground accepts text-only chat. Image inputs are not supported.",
+        body,
+        PLAYGROUND_URL
+      );
+    }
     const rawModel = (bodyObj.model as string) || DEFAULT_MODEL;
+    if (
+      ["audio", "video", "document", "file"].some((kind) =>
+        containsMediaKind(
+          [{ content: [bodyObj.messages, bodyObj.input, bodyObj.contents] }],
+          kind as "audio" | "video" | "document" | "file"
+        )
+      )
+    ) {
+      return makeErrorResult(
+        400,
+        "Cloudflare Playground accepts text-only chat. Audio, video and file inputs are not supported.",
+        body,
+        PLAYGROUND_URL
+      );
+    }
     const model = rawModel.startsWith(MODEL_PREFIX) ? rawModel : MODEL_PREFIX + rawModel;
     const temperature =
       typeof bodyObj.temperature === "number" ? bodyObj.temperature : DEFAULT_TEMPERATURE;
@@ -452,7 +571,13 @@ export class CloudflarePlaygroundExecutor extends BaseExecutor {
       signal,
     });
     if (started.ok !== true) {
-      return makeErrorResult(started.status, started.message, body, PLAYGROUND_URL);
+      return makeErrorResult(
+        started.status,
+        started.message,
+        body,
+        PLAYGROUND_URL,
+        started.fallbackHint ? { "X-Omni-Fallback-Hint": started.fallbackHint } : undefined
+      );
     }
 
     const timedOut = { current: false };

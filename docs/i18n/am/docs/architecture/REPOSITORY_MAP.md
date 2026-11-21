@@ -4,577 +4,627 @@
 
 ---
 
-> **ለእያንዳንዱ ማውጫ እና ስርወ ፋይል የአንድ መስመር መግለጫ።**
-> መጨረሻ የተዘመነው፦ 2026-06-28 — OmniRoute v3.8.40
+> **የት ነው የሚኖረው፡ እያንዳንዱ ክትትል የሚደረግበት ከፍተኛ ደረጃ ማውጫ እና ስርወ ፋይል፣ ባለ አንድ መስመር አላማ።** መጨረሻ የዘመነው፡ 2026-11-13 (OmniRoute v3.8.54)
 >
-> በኮድ ማከማቻው ውስጥ በፍጥነት ለመዘዋወር ይህን ካርታ ይጠቀሙ። ዝርዝር መረጃ ለማግኘት፣ ወደ ተለዩ ሰነዶች የሚወስዱትን አገናኞች ይከተሉ።
+> በኮድ ቤዝ ዙሪያ መንገድዎን ለማግኘት ይህንን ካርታ ይጠቀሙ፣ ከዚያ ወደ ተወሰኑ ሰነዶች አገናኞችን ይከተሉ። የፋይል ብዛት የሚለካው ከላይ ባለው ቀን በ `git ls-files` ነው። በእያንዳንዱ በሚለቀቁበት ጊዜ ይለወጣሉ፣ ስለዚህ እንደ ትልቅ ትዕዛዝ ይያዙዋቸው።
 
-## ከፍተኛ-ደረጃ የማውጫ ዛፍ
+## ከፍተኛ ደረጃ ያለው ዛፍ
 
 ```
 OmniRoute/
-├── src/                  # Next.js 16 መተግበሪያ (UI + API መስመሮች + ላይብረሪዎች + ዶሜይን + አገልጋይ)
-├── open-sse/             # የዥረት ሞተር የሥራ ቦታ (ተቆጣጣሪዎች፣ አስፈጻሚዎች፣ ተርጓሚ፣ MCP አገልጋይ)
-├── electron/             # የዴስክቶፕ መጠቅለያ (Electron 41 + electron-builder 26.10)
-├── bin/                  # የCLI መግቢያ ነጥብ እና የትዕዛዝ ተቆጣጣሪዎች
-├── scripts/              # የግንባታ፣ የማረጋገጫ፣ የማመሳሰል እና የአንድ ጊዜ ስክሪፕቶች
-├── docs/                 # ይፋዊ ሰነዶች (እዚህ ይገኛሉ)
-├── tests/                # ሁሉም የሙከራ ስብስቦች (አሃድ፣ ውህደት፣ e2e፣ የፕሮቶኮል ደንበኞች)
-├── public/               # የNext.js የማይንቀሳቀሱ ንብረቶች፣ PWA manifest፣ service worker፣ አዶዎች
-├── config/               # የማይንቀሳቀስ ውቅር + የጥራት መቆጣጠሪያ ሁኔታ (i18n፣ payloadRules፣ quality/)
-├── images/               # የግብይት / README ምስል ንብረቶች
-├── @omniroute/           # ሊታተሙ የሚችሉ አጋር ጥቅሎች (opencode-plugin፣ opencode-provider)
-├── skills/               # የCLI/ወኪል ክህሎት ጥቅሎች (cli-* + omni-* + config-codex-cli)
-├── examples/             # የናሙና ፕለጊኖች + omniroute-cmd-hello ማስጀመሪያ
-├── contrib/              # የማህበረሰብ አስተዋጽኦዎች (podman/)
-├── .source/              # የFumadocs ምንጭ ውቅር (source.config.mjs + server/browser/dynamic)
-├── .github/              # የGitHub Actions የሥራ ፍሰቶች + የጉዳይ አብነቶች + የPR አብነት
-├── .husky/               # የGit መንጠቆዎች (pre-commit፣ pre-push)
-├── .claude/              # የClaude Code የስላሽ ትዕዛዞች (በፕሮጀክት የተወሰኑ)
-├── .agents/              # የCodex / አጠቃላይ ወኪል የሥራ ፍሰቶች + ክህሎቶች (የ .claude/ ቅጂ)
-├── .vscode/              # የVS Code የሥራ ቦታ ቅንብሮች
-├── _ideia/               # የዕቅድ ማስታወሻዎች (መደበኛ ያልሆኑ፤ አብረው አይላኩም)
-├── _mono_repo/           # ታሪካዊ ንዑስ ፕሮጀክቶች (cloud፣ site፣ vscode-extension)
-├── _references/          # ከተዛማጅ OSS ፕሮጀክቶች የተወሰዱ ለንባብ ብቻ የሚያገለግሉ ቅጂዎች
-├── _tasks/               # የእያንዳንዱ ልቀት ተግባር መከታተያ ፋይሎች (መደበኛ ያልሆኑ)
-├── .build/ .worktrees/ dist/   # የአካባቢ ግንባታ / git-worktree / የግንባታ ውጤት ጊዜያዊ ማከማቻ (gitignored)
-├── .issues/              # የአካባቢ ጉዳይ መሸጎጫ (gitignored)
-├── .playwright-mcp/      # የPlaywright MCP ሙከራ ቅርሶች
-├── coverage/             # የc8 ሽፋን ውጤት (gitignored)
-├── logs/                 # የአሂድ ጊዜ ምዝግብ ማስታወሻዎች (gitignored)
-├── node_modules/         # ጥገኞች (gitignored)
-├── package/              # የnpm pack ዝግጅት ቦታ (የግንባታ ቅርስ)
-├── .next/                # የNext.js ግንባታ ውጤት (gitignored)
-└── (ስርወ ፋይሎች — ከታች ይመልከቱ)
+├── src/              # Next.js 16 app: dashboard, /api and /v1 routes, server libs, domain, i18n
+├── open-sse/         # Streaming engine workspace (@omniroute/open-sse): handlers, executors, translator, services, MCP server
+├── packages/         # npm workspaces: ui-kit (vendored Keak CI UI Kit) and browser-pool
+├── @omniroute/       # Separately published npm packages (OpenCode plugins and provider)
+├── bin/              # Published `omniroute` CLI, MCP/bridge entry points, self-host ops scripts (*.sh)
+├── electron/         # Desktop app (Electron main/preload + helpers + icons)
+├── public/           # Static assets served by Next.js (provider logos, PWA icons, sw.js, openapi.yaml copy)
+├── skills/           # Agent Skills (SKILL.md) served by /api/agent-skills, MCP and A2A
+├── tests/            # All test suites: unit, integration, e2e, homolog, fixtures, snapshots
+├── scripts/          # Build, quality gates, i18n, release, ops, perf and one-off scripts (allow-listed subfolders)
+├── config/           # Versioned config: i18n, payload rules, CLI manifest, quality-gate baselines, release inventories
+├── changelog.d/      # Per-PR changelog fragments, aggregated into CHANGELOG.md at release time
+├── docs/             # Public documentation (served at /docs via Fumadocs) + translated mirrors in docs/i18n/
+├── examples/         # Example plugins and quickstart clients
+├── deploy/           # Kubernetes deployment: Helm chart + Kustomize base/overlays
+├── docker/           # Auxiliary container images (not the main image, which is the root Dockerfile)
+├── contrib/          # Community recipes: Podman quadlets, VPS compose, Windows launchers, session-sync note
+├── .github/          # GitHub Actions workflows, composite actions, issue/PR templates, CODEOWNERS, labels
+├── .husky/           # Tracked git hooks: commit-msg, pre-commit, pre-push
+├── .vale/            # Vale prose-lint vocabulary (styles/Vocab/OmniRoute/accept.txt)
+├── .vscode/          # Shared VS Code workspace settings (settings.json)
+└── (root files — see below)
+```
+
+የአካባቢ፣ የመነጩ ወይም የግል ዱካዎች (ሁሉም የተደናቀፉ፣ ፈጽሞ ያልተፈጸሙ፣ ከዚህ በላይ ያልተገለጹ)፡
+
+```
+node_modules/            # npm dependencies
+.build/                  # Next.js build output (default distDir .build/next, see next.config.mjs)
+dist/                    # npm staging directory assembled by scripts/build/prepublish.ts
+.source/                 # fumadocs-mdx output that feeds the /docs viewer
+.husky/_/                # Husky runtime generated on install (core.hooksPath target)
+coverage/ logs/ test-results/ playwright-report/   # coverage, runtime logs, Playwright output
+.env                     # local secrets generated from .env.example
+_*/                      # private local-only folders (anchored /_* ignore); never tracked
+.claude/ .agents/        # local AI-assistant state and skills; never tracked
 ```
 
 ---
 
-## ስርወ ፋይሎች
+## የስር ፋይሎች
 
-| ፋይል                                         | ዓላማ                                                                                |
-| ------------------------------------------- | ---------------------------------------------------------------------------------- |
-| **README.md**                               | የግብይት ማረፊያ ገጽ + ፈጣን መጀመሪያ + የባህሪያት ማትሪክስ (`llm.txt`ንም ይመልከቱ)                       |
-| **CHANGELOG.md**                            | የእያንዳንዱ ልቀት የለውጥ መዝገብ (በ`/version-bump-cc` skill በራስ-ሰር የሚመነጭ)                     |
-| **LICENSE**                                 | የMIT ፈቃድ ጽሑፍ                                                                       |
-| **CLAUDE.md**                               | ለClaude Code agents የፕሮጀክቱ ደንቦች (ጥብቅ ደንቦች፣ ስምምነቶች፣ ሁኔታዎች)                          |
-| **AGENTS.md**                               | ከCLAUDE.md ጋር ተመሳሳይ፣ ነገር ግን Claude ላልሆኑ AI agents (Codex፣ Cursor፣ ወዘተ)             |
-| **GEMINI.md**                               | በGemini ላይ ለተመሠረቱ agents አጭር ደንቦች (የCLAUDE.md ንዑስ ስብስብ)                            |
-| **CONTRIBUTING.md**                         | የአስተዋጽኦ አድራጊዎች መመሪያ፦ ማዋቀር፣ conventional commits፣ ሙከራ፣ የPR ፍሰት                      |
-| **SECURITY.md**                             | የተጋላጭነት ሪፖርት ማድረጊያ ፖሊሲ፣ የሚደገፉ ስሪቶች፣ የስጋት ሞዴል                                       |
-| **CODE_OF_CONDUCT.md**                      | Contributor Covenant — ከማህበረሰቡ የሚጠበቁ የባህሪ መመሪያዎች                                   |
-| **llm.txt**                                 | ለLLM crawlers የተመቻቸ ግልጽ ጽሑፍ ማረፊያ ገጽ (SEO ለAI assistants)                           |
-| **package.json**                            | npm manifest፣ scripts፣ dependencies፣ engines፣ c8 coverage gate                     |
-| **package-lock.json**                       | የተቆለፈ የdependency ዛፍ                                                               |
-| **tsconfig.json**                           | ዋናው የTypeScript config                                                             |
-| **tsconfig.typecheck-core.json**            | ለ`src/` core የtypecheck config                                                     |
-| **tsconfig.typecheck-noimplicit-core.json** | ጥብቅ (`noImplicitAny`) typecheck                                                    |
-| **tsconfig.tsbuildinfo**                    | የTS ጭማሪያዊ build cache (gitignored)                                                 |
-| **next.config.mjs**                         | የNext.js 16 build configuration (standalone output)                                |
-| **next-env.d.ts**                           | በNext.js በራስ-ሰር የሚመነጩ የenv types                                                   |
-| **eslint.config.mjs**                       | የESLint flat config (ለእያንዳንዱ የፕሮጀክት ክፍል ደንቦች)                                      |
-| **prettier.config.mjs**                     | የPrettier ቅርጸት ማስያዣ ደንቦች                                                           |
-| **postcss.config.mjs**                      | ለTailwind/CSS pipeline የPostCSS config                                             |
-| **playwright.config.ts**                    | የPlaywright E2E ሙከራ config                                                         |
-| **vitest.config.ts**                        | የVitest config (ነባሪ suite)                                                         |
-| **vitest.mcp.config.ts**                    | ለMCP server / autoCombo / cache suites የVitest config                              |
-| **sonar-project.properties**                | የSonarQube/SonarCloud config (የኮድ ጥራት)                                             |
-| **Dockerfile**                              | ባለብዙ-ደረጃ Docker build (builder → runner-base → runner-cli)                         |
-| **docker-compose.yml**                      | ባለ4 profiles (base፣ cli፣ host፣ cliproxyapi) እና redis sidecar የልማት compose          |
-| **docker-compose.prod.yml**                 | የproduction compose (port 20130፣ redis፣ named volumes)                             |
-| **.dockerignore**                           | ከDocker context የተገለሉ ፋይሎች                                                         |
-| **fly.toml**                                | የFly.io deployment config (region `sin`፣ port 20128፣ /data volume)                 |
-| **.env.example**                            | የenv ፋይል አብነት (በመጀመሪያ ጭነት ወደ `.env` በራስ-ሰር የሚቀዳ)                                   |
-| **.gitignore**                              | የGit ignore ቅጦች                                                                    |
-| **.npmignore**                              | የnpm publish ማግለያ ዝርዝር                                                             |
-| **.npmrc**                                  | የnpm config (registry፣ lockfile policy)                                            |
-| **.node-version**                           | የNode ስሪት መቆለፊያ (ከnvm ጋር ተኳሃኝ በሆኑ መሣሪያዎች የሚጠቀም)                                    |
-| **.nvmrc**                                  | ለnvm የNode ስሪት መቆለፊያ                                                               |
-| **eslint.complexity.config.mjs**            | ለcomplexity ratchet የESLint config (`scripts/check/check-complexity.mjs --config`) |
-| **eslint.sonarjs.config.mjs**               | ለSonarJS ደንቦች የESLint config (cognitive complexity / duplication)                  |
-| **source.config.ts**                        | የFumadocs `defineDocs` source config (`.source/`ን የሚመግብ)                           |
-| **knip.json**                               | የKnip config — ጥቅም ላይ ያልዋሉ files/exports/deps (dead-code gateን የሚመግብ)              |
-| **stryker.conf.json**                       | የStryker mutation-testing config                                                   |
-| **.size-limit.json**                        | የsize-limit bundle budget config                                                   |
-| **promptfooconfig.yaml**                    | የpromptfoo eval config                                                             |
-| **.gitleaks.toml**                          | የgitleaks secret-scan ruleset                                                      |
-| **.zizmor.yml**                             | የzizmor GitHub-Actions security-lint config                                        |
-| **socket.yml**                              | የSocket.dev supply-chain config                                                    |
-| **news.json**                               | አካባቢያዊ የተደረገ v2 announcement feed፤ የRadar ማስጀመሪያ ንጥል እንደቦዘነ ይላካል                   |
-| **flake.nix** / **flake.lock**              | የNix dev-shell definition + lock                                                   |
-| **.env**                                    | የአካባቢ ምስጢሮች (gitignored — ከ`.env.example` የሚመነጭ)                                   |
+ሁሉም ክትትል የሚደረግባቸው ፋይሎች በማጠራቀሚያ ስር (`git ls-files | grep -v /`)፣ በተግባር ተመድበው።
 
-> **በv3.8.26 ከroot ውጭ ተዛውሯል (ማስተካከያ):**
->
-> - **→ `config/quality/`:** `quality-baseline.json`፣ `complexity-baseline.json`፣ `duplication-baseline.json`፣ `file-size-baseline.json`፣ `test-discovery-baseline.json`፣ `dependency-allowlist.json`፣ `.license-allowlist.json`፣ እና የሚመነጨው `quality-metrics.json` (በgitignored የተደረገ)። [`## config/`](#config--static-configs--quality-gate-state)ን ይመልከቱ።
+### የፕሮጀክት ሰነዶች
+
+| ፋይል                      | ዓላማ                                                      |
+| ------------------------ | -------------------------------------------------------- |
+| `README.md`              | ማረፊያ ገጽ፡ የባህሪ አጠቃላይ እይታ፣ ፈጣን ጅምር፣ የመጫን ዘዴዎች              |
+| `CHANGELOG.md`           | በየልቀት ሎግ ( `changelog.d/` ቁርጥራጭ እዚህ ውስጥ ተጣጥፈው ይገኛሉ)      |
+| `ROADMAP.md`             | የህዝብ የመንገድ ካርታ                                           |
+| `LICENSE`                | MIT ፈቃድ                                                  |
+| `THIRD_PARTY_NOTICES.md` | የተጠቀለለ የሶስተኛ ወገን ኮድ ማሳወቂያዎች (ለምሳሌ wreq-js ማሰሪያዎች)        |
+| `CONTRIBUTING.md`        | የአስተዋጽዖ አድራጊ መመሪያ፡ ማዋቀር፣ የተለመዱ ድርጊቶች፣ የሙከራ ማትሪክስ፣ PR ፍሰት |
+| `SECURITY.md`            | የተጋላጭነት ሪፖርት ፖሊሲ                                         |
+| `CODE_OF_CONDUCT.md`     | የማህበረሰብ ባህሪ የሚጠበቁ                                        |
+| `llm.txt`                | ለ LLM ጎብኚዎች እና ረዳቶች ግልጽ-ጽሁፍ ፕሮጀክት ማጠቃለያ                  |
+
+### AI-ረዳት መመሪያዎች
+
+| ፋይል         | ዓላማ                                                            |
+| ----------- | -------------------------------------------------------------- |
+| `AGENTS.md` | ለእያንዳንዱ AI ረዳት ነጠላ የእውነት ምንጭ፡ የአውራጃ ስብሰባዎች፣ የጥራት በሮች፣ ሃርድ ደንቦች |
+| `CLAUDE.md` | ክላውድ ኮድ-የተወሰኑ ዴልታዎች; `AGENTS.md` ያስመጣል                         |
+| `GEMINI.md` | ጌሚኒ-ተኮር ዴልታዎች; ወደ `AGENTS.md` ይመለሳሉ                            |
+
+የጎጆ አስጎብኚዎች ከሚገልጹት ኮድ ቀጥሎም አሉ `open-sse/services/AGENTS.md` እና `src/lib/db/AGENTS.md`.
+
+### ጥቅል አንጸባራቂ እና የመስቀለኛ መሣሪያ ሰንሰለት
+
+| ፋይል                        | ዓላማ                                                                |
+| -------------------------- | ------------------------------------------------------------------ |
+| `package.json`             | npm አንጸባራቂ፡ ስክሪፕቶች፣ ጥገኞች፣ `engines`፣ `workspaces`፣ የታተመ `files`    |
+| `package-lock.json`        | የተቆለፈ ጥገኛ ዛፍ                                                       |
+| `pnpm-workspace.yaml`      | pnpm የስራ ቦታ ዝርዝር (`packages/*`፣ `open-sse`) እና ቤተኛ-ግንባታ የተፈቀደ ዝርዝር |
+| `.npmrc` / `.npmignore`    | npm ያዋቅሩ እና የማይካተቱትን ያትሙ                                           |
+| `.node-version` / `.nvmrc` | የስሪት አስተዳዳሪዎች የመስቀለኛ ሥሪት ፒን                                        |
+| `flake.nix` / `flake.lock` | Nix dev shell እና መቆለፊያው።                                           |
+| `Makefile`                 | ለ npm ስክሪፕቶች ውክልና የሚሰጡ `make` አቋራጮች                                |
+
+### TypeScript፣ Next.js እና ሰነዶች ይገነባሉ።
+
+| ፋይል                                       | ዓላማ                                                               |
+| ----------------------------------------- | ----------------------------------------------------------------- |
+| `tsconfig.json`                           | ቤዝ TypeScript ውቅር እና የዱካ ተለዋጭ ስሞች (`@/*`፣ `@omniroute/open-sse`)  |
+| `tsconfig.typecheck-core.json`            | `npm run typecheck:core` ቁራጭ                                      |
+| `tsconfig.typecheck-noimplicit-core.json` | `npm run typecheck:noimplicit:core` (ጥብቅ `noImplicitAny`) ቁራጭ     |
+| `tsconfig.typecheck-api.json`             | ኤፒአይ-መንገድ መተየቢያ ቁራጭ (`scripts/check/check-api-typecheck.mjs`)     |
+| `tsconfig.typecheck-dashboard.json`       | ዳሽቦርድ የጽሕፈት መኪና ቁራጭ (`npm run check:dashboard-typecheck`)         |
+| `tsconfig.build.json`                     | የምርት ዓይነት ቼክ (`npm run typecheck:build`፣ `check:build-typecheck`) |
+| `tsconfig.mitm.json`                      | MITM ግንባታ ውቅረት በ `scripts/build/buildMitm.mjs` ጥቅም ላይ ይውላል        |
+| `next.config.mjs`                         | Next.js 16 ውቅር (ብቻ ውፅዓት፣ ግንባታ-መገለጫ ተለዋጭ ስሞች)                      |
+| `source.config.ts`                        | Fumadocs `defineDocs` config፡ የትኞቹ `docs/` ክፍሎች ወደ `/docs` ያጠናቅራሉ |
+| `postcss.config.mjs`                      | PostCSS / Tailwind የቧንቧ መስመር                                      |
+
+### ሊንት እና ቅርጸት
+
+| ፋይል                                       | ዓላማ                                                                                 |
+| ----------------------------------------- | ----------------------------------------------------------------------------------- |
+| `eslint.config.mjs`                       | ዋና ESLint ጠፍጣፋ ውቅር (`npm run lint`፣ ከ `config/quality/eslint-suppressions.json` ጋር) |
+| `eslint.complexity-ratchets.config.mjs`   | በአንድ ESLint ማለፊያ ውስጥ ውስብስብነት እና የግንዛቤ-ውስብስብ ራትቼስ ጥቅም ላይ የሚውለው ራሱን የቻለ ውቅር           |
+| `eslint.complexity.config.mjs`            | ራሱን የቻለ ማዋቀር ከዋና `complexity` + `max-lines-per-function` ጋር ብቻ (በሙከራዎች ጥቅም ላይ የዋለ)  |
+| `prettier.config.mjs` / `.prettierignore` | Prettier ደንቦች እና ማግለያዎች                                                             |
+| `.editorconfig`                           | የአርታዒ ነባሪዎች (ባለ2-ቦታ ገብ)                                                             |
+| `.markdownlint.json`                      | የምክር ምልክት ማድረጊያ lint (`npm run lint:md`)                                            |
+| `.vale.ini`                               | የምክር ፕሮዝ ሊንት (`npm run lint:prose`)፣ መዝገበ ቃላት በ `.vale/`                            |
+
+### ሙከራዎች, ግምገማ እና ሽፋን
+
+| ፋይል                           | ዓላማ                                                                                            |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- |
+| `vitest.config.ts`            | jsdom Vitest suite `npm run test:vitest:ui` (ዳሽቦርድ `.tsx`፣ መንጠቆዎች፣ memory/skills ሙከራዎች)        |
+| `vitest.mcp.config.ts`        | መስቀለኛ `npm run test:vitest` Vitest MCP አገልጋይ፣ autoCombo፣ ጥምር፣ API `.spec.ts`)                  |
+| `vitest.quarantine.config.ts` | በ `config/quality/vitest-exclusions.json` ውስጥ የተዘረዘሩትን በለይቶ ማቆያ ፋይሎችን ይሰራል                     |
+| `vitest.e2e-live.config.ts`   | የቀጥታ አገልጋይ Vitest suites (`tests/e2e/ecosystem.test.ts`፣ `tests/e2e/protocol-clients.test.ts`) |
+| `playwright.config.ts`        | Playwright E2E (`tests/e2e/**/*.spec.ts`, `npm run test:e2e`)                                  |
+| `stryker.conf.mjs`            | የስትሮከር ሚውቴሽን ሙከራ (`npm run test:mutation`፣ `tap.testFiles` ከ `mutate` ያሰላል)                    |
+| `stryker.disablebail.mjs`     | Stryker ተለዋጭ ያለ ዋስ፣ ለሙከራ-ቅደም መለኪያ                                                              |
+| `promptfooconfig.yaml`        | Quickfoo LLM-የደህንነት ስብስብ                                                                       |
+| `codecov.yml`                 | Codecov patch-cover settings                                                                   |
+
+### Docker እና ማሰማራት
+
+| ፋይል                               | ዓላማ                                                                     |
+| --------------------------------- | ----------------------------------------------------------------------- |
+| `Dockerfile`                      | ባለብዙ ደረጃ ምስል (`builder` → `runner-base` → `runner-web` / `runner-cli*`) |
+| `Dockerfile.bun`                  | አማራጭ ምስል በ Bun ሩጫ ጊዜ (በ `docker-publish.yml` የተሰራ)                      |
+| `docker-compose.yml`              | ነባሪ በፕሮፋይሎች (ቤዝ፣ ድር፣ ክሊ፣ አስተናጋጅ፣ ማህደረ ትውስታ፣ ክሊፕሮክሲያፒ፣…) አዘጋጅ።           |
+| `docker-compose.prod.yml`         | በፖርት 20130 ላይ የተለየ የምርት-ቅጽበተ-ፎቶ ምሳሌ                                     |
+| `docker-compose.selfhost.yml`     | አንድ-ትዕዛዝ loopback ራስን አስተናጋጅ (ጥንዶች ከ `.env.selfhost.example` ጋር)        |
+| `docker-compose.ollama-local.yml` | Docker OmniRoute ከአስተናጋጅ-ተወላጅ Ollama ጋር ማውራት                            |
+| `.dockerignore`                   | Docker ግንባታ-አውድ ማግለያዎች                                                  |
+| `fly.toml`                        | Fly.io መተግበሪያ ማዋቀር (ወደብ 20128፣ `/data` ድምጽ)                             |
+
+### ደህንነት፣ የአቅርቦት ሰንሰለት እና የማጠራቀሚያ ቦቶች
+
+| ፋይል                                          | ዓላማ                                                                   |
+| -------------------------------------------- | --------------------------------------------------------------------- |
+| `.gitleaks.toml`                             | gitleaks ሚስጥራዊ-መቃኘት ህጎች እና የፈቃድ ዝርዝሮች                                 |
+| `.trivyignore`                               | ለኮንቴይነር ምስል ቅኝት ተቀባይነት ያለው-አደጋ ማፈን                                    |
+| `.zizmor.yml`                                | zizmor GitHub የእርምጃዎች ደህንነት-የኦዲት ውቅር                                  |
+| `socket.yml`                                 | Socket.dev መተግበሪያ ማዋቀር (ዱካ ችላ ይላል፣ CI በር አይደለም)                       |
+| `sonar-project.properties`                   | SonarQube/SonarCloud ፕሮጀክት ውቅር                                        |
+| `knip.json`                                  | ጥቅም ላይ ያልዋለ files/exports/deps ማዋቀርን (ምግቦች `npm run check:dead-code`) |
+| `.size-limit.json`                           | የጥቅል መጠን በጀቶች                                                         |
+| `.mergify.yml`                               | የውህደት-ወረፋ ውቅረትን አዋህድ                                                  |
+| `.coderabbit.yaml`                           | CodeRabbit ግምገማ ውቅር                                                   |
+| `.cbmignore`                                 | ለ codebase-memory-mcp ኮድ መረጃ ጠቋሚ ዝርዝርን ችላ በል                          |
+| `.gitignore` / `.gitattributes` / `.mailmap` | ደንቦችን፣ LF መስመር መጨረሻዎችን ለስክሪፕቶች፣ ቀኖናዊ ደራሲ ማንነቶችን ችላ ይበሉ                |
+
+### የአካባቢ አብነቶች፣ ግዛት እና ምግቦች
+
+| ፋይል                         | ዓላማ                                                 |
+| --------------------------- | --------------------------------------------------- |
+| `.env.example`              | አብነት በመጀመሪያ ጭነት ወደ `.env` ተቀድቷል; env vars ማጣቀሻ ዝርዝር |
+| `.env.selfhost.example`     | ለ `docker-compose.selfhost.yml`                     |
+| `.env.homolog.example`      | የግብረ ሰዶማውያን ሯጭ (`npm run homolog`) አብነት             |
+| `.env.devin-bridge.example` | ለ Devin ድልድይ ማዋቀር ምሳሌ env ፋይል                       |
+| `.i18n-state.json`          | ተጨማሪ የትርጉም ሁኔታ (ምንጭ ሃሽ በዶክ እና በአካባቢው)               |
+| `news.json`                 | አካባቢያዊ የተደረገ የማስታወቂያ ምግብ (schema v2) በዳሽቦርዱ የተነበበ   |
 
 ---
 
 ## `src/` — Next.js መተግበሪያ
 
+ወደ 4,550 የሚጠጉ ክትትል የሚደረግባቸው ፋይሎች። መንገድ ተለዋጭ ስም `@/*` → `src/*`.
+
 ```
 src/
-├── app/                 # App Router (ገጾች + API መስመሮች + የሁኔታ ገጾች + ማረፊያ ገጽ)
-├── lib/                 # ዋና ላይብረሪዎች / የዶሜይን ሞጁሎች (80 ንዑስ ማውጫዎች + ~70 ከፍተኛ-ደረጃ ፋይሎች)
-├── domain/              # ንጹህ የዶሜይን ሎጂክ (የፖሊሲ ሞተር፣ fallback፣ ወጪ፣ lockout፣ comboResolver፣ assessment)
-├── server/              # ለሰርቨር ብቻ የሆኑ ሞጁሎች (authz pipeline፣ cors፣ auth middleware) — ከደንበኛ ሊመጡ አይችሉም
-├── shared/              # ደህንነቱ በተጠበቀበት ሁኔታ በሰርቨርና በደንበኛ መካከል የሚጋራ (constants፣ types፣ validation፣ contracts፣ utils)
-├── i18n/                # next-intl ውቅር + ለእያንዳንዱ ቋንቋ የመልዕክት JSON (42 ቋንቋዎች)
-├── middleware/          # Next.js middleware (የጥያቄ ማበልጸጊያ፣ ቋንቋ መለየት)
-├── mitm/                # የMITM ፕሮክሲ ዋና ክፍል፦ የምስክር ወረቀት ማመንጨት/መጫን፣ handlers፣ targets፣ inspector፣ masks፣ passthrough
-│   ├── handlers/        # MitmHandlerBaseን የሚያራዝሙ 9 የIDE-agent handler ክላሶች (antigravity፣ kiro፣ copilot፣ codex፣ cursor፣ zed፣ claudeCode፣ openCode፣ trae)
-│   └── inspector/       # የትራፊክ ቀረጻ ንብርብር፦ buffer (በማህደረ ትውስታ ውስጥ ያለ ring)፣ sseMerger፣ conversationNormalizer፣ kindDetector፣ contextKey፣ httpProxyServer፣ systemProxyConfig
-├── models/              # የሞዴል adapter ማገናኛ (የቀድሞ shim)
-├── scripts/             # በፕሮጀክቱ ውስጥ ያሉ የጥገና scripts (ለምሳሌ፣ backfillAggregation)
-├── sse/                 # የቀድሞ SSE handlers/services (chat.ts፣ chatHelpers.ts፣ services/auth.ts)
-├── store/               # የቀድሞ በማህደረ ትውስታ ውስጥ ያለ store (በsrc/lib/db ቀስ በቀስ እየተተካ ነው)
-├── types/               # የሚጋሩ TS type ፋይሎች
-├── instrumentation.ts   # የNext.js telemetry hook (browser + edge)
-├── instrumentation-node.ts  # ለNode ብቻ የሆነ instrumentation
-└── proxy.ts             # የHTTP-proxy መግቢያ shim
+├── app/                  # App Router: pages, layouts and route handlers (file-convention loaded)
+│   ├── (dashboard)/      # Route group for the dashboard: dashboard/<section>/ pages + home widgets
+│   ├── api/              # HTTP routes: v1/ (OpenAI-compatible), v1beta/ (Gemini-style), management routes
+│   ├── docs/             # Embedded docs viewer (lib/openapi.generated.ts is generated)
+│   ├── a2a/ .well-known/ # A2A JSON-RPC entry point and Agent Card discovery
+│   ├── healthz/ livez/ readyz/ status/   # Health probes and status page
+│   ├── landing/ login/ auth/ authorize/ callback/ connect/   # Public, auth and OAuth pages
+│   ├── miniapp/          # Telegram Mini App page
+│   └── 400/ … 503/       # Static HTTP error pages
+├── lib/                  # Server-side libraries and domain modules (largest folder)
+├── shared/               # Code shared by server and client: components, constants, validation, utils
+├── sse/                  # Next.js side of the SSE pipeline: handlers/ (chat*), services/ (auth, leases, quotas)
+├── mitm/                 # MITM / TPROXY capture: cert/, dns/, handlers/, targets/, inspector/, tproxy/ (C addon)
+├── server/               # Server-only: authz/ (route guard pipeline), auth/, cors/, origin/, ws/
+├── domain/               # Policy engine, fallback, cost rules, lockout, quota cache, assessment/
+├── i18n/                 # next-intl: messages/ (67 locales), global-error-messages/ (generated), routeNamespaces.generated.json
+├── store/                # Zustand client stores (theme, notifications, …)
+├── hooks/                # Client hooks (live dashboard, compression preview, breaker health)
+├── types/                # Ambient and shared type declarations
+├── models/               # Compatibility barrel re-exporting db functions
+├── middleware/           # promptInjectionGuard.ts (facade over the guardrail system)
+├── scripts/              # backfillAggregation.ts (`npm run backfill-aggregation`)
+├── proxy.ts              # Next.js 16 proxy: headless gate + authz pipeline for dashboard, /api and /v1-style paths
+├── instrumentation.ts    # Next.js instrumentation hook (delegates Node-only work)
+└── instrumentation-node.ts   # Node-only startup work
 ```
 
-### `src/app/` — App Router (Next.js 16)
+### `src/app/` — መተግበሪያ ራውተር
 
-| Path                                                                         | Purpose                                                                                                                                                                                                                                                                                                         |
-| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/v1/`                                                                | ይፋዊ OpenAI-ተኳሃኝ API (~25 ንዑስ-መስመሮች፦ chat, completions, embeddings, files, batches, audio, images, videos, music, rerank, moderations, search, ws, agents, accounts, providers, ወዘተ።)                                                                                                                            |
-| `app/api/v1beta/`                                                            | የGemini-ቅጥ API መጨረሻ ነጥቦች                                                                                                                                                                                                                                                                                        |
-| `app/api/playground/`                                                        | የPlayground Studio መስመሮች፦ `improve-prompt/` (POST — የLLM ጥያቄ ዳግም ጸሐፊ)፣ `presets/` (GET ዝርዝር / POST ፍጠር)፣ `presets/[id]/` (GET / PUT / DELETE) — `docs/frameworks/PLAYGROUND_STUDIO.md`ን ይመልከቱ                                                                                                                   |
-| `app/api/` (non-v1)                                                          | የአስተዳደር/አስተዳዳሪ መስመሮች (~60 ማውጫዎች፦ providers, combos, settings, mcp, a2a, evals, memory, skills, webhooks, compliance, resilience, monitoring, tunnels, cli-tools, ወዘተ።)                                                                                                                                          |
-| `app/api/tools/agent-bridge/`                                                | AgentBridge REST API — 12 መስመሮች (የሰርቨር ቁጥጥር፣ የወኪል ሁኔታ/DNS/ማዛመጃዎች፣ ማለፊያ፣ ሰርተፊኬት፣ upstream-CA)። LOCAL_ONLY + SPAWN_CAPABLE። `docs/frameworks/AGENTBRIDGE.md §7`ን ይመልከቱ።                                                                                                                                           |
-| `app/api/tools/traffic-inspector/`                                           | Traffic Inspector REST + WS API — 16+ መስመሮች (ጥያቄዎች፣ ክፍለ-ጊዜዎች፣ አስተናጋጆች፣ የቀረጻ ሁነቶች፣ ወደ ውጭ መላክ፣ ws)። LOCAL_ONLY + SPAWN_CAPABLE። `docs/frameworks/TRAFFIC_INSPECTOR.md §8`ን ይመልከቱ።                                                                                                                                 |
-| `app/a2a/`                                                                   | የA2A JSON-RPC 2.0 መግቢያ ነጥብ (`POST /a2a`)                                                                                                                                                                                                                                                                        |
-| `app/.well-known/agent.json/`                                                | A2A Agent Card (ማግኘት)                                                                                                                                                                                                                                                                                           |
-| `app/(dashboard)/dashboard/`                                                 | የዳሽቦርድ UI ገጾች (50+ ክፍሎች፣ ~118 page.tsx ፋይሎች፦ providers, combos, settings, memory, skills, webhooks, evals, audit, batch, cache, costs, health, system, activity, ወዘተ።)                                                                                                                                          |
-| `app/(dashboard)/dashboard/search-tools/`                                    | Search Tools Studio UI (3 ትሮች፦ Search/Scrape/Compare + SearchConceptCard + ProviderCatalog) — `docs/frameworks/SEARCH_TOOLS_STUDIO.md`ን ይመልከቱ                                                                                                                                                                   |
-| `app/(dashboard)/dashboard/memory/`                                          | Memory Studio (ዕቅድ 21)፦ `page.tsx` (ባለ3-ትር ሼል)፣ `components/` (MemoryConceptCard, MemoryEngineStatus, EmbeddingSourceSelector, EditMemoryModal, RetrievePreview, QdrantConfigCard, RerankConfigCard)፣ `components/tabs/` (MemoriesTab, PlaygroundTab, EngineTab)፣ `hooks/` (useEngineStatus, useMemorySettings) |
-| `app/(dashboard)/dashboard/tools/agent-bridge/`                              | የAgentBridge ዳሽቦርድ ገጽ — የሰርቨር ካርድ፣ 9 የወኪል ካርዶች፣ የማዋቀር አዋቂ፣ የሞዴል ማዛመድ፣ የማለፊያ ዝርዝር። i18n PT-BR + EN። `docs/frameworks/AGENTBRIDGE.md`ን ይመልከቱ።                                                                                                                                                                     |
-| `app/(dashboard)/dashboard/tools/traffic-inspector/`                         | የTraffic Inspector ዳሽቦርድ ገጽ — የDevTools ክፍፍል፣ 7 የዝርዝር ትሮች፣ 4 የቀረጻ ሁነት መቀያየሪያዎች፣ የክፍለ-ጊዜ መቅጃ፣ የዐውድ ቀለም አሰጣጥ። i18n PT-BR + EN። `docs/frameworks/TRAFFIC_INSPECTOR.md`ን ይመልከቱ።                                                                                                                                     |
-| `app/(dashboard)/dashboard/activity/`                                        | የእንቅስቃሴ ዥረት ገጽ (ቡድን B): `page.tsx` (ሰርቨር) + `ActivityFeedClient.tsx` + `components/{ActivityFeed,ActivityItem,DayHeader,EventTypeFilter}.tsx` — `docs/architecture/MONITORING_SECTIONS.md`ን ይመልከቱ                                                                                                               |
-| `app/(dashboard)/dashboard/costs/quota-share/`                               | የኮታ መጋራት ገጽ (ቡድን B): `QuotaSharePageClient.tsx` + `components/{PoolCard,DimensionBar,AllocationTable,BurnRateChart,QuotaConceptCard,CreatePoolModal,EditAllocationsModal}.tsx` + `hooks/{usePools,usePoolUsage,useLocalStoragePoolMigration}.ts`                                                                |
-| `app/(dashboard)/dashboard/costs/quota-share/plans/`                         | የአቅራቢ ዕቅድ ውቅር ገጽ (ቡድን B): `page.tsx` + `ProviderPlanConfigClient.tsx` — በእያንዳንዱ ግንኙነት የሚሻሩ የኮታ ልኬቶች                                                                                                                                                                                                             |
-| `app/docs/`                                                                  | የተካተተ የሰነድ መመልከቻ (`docs/*.md`ን ያሳያል)                                                                                                                                                                                                                                                                            |
-| `app/landing/`                                                               | የግብይት ማረፊያ ገጽ                                                                                                                                                                                                                                                                                                   |
-| `app/login/`, `forgot-password/`, `forbidden/`                               | ከማረጋገጫ ጋር የተያያዙ ገጾች                                                                                                                                                                                                                                                                                             |
-| `app/{400,401,403,408,429,500,502,503}/`                                     | የHTTP ስህተት ገጾች                                                                                                                                                                                                                                                                                                  |
-| `app/maintenance/`, `offline/`, `status/`, `privacy/`, `terms/`, `callback/` | ቋሚ/የሁኔታ ገጾች                                                                                                                                                                                                                                                                                                     |
-| `app/layout.tsx`, `page.tsx`, `manifest.ts`, `globals.css`                   | ስርወ አቀማመጥ፣ መነሻ ገጽ፣ PWA ማኒፌስት፣ ዓለም አቀፍ CSS                                                                                                                                                                                                                                                                       |
-| `app/error.tsx`, `global-error.tsx`, `not-found.tsx`, `loading.tsx`          | የስህተት ወሰኖች                                                                                                                                                                                                                                                                                                      |
+| መንገድ                                                                | ዓላማ                                                                                                                                           |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/api/v1/`                                                       | ይፋዊ ክፍት AI-ተኳሃኝ API፡ ውይይት፣ ማጠናቀቂያዎች፣ ምላሾች፣ መልእክቶች፣ መክተቶች፣ ምስሎች፣ ኦዲዮ፣ ቪዲዮዎች፣ ሙዚቃ፣ ዳግም ደረጃ፣ አወያይ፣ ፍለጋ፣ ፋይሎች፣ ስብስቦች፣ WS፣ ሞዴሎች፣…                  |
+| `app/api/v1beta/`                                                   | የጌሚኒ-ቅጥ የመጨረሻ ነጥቦች                                                                                                                            |
+| `app/api/` (ሌሎች አቃፊዎች)                                              | የአስተዳደር እና የአስተዳዳሪ መስመሮች፡ አቅራቢዎች፣ ጥንብሮች፣ ቅንጅቶች፣ ቁልፎች፣ አጠቃቀም፣ ሎግዎች፣ mcp፣ a2a፣ acp፣ memory፣ skills፣ evals፣ webhooks፣ ዋሻዎች፣ ተሰኪዎች፣ ራዳር፣ መሳሪያዎች፣… |
+| `app/api/tools/agent-bridge/`                                       | AgentBridge REST API — ተመልከት [AGENTBRIDGE.md](../frameworks/AGENTBRIDGE.md)                                                                   |
+| `app/api/tools/traffic-inspector/`                                  | የትራፊክ ኢንስፔክተር REST API — [TRAFFIC_INSPECTOR.md](../frameworks/TRAFFIC_INSPECTOR.md)                                                           |
+| `app/(dashboard)/dashboard/`                                        | በአንድ ዳሽቦርድ ክፍል አንድ አቃፊ (አቅራቢዎች፣ ጥንብሮች፣ ሎግዎች፣ አጠቃቀም፣ ወጪዎች፣ መሸጎጫ፣ መጭመቂያ፣ ማህደረ ትውስታ፣ የመጫወቻ ስፍራ፣ የፍለጋ መሳሪያዎች፣ ቅንብሮች፣ መሳሪያዎች፣…)                    |
+| `app/(dashboard)/home/`                                             | የመነሻ ማያ ገጽ እና መግብሮቹ                                                                                                                           |
+| `app/docs/`                                                         | የሰነዶች ተመልካች በ `source.config.ts` ውስጥ የተዘረዘሩትን የፉማዶክስ ክፍሎችን ያሳያል                                                                               |
+| `app/layout.tsx`, `page.tsx`, `manifest.ts`, `globals.css`          | የስር አቀማመጥ፣ ስርወ ግቤት (ማዞሪያዎች)፣ PWA መግለጫ፣ አለምአቀፍ CSS                                                                                             |
+| `app/error.tsx`, `global-error.tsx`, `not-found.tsx`, `loading.tsx` | የስህተት ገደቦች እና ውድቀቶች                                                                                                                           |
 
-### `src/lib/` — ዋና ቤተ-መጻሕፍት (~50 ሞጁሎች)
+API መንገዶች `Route → CORS → Zod validation → optional auth → policy → handler` ይከተላሉ; [ARCHITECTURE.md](ARCHITECTURE.md) እና [API_REFERENCE ይመልከቱ .md](../reference/API_REFERENCE.md).
 
-| ሞጁል                                      | ዓላማ                                                                                                                                                                                                                                                                                                              |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `a2a/`                                   | የA2A ፕሮቶኮል ተግባር አስተዳዳሪ፣ ክህሎቶች (5)፣ ዥረት ማስተላለፍ                                                                                                                                                                                                                                                                    |
-| `acp/`                                   | የCLI Agent Registry (የአካባቢ CLI ፍለጋ — `docs/frameworks/AGENT_PROTOCOLS_GUIDE.md`ን ይመልከቱ)                                                                                                                                                                                                                          |
-| `api/`                                   | የጋራ API ረዳቶች (`requireManagementAuth`፣ ማረጋገጫ)                                                                                                                                                                                                                                                                    |
-| `auth/`                                  | ክፍለ-ጊዜ፣ የይለፍ ቃል ሃሺንግ፣ የቶከን ማረጋገጫ                                                                                                                                                                                                                                                                                 |
-| `batches/`                               | የOpenAI Batches API ተቆጣጣሪዎች                                                                                                                                                                                                                                                                                      |
-| `catalog/`                               | የአቅራቢ ካታሎግ Zod ማረጋገጫ + የችሎታ መፍታት                                                                                                                                                                                                                                                                                 |
-| `cloudAgent/`                            | Cloud Agents (Codex Cloud፣ Devin፣ Jules) — `docs/frameworks/CLOUD_AGENT.md`ን ይመልከቱ                                                                                                                                                                                                                               |
-| `combos/`                                | የኮምቦ መፍታት + እንደገና የማደራጀት ረዳቶች                                                                                                                                                                                                                                                                                    |
-| `audit/`                                 | የእንቅስቃሴ ዥረት ረዳቶች፦ `highLevelActions.ts` (የተፈቀዱ ዝርዝር + `isHighLevelAction()`), `activityIcons.ts` (ድርጊት → የአዶ/ግስ ካርታ)፣ `timeline.ts` (`groupByDay`/`relativeTime`) — `docs/architecture/MONITORING_SECTIONS.md`ን ይመልከቱ                                                                                            |
-| `compliance/`                            | የኦዲት ምዝግብ + የአቅራቢ ኦዲት — `docs/security/COMPLIANCE.md`ን ይመልከቱ                                                                                                                                                                                                                                                     |
-| `compression/`                           | የመጭመቂያ ሞተር ማገናኛ (ሞተሮቹ በ`open-sse/services/compression/` ውስጥ ይገኛሉ)                                                                                                                                                                                                                                                |
-| `config/`                                | የአሂድ-ጊዜ ውቅር ረዳቶች                                                                                                                                                                                                                                                                                                 |
-| `db/`                                    | 120+ የጎራ DB ሞጁሎች + 168 ፍልሰቶች (ለSQLite ሁልጊዜ በዚህ በኩል ይለፉ)                                                                                                                                                                                                                                                          |
-| `quota/`                                 | የኮታ መጋራት ሞተር፦ `dimensions.ts` (ዓይነቶች/Zod)፣ `types.ts` (`QuotaStore` በይነገጽ)፣ `sqliteQuotaStore.ts`፣ `redisQuotaStore.ts`፣ `storeFactory.ts`፣ `fairShare.ts`፣ `burnRate.ts`፣ `planResolver.ts`፣ `planRegistry.ts`፣ `saturationSignals.ts`፣ `enforce.ts`፣ `spendRecorder.ts` — `docs/routing/QUOTA_SHARE.md`ን ይመልከቱ |
-| `radar/`                                 | የRadar ነጻ-ሞዴል ካታሎግ ደንበኛ፦ `feedSchema.ts`፣ `pinnedKeys.ts`፣ `verify.ts`፣ `sync.ts`፣ `applyFeed.ts`፣ `index.ts` (`getRadarCatalog()`) — `docs/frameworks/RADAR.md`ን ይመልከቱ                                                                                                                                          |
-| `display/`                               | የUI ቅርጸት ማስያዣ ረዳቶች (ወጪ፣ መዘግየት፣ ወዘተ.)                                                                                                                                                                                                                                                                             |
-| `embeddings/`                            | የEmbeddings አገልግሎት ረዳቶች                                                                                                                                                                                                                                                                                          |
-| `env/`                                   | የEnv ተለዋዋጮችን መተንተን + ማረጋገጥ                                                                                                                                                                                                                                                                                       |
-| `evals/`                                 | የEval ማዕቀፍ (ስብስቦች፣ አስኬጅ፣ የአፈጻጸም አካባቢ) — `docs/frameworks/EVALS.md`ን ይመልከቱ                                                                                                                                                                                                                                        |
-| `guardrails/`                            | የPII መደበቂያ፣ የprompt injection መከላከያ፣ የvision bridge — `docs/security/GUARDRAILS.md`ን ይመልከቱ                                                                                                                                                                                                                       |
-| `jobs/`                                  | የጀርባ ሥራዎች (cron-መሰል)                                                                                                                                                                                                                                                                                             |
-| `memory/`                                | የውይይት ማህደረ ትውስታ (SQLite FTS5 + sqlite-vec ድብልቅ RRF + Qdrant tier 2) — `docs/frameworks/MEMORY.md`ን ይመልከቱ                                                                                                                                                                                                         |
-| `memory/embedding/`                      | ባለብዙ-ምንጭ embedding ንብርብር፦ `index.ts` (መፍቻ)፣ `remote.ts`፣ `staticPotion.ts`፣ `transformersLocal.ts`፣ `cache.ts`፣ `types.ts` (ዕቅድ 21)                                                                                                                                                                              |
-| `memory/vectorStore.ts`                  | የsqlite-vec v0.1.9 መጠቅለያ — KNN ሙሉ-ፍለጋ + ድብልቅ RRF (FTS5 + vector፣ k=60)። በሚያስፈልግበት ጊዜ ይጀምራል፣ sqlite-vec በማይገኝበት ጊዜም በአግባቡ አቅሙን ይቀንሳል። (ዕቅድ 21)                                                                                                                                                                    |
-| `memory/reindex.ts`                      | `runReindexBatch()` — `needs_reindex=1` ያላቸውን ትውስታዎች በጀርባ ያስኬዳል፤ በ`POST /api/memory/reindex` እና በlazy-backfill መንገድ ይጠራል። (ዕቅድ 21)                                                                                                                                                                               |
-| `monitoring/`                            | የጤና ምርመራዎች፣ የመለኪያዎች ልቀት                                                                                                                                                                                                                                                                                          |
-| `oauth/`                                 | ለ22 የአቅራቢ ሞጁሎች OAuth/የማስመጣት ፍሰቶች (agy, antigravity, claude, cline, codebuddy-cn, codex, cursor, devin-desktop, ghe-copilot, github, gitlab-duo, grok-cli-oauth, grok-cli, kilocode, kimi-coding, kiro, openference, qoder, trae, xai-oauth, zed-hosted, zed)                                                     |
-| `plugins/`                               | የPlugin መዝገብ                                                                                                                                                                                                                                                                                                     |
-| `promptCache/`                           | የAnthropic-ቅጥ prompt cache መግቻ ነጥቦች                                                                                                                                                                                                                                                                              |
-| `skills/`                                | የSkills ማዕቀፍ (አብሮገነብ + marketplace + SkillsSH) — `docs/frameworks/SKILLS.md`ን ይመልከቱ                                                                                                                                                                                                                              |
-| `playground/`                            | የPlayground Studio የጋራ ረዳቶች፦ `codeExport.ts` (የcurl/Python/TS ማመንጫ)፣ `promptImprover.ts` (የmeta-prompt ገንቢ)፣ `streamMetrics.ts` (ንጹህ TTFT/TPS)፣ `types.ts` (የዋጋ ሰንጠረዥ) — `docs/frameworks/PLAYGROUND_STUDIO.md`ን ይመልከቱ                                                                                           |
-| `webhookDispatcher.ts`                   | የHMAC webhook ማድረስ — `docs/frameworks/WEBHOOKS.md`ን ይመልከቱ                                                                                                                                                                                                                                                        |
-| `cloudflaredTunnel.ts`, `ngrokTunnel.ts` | የtunnel አስተዳዳሪዎች — `docs/ops/TUNNELS_GUIDE.md`ን ይመልከቱ                                                                                                                                                                                                                                                            |
-| `cloudSync.ts`, `initCloudSync.ts`       | አማራጭ የሁኔታ cloud ማመሳሰል                                                                                                                                                                                                                                                                                            |
-| `localDb.ts`                             | ለdb ሞጁሎች ዳግም-ወደ-ውጭ የሚልክ barrel (ሎጂክ የለውም — ዳግም ወደ ውጭ መላክ ብቻ)                                                                                                                                                                                                                                                     |
-| `cacheLayer.ts`, `idempotencyLayer.ts`   | የጥያቄ caching + idempotency                                                                                                                                                                                                                                                                                       |
-| (ተጨማሪ ~30 ከፍተኛ-ደረጃ ፋይሎች)                 | ልዩ ረዳቶች (logEnv፣ modelsDevSync፣ piiSanitizer፣ ወዘተ)                                                                                                                                                                                                                                                               |
+### `src/lib/` — አገልጋይ ቤተ-መጻሕፍት
 
-### `src/lib/db/` — የውሂብ ጎታ (137 ሞጁሎች + 193 migrations)
+በግምት 90 ንዑስ አቃፊዎች እና ወደ 90 ከፍተኛ ደረጃ ሞጁሎች። ዋና ቡድኖች፡-
 
-| ንዑስ ማውጫ                   | ዓላማ                                                                                                                                                                         |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `db/core.ts`              | የWAL journaling ያለው `getDbInstance()` singleton                                                                                                                             |
-| `db/migrations/`          | ስሪት የተሰጣቸው SQL ፋይሎች (idempotent፣ transactional)። `073_memory_vec.sql` የ`memory_vec_meta` + `needs_reindex` ዓምድን ይጨምራል (ዕቅድ 21)።                                             |
-| `db/playgroundPresets.ts` | ለPlayground Studio presets የCRUD ሞጁል (`listPlaygroundPresets`, `getPlaygroundPreset`, `createPlaygroundPreset`, `updatePlaygroundPreset`, `deletePlaygroundPreset`)         |
-| `db/memoryVec.ts`         | ለ`memory_vec_meta` CRUD (active_dim፣ embedding_signature፣ last_reset_at፣ vec_loaded) + `markMemoryNeedsReindex`፣ `getMemoryReindexQueue`፣ ወዘተ (ዕቅድ 21)                      |
-| `db/<domain>.ts`          | ለእያንዳንዱ domain አንድ ሞጁል፦ providers፣ combos፣ apiKeys፣ users፣ sessions፣ usage፣ audit*log፣ webhooks፣ skills፣ memory_entries፣ cloud_agent_tasks፣ evals*\*፣ reasoning_cache፣ ወዘተ። |
+| አካባቢ               | ማህደሮች / ፋይሎች                                                                                                        | ጥልቅ ጠልቆ መግባት                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| የውሂብ ጎታ            | `db/` — ጎራ ሞጁሎች፣ `migrations/`, `adapters/`, `repositories/`, `migrationRunner/`                                    | [`src/lib/db/AGENTS.md`](../../src/lib/db/AGENTS.md), [DATABASE_GUIDE.md](../ops/DATABASE_GUIDE.md)                                            |
+| አጠቃቀም፣ ኮታ እና ወጪ    | `usage/`, `quota/`, `spend/`                                                                                        | [QUOTA_SHARE.md](../routing/QUOTA_SHARE.md), [COST_TRACKING.md](../guides/COST_TRACKING.md)                                                    |
+| አቅራቢዎች እና ሞዴሎች     | `providers/`, `providerModels/`, `modelValidation/`, `catalog/`, `radar/`, `freeProxyProviders/`                    | [RADAR.md](../frameworks/RADAR.md), [MODEL-VALIDATION.md](../guides/MODEL-VALIDATION.md)                                                       |
+| OAuth እና ምስክርነቶች   | `oauth/` (አቅራቢዎች/፣ አገልግሎቶች/፣ መገልገያዎች/)፣ `zed-oauth/`፣ `copilot/`፣ `cursor/`፣ `credentialHealth/`                    | `resolvePublicCred()` (ኦፕሬተር ሰነድ፣ በይፋ ያልቀረበ)                                                                                                   |
+| ደህንነት እና አስተዳደር    | `guardrails/`, `compliance/`, `pii/`, `security/`                                                                   | [GUARDRAILS.md](../security/GUARDRAILS.md), [COMPLIANCE.md](../security/COMPLIANCE.md)                                                         |
+| የወኪል ባህሪያት         | `a2a/`, `acp/`, `cloudAgent/`, `memory/`, `skills/`, `agentSkills/`                                                 | [AGENT_PROTOCOLS_GUIDE.md](../frameworks/AGENT_PROTOCOLS_GUIDE.md), [MEMORY.md](../frameworks/MEMORY.md), [SKILLS.md](../frameworks/SKILLS.md) |
+| ተሰኪዎች እና አገልግሎቶች   | `plugins/`፣ `services/` (የተከተተ አገልግሎት ጫኚዎች እና ተቆጣጣሪ)                                                                | [PLUGINS.md](../frameworks/PLUGINS.md), [EMBEDDED-SERVICES.md](../frameworks/EMBEDDED-SERVICES.md)                                             |
+| መስመር እና የመቋቋም      | `combos/`, `routing/`, `resilience/`, `reasoningRouting/`, `promptCache/`                                           | [RESILIENCE_GUIDE.md](RESILIENCE_GUIDE.md)                                                                                                     |
+| ፕሮክሲዎች እና አውታረመረብ  | `proxyHealth/`, `proxySubscription/`, `proxyRelay/`, `proxyEvents/`, ዋሻ ሞጁሎች                                        | [PROXY_GUIDE.md](../ops/PROXY_GUIDE.md), [TUNNELS_GUIDE.md](../ops/TUNNELS_GUIDE.md)                                                           |
+| ስራዎች እና መርሐግብር     | `jobs/`, `jobRegistry/`, `warmupScheduler/`                                                                         |                                                                                                                                                |
+| ታዛቢነት እና ወደ ውጭ መላክ | `monitoring/`, `logExport/`, `webhooks/`, `audit/`, `events/`                                                       | [LOG-EXPORT.md](../frameworks/LOG-EXPORT.md), [WEBHOOKS.md](../frameworks/WEBHOOKS.md)                                                         |
+| CLI እና IDE ውህደት    | `cliTools/`, `cli-helper/`, `vscode/`, `inspector/`, `versionManager/`                                              | [CLI-TOOLS.md](../reference/CLI-TOOLS.md), [VSCODE-COPILOT.md](../guides/VSCODE-COPILOT.md)                                                    |
+| የአውድ ምንጮች          | `localCorpus/`, `notion/`, `obsidian/`                                                                              | [LOCAL_CORPUS_CONTEXT.md](../frameworks/LOCAL_CORPUS_CONTEXT.md)                                                                               |
+| ሌሎች ባህሪያት          | `evals/`, `playground/`, `gamification/`, `telegram/`, `conductor/`, `batches/`, `deploy/`, `transfer/`, `sync/`, … | [EVALS.md](../frameworks/EVALS.md), [PLAYGROUND_STUDIO.md](../frameworks/PLAYGROUND_STUDIO.md)                                                 |
 
-### `src/domain/`
+ሊታወቅ የሚገባው ከፍተኛ ደረጃ ሞጁሎች፡-
 
-| ሞጁል                    | ዓላማ                                            |
-| ---------------------- | ---------------------------------------------- |
-| `policy.ts`            | የፖሊሲ ሞተር                                       |
-| `fallbackPolicy.ts`    | የfallback ውሳኔ ዛፍ                               |
-| `costRules.ts`         | የወጪ ስሌት ደንቦች                                   |
-| `lockoutPolicy.ts`     | የmodel/connection lockout ፖሊሲ                  |
-| `tagRouter.ts`         | በtag ላይ የተመሠረተ routing                         |
-| `comboResolver.ts`     | የcombo መፍታት (በcombo engine ጥቅም ላይ የሚውል)        |
-| `modelAvailability.ts` | የእያንዳንዱ model availability ማረጋገጫ               |
-| `assessment/`          | የmodel assessment (የRFC-AUTO-ASSESSMENT ደረጃ 1) |
+| ፋይል                                                            | ዓላማ                                              |
+| -------------------------------------------------------------- | ------------------------------------------------ |
+| `cacheLayer.ts`, `idempotencyLayer.ts`, `semanticCache.ts`     | የምላሽ መሸጎጫ እና ስሜታዊነት                              |
+| `webhookDispatcher.ts`                                         | በHMAC የተፈረመ የድር መንጠቆ ማቅረቢያ                       |
+| `cloudflaredTunnel.ts`, `ngrokTunnel.ts`, `tailscaleTunnel.ts` | መሿለኪያ አስተዳዳሪዎች                                   |
+| `tokenHealthCheck*.ts`, `tokenRefreshCircuit.ts`               | የበስተጀርባ ምስክርነት የጤና ፍተሻ እና የማደስ ወረዳ               |
+| `streamingPiiTransform.ts`, `streamingCredentialTransform.ts`  | የዥረት ምላሽ ሳኒታይዘር                                  |
+| `gracefulShutdown.ts`, `serverLifecycle.ts`                    | የሕይወት ዑደት ሂደት                                    |
+| `*.stub.ts`                                                    | ግንባታ-መገለጫ stubs በ `next.config.mjs` ውስጥ ተለዋጭ ስሞች |
 
-### `src/server/`
+### `src/lib/db/` — የውሂብ ጎታ
 
-| ሞጁል      | ዓላማ                                                                                                |
-| -------- | -------------------------------------------------------------------------------------------------- |
-| `authz/` | የፈቃድ መስጫ pipeline፦ `classify` → `policies` → `enforce` — `docs/architecture/AUTHZ_GUIDE.md`ን ይመልከቱ |
-| `cors/`  | የCORS ውቅር                                                                                          |
-| `auth/`  | የsession middleware                                                                                |
+| መንገድ                  | ዓላማ                                                                                      |
+| --------------------- | ---------------------------------------------------------------------------------------- |
+| `db/core.ts`          | `getDbInstance()` singleton (WAL journaling)                                             |
+| `db/migrations/`      | የተቆጠሩ፣ ኃይለኛ `.sql` ፍልሰቶች (በሚጻፉበት ጊዜ 236 ፋይሎች፣ `check-migration-numbering.mjs` ጠባቂዎች ቁጥር) |
+| `db/migrationRunner/` | የስደት ሯጭ                                                                                  |
+| `db/adapters/`        | SQLite ነጂ አስማሚዎች (better-sqlite3፣ node:sqlite፣ bun:sqlite፣ sql.js)                       |
+| `db/repositories/`    | SQLite ማከማቻ አተገባበር (ኮምቦስ፣ የመጫወቻ ስፍራ ቅድመ-ቅምጦች፣ የማዞሪያ ውቅር)                                 |
+| `db/<domain>.ts`      | ወደ 175 የሚሆኑ የጎራ ሞጁሎች (አቅራቢዎች፣ ጥንብሮች፣ apiKeys፣ መቼቶች፣ አጠቃቀም፣…) — ሁልጊዜ እነዚህን በቀጥታ ያስመጣሉ።    |
 
-### `src/shared/`
+### `src/domain/`, `src/server/`, `src/shared/`
 
-| ሞጁል                              | ዓላማ                                                              |
-| -------------------------------- | ---------------------------------------------------------------- |
-| `constants/providers.ts`         | **355 አቅራቢዎች** ከZod ማረጋገጫ ጋር (ዋናው የእውነት ምንጭ)                     |
-| `constants/cliTools.ts`          | የውጫ CLI መሣሪያዎች መዝገብ                                              |
-| `constants/routingStrategies.ts` | **19 የማዘዋወሪያ ስልቶች** ከቅድሚያዎች ጋር                                   |
-| `constants/publicApiRoutes.ts`   | Bearer (ከአስተዳደር ማረጋገጫ በተቃራኒ) ማረጋገጫ የሚፈልጉ መስመሮች                   |
-| `constants/upstreamHeaders.ts`   | ለወደላይ ጥያቄዎች የራስጌ ክልክል ዝርዝር                                       |
-| `validation/schemas.ts`          | ~80 Zod መርሃግብሮች (ለAPI ውሎች ነጠላ የእውነት ምንጭ)                         |
-| `validation/helpers.ts`          | የZod ማረጋገጫ ረዳቶች (`validateBody`፣ ወዘተ)                            |
-| `types/`                         | የጋራ TS ዓይነቶች                                                     |
-| `contracts/`                     | ይፋዊ API ውሎች (በ`package.json` ውስጥ ባለው `files:` የሚጠቀሙባቸው)          |
-| `utils/circuitBreaker.ts`        | የአቅራቢ የወረዳ ተቋራጭ (`docs/architecture/RESILIENCE_GUIDE.md`ን ይመልከቱ) |
-| `utils/apiAuth.ts`               | የAPI ቁልፍ ማረጋገጫ፣ የወሰን ምርመራ                                        |
-| `utils/fetchTimeout.ts`          | ለወደላይ fetch የጊዜ ገደብ/ማቋረጫ መጠቅለያዎች                                 |
-| `utils/releaseNotes.ts`          | የተዘጋ v2/legacy ማስታወቂያ ተንታኝ፣ አካባቢያዊነት እና የID ማሰናበት                |
+| መንገድ                                                           | ዓላማ                                                                                                                                             |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain/policyEngine.ts`                                       | የፖሊሲ ሞተር                                                                                                                                        |
+| `domain/fallbackPolicy.ts`, `lockoutPolicy.ts`, `costRules.ts` | የመውደቅ ውሳኔዎች፣ የመቆለፊያ ፖሊሲ፣ የወጪ ህጎች                                                                                                                |
+| `domain/quotaCache*.ts`, `quotaSnapshot*.ts`                   | የኮታ መሸጎጫ እና ቅጽበተ-ፎቶ ጽናት                                                                                                                         |
+| `domain/assessment/`                                           | የሞዴል ግምገማ (ገምጋሚ፣ ምድብ ሰጪ፣ ራስን ፈዋሽ)                                                                                                               |
+| `server/authz/`                                                | የፍቃድ ቧንቧ መስመር እና የመንገድ ጠባቂ (`routeGuard.ts`) — ተመልከት [AUTHZ_GUIDE.md](AUTHZ_GUIDE.md), [ROUTE_GUARD_TIERS.md](../security/ROUTE_GUARD_TIERS.md) |
+| `server/origin/`, `server/cors/`                               | Public/MCP/WS አመጣጥ መፍታት እና CORS — [CORS.md](../security/CORS.md) ይመልከቱ                                                                          |
+| `server/ws/`                                                   | የቀጥታ ዳሽቦርድ WebSocket አገልጋይ                                                                                                                      |
+| `shared/components/`                                           | ዳሽቦርድ ክፍሎች እና አስማሚዎች `packages/ui-kit` — ላይ [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) ይመልከቱ                                                          |
+| `shared/constants/`                                            | የአቅራቢ ካታሎግ (`providers.ts`)፣ የማዞሪያ ስልቶች፣ CLI መሳሪያዎች፣ የአዶ ካርታ፣ የላይ ራስጌ መካድ፣…                                                                     |
+| `shared/validation/`                                           | Zod ንድፎችን እና የማረጋገጫ ረዳቶች                                                                                                                        |
+| `shared/utils/`                                                | የወረዳ ተላላፊ፣ የኤፒአይ-ቁልፍ ማረጋገጫ፣ የጊዜ ማብቂያዎችን ማምጣት፣ የባህሪ ባንዲራዎች፣…                                                                                     |
+| `shared/middleware/`, `network/`, `services/`, `hooks/`        | የውይይት መግቢያ ሚድልዌር፣ የአውታረ መረብ አጋዥዎች፣ የደንበኛ አገልግሎቶች፣ React መንጠቆዎች                                                                                  |
 
 ---
 
-## `open-sse/` — የStreaming Engine Workspace
+## `open-sse/` — ዥረት ሞተር የስራ ቦታ
 
-የተለየ npm workspace (`@omniroute/open-sse`)። የጥያቄ ሂደትን + የprovider አፈጻጸምን ያስተናግዳል።
+npm የስራ ቦታ `@omniroute/open-sse` (ወደ 2,390 ክትትል የሚደረግባቸው ፋይሎች)። የጥያቄውን ሂደት እና የአቅራቢዎችን አፈፃፀም ያካሂዳል። አጠቃላይ እይታ [OPEN_SSE_ARCHITECTURE.md](../frameworks/OPEN_SSE_ARCHITECTURE.md).
 
 ```
 open-sse/
-├── handlers/            # 16 ፋይሎች (12 handlers + 4 helpers)፦ chatCore, responsesHandler, embeddings, audio, image, video, music, rerank, moderations, search, ወዘተ።
-├── executors/           # 67 provider-specific executors (BaseExecutorን ያስፋፋሉ)
-├── translator/          # የቅርጸት መቀየሪያዎች (9 request, 9 response, 9 helpers)
-├── transformer/         # Responses API ↔ Chat Completions (TransformStream)
-├── services/            # ~80+ የservice modules (combo, accountFallback, autoCombo, reasoningCache, claude code/chatgpt stealth, modelDeprecation, taskAwareRouter, workflowFSM, ወዘተ።)
-├── mcp-server/          # MCP server (110 tools, 3 transports, 33 scopes)
-├── config/              # የProvider/model registries፣ የheader config፣ የmodel aliases
-├── utils/               # TLS client፣ proxy fetch/dispatcher፣ የnetwork helpers
-├── index.ts             # የWorkspace መግቢያ
-├── package.json         # የWorkspace manifest
-├── tsconfig.json        # የWorkspace TS config
-└── types.d.ts           # የWorkspace type declarations
+├── handlers/       # Request handlers: chatCore.ts + chatCore/, responses, embeddings, audio, imageGeneration/,
+│                   #   videoGeneration/, search/, fal/, mediaGeneration/, sseParser/, responseSanitizer/, …
+├── executors/      # Provider-specific HTTP dispatch, registered in executors/registry.ts; base/ holds shared recovery helpers
+├── translator/     # Format conversion: request/, response/, helpers/, image/, registry.ts, bootstrap.ts
+├── transformer/    # responsesTransformer.ts (Responses API ↔ Chat Completions TransformStream)
+├── services/       # Combo routing, rate limits, fallback, caching, usage, token refresh, compression (see below)
+├── config/         # Provider registry (config/providers/registry/<id>/), constants, model/media registries
+├── mcp-server/     # MCP server: tools/, schemas/, toolSearch/, transports, audit, scopes, __tests__/
+├── utils/          # Stream, error, TLS, proxy-fetch and logging utilities
+├── vendor/         # codex-chatgpt-web/ — vendored adapter (provenance in vendor.json)
+├── lib/            # DeepSeek proof-of-work worker and hash
+├── shared/         # zedAuth.ts
+├── index.ts        # Workspace entry
+└── package.json · tsconfig.json · types.d.ts
 ```
+
+### `open-sse/services/`
+
+| መንገድ                                                                                           | ዓላማ                                                                                                                                                 |
+| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `combo.ts` + `combo/`                                                                          | ጥምር መሄጃ ስልቶች — እዩ [AUTO-COMBO.md](../routing/AUTO-COMBO.md)                                                                                         |
+| `autoCombo/`                                                                                   | ራስ-ጥምር ውጤት እና ሁነታ ጥቅሎች                                                                                                                              |
+| `accountFallback.ts` + `accountFallback/`                                                      | የግንኙነት ማቀዝቀዣ እና የሞዴል መቆለፊያ — ይመልከቱ [RESILIENCE_GUIDE.md](RESILIENCE_GUIDE.md)                                                                       |
+| `rateLimitManager.ts` + `rateLimitManager/`                                                    | ደረጃ-ገደብ መከታተል እና ራስጌ መተንተን                                                                                                                          |
+| `compression/`                                                                                 | መጭመቂያ ሞተሮች (`engines/`)፣ ደንብ ጥቅሎች (`rules/`)፣ `eval/`፣ `harness/`፣ `riskGate/` — [COMPRESSION_GUIDE ይመልከቱ .md](../compression/COMPRESSION_GUIDE.md) |
+| `tokenRefresh/`, `usage/`, `cache/`, `admission/`, `sessionPool/`, `codexAccount/`, `routing/` | ማስመሰያ ማደስ፣ የአጠቃቀም ሂሳብ፣ መሸጎጫ፣ የመግቢያ መስመሮች፣ የክፍለ ጊዜ ገንዳዎች፣ Codex መለያዎች፣ የማዞሪያ አጋዥ                                                                     |
+| `__tests__/`                                                                                   | በጋራ የሚገኙ Vitest suites (በ Vitest ውቅሮች የተሰበሰበ)                                                                                                       |
+| `AGENTS.md`                                                                                    | የዚህ አቃፊ ወኪል መመሪያ                                                                                                                                    |
+
+ስርዓተ-ጥለት፡ ትልቅ ሞጁል `X.ts` ከአቃፊ `X/` ቀጥሎ ማለት ሞጁሉ ወደ ትናንሽ ፋይሎች ተከፍሎ ነበር (`handlers/chatCore.ts` + `handlers/chatCore/`፣ `services/combo.ts` + `services/combo/`)።
 
 ### `open-sse/mcp-server/`
 
-| ዱካ                          | ዓላማ                                                                            |
-| --------------------------- | ------------------------------------------------------------------------------ |
-| `server.ts`                 | የMCP server lifecycle (stdio + HTTP transports)                                |
-| `httpTransport.ts`          | HTTP Streamable + SSE transports (`/api/mcp/sse`, `/api/mcp/stream`)           |
-| `audit.ts`                  | Audit logging ወደ `mcp_tool_audit` table                                        |
-| `scopeEnforcement.ts`       | ለእያንዳንዱ tool የscope validation                                                 |
-| `runtimeHeartbeat.ts`       | የHealth heartbeat ወደ `DATA_DIR/runtime/mcp-heartbeat.json`                     |
-| `descriptionCompressor.ts`  | contextን ለመቆጠብ የtool description metadataን ይጨምቃል                               |
-| `schemas/tools.ts`          | 36 መሠረታዊ የtool definitions + scopes                                            |
-| `tools/advancedTools.ts`    | የላቁ tool implementations                                                       |
-| `tools/memoryTools.ts`      | 3 የmemory tools (search/add/clear)                                             |
-| `tools/skillTools.ts`       | 4 የskill tools (list/enable/execute/executions)                                |
-| `tools/compressionTools.ts` | 5 የcompression tools                                                           |
-| `README.md`                 | ውስጣዊ የMCP server README (ከ`docs/frameworks/MCP-SERVER.md` ጋር በተሻጋሪ አገናኝ የተገናኘ) |
+| መንገድ                  | ዓላማ                                                                               |
+| --------------------- | --------------------------------------------------------------------------------- |
+| `server.ts`           | MCP አገልጋይ የሕይወት ዑደት                                                               |
+| `httpTransport.ts`    | ሊተላለፍ የሚችል HTTP እና SSE ማጓጓዣዎች                                                     |
+| `scopeEnforcement.ts` | የየመሳሪያ ወሰን ፍተሻዎች                                                                  |
+| `audit.ts`            | የጥሪ ኦዲት ምዝግብ ማስታወሻ                                                                |
+| `schemas/`            | የመሳሪያዎች ትርጓሜዎች እና ወሰኖች                                                            |
+| `tools/`              | የመሳሪያ አተገባበር (ትውስታ፣ ችሎታ፣ መጭመቅ፣…)                                                  |
+| `toolSearch/`         | የመሳሪያ ፍለጋ                                                                         |
+| `README.md`           | የውስጥ አርክቴክቸር ማስታወሻዎች; ሙሉው ካታሎግ በ [MCP-SERVER.md](../frameworks/MCP-SERVER.md) ነው። |
 
 ---
 
-## `electron/` — የDesktop Wrapper
+## `packages/` — npm የስራ ቦታዎች
 
-| ፋይል              | ዓላማ                                                                           |
-| ---------------- | ----------------------------------------------------------------------------- |
-| `main.js`        | የElectron ዋና process (BrowserWindow፣ የተካተተ Next.js server፣ tray፣ auto-update) |
-| `preload.js`     | IPC bridge (contextBridge → `window.omniroute`)                               |
-| `package.json`   | electron-builder config + Electron 41 + electron-builder 26.10 deps           |
-| `assets/`        | የመተግበሪያ አዶዎች (Windows .ico፣ macOS .icns፣ Linux .png)                          |
-| `dist-electron/` | የBuild output (gitignored)                                                    |
-| `types.d.ts`     | የrenderer bridge type declarations                                            |
-| `README.md`      | ውስጣዊ የElectron README (`docs/guides/ELECTRON_GUIDE.md`ንም ይመልከቱ)               |
+| መንገድ                     | ዓላማ                                                                                                                                                                                                                                                                        |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/ui-kit/`       | `@omniroute/ui-kit`: የተሸጠ የ Keak CI UI Kit፣ እንደ ምንጭ የሚበላ። `UPSTREAM.md` ወደ ላይ ያለውን ቁርጠኝነት ይሰካል፣ `PATCHES.md` የአካባቢ ንጣፎችን ይዘረዝራል። `src/` በ `scripts/dev/sync-ui-kit.sh` ብቻ የተመሳሰለ እና በ `npm run check:ui-kit-snapshot` የተጠበቀ ነው። [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) ይመልከቱ |
+| `packages/browser-pool/` | `@omniroute/browser-pool`: የአሳሽ-ፑል በይነገጾች እና አተገባበር (`packages/browser-pool/src/index.ts`, `packages/browser-pool/src/interfaces.ts`). በ `workspaces` ውስጥ ተዘርዝሯል; በጌትዌይ ጥቅም ላይ የዋለው የሩጫ ጊዜ አሳሽ ገንዳ በ `open-sse/services/` ውስጥ ይኖራል                                         |
 
----
+## `@omniroute/` — በተናጠል የታተሙ ጥቅሎች
 
-## `bin/` — CLI
+እነዚህ npm የስራ ቦታዎች አይደሉም። እያንዳንዱ የራሱ `package.json` እና lockfile አለው; ማህደሩ በ `omniroute` ታርቦል (`files: ["@omniroute/"]`) ውስጥ ይልካል.
 
-| ፋይል                                                                                                         | ዓላማ                                                                                                                       |
-| ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `omniroute.mjs`                                                                                             | ዋናው የCLI መግቢያ — `omniroute serve`፣ `omniroute setup`፣ `omniroute doctor`፣ `omniroute providers`፣ `omniroute combos`፣ ወዘተ። |
-| `reset-password.mjs`                                                                                        | ራሱን የቻለ የይለፍ ቃል ዳግም ማስጀመሪያ CLI                                                                                            |
-| `cli/commands/setup.mjs`                                                                                    | በይነተገናኝ + በይነተገናኝ ያልሆነ የማዋቀሪያ አዋቂ                                                                                         |
-| `cli/commands/doctor.mjs`                                                                                   | የስርዓት ጤንነት ምርመራዎች (8+ ፍተሻዎች)                                                                                              |
-| `cli/commands/providers.mjs`                                                                                | የአቅራቢዎች ዝርዝር/ሙከራ/ማረጋገጫ                                                                                                    |
-| `cli/{args,data-dir,encryption,io,provider-catalog,provider-store,provider-test,settings-store,sqlite}.mjs` | የCLI ረዳት ሞጁሎች                                                                                                             |
-| `cli/tray/tray.ts`                                                                                          | ከስርዓት ትሪ ጋር ውህደት (ተሻጋሪ-መድረክ፦ NotifyIcon በWindows ላይ፣ systray2 በmacOS/Linux ላይ)                                            |
-| `cli/tray/tray.ps1`                                                                                         | የPowerShell NotifyIcon ተተኪ ስርዓት (Windows፣ ምንም አዲስ ሁለትዮሽ ፋይሎች የሉም)                                                         |
-| `cli/tray/autostart.ts`                                                                                     | ተሻጋሪ-መድረክ ራስ-ሰር ማስጀመሪያ (LaunchAgent / .desktop / registry)                                                                |
-| `cli/runtime/sqliteRuntime.mjs`                                                                             | ባለ5-ደረጃ የSQLite ነጂ መፍቻ ሰንሰለት (bundled → runtime → lazy-install → node:sqlite → sql.js)                                    |
-| `cli/runtime/magicBytes.mjs`                                                                                | የሁለትዮሽ magic-byte ማረጋገጫ (ELF / Mach-O / Mach-O fat / PE)                                                                  |
-| `cli/runtime/index.mjs`                                                                                     | `warmUpRuntimes()` — በpostinstall / በመጀመሪያ ጅምር ላይ ነጂዎችን አስቀድሞ ይፈታል                                                        |
-| `nodeRuntimeSupport.mjs`                                                                                    | በመጫን ጊዜ የሚደገፈውን የNode.js ስሪት ማረጋገጥ                                                                                        |
+| መንገድ                             | ዓላማ                                                                                                                    |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `@omniroute/opencode-plugin/`    | OpenCode ተሰኪ (ሞዴል ግኝት፣ `/connect` auth); በ `omniroute setup-opencode` — ተመልከት [OPENCODE.md](../frameworks/OPENCODE.md) |
+| `@omniroute/opencode-plugin-v2/` | OpenCode plugin ለ v2 ተስፋ API — [OPENCODE-V2-PLUGIN.md](../guides/OPENCODE-V2-PLUGIN.md) ተመልከት                          |
+| `@omniroute/opencode-provider/`  | የማይንቀሳቀስ ውቅር ጀነሬተር; ለ `opencode-plugin` የሚደግፍ በራሱ `package.json` ውስጥ ተቋርጧል የሚል ምልክት የተደረገበት                            |
 
 ---
 
-## `skills/` — ይፋዊ የኤጀንት ክህሎቶች
+## `bin/` — CLI እና ops ስክሪፕቶች
 
-| ፋይል                          | ዓላማ                                                                            |
-| ---------------------------- | ------------------------------------------------------------------------------ |
-| `skills/omniroute*/SKILL.md` | ለውጫዊ AI ኤጀንቶች (Claude Desktop, ChatGPT, Cursor, Cline) የሚያገለግሉ 10 የክህሎት መግለጫዎች |
+| መንገድ                                                                        | ዓላማ                                                                        |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `omniroute.mjs`                                                             | ዋና CLI ግቤት (`omniroute serve`, `setup`, `doctor`, `providers`, `combo`, …) |
+| `reset-password.mjs`                                                        | `omniroute-reset-password` ሁለትዮሽ                                           |
+| `mcp-server.mjs`                                                            | MCP stdio የመግቢያ ነጥብ                                                        |
+| `antigravity-bridge.mjs`, `chatgpt-web-codex-mcp.mjs`                       | ረዳት ድልድይ / MCP ማስገቢያ ነጥቦች                                                  |
+| `aliasResolver.mjs`, `aliasResolverHook.mjs`                                | ESM መፍታት መንጠቆ የ tsconfig ዱካ ተለዋጭ ስሞችን ለአለምአቀፍ ጭነቶች ያዘጋጃል።                  |
+| `nodeRuntimeSupport.mjs`                                                    | የሚደገፍ Node.js ስሪት ቼክ                                                       |
+| `snapshot-data.sh`, `restore-data.sh`, `restore-policies.sh`, `rollback.sh` | እራስን የሚያስተናግድ ክስተት-የመልሶ ማግኛ ስክሪፕቶች ( `_ops-common.sh` ያጋሩ)                 |
+| `cold-start-bench.sh`                                                       | ቀዝቃዛ ጅምር ቤንችማርክ — ተመልከት [PERF_BASELINE.md](../ops/PERF_BASELINE.md)        |
+| `cli/commands/`                                                             | አንድ ሞጁል በ CLI ትዕዛዝ (100 ያህል፣ የ `setup-*` ውህደቶችን ጨምሮ)                       |
+| `cli/api-commands/`                                                         | ከ `docs/openapi.yaml` የመነጨ በ `npm run build:cli-api` — አታርትዑ               |
+| `cli/locales/`                                                              | CLI መልእክት ካታሎጎች (67 አካባቢዎች)                                                |
+| `cli/tui/`, `cli/tui-components/`                                           | ተርሚናል UI                                                                   |
+| `cli/tray/`                                                                 | የስርዓት ትሪ እና ራስ-ጀምር (Windows PowerShell backend፣ systray on macOS/Linux)    |
+| `cli/runtime/`                                                              | ቤተኛ የአሂድ ጊዜ መፍታት (`sqliteRuntime.mjs`፣ `magicBytes.mjs`)፣ የሂደት ተቆጣጣሪ       |
+| `cli/*.mjs`                                                                 | የተጋሩ ረዳቶች (args፣ API ደንበኛ፣ data dir፣ ምስጠራ፣ የአቅራቢ መደብር፣ የቅንጅቶች መደብር፣…)      |
+| `cli/README.md`, `cli/CONVENTIONS.md`                                       | CLI የውስጥ እና ኮንቬንሽን                                                         |
+
+[CLI-TOOLS.md](../reference/CLI-TOOLS.md) እና [CLI-COMPANION.md](../guides/CLI-COMPANION.md) ይመልከቱ.
+
+## `electron/` — ዴስክቶፕ መተግበሪያ
+
+| መንገድ                                                       | ዓላማ                                                                   |
+| ---------------------------------------------------------- | --------------------------------------------------------------------- |
+| `main.js`                                                  | Electron ዋና ሂደት (መስኮት፣ የተከተተ አገልጋይ፣ ትሪ፣ ማሻሻያ)                         |
+| `preload.js`                                               | IPC ድልድይ ለተቀባዩ ተጋልጧል                                                  |
+| `lib/`                                                     | የመስኮት የህይወት ኡደት፣ የአገልጋይ ዝግጁነት፣ የጤና ጠባቂ፣ የርቀት አገልጋይ ምርጫዎች              |
+| `remoteServerPrompt*.js`, `assets/remoteServerPrompt.html` | የርቀት አገልጋይ መጠየቂያ መስኮት                                                 |
+| `processTree.js`, `sqlite-inspection.js`                   | የልጅ-ሂደት ማጽዳት እና SQLite ፍተሻ ረዳቶች                                       |
+| `package.json` / `package-lock.json`                       | ኤሌክትሮን-ገንቢ ውቅር እና Electron ጥገኛዎች                                      |
+| `assets/`                                                  | የመተግበሪያ እና ትሪ አዶዎች (`.ico`, `.icns`, `.png`)                          |
+| `README.md`                                                | የውስጥ ማስታወሻዎች — ተመልከት [ELECTRON_GUIDE.md](../guides/ELECTRON_GUIDE.md) |
+
+## `public/` — የማይንቀሳቀሱ ንብረቶች
+
+| መንገድ                                        | ዓላማ                                                                                                                 |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `providers/`                                | በመታወቂያ (`/providers/<id>.svg`) የተጫኑ የአቅራቢዎች አርማዎች; provenance `config/quality/provider-assets-provenance.jsonl` ውስጥ |
+| `favicon.*`, `apple-touch-icon.*`, `icon-*` | አሳሽ እና PWA አዶዎች                                                                                                     |
+| `sw.js`                                     | ኣገልግሎት ሰራሕተኛ — እዩ [PWA_GUIDE.md](../guides/PWA_GUIDE.md)                                                            |
+| `openapi.yaml`                              | በ `npm run gen:public-openapi` የመነጨ `docs/openapi.yaml` ቅጂ                                                          |
+| `images/`, `sponsors/`, `deyin.svg`         | የደረጃ-ፍሰት ሥዕላዊ መግለጫዎች፣ የስፖንሰር ባነር፣ README የስነ ጥበብ ስራ                                                                 |
+
+## `skills/` — ወኪል ችሎታዎች
+
+46 ችሎታዎች፣ እያንዳንዳቸው አንድ ማህደር `SKILL.md` (`cli-*`፣ `omni-*`፣ `config-codex-cli`፣ `ponytail`) እና `skills/README.md` ያለው። `src/lib/agentSkills/catalog.ts` በሩጫ ሰአት ያነባቸዋል እና በ `/api/agent-skills`፣ MCP እና A2A ያጋልጣል። አብዛኛዎቹ መገለጫዎች የሚመነጩት በ `src/lib/agentSkills/generator.ts` (`scripts/skills/generate-agent-skills.mjs`፣ `npm run check:agent-skills-sync` ቼኮች ለመንሸራተት) ነው። [AGENT-SKILLS.md](../frameworks/AGENT-SKILLS.md) ይመልከቱ.
 
 ---
 
-## `scripts/` — የግንባታ እና የፍተሻ ስክሪፕቶች
+## `scripts/` — ግንባታ፣ በሮች እና መሣርያዎች
 
-| ስክሪፕት                               | ዓላማ                                                                            |
-| ----------------------------------- | ------------------------------------------------------------------------------ |
-| `run-next.mjs`                      | የአካባቢ ተለዋዋጮችን በመሙላት የልማት/ማስጀመሪያ አስኬጅ                                           |
-| `build-next-isolated.mjs`           | ራሱን የቻለ ግንባታ (Next.js 16 standalone)                                           |
-| `prepublish.ts`                     | ከ`npm pack` በፊት የጥቅል ዝግጅት                                                      |
-| `postinstall.mjs`                   | በመጀመሪያው ጭነት `.env`ን ከ`.env.example` በራስ-ሰር መፍጠር                                |
-| `sync-env.mjs`                      | የ`.env` ቁልፎችን ከ`.env.example` ጋር እንደገና ማመሳሰል                                   |
-| `check-cycles.mjs`                  | ዑደታዊ ጥገኝነቶችን ማግኘት                                                              |
-| `check-route-validation.mjs`        | ሁሉም API መስመሮች የZod ማረጋገጫ እንዳላቸው ማረጋገጥ                                          |
-| `check-t11-any-budget.mjs`          | ለእያንዳንዱ ፋይል ግልጽ የ`any` በጀትን ተፈጻሚ ማድረግ                                          |
-| `check-docs-sync.mjs`               | የሰነዶች ስሪት መመሳሰልን ማረጋገጥ (ነባር pre-commit)                                        |
-| **`check-env-doc-sync.mjs`**        | አዲስ፦ በኮድ፣ `.env.example` እና `ENVIRONMENT.md` ውስጥ ያሉ የአካባቢ ተለዋዋጮችን በማነጻጸር ማረጋገጥ |
-| **`check-docs-counts-sync.mjs`**    | አዲስ፦ ቆጠራዎች (አስፈጻሚዎች፣ ስልቶች፣ OAuth፣ A2A ክህሎቶች) ከሰነዶች ጋር መዛመዳቸውን ማረጋገጥ            |
-| **`check-deprecated-versions.mjs`** | አዲስ፦ በሰነዶች ውስጥ ጊዜ ያለፈባቸውን ስሪቶች/ቀኖች ምልክት ማድረግ                                   |
-| `check-supported-node-runtime.ts`   | የአሁኑ Node ስሪት የሚደገፍ መሆኑን ማረጋገጥ                                                 |
-| `check-pr-test-policy.mjs`          | በምርት ኮድ ለውጦች ላይ የ"ሙከራዎች ያስፈልጋሉ" ደንብን ተፈጻሚ ማድረግ                                 |
-| **`gen-provider-reference.ts`**     | አዲስ፦ `docs/reference/PROVIDER_REFERENCE.md`ን ከካታሎግ በራስ-ሰር ማመንጨት                |
-| `i18n/generate-multilang.mjs`       | የUI ሕብረቁምፊዎችን እና ሰነዶችን በGoogle Translate መተርጎም                                 |
-| `i18n_autotranslate.py`             | በLLM ላይ የተመሠረተ የሰነድ ትርጉም ሂደት                                                   |
-| `validate_translation.py`           | ለእያንዳንዱ locale የትርጉም ማረጋገጫ                                                     |
-| `check_translations.py`             | በኮድ በኩል የi18n ቁልፍ ፍተሻ                                                          |
-| `run-playwright-tests.mjs`          | የPlaywright E2E ሙከራ አስኬጅ                                                       |
-| `run-protocol-clients-tests.mjs`    | የMCP/A2A E2E ሙከራ አስኬጅ                                                          |
-| `run-ecosystem-tests.mjs`           | የሥነ-ምህዳር (የአቅራቢ ውህደት) ሙከራዎች                                                    |
-| `test-report-summary.mjs`           | የሽፋን ማጠቃለያ markdown ማመንጨት                                                      |
-| `smoke-electron-packaged.mjs`       | በጥቅል የቀረበውን Electron ግንባታ የጭስ ሙከራ ማድረግ                                         |
-| `native-binary-compat.mjs`          | ቤተኛ ጥገኞች (`better-sqlite3`) ከElectron Node ጋር መዛመዳቸውን ማረጋገጥ                    |
-| `validate-pack-artifact.ts`         | የnpm pack ውጤትን ማረጋገጥ                                                           |
-| `responses-ws-proxy.mjs`            | ለCodex Responses API የWebSocket ድልድይ                                           |
-| `v1-ws-bridge.mjs`                  | ለ`/api/v1/ws` መጨረሻ ነጥብ የWebSocket ድልድይ                                         |
-| `standalone-server-ws.mjs`          | ራሱን የቻለ የWS አገልጋይ አስኬጅ                                                         |
-| `system-info.mjs`                   | ለድጋፍ የስርዓት/የአሂድ ጊዜ መረጃን ማተም                                                    |
-| `healthcheck.mjs`                   | የአንድ ጊዜ የጤና ፍተሻ (በDocker HEALTHCHECK የሚጠቀም)                                    |
-| `uninstall.mjs`                     | ንጹህ የማራገፊያ ስክሪፕት                                                               |
+ወደ 435 የሚጠጉ የክትትል ፋይሎች። አዲስ ስክሪፕቶች በ `AGENTS.md` ከተፈቀዱት ንዑስ አቃፊዎች በአንዱ ውስጥ ይገባሉ; የአንድ ጊዜ ኮድ በ `scripts/ad-hoc/` ውስጥ ይሄዳል።
+
+```
+scripts/
+├── check-permissions.sh   # Container ENTRYPOINT (copied to /app by the Dockerfile)
+├── postinstall.mjs        # Native-runtime warm-up run after scripts/build/postinstall.mjs
+├── start-ws-server.mjs    # Starts the live-dashboard WebSocket server as a separate process
+├── build/                 # Build, standalone assembly, npm pack/publish, postinstall, MITM, Electron prep
+├── check/                 # Quality gates behind most `npm run check:*` scripts; lib/ holds shared helpers
+├── quality/               # Ratchets, gate manifest, impact map, mutation tooling, release acceptance
+├── ci/                    # Steps invoked only by workflows (Docker publish, Release-Green, scanners)
+├── dev/                   # Dev runners (run-next, Playwright/protocol/ecosystem runners) and runtime helpers shipped in the package
+├── docs/                  # README SVG/diagram generators, OpenAPI module, provider reference, wiki sync
+├── i18n/                  # UI and docs translation pipeline, coverage checks, glossary/, lib/
+├── release/               # Changelog aggregation, contributors, merge train, LTS cut, publish verification
+├── ops/                   # Canary deploy, OpenCode free relay, runner janitor, allowlist sync
+├── perf/                  # Benchmarks and one-off performance A/B scripts
+├── cli/                   # CLI tooling (API-command generator, SSO, CLI smoke tests, media MCP)
+├── homolog/               # Homologation against a running instance + promptfoo config generation
+├── features/              # Feature-triage engine and its lib/
+├── router-eval/           # Offline router evaluation (`npm run eval:router*`)
+├── compression/           # Compression benchmark (`npm run bench:compression`, runs on Bun)
+├── compression-eval/      # Compression quality evaluation (`npm run eval:compression`)
+├── devin-bridge/          # Shell entry points for the Devin bridge (build, launch, tests)
+├── docker/                # Base-path patching for the standalone server inside containers
+├── integrations/          # MarkItDown MCP launchers — see docs/integrations/MARKITDOWN_MCP.md
+├── launchers/             # Double-click launchers and desktop-shortcut creators (Windows/macOS/Linux)
+├── packs/                 # Optional-pack manifest and installer (shipped in the npm package)
+├── test/                  # Live smoke scripts (combo-live, OpenCode/ChatGPT Web)
+├── sre/                   # On-call rotation, log redaction, TCP close analyzer
+├── vps/                   # Start/stop the release runner
+├── skills/                # Agent Skills generator CLI
+├── research/              # Free-tier budget card SVG generator
+└── ad-hoc/                # One-shot diagnostics and migrations
+```
+
+በብዛት ጥቅም ላይ የዋሉ የመግቢያ ነጥቦች፡-
+
+| ስክሪፕት                                                               | ዓላማ                                                                            |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `dev/run-next.mjs`                                                  | `npm run dev` / `npm start` ሯጭ                                                 |
+| `build/build-next-isolated.mjs`                                     | `npm run build` (Next.js ራሱን የቻለ ግንባታ)                                         |
+| `build/prepublish.ts`                                               | `npm run build:cli`: npm `dist/` ይሰበስባል                                        |
+| `build/postinstall.mjs`                                             | npm `postinstall` መንጠቆ                                                         |
+| `build/publicOpenApi.mjs`                                           | `npm run gen:public-openapi`                                                   |
+| `docs/gen-provider-reference.ts`                                    | `npm run gen:provider-reference` ( PROVIDER_REFERENCE.md ያድሳል)                 |
+| `docs/gen-openapi-module.mjs`                                       | `prebuild:docs` ( `src/app/docs/lib/openapi.generated.ts` ያመነጫል)               |
+| `i18n/run-translation.mjs`                                          | `npm run i18n:run` (የዶክመንቶች መስተዋቶች)                                            |
+| `i18n/generate-route-namespaces.mjs`                                | `npm run gen:i18n-routes`                                                      |
+| `release/aggregate-changelog.mjs`                                   | `changelog.d/` ቁርጥራጮችን ወደ `CHANGELOG.md` ያጠፋል                                  |
+| `check/check-fabricated-docs.mjs`                                   | `npm run check:fabricated-docs` (የሰነድ ትክክለኛነት በር)                              |
+| `check/check-tracked-artifacts.mjs`                                 | `npm run check:tracked-artifacts` (የክትትል ስርወ `_*` መንገዶችን ያግዳል)                 |
+| `quality/check-quality-ratchet.mjs`                                 | `npm run quality:ratchet` (ሜትሪክ ratchet ከ `config/quality/` ጋር)                |
+| `dev/run-playwright-tests.mjs`                                      | `npm run test:e2e`                                                             |
+| `dev/run-protocol-clients-tests.mjs`, `dev/run-ecosystem-tests.mjs` | `npm run test:protocols:e2e`, `npm run test:ecosystem`                         |
+| `dev/new-worktree.sh`                                               | የተናጠል ልማት ስራን ይፈጥራል — እዩ [WORKTREE_ISOLATION.md](../ops/WORKTREE_ISOLATION.md) |
+| `dev/sync-ui-kit.sh`                                                | `packages/ui-kit/src` ከተሰካ የላይ ዥረት ቁርጠኝነት ጋር ያመሳስለዋል።                          |
+
+የበር ቆጠራ እና ፖሊሲዎች [QUALITY_GATES.md](QUALITY_GATES.md).
+
+## `config/` — ስሪት ያለው ውቅር እና የበር ሁኔታ
+
+| መንገድ                                     | ዓላማ                                                                                            |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `i18n.json` / `i18n-schema.json`         | የሚደገፉ አካባቢዎች (የአካባቢው ቆጠራ ምንጭ) እና እቅዳቸው                                                         |
+| `payloadRules.json`                      | ወደላይ የመጫኛ ህጎች (`open-sse/services/payloadRules.ts`)                                            |
+| `cli-tools-manifest.json`                | ሊጣመሩ የሚችሉ CLI መሳሪያዎች (`bin/cli/cli-manifest.mjs`) መገለጫ                                         |
+| `alibaba-free-tier-allowlist.json`       | Alibaba ነፃ-ደረጃ ሞዴል የተፈቀደ ዝርዝር                                                                  |
+| `ci/toolchain.json`                      | CI toolchain ስሪቶች                                                                              |
+| `quality/quality-baseline.json`          | ባለብዙ-ሜትሪክ ራኬት መነሻ መስመር (ሽፋን ፣ ማስጠንቀቂያዎች ፣ ማባዛት ፣…)                                             |
+| `quality/*-baseline.json`                | የታሰሩ የመነሻ መስመሮች ለግለሰብ በሮች (ውስብስብነት፣ ብዜት፣ የፋይል መጠን፣ የቼክ ቁርጥራጭ፣ የሙከራ ግኝት፣…)                      |
+| `quality/*-allowlist.json`               | የጌት ፈቃዶች (ጥገኛዎች፣ ፈቃዶች፣ AI መገለጫ፣ የተረሱ ወንድም እህት ሙከራዎች፣…)                                         |
+| `quality/eslint-suppressions.json`       | የቀዘቀዙ ESLint ማፈኛዎች በ `npm run lint` ተተግብረዋል።                                                   |
+| `quality/gate-manifest.json`             | የበር አንጸባራቂ `scripts/quality/gate-manifest.mjs` የተረጋገጠ                                          |
+| `quality/vitest-exclusions.json`         | ለ `vitest.quarantine.config.ts` የኳራንቲን ክምችት                                                    |
+| `quality/skill-templates/`               | ቀኖናዊ SKILL.md አብነቶች በ `scripts/quality/check-skill-contract.mjs` ተረጋግጠዋል                       |
+| `quality/release-acceptance.schema.json` | የመልቀቂያ-ተቀባይነት ማስረጃ schema — ተመልከት [QUALITY_EVIDENCE_CONTRACT.md](QUALITY_EVIDENCE_CONTRACT.md) |
+| `release/`                               | Changelog reconciliations እና wreq-js ቤተኛ አንጸባራቂ፣ የፍቃድ ክምችት እና ማስታወቂያዎች                         |
+
+## `changelog.d/` — changelog ቁርጥራጮች
+
+PR `CHANGELOG.md` ከማርትዕ ይልቅ አንድ ቁራጭ ያክላል `features/`፣ `fixes/` ወይም `maintenance/`፣ `<PR-number>-<slug>.md` የሚባል። በሚለቀቅበት ጊዜ `scripts/release/aggregate-changelog.mjs` ወደ `CHANGELOG.md` አጣጥፎ ይሰርዛቸዋል፤ `npm run check:changelog-integrity` ያረጋግጣቸዋል። ዝርዝሮች በ `changelog.d/README.md`.
 
 ---
 
-## `docs/` — ይፋዊ ሰነዶች (7 ዋና ፋይሎች + 17 ንዑስ ማውጫዎች)
+## `docs/` — የህዝብ ሰነድ
 
-### ዋና መመሪያዎች
+በ `source.config.ts` ውስጥ የተዘረዘሩ ክፍሎች ወደ `/docs` ጣቢያ ያጠናቅራሉ (ከጥቂት ኦፕሬተር-ብቻ የጥበቃ ገጾች አይካተቱም)። `docs/meta.json` የጎን አሞሌን ቅደም ተከተል ያዘጋጃል። በ [README.md](../README.md) ይጀምሩ።
 
-| ሰነድ                         | ዓላማ                                                                                |
-| --------------------------- | ---------------------------------------------------------------------------------- |
-| `ARCHITECTURE.md`           | ከፍተኛ-ደረጃ አርክቴክቸር፣ የንዑስ ሥርዓቶች ካርታ፣ የዳሽቦርድ ገጽታ                                       |
-| `CODEBASE_DOCUMENTATION.md` | የምህንድስና ማጣቀሻ፦ ማውጫዎች፣ ሞጁሎች፣ ስምምነቶች                                                  |
-| `FEATURES.md`               | የv3.8 ዋና ማሻሻያዎችን ያካተተ የባህሪያት ማትሪክስ                                                 |
-| `USER_GUIDE.md`             | የዋና ተጠቃሚ መመሪያ (ማዋቀር፣ ሞዴሎች፣ ጥምረቶች፣ CLIዎች፣ ድምፅ፣ ወዘተ)                                 |
-| `API_REFERENCE.md`          | የማረጋገጫ ሞዴልን ያካተተ የAPI መጨረሻ ነጥቦች ማጣቀሻ                                               |
-| `openapi.yaml`              | OpenAPI 3.0 ዝርዝር መግለጫ (121 መንገዶች)                                                  |
-| `SETUP_GUIDE.md`            | የመጫኛ ዘዴዎች (npm፣ npx፣ Docker፣ Electron፣ Termux፣ የምንጭ ኮድ)                            |
-| `ENVIRONMENT.md`            | ሁሉም የአካባቢ ተለዋዋጮች (~800 የተሰነዱ፣ ~3,050 የ`.env.example` መስመሮች)                        |
-| `TROUBLESHOOTING.md`        | የተለመዱ ስህተቶች + የv3.8.0 የታወቁ ችግሮች                                                    |
-| `RELEASE_CHECKLIST.md`      | ሙሉ የልቀት ሂደት (ክህሎቶች፣ husky፣ መደበኛ ኮሚቶች፣ ማሰማራት)                                       |
-| `COVERAGE_PLAN.md`          | የሽፋን ግቦች እና የአሁኑ ሁኔታ                                                               |
-| `FREE_TIERS.md`             | በጥንቃቄ የተመረጡ የነፃ-ደረጃ አቅራቢዎች (48+ ነፃ + 11 OAuth)                                     |
-| `CLI-TOOLS.md`              | የውጭ CLI ውህደቶች + ውስጣዊ OmniRoute CLI                                                 |
-| `I18N.md`                   | የi18n አርክቴክቸር፣ ቋንቋ ማከል፣ 42 የአካባቢ ቅንብሮች                                             |
-| `UNINSTALL.md`              | ንጹህ የማራገፊያ ደረጃዎች                                                                   |
-| `PROVIDER_REFERENCE.md`     | **በራስ-ሰር የተፈጠረ** የ355 አቅራቢዎች ካታሎግ (እንደገና ለማመንጨት፦ `npm run gen:provider-reference`) |
+| መንገድ               | ይዘቶች                                                                                                                                |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `getting-started/` | ፈጣን ጅምር፣ ራስን አስተናጋጅ፣ አቅራቢዎች፣ ነጻ ደረጃዎች፣ ራስ-ኮምቦ እና የድር-ኩኪ መመሪያዎች                                                                      |
+| `guides/`          | ኦፕሬተር እና ገንቢ መመሪያዎች፡ ማዋቀር፣ Docker፣ Electron፣ PWA፣ Termux፣ CLIs፣ i18n፣ መላ ፍለጋ፣ የተጠቃሚ መመሪያ                                            |
+| `architecture/`    | አርክቴክቸር፣ codebase ማጣቀሻ፣ ማሻሻያ የምግብ አዘገጃጀት፣ authz፣ ተቋቋሚነት፣ የጥራት በሮች፣ የንድፍ ስርዓት፣ ይህ ካርታ                                                |
+| `reference/`       | API ማጣቀሻ፣ የአካባቢ ተለዋዋጮች፣ የባህሪ ባንዲራዎች፣ CLI መሳሪያዎች፣ ነጻ ደረጃዎች፣ የመነጨ አቅራቢ ማጣቀሻ፣ የተወገዱ አቅራቢዎች                                             |
+| `frameworks/`      | MCP, A2A, ACP, ችሎታዎች, ማህደረ ትውስታ, ተሰኪዎች, የደመና ወኪሎች, webhooks, evals, ሎግ ወደ ውጭ መላክ, ራዳር, መጫወቻ ቦታ,…                                    |
+| `routing/`         | ራስ-ኮምቦ፣ የማመዛዘን replay/routing፣ የኮታ ድርሻ፣ የደንበኝነት ምዝገባ መሰላል፣ ጥብቅ ዜሮ-ዋጋ፣…                                                              |
+| `security/`        | የጥበቃ መንገዶች፣ የስህተት ማፅዳት፣ CORS፣ SSO፣ የኢግሬስ ፖሊሲ፣ የመንገድ ጥበቃ ደረጃዎች፣ የአቅርቦት ሰንሰለት፣…                                                       |
+| `compression/`     | የማመቅ መመሪያ፣ ሞተሮች፣ RTK፣ ደንብ ቅርጸት፣ የቋንቋ ጥቅሎች፣ አውድ አርትዖት                                                                                |
+| `ops/`             | የመልቀቂያ ፍሰት፣ ቅርንጫፍ መስራት፣ ባቡር አዋህድ፣ ማሰማራት (VM፣ Fly.io፣ Kubernetes)፣ የውሂብ ጎታ፣ ፕሮክሲዎች፣ የስራ ዛፎች፣ የሃርድ ደንቦች ዝርዝር                          |
+| `providers/`       | የአቅራቢዎች መመሪያዎች (Claude Code፣ ChatGPT Web፣ Cursor፣ GitHub Copilot፣…)                                                                 |
+| `comparison/`      | OmniRoute ከአማራጮች ጋር ሲነጻጸር                                                                                                           |
+| `integrations/`    | የውህደት ማስታወሻዎች (fal.ai ተወላጅ, MarkItDown MCP); ወደ `/docs` አልተጠናቀረም።                                                                   |
+| `openapi.yaml`     | OpenAPI ምንጭ; `src/app/docs/lib/openapi.generated.ts`፣ `public/openapi.yaml` እና `bin/cli/api-commands/` ይመገባል።                       |
+| `diagrams/`        | የመርሜድ ምንጮች (`.mmd`)፣ የተተረጎሙት SVGs (`exported/`) እና README SVGs ከ `scripts/docs/gen-readme-*`                                        |
+| `assets/`          | ቋንቋ-ባንዲራ SVGs እና ሌሎች README ንብረቶች                                                                                                   |
+| `screenshots/`     | በ README እና መመሪያዎች የሚጠቀሙባቸው ቅጽበታዊ ገጽ እይታዎች                                                                                          |
+| `i18n/`            | የተተረጎሙ መስተዋቶች፡ አንድ አቃፊ በየአካባቢው (66) ከስር ሰነዶች እና `docs/` ንዑስ ስብስብ ጋር; በ `npm run i18n:run` — የተሰራ [I18N.md](../guides/I18N.md) ይመልከቱ |
+| ከፍተኛ ደረጃ `*.md`    | `README.md` (doc ኢንዴክስ)፣ `DEVELOPER-ENVIRONMENT.md` እና ጥቂት የቆሙ ማስታወሻዎች                                                              |
 
-### የንዑስ ሥርዓቶች ጥልቅ ዳሰሳዎች
-
-| ሰነድ                                        | ዓላማ                                                          |
-| ------------------------------------------ | ------------------------------------------------------------ |
-| `MCP-SERVER.md`                            | MCP ሰርቨር፦ 110 መሣሪያዎች፣ 3 ማጓጓዣዎች፣ 33 ወሰኖች፣ REST መጨረሻ ነጥቦች      |
-| `A2A-SERVER.md`                            | A2A v0.3፦ JSON-RPC፣ 6 ክህሎቶች፣ REST አጋዥ መሣሪያዎች፣ የወኪል ካርድ       |
-| `AGENT_PROTOCOLS_GUIDE.md`                 | የተዋሃደ መመሪያ፦ A2A ከ ACP እና Cloud Agents ጋር                     |
-| `CLOUD_AGENT.md`                           | Codex Cloud / Devin / Jules ኦርኬስትሬሽን                         |
-| `SKILLS.md`                                | የክህሎቶች ማዕቀፍ (አብሮገነብ + የገበያ ቦታ + SkillsSH + ማጠሪያ)             |
-| `RADAR.md`                                 | የRadar ነፃ-ሞዴል ካታሎግ ተደራቢ (`RADAR_ENABLED`፣ በነባሪ ጠፍቷል)         |
-| `MEMORY.md`                                | የማስታወሻ ሥርዓት (SQLite FTS5 + Qdrant)                           |
-| `EVALS.md`                                 | የግምገማ ማዕቀፍ (ስብስቦች፣ አሂዶች፣ የውጤት መስፈርቶች)                        |
-| `GUARDRAILS.md`                            | PII መሸፈኛ፣ የጥያቄ መርፌ ጥቃት፣ የምስል ድልድይ                            |
-| `COMPLIANCE.md`                            | የኦዲት መዝገብ፣ የማቆያ ጊዜ፣ የnoLog አለመሳተፊያ                           |
-| `WEBHOOKS.md`                              | በHMAC የተፈረመ የwebhook ማድረስ                                    |
-| `REASONING_REPLAY.md`                      | ለ`reasoning_content` ድብልቅ ማስታወሻ/SQLite መሸጎጫ                  |
-| `AUTHZ_GUIDE.md`                           | የፈቃድ አሰጣጥ መስመር (`classify` → `policies` → `enforce`)         |
-| `RESILIENCE_GUIDE.md`                      | የወረዳ መግቻ + የማቀዝቀዣ ጊዜ + የሞዴል መቆለፊያ                            |
-| `docs/security/STEALTH_GUIDE.md` (በgit ብቻ) | TLS አሻራ ማውጣት (JA3/JA4)፣ Claude Code CCH፣ MITM ሰርተፊኬት         |
-| `AUTO-COMBO.md`                            | Auto Combo ሞተር (ባለ16-ምክንያት ነጥብ አሰጣጥ፣ 6 የሁነታ ጥቅሎች፣ ምናባዊ ፋብሪካ) |
-
-### መጭመቅ
-
-| ሰነድ                             | ዓላማ                                |
-| ------------------------------- | ---------------------------------- |
-| `COMPRESSION_GUIDE.md`          | የመጭመቂያ ሁነታዎች አጠቃላይ እይታ + የመንገድ ካርታ |
-| `COMPRESSION_ENGINES.md`        | Caveman + RTK ሞተሮች፣ የመዝገብ ቤት ውል    |
-| `COMPRESSION_RULES_FORMAT.md`   | የCaveman ደንብ ጥቅል JSON ንድፍ          |
-| `COMPRESSION_LANGUAGE_PACKS.md` | ለእያንዳንዱ ቋንቋ የደንብ ጥቅሎች ዝርዝር         |
-| `RTK_COMPRESSION.md`            | RTK ገላጭ የሂደት መስመር (49 ማጣሪያዎች)      |
-
-### ማሰማራት
-
-| ሰነድ                          | ዓላማ                                                            |
-| ---------------------------- | -------------------------------------------------------------- |
-| `DOCKER_GUIDE.md`            | Docker ግንባታ፣ መገለጫዎች (base/cli/host/cliproxyapi)፣ Redis የጎን መያዣ |
-| `VM_DEPLOYMENT_GUIDE.md`     | አጠቃላይ VM/VPS ማሰማራት (Ubuntu/Debian + nginx + systemd)           |
-| `FLY_IO_DEPLOYMENT_GUIDE.md` | Fly.io ማሰማራት (በአሁኑ ጊዜ በቻይንኛ ብቻ)                                |
-| `TERMUX_GUIDE.md`            | ማሳያ-አልባ Android በTermux በኩል                                    |
-| `PWA_GUIDE.md`               | የProgressive Web App ጭነት + የአገልግሎት ሠራተኛ                        |
-| `ELECTRON_GUIDE.md`          | የዴስክቶፕ መተግበሪያ ግንባታ + መፈረም + ማሰራጨት                              |
-| `TUNNELS_GUIDE.md`           | Cloudflared + ngrok + Tailscale Funnel                         |
-| `PROXY_GUIDE.md`             | ባለ4-ደረጃ ወደ ውጭ የሚወጣ ፕሮክሲ + 1proxy የገበያ ቦታ                       |
-
-### ንዑስ ማውጫዎች
-
-| ንዑስ ማውጫ               | ዓላማ                                                                                                                                                                                |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/i18n/`          | የተተረጎሙ የሰነድ ትርጉሞች (41 የአካባቢ ቅንብሮች)                                                                                                                                                 |
-| `docs/screenshots/`   | ለመመሪያዎች የሚያገለግሉ የምስል ሀብቶች                                                                                                                                                          |
-| `_tasks/superpowers/` | ከ superpowers (`writing-plans`/`brainstorming`) የተገኙ ዕቅዶች/ዝርዝር መግለጫዎች + ምርምር — ተነጥሎ የተቀመጠ፣ ለየት ብሎ ስሪት የሚቆጣጠር ማከማቻ፤ በዋናው ዛፍ በ git ችላ የተባለ። CLAUDE.md → "የዕቅድ እና የምርምር ቅርሶች"ን ይመልከቱ። |
+ቁልፍ የመግቢያ ነጥቦች [ARCHITECTURE.md](ARCHITECTURE.md), [CODEBASE_DOCUMENTATION.md](CODEBASE_DOCUMENTATION.md), [MODIFICATION_SCENARIOS.md](MODIFICATION_SCENARIOS.md), [ENVIRONMENT.md](../reference/ENVIRONMENT.md), [PROVIDER_REFERENCE.md](../reference/PROVIDER_REFERENCE.md) (በ `npm run gen:provider-reference` የተፈጠረ)።
 
 ---
 
 ## `tests/` — የሙከራ ስብስቦች
 
-| ንዑስ ማውጫ                              | ዓይነት                          | ማስኬጃ                          |
-| ------------------------------------ | ----------------------------- | ----------------------------- |
-| `tests/unit/`                        | የክፍል ሙከራዎች (~4,800 ፋይሎች፣ ፈጣኑ) | የNode ቤተኛ የሙከራ ማስኬጃ           |
-| `tests/integration/`                 | የብዙ ሞጁሎች + DB ውህደት ሙከራዎች      | የNode ቤተኛ የሙከራ ማስኬጃ (ትይዩነት 1) |
-| `tests/e2e/`                         | UI + የሥራ ፍሰት E2E              | Playwright                    |
-| `tests/e2e/protocol-clients.test.ts` | MCP + A2A የእውነተኛ ደንበኛ E2E     | ብጁ የፕሮቶኮል ደንበኞች               |
-| `tests/e2e/ecosystem.test.ts`        | የአቅራቢ ውህደት (ኔትወርክን የሚጠቀም)     | የNode ቤተኛ የሙከራ ማስኬጃ           |
+ወደ 9,670 የሚጠጉ ክትትል የሚደረግባቸው ፋይሎች። የሙከራ ፋይሎች እዚህ ናቸው እንጂ በፕሮጀክት ስር ውስጥ አይደሉም። ልዩ ሁኔታዎች፡- `__tests__/` የሚያዋቅራቸው በ `src/` እና `open-sse/` ውስጥ የሚገኙ Vitest አቃፊዎች።
+
+| መንገድ                                                   | ይዘቶች                                                                                                                                                           | ሯጭ                                                                                      |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `tests/unit/`                                          | የዩኒት ሙከራዎች (ከ9,000 በላይ ፋይሎች)፡ ብዙ በከፍተኛ ደረጃ፣ በተጨማሪም የጎራ ማህደሮች (`ui/`፣ `compression/`፣ `build/`፣ `guardrails/`፣ `db/`፣ `cli/`፣ `api/`፣ `dashboard/`፣ `combo/`፣…) | የመስቀለኛ ሙከራ ሯጭ (`npm run test:unit`); `*.tsx` በ `test:vitest:ui` በኩል                     |
+| `tests/unit/serial/`                                   | ሲፒዩ-sensitive ሙከራዎች ከተዛማጅ 1 ጋር ይሰራሉ                                                                                                                            | `npm run test:unit:serial`                                                              |
+| `tests/unit/autoCombo/`, `tests/unit/api/**/*.spec.ts` | Vitest suites በዩኒት ዛፍ ውስጥ                                                                                                                                      | `npm run test:vitest`                                                                   |
+| `tests/integration/`                                   | ባለብዙ ሞጁል እና DB ውህደት ሙከራዎች; `combo-matrix/`, `combo-live/`, `services/`                                                                                         | `npm run test:integration`, `test:combo:matrix`, `test:combo:live`, `test:services:int` |
+| `tests/e2e/`                                           | Playwright `*.spec.ts` + የቀጥታ ስብስቦች `ecosystem.test.ts`, `protocol-clients.test.ts`                                                                            | `npm run test:e2e`, `test:ecosystem`, `test:protocols:e2e`                              |
+| `tests/boundary/`                                      | `*.live.test.ts` በሩጫ ምሳሌ ላይ                                                                                                                                    | `npm run test:boundary:live`                                                            |
+| `tests/homolog/`                                       | የግብረ-ሰዶማውያን ስብስቦች (`api/`፣ `ui/` ከራሱ Playwright ውቅር ጋር)                                                                                                        | `npm run homolog` — ተመልከት [HOMOLOGATION.md](../ops/HOMOLOGATION.md)                     |
+| `tests/load/`                                          | ስክሪፕቶችን ጫን እና ስከር (k6)                                                                                                                                         | የምሽት የመቋቋም የስራ ፍሰት                                                                      |
+| `tests/_setup/`                                        | `--import` /ማዋቀር ፋይሎች (የተገለሉ ዳታ dir፣ egress guard፣ Vitest UI polyfills)                                                                                        | በሯጮች ተጭኗል                                                                               |
+| `tests/_helpers/`, `tests/helpers/`                    | የተጋሩ የሙከራ ረዳቶች (ወርቃማ ቅጽበተ-ፎቶዎች፣ የአስተዳደር ክፍለ-ጊዜ፣…)                                                                                                              | በፈተናዎች የመጣ                                                                              |
+| `tests/fixtures/`                                      | ቋሚ ውሂብ እና የልጅ-ሂደት እቃዎች                                                                                                                                         | በፈተናዎች የመጣ                                                                              |
+| `tests/snapshots/`                                     | ወርቃማ ፋይሎች ለ `tests/helpers/goldenSnapshot.ts`                                                                                                                  | በፈተናዎች የመጣ                                                                              |
+| `tests/manual/`                                        | `.http` ፋይሎች ለእጅ REST ጥሪዎች                                                                                                                                     | መመሪያ                                                                                    |
+| `tests/security/`                                      | የደህንነት ቅርፊት ስክሪፕቶች                                                                                                                                             | በእጅ / ክፍል-የሙከራ ዕቃዎች                                                                     |
+| `tests/types/`                                         | ዓይነት-ደረጃ ኮንትራት ዕቃዎች                                                                                                                                            | —                                                                                       |
+
+ሙሉ ማትሪክስ `CONTRIBUTING.md` → "የሩጫ ሙከራዎች" እና [COVERAGE_PLAN.md](../ops/COVERAGE_PLAN.md).
 
 ---
 
-## `public/` — የማይለወጡ ሀብቶች
+## `deploy/` — ኩበርኔትስ
 
-| ዱካ                  | ዓላማ                                                        |
-| ------------------- | ---------------------------------------------------------- |
-| `public/` (ሥር)      | Favicons፣ robots.txt፣ manifest፣ service worker፣ የግብይት ምስሎች |
-| `public/providers/` | የአቅራቢ አርማ PNG/SVG (በዳሽቦርድ ውስጥ ጥቅም ላይ የሚውል)                 |
+| መንገድ                                               | ዓላማ                                                                                 |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `deploy/helm/omniroute/`                           | Helm ገበታ (`Chart.yaml`፣ `values.yaml`፣ የማሰማራት አብነቶች፣ አገልግሎት፣ መግቢያ፣ PVC፣ ሚስጥር፣ ማዋቀር) |
+| `deploy/kubernetes/base/`                          | መሠረትን (ስም ቦታ፣ ማሰማራት፣ አገልግሎት፣ PVC፣ ማዋቀር፣ `secret.example.yaml`) አስተካክል               |
+| `deploy/kubernetes/overlays/k3s/`, `overlays/k8s/` | ክላስተር-ተኮር ተደራቢዎች (መግቢያ፣ የማከማቻ ክፍል፣ ግብዓቶች፣ መመርመሪያዎች)                                 |
 
----
+[KUBERNETES_DEPLOYMENT_GUIDE.md](../ops/KUBERNETES_DEPLOYMENT_GUIDE.md) ተመልከት.
 
-## `config/` — የማይለወጡ ውቅሮች + የጥራት መግቢያ-በር ሁኔታ
+## `docker/` — ረዳት ምስሎች
 
-ከማከማቻው ሥር በv3.8.26 ወደዚህ የተዘዋወሩ፣ ከምርቱ ጋር የሚሰጡ የውቅር አብነቶች እና ቁርጥ የጥራት መግቢያ-በር መነሻዎች
-(ይህም ሥሩን ቀላል ለማድረግ ነው)።
+| መንገድ                                | ዓላማ                                                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `docker/chatgpt-web-codex-browser/` | ጭንቅላት የሌለው የአሳሽ ምስል CDP ፕሮክሲ ጋር ለ ChatGPT ድር ፈጻሚ — ተመልከት [CHATGPT_WEB.md](../providers/CHATGPT_WEB.md) |
+| `docker/devin-bridge/`              | Devin ድልድይ ምስል፣ ፋይል ፃፍ፣ መሳለቂያ እና የአውታረ መረብ ጠባቂ                                                         |
+| `docker/vnc-browser/`               | Chromium ከ VNC ጋር ለአሳሽ ክፍለ ጊዜዎች                                                                        |
 
-| ዱካ                                            | ዓላማ                                                               |
-| --------------------------------------------- | ----------------------------------------------------------------- |
-| `config/i18n.json`                            | የቋንቋ ክልል ዝርዝር + ሜታዳታ (ለ42 የቋንቋ ክልሎች ብዛት ቀኖናዊ ምንጭ)                 |
-| `config/i18n-schema.json`                     | `i18n.json`ን የሚያረጋግጥ JSON schema                                  |
-| `config/payloadRules.json`                    | የላይኛው ምንጭ payload ማጽጃ ደንቦች                                        |
-| `config/quality/quality-baseline.json`        | የብዙ-መለኪያ ራቼት መነሻ (`scripts/quality/check-quality-ratchet.mjs`)    |
-| `config/quality/complexity-baseline.json`     | የታሰረ የESLint-ውስብስብነት መነሻ (`check-complexity.mjs`)                 |
-| `config/quality/duplication-baseline.json`    | የታሰረ የjscpd ድግግሞሽ መነሻ (`check-duplication.mjs`)                   |
-| `config/quality/file-size-baseline.json`      | የታሰረ የእያንዳንዱ ፋይል መጠን መነሻ (`check-file-size.mjs`)                  |
-| `config/quality/test-discovery-baseline.json` | የታሰረ የወላጅ-አልባ ሙከራ መነሻ (`check-test-discovery.mjs`)                |
-| `config/quality/dependency-allowlist.json`    | የጸደቁ ጥገኝነቶች የፍቃድ ዝርዝር (`check-deps.mjs`)                          |
-| `config/quality/.license-allowlist.json`      | የSPDX ፈቃድ የፍቃድ ዝርዝር (`check-licenses.mjs`)                        |
-| `config/quality/quality-metrics.json`         | ጊዜያዊ የተሰበሰቡ መለኪያዎች (በ`collect-metrics.mjs` የሚፈጠሩ፤ **gitignored**) |
+ዋናው ምስል ሥር `Dockerfile` ነው; [DOCKER_GUIDE ተመልከት .md](../guides/DOCKER_GUIDE.md).
 
----
+## `contrib/` — የማህበረሰብ የምግብ አዘገጃጀት መመሪያዎች (በይፋ አይደገፍም)
 
-## `.github/` — የGitHub ውህደት
+| መንገድ                    | ዓላማ                                                                                                              |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `contrib/podman/`       | ፖድማን ኳድሌትስ (መያዣ፣ ድምጽ፣ ኔትወርክ፣ Redis)                                                                              |
+| `contrib/vps/`          | VPS `compose.yaml` + `.env.example`                                                                              |
+| `contrib/windows/`      | ከ Windows ቼክአውት ለመሮጥ `.bat` ማስነሻዎች                                                                               |
+| `contrib/session-sync/` | README ለሶስተኛ ወገን ክፍለ ጊዜ-አመሳስል አሳሽ ቅጥያ — [SESSION-SYNC-EXTENSION.md](../guides/SESSION-SYNC-EXTENSION.md) ን ይመልከቱ |
 
-| ዱካ                                 | ዓላማ                                                  |
-| ---------------------------------- | ---------------------------------------------------- |
-| `.github/workflows/`               | የGitHub Actions CI/CD የሥራ ፍሰቶች (lint፣ ሙከራ፣ ሽፋን፣ ልቀት) |
-| `.github/ISSUE_TEMPLATE/`          | የሳንካ/ባህሪ ጉዳይ አብነቶች                                   |
-| `.github/pull_request_template.md` | የPR አብነት                                             |
-| `.github/dependabot.yml`           | የጥገኝነት ማዘመኛ ውቅር                                      |
+## `examples/`
+
+| መንገድ                            | ዓላማ                                                                |
+| ------------------------------- | ------------------------------------------------------------------ |
+| `examples/omniroute-cmd-hello/` | አነስተኛ ትዕዛዝ ተሰኪ — [PLUGINS.md](../frameworks/PLUGINS.md) ይመልከቱ      |
+| `examples/plugins/`             | ምሳሌ ተሰኪዎች፡ langfuse፣ request-logger፣ ጭብጥ-አቀናባሪ፣ የእንኳን ደህና መጣችሁ ባነር |
+| `examples/quickstart/`          | የደንበኛ ቅንጥቦች፡ curl፣ Node.js (axios)፣ PHP፣ Python                    |
 
 ---
 
-## `.husky/` — የGit Hooks
+## `.github/` — GitHub ውህደት
 
-| ፋይል          | ዓላማ                                                            |
-| ------------ | -------------------------------------------------------------- |
-| `pre-commit` | `lint-staged + check-docs-sync + check:any-budget:t11`ን ያስኬዳል  |
-| `pre-push`   | በአሁኑ ጊዜ ተሰናክሏል (በአስተያየት ተዘግቷል)። `npm run test:unit`ን በእጅ ያስኪዱ። |
-| `_/`         | የHusky ውስጣዊ ክፍሎች                                               |
+| መንገድ                                                         | ዓላማ                                                                                                                                                                                                                                               |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/`                                         | CI (`ci.yml`, `quality.yml`, `build.yml`), የደህንነት ስካን (`codeql.yml`, `semgrep.yml`, `scorecard.yml`, `dast-smoke.yml`), የታቀደ `nightly-*.yml` ስብስቦች, ማተም (`npm-publish.yml`, `docker-publish.yml`, `electron-release.yml`), የመልቀቅ እና የጥገና የስራ ፍሰቶች |
+| `.github/actions/npm-ci-retry/`                              | የተቀናጀ እርምጃ `npm ci` ከመሸጎጫ ጋር እና እንደገና ይሞክሩ                                                                                                                                                                                                        |
+| `.github/actions/prepare-unit-storage/`                      | የተቀናጀ እርምጃ፡ የሯጭ የዲስክ ቦታን ነጻ ያደርጋል፣ ከዚያም ጥገኞችን ይጭናል።                                                                                                                                                                                               |
+| `.github/ISSUE_TEMPLATE/`                                    | የሳንካ፣ ባህሪ እና የሙከራ ሽፋን ችግር ቅጾች                                                                                                                                                                                                                     |
+| `.github/pull_request_template.md`, `PULL_REQUEST_TEMPLATE/` | ነባሪ PR አብነት እና bugfix/feature ልዩነቶች                                                                                                                                                                                                               |
+| `.github/CODEOWNERS`, `FUNDING.yml`, `dependabot.yml`        | የኮድ ባለቤቶች፣ የስፖንሰርሺፕ አገናኞች፣ የጥገኝነት ዝማኔዎች                                                                                                                                                                                                           |
+| `.github/labels.yml`                                         | የመለያ ትርጉሞች በ `npm run labels:sync` ተተግብረዋል።                                                                                                                                                                                                       |
+| `.github/copilot-instructions.md`                            | GitHub Copilot መመሪያዎች (ወኪል-መመሪያ ወለል)                                                                                                                                                                                                              |
 
----
+CI የስራ ካርታ [QUALITY_GATES.md](QUALITY_GATES.md).
 
-## `.claude/` — የClaude Code Slash Commands
+## `.husky/` — git መንጠቆዎች
 
-| ፋይል                                                 | ዓላማ                                              |
-| --------------------------------------------------- | ------------------------------------------------ |
-| `commands/version-bump-cc.md`                       | `/version-bump-cc` — ስሪት ማሳደግ + ራስ-ሰር የለውጥ ማስታወሻ |
-| `commands/generate-release-cc.md`                   | `/generate-release-cc` — ሙሉ የልቀት የሥራ ፍሰት         |
-| `commands/deploy-vps-{local,akamai,both}-cc.md`     | ወደ VPS ማሰማራት                                     |
-| `commands/capture-release-evidences-cc.md`          | አዳዲስ ባህሪያትን በአሳሽ WebP አድርጎ መቅዳት                  |
-| `commands/review-{prs,discussions}-cc.md`           | የGitHub PRs/ውይይቶችን መለየትና ቅድሚያ መስጠት               |
-| `commands/{review-issues,implement-features}-cc.md` | የጉዳይ የሥራ ፍሰቶች                                    |
-| `settings.local.json`                               | ለእያንዳንዱ ፕሮጀክት የClaude Code ቅንብሮች                 |
+| ፋይል          | ዓላማ                                                                                                                     |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `pre-commit` | Git የማንነት ማረጋገጫ፣ ሊንት-ደረጃ፣ የጌት አንጸባራቂ፣ የሰነዶች ማመሳሰል፣ ማንኛውም-በጀት፣ የአይነት-ልኬት ራትሼት፣ ክትትል የሚደረግባቸው-ቅርሶች እና የዩአይ-ኪት ቅጽበታዊ እይታዎች |
+| `commit-msg` | `scripts/check/check-ai-attribution.mjs` በመልእክቱ ላይ                                                                      |
+| `pre-push`   | ሆን ተብሎ ብርሃን፡ ከ0 የሚወጣ PATH/npm የንጽሕና ማረጋገጫ                                                                               |
 
----
-
-## `.agents/` — አጠቃላይ የAgent የሥራ ፍሰቶች (Codex / Cursor / ወዘተ)
-
-| ዱካ                       | ዓላማ                                         |
-| ------------------------ | ------------------------------------------- |
-| `workflows/*-ag.md`      | 11 የሥራ ፍሰት ትርጓሜዎች (የ`.claude/commands/` ቅጂ) |
-| `skills/<name>/SKILL.md` | Codex Execution Notes ያላቸው 9 የክህሎት ትርጓሜዎች   |
-
-> **ማስታወሻ፦** የሥራ ፍሰቶቹና ትዕዛዞቹ በአሁኑ ጊዜ ባይት በባይት አንድ ናቸው። `.agents/` የተለየ የAgent ማስኬጃን (Codex) ለማነጣጠር የታሰበ ከሆነ፣ ልዩነቶቹ ትርጉም ባለው መልኩ መለያየት አለባቸው።
+በ `.husky/_/` ውስጥ ያለው መንጠቆ የሩጫ ጊዜ የሚመነጨው በመጫን ላይ ነው እና ክትትል አይደረግበትም።
 
 ---
 
-## `_ideia/`, `_mono_repo/`, `_references/`, `_tasks/` — ከዋናው ዛፍ ውጭ
+## የማውጫ ቁልፎች
 
-እነዚህ በስርዝ የሚጀምሩ ማውጫዎች ለማሰራጨት ያልታሰበ ይዘት ይይዛሉ፦
-
-- **`_ideia/`** — የንድፍ ማስታወሻዎች (defer / notfit / viable ምድቦች)
-- **`_mono_repo/`** — ታሪካዊ ንዑስ ፕሮጀክቶች (omnirouteCloud፣ omnirouteSite፣ vscode-extension)
-- **`_references/`** — በልማት ወቅት ለማጣቀሻነት የተዘጋጁ የተዛማጅ OSS ፕሮጀክቶች (LiteLLM፣ 9router፣ ClawRouter፣ CLIProxyAPI፣ modelrelay፣ new-api፣ ወዘተ) ንባብ-ብቻ ቅጂዎች
-- **`_tasks/`** — ለእያንዳንዱ ልቀት የተግባር ክትትል ፋይሎች (መደበኛ ያልሆኑ)
-
-በ`npm pack` ውጤት ውስጥ አይካተቱም። `.npmignore`ን ይመልከቱ።
-
----
-
-## የሚፈጠሩ / በGit ችላ የሚባሉ
-
-| ዱካ                     | ዓላማ                      |
-| ---------------------- | ------------------------ |
-| `node_modules/`        | የnpm ጥገኞች                |
-| `.next/`               | የNext.js ግንባታ ውጤት        |
-| `coverage/`            | የc8 ሽፋን ሪፖርቶች            |
-| `logs/`                | የአፈጻጸም ጊዜ ምዝግቦች          |
-| `package/`             | የnpm pack ማዘጋጃ ቦታ        |
-| `.playwright-mcp/`     | የPlaywright MCP ሙከራ ቅርሶች |
-| `.issues/`             | የአካባቢያዊ ጉዳዮች መሸጎጫ        |
-| `tsconfig.tsbuildinfo` | የTS ጭማሪያዊ መሸጎጫ           |
-
----
-
-## የአሰሳ ምክሮች
-
-- **አዲስ አስተዋጽዖ አድራጊ ነዎት?** `CONTRIBUTING.md` → `CLAUDE.md` → `docs/architecture/ARCHITECTURE.md` → `docs/architecture/CODEBASE_DOCUMENTATION.md` ያንብቡ።
-- **አቅራቢ እያከሉ ነው?** `docs/architecture/ARCHITECTURE.md § Adding a New Provider`ን ይከተሉ + ከ`docs/reference/PROVIDER_REFERENCE.md` ጋር ያመሳክሩ።
-- **መስመር እያከሉ ነው?** `docs/architecture/ARCHITECTURE.md § Adding a New API Route` + `src/shared/validation/schemas.ts`።
-- **የMCP መሣሪያ እያከሉ ነው?** `docs/frameworks/MCP-SERVER.md § Adding a Tool`።
-- **የA2A ክህሎት እያከሉ ነው?** `docs/frameworks/A2A-SERVER.md § Adding a New Skill`።
-- **በአካባቢዎ እያስኬዱ ነው?** `docs/guides/SETUP_GUIDE.md`።
-- **ሥምሪት እያደረጉ ነው?** `docs/guides/DOCKER_GUIDE.md` / `docs/ops/VM_DEPLOYMENT_GUIDE.md` / `docs/ops/FLY_IO_DEPLOYMENT_GUIDE.md`።
-- **ልቀት እያደረጉ ነው?** `docs/ops/RELEASE_CHECKLIST.md` (እና `/generate-release-cc` የClaude Code ክህሎት)።
+- **አዲስ አበርካች?** `CONTRIBUTING.md` → `AGENTS.md` → [ARCHITECTURE.md](ARCHITECTURE.md) → [CODEBASE_DOCUMENTATION.md](CODEBASE_DOCUMENTATION.md).
+- **የተለመደ ነገር መለወጥ** (አቅራቢ፣ መንገድ፣ DB ሞጁል፣ MCP መሣሪያ፣ A2A ችሎታ)? ተከተል [MODIFICATION_SCENARIOS.md](MODIFICATION_SCENARIOS.md).
+- **አቅራቢ ማከል?** በመጀመሪያ [REMOVED_PROVIDERS.md ን](../reference/REMOVED_PROVIDERS.md) ይፈትሹ፣ ከዚያ [PROVIDER_REFERENCE.md](../reference/PROVIDER_REFERENCE.md) ን አቋርጠው ያረጋግጡ።
+- **በአካባቢው እየሮጠ ነው?** [SETUP_GUIDE.md](../guides/SETUP_GUIDE.md).
+- **በማሰማራት ላይ?** [DOCKER_GUIDE.md](../guides/DOCKER_GUIDE.md), [SELF_HOST_GUIDE.md](../getting-started/SELF_HOST_GUIDE.md), [VM_DEPLOYMENT_GUIDE.md](../ops/VM_DEPLOYMENT_GUIDE.md), [FLY_IO_DEPLOYMENT_GUIDE.md](../ops/FLY_IO_DEPLOYMENT_GUIDE.md), [KUBERNETES_DEPLOYMENT_GUIDE.md](../ops/KUBERNETES_DEPLOYMENT_GUIDE.md).
+- **በመልቀቅ ላይ?** [RELEASE_CHECKLIST.md](../ops/RELEASE_CHECKLIST.md).
+- **ጥራት ያለው በር አልተሳካም?** [QUALITY_GATES.md](QUALITY_GATES.md) እና [QUALITY_GATE_PLAYBOOK.md](../ops/QUALITY_GATE_PLAYBOOK.md).

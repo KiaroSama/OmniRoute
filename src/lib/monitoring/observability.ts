@@ -5,6 +5,7 @@ import {
 import type { AdaptiveAdmissionPublicSnapshot } from "@omniroute/open-sse/services/admission/runtime.ts";
 import type { PerConnectionAdmissionController } from "@/shared/middleware/chatBodyAdmission";
 import type { WalMaintenanceState } from "@/lib/db/walMaintenance";
+import { getKeyStoreDecryptable } from "@/lib/db/encryption";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -210,6 +211,12 @@ interface BuildTelemetryPayloadOptions {
   activeSessions: SessionSnapshot[];
 }
 
+/** Event-loop stall counters for the recorder started at boot. */
+export type EventLoopStallSummary = {
+  count: number;
+  maxMs: number;
+};
+
 interface BuildHealthPayloadOptions {
   appVersion: string;
   /** #10427: git SHA the running artifact was built from, so a deploy is auditable over HTTP. */
@@ -254,6 +261,8 @@ interface BuildHealthPayloadOptions {
   chatAdmission?: ChatAdmissionSnapshot | null;
   /** #12853: optional WAL maintenance snapshot; projected, never raw-spread. */
   walMaintenance?: WalMaintenanceSnapshot | null;
+  /** Stall counters from the boot recorder (healthzLag); additive key, nothing moves. */
+  eventLoopStall?: EventLoopStallSummary | null;
 }
 
 function limitMonitors(monitors: QuotaMonitorSnapshot[], maxItems = 8): QuotaMonitorSnapshot[] {
@@ -485,6 +494,7 @@ export function buildHealthPayload({
   adaptiveAdmission = null,
   chatAdmission = null,
   walMaintenance = null,
+  eventLoopStall = null,
   buildSha = null,
 }: BuildHealthPayloadOptions) {
   const timestamp = new Date().toISOString();
@@ -593,6 +603,9 @@ export function buildHealthPayload({
     // #12853: WAL maintenance next to the admission gates — additive key,
     // nothing existing moves.
     walMaintenance: projectWalMaintenanceSummary(walMaintenance),
+    // Stall counters from the boot recorder — additive key, nothing moves.
+    // A caller that never starts the recorder passes null and reads {0,0}.
+    eventLoopStall: eventLoopStall ?? { count: 0, maxMs: 0 },
     dedup: {
       inflightRequests,
     },
@@ -602,6 +615,8 @@ export function buildHealthPayload({
           ? "healthy"
           : "missing_or_invalid",
       provider: "aes-256-gcm",
+      // null until the boot probe ran, or when it cannot tell (no encryption, no stored secret).
+      keyStoreDecryptable: getKeyStoreDecryptable(),
     },
     setupComplete: settings?.setupComplete || false,
   };

@@ -27,28 +27,36 @@ Every call to `logAuditEvent({ action, actor, target, details, ... })` produces
 one row. Action strings follow a `domain.verb` (or `domain.verb.outcome`)
 pattern. Confirmed in-tree action types include:
 
-| Action                               | Source                                  |
-| ------------------------------------ | --------------------------------------- |
-| `auth.login.success`                 | `src/app/api/auth/login/route.ts`       |
-| `auth.login.failed`                  | `src/app/api/auth/login/route.ts`       |
-| `auth.login.locked`                  | `src/app/api/auth/login/route.ts`       |
-| `auth.login.error`                   | `src/app/api/auth/login/route.ts`       |
-| `auth.login.misconfigured`           | `src/app/api/auth/login/route.ts`       |
-| `auth.login.setup_required`          | `src/app/api/auth/login/route.ts`       |
-| `auth.logout.success`                | `src/app/api/auth/logout/route.ts`      |
-| `provider.credentials.created`       | `src/app/api/providers/route.ts`        |
-| `provider.credentials.updated`       | `src/app/api/providers/[id]/route.ts`   |
-| `provider.credentials.revoked`       | `src/app/api/providers/[id]/route.ts`   |
-| `provider.credentials.batch_revoked` | `src/app/api/providers/route.ts`        |
-| `sync.token.created`                 | `src/app/api/sync/tokens/route.ts`      |
-| `sync.token.revoked`                 | `src/app/api/sync/tokens/[id]/route.ts` |
-| `compliance.cleanup`                 | `src/lib/compliance/index.ts`           |
+| Action                               | Source                                   |
+| ------------------------------------ | ---------------------------------------- |
+| `auth.login.success`                 | `src/app/api/auth/login/route.ts`        |
+| `auth.login.failed`                  | `src/app/api/auth/login/route.ts`        |
+| `auth.login.locked`                  | `src/app/api/auth/login/route.ts`        |
+| `auth.login.error`                   | `src/app/api/auth/login/route.ts`        |
+| `auth.login.misconfigured`           | `src/app/api/auth/login/route.ts`        |
+| `auth.login.setup_required`          | `src/app/api/auth/login/route.ts`        |
+| `auth.logout.success`                | `src/app/api/auth/logout/route.ts`       |
+| `provider.credentials.created`       | `src/app/api/providers/route.ts`         |
+| `provider.credentials.updated`       | `src/app/api/providers/[id]/route.ts`    |
+| `provider.credentials.revoked`       | `src/app/api/providers/[id]/route.ts`    |
+| `provider.credentials.batch_revoked` | `src/app/api/providers/route.ts`         |
+| `sync.token.created`                 | `src/app/api/sync/tokens/route.ts`       |
+| `sync.token.revoked`                 | `src/app/api/sync/tokens/[id]/route.ts`  |
+| `compliance.cleanup`                 | `src/lib/compliance/index.ts`            |
+| `api_key.auth.touch`                 | `src/server/authz/policies/clientApi.ts` |
 
 Each entry captures `action`, `actor` (defaults to `"system"`), `target`,
 `details`/`metadata` (JSON), `ip_address`, `resource_type`, `status`,
 `request_id`, and `timestamp`. Sensitive keys (`apiKey`, `accessToken`,
 `refreshToken`, `password`, anything matching `*token`/`*secret`/`*apikey`,
 etc.) are recursively redacted to `"[redacted]"` before the row is written.
+
+`api_key.auth.touch` rows record successful API-key metadata and discovery
+reads (GET/HEAD) that never reach the request log: which key, when, and the
+normalized path, coalesced and capped at 1,000 rows. Keys with `noLog` and the
+environment key are skipped. The caller's IP address and user-agent are added
+only when the `API_KEY_AUDIT_CLIENT_DETAILS_ENABLED` feature flag is on (off by
+default).
 
 ### MCP tool calls (`mcp_tool_audit`)
 
@@ -151,6 +159,25 @@ Helpers (`src/lib/compliance/index.ts`):
 Administrative audit events (login, provider changes, MCP tool calls, etc.)
 are **not** affected by `noLog` — only per-request traffic logging is opted
 out.
+
+### Per-request opt-out (`x-omniroute-no-log`)
+
+A client can opt a single inference request out of payload persistence
+without creating a dedicated key. Send `x-omniroute-no-log: true` on the request
+(`1` and `yes` are also accepted, case-insensitive). It applies to every
+chat-family route that runs through the chat handler: Chat Completions,
+Responses, Messages, Completions and the Gemini-compatible path. The call-log
+row is still written with its timestamp, model, provider, status, duration and
+token counts, but `request_body`, `response_body`, request summaries and
+pipeline artifacts are omitted.
+
+The header is ORed with the key flag: a no-log key stays no-log regardless of
+the header, and the header cannot re-enable logging for a no-log key. The header
+is stripped before the request is forwarded upstream.
+
+This header does **not** disable Memory extraction or the semantic cache. Send
+`x-omniroute-no-memory: true` and `x-omniroute-no-cache: true` alongside it when
+the request must not persist content in those subsystems either.
 
 ## REST API
 

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { getSettledModelCatalogResponse } from "../_setup/modelCatalogFixture.ts";
 
 const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-token-limit-catalog-"));
 process.env.DATA_DIR = TEST_DATA_DIR;
@@ -31,9 +32,7 @@ test.after(() => {
 });
 
 async function getModel(target = TARGET) {
-  const response = await catalog.getUnifiedModelsResponse(
-    new Request("http://localhost/api/v1/models")
-  );
+  const response = await getSettledModelCatalogResponse(catalog);
   assert.equal(response.status, 200, "model catalog must be available before projecting limits");
   const body = (await response.json()) as { data: Array<Record<string, unknown>> };
   return body.data.find((model) => model.id === target);
@@ -153,8 +152,8 @@ test("v1 model catalog projects a synced Codex context to both public aliases", 
 });
 
 test("v1 model catalog projects an exact raw-alias context override", async () => {
-  const target = "github/claude-opus-4.5";
-  assert.equal(contextOverrides.setModelContextOverride("github", "claude-opus-4.5", 333333), true);
+  const target = "github/claude-opus-4.8";
+  assert.equal(contextOverrides.setModelContextOverride("github", "claude-opus-4.8", 333333), true);
   await providers.createProviderConnection({
     provider: "github",
     authType: "api_key",

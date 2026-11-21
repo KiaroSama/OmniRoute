@@ -47,7 +47,7 @@ docker run -d --name omniroute \
   -p 20128:20128 \
   -v omniroute-data:/app/data \
   -e ENABLE_CC_COMPATIBLE_PROVIDER=true \
-  diegosouzapw/omniroute:latest
+  cheaperinference/omniroute:latest
 ```
 
 重新啟動後，除了現有的 OpenAI 相容與 Anthropic 相容流程之外，儀表板還會顯示**新增 Claude Code 相容提供者**選項。
@@ -104,7 +104,7 @@ curl -X POST http://localhost:20128/v1/chat/completions \
 | 標頭                                        | 值                                                                       |
 | ------------------------------------------- | ------------------------------------------------------------------------ |
 | `Authorization`                             | `Bearer <api-key>`                                                       |
-| `User-Agent`                                | `claude-cli/2.1.258 (external, sdk-cli)`                                 |
+| `User-Agent`                                | `claude-cli/2.1.280 (external, sdk-cli)`                                 |
 | `anthropic-version`                         | `2023-06-01`                                                             |
 | `anthropic-beta`                            | `claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24` |
 | 各連線的隱去思考 beta 切換選項              | 針對明確要求隱去思考串流的上游新增 `redact-thinking-2026-02-12`          |

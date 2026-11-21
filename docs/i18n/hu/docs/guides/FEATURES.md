@@ -57,29 +57,19 @@ Az OpenRouter-kapcsolatok kapcsolatonként egy `preset` értéket tárolhatnak a
 
 ---
 
-## 🎨 Kombinációk
+## 🎨 Combos
 
-Hozzon létre modellútválasztási kombinációkat 19 nyilvános stratégiával: priority, weighted, round-robin, context-relay, fill-first, p2c (kettő közül a jobb választása), random, least-used, cost-optimized, reset-aware, reset-window, headroom, strict-random, auto, lkgp (utolsó ismert működő szolgáltató), context-optimized, cache-optimized, **fusion** (a kérés párhuzamos kiküldése egy modellpanelnek, majd egyetlen válasz szintetizálása egy bíráló segítségével), valamint **pipeline**. Minden kombináció több modellt fűz össze automatikus tartalékra váltással, továbbá gyorssablonokat és készenléti ellenőrzéseket is tartalmaz.
+Modell-útválasztási kombók létrehozása 22 nyilvános stratégiával: prioritás, súlyozott, kör-robin, kontextus-közvetítés, kitöltési sorrend, p2c (két választási lehetőség), véletlenszerű, legkevésbé használt, költségoptimalizált, alaphelyzetbe állítás, reset-window, expiry-first, headroom, quota-weighted, range-randodom, (autoprolast-randomod), környezetre optimalizált, gyorsítótárra optimalizált,** fúzió** (párhuzamosan szellőztessen ki egy modellbizottság elé, majd szintetizáljon egy választ egy bírón keresztül),** csővezeték** , és** jev** (opt-in TypeSafe Jev belépő a rangsorolt listára). Mindegyik kombó több modellt láncol, automatikus tartalékkal, és gyors sablonokat és készenléti ellenőrzéseket tartalmaz.
 
-A kombinációk legújabb fejlesztései:
+Legutóbbi kombinált fejlesztések:
 
-- **Strukturált kombinációkészítő** — minden lépés létrehozása a szolgáltató, a modell és a pontos fiók/kapcsolat kiválasztásával
-- **Ismétlődő szolgáltatók támogatása** — ugyanaz a szolgáltató többször is felhasználható egy kombinációban, amennyiben a `(provider, model, connection)` tuple egyedi
-- **Kombinációs célpontok állapota** — az analitikai és állapotfelületek mostantól megkülönböztetik az egyes kombinációs célpontokat/lépéseket ahelyett, hogy mindent modellkarakterláncokba vonnának össze
-- **Összetett szintek sorrendje** — a `defaultTier -> fallbackTier` mostantól befolyásolja a legfelső szintű kombinációs lépések futásidejű végrehajtási/tartalékra váltási sorrendjét
-- **Rendszerprompt-sablonok** — a kombináció `system_message` mezője támogatja a szerveroldali
-  `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` és `{{FINGERPRINT}}`
-  helyőrzőket, amelyek értékét a ténylegesen kiválasztott célpont alapján, közvetlenül a kiküldés előtt helyettesíti a rendszer.
-  Csak engedélyezett helyőrzők használhatók, rekurzió nélkül; az ismeretlen helyőrzők változatlanul maradnak; az üres értékek
-  üresre cserélődnek; az ügyfél rendszerpromptjait a rendszer soha nem írja át. A `{{FINGERPRINT}}`
-  csak az ujjlenyomat-alapú ingyenes szolgáltatóknál oldódik fel rögzített vagy
-  automatikusan rotált ujjlenyomat esetén — máshol üresre cserélődik (például
-  egyetlen ujjlenyomatot használó kapcsolatoknál vagy nem ujjlenyomat-alapú szolgáltatóknál). A helyettesítés kiterjed a
-  szabványos kiküldési ciklusra, a round-robin működésre és a rögzített kontextus-gyorsítótáras munkamenetekre;
-  a fusion, chaos, pipeline és nested-execute stratégiák még nem helyettesítik a
-  helyőrzőket.
+- **Strukturált kombóépítő** — minden lépést létrehozhat a szolgáltató, a modell és a pontos account/connection kiválasztásával
+- **Ismételt szolgáltatói támogatás** — többször használja ugyanazt a szolgáltatót egy kombinációban, amíg a `(provider, model, connection)` sor egyedi
+- **Combo cél egészség** — analytics és az egészségügyi felületek mostantól megkülönböztetik az egyéni kombinált targets/steps ahelyett, hogy mindent modellkarakterláncokba zsugorítanának
+- **Összetett rétegrend** — `defaultTier -> fallbackTier` mostantól befolyásolja a futásidejű execution/fallback sorrendet a legfelső szintű kombinált lépéseknél
+- **Rendszerkérdési sablonok** — combo `system_message` támogatja a szerveroldali `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` és `{{FINGERPRINT}}` helyőrzőket, kibővítve a ténylegesen irányított célponttól közvetlenül a feladás előtt. Engedélyezett és nem rekurzív; az ismeretlen helyőrzők szó szerintiek maradnak; üres értékek üresre bővülnek; a kliens rendszer promptjai soha nem íródnak át. `{{FINGERPRINT}}` csak az ujjlenyomat-alapú ingyenes szolgáltatóknál oldja meg a rögzített vagy automatikusan elforgatott ujjlenyomattal rendelkező — és máshol kiürül (pl. egyujjlenyomatos kapcsolatok, nem fp szolgáltatók). A bővítés lefedi a szabványos elküldési hurkot, a körbefutást és a rögzített kontextus-gyorsítótár munkameneteket; a fúzió, a káosz, a pipeline és a beágyazott végrehajtási stratégiák még nem bővítik ki a helyőrzőket.
 
-![Kombinációk irányítópultja](../screenshots/02-combos.png)
+![Combos Dashboard](../screenshots/02-combos.png)
 
 ---
 
@@ -200,23 +190,23 @@ Az OAuth-fiókok e-mail-címei alapértelmezés szerint maszkolva jelennek meg (
 
 ---
 
-## 👁️ Modellláthatósági kapcsoló _(v3.5.6+)_
+## 👁️ modell láthatóságának kapcsolója _(v3.5.6 +)_
 
-A szolgáltatói oldal modelllistája mostantól a következőket tartalmazza:
+A szolgáltatói oldal modelllistája most a következőket tartalmazza:
 
-- **Valós idejű kereső-/szűrősáv** — Adott modellek gyors megkeresése
-- **Modellenkénti láthatósági kapcsoló** (👁 ikon) — A rejtett modellek szürkén jelennek meg, és kimaradnak a `/v1/models` katalógusból
-- **Aktív darabszámot jelző jelvény** (`N/M aktív`) — Egy pillantással megmutatja, hogy az összes modellből hány van engedélyezve
+- **Valós idejű search/filter bár** — Gyorsan találhat konkrét modelleket
+- **Modellenkénti láthatóság kapcsoló** (👁 ikon) — A rejtett modellek szürkén jelennek meg, és nem szerepelnek a `/v1/models` katalógusban
+- **Aktív számláló jelvény** (`N/M active`) — Egy pillantással megmutatja, hogy hány modell engedélyezett az összeshez képest
 
 ---
 
-## 🔧 OAuth környezeti változók javítása _(v3.6.1+)_
+## 🔧 OAuth Env javítás _(v3.6.1 +)_
 
-Egykattintásos „Környezeti változók javítása” művelet OAuth-szolgáltatókhoz, amely visszaállítja a hiányzó környezeti változókat, és kijavítja a hibás hitelesítési állapotot. Elérhető itt: `Vezérlőpult → Szolgáltatók → [OAuth-szolgáltató] → Környezeti változók javítása`. Automatikusan észleli és javítja a következőket:
+Egykattintásos „Repair env” művelet OAuth -szolgáltatók számára, amely visszaállítja a hiányzó környezeti változókat, és kijavítja a meghibásodott hitelesítési állapotot. Elérhető `Dashboard → Providers → [OAuth Provider] → Repair env` ről. Automatikusan észleli és javítja:
 
-- Hiányzó OAuth-klienshitelesítő adatok
-- Sérült bejegyzések a környezeti változókat tartalmazó fájlban
-- Biztonsági mentési útvonalak biztonságossá tétele
+- Hiányoznak OAuth ügyfél hitelesítő adatai
+- Sérült env fájl bejegyzések
+- Biztonsági útvonal fertőtlenítése
 
 ---
 
@@ -298,13 +288,13 @@ Főbb működési jellemzők:
 
 ## 🔑 Szinkronizálási tokenek és konfigurációs csomag _(v3.6.6+)_
 
-A többeszközös és külső operátori hozzáférés mostantól **hatókörrel rendelkező szinkronizálási tokeneken** keresztül lehetséges:
+A többeszközös és külső üzemeltetői hozzáférés mostantól **hatókörrel rendelkező szinkronizálási tokeneken** keresztül lehetséges:
 
-- **`POST /api/sync/tokens`** — Új szinkronizálási token kibocsátása (meghatározott hatókörrel és opcionális lejárattal)
+- **`POST /api/sync/tokens`** — Új szinkronizálási token kiadása (meghatározott hatókörrel és opcionális lejárattal)
 - **`DELETE /api/sync/tokens/:id`** — Token visszavonása
-- **`GET /api/sync/bundle`** — Az összes nem érzékeny beállítás verziózott, ETag-kulcsú JSON-pillanatképének letöltése (a jelszavak kitakarásával)
+- **`GET /api/sync/bundle`** — A konfiguráció verziózott, ETag-kulcsú JSON-pillanatképének letöltése (kizárólag szinkronizálási tokennel hitelesítve). A hitelesítési beállítások, például az irányítópult jelszava, el vannak távolítva, a szolgáltatói hitelesítő adatok és az API-kulcsok azonban szerepelnek benne, ezért a fájlt bizalmas adatként kell kezelni
 
-A konfigurációs csomagot a `src/lib/sync/bundle.ts` állítja elő. A felhasználó rendszerek az `ETag` válaszfejléc összehasonlításával észlelhetik a változásokat a teljes tartalom újbóli letöltése nélkül.
+A konfigurációs csomagot a `src/lib/sync/bundle.ts` állítja elő. A fogyasztók az `ETag` válaszfejléc összehasonlításával észlelhetik a változásokat a teljes tartalom ismételt letöltése nélkül. A CLI használatával az `omniroute sync bundle <outPath> --token <syncToken>` (vagy az `OMNIROUTE_SYNC_TOKEN`) egy kizárólag a tulajdonos által hozzáférhető fájlba menti azt.
 
 ---
 
@@ -316,14 +306,14 @@ A **hibrid tokenszámlálás** szintén a v3.6.6 verzióban érkezik: amikor egy
 
 ---
 
-## 🛡️ Biztonságos kimenő lekérés és SSRF-védelem _(v3.6.6+)_
+## 🛡️ Biztonságos kimenő lekérések és SSRF-védelem _(v3.6.6+)_
 
 Mostantól minden szolgáltató-ellenőrzési és modellfelderítési hívás egy kétrétegű kimenő forgalmi védelmen halad át:
 
-1. **URL-védelem** (`src/shared/network/outboundUrlGuard.ts`) — A socket megnyitása előtt blokkolja a privát, visszacsatolási és helyi kapcsolati IP-tartományokat.
-2. **Biztonságos lekérési burkoló** (`src/shared/network/safeOutboundFetch.ts`) — Alkalmazza az URL-védelmet, egységesíti az időtúllépéseket, és exponenciális késleltetéssel újrapróbálkozik átmeneti hibák esetén.
+1. **URL-védelem** (`src/shared/network/outboundUrlGuard.ts`) — Először a cél megadott állomásnevét vagy IP-literálját ellenőrzi; kizárólag nyilvános címeket engedélyező módban a biztonságos lekérési burkoló a nevet is feloldja, és elutasítja a privát címeket. Alapértelmezés szerint blokkolja a felhőalapú metaadat-végpontokat — a teljes 169.254.0.0/16 tartományt, valamint az ismert metaadat-állomásneveket; az `OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS=false` a privát és visszacsatolási állomásokat is blokkolja; az `OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS=true` (vagy a korábbi `OUTBOUND_SSRF_GUARD_ENABLED=false`) kikapcsolja az ellenőrzéseket. Egy jelző irányítópulti kapcsolójával mentett érték elsőbbséget élvez a változójával szemben, a beépített helyi szolgáltatók pedig a kulcsellenőrzés során kihagyják a védelmet. Lásd: `docs/reference/ENVIRONMENT.md`.
+2. **Biztonságos lekérési burkoló** (`src/shared/network/safeOutboundFetch.ts`) — Alkalmazza az URL-védelmet, normalizálja az időkorlátokat, és exponenciális késleltetéssel újrapróbálkozik átmeneti hibák esetén.
 
-A védelem megsértése HTTP 422 (`URL_GUARD_BLOCKED`) hibaként jelenik meg, és a `providerAudit.ts` segítségével bekerül a megfelelőségi auditnaplóba.
+A védelem megsértése `URL_GUARD_BLOCKED` hibaként jelenik meg — HTTP 503 a `getSafeOutboundFetchErrorStatus` használatával (400 a modellfelderítési útvonalon) —, az ellenőrzés során észlelt tényleges SSRF-blokkolásokat pedig `provider.validation.ssrf_blocked` eseményként rögzíti a naplózási rendszer.
 
 ---
 

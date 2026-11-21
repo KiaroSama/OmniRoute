@@ -10,6 +10,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { z } from "zod";
+import { nativeCoverageArgs } from "../_helpers/nativeCoverageArgs.ts";
 
 const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omni-log-export-ext-"));
 process.env.DATA_DIR = TEST_DATA_DIR;
@@ -82,6 +83,7 @@ test.beforeEach(() => {
 
 test.afterEach(() => {
   registry.__resetLogExportDestinationTypesForTest();
+  runner.__setLogExportChildOptionsForTest(null);
 });
 
 test.after(() => {
@@ -103,7 +105,17 @@ test("runner_ThirdPartyDestination_DrivesTheWholePipelineWithNoBigQueryCode", as
     }),
   });
 
+  const [, coveragePreload] = nativeCoverageArgs();
+  runner.__setLogExportChildOptionsForTest({
+    modulePath: path.join(import.meta.dirname, "fixtures/logExportExtensibilityDestination.ts"),
+    coveragePreload,
+  });
   const result = await runner.runDestinationExport(destination);
+  const childOutput = JSON.parse(
+    fs.readFileSync(path.join(TEST_DATA_DIR, "ext-sent.json"), "utf8")
+  ) as { sent: unknown[][]; prepareCalls: number };
+  sent.push(...childOutput.sent);
+  prepareCalls = childOutput.prepareCalls;
 
   assert.equal(result.success, true, result.error ?? "");
   assert.equal(result.exported, 5);

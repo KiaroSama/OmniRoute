@@ -57,29 +57,19 @@ OpenRouter-forbindelser kan gemme en `preset` pr. forbindelse under Avancerede i
 
 ---
 
-## 🎨 Kombinationer
+## 🎨 Combos
 
-Opret kombinationer til modelrouting med 19 offentlige strategier: priority, weighted, round-robin, context-relay, fill-first, p2c (valg mellem to muligheder), random, least-used, cost-optimized, reset-aware, reset-window, headroom, strict-random, auto, lkgp (senest kendte fungerende udbyder), context-optimized, cache-optimized, **fusion** (send parallelt til et panel af modeller, og syntetiser derefter ét svar via en bedømmer) og **pipeline**. Hver kombination sammenkæder flere modeller med automatisk fallback og omfatter hurtige skabeloner og parathedstjek.
+Opret modelrouting-kombinationer med 22 offentlige strategier: prioritet, vægtet, round-robin, kontekst-relæ, fill-first, p2c (power-of-two choices), tilfældig, mindst brugt, omkostningsoptimeret, nulstil-bevidst, nulstil-vindue, udløb-først, frihøjde, kvote-l-tilfældig, auto (sidst kendt-god-udbyder), kontekstoptimeret, cache-optimeret,** fusion** (fan ud til et panel af modeller parallelt, og syntetiser derefter ét svar via en dommer)** rørledning** , og** jev** (en opt-in TypeSafe Jev-adgang over din rangerede liste). Hver combo kæder flere modeller med automatisk fallback og inkluderer hurtige skabeloner og klarhedstjek.
 
-Seneste forbedringer af kombinationer:
+Seneste kombinationsforbedringer:
 
-- **Struktureret kombinationsbygger** — opret hvert trin ved at vælge udbyder, model og præcis konto/forbindelse
-- **Understøttelse af gentagne udbydere** — genbrug den samme udbyder flere gange i én kombination, så længe tuplen `(provider, model, connection)` er unik
-- **Tilstand for kombinationsmål** — analyse- og tilstandsvisninger skelner nu mellem individuelle kombinationsmål/-trin i stedet for at samle alt i modelstrenge
-- **Sammensat niveau-rækkefølge** — `defaultTier -> fallbackTier` påvirker nu rækkefølgen for kørsel/fallback ved kombinationstrin på øverste niveau
-- **Systempromptskabeloner** — kombinationens `system_message` understøtter serverside-
-  pladsholderne `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` og `{{FINGERPRINT}}`,
-  som udfoldes ud fra det faktisk routede mål umiddelbart før afsendelse.
-  De er baseret på en tilladelsesliste og er ikke-rekursive; ukendte pladsholdere forbliver uændrede; tomme værdier
-  udfoldes til tomme værdier; klientsystemprompter omskrives aldrig. `{{FINGERPRINT}}`
-  fortolkes kun for fingerprint-baserede gratis udbydere med et fastgjort eller
-  automatisk roteret fingerprint — andre steder udfoldes den til en tom værdi (f.eks.
-  forbindelser med ét fingerprint og udbydere uden fp). Udfoldelse omfatter
-  standardafsendelsesløkken, round-robin og fastgjorte context-cache-sessioner;
-  strategierne fusion, chaos, pipeline og nested-execute udfolder endnu ikke
-  pladsholdere.
+- **Struktureret combo builder** — opret hvert trin ved at vælge udbyder, model og nøjagtige account/connection
+- **Gentagen udbydersupport** — genbruger den samme udbyder mange gange i én kombination, så længe `(provider, model, connection)` tuplen er unik
+- **Combo mål sundhed** — -analyse og sundhedsoverflader skelner nu individuelle combo targets/steps i stedet for at kollapse alt i modelstrenge
+- **Komposit tier bestilling** — `defaultTier -> fallbackTier` påvirker nu runtime execution/fallback rækkefølgen for kombinationstrin på øverste niveau
+- **Systempromptskabeloner** — combo `system_message` understøtter server-side `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` og `{{FINGERPRINT}}` pladsholdere, udvidet fra det faktisk rutede mål lige før afsendelse. Tilladt og ikke-rekursiv; ukendte pladsholdere forbliver bogstavelige; tomme værdier udvides til tomme; klientsystemprompter bliver aldrig omskrevet. `{{FINGERPRINT}}` løser kun for fingeraftryksbaserede gratis udbydere med et fastgjort eller autoroteret fingeraftryk — det udvides til at blive tomt andre steder (f.eks. enkeltfingeraftryksforbindelser, ikke-fp-udbydere). Udvidelse dækker standard afsendelsesløkke, round-robin og fastgjorte kontekstcache-sessioner; fusion, kaos, pipeline og nested-execute-strategier udvider ikke pladsholdere endnu.
 
-![Kombinationsdashboard](../screenshots/02-combos.png)
+![Combos Dashboard](../screenshots/02-combos.png)
 
 ---
 
@@ -200,23 +190,23 @@ E-mailadresser for OAuth-konti maskeres som standard (f.eks. `di*****@g****.com`
 
 ---
 
-## 👁️ Skift af modelsynlighed _(v3.5.6+)_
+## 👁️ Model Synlighed Toggle _(v3.5.6 +)_
 
-Modellisten på udbydersiden indeholder nu:
+Udbydersidemodellisten inkluderer nu:
 
-- **Søge-/filterlinje i realtid** — Find hurtigt bestemte modeller
-- **Synlighedsindstilling pr. model** (👁-ikon) — Skjulte modeller er nedtonede og udeladt fra `/v1/models`-kataloget
-- **Mærke med antal aktive** (`N/M aktive`) — Viser hurtigt, hvor mange modeller der er aktiveret i forhold til det samlede antal
+- **search/filter bar i realtid** — Find hurtigt specifikke modeller
+- **Synlighedsskift pr. model** (👁 ikon) — Skjulte modeller er nedtonet og udelukket fra `/v1/models` -kataloget
+- **Active-count badge** (`N/M active`) — Viser med et øjeblik, hvor mange modeller der er aktiveret i forhold til i alt
 
 ---
 
-## 🔧 Reparation af OAuth-miljø _(v3.6.1+)_
+## 🔧 OAuth Env Repair _(v3.6.1 +)_
 
-Handlingen "Reparer miljø" med ét klik for OAuth-udbydere gendanner manglende miljøvariabler og retter en defekt godkendelsestilstand. Tilgængelig via `Dashboard → Udbydere → [OAuth-udbyder] → Reparer miljø`. Registrerer og reparerer automatisk:
+Et-klik "Reparer env"-handling for OAuth udbydere, der gendanner manglende miljøvariabler og retter brudt godkendelsestilstand. Tilgængelig fra `Dashboard → Providers → [OAuth Provider] → Repair env`. Registrerer og reparerer automatisk:
 
-- Manglende OAuth-klientlegitimationsoplysninger
-- Beskadigede poster i miljøfilen
-- Rensning af stier til sikkerhedskopier
+- Manglende OAuth klientoplysninger
+- Korrupte env-filposter
+- Desinficering af backup sti
 
 ---
 
@@ -298,13 +288,13 @@ Vigtigste funktionsmåder:
 
 ## 🔑 Synkroniseringstokens og konfigurationspakke _(v3.6.6+)_
 
-Adgang fra flere enheder og eksterne operatører er nu mulig via **afgrænsede synkroniseringstokens**:
+Adgang fra flere enheder og for eksterne operatører er nu mulig via **afgrænsede synkroniseringstokens**:
 
-- **`POST /api/sync/tokens`** — Udsted et nyt synkroniseringstoken (afgrænset og med valgfrit udløbstidspunkt)
+- **`POST /api/sync/tokens`** — Udsted et nyt synkroniseringstoken (afgrænset og med valgfri udløbsdato)
 - **`DELETE /api/sync/tokens/:id`** — Tilbagekald et token
-- **`GET /api/sync/bundle`** — Download et versioneret JSON-snapshot, identificeret med ETag, af alle ikke-følsomme indstillinger (adgangskoder er skjult)
+- **`GET /api/sync/bundle`** — Download et versionsstyret JSON-snapshot af konfigurationen, identificeret med ETag (kun godkendt med et synkroniseringstoken). Godkendelsesindstillinger såsom adgangskoden til dashboardet fjernes, men udbyderlegitimationsoplysninger og API-nøgler medtages, så filen skal behandles som en hemmelighed
 
-Konfigurationspakken oprettes af `src/lib/sync/bundle.ts`. Klienter sammenligner `ETag`-responsheaderen for at registrere ændringer uden at downloade hele indholdet igen.
+Konfigurationspakken oprettes af `src/lib/sync/bundle.ts`. Klienter sammenligner `ETag`-responsheaderen for at registrere ændringer uden at downloade hele indholdet igen. Fra CLI'en gemmer `omniroute sync bundle <outPath> --token <syncToken>` (eller `OMNIROUTE_SYNC_TOKEN`) den i en fil, som kun ejeren har adgang til.
 
 ---
 
@@ -318,12 +308,12 @@ Konfigurationspakken oprettes af `src/lib/sync/bundle.ts`. Klienter sammenligner
 
 ## 🛡️ Sikker udgående hentning og SSRF-beskyttelse _(v3.6.6+)_
 
-Alle kald til udbydervalidering og modelregistrering går nu gennem en udgående beskyttelse i to lag:
+Alle kald til validering af udbydere og registrering af modeller går nu gennem en udgående beskyttelse i to lag:
 
-1. **URL-beskyttelse** (`src/shared/network/outboundUrlGuard.ts`) — Blokerer private IP-områder samt loopback- og link-local-IP-områder, før socketforbindelsen åbnes.
-2. **Wrapper til sikker hentning** (`src/shared/network/safeOutboundFetch.ts`) — Anvender URL-beskyttelsen, normaliserer timeouts og forsøger igen ved midlertidige fejl med eksponentiel ventetid.
+1. **URL-beskyttelse** (`src/shared/network/outboundUrlGuard.ts`) — Kontrollerer først målets værtsnavn eller bogstavelige IP-adresse, som den er skrevet. I tilstanden kun offentlig adgang slår wrapperen til sikker hentning også navnet op og afviser private adresser. Som standard blokerer den cloud-metadataendpoints — hele 169.254.0.0/16 samt de kendte metadataværtsnavne. `OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS=false` blokerer også private værter og loopback-værter. `OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS=true` (eller den ældre `OUTBOUND_SSRF_GUARD_ENABLED=false`) slår kontrollerne fra. En værdi, der er gemt via et flags kontakt på kontrolpanelet, har forrang for den tilhørende variabel, og indbyggede lokale udbydere springer beskyttelsen over under nøglevalidering. Se `docs/reference/ENVIRONMENT.md`.
+2. **Wrapper til sikker hentning** (`src/shared/network/safeOutboundFetch.ts`) — Anvender URL-beskyttelsen, normaliserer timeouts og forsøger igen ved midlertidige fejl med eksponentiel forsinkelse.
 
-Overtrædelser af beskyttelsen returneres som HTTP 422 (`URL_GUARD_BLOCKED`) og skrives til compliance-revisionsloggen via `providerAudit.ts`.
+Overtrædelser af beskyttelsen vises som `URL_GUARD_BLOCKED` — HTTP 503 via `getSafeOutboundFetchErrorStatus` (400 på ruten til registrering af modeller) — og reelle SSRF-blokeringer under validering skrives til revisionsloggen som `provider.validation.ssrf_blocked`-hændelser.
 
 ---
 

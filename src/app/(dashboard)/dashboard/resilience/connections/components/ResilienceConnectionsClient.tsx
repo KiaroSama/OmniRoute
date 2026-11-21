@@ -3,19 +3,36 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslations } from "next-intl";
 import type { ResilienceConnectionsResponse } from "@/types/resilience";
+import { Alert } from "@omniroute/ui-kit/alert";
+import Button from "@/shared/components/Button";
 import EmptyState from "@/shared/components/EmptyState";
+import { LocalOnlyNotice } from "@/shared/components/LocalOnlyNotice";
+import { useLocalOnlyBlocked } from "@/shared/hooks/useLocalOnlyAccess";
+import { detectLocalOnlyRejection } from "@/shared/utils/localOnlyAccess";
 import ConnectionsTable from "./ConnectionsTable";
 import BreakerTimeline from "./BreakerTimeline";
 
 const POLL_INTERVAL_MS = 30000;
+const CONNECTIONS_API_PATH = "/api/resilience/connections";
 
+/**
+ * The connections API is a local-only route. A session that cannot reach it gets the notice
+ * straight away (no loading state, no request); otherwise the poller below runs and hands
+ * over to the notice if the server rejects it as local-only.
+ */
 export default function ResilienceConnectionsClient() {
+  const localOnly = useLocalOnlyBlocked(CONNECTIONS_API_PATH);
+  return localOnly ? <LocalOnlyNotice /> : <ResilienceConnectionsPoller />;
+}
+
+function ResilienceConnectionsPoller() {
   const t = useTranslations("resilienceConnections");
+  const tc = useTranslations("common");
   const [data, setData] = useState<ResilienceConnectionsResponse | null>(null);
   const [windowMs, setWindowMs] = useState(3600000);
   const [pollError, setPollError] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [stopReason, setStopReason] = useState<"none" | "local_only" | "not_found">("none");
+  const [stopReason, setStopReason] = useState<"none" | "rejected">("none");
   const [retryCount, setRetryCount] = useState(0);
   const stoppedRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
@@ -34,14 +51,16 @@ export default function ResilienceConnectionsClient() {
       controller.abort();
     }, 25000); // < 30s poll interval
     try {
-      const res = await fetch(`/api/resilience/connections?windowMs=${ws}`, {
+      const res = await fetch(`${CONNECTIONS_API_PATH}?windowMs=${ws}`, {
         cache: "no-store",
         signal: controller.signal,
       });
       if (controller.signal.aborted) return; // guard: window switch cancelled this request
       if (res.status === 404 || res.status === 403) {
         stoppedRef.current = true;
-        setStopReason(res.status === 403 ? "local_only" : "not_found"); // explicit reason for UI
+        // Local-only rejection: the wrapper swaps this poller for the notice.
+        if (await detectLocalOnlyRejection(res, CONNECTIONS_API_PATH)) return;
+        setStopReason("rejected"); // explicit reason for UI
         setPollError(true);
         setLoading(false); // exit loading so pollError banner is visible
         return;
@@ -127,25 +146,18 @@ export default function ResilienceConnectionsClient() {
   }, []);
 
   const errorBanner = pollError ? (
-    <div
-      style={{
-        padding: "12px",
-        borderRadius: "8px",
-        background: "rgba(239,68,68,0.1)",
-        color: "var(--color-error)",
-      }}
-    >
-      {stopReason === "local_only"
-        ? t("pollErrorLocalOnly") // LOCAL_ONLY gate rejection - page only accessible from localhost/LAN
-        : stopReason !== "none"
-          ? t("pollErrorStopped")
-          : t("pollErrorTransient")}
-      {stopReason !== "local_only" && (
-        <button type="button" onClick={handleRetry} style={{ marginLeft: "8px" }}>
+    <Alert
+      // Re-keyed on the stop reason: a dismissed banner re-appears when the state changes.
+      key={stopReason}
+      variant="critical"
+      dismissLabel={tc("close")}
+      description={stopReason !== "none" ? t("pollErrorStopped") : t("pollErrorTransient")}
+      actions={
+        <Button variant="secondary" size="sm" icon="refresh" onClick={handleRetry}>
           {t("retry")}
-        </button>
-      )}
-    </div>
+        </Button>
+      }
+    />
   ) : null;
 
   if (pollError && !data) return errorBanner;
@@ -166,9 +178,7 @@ export default function ResilienceConnectionsClient() {
   return (
     <>
       {errorBanner}
-      <div
-        style={{ display: "flex", gap: "16px", fontSize: "12px", color: "var(--color-text-muted)" }}
-      >
+      <div className="flex flex-wrap gap-4 text-xs text-text-muted">
         <span>
           {t("summary.total", { count: data.meta.totalConnections })}
           {data.meta.countsCapped ? ` (${t("summary.capped")})` : ""}
@@ -177,20 +187,16 @@ export default function ResilienceConnectionsClient() {
         <span>{t("summary.unhealthyBreakers", { count: data.meta.unhealthyBreakerCount })}</span>
       </div>
       {data.meta.degraded.length > 0 && (
-        <div
-          style={{
-            padding: "12px",
-            borderRadius: "8px",
-            background: "rgba(245,158,11,0.1)",
-            color: "var(--color-warning)",
-          }}
-        >
-          {t("degraded.message", {
+        <Alert
+          key={data.meta.degraded.join(",")}
+          variant="warning"
+          dismissLabel={tc("close")}
+          description={t("degraded.message", {
             sources: data.meta.degraded.map((s) => t(`degraded.source.${s}`)).join(", "),
           })}
-        </div>
+        />
       )}
-      <div style={{ fontSize: "11px", color: "var(--color-text-muted)" }}>{t("pollingNote")}</div>
+      <div className="text-xs text-text-muted">{t("pollingNote")}</div>
       <ConnectionsTable
         connections={data.connections}
         receivedAt={data.receivedAt ?? 0}

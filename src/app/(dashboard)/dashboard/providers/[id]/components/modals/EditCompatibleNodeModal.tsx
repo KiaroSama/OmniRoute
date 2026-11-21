@@ -1,10 +1,15 @@
 "use client";
+
+import Icon from "@/shared/components/Icon";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Button, Badge, Input, Modal, Select, Toggle } from "@/shared/components";
 import { isValidProviderIconUrl } from "@/shared/validation/iconUrl";
+import { DEFAULT_COMPATIBLE_QUOTA_PATH } from "@/shared/utils/compatibleQuotaCheck";
 import { CC_COMPATIBLE_DEFAULT_CHAT_PATH } from "../../providerDetailConstants";
 import NewApiAggregatorFields from "./NewApiAggregatorFields";
+import CustomJsonFields from "./CustomJsonFields";
+import { CUSTOM_JSON_API_TYPE, createCustomJsonForm, parseCustomJsonForm } from "./customJsonForm";
 import { providerText } from "../../providerPageHelpers";
 interface EditCompatibleNodeModalNode {
   id?: string;
@@ -18,6 +23,10 @@ interface EditCompatibleNodeModalNode {
   dailyQuotaResetTimezone?: string | null;
   dailyQuotaResetHour?: number | null;
   providerSpecificData?: Record<string, unknown>;
+  /** Derived from the node's connections (useProviderConnections). */
+  quotaCheck?: { enabled: boolean; path: string } | null;
+  /** Custom JSON API node config (apiType "custom-json"), as stored by the API. */
+  customJsonConfig?: unknown;
 }
 
 interface EditCompatibleNodeModalProps {
@@ -52,6 +61,8 @@ export default function EditCompatibleNodeModal({
     quotaPerUnit: "",
     dailyQuotaResetTimezone: "",
     dailyQuotaResetHour: "",
+    quotaCheckEnabled: false,
+    quotaPath: DEFAULT_COMPATIBLE_QUOTA_PATH,
   });
   const [saving, setSaving] = useState(false);
   const [checkKey, setCheckKey] = useState("");
@@ -65,6 +76,7 @@ export default function EditCompatibleNodeModal({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [iconUrlError, setIconUrlError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [customJson, setCustomJson] = useState(() => createCustomJsonForm());
 
   // Modal-open form initialization from the node being edited — applied as a
   // render-phase adjustment guarded by the previously initialized node
@@ -107,9 +119,12 @@ export default function EditCompatibleNodeModal({
           node.dailyQuotaResetHour === 0 || node.dailyQuotaResetHour
             ? String(node.dailyQuotaResetHour)
             : "",
+        quotaCheckEnabled: node.quotaCheck?.enabled === true,
+        quotaPath: node.quotaCheck?.path || DEFAULT_COMPATIBLE_QUOTA_PATH,
       });
       setSaveError(null);
       setIconUrlError(null);
+      setCustomJson(createCustomJsonForm(node.customJsonConfig));
       setShowAdvanced(
         !!(
           node.chatPath ||
@@ -129,7 +144,9 @@ export default function EditCompatibleNodeModal({
     { value: "audio-transcriptions", label: t("audioTranscriptions") },
     { value: "audio-speech", label: t("audioSpeech") },
     { value: "images-generations", label: t("imagesGenerations") },
+    { value: CUSTOM_JSON_API_TYPE, label: t("customJsonApi") },
   ];
+  const isCustomJson = !isAnthropic && formData.apiType === CUSTOM_JSON_API_TYPE;
 
   const handleSubmit = async () => {
     if (!formData.name.trim() || !formData.prefix.trim() || !formData.baseUrl.trim()) return;
@@ -140,6 +157,11 @@ export default function EditCompatibleNodeModal({
     }
     setIconUrlError(null);
     setSaveError(null);
+    const customJsonResult = isCustomJson ? parseCustomJsonForm(customJson) : null;
+    if (customJsonResult?.error) {
+      setSaveError(t(customJsonResult.error.key, customJsonResult.error.values));
+      return;
+    }
     setSaving(true);
     try {
       const payload: any = {
@@ -157,6 +179,11 @@ export default function EditCompatibleNodeModal({
       if (!isAnthropic) {
         payload.apiType = formData.apiType;
       }
+      payload.quotaCheck = {
+        enabled: formData.quotaCheckEnabled,
+        path: formData.quotaPath.trim() || DEFAULT_COMPATIBLE_QUOTA_PATH,
+      };
+      if (customJsonResult?.config) payload.customJson = customJsonResult.config;
       // Aggregator gateway fields (#9415)
       if (formData.newApiAggregatorBalance) {
         payload.providerSpecificData = {
@@ -186,6 +213,14 @@ export default function EditCompatibleNodeModal({
   };
 
   const handleValidate = async () => {
+    const customJsonResult = isCustomJson ? parseCustomJsonForm(customJson) : null;
+    if (customJsonResult?.error) {
+      setValidationResult({
+        valid: false,
+        error: t(customJsonResult.error.key, customJsonResult.error.values),
+      });
+      return;
+    }
     setValidating(true);
     try {
       const res = await fetch("/api/provider-nodes/validate", {
@@ -200,6 +235,7 @@ export default function EditCompatibleNodeModal({
           chatPath: formData.chatPath || (isCcCompatible ? CC_COMPATIBLE_DEFAULT_CHAT_PATH : ""),
           modelsPath: isCcCompatible ? "" : formData.modelsPath,
           modelId: checkModelId.trim() || undefined,
+          customJson: customJsonResult?.config,
         }),
       });
       const data = await res.json();
@@ -232,11 +268,9 @@ export default function EditCompatibleNodeModal({
     >
       <div className="flex flex-col gap-4">
         {isCcCompatible && (
-          <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-sm text-text-muted">
+          <div className="rounded-lg border border-warning/25 bg-warning/10 px-3 py-2 text-sm text-text-muted">
             <div className="flex items-start gap-2">
-              <span className="material-symbols-outlined mt-0.5 text-[18px] text-amber-500">
-                warning
-              </span>
+              <Icon name="warning" size={18} className="mt-0.5 text-warning" />
               <p>{t("ccCompatibleValidationHint")}</p>
             </div>
           </div>
@@ -287,13 +321,16 @@ export default function EditCompatibleNodeModal({
                 : t("openaiBaseUrlPlaceholder")
           }
           hint={
-            isCcCompatible
-              ? t("ccCompatibleBaseUrlHint")
-              : t("compatibleBaseUrlHint", {
-                  type: isAnthropic ? t("anthropic") : t("openai"),
-                })
+            isCustomJson
+              ? t("customJsonEndpointHint")
+              : isCcCompatible
+                ? t("ccCompatibleBaseUrlHint")
+                : t("compatibleBaseUrlHint", {
+                    type: isAnthropic ? t("anthropic") : t("openai"),
+                  })
           }
         />
+        {isCustomJson && <CustomJsonFields value={customJson} onChange={setCustomJson} t={t} />}
         <Input
           label={t("iconUrlLabel")}
           value={formData.iconUrl}
@@ -319,37 +356,54 @@ export default function EditCompatibleNodeModal({
           onChange={(patch) => setFormData({ ...formData, ...patch })}
           t={t}
         />
-        <button
-          type="button"
-          className="text-sm text-text-muted hover:text-text-primary flex items-center gap-1"
+        <Toggle
+          label={t("quotaCheck")}
+          description={t("quotaCheckHint")}
+          checked={formData.quotaCheckEnabled}
+          onChange={(checked: boolean) => setFormData({ ...formData, quotaCheckEnabled: checked })}
+        />
+        {formData.quotaCheckEnabled && (
+          <Input
+            label={t("quotaPath")}
+            value={formData.quotaPath}
+            onChange={(e) => setFormData({ ...formData, quotaPath: e.target.value })}
+            placeholder={DEFAULT_COMPATIBLE_QUOTA_PATH}
+            hint={t("quotaPathHint")}
+          />
+        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="self-start"
           onClick={() => setShowAdvanced(!showAdvanced)}
           aria-expanded={showAdvanced}
           aria-controls="advanced-settings"
         >
-          <span
+          <Icon
+            name="chevron_right"
+            size={14}
             className={`transition-transform ${showAdvanced ? "rotate-90" : ""}`}
-            aria-hidden="true"
-          >
-            ▶
-          </span>
+          />
           {t("advancedSettings")}
-        </button>
+        </Button>
         {showAdvanced && (
           <div id="advanced-settings" className="flex flex-col gap-3 pl-2 border-l-2 border-border">
-            <Input
-              label={t("chatPathLabel")}
-              value={formData.chatPath}
-              onChange={(e) => setFormData({ ...formData, chatPath: e.target.value })}
-              placeholder={
-                isCcCompatible
-                  ? CC_COMPATIBLE_DEFAULT_CHAT_PATH
-                  : isAnthropic
-                    ? "/messages"
-                    : t("chatPathPlaceholder")
-              }
-              hint={isCcCompatible ? t("ccCompatibleChatPathHint") : t("chatPathHint")}
-            />
-            {!isCcCompatible && (
+            {!isCustomJson && (
+              <Input
+                label={t("chatPathLabel")}
+                value={formData.chatPath}
+                onChange={(e) => setFormData({ ...formData, chatPath: e.target.value })}
+                placeholder={
+                  isCcCompatible
+                    ? CC_COMPATIBLE_DEFAULT_CHAT_PATH
+                    : isAnthropic
+                      ? "/messages"
+                      : t("chatPathPlaceholder")
+                }
+                hint={isCcCompatible ? t("ccCompatibleChatPathHint") : t("chatPathHint")}
+              />
+            )}
+            {!isCcCompatible && !isCustomJson && (
               <Input
                 label={t("modelsPathLabel")}
                 value={formData.modelsPath}
@@ -387,13 +441,18 @@ export default function EditCompatibleNodeModal({
           <div className="pt-6">
             <Button
               onClick={handleValidate}
-              disabled={!checkKey || validating || !formData.baseUrl.trim()}
+              disabled={
+                (!checkKey && !(isCustomJson && customJson.authType === "none")) ||
+                validating ||
+                !formData.baseUrl.trim()
+              }
               variant="secondary"
             >
-              {validating ? t("checking") : t("check")}
+              {validating ? t("checking") : isCustomJson ? t("customJsonSendTest") : t("check")}
             </Button>
           </div>
         </div>
+        {isCustomJson && <p className="text-xs text-text-muted">{t("customJsonSendTestHint")}</p>}
         <Input
           label={t("testModelIdLabel")}
           value={checkModelId}
@@ -408,7 +467,7 @@ export default function EditCompatibleNodeModal({
             </Badge>
             {validationResult.error && (
               <span
-                className={`text-sm ${validationResult.valid ? "text-text-muted" : "text-red-500"}`}
+                className={`text-sm ${validationResult.valid ? "text-text-muted" : "text-error"}`}
               >
                 {validationResult.error}
               </span>
@@ -419,7 +478,7 @@ export default function EditCompatibleNodeModal({
           <div
             role="alert"
             aria-live="assertive"
-            className="text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2"
+            className="text-sm text-error bg-error/10 border border-error/20 rounded-lg px-3 py-2"
           >
             {saveError}
           </div>

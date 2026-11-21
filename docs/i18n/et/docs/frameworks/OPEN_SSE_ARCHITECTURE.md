@@ -33,27 +33,27 @@ open-sse/
 ├── index.ts              # Avalik sisenemispunkt
 ├── types.d.ts            # Avalikud tüübiekspordid
 ├── package.json          # @omniroute/open-sse
-├── config/               # Pakkujate konfiguratsioonid, konstandid, registrid
-├── executors/            # Pakkujapõhised HTTP-täiturid (67 + base.ts/index.ts)
+├── config/               # Pakkujate konfiguratsioonid, konstandid ja registrid
+├── executors/            # Pakkujapõhised HTTP-täiturid (150 moodulit + base.ts/index.ts)
 ├── handlers/             # Päringutöötlejad (chatCore, responses jne)
 ├── lib/                  # Sisemised utiliidid
 ├── mcp-server/           # Model Context Protocoli server
-├── services/             # Ligikaudu 298 teenusemoodulit
+├── services/             # ~298 teenusemoodulit
 ├── transformer/          # Responses API vormingu teisendaja
 ├── translator/           # Vormingute tõlkimine (OpenAI ↔ Claude ↔ Gemini)
-└── utils/                # Jagatud utiliidid (logimine, vead, voog jne)
+└── utils/                # Jagatud utiliidid (logimine, vead, vood jne)
 ```
 
 ### Moodulite arv
 
-| Kataloog | Faile | Otstarve |
-| `executors/` | 167 | Pakkujapõhised HTTP-täiturid (ühtlustatud `DefaultExecutor`-i tehase kaudu) |
-| `handlers/` | 157 | Päringute sisenemispunktid (`chatCore`, vastused, põimingud) |
-| `services/` | ~536 | Marsruutimine, vahemällu salvestamine, kiiruse piiramine, värskendamine jne |
+| Kataloog | Failid | Otstarve |
+| `executors/` | 167 | Pakkujapõhised HTTP-täiturid (ühtlustatud DefaultExecutori tehase kaudu) |
+| `handlers/` | 157 | Päringute sisenemispunktid (chatCore, responses, embeddings) |
+| `services/` | ~536 | Marsruutimine, vahemällu salvestamine, päringusageduse piiramine, värskendamine jne |
 | `translator/` | 56 | Vormingute teisendamine (OpenAI ↔ Claude ↔ Gemini) |
-| `mcp-server/` | 44 | MCP-tööriistad ja transpordid |
+| `mcp-server/` | 44 | MCP tööriistad ja transpordid |
 | `utils/` | ~108 | Läbivad utiliidid (logimine, vead, vood) |
-| `config/` | ~339 | Pakkujate konfiguratsioonid, konstandid, registrid |
+| `config/` | ~339 | Pakkujate konfiguratsioonid, konstandid ja registrid |
 
 ---
 
@@ -165,30 +165,30 @@ Kõnelogi artefaktid (kui need on lubatud) kirjutatakse asukohta `${DATA_DIR}/ca
 
 ---
 
-## Põhifailide süvaanalüüs
+## Võtmefailid sügavale sukeldumisele
 
 ### chatCore.ts (5977 rida)
 
-**Peamine päringutöötleja**. Vaatamata suurusele on sellel selge struktuur:
+The** peamine päringu menetleja** . Vaatamata oma suurusele on sellel selge struktuur:
 
 ```ts
-// Faili chatCore.ts pseudostruktuur
+// Pseudo-structure of chatCore.ts
 export async function handleChat(request: NextRequest) {
-  // 1. Autentimine + CORS
+  // 1. Auth + CORS
   await authenticateRequest(request);
   applyCorsHeaders(response);
 
-  // 2. Keha valideerimine
+  // 2. Body validation
   const body = await parseRequestBody(request);
 
-  // 3. Vormingu tuvastamine + teisendamine
+  // 3. Format detection + translation
   const sourceFormat = detectFormat(request);
   const targetFormat = getTargetFormat(providerId);
   if (needsTranslation(sourceFormat, targetFormat)) {
     body = translateRequest(body, sourceFormat, targetFormat);
   }
 
-  // 4. Kombinatsiooni marsruutimine
+  // 4. Combo routing
   const targets = await resolveComboTargets(comboId, body);
   for (const target of targets) {
     try {
@@ -196,20 +196,20 @@ export async function handleChat(request: NextRequest) {
       await recordUsage(result);
       return result;
     } catch (err) {
-      // Jätka järgmise sihtmärgiga
+      // Continue to next target
     }
   }
 
-  // 5. Hädaolukorra varulahendus
+  // 5. Emergency fallback
   return await emergencyFallback(body);
 }
 ```
 
-Vaatamata sellele, et tegu on ühe hiiglasliku funktsiooniga, on see jaotatud **kommenteeritud osadeks**, mis vastavad viieetapilisele konveierile.
+Vaatamata sellele, et see on üks hiiglaslik funktsioon, on see organiseeritud** kommenteeritud jaotised** et kaardistada 5-etapilise torujuhtmega.
 
-### combo.ts (4456 koodirida)
+### combo.ts (4456 LOC)
 
-**Marsruutimismootor**, mis teisendab kombinatsiooni järjestatud sihtmärkideks.
+The** marsruutimismootor** mis lahendab järjestatud sihtmärkide kombinatsiooni.
 
 ```ts
 // services/combo.ts
@@ -226,46 +226,51 @@ export async function handleComboChat(body, comboId): Promise<ChatResult> {
 }
 ```
 
-Toetab **19 marsruutimisstrateegiat** (vt `src/shared/constants/routingStrategies.ts`):
+Toetab** 22 marsruutimisstrateegiat** (vt `src/shared/constants/routingStrategies.ts`):
 
-| Strateegia          | Käitumine                                                                                 |
-| ------------------- | ----------------------------------------------------------------------------------------- |
-| `priority`          | Järjestatud loend, kus esimest sihtmärki eelistatakse                                     |
-| `weighted`          | Tõenäosuslik valik iga sihtmärgi kaalu põhjal                                             |
-| `round-robin`       | Sihtmärkide järjestikune tsükliline läbimine                                              |
-| `context-relay`     | Konteksti edastamine sihtmärkide vahel                                                    |
-| `fill-first`        | Kvoodi täitmine enne järgmise sihtmärgi juurde liikumist                                  |
-| `p2c`               | Kahe valiku meetod                                                                        |
-| `random`            | Ühtlane juhuslik valik                                                                    |
-| `least-used`        | Valitakse viimati kõige vähem kasutatud sihtmärk                                          |
-| `cost-optimized`    | Esmalt odavaim töökorras sihtmärk                                                         |
-| `reset-aware`       | Arvestab teenusepakkuja lähtestamisakendega                                               |
-| `reset-window`      | Lähtestamisaknal põhinev marsruutimine                                                    |
-| `headroom`          | Esmalt suurima allesjäänud kvoodivaruga sihtmärk                                          |
-| `strict-random`     | Täiesti ühtlane juhuslik valik (ilma kvaliteedipõhise kaalumiseta)                        |
-| `auto`              | Kasutab 16 teguriga hindamist (`autoCombo/`)                                              |
-| `lkgp`              | Esmalt viimane teadaolevalt töötav teenusepakkuja                                         |
-| `context-optimized` | Sobib kõige paremini pika kontekstiga päringutele                                         |
-| `fusion`            | Saadab päringu paralleelselt paneelile ja sünteesib seejärel kohtuniku abil (`fusion.ts`) |
+| strateegia          | Käitumine                                                                                     |
+| ------------------- | --------------------------------------------------------------------------------------------- |
+| `priority`          | Esimene sihtmärk järjestatud loend                                                            |
+| `weighted`          | Tõenäosus sihtkaalu järgi                                                                     |
+| `round-robin`       | Liikuge järjekorras läbi sihtmärkide                                                          |
+| `context-relay`     | Edasta konteksti sihtmärkide vahel                                                            |
+| `fill-first`        | Enne järgmise juurde liikumist täitke kvoot                                                   |
+| `p2c`               | Kahe valiku võimsus                                                                           |
+| `random`            | Ühtlane juhuslik                                                                              |
+| `least-used`        | Valige see, mida on hiljuti kasutatud kõige vähem                                             |
+| `cost-optimized`    | Kõigepealt odavaim tervislik sihtmärk                                                         |
+| `reset-aware`       | Teadlik pakkuja lähtestamisakendest                                                           |
+| `reset-window`      | Lähtestage aknapõhine marsruutimine                                                           |
+| `expiry-first`      | Kulutage konto, mille kvoot aeguks kasutamata esimesena                                       |
+| `headroom`          | Esmalt suurem osa järelejäänud kvootidest                                                     |
+| `quota-weighted`    | Jätke ammendatud kontod vahele, seejärel kasutage järelejäänud kvooti ÷ lennu ajal            |
+| `strict-random`     | Tõeliselt ühtlane (kvaliteetne kaalumine puudub)                                              |
+| `auto`              | Kasutage 16-tegurilist hindamist (`autoCombo/`)                                               |
+| `lkgp`              | Esimene teadaolev hea pakkuja                                                                 |
+| `context-optimized` | Parim pika kontekstiga päringute jaoks                                                        |
+| `cache-optimized`   | Kinnitage iga korduvkasutatavate viipade eesliide samale kontole (viipade vahemälu tabamused) |
+| `fusion`            | Tuulutage paralleelselt paneelile, seejärel sünteesige kohtuniku kaudu (`fusion.ts`)          |
+| `pipeline`          | Ahelasammud — iga sihtmärgi väljund toidab järgmist                                           |
+| `jev`               | Opt-in: TypeSafe Jev tunnistab, millised järjestatud kirjed jooksevad; muidu teie tellimus    |
 
-### base.ts (1170 koodirida)
+### base.ts (1170 LOC)
 
-**Abstraktne täitur**, mida laiendavad kõik 107 täiturit. See sisaldab järgmist:
+The** abstraktne täitja** et iga täituriklass laieneb (otse või `DefaultExecutor` ja teiste alamklasside kaudu). See sisaldab:
 
-- `buildUrl()` — vaikimisi URL-i koostamine (alamklassid kirjutavad selle erijuhtudeks üle)
-- `buildHeaders()` — vaikimisi päised (autentimine, sisutüüp)
-- `transformRequest()` — vaikimisi muutmata edastamine
-- `execute()` — peamine HTTP-tsükkel koos korduskatsete, eksponentsiaalse viivituse ja kaitselülitiga
+- `buildUrl()` — vaikimisi URL konstruktsioon (alaklassid alistavad kohandatud jaoks)
+- `buildHeaders()` — vaikepäised (auth, sisutüüp)
+- `transformRequest()` — läbipääsu vaikimisi
+- `execute()` — peamine HTTP silmus koos retry/backoff/breaker
 
 ```ts
 // open-sse/executors/default.ts
 export class DefaultExecutor extends BaseExecutor {
-  // Töötleb kõiki OpenAI/Anthropicuga ühilduvaid teenusepakkujaid
-  // Teenusepakkujad registreerivad konfiguratsioonid (URL, autentimine, päised), kuid jagavad täituri loogikat
+  // Handles all OpenAI/Anthropic-compatible providers
+  // Providers register configurations (URL, auth, headers) but share executor logic
 }
 ```
 
-Teenusepakkujapõhine käitumine (autentimispäised, baas-URL, versioonipäised) konfigureeritakse teenusepakkujate registri kaudu, mitte eraldi täituriklassidega.
+Pakkuja-spetsiifiline käitumine (auth-päised, baas- URL, versioonipäised) konfigureeritakse pakkuja registri, mitte eraldi täituriklasside kaudu.
 
 ````
 
@@ -273,88 +278,88 @@ Teenusepakkujapõhine käitumine (autentimispäised, baas-URL, versioonipäised)
 
 ## Teenused (117 moodulit)
 
-Teenused on **kindla fookusega üheotstarbelised moodulid**, mida käsitlejad kombineerivad. Peamised kategooriad:
+Teenused on** fokuseeritud, üheotstarbelised moodulid** mida käitlejad koostavad. Suured kategooriad:
 
-### Marsruutimine ja kombinatsioonid
+### Marsruutimine ja kombinatsioon
 
-- `combo.ts` — kombinatsioonmarsruutimisega päringute sisenemispunkt
-- `services/autoCombo/` — 16 teguriga hindamine, 8 automaatse marsruutimise strateegiat
-- `wildcardRouter.ts` — leiab metamärgiga marsruutide vasted (`gpt-*`)
-- `modelFamilyFallback.ts` — T5 mudelipere sisene varuvariant
+- `combo.ts` — sisestuspunkt kombineeritud marsruudiga päringute jaoks
+- `services/autoCombo/` — 16-teguriline hindamine, 8 automaatse marsruutimise strateegiat
+- `wildcardRouter.ts` — vastab metamärkide marsruutidele (`gpt-*`)
+- `modelFamilyFallback.ts` — T5 perekonnasisene varu
 
-### Sageduse piiramine ja kvoot
+### Hindade piiramine ja kvoot
 
-- `rateLimitManager.ts` — loenduriga piiramine võtme ja teenusepakkuja kombinatsiooni kohta
-- `usage.ts` — kasutuse salvestamine
-- `quotaCache.ts` — mälusisesed kvooditõmmised
+- `rateLimitManager.ts` — märgisämber võtme + pakkuja kohta
+- `usage.ts` — kasutamise salvestus
+- `quotaCache.ts` — mälusisese kvoodi hetktõmmised
 
-### Konto ja pääsutõend
+### Konto ja tunnus
 
-- `tokenRefresh.ts` — OAuthi värskendamine vastuse 401 korral
-- `accountFallback.ts` — alternatiivsele kontole lülitumine
-- `sessionManager.ts` — mitmevoorulise seansi olek
+- `tokenRefresh.ts` — OAuth värskenda 401 peal
+- `accountFallback.ts` — lülitub alternatiivsele kontole
+- `sessionManager.ts` — mitme pöördega seansi olek
 
 ### Intelligentsus
 
-- `intentClassifier.ts` — päringu kavatsuse liigitamine
-- `taskAwareRouter.ts` — marsruutimine ülesande tüübi järgi
-- `thinkingBudget.ts` — mõtlemistõendite eraldamine
-- `contextManager.ts` — marsruutimiskonteksti lisamine
+- `intentClassifier.ts` — klassifitseerida päringu kavatsus
+- `taskAwareRouter.ts` — marsruut ülesande tüübi järgi
+- `thinkingBudget.ts` — eraldab mõtlemismärke
+- `contextManager.ts` — süsti marsruutimise kontekst
 
-### Tõrkekindlus
+### Vastupidavus
 
-- `resilience.ts` — korduskatsete, viivituse ja katkesti orkestreerimine
-- `emergencyFallback.ts` — viimase võimaluse varuvariant
-- `modelDeprecation.ts` — automaatne marsruutimine järglasmudelitele
+- `resilience.ts` — uuesti proovimine, taganemine, katkestuse orkestreerimine
+- `emergencyFallback.ts` — viimase võimaluse tagavara
+- `modelDeprecation.ts` — automaatne marsruut järeltulijatele
 
-### Olek
+### osariik
 
-- `signatureCache.ts` — duplikaatide eemaldamine päringu signatuuri alusel
-- `volumeDetector.ts` — koormuse vähendamine
+- `signatureCache.ts` — dedup päringu allkirja alusel
+- `volumeDetector.ts` — koormuse langetamine
 - `contextHandoff.ts` — seansi serialiseerimine
 
-### Tihendamine
+### Kokkusurumine
 
 - `compression/` (alamkataloog) — täielik tihenduskonveier
-- 39 faili, mis hõlmavad mootoreid, reeglikogumeid ja adaptereid
+- 39 faili, mis hõlmavad mootoreid, reeglipakette, adaptereid
 
 ### Oskused
 
-- (käsitletud failis [SKILLS.md](./SKILLS.md))
+- (kaetud [SKILLS.md](./SKILLS.md) )
 
 ### Mälu
 
-- (käsitletud failis [MEMORY.md](./MEMORY.md))
+- (kaetud [MEMORY.md](./MEMORY.md) )
 
 ---
 
-## Täiturid (75+ faili)
+## Teostajad (150 moodulit)
 
-Üks fail teenusepakkuja kohta. Kõik need laiendavad klassi `BaseExecutor` ja kirjutavad erinevad osad üle.
+Enamasti üks fail pakkuja kohta. Kõik täituriklassid laiendavad `BaseExecutor` ja tühistavad selle, mis erineb; teised moodulid on pakkujapõhised abilised (tööriistaskeemid, fetch/TTS adapterid, veidruse töötlejad).
 
 ### Levinud mustrid
 
-Teenusepakkujad lahendatakse funktsiooniga `getExecutor(providerId)`, mis tagastab konfigureeritud täituri. OpenAI/Anthropicuga ühilduvad teenusepakkujad kasutavad täiturit `DefaultExecutor` (`executors/default.ts`). Teenusepakkujapõhine käitumine (baas-URL, autentimispäised, API versioon) konfigureeritakse kataloogis `open-sse/config/providers/`, samal ajal kui päringu keha teisendusi käsitletakse kataloogis `open-sse/translator/`.
+Pakkujad lahendatakse `getExecutor(providerId)` kaudu, mis tagastab konfigureeritud täitja. OpenAI/Anthropic-compatible pakkujad kasutavad `DefaultExecutor` (`executors/default.ts`). Pakkujapõhine käitumine (baas URL, autentimispäised, API versioon) on konfigureeritud `open-sse/config/providers/`, samas kui päringu keha teisendusi käsitletakse `open-sse/translator/`.
 
-**Kohandatud URL** määratakse teenusepakkuja konfiguratsiooni kaudu:
+**Kohandatud URL** on määratud pakkuja konfiguratsiooni kaudu:
 
 ```ts
-// Teenusepakkuja konfiguratsioon kataloogis open-sse/config/providers/
+// Provider config in open-sse/config/providers/
 export default {
   id: "together",
   baseURL: "https://api.together.xyz/v1/chat/completions",
 }
 ````
 
-**Kohandatud autentimist** käsitletakse teenusepakkujate registri autentimiskonfiguratsiooni kaudu (API võti, OAuth, päiseprofiilid).
+**Kohandatud autentimine** käsitletakse pakkuja registri autentimiskonfiguratsiooni kaudu (API võti, OAuth, päiseprofiilid).
 
-**Kohandatud päringukeha** teisendused (nt Anthropicu `system`-välja eraldamine väljast `messages`) registreeritakse iga teenusepakkuja jaoks eraldi kataloogis `open-sse/translator/`.
+**Kohandatud päringu keha** teisendused (nt Anthropic, mis eraldab `system` ja `messages`) registreeritakse teenusepakkuja kohta kaustas `open-sse/translator/`.
 
 ````
 
-### Täiturite tehas
+### The Executor Factory
 
-`executors/index.ts` ekspordib funktsiooni `getExecutor(providerId)`:
+`executors/index.ts` exports `getExecutor(providerId)`:
 
 ```ts
 import { getExecutor } from "@omniroute/open-sse/executors";
@@ -366,7 +371,7 @@ const result = await executor.execute({
 });
 ````
 
-Lahendamine toimub registri `ExecutorRegistry` (`executors/registry.ts`) kaudu: iga spetsialiseeritud täitur deklareeritakse faili `executors/index.ts` sisseehitatud tabelis ja registreeritakse mooduli laadimisel funktsiooniga `registerExecutor(alias, instance)`; `getExecutor()` kontrollib registrit ja kasutab spetsialiseeritud kirjeta teenusepakkujate puhul varuvariandina memoiseeritud täiturit `DefaultExecutor`. Täielikku pseudonüümi → täituri vastendust iseloomustab etalontest `tests/unit/executor-map-golden.test.ts`.
+Lahutusvõime läbib `ExecutorRegistry` (`executors/registry.ts`): iga spetsialiseeritud täitja deklareeritakse `executors/index.ts` sisseehitatud tabelis ja registreeritakse mooduli laadimisel `registerExecutor(alias, instance)` kaudu; `getExecutor()` konsulteerib registriga ja naaseb meelde jäetud `DefaultExecutor` mis tahes teenusepakkuja jaoks, kellel pole spetsiaalset kirjet. Täielikku aliase → täitja vastendamist iseloomustab kuldne test `tests/unit/executor-map-golden.test.ts`.
 
 ---
 
@@ -479,19 +484,19 @@ See käsitleb järgmist:
 
 ---
 
-## Konfiguratsioon
+## Seadistamine
 
-`open-sse/config/` sisaldab konfiguratsioonikihti:
+`open-sse/config/` hoiab konfiguratsioonikihti:
 
-| Fail                          | Otstarve                                                    |
-| ----------------------------- | ----------------------------------------------------------- |
-| `providerRegistry.ts`         | Vestlusmudelite register 352 teenusepakkuja kataloogi jaoks |
-| `providerModels.ts`           | Mudelite aliased, vormingute vastendus                      |
-| `constants.ts`                | Ajalõpud, piirangud, olekukoodid                            |
-| `defaultThinkingSignature.ts` | Claude'i vaikimisi mõtlemissignatuur                        |
-| `modelStrip.ts` (teenustes)   | Väljade teenusepakkujapõhine eemaldamine                    |
+| Fail                          | Eesmärk                                            |
+| ----------------------------- | -------------------------------------------------- |
+| `providerRegistry.ts`         | Vestlusmudeli register 394-pakkuja kataloogi kaudu |
+| `providerModels.ts`           | Mudelinimed, vormingu vastendamine                 |
+| `constants.ts`                | Aegumised, piirangud, olekukoodid                  |
+| `defaultThinkingSignature.ts` | Vaikimisi mõtlev Claude signatuur                  |
+| `modelStrip.ts` (teenustes)   | Pakkujapõhine väljade eemaldamine                  |
 
-### Teenusepakkuja registri skeem
+### Pakkuja registriskeem
 
 ```ts
 interface ProviderConfig {
@@ -506,7 +511,7 @@ interface ProviderConfig {
 }
 ```
 
-Zodi valideerimine mooduli laadimisel tagab, et kõik teenusepakkujate konfiguratsioonid on kehtivad.
+Zod valideerimine mooduli laadimisel tagab, et kõik pakkuja konfiguratsioonid on kehtivad.
 
 ---
 

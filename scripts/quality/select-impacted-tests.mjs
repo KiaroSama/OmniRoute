@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { readTestImpactMap } from "./build-test-impact-map.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const HUB_RE =
@@ -27,6 +28,9 @@ export function selectImpacted({ changed, map }) {
       out.add(f);
       continue;
     }
+    // #16068: path-literal edges (workflows/configs/docs read as files) are ADDITIVE — they
+    // never escalate to __RUN_ALL__.
+    map.artifacts?.[f]?.forEach((t) => out.add(t));
     // Impact map only indexes imports under src/ + open-sse/. electron/ and bin/
     // are not unit-mapped; treating them as unmapped used to force __RUN_ALL__ and
     // a full unit suite for pure CLI/desktop PRs. Package/smoke jobs cover those.
@@ -64,11 +68,11 @@ function changedFiles() {
     .filter(Boolean);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {
   const mapPath = path.join(ROOT, "config/quality/test-impact-map.json");
   let map;
   try {
-    map = JSON.parse(fs.readFileSync(mapPath, "utf8"));
+    map = readTestImpactMap(mapPath);
   } catch {
     console.log("__RUN_ALL__");
     process.exit(0);

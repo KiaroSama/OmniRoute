@@ -68,7 +68,7 @@ docker run -d --name omniroute \
   -p 20128:20128 \
   -v omniroute-data:/app/data \
   -e ENABLE_CC_COMPATIBLE_PROVIDER=true \
-  diegosouzapw/omniroute:latest
+  cheaperinference/omniroute:latest
 ```
 
 Après le redémarrage, le tableau de bord affiche une option **Ajouter un fournisseur compatible avec Claude Code**
@@ -128,7 +128,7 @@ en amont (voir `open-sse/services/claudeCodeCompatible.ts`) :
 | En-tête                                               | Valeur                                                                                                                      |
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | `Authorization`                                       | `Bearer <api-key>`                                                                                                          |
-| `User-Agent`                                          | `claude-cli/2.1.258 (external, sdk-cli)`                                                                                    |
+| `User-Agent`                                          | `claude-cli/2.1.280 (external, sdk-cli)`                                                                                    |
 | `anthropic-version`                                   | `2023-06-01`                                                                                                                |
 | `anthropic-beta`                                      | `claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24`                                                    |
 | Option bêta de masquage du raisonnement par connexion | Ajoute `redact-thinking-2026-02-12` pour les services en amont qui exigent spécifiquement des flux de raisonnement masqués  |

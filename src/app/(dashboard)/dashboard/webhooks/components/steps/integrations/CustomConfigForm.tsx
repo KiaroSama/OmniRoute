@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
+import Input from "@/shared/components/Input";
 import { HmacRecipeBlock } from "../../shared/HmacRecipeBlock";
+import { webhookSecretFieldError, webhookUrlFieldFeedback } from "../../../webhookFieldValidation";
+import { useWebhookUrlCheck } from "./useWebhookUrlCheck";
 
 export interface CustomConfig {
   endpointUrl: string;
@@ -13,95 +16,63 @@ interface CustomConfigFormProps {
   onChange: (v: CustomConfig) => void;
   t: (key: string) => string;
   isEditing?: boolean;
+  /** Set by a refused Next: an untouched form is not flagged for being empty. */
+  showRequired?: boolean;
 }
 
-type UrlState = "idle" | "checking" | "ok" | "blocked" | "invalid";
-
-export function CustomConfigForm({ value, onChange, t, isEditing }: CustomConfigFormProps) {
-  const [urlState, setUrlState] = useState<UrlState>("idle");
-
-  useEffect(() => {
-    const url = value.endpointUrl.trim();
-    const controller = new AbortController();
-    const delay = url ? 600 : 0;
-    const timer = setTimeout(async () => {
-      if (!url) {
-        setUrlState("idle");
-        return;
-      }
-      setUrlState("checking");
-      try {
-        const res = await fetch("/api/webhooks/validate-url", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url }),
-          signal: controller.signal,
-        });
-        const data = await res.json().catch(() => ({}));
-        setUrlState(data.valid ? "ok" : data.reason === "blocked_private" ? "blocked" : "invalid");
-      } catch {
-        if (!controller.signal.aborted) setUrlState("invalid");
-      }
-    }, delay);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [value.endpointUrl]);
-
-  const urlHint =
-    urlState === "checking"
-      ? t("validateUrl.checking")
-      : urlState === "ok"
-        ? t("validateUrl.ok")
-        : urlState === "blocked"
-          ? t("validateUrl.blockedPrivate")
-          : urlState === "invalid" && value.endpointUrl.trim()
-            ? t("validateUrl.invalidUrl")
-            : "";
+export function CustomConfigForm({
+  value,
+  onChange,
+  t,
+  isEditing,
+  showRequired,
+}: CustomConfigFormProps) {
+  const tv = useTranslations("formValidation");
+  const urlState = useWebhookUrlCheck(value.endpointUrl);
+  const url = webhookUrlFieldFeedback(value.endpointUrl, urlState, {
+    label: t("custom.endpointUrl"),
+    showRequired,
+    t,
+    tv,
+  });
+  const secretError = webhookSecretFieldError(value.secretKey, {
+    label: t("custom.secretKey"),
+    tv,
+  });
 
   return (
     <div className="space-y-4">
-      <div>
-        <label className="text-xs font-medium uppercase tracking-wider text-text-muted">
-          {t("custom.endpointUrl")}
-        </label>
-        <input
-          value={value.endpointUrl}
-          onChange={(e) => onChange({ ...value, endpointUrl: e.target.value })}
-          placeholder={t("custom.endpointUrlPlaceholder")}
-          className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-main focus:outline-none focus:ring-2 focus:ring-primary/40"
-        />
-        {urlHint && (
-          <p
-            className={`mt-1 text-xs ${
-              urlState === "ok"
-                ? "text-emerald-500"
-                : urlState === "checking"
-                  ? "text-text-muted"
-                  : "text-red-500"
-            }`}
-          >
-            {urlHint}
-          </p>
-        )}
-      </div>
-      <div>
-        <label className="text-xs font-medium uppercase tracking-wider text-text-muted">
-          {t("custom.secretKey")}
-        </label>
-        <input
-          type="password"
-          value={value.secretKey}
-          onChange={(e) => onChange({ ...value, secretKey: e.target.value })}
-          placeholder={isEditing ? t("secretEditPlaceholder") : t("custom.secretKeyPlaceholder")}
-          autoComplete="new-password"
-          className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-main focus:outline-none focus:ring-2 focus:ring-primary/40"
-        />
-        <p className="mt-1 text-xs text-text-muted">{t("custom.secretKeyHint")}</p>
-      </div>
+      <Input
+        label={t("custom.endpointUrl")}
+        value={value.endpointUrl}
+        onChange={(e) => onChange({ ...value, endpointUrl: e.target.value })}
+        placeholder={t("custom.endpointUrlPlaceholder")}
+        required
+        error={url.error}
+        hint={
+          <>
+            {url.status && (
+              <span className={`block ${urlState === "ok" ? "text-success" : ""}`}>
+                {url.status}
+              </span>
+            )}
+          </>
+        }
+      />
+      <Input
+        label={t("custom.secretKey")}
+        type="password"
+        value={value.secretKey}
+        onChange={(e) => onChange({ ...value, secretKey: e.target.value })}
+        placeholder={isEditing ? t("secretEditPlaceholder") : t("custom.secretKeyPlaceholder")}
+        autoComplete="new-password"
+        error={secretError}
+        hint={t("custom.secretKeyHint")}
+      />
       <HmacRecipeBlock
         title={t("howItWorks.hmacRecipeTitle")}
+        copyLabel={t("copy")}
+        copiedLabel={t("copied")}
         snippets={[
           { label: "Node.js", code: t("howItWorks.hmacRecipe") },
           { label: "Python", code: t("howItWorks.hmacRecipePython") },

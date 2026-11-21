@@ -59,10 +59,8 @@ function summarizeQuotas(provider: string, raw: unknown): QuotaSummary | null {
 }
 
 function PctDot({ pct }: { pct: number }) {
-  const color =
-    pct <= 20 ? "bg-red-500" : pct <= 50 ? "bg-yellow-500" : "bg-emerald-500";
-  const textColor =
-    pct <= 20 ? "text-red-500" : pct <= 50 ? "text-yellow-500" : "text-emerald-500";
+  const color = pct <= 20 ? "bg-error" : pct <= 50 ? "bg-warning" : "bg-success";
+  const textColor = pct <= 20 ? "text-error" : pct <= 50 ? "text-warning" : "text-success";
   return (
     <span className={`inline-flex items-center gap-1 tabular-nums text-[11px] ${textColor}`}>
       <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${color}`} aria-hidden />
@@ -109,26 +107,21 @@ export default function AccountQuotaRow({
   }, []);
 
   // Resolve the effective connection list to display
-  const ids: string[] = Array.isArray(connectionIds) && connectionIds.length > 0
-    ? connectionIds
-    : [];
+  const ids: string[] =
+    Array.isArray(connectionIds) && connectionIds.length > 0 ? connectionIds : [];
 
   // Resolve provider for each connection (providers[i] matches connectionIds[i])
   const providerFor = (index: number): string =>
-    Array.isArray(providers) && providers[index] != null
-      ? (providers[index] as string)
-      : provider;
+    Array.isArray(providers) && providers[index] != null ? (providers[index] as string) : provider;
 
   const renderFallback = () => (
-    <span className="text-[11px] text-text-muted tabular-nums">
-      {t("accountQuotaNone")}
-    </span>
+    <span className="text-[11px] text-text-muted tabular-nums">{t("accountQuotaNone")}</span>
   );
 
   if (error || caches === null) {
     return (
       <div className="mt-2 pt-2 border-t border-border/30">
-        <span className="text-[10px] uppercase tracking-wide font-bold text-text-muted block mb-1">
+        <span className="text-[10px] uppercase tracking-wide font-semibold text-text-muted block mb-1">
           {t("accountQuotaTitle")}
         </span>
         {renderFallback()}
@@ -140,7 +133,7 @@ export default function AccountQuotaRow({
   if (ids.length === 0) {
     return (
       <div className="mt-2 pt-2 border-t border-border/30">
-        <span className="text-[10px] uppercase tracking-wide font-bold text-text-muted block mb-1">
+        <span className="text-[10px] uppercase tracking-wide font-semibold text-text-muted block mb-1">
           {t("accountQuotaTitle")}
         </span>
         {renderFallback()}
@@ -150,7 +143,7 @@ export default function AccountQuotaRow({
 
   return (
     <div className="mt-2 pt-2 border-t border-border/30">
-      <span className="text-[10px] uppercase tracking-wide font-bold text-text-muted block mb-1.5">
+      <span className="text-[10px] uppercase tracking-wide font-semibold text-text-muted block mb-1.5">
         {t("accountQuotaTitle")}
       </span>
       <div className="flex flex-col gap-1">
@@ -165,15 +158,16 @@ export default function AccountQuotaRow({
               <span className="shrink-0">
                 <ProviderIcon providerId={prov} size={14} />
               </span>
-              <span className="text-text-muted truncate max-w-[90px]" title={emailsVisible ? connId : maskEmailLikeValue(connId)}>
+              <span
+                className="text-text-muted truncate max-w-[90px]"
+                title={emailsVisible ? connId : maskEmailLikeValue(connId)}
+              >
                 {emailsVisible ? `${connId.slice(0, 8)}…` : maskEmailLikeValue(connId)}
               </span>
               {summary ? (
                 <>
                   <PctDot pct={summary.pct} />
-                  {reset ? (
-                    <span className="text-text-muted">· {reset}</span>
-                  ) : null}
+                  {reset ? <span className="text-text-muted">· {reset}</span> : null}
                 </>
               ) : (
                 <span className="text-text-muted">{t("accountQuotaNone")}</span>

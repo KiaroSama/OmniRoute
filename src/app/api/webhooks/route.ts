@@ -5,6 +5,7 @@
  */
 
 import { z } from "zod";
+import { parseIntegerQueryParam } from "@/lib/api/queryIntegerParam";
 import { NextResponse } from "next/server";
 import { sanitizeErrorMessage } from "@omniroute/open-sse/utils/error";
 import { getWebhooks, createWebhook } from "@/lib/db/webhooks";
@@ -15,18 +16,19 @@ import { isEncryptionEnabled } from "@/lib/db/encryption";
 import { parseAndValidateWebhookUrl } from "@/shared/network/outboundUrlGuardPolicy";
 
 import { WEBHOOK_EVENT_VALUES } from "@/lib/webhooks/eventDescriptions";
+import { WEBHOOK_SECRET_MAX_LENGTH, WEBHOOK_URL_MAX_LENGTH } from "@/shared/constants/formLimits";
 
 const WEBHOOK_KINDS = ["slack", "telegram", "discord", "custom"] as const;
 const WEBHOOK_EVENT_VALUES_WITH_WILDCARD = ["*", ...WEBHOOK_EVENT_VALUES] as const;
 
 const createWebhookSchema = z
   .object({
-    url: z.string().min(1).max(2000),
+    url: z.string().min(1).max(WEBHOOK_URL_MAX_LENGTH),
     events: z.array(z.enum(WEBHOOK_EVENT_VALUES_WITH_WILDCARD)).optional().default(["*"]),
-    secret: z.string().max(500).optional(),
+    secret: z.string().max(WEBHOOK_SECRET_MAX_LENGTH).optional(),
     description: z.string().max(1000).optional().default(""),
     kind: z.enum(WEBHOOK_KINDS).optional().default("custom"),
-    metadata: z.record(z.string()).optional(),
+    metadata: z.record(z.string(), z.string()).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.kind === "telegram") return;
@@ -47,9 +49,16 @@ export async function GET(request: Request) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const limit = searchParams.has("limit") ? Number(searchParams.get("limit")) : undefined;
-    const offset = searchParams.has("offset") ? Number(searchParams.get("offset")) : 0;
-    const result = getWebhooks(limit !== undefined ? { limit, offset } : undefined);
+    // No `limit` keeps the unpaginated list; a present one is the page size.
+    const parsedLimit = parseIntegerQueryParam(searchParams, "limit", 0);
+    if (parsedLimit.ok === false) return parsedLimit.response;
+    const parsedOffset = parseIntegerQueryParam(searchParams, "offset", 0);
+    if (parsedOffset.ok === false) return parsedOffset.response;
+    const result = getWebhooks(
+      searchParams.get("limit")
+        ? { limit: parsedLimit.value, offset: parsedOffset.value }
+        : undefined
+    );
     // Mask secrets in listing
     const masked = result.webhooks.map((w) => ({
       ...w,

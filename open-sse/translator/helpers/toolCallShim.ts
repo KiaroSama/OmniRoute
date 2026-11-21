@@ -9,7 +9,8 @@
 // keyed by the tool name. The transformer must accept arbitrary input and
 // return a JSON-safe value.
 
-type ShimFn = (input: unknown) => unknown;
+type ToolSchema = Record<string, unknown>;
+type ShimFn = (input: unknown, schema?: ToolSchema) => unknown;
 
 function coerceToArray(v: unknown): unknown[] {
   if (Array.isArray(v)) return v;
@@ -43,7 +44,50 @@ function isValidPdfPagesArg(filePath: unknown, pages: unknown): boolean {
   );
 }
 
-function sanitizeReadArgs(args: Record<string, unknown>): void {
+const READ_PATH_KEYS = ["file_path", "filePath", "path"] as const;
+
+/** Exact spelling wins; restored Claude tool names may differ only in case. */
+export function findToolCallSchema(
+  name: string,
+  schemas?: Map<string, ToolSchema> | null
+): ToolSchema | undefined {
+  const exact = schemas?.get(name);
+  if (exact) return exact;
+  for (const [key, schema] of schemas ?? []) {
+    if (key.toLowerCase() === name.toLowerCase()) return schema;
+  }
+  return undefined;
+}
+
+function sanitizeFilePathArg(args: Record<string, unknown>, schema?: ToolSchema): void {
+  const properties = schema?.properties;
+  const declared =
+    properties && typeof properties === "object" && !Array.isArray(properties)
+      ? READ_PATH_KEYS.filter((key) => Object.prototype.hasOwnProperty.call(properties, key))
+      : [];
+  const isPath = (value: unknown): value is string => typeof value === "string" && value.length > 0;
+  // Prefer the client's valid declared field over a conflicting upstream alias.
+  const path = [...declared, ...READ_PATH_KEYS].map((key) => args[key]).find(isPath);
+  if (!path) return;
+  if (declared.length > 0) {
+    for (const key of READ_PATH_KEYS) {
+      if (declared.includes(key)) {
+        if (!isPath(args[key])) args[key] = path;
+      } else {
+        delete args[key];
+      }
+    }
+    return;
+  }
+  // No recognizable client path schema: mirror the resolved path into file_path and filePath,
+  // and drop the `path` alias.
+  args.file_path = path;
+  args.filePath = path;
+  if (typeof args.path === "string") delete args.path;
+}
+
+function sanitizeReadArgs(args: Record<string, unknown>, schema?: ToolSchema): void {
+  sanitizeFilePathArg(args, schema);
   // Coerce numeric-string limit/offset (some non-Anthropic models stringify everything).
   if (typeof args.limit === "string" && /^\d+$/.test(args.limit)) {
     args.limit = Number(args.limit);
@@ -63,9 +107,95 @@ function sanitizeReadArgs(args: Record<string, unknown>): void {
   }
   if (typeof args.offset === "number" && args.offset < 0) args.offset = 0;
 
-  if ("pages" in args && !isValidPdfPagesArg(args.file_path, args.pages)) {
+  if (
+    "pages" in args &&
+    !isValidPdfPagesArg(args.file_path ?? args.filePath ?? args.path, args.pages)
+  ) {
     delete args.pages;
   }
+}
+
+const asRecord = (v: unknown): Record<string, unknown> | null =>
+  v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+
+function declaredTypes(schema: unknown): string[] {
+  const type = asRecord(schema)?.type;
+  if (typeof type === "string") return [type];
+  return Array.isArray(type) ? type.filter((t): t is string => typeof t === "string") : [];
+}
+
+// True when the schema declares a property that a model may send as a JSON string.
+function declaresStructuredProperty(schema: ToolSchema | undefined): boolean {
+  const props = asRecord(schema?.properties);
+  return Object.values(props ?? {}).some((p) => {
+    const types = declaredTypes(p);
+    return !types.includes("string") && (types.includes("array") || types.includes("object"));
+  });
+}
+
+// Decode a string only when the schema says array/object (and never string) and the
+// text parses to that type; undefined means "leave the string as it is".
+function decodeStructuredString(value: string, types: string[]): unknown {
+  const wantArray = types.includes("array");
+  const wantObject = types.includes("object");
+  if (types.includes("string") || !(wantArray || wantObject)) return undefined;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    return undefined;
+  }
+  return (Array.isArray(parsed) ? wantArray : asRecord(parsed) !== null && wantObject)
+    ? parsed
+    : undefined;
+}
+
+// Repair one value against its schema; anything else comes back unchanged. `changed.v` records a repair.
+function repairValue(value: unknown, schema: unknown, changed: { v: boolean }): unknown {
+  if (typeof value === "string") {
+    const parsed = decodeStructuredString(value, declaredTypes(schema));
+    if (parsed === undefined) return value;
+    changed.v = true;
+    return repairValue(parsed, schema, changed);
+  }
+  if (Array.isArray(value)) {
+    const items = asRecord(asRecord(schema)?.items);
+    return items ? value.map((v) => repairValue(v, items, changed)) : value;
+  }
+  const obj = asRecord(value);
+  const props = asRecord(asRecord(schema)?.properties);
+  if (!obj || !props) return value;
+  const out: Record<string, unknown> = { ...obj };
+  for (const key of Object.keys(props)) {
+    if (Object.prototype.hasOwnProperty.call(out, key)) {
+      out[key] = repairValue(out[key], props[key], changed);
+    }
+  }
+  return out;
+}
+
+/**
+ * Repair tool arguments that a model sent as JSON-in-a-string (e.g. `"tags":"[\"a\"]"`).
+ * Strict clients reject those. A whole-arguments string is unwrapped once; then each
+ * value is decoded only where the declared schema says array/object. Returns `raw`
+ * byte for byte when there is no schema, no repair, or any doubt.
+ */
+export function repairToolArguments(raw: string, schema?: ToolSchema): string {
+  if (!schema || !raw) return raw;
+  const changed = { v: false };
+  let value: unknown;
+  try {
+    value = JSON.parse(raw);
+    if (typeof value === "string") {
+      value = JSON.parse(value);
+      if (asRecord(value) === null) return raw;
+      changed.v = true;
+    }
+  } catch {
+    return raw;
+  }
+  const repaired = repairValue(value, schema, changed);
+  return changed.v ? JSON.stringify(repaired) : raw;
 }
 
 const TOOL_SHIMS: Record<string, ShimFn> = {
@@ -73,10 +203,10 @@ const TOOL_SHIMS: Record<string, ShimFn> = {
   // models that emit oversized limits, negative offsets, stringified numbers, or stray
   // `pages` on non-PDF files. Buffer and emit one cleaned JSON delta so the client never
   // sees the bad fields. See `sanitizeReadArgs` for the per-field rules.
-  Read: (input) => {
+  Read: (input, schema) => {
     if (typeof input !== "object" || input === null || Array.isArray(input)) return input;
     const patched = { ...(input as Record<string, unknown>) };
-    sanitizeReadArgs(patched);
+    sanitizeReadArgs(patched, schema);
     return patched;
   },
   submit_pr_review: (input) => {
@@ -99,8 +229,9 @@ function resolveToolCallShim(name: string | undefined | null): ShimFn | undefine
   return undefined;
 }
 
-export function hasToolCallShim(name: string | undefined | null): boolean {
-  return Boolean(resolveToolCallShim(name));
+/** True for registered shims, or when `schema` declares array/object parameters to repair. */
+export function hasToolCallShim(name: string | undefined | null, schema?: ToolSchema): boolean {
+  return Boolean(resolveToolCallShim(name)) || declaresStructuredProperty(schema);
 }
 
 /**
@@ -109,9 +240,11 @@ export function hasToolCallShim(name: string | undefined | null): boolean {
  * If the buffer is unparseable, returns the empty-object JSON `{}` after applying
  * the shim with `{}` as input (so required arrays still get injected).
  */
-export function applyToolCallShimToBuffer(name: string, raw: string): string {
+export function applyToolCallShimToBuffer(name: string, raw: string, schema?: ToolSchema): string {
   const shim = resolveToolCallShim(name);
-  if (!shim) return raw;
+  // An empty buffer is a zero-argument call: it must still be a JSON object, never "".
+  if (!shim) return raw ? repairToolArguments(raw, schema) : "{}";
+  raw = repairToolArguments(raw, schema);
 
   let parsed: unknown;
   try {
@@ -120,7 +253,7 @@ export function applyToolCallShimToBuffer(name: string, raw: string): string {
     parsed = {};
   }
 
-  const patched = shim(parsed);
+  const patched = shim(parsed, schema);
   return JSON.stringify(patched);
 }
 

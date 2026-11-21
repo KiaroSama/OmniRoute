@@ -1,5 +1,6 @@
+export { isPassiveCodex } from "@omniroute/open-sse/services/tokenRefresh/passiveCodex.ts";
 import { PROVIDER_ERROR_TYPES } from "@omniroute/open-sse/services/errorClassifier.ts";
-import { isCreditsExhausted } from "@omniroute/open-sse/services/accountFallback.ts";
+import { isCreditsExhaustedForStatus } from "@omniroute/open-sse/services/accountFallback/creditsExhaustedForStatus.ts";
 import { takeMistralAmbiguous401SoftStrike } from "@omniroute/open-sse/services/accountFallback/mistralAmbiguousAuth.ts";
 import { resolveProviderId, WEB_COOKIE_PROVIDERS } from "@/shared/constants/providers";
 
@@ -38,11 +39,12 @@ export function shouldParkCreditsExhausted(
   status: number,
   result: { permanent?: boolean; creditsExhausted?: boolean },
   isPerModelQuotaProvider: boolean,
-  errorText: string
+  errorText: string,
+  provider: string | null = null
 ): boolean {
   return (
     isConnectionWideCreditsExhausted(status, result, isPerModelQuotaProvider) ||
-    (!isPerModelQuotaProvider && isCreditsExhausted(errorText))
+    (!isPerModelQuotaProvider && isCreditsExhaustedForStatus(status, provider, errorText))
   );
 }
 
@@ -57,6 +59,8 @@ function isNonTerminalProviderError(providerErrorType: string | null): boolean {
     // Anthropic OAuth 403 "Request not allowed" refuses ONE request; the token
     // keeps serving the next one — never a terminal account state.
     providerErrorType === PROVIDER_ERROR_TYPES.REQUEST_REJECTED ||
+    // A provider safety stop refuses one request's content; the account is healthy.
+    providerErrorType === PROVIDER_ERROR_TYPES.PROVIDER_SAFETY_REFUSAL ||
     // A model the account is not entitled to is a MODEL fact, never a credential
     // fact. Aggregator gateways answer 401 (not 404) for it — classifyProviderError
     // already detects that phrasing and yields MODEL_NOT_FOUND (#7268) — but the
@@ -93,7 +97,7 @@ export function resolveTerminalConnectionStatus(
   errorText: string = "",
   connectionId: string | null = null
 ): string | null {
-  if (shouldParkCreditsExhausted(status, result, isPerModelQuotaProvider, errorText)) {
+  if (shouldParkCreditsExhausted(status, result, isPerModelQuotaProvider, errorText, provider)) {
     return "credits_exhausted";
   }
   if (isNonTerminalProviderError(providerErrorType)) {

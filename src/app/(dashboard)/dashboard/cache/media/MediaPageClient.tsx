@@ -1,9 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Disclosure, DisclosureContent, DisclosureTrigger } from "@omniroute/ui-kit/disclosure";
+import { useId, useRef, useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { IMAGE_PROVIDERS } from "@omniroute/open-sse/config/imageRegistry.ts";
+import { Alert } from "@omniroute/ui-kit/alert";
+import { Field } from "@omniroute/ui-kit/field";
+import { PageHeader } from "@omniroute/ui-kit/page-header";
+import Button from "@/shared/components/Button";
+import Card from "@/shared/components/Card";
+import Icon from "@/shared/components/Icon";
+import Input from "@/shared/components/Input";
+import SegmentedControl, {
+  SegmentedPanel,
+  SegmentedTabs,
+} from "@/shared/components/SegmentedControl";
+import Select from "@/shared/components/Select";
+import Textarea from "@/shared/components/Textarea";
+import { IMAGE_PROVIDERS } from "@omniroute/open-sse/config/imageRegistryData.ts";
 import { VIDEO_PROVIDERS } from "@omniroute/open-sse/config/videoRegistry.ts";
 import { MUSIC_PROVIDERS } from "@omniroute/open-sse/config/musicRegistry.ts";
 import {
@@ -11,6 +25,13 @@ import {
   AUDIO_TRANSCRIPTION_PROVIDERS,
 } from "@omniroute/open-sse/config/audioRegistry.ts";
 import { toProviderModels, type ProviderModelGroup } from "./mediaProviderModels";
+import {
+  collectConnectedProviderIds,
+  pickPreferredMediaProvider,
+  resolveMediaProviderConnectionState,
+  type MediaProviderConnectionState,
+  type MediaProviderRegistry,
+} from "./mediaProviderConnection";
 
 type Modality = "image" | "video" | "music" | "speech" | "transcription";
 type GenerationResult = {
@@ -32,7 +53,6 @@ const MODALITY_CONFIG: Record<
     endpoint: string;
     labelKey: string;
     placeholderKey?: string;
-    color: string;
   }
 > = {
   image: {
@@ -40,35 +60,30 @@ const MODALITY_CONFIG: Record<
     endpoint: "/api/v1/images/generations",
     labelKey: "imageGeneration",
     placeholderKey: "imagePromptPlaceholder",
-    color: "from-purple-500 to-pink-500",
   },
   video: {
     icon: "videocam",
     endpoint: "/api/v1/videos/generations",
     labelKey: "videoGeneration",
     placeholderKey: "videoPromptPlaceholder",
-    color: "from-blue-500 to-cyan-500",
   },
   music: {
     icon: "music_note",
     endpoint: "/api/v1/music/generations",
     labelKey: "musicGeneration",
     placeholderKey: "musicPromptPlaceholder",
-    color: "from-orange-500 to-yellow-500",
   },
   speech: {
     icon: "record_voice_over",
     endpoint: "/api/v1/audio/speech",
     labelKey: "textToSpeech",
     placeholderKey: "speechTextPlaceholder",
-    color: "from-green-500 to-teal-500",
   },
   transcription: {
     icon: "mic",
     endpoint: "/api/v1/audio/transcriptions",
     labelKey: "transcription",
     placeholderKey: "transcriptionPlaceholder",
-    color: "from-indigo-500 to-blue-500",
   },
 };
 
@@ -82,6 +97,77 @@ const PROVIDER_MODELS: Record<Modality, ProviderModelGroup[]> = {
 };
 const INITIAL_IMAGE_PROVIDER = PROVIDER_MODELS.image[0];
 const INITIAL_IMAGE_MODEL = INITIAL_IMAGE_PROVIDER?.models[0];
+
+// KEA-9390: the registry behind each tab says where a provider's credentials come from, so
+// the page can tell — before sending anything — that a provider has no connection to run on.
+const PROVIDER_REGISTRIES: Record<Modality, MediaProviderRegistry> = {
+  image: IMAGE_PROVIDERS,
+  video: VIDEO_PROVIDERS,
+  music: MUSIC_PROVIDERS,
+  speech: AUDIO_SPEECH_PROVIDERS,
+  transcription: AUDIO_TRANSCRIPTION_PROVIDERS,
+};
+
+function connectionStateFor(
+  tab: Modality,
+  providerId: string,
+  connectedProviders: ReadonlySet<string> | null
+): MediaProviderConnectionState {
+  return resolveMediaProviderConnectionState(
+    providerId,
+    PROVIDER_REGISTRIES[tab],
+    connectedProviders,
+    // Only /v1/audio/transcriptions retries a gateway that lists the same model.
+    { gatewayFallback: tab === "transcription" }
+  );
+}
+
+// Local providers (SD WebUI, ComfyUI) are listed only once they are set up (#390).
+const LOCAL_PROVIDERS = ["sdwebui", "comfyui"];
+
+/** The providers a tab lists: a local one only when it is configured. */
+function listedProviders(tab: Modality, configuredLocal: ReadonlySet<string>) {
+  return (PROVIDER_MODELS[tab] ?? []).filter(
+    (p) => !LOCAL_PROVIDERS.includes(p.id) || configuredLocal.has(p.id)
+  );
+}
+
+/**
+ * KEA-9390: the provider a tab should be on — `currentId` when it is connected, else the first
+ * connected one, else `currentId` (or the first listed provider when there is none).
+ */
+function preferredProvider(
+  tab: Modality,
+  currentId: string | null,
+  configuredLocal: ReadonlySet<string>,
+  connectedProviders: ReadonlySet<string> | null
+): ProviderModelGroup | undefined {
+  const providers = listedProviders(tab, configuredLocal);
+  const preferredId = pickPreferredMediaProvider(providers, currentId ?? providers[0]?.id, (id) =>
+    connectionStateFor(tab, id, connectedProviders)
+  );
+  return providers.find((p) => p.id === preferredId);
+}
+
+/**
+ * KEA-9390: the provider to move to once the connection list has loaded, or `null` to stay:
+ * nothing is known (`connectedProviders` is `null`) or the current provider is already the
+ * preferred one.
+ */
+function providerToOpenOn(
+  current: { tab: Modality; provider: string },
+  configuredLocal: ReadonlySet<string>,
+  connectedProviders: ReadonlySet<string> | null
+): string | null {
+  if (!connectedProviders) return null;
+  const preferred = preferredProvider(
+    current.tab,
+    current.provider,
+    configuredLocal,
+    connectedProviders
+  );
+  return preferred && preferred.id !== current.provider ? preferred.id : null;
+}
 
 // Voice presets per TTS provider
 const VOICE_PRESETS: Record<string, { id: string; label: string }[]> = {
@@ -348,6 +434,10 @@ function parseApiError(
 }
 
 /** Format file size to human-readable string */
+// Native file pickers keep the browser's button; style it with the kit tokens.
+const FILE_INPUT_CLASS =
+  "file:mr-3 file:rounded file:border-0 file:bg-bg-subtle file:px-3 file:py-1 file:text-sm file:text-text-main";
+
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -384,10 +474,7 @@ function ImageResults({ data }: { data: any }) {
         const src = img.url || (img.b64_json ? `data:image/png;base64,${img.b64_json}` : null);
         if (!src) return null;
         return (
-          <div
-            key={i}
-            className="relative group rounded-lg overflow-hidden border border-black/10 dark:border-white/10"
-          >
+          <div key={i} className="relative group rounded-lg overflow-hidden border border-border">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={src}
@@ -397,9 +484,9 @@ function ImageResults({ data }: { data: any }) {
             <a
               href={src}
               download={`image-${i + 1}.png`}
-              className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
+              className="absolute bottom-2 right-2 bg-surface/90 text-text-main border border-border text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity flex items-center gap-1"
             >
-              <span className="material-symbols-outlined text-[13px]">download</span>
+              <Icon name="download" size={13} />
               {t("save")}
             </a>
             {img.revised_prompt && (
@@ -419,6 +506,9 @@ function ImageResults({ data }: { data: any }) {
 
 export default function MediaPageClient() {
   const t = useTranslations("media");
+  const tc = useTranslations("common");
+  const tSidebar = useTranslations("sidebar");
+  const tHeader = useTranslations("header");
   const [activeTab, setActiveTab] = useState<Modality>("image");
   const [prompt, setPrompt] = useState("");
 
@@ -439,6 +529,8 @@ export default function MediaPageClient() {
 
   // Transcription-specific
   const MAX_TRANSCRIPTION_FILE_SIZE = 4 * 1024 * 1024 * 1024; // 4 GB
+  const promptId = useId();
+  const connectionHintId = useId();
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [fileSizeError, setFileSizeError] = useState<string | null>(null);
   const [imageInputFile, setImageInputFile] = useState<File | null>(null);
@@ -446,10 +538,19 @@ export default function MediaPageClient() {
 
   // Fix #390: Track which local providers (sdwebui, comfyui) are actually configured
   // so we can hide them when they haven't been set up in the providers page
-  const LOCAL_PROVIDERS = ["sdwebui", "comfyui"];
   const [configuredLocalProviders, setConfiguredLocalProviders] = useState<Set<string>>(
     new Set(LOCAL_PROVIDERS) // Optimistic: show all until we know otherwise
   );
+  // KEA-9390: provider ids with a saved connection; `null` until the list has loaded (or when
+  // it could not be read — the page then blocks nothing).
+  const [connectedProviders, setConnectedProviders] = useState<Set<string> | null>(null);
+  // What the connection list is applied to once it arrives: the tab and provider on screen
+  // by then, and never a provider the user picked.
+  const providerPicked = useRef(false);
+  const selection = useRef<{ tab: Modality; provider: string }>({
+    tab: "image",
+    provider: INITIAL_IMAGE_PROVIDER?.id ?? "",
+  });
 
   useEffect(() => {
     const audioUrl = result?.audioUrl;
@@ -459,6 +560,20 @@ export default function MediaPageClient() {
       }
     };
   }, [result?.audioUrl]);
+
+  // Selects a provider with its first model (and, for speech, a voice and format it supports).
+  const applyProvider = (tab: Modality, providerId: string) => {
+    selection.current = { tab, provider: providerId };
+    setSelectedProvider(providerId);
+    const models = PROVIDER_MODELS[tab]?.find((p) => p.id === providerId)?.models ?? [];
+    const firstModel = models[0]?.id ?? "";
+    setSelectedModel(firstModel);
+    if (tab === "speech") {
+      setSpeechVoice(getVoiceList(providerId)[0]?.id ?? "alloy");
+      const formats = getSpeechFormats(providerId);
+      setSpeechFormat((current) => (formats.includes(current) ? current : (formats[0] ?? "mp3")));
+    }
+  };
 
   useEffect(() => {
     // Fetch configured provider connections to determine which local providers are set up
@@ -482,17 +597,21 @@ export default function MediaPageClient() {
           // No local providers configured — hide sdwebui/comfyui
           setConfiguredLocalProviders(new Set());
         }
+        // KEA-9390: open on a connected provider when the default one has no connection.
+        const connected = collectConnectedProviderIds(data);
+        setConnectedProviders(connected);
+        const next = providerPicked.current
+          ? null
+          : providerToOpenOn(selection.current, configured, connected);
+        if (next) applyProvider(selection.current.tab, next);
       })
       .catch(() => {
         // On error, keep showing all (fail-open)
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Filter out unconfigured local providers from the provider list
-  const currentProviders = (PROVIDER_MODELS[activeTab] ?? []).filter(
-    (p) => !LOCAL_PROVIDERS.includes(p.id) || configuredLocalProviders.has(p.id)
-  );
+  const currentProviders = listedProviders(activeTab, configuredLocalProviders);
   const currentModels = currentProviders.find((p) => p.id === selectedProvider)?.models ?? [];
 
   const switchTab = (tab: Modality) => {
@@ -504,28 +623,29 @@ export default function MediaPageClient() {
     setAudioFile(null);
     setImageInputFile(null);
     setImageMaskFile(null);
-    // Pick first provider and first model automatically
-    const providers = PROVIDER_MODELS[tab] ?? [];
-    const firstProvider = providers[0];
-    setSelectedProvider(firstProvider?.id ?? "");
+    // Pick the first connected provider (else the first listed one) and its first model. Only
+    // providers the list shows: a local one that is not set up is not a choice.
+    const firstProvider = preferredProvider(
+      tab,
+      null,
+      configuredLocalProviders,
+      connectedProviders
+    );
+    const firstProviderId = firstProvider?.id ?? "";
+    providerPicked.current = false;
+    selection.current = { tab, provider: firstProviderId };
+    setSelectedProvider(firstProviderId);
     const firstModel = firstProvider?.models[0]?.id ?? "";
     setSelectedModel(firstModel);
     if (tab === "speech") {
-      setSpeechVoice(getVoiceList(firstProvider?.id ?? "")[0]?.id ?? "alloy");
-      setSpeechFormat(getSpeechFormats(firstProvider?.id ?? "")[0] ?? "mp3");
+      setSpeechVoice(getVoiceList(firstProviderId)[0]?.id ?? "alloy");
+      setSpeechFormat(getSpeechFormats(firstProviderId)[0] ?? "mp3");
     }
   };
 
   const handleProviderChange = (providerId: string) => {
-    setSelectedProvider(providerId);
-    const models = PROVIDER_MODELS[activeTab]?.find((p) => p.id === providerId)?.models ?? [];
-    const firstModel = models[0]?.id ?? "";
-    setSelectedModel(firstModel);
-    if (activeTab === "speech") {
-      setSpeechVoice(getVoiceList(providerId)[0]?.id ?? "alloy");
-      const formats = getSpeechFormats(providerId);
-      setSpeechFormat((current) => (formats.includes(current) ? current : (formats[0] ?? "mp3")));
-    }
+    providerPicked.current = true;
+    applyProvider(activeTab, providerId);
   };
 
   const handleGenerate = async () => {
@@ -679,8 +799,20 @@ export default function MediaPageClient() {
   const voiceList = getVoiceList(selectedProvider);
   const currentSpeechFormats = getSpeechFormats(selectedProvider);
   const isTopazImageFlow = activeTab === "image" && selectedProvider === "topaz";
+  // KEA-9390: a provider that needs a connection and has none cannot run — say so and keep
+  // the request from being sent, instead of waiting for the server's "No credentials" answer.
+  const connectionStateOf = (providerId: string) =>
+    connectionStateFor(activeTab, providerId, connectedProviders);
+  const selectedProviderName =
+    currentProviders.find((p) => p.id === selectedProvider)?.name ?? selectedProvider;
+  const isSelectedNotConnected =
+    Boolean(selectedProvider) && connectionStateOf(selectedProvider) === "not-connected";
+  const hasConnectedProvider = currentProviders.some(
+    (p) => connectionStateOf(p.id) === "connected"
+  );
   const isGenerateDisabled =
     loading ||
+    isSelectedNotConnected ||
     (activeTab === "transcription"
       ? !audioFile
       : activeTab === "image"
@@ -690,127 +822,122 @@ export default function MediaPageClient() {
         : !prompt.trim());
 
   return (
-    <div className="space-y-6">
+    <SegmentedTabs
+      value={activeTab}
+      onChange={(next) => switchTab(next as Modality)}
+      className="gap-6"
+    >
+      <PageHeader compact title={tSidebar("media")} description={tHeader("mediaDescription")} />
       {/* Modality Tabs */}
-      <div className="flex flex-wrap gap-2 p-1 bg-surface/50 rounded-xl border border-black/5 dark:border-white/5">
-        {(Object.keys(MODALITY_CONFIG) as Modality[]).map((key) => {
-          const cfg = MODALITY_CONFIG[key];
-          const isActive = key === activeTab;
-          return (
-            <button
-              key={key}
-              onClick={() => switchTab(key)}
-              className={`flex-1 min-w-[110px] flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                isActive
-                  ? "bg-primary/10 text-primary shadow-sm border border-primary/20"
-                  : "text-text-muted hover:text-text-main hover:bg-surface/80"
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px]">{cfg.icon}</span>
-              {t(cfg.labelKey)}
-            </button>
-          );
-        })}
-      </div>
+      <SegmentedControl
+        semantics="tabs"
+        aria-label={t("modalityTabsAria")}
+        options={(Object.keys(MODALITY_CONFIG) as Modality[]).map((key) => ({
+          value: key,
+          label: t(MODALITY_CONFIG[key].labelKey),
+          icon: MODALITY_CONFIG[key].icon,
+        }))}
+      />
 
-      {/* Generation Form */}
-      <div className="bg-surface/30 rounded-xl border border-black/5 dark:border-white/5 p-6 space-y-4">
-        {/* Provider + Model row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {/* Provider dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-text-main mb-2">{t("provider")}</label>
-            <select
+      {/* One form for every modality: the panel follows the selected tab. */}
+      <SegmentedPanel value={activeTab} className="flex flex-col gap-6">
+        {/* Generation Form */}
+        <Card className="space-y-4" padding="md">
+          {/* Provider + Model row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Select
+              label={t("provider")}
               value={selectedProvider}
               onChange={(e) => handleProviderChange(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-surface border border-black/10 dark:border-white/10 text-text-main text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              {currentProviders.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Model dropdown */}
-          <div>
-            <label className="block text-sm font-medium text-text-main mb-2">{t("model")}</label>
-            <select
+              options={currentProviders.map((p) => ({
+                value: p.id,
+                // The list holds every provider that supports the type: mark the ones with no
+                // connection so a choice that cannot run is visible before it is made.
+                label:
+                  connectionStateOf(p.id) === "not-connected"
+                    ? t("providerNotConnectedOption", { name: p.name })
+                    : p.name,
+              }))}
+            />
+            <Select
+              label={t("model")}
               value={selectedModel}
               onChange={(e) => setSelectedModel(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-surface border border-black/10 dark:border-white/10 text-text-main text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              {currentModels.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
+              options={currentModels.map((m) => ({ value: m.id, label: m.name }))}
+            />
           </div>
-        </div>
 
-        {/* Credential hint */}
-        {selectedProvider && !["sdwebui", "comfyui", "qwen"].includes(selectedProvider) && (
-          <p className="text-xs text-text-muted flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[14px] text-amber-500">info</span>
-            {t.rich("credentialsRequired", {
-              provider: () => <strong className="capitalize">{selectedProvider}</strong>,
-              providers: (chunks) => (
-                <Link
-                  href="/dashboard/providers"
-                  className="text-primary underline underline-offset-2 hover:text-primary/80"
-                >
-                  {chunks}
-                </Link>
-              ),
-            })}
-          </p>
-        )}
+          {/* Credential hint */}
+          {isSelectedNotConnected ? (
+            <p id={connectionHintId} className="text-xs text-text-muted flex items-center gap-1.5">
+              <Icon name="info" size={14} className="text-warning" />
+              <span>
+                {t.rich(hasConnectedProvider ? "providerNotConnected" : "noProviderConnected", {
+                  provider: () => <strong>{selectedProviderName}</strong>,
+                  connect: (chunks) => (
+                    <Link
+                      href="/dashboard/providers"
+                      className="text-primary underline underline-offset-2 hover:text-primary/80"
+                    >
+                      {chunks}
+                    </Link>
+                  ),
+                })}
+              </span>
+            </p>
+          ) : selectedProvider && !["sdwebui", "comfyui", "qwen"].includes(selectedProvider) ? (
+            <p className="text-xs text-text-muted flex items-center gap-1.5">
+              <Icon name="info" size={14} className="text-warning" />
+              {t.rich("credentialsRequired", {
+                provider: () => <strong className="capitalize">{selectedProvider}</strong>,
+                providers: (chunks) => (
+                  <Link
+                    href="/dashboard/providers"
+                    className="text-primary underline underline-offset-2 hover:text-primary/80"
+                  >
+                    {chunks}
+                  </Link>
+                ),
+              })}
+            </p>
+          ) : null}
 
-        {/* Speech: voice + format */}
-        {activeTab === "speech" && (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-text-main mb-2">{t("voice")}</label>
-              <select
+          {/* Speech: voice + format */}
+          {activeTab === "speech" && (
+            <div className="grid grid-cols-2 gap-4">
+              <Select
+                label={t("voice")}
                 value={speechVoice}
                 onChange={(e) => setSpeechVoice(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-surface border border-black/10 dark:border-white/10 text-text-main text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              >
-                {voiceList.map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-text-main mb-2">{t("format")}</label>
-              <select
+                options={voiceList.map((v) => ({ value: v.id, label: v.label }))}
+              />
+              <Select
+                label={t("format")}
                 value={speechFormat}
                 onChange={(e) => setSpeechFormat(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-surface border border-black/10 dark:border-white/10 text-text-main text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              >
-                {currentSpeechFormats.map((f) => (
-                  <option key={f} value={f}>
-                    {f}
-                  </option>
-                ))}
-              </select>
+                options={currentSpeechFormats.map((f) => ({ value: f, label: f }))}
+              />
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Transcription: file upload */}
-        {activeTab === "transcription" ? (
-          <div>
-            <label className="block text-sm font-medium text-text-main mb-2">
-              {t("audioVideoFile")}
-            </label>
-            <input
+          {/* Transcription: file upload */}
+          {activeTab === "transcription" ? (
+            <Input
               type="file"
               accept="audio/*,video/*"
+              label={t("audioVideoFile")}
+              error={fileSizeError || undefined}
+              hint={
+                <>
+                  {audioFile && !fileSizeError && (
+                    <span className="block">
+                      {audioFile.name} ({formatFileSize(audioFile.size)})
+                    </span>
+                  )}
+                  <span className="block">{t("audioVideoFileHint")}</span>
+                </>
+              }
+              inputClassName={FILE_INPUT_CLASS}
               onChange={(e) => {
                 const file = e.target.files?.[0] ?? null;
                 setFileSizeError(null);
@@ -824,212 +951,186 @@ export default function MediaPageClient() {
                 }
                 setAudioFile(file);
               }}
-              className="w-full px-3 py-2 rounded-lg bg-surface border border-black/10 dark:border-white/10 text-text-main text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-primary/10 file:text-primary file:text-sm"
             />
-            {fileSizeError && (
-              <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
-                <span className="material-symbols-outlined text-[12px]">error</span>
-                {fileSizeError}
-              </p>
-            )}
-            {audioFile && !fileSizeError && (
-              <p className="text-xs text-text-muted mt-1">
-                {audioFile.name} ({formatFileSize(audioFile.size)})
-              </p>
-            )}
-            <p className="text-[10px] text-text-muted/60 mt-1">{t("audioVideoFileHint")}</p>
-          </div>
-        ) : (
-          <>
-            {activeTab === "image" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-text-main mb-2">
-                    {t("sourceImage")}
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setImageInputFile(e.target.files?.[0] ?? null)}
-                    className="w-full px-3 py-2 rounded-lg bg-surface border border-black/10 dark:border-white/10 text-text-main text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-primary/10 file:text-primary file:text-sm"
-                  />
-                  {imageInputFile && (
-                    <p className="text-xs text-text-muted mt-1">
-                      {imageInputFile.name} ({formatFileSize(imageInputFile.size)})
-                    </p>
-                  )}
-                  <p className="text-[10px] text-text-muted/60 mt-1">{t("sourceImageHint")}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-text-main mb-2">
-                    {t("maskImage")}
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setImageMaskFile(e.target.files?.[0] ?? null)}
-                    className="w-full px-3 py-2 rounded-lg bg-surface border border-black/10 dark:border-white/10 text-text-main text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-primary/10 file:text-primary file:text-sm"
-                  />
-                  {imageMaskFile && (
-                    <p className="text-xs text-text-muted mt-1">
-                      {imageMaskFile.name} ({formatFileSize(imageMaskFile.size)})
-                    </p>
-                  )}
-                  <p className="text-[10px] text-text-muted/60 mt-1">{t("maskImageHint")}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Prompt / Text */}
-            <div>
-              <label className="block text-sm font-medium text-text-main mb-2">
-                {activeTab === "speech"
-                  ? t("text")
-                  : activeTab === "image" && selectedProvider === "topaz"
-                    ? t("promptOptional")
-                    : t("prompt")}
-              </label>
-              <textarea
-                rows={3}
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder={
-                  activeTab === "image" && selectedProvider === "topaz"
-                    ? t("enhancementInstructionsPlaceholder")
-                    : config.placeholderKey
-                      ? t(config.placeholderKey)
-                      : undefined
-                }
-                className="w-full px-3 py-2 rounded-lg bg-surface border border-black/10 dark:border-white/10 text-text-main text-sm placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none"
-              />
-            </div>
-          </>
-        )}
-
-        {/* Generate button */}
-        <button
-          onClick={handleGenerate}
-          disabled={isGenerateDisabled}
-          className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-white font-medium transition-all bg-gradient-to-r ${config.color} ${
-            isGenerateDisabled
-              ? "opacity-50 cursor-not-allowed"
-              : "hover:opacity-90 hover:shadow-lg"
-          }`}
-        >
-          {loading ? (
-            <>
-              <span className="material-symbols-outlined animate-spin text-[18px]">
-                progress_activity
-              </span>
-              {activeTab === "speech"
-                ? t("synthesizing")
-                : activeTab === "transcription"
-                  ? t("transcribing")
-                  : t("generating")}
-            </>
           ) : (
             <>
-              <span className="material-symbols-outlined text-[18px]">
-                {activeTab === "speech"
+              {activeTab === "image" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    label={t("sourceImage")}
+                    hint={
+                      <>
+                        {imageInputFile && (
+                          <span className="block">
+                            {imageInputFile.name} ({formatFileSize(imageInputFile.size)})
+                          </span>
+                        )}
+                        <span className="block">{t("sourceImageHint")}</span>
+                      </>
+                    }
+                    inputClassName={FILE_INPUT_CLASS}
+                    onChange={(e) => setImageInputFile(e.target.files?.[0] ?? null)}
+                  />
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    label={t("maskImage")}
+                    hint={
+                      <>
+                        {imageMaskFile && (
+                          <span className="block">
+                            {imageMaskFile.name} ({formatFileSize(imageMaskFile.size)})
+                          </span>
+                        )}
+                        <span className="block">{t("maskImageHint")}</span>
+                      </>
+                    }
+                    inputClassName={FILE_INPUT_CLASS}
+                    onChange={(e) => setImageMaskFile(e.target.files?.[0] ?? null)}
+                  />
+                </div>
+              )}
+
+              {/* Prompt / Text */}
+              <Field
+                htmlFor={promptId}
+                label={
+                  activeTab === "speech"
+                    ? t("text")
+                    : activeTab === "image" && selectedProvider === "topaz"
+                      ? t("promptOptional")
+                      : t("prompt")
+                }
+              >
+                <Textarea
+                  id={promptId}
+                  rows={3}
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder={
+                    activeTab === "image" && selectedProvider === "topaz"
+                      ? t("enhancementInstructionsPlaceholder")
+                      : config.placeholderKey
+                        ? t(config.placeholderKey)
+                        : undefined
+                  }
+                  className="resize-none"
+                />
+              </Field>
+            </>
+          )}
+
+          {/* Generate button */}
+          <Button
+            variant="primary"
+            size="lg"
+            fullWidth
+            onClick={handleGenerate}
+            disabled={isGenerateDisabled}
+            aria-describedby={isSelectedNotConnected ? connectionHintId : undefined}
+            loading={loading}
+            icon={
+              loading
+                ? undefined
+                : activeTab === "speech"
                   ? "volume_up"
                   : activeTab === "transcription"
                     ? "mic"
-                    : "auto_awesome"}
-              </span>
-              {activeTab === "speech"
+                    : "auto_awesome"
+            }
+          >
+            {loading
+              ? activeTab === "speech"
+                ? t("synthesizing")
+                : activeTab === "transcription"
+                  ? t("transcribing")
+                  : t("generating")
+              : activeTab === "speech"
                 ? t("synthesizeSpeech")
                 : activeTab === "transcription"
                   ? t("transcribeAudio")
                   : t("generateModality", { modality: t(config.labelKey) })}
-            </>
-          )}
-        </button>
-      </div>
+          </Button>
+        </Card>
 
-      {/* Error */}
-      {error && (
-        <div
-          className={`rounded-xl p-4 flex items-start gap-3 ${isCredentialsError ? "bg-amber-500/10 border border-amber-500/20" : "bg-red-500/10 border border-red-500/20"}`}
-        >
-          <span
-            className={`material-symbols-outlined text-[20px] mt-0.5 ${isCredentialsError ? "text-amber-500" : "text-red-500"}`}
-          >
-            {isCredentialsError ? "key" : "error"}
-          </span>
-          <div className="flex-1 min-w-0">
-            <p
-              className={`text-sm font-medium ${isCredentialsError ? "text-amber-500" : "text-red-500"}`}
-            >
-              {isCredentialsError ? t("apiKeyRequired") : t("error")}
-            </p>
-            <p className="text-sm text-text-muted mt-1 break-words">{error}</p>
-            {isCredentialsError && (
-              <Link
-                href="/dashboard/providers"
-                className="inline-flex items-center gap-1 mt-2 text-xs text-primary hover:underline"
-              >
-                <span className="material-symbols-outlined text-[13px]">open_in_new</span>
-                {t("configureApiKeys")} →
-              </Link>
-            )}
-          </div>
-        </div>
-      )}
+        {/* Error */}
+        {error && (
+          <Alert
+            variant={isCredentialsError ? "warning" : "critical"}
+            icon={<Icon name={isCredentialsError ? "key" : "error"} size={20} />}
+            title={isCredentialsError ? t("apiKeyRequired") : t("error")}
+            description={<span className="break-words">{error}</span>}
+            dismissLabel={tc("dismissNotification")}
+            onDismiss={() => setError(null)}
+            actions={
+              isCredentialsError ? (
+                <Link
+                  href="/dashboard/providers"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <Icon name="open_in_new" size={13} />
+                  {t("configureApiKeys")} →
+                </Link>
+              ) : undefined
+            }
+          />
+        )}
 
-      {/* Result */}
-      {result && (
-        <div className="bg-surface/30 rounded-xl border border-black/5 dark:border-white/5 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <span
-              className={`material-symbols-outlined text-[20px] bg-gradient-to-r ${config.color} bg-clip-text text-transparent`}
-            >
-              {config.icon}
-            </span>
-            <h3 className="text-sm font-medium text-text-main">{t("result")}</h3>
-            <span className="text-xs text-text-muted ml-auto">
-              {new Date(result.timestamp).toLocaleTimeString()}
-            </span>
-          </div>
-
-          {result.type === "speech" && result.audioUrl ? (
-            <div className="space-y-3">
-              <audio controls src={result.audioUrl} className="w-full rounded-lg" autoPlay />
-              <a
-                href={result.audioUrl}
-                download={`speech.${result.data?.format || "mp3"}`}
-                className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
-              >
-                <span className="material-symbols-outlined text-[16px]">download</span>
-                {t("downloadFormat", { format: result.data?.format?.toUpperCase() || "MP3" })}
-              </a>
+        {/* Result */}
+        {result && (
+          <Card padding="md">
+            <div className="flex items-center gap-2 mb-4">
+              <Icon name={config.icon} size={20} className="text-primary" />
+              <h3 className="text-sm text-text-main">{t("result")}</h3>
+              <span className="text-xs text-text-muted ml-auto">
+                {new Date(result.timestamp).toLocaleTimeString()}
+              </span>
             </div>
-          ) : result.type === "image" ? (
-            <ImageResults data={result.data} />
-          ) : result.type === "transcription" ? (
-            <div className="space-y-3">
-              <div className="bg-surface rounded-lg p-4 text-sm text-text-main leading-relaxed whitespace-pre-wrap">
-                {result.data?.text || (
-                  <span className="text-text-muted italic">{t("noTextReturned")}</span>
+
+            {result.type === "speech" && result.audioUrl ? (
+              <div className="space-y-3">
+                <audio controls src={result.audioUrl} className="w-full rounded-lg" autoPlay />
+                <a
+                  href={result.audioUrl}
+                  download={`speech.${result.data?.format || "mp3"}`}
+                  className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                >
+                  <Icon name="download" size={16} />
+                  {t("downloadFormat", { format: result.data?.format?.toUpperCase() || "MP3" })}
+                </a>
+              </div>
+            ) : result.type === "image" ? (
+              <ImageResults data={result.data} />
+            ) : result.type === "transcription" ? (
+              <div className="space-y-3">
+                <div className="bg-bg-subtle rounded-lg p-4 text-sm text-text-main leading-relaxed whitespace-pre-wrap">
+                  {result.data?.text || (
+                    <span className="text-text-muted italic">{t("noTextReturned")}</span>
+                  )}
+                </div>
+                {result.data?.words && (
+                  <Disclosure className="mt-2">
+                    <DisclosureTrigger>
+                      {t("wordTimestamps", { count: result.data.words.length })}
+                    </DisclosureTrigger>
+                    <DisclosureContent keepMounted>
+                      <pre className="bg-bg-subtle rounded mt-2 p-3 text-xs text-text-muted overflow-auto max-h-48 custom-scrollbar">
+                        {JSON.stringify(result.data.words, null, 2)}
+                      </pre>
+                    </DisclosureContent>
+                  </Disclosure>
                 )}
               </div>
-              {result.data?.words && (
-                <details className="mt-2">
-                  <summary className="text-xs text-text-muted cursor-pointer hover:text-text-main">
-                    {t("wordTimestamps", { count: result.data.words.length })}
-                  </summary>
-                  <pre className="bg-surface rounded mt-2 p-3 text-xs text-text-muted overflow-auto max-h-48 custom-scrollbar">
-                    {JSON.stringify(result.data.words, null, 2)}
-                  </pre>
-                </details>
-              )}
-            </div>
-          ) : (
-            <pre className="bg-surface rounded-lg p-4 text-xs text-text-muted overflow-auto max-h-96 custom-scrollbar">
-              {JSON.stringify(result.data, null, 2)}
-            </pre>
-          )}
-        </div>
-      )}
+            ) : (
+              <pre className="bg-bg-subtle rounded-lg p-4 text-xs text-text-muted overflow-auto max-h-96 custom-scrollbar">
+                {JSON.stringify(result.data, null, 2)}
+              </pre>
+            )}
+          </Card>
+        )}
+      </SegmentedPanel>
 
       {/* Info cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -1037,30 +1138,23 @@ export default function MediaPageClient() {
           const cfg = MODALITY_CONFIG[key];
           const providerCount = PROVIDER_MODELS[key]?.length ?? 0;
           return (
-            <div
-              key={key}
-              className="bg-surface/30 rounded-xl border border-black/5 dark:border-white/5 p-4"
-            >
+            <Card key={key} padding="sm">
               <div className="flex items-center gap-2 mb-2">
-                <div
-                  className={`flex items-center justify-center size-8 rounded-lg bg-gradient-to-r ${cfg.color}`}
-                >
-                  <span className="material-symbols-outlined text-white text-[16px]">
-                    {cfg.icon}
-                  </span>
+                <div className="flex items-center justify-center size-8 rounded-lg bg-bg-subtle text-primary">
+                  <Icon name={cfg.icon} size={16} />
                 </div>
                 <span className="text-sm font-medium text-text-main">{t(cfg.labelKey)}</span>
               </div>
               <p className="text-xs text-text-muted">
                 {t("providerCount", { count: providerCount })}
               </p>
-              <code className="block mt-2 text-xs text-primary/70 bg-primary/5 rounded px-2 py-1">
+              <code className="block mt-2 break-all text-xs text-text-muted bg-bg-subtle rounded px-2 py-1">
                 POST {cfg.endpoint}
               </code>
-            </div>
+            </Card>
           );
         })}
       </div>
-    </div>
+    </SegmentedTabs>
   );
 }

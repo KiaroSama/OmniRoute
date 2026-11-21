@@ -26,6 +26,11 @@ import { FORMATS } from "../translator/formats.ts";
 type JsonRecord = Record<string, unknown>;
 
 const SAMPLING_PARAMS = ["temperature", "top_p"] as const;
+// Terra additionally rejects log-probability controls when reasoning is active.
+// With effort "none" all four fields remain eligible for passthrough.
+const TERRA_REASONING_SAMPLING_PARAMS = [
+  ...SAMPLING_PARAMS, "top_logprobs", "logprobs",
+] as const;
 // Suffix that encodes an active (non-none) reasoning effort, e.g. `gpt-5.4-high`.
 const ACTIVE_EFFORT_SUFFIX = /-(low|medium|high|xhigh|minimal)$/i;
 // Suffix that encodes the explicit non-reasoning mode, e.g. `gpt-5.4-none`.
@@ -37,8 +42,8 @@ function asRecord(value: unknown): JsonRecord | null {
 
 /**
  * True when the request carries an active reasoning effort (any level other than
- * `none`). When there is no signal at all we return false: GPT-5.1+ defaults to
- * `none`, so the safe assumption is "reasoning off → sampling allowed".
+ * `none`). When there is no signal at all: GPT-5.1+ defaults to `none` (reasoning
+ * off → sampling allowed), whereas GPT-6 defaults to reasoning on (#16440).
  */
 function hasActiveReasoning(record: JsonRecord, model: string): boolean {
   const effort = record.reasoning_effort;
@@ -51,7 +56,7 @@ function hasActiveReasoning(record: JsonRecord, model: string): boolean {
 
   if (NONE_EFFORT_SUFFIX.test(model)) return false;
   if (ACTIVE_EFFORT_SUFFIX.test(model)) return true;
-  return false;
+  return /^gpt-6/i.test(model);
 }
 
 export function stripGpt5SamplingWhenReasoning<T extends Record<string, unknown>>(
@@ -68,7 +73,9 @@ export function stripGpt5SamplingWhenReasoning<T extends Record<string, unknown>
   if (!hasActiveReasoning(record, model)) return body;
 
   const stripped: string[] = [];
-  for (const param of SAMPLING_PARAMS) {
+  const params = model.toLowerCase() === "gpt-6.1-terra"
+    ? TERRA_REASONING_SAMPLING_PARAMS : SAMPLING_PARAMS;
+  for (const param of params) {
     if (Object.hasOwn(record, param)) stripped.push(param);
   }
   if (stripped.length === 0) return body;
@@ -99,6 +106,20 @@ function hasFunctionTools(record: JsonRecord): boolean {
     const toolType = typeof tool.type === "string" ? tool.type : "";
     return toolType === "" || toolType === "function";
   });
+}
+
+function disableLunaToolReasoning<T extends JsonRecord>(
+  body: T,
+  log?: { warn?: (tag: string, message: string) => void } | null
+): T {
+  if (body.reasoning_effort === "none" && !Object.hasOwn(body, "reasoning")) return body;
+  const next: JsonRecord = { ...body, reasoning_effort: "none" };
+  delete next.reasoning;
+  log?.warn?.(
+    "PARAMS",
+    "Set reasoning_effort=none for GPT-6 Luna function tools on Chat Completions"
+  );
+  return next as T;
 }
 
 /**
@@ -138,6 +159,9 @@ export function stripGpt5ReasoningWhenTools<T extends Record<string, unknown>>(
   const record = asRecord(body);
   if (!record) return body;
   if (!hasFunctionTools(record)) return body;
+  // #16440: omission enables Luna's default reasoning, so stripping is insufficient.
+  // https://developers.openai.com/api/docs/models/gpt-6-luna
+  if (model.toLowerCase() === "gpt-6-luna") return disableLunaToolReasoning(body, log);
   if (!hasActiveReasoning(record, model)) return body;
 
   const stripped: string[] = [];
@@ -154,5 +178,28 @@ export function stripGpt5ReasoningWhenTools<T extends Record<string, unknown>>(
     `Stripped ${stripped.join(", ")} for ${model} (function tools + reasoning_effort ` +
       `are rejected on /v1/chat/completions; use /v1/responses instead)`
   );
+  return next as T;
+}
+
+/**
+ * `reasoning` is the Responses envelope: raw api.openai.com Chat Completions only
+ * documents `reasoning_effort` and answers 400 "Unknown parameter: 'reasoning'" (#18912).
+ * Keep the effort on the supported field, with the precedence the effort readers use:
+ * `reasoning_effort` first, then `reasoning.effort`. Compatible providers that accept
+ * the object are out of scope, as are Responses targets.
+ */
+export function foldReasoningForOpenAIChat<T extends Record<string, unknown>>(
+  body: T,
+  provider: string | null | undefined,
+  targetFormat: string | null | undefined
+): T {
+  if (provider !== "openai" || targetFormat !== FORMATS.OPENAI) return body;
+  const record = asRecord(body);
+  if (!record || !Object.hasOwn(record, "reasoning")) return body;
+
+  const next: JsonRecord = { ...record };
+  const effort = next.reasoning_effort ?? asRecord(next.reasoning)?.effort;
+  if (typeof effort === "string") next.reasoning_effort = effort;
+  delete next.reasoning;
   return next as T;
 }

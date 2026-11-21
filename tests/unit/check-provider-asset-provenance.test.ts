@@ -150,6 +150,32 @@ function emptyTreeCommit() {
   return commit.stdout.trim();
 }
 
+function detachedSnapshotCommit() {
+  const result = spawnSync(
+    "git",
+    [
+      "-C",
+      REPO_ROOT,
+      "commit-tree",
+      gitObjectId("HEAD^{tree}"),
+      "-m",
+      "provenance fixture: matching snapshot without candidate ancestry",
+    ],
+    {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        GIT_AUTHOR_NAME: "provenance-fixture",
+        GIT_AUTHOR_EMAIL: "provenance-fixture@example.invalid",
+        GIT_COMMITTER_NAME: "provenance-fixture",
+        GIT_COMMITTER_EMAIL: "provenance-fixture@example.invalid",
+      },
+    }
+  );
+  assert.equal(result.status, 0, result.stderr);
+  return result.stdout.trim();
+}
+
 function workflowJob(source: string, name: string) {
   const lines = source.split("\n");
   const start = lines.indexOf(`  ${name}:`);
@@ -513,6 +539,40 @@ test("provider asset provenance gate rejects a missing or non-commit auditedComm
   }
 });
 
+test("provider asset provenance rejects a matching snapshot outside candidate ancestry", () => {
+  const fixture = makeFixture();
+  try {
+    const records = readFileSync(
+      join(REPO_ROOT, "config/quality/provider-assets-provenance.jsonl"),
+      "utf8"
+    )
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    records[0] = { ...records[0], auditedCommit: detachedSnapshotCommit() };
+    writeFileSync(
+      fixture.manifestPath,
+      `${records.map((record) => JSON.stringify(record)).join("\n")}\n`
+    );
+
+    const result = runGate(join(REPO_ROOT, "public/providers"), fixture.manifestPath);
+
+    assert.equal(result.status, 1, `${result.stdout}\n${result.stderr}`);
+    assert.match(`${result.stdout}\n${result.stderr}`, /auditedCommit must be an ancestor of HEAD/);
+
+    // Matching bytes on the actual candidate remain a valid positive control.
+    records[0] = { ...records[0], auditedCommit: gitObjectId("HEAD") };
+    writeFileSync(
+      fixture.manifestPath,
+      `${records.map((record) => JSON.stringify(record)).join("\n")}\n`
+    );
+    const accepted = runGate(join(REPO_ROOT, "public/providers"), fixture.manifestPath);
+    assert.equal(accepted.status, 0, `${accepted.stdout}\n${accepted.stderr}`);
+  } finally {
+    rmSync(fixture.root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  }
+});
+
 test("provider asset provenance gate binds auditedCommit to the physical provider snapshot", () => {
   const fixture = makeFixture();
   try {
@@ -541,7 +601,7 @@ test("provider asset provenance gate binds auditedCommit to the physical provide
   }
 });
 
-test("repository provider asset manifest covers the audited 141-file snapshot", (t) => {
+test("repository provider asset manifest covers the audited 146-file snapshot", (t) => {
   const manifestPath = join(REPO_ROOT, "config/quality/provider-assets-provenance.jsonl");
   const { auditedCommit } = JSON.parse(readFileSync(manifestPath, "utf8").split("\n")[0]);
   if (!gitHasCommit(auditedCommit) && isShallowRepository()) {
@@ -556,7 +616,10 @@ test("repository provider asset manifest covers the audited 141-file snapshot", 
   assert.equal(result.status, 0, `${result.stdout}\n${result.stderr}`);
   assert.match(
     result.stdout,
-    /141\/141 registered; proven=72 probable=69 unresolved=0; duplicate-groups=1/
+    // runcrate (#18061) adds one unresolved contributor-supplied logomark: 142 → 143.
+    // gisoo (#18112) adds one unresolved contributor-supplied logomark: 143 → 144.
+    // ChatGPT sign-in (#15201) adds two probable official SIWC logomarks: 144 → 146.
+    /146\/146 registered; proven=72 probable=71 unresolved=3; duplicate-groups=1/
   );
 });
 

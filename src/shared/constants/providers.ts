@@ -1,10 +1,12 @@
 // Re-export service kinds from leaf module (avoids circular dep with providerSchema)
 export type { ServiceKind } from "./serviceKinds";
-export type RiskNoticeVariant = "oauth" | "webCookie" | "deprecated" | "embedded-service";
+export type RiskNoticeVariant =
+  "oauth" | "webCookie" | "deprecated" | "embedded-service" | "official-client-only";
 
 import { NOAUTH_PROVIDERS } from "./providers/noauth";
 export { supportsNoAuthProviderProxy } from "./providers/noauth";
 import { OAUTH_PROVIDERS } from "./providers/oauth";
+import { NOAUTH_DEVICE_CODE_PROVIDER_IDS } from "./oauthDeviceCodeProviders";
 import { WEB_COOKIE_PROVIDERS, resolveWebProviderHost } from "./providers/web-cookie";
 export { resolveWebProviderHost };
 import { APIKEY_PROVIDERS } from "./providers/apikey";
@@ -15,6 +17,10 @@ import { UPSTREAM_PROXY_PROVIDERS } from "./providers/upstream-proxy";
 import { CLOUD_AGENT_PROVIDERS } from "./providers/cloud-agent";
 import { SYSTEM_PROVIDERS } from "./providers/system";
 import { validateProviders } from "../validation/providerSchema";
+import {
+  getCredentialRequirement,
+  worksWithoutCredential,
+} from "../utils/providerCredentialRequirement";
 
 export const FREE_PROVIDERS = {};
 
@@ -22,7 +28,6 @@ export const FREE_PROVIDERS = {};
 
 export const FREE_APIKEY_PROVIDER_IDS = new Set([
   "qoder",
-  "opencode",
   "dahl",
   // auggie is a fully local, credential-less CLI passthrough (auth handled by
   // `auggie login` outside OmniRoute). Admitted here purely so POST /api/providers
@@ -35,18 +40,53 @@ export const FREE_APIKEY_PROVIDER_IDS = new Set([
   // key for higher queue priority. The no-auth page still enables the provider;
   // this flag admits an optional apikey connection so that stored key is used.
   "aihorde",
+  // Veo AI Free accepts optional web-session credentials (wordpress_logged_in cookie)
+  // for authenticated generation.
+  "veoaifree-web",
 ]);
 
 export function supportsApiKeyOnFreeProvider(providerId: unknown): boolean {
-  return typeof providerId === "string" && FREE_APIKEY_PROVIDER_IDS.has(providerId);
+  if (typeof providerId !== "string") return false;
+  return (
+    FREE_APIKEY_PROVIDER_IDS.has(providerId) ||
+    FREE_APIKEY_PROVIDER_IDS.has(resolveProviderId(providerId))
+  );
 }
 
 // Providers presented as one dashboard card with OAuth as the primary action
 // and a direct API-key alternative. Keep these out of FREE_APIKEY_PROVIDER_IDS.
-const DUAL_AUTH_PROVIDER_IDS = new Set(["clinepass", "codebuddy-cn", "xai", "muse-code"]);
+const DUAL_AUTH_PROVIDER_IDS = new Set([
+  "copilot-m365-web",
+  "clinepass",
+  "codebuddy-cn",
+  "codebuddy-intl",
+  "xai",
+  "muse-code",
+  "cline",
+  "kilocode",
+  "renderhour",
+  "megabrain",
+  "freebuff",
+]);
 
 export function supportsDualAuthProvider(providerId: unknown): boolean {
   return typeof providerId === "string" && DUAL_AUTH_PROVIDER_IDS.has(providerId);
+}
+
+/**
+ * No-auth providers that ALSO offer a device-code sign-in in the dashboard.
+ *
+ * MiniMax Code is the reference: the provider itself stores no credential
+ * (it reads the local MiniMax Code profile), but an operator can sign in
+ * to their MiniMax account from the dashboard and have the credential
+ * written into that profile. The dashboard row is the account; the
+ * credential lives in the provider's own profile.
+ *
+ * The list lives with the other device-code providers so that the two cannot
+ * drift apart.
+ */
+export function supportsDeviceCodeLogin(providerId: unknown): boolean {
+  return typeof providerId === "string" && NOAUTH_DEVICE_CODE_PROVIDER_IDS.has(providerId);
 }
 
 /**
@@ -88,6 +128,7 @@ export const IMAGE_ONLY_PROVIDER_IDS = new Set([
   "segmind",
   "magnific",
   "deepai",
+  "deapi",
 ]);
 
 export const AGGREGATOR_PROVIDER_IDS = new Set([
@@ -120,12 +161,16 @@ export const AGGREGATOR_PROVIDER_IDS = new Set([
   "zylo-api",
   "fastrouter",
   "anyapi",
+  "beatapi",
   "electronhub",
   "llmgateway",
   "lyceum",
   "llm-kiwi",
   "literouter",
+  "onomeo",
   "eurouter",
+  "unifically",
+  "y-api",
   "mnn-ai",
   "meganova-ai",
   "mixlayer",
@@ -148,6 +193,11 @@ export const AGGREGATOR_PROVIDER_IDS = new Set([
   "tabitoken",
   "logfare",
   "seekai",
+  "tokenmarket",
+  "tokenharbor",
+  "demonroute",
+  "daoxe",
+  "gisoo",
 ]);
 
 export const ENTERPRISE_CLOUD_PROVIDER_IDS = new Set([
@@ -179,6 +229,7 @@ export const VIDEO_PROVIDER_IDS = new Set([
   "leonardo",
   "segmind",
   "novita",
+  "deapi",
 ]);
 
 // IDE Providers: editors with built-in AI subscription (separate section in UI).
@@ -230,6 +281,7 @@ export const SELF_HOSTED_CHAT_PROVIDER_IDS = new Set([
   "docker-model-runner",
   "xinference",
   "oobabooga",
+  "opencode-server",
 ]);
 
 export function isSelfHostedChatProvider(providerId: unknown): boolean {
@@ -244,30 +296,28 @@ const EXPLICIT_OPTIONAL_APIKEY_PROVIDER_IDS = new Set([
   "searxng-search",
   "firecrawl",
   "copilot-web",
-  "g4f-groq",
-  "g4f-gemini",
-  "g4f-pollinations",
-  "g4f-ollama",
-  "g4f-nvidia",
   "huggingchat",
   "gitlawb",
   "gitlawb-gmi",
-  "naga-ac",
-  // UC (uncensored.com) persona: un-metered subscription chat with NO API key —
-  // auth is a durable Clerk credential stored in providerSpecificData, from which
-  // the executor mints a short-lived session token per connect.
-  "uc",
 ]);
 
 export function providerAllowsOptionalApiKey(providerId: unknown): boolean {
+  if (typeof providerId !== "string") return false;
+  const canonicalId = resolveProviderId(providerId);
   return (
     // ponytail: any noAuth provider auto-qualifies — no per-provider maintenance
-    (typeof providerId === "string" && providerId in NOAUTH_PROVIDERS) ||
-    (typeof providerId === "string" && EXPLICIT_OPTIONAL_APIKEY_PROVIDER_IDS.has(providerId)) ||
-    isLocalProvider(providerId) ||
-    isSelfHostedChatProvider(providerId) ||
-    isOpenAICompatibleProvider(providerId) ||
-    isAnthropicCompatibleProvider(providerId)
+    canonicalId in NOAUTH_PROVIDERS ||
+    providerId in NOAUTH_PROVIDERS ||
+    // The credential registry is the source of truth for what is user-facing:
+    // anything declared optional or none works without a pasted key.
+    worksWithoutCredential(getCredentialRequirement(canonicalId)) ||
+    worksWithoutCredential(getCredentialRequirement(providerId)) ||
+    EXPLICIT_OPTIONAL_APIKEY_PROVIDER_IDS.has(canonicalId) ||
+    EXPLICIT_OPTIONAL_APIKEY_PROVIDER_IDS.has(providerId) ||
+    isLocalProvider(canonicalId) ||
+    isSelfHostedChatProvider(canonicalId) ||
+    isOpenAICompatibleProvider(canonicalId) ||
+    isAnthropicCompatibleProvider(canonicalId)
   );
 }
 
@@ -429,15 +479,31 @@ export const AUTH_METHODS = {
   apikey: { id: "apikey", name: "API Key", icon: "key" },
 };
 
-export function getProviderByAlias(alias: string): AiProviderDefinition | null {
+let _PROVIDER_BY_KEY: Map<string, AiProviderDefinition> | null = null;
+
+// One index over every alias and id. The first provider in section order wins a shared
+// key, the same rule the old linear scan applied.
+function buildProviderByKey(): Map<string, AiProviderDefinition> {
+  const index = new Map<string, AiProviderDefinition>();
   for (const section of _PROVIDER_SECTIONS) {
-    for (const provider of Object.values(section)) {
-      if (provider.alias === alias || provider.id === alias) {
-        return provider as AiProviderDefinition;
+    for (const provider of Object.values(section) as Array<
+      AiProviderDefinition & { alias?: string }
+    >) {
+      for (const key of [provider.alias, provider.id]) {
+        if (key && !index.has(key)) index.set(key, provider);
       }
     }
   }
-  return null;
+  return index;
+}
+
+function getOrCreateProviderByKey(): Map<string, AiProviderDefinition> {
+  _PROVIDER_BY_KEY ??= buildProviderByKey();
+  return _PROVIDER_BY_KEY;
+}
+
+export function getProviderByAlias(alias: string): AiProviderDefinition | null {
+  return getOrCreateProviderByKey().get(alias) ?? null;
 }
 
 // Helper: Get provider ID from alias

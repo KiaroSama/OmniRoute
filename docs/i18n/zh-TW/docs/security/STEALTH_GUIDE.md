@@ -18,38 +18,57 @@ OmniRoute 會與邊緣節點主動對非官方用戶端進行指紋辨識（TLS 
 
 ## TLS 指紋辨識層
 
-### `open-sse/utils/tlsClient.ts` — wreq-js（Chrome 124）
+### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-系統會依各帳戶範圍與解析後的代理伺服器，延遲建立持久性 `wreq-js` 工作階段。全程序共用的 `TlsClient` 集區最多容納 128 個工作階段，這些工作階段會針對位於 Cloudflare 後方的上游服務，模擬 **macOS 上的 Chrome 124**。當原生執行階段不可用時，`TlsClient.fetch()` 會採取封閉式失敗；呼叫端可在此包裝器之外明確選擇備援方案。
+系統會依每個帳戶範圍與解析後的代理伺服器，延遲建立持久化 `wreq-js` 工作階段。全程序共用的
+`TlsClient` 最多會彙集 128 個工作階段，對 Cloudflare 後方的上游服務模擬 **macOS 上的 Chrome 124**。
+當原生執行階段無法使用時，`TlsClient.fetch()` 會採封閉式失敗；呼叫端可在此包裝器之外明確選擇備援方案。
 
 - 工作階段設定檔：`browser: "chrome_124", os: "macos"`
 - 代理伺服器解析（優先順序）：`HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY`（亦包含小寫形式）
-- 逾時：`TLS_CLIENT_TIMEOUT_MS`（繼承自 `FETCH_TIMEOUT_MS`，預設值為 600000）
+- 逾時：`TLS_CLIENT_TIMEOUT_MS`（繼承自 `FETCH_TIMEOUT_MS`，預設為 600000）
 - `wreq-js` Response 與 fetch 相容（`headers`、`text()`、`json()`、`clone()`、`body`）。
-- 首位元組監控器（`open-sse/utils/tlsFirstByteWatchdog.ts`，#12656）：上游標頭一抵達，`TlsClient.fetch()` 即會完成解析，因此單靠 `TLS_CLIENT_TIMEOUT_MS` 無法限制始終未產生首位元組的主體。`guardTlsFirstByte()` 會讓主體第一次 `read()` 與 `TLS_FIRST_BYTE_WATCHDOG_MS`（預設值為 `10000`，設為 `0` 可停用）競速；正常主體不受影響，而停滯的主體會取消 wreq 讀取器，並讓 `proxyFetch` 現有的 TLS 備援邏輯繼續轉由直接／代理分派器處理（不可安全重播的請求，例如含有主體的 POST，仍會擲回錯誤，而不會在未告知的情況下重試）。
+- 首位元組看門狗（`open-sse/utils/tlsFirstByteWatchdog.ts`，#12656）：上游標頭一抵達，
+  `TlsClient.fetch()` 就會完成解析，因此僅靠 `TLS_CLIENT_TIMEOUT_MS` 無法限制永遠不產生首位元組的
+  回應主體。`guardTlsFirstByte()` 會讓主體的第一次 `read()` 與 `TLS_FIRST_BYTE_WATCHDOG_MS`
+  競速（預設為 `10000`，設為 `0` 則停用）；正常的回應主體不受影響，而停滯的回應主體會取消
+  wreq 讀取器，並讓 `proxyFetch` 現有的 TLS 備援邏輯繼續轉至直接／代理分派器（無法安全重播的請求，
+  例如含有主體的 POST，仍會擲出錯誤，而不會在未明示的情況下重試）。
 
-### Web Cookie 提供者傳輸層 — wreq-js 3.2.0
+### Web-cookie 提供者傳輸層 — wreq-js 3.2.0
 
-`open-sse/services/tlsClientBase.ts` 是下列五種專用 Web Cookie 傳輸層共用的配接器。每個精簡的提供者包裝器都會選取瀏覽器／作業系統設定檔。此配接器使用 `open-sse/utils/tlsClient.ts` 中單一的 wreq 執行階段載入器與傳輸集區，並以設定檔 + 作業系統 + 解析後的代理伺服器作為索引鍵；同時，每個請求都使用 `cookieMode: "ephemeral"`。因此，帳戶與請求會共用傳輸層級的連線，但絕不會共用 wreq 工作階段或 Cookie Jar。
+`open-sse/services/tlsClientBase.ts` 是下列五種特製 Web-cookie 傳輸層的共用轉接器。
+每個精簡的提供者包裝器都會選擇瀏覽器／作業系統設定檔。此轉接器使用
+`open-sse/utils/tlsClient.ts` 中單一的 wreq 執行階段載入器與傳輸集區，並以設定檔 + 作業系統 +
+解析後的代理伺服器作為鍵值，而每個請求都會使用 `cookieMode: "ephemeral"`。因此，帳戶與請求會共用
+傳輸層連線，但絕不共用 wreq 工作階段或 Cookie Jar。
 
 | 提供者     | 設定檔        | 模擬的作業系統 | 串流 EOF 政策               |
 | ---------- | ------------- | -------------- | --------------------------- |
 | Claude     | `chrome_146`  | Linux          | 包含 `[DONE]`               |
-| Perplexity | `firefox_148` | macOS          | 包含 `event: end_of_stream` |
+| Perplexity | `firefox_151` | macOS          | 包含 `event: end_of_stream` |
 | Grok       | `chrome_146`  | Linux          | 排除 `[DONE]`               |
 | Notion     | `chrome_146`  | Windows        | 包含 `[DONE]`               |
 | LMArena    | `chrome_146`  | Windows        | 無哨兵值；於原生 EOF 時關閉 |
 
-- 串流會直接取用原生回應的 `ReadableStream`；不會建立暫存檔或輔助程序。
-- 在公開串流前，最多會檢查開頭 256 個位元組。SSE 提供者會緩衝非 SSE 錯誤；Grok/LMArena 會將 Cloudflare 挑戰對應至 `403`，並將 HTML 中介頁面對應至 `502`。
-- 原生請求逾時仍會由絕對的 JS 強制截止時間包裝。發生停滯時，只會使受影響的設定檔／作業系統／代理傳輸失效並關閉，下一個請求才會重新建立該傳輸。
-- 代理伺服器解析的優先順序為：每次呼叫的 `proxyUrl` → 請求範圍的帳戶／儀表板內容 → `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY`（包括小寫變體）。解析錯誤會採取封閉式失敗，而不是洩漏直接連線。LMArena 會刻意針對 `arena.ai` 進行解析。
-- `byteResponse` 會回傳包含內容類型的 `data:` URL，且不會造成 UTF-8 損毀。
-- 錯誤包括 `TlsClientUnavailableError`（套件／附加元件不可用）、`TlsClientHangError`（超過截止時間），以及當所有 128 個有上限的設定檔／作業系統／代理插槽皆處於作用中或關閉中狀態時的 `WreqTransportCapacityError`（共用的工作階段容量錯誤代碼）。
+- 串流會直接取用原生回應的 `ReadableStream`；不會建立暫存檔或附屬程序。
+- 在公開串流前，最多會檢查開頭 256 個位元組。SSE 提供者會緩衝非 SSE 錯誤；
+  Grok/LMArena 會將 Cloudflare 挑戰對應為 `403`，並將 HTML 中介頁面對應為 `502`。
+- 原生請求逾時仍由絕對的 JS 硬性期限包裝。發生停滯時，只會使受影響的設定檔／作業系統／代理伺服器
+  傳輸失效並將其關閉，下一個請求會再重新建立該傳輸。
+- 每次呼叫的代理伺服器解析優先順序為 `proxyUrl` → 請求範圍內的帳戶／儀表板情境 →
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY`（包含小寫變體）。解析錯誤會採封閉式失敗，而不會洩漏
+  直接連線。LMArena 會刻意針對 `arena.ai` 進行解析。
+- `byteResponse` 會傳回具有內容類型的 `data:` URL，且不會造成 UTF-8 毀損。
+- 錯誤包括 `TlsClientUnavailableError`（套件／附加元件無法使用）、`TlsClientHangError`
+  （超過期限），以及當全部 128 個有界的設定檔／作業系統／代理伺服器槽位皆處於使用中或關閉中時
+  的 `WreqTransportCapacityError`（共用的工作階段容量錯誤代碼）。
 
-上述通用 `TlsClient` 工作階段仍專門用於持久性的瀏覽器支援 Cookie 狀態。兩條路徑會重複使用同一個已快取的 wreq 模組載入器與程序生命週期掛鉤；其集區維持分離，因為兩者的 Cookie 存留期刻意設計為不同。
+上述通用的 `TlsClient` 工作階段仍專門用於持久化、以瀏覽器為基礎的 Cookie 狀態。兩條路徑都會重複使用
+同一個已快取的 wreq 模組載入器與程序生命週期掛鉤；其集區維持分離，因為兩者的 Cookie 生命週期刻意不同。
 
-固定版本的套件支援這些設定檔，但實際的 WAF 接受情況可能獨立於本機契約測試而變更。在宣稱與上游瀏覽器具有同等效果之前，請先使用獲得明確授權的實際帳戶驗證指紋變更。
+固定版本的套件支援這些設定檔，但實際的 WAF 接受度可能會獨立於本機契約測試而改變。在聲稱與上游瀏覽器
+具有同等效果之前，請使用已明確授權的實際帳戶驗證指紋變更。
 
 ---
 
@@ -98,7 +117,7 @@ aider, continue.dev, copilot, avante, codecompanion
 
 供僅接受「真正 Claude Code」流量的第三方 Anthropic 中繼服務使用：
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"`（預設）
@@ -115,41 +134,63 @@ aider, continue.dev, copilot, avante, codecompanion
 
 ---
 
-## Antigravity 隱匿機制
+## Antigravity隱身
 
-Antigravity 請求會逐位元組保留呼叫端文字。OmniRoute 不會在提示中插入零寬字元，也不會重新命名或注入工具以模仿 IDE 用戶端。
+Antigravity請求逐字節保留呼叫者文字。 OmniRoute不會在提示或rename/inject工具中插入零寬度字元來模仿IDE客戶端。
 
 ### `antigravityHeaderScrub.ts`
 
-轉送前移除 Stainless SDK 標記（`x-stainless-lang`、`x-stainless-package-version`、`x-stainless-os`、`x-stainless-arch`、`x-stainless-runtime`、`x-stainless-runtime-version`、`x-stainless-timeout`、`x-stainless-retry-count`、`x-stainless-helper-method`）。
+在轉發之前剝離不銹鋼SDK標記（`x-stainless-lang`、 `x-stainless-package-version`、 `x-stainless-os`、 `x-stainless-arch`、 `x-stainless-runtime`、 `x-stainless-runtime-version`、 `x-stainless-timeout`、 `x-stainless-retry-count`、 `x-stainless-helper-method`）。
 
-### ⚠️ 風險：`ANTIGRAVITY_CREDITS=always`（帳號封鎖高風險點）
+### ⚠️風險： `ANTIGRAVITY_CREDITS=always` （封號熱點）
 
-`ANTIGRAVITY_CREDITS=always`（由 `open-sse/executors/antigravity.ts` 使用）會將**每一個**請求都透過 Antigravity AI Credit Overages（付費 Google 點數）路由，而不是讓 Google 的免費方案配額進行限制。這雖被記載為一項功能，但它是**我們所見最常見的單一 ToS 違規回報來源**——多個 Google Ultra 帳號在使用 `=always` 執行數小時後，遭到封鎖並收到 `403 / "service disabled for ToS violation" / insufficient_quota`。
+`ANTIGRAVITY_CREDITS=always` （由`open-sse/executors/antigravity.ts`使用）路線**每一個**透過Antigravity AI信用超額（支付Google信用）請求，而不是讓Google的免費配額限制事物。這被記錄為一項功能，但它是**我們看到的最常見的 ToS 違規報告**—多個Google Ultra 帳戶在使用`=always`運行幾個小時後已被`403 / "service disabled for ToS violation" / insufficient_quota`禁止。
 
-上游的執法發生在 **Google 端**，並非 OmniRoute 所能阻止。環境變數名稱與現有文件讓它聽起來像是可以安全切換的選項；事實並非如此。
+上游執法已開啟**Google這邊**，沒有什麼OmniRoute可以阻止的。環境變數名稱和現有文件使它聽起來像一個安全的旋鈕；事實並非如此。
 
-**為何這比僅使用免費方案更容易觸發濫用偵測：**
+**為什麼這比僅免費套餐的使用更積極地吸引濫用檢測：**
 
-- 在單一 Google 帳號上持續進行自動化消費，會產生不同於免費方案達到配額後停止的風險訊號。
-- 額外付費點數沒有速率上限，因此設定錯誤的用戶端可能在幾分鐘內消耗數百美元，並看起來像 API 金鑰轉售或機器人流量。
-- 多名 OmniRoute 使用者從相同外部 IP 平行使用額外付費點數，會進一步加重此風險訊號。
+- 單一Google帳戶上的持續自動支出與免費套餐的點擊配額和停止標記不同。
+- 信用超額沒有速率上限，因此配置錯誤的客戶端可能會在幾分鐘內耗盡數百個USD ，看起來就像 API 金鑰轉售或機器人流量。
+- 多個OmniRoute用戶從同一個外部IP並行獲得超額積分，從而複合訊號。
 
-**建議做法：**
+**推薦姿勢：**
 
-1. 除非操作者明確接受付費點數與帳號執法風險，否則請維持預設的 `ANTIGRAVITY_CREDITS=off`。`retry` 會先傳送一般請求，並只在符合條件的配額 429 發生後注入點數，且最多一次；`always` 則會在第一個請求中直接注入點數。
-2. **透過 Auto-Combo 將負載分散至多個提供者**（`model: "auto"` 或 `kr/glm/etc`-combo），而非讓單一 Antigravity 帳號飽和。
-3. **設定每個連線的 RPM 限制**，位置在 Antigravity 提供者的編輯頁面（Dashboard → Providers → Antigravity → connection → rate limit）。對於持續使用，30–60 RPM 是合理且可辯護的上限。
-4. **使用穩定且由操作者控制的上游網路**，並避免讓不相關的使用者或工作負載共用同一個帳號。
-5. **若遭封鎖**：請透過 `support.google.com` →「Restore Workspace/Account access」提出申訴，並附上 Google 傳回的完整 `quota_exceeded` / `service disabled` 回應主體。不保證一定能恢復。
+1. 保留預設`ANTIGRAVITY_CREDITS=off`除非業者明確接受付費信用和帳戶執行風險。 `retry`先發送普通請求，在達到合格配額429後最多註入一次積分； `always`在第一個請求時注入積分。
+2. **透過自動組合在提供者之間分散負載**（`model: "auto"`或`kr/glm/etc` -combo）而不是使單一Antigravity帳戶飽和。
+3. **設定每個連接的RPM限制**在Antigravity提供者的編輯頁面（儀表板→提供者→ Antigravity →連接→速率限制）。 30-60 RPM是持續使用的合理上限。
+4. **使用穩定的、運營商控制的上游網絡**避免在不相關的使用者或工作負載之間共用一個帳戶。
+5. **如果被禁止**：透過`support.google.com` → “恢復Workspace/Account訪問”進行申訴，並發送準確的`quota_exceeded` / `service disabled`回應正文Google 。無法保證恢復。
 
-環境變數參考文件說明了各種點數模式對帳號與支出的影響。
+環境參考記錄了每種積分模式的帳戶和支出影響。
 
-相關位置：
+#### 不只是`=always`：一般Antigravity OAuth路由
 
-- `open-sse/executors/antigravity.ts` — 讀取 `process.env.ANTIGRAVITY_CREDITS`
-- `src/lib/oauth/providers/antigravity.ts` — 憑證處理
-- 原始事件報告：討論 [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
+暫停不僅限於信用超額。 2026 年 11 月的報告 (#19223、 #19266) 描述了多個Google帳戶在透過`antigravity`和`agy` (Antigravity CLI) 提供者進行路由時被暫停，其中：
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+兩個提供者都使用Antigravity產品OAuth會話進行身份驗證，在新增連接之前，儀表板的風險通知（「此提供者使用您的官方產品session/OAuth，未授權使用proxy/router 」）會發出警告。上述建議均未授權該用途；它們只會減少一個帳戶所承載的流量。
+
+**Gemini模型的授權API介面。** Google透過其APIs提供對Gemini的程式訪問， OmniRoute支援普通 API 金鑰提供者：
+
+| 提供者 ID | 儀表板名稱                 | 憑證                                                           |
+| --------- | -------------------------- | -------------------------------------------------------------- |
+| `gemini`  | Gemini （Google AI工作室） | 來自Google AI Studio 的Gemini API密鑰（提供免費套餐）          |
+| `vertex`  | 頂點AI                     | 服務帳戶JSON、 OAuth存取權杖或 Vertex Express API金鑰 (Gemini) |
+
+與Antigravity產品會話不同，這些提供者使用Google問題的憑證進行API存取。它們不會使每種使用都合規或消除強制執行的風險：每種使用都受其自己的條款管轄，業者必須檢查其部署情況。例如，當API客戶端向歐洲經濟區、瑞士或英國的用戶提供時， [Gemini API附加服務條款](https://ai.google.dev/gemini-api/terms)僅允許付費服務，並且發送到非付費服務的內容可用於改進Google的產品。 Vertex AI屬於Google Cloud 條款（[服務特定條款](https://cloud.google.com/terms/service-terms)）。定價和配額遵循這些API條款，而不是Antigravity訂閱。
+
+想要避免上述Antigravity暫停的業者應在檢查其使用是否符合提供者的條款後，透過這些提供者之一而不是`antigravity` / `agy`路由Gemini流量。
+
+接觸點：
+
+- `open-sse/executors/antigravity.ts` —讀取`process.env.ANTIGRAVITY_CREDITS`
+- `src/lib/oauth/providers/antigravity.ts` —憑證管道
+- 原始事件報告：討論[#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
 
@@ -218,19 +259,18 @@ interface CliFingerprint {
 
 ---
 
-## User-Agent 覆寫 — 環境變數（`.env.example` 第 12 節）
+## 使用者代理程式覆蓋—環境變數（`.env.example`第 12 節）
 
-| 變數                     | 預設值                                                          |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| 多變的              | 預設                                          |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-由 `open-sse/executors/base.ts::buildHeaders()` 透過動態查詢使用。**當提供者發布新的 CLI 版本時，請更新這些值** — 過時的 UA 字串會開始因用戶端版本過舊而遭到拒絕。
+由`open-sse/executors/base.ts::buildHeaders()`透過動態查找使用。**當提供者發布新的CLI版本時，請注意這些**—過時的UA字串開始被視為過時的客戶端而被拒絕。
 
 ## CLI 相容模式切換選項（`.env.example` 第 13 節）
 

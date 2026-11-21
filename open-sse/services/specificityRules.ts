@@ -24,10 +24,109 @@ export function estimateMessageTokens(messages: Array<{ content?: string | unkno
   }, 0);
 }
 
-export function detectCodeComplexity(input: RuleInput): number {
-  const allText = input.messages
-    .map((m) => (typeof m.content === "string" ? m.content : ""))
+// Coding harnesses (Claude Code, Codex) wrap protocol text in fixed tags inside user messages.
+// That text is full of code words and says nothing about the task, so classifiers skip it.
+// The list is explicit on purpose: any other XML-like text is the user's own.
+// shortcut: no user-agent gate, because the callers do not pass one; add it when they do.
+const HARNESS_WRAPPERS: ReadonlyArray<readonly [string, string]> = [
+  ["<system-reminder>", "</system-reminder>"],
+  ["<local-command-caveat>", "</local-command-caveat>"],
+  ["<local-command-stdout>", "</local-command-stdout>"],
+  ["<local-command-stderr>", "</local-command-stderr>"],
+  ["<command-name>", "</command-name>"],
+  ["<command-message>", "</command-message>"],
+  ["<command-args>", "</command-args>"],
+  ["# AGENTS.md instructions", "</INSTRUCTIONS>"],
+  ["<environment_context>", "</environment_context>"],
+  ["<skill>", "</skill>"],
+  ["<turn_aborted>", "</turn_aborted>"],
+  ["<subagent_notification>", "</subagent_notification>"],
+  ["<codex_internal_context", "</codex_internal_context>"],
+  ["<goal_context>", "</goal_context>"],
+  ["<recommended_plugins>", "</recommended_plugins>"],
+  ["<user_shell_command>", "</user_shell_command>"],
+];
+
+/** Remove harness wrapper blocks from text before intent or complexity classification. */
+export function stripHarnessWrappers(text: string): string {
+  let out = text;
+  for (const [open, close] of HARNESS_WRAPPERS) {
+    let kept = "";
+    let pos = 0;
+    while (true) {
+      const start = out.indexOf(open, pos);
+      if (start === -1) break;
+      const end = out.indexOf(close, start + open.length);
+      // No close after this open means none after a later open: stop, keep the text.
+      if (end === -1) break;
+      kept += out.slice(pos, start);
+      pos = end + close.length;
+    }
+    out = pos === 0 ? out : kept + out.slice(pos);
+  }
+  return out;
+}
+
+function classifiableText(input: RuleInput): string {
+  return input.messages
+    .map((m) => (typeof m.content === "string" ? stripHarnessWrappers(m.content) : ""))
     .join("\n");
+}
+
+const WHITESPACE_CHAR = /\s/;
+
+/**
+ * Count the matches of a greedy `open\s+.*close` (or `open.*close`) indicator regex in one
+ * linear pass (#19881). The regex form retries its `.*` from every `open` on a line that lacks
+ * `close` (quadratic on a long line), and its `\s+` backtracks across long whitespace runs; a
+ * bounded `.{0,N}?` instead stops seeing long but valid spans. A greedy span always ends at the
+ * last `close` on the line where its `.*` starts, so each line tail is searched at most twice.
+ *
+ * `open` must be a global regex for the opening token (with its first whitespace character when
+ * `skipWhitespace` is set); `text` and `close` must share the same case.
+ */
+function countGreedySpans(
+  text: string,
+  open: RegExp,
+  close: string,
+  skipWhitespace: boolean
+): number {
+  const lineBreak = /[\n\r\u2028\u2029]/g;
+  let count = 0;
+  let exhaustedUntil = -1;
+  open.lastIndex = 0;
+  for (let match = open.exec(text); match; match = open.exec(text)) {
+    let spanStart = match.index + match[0].length;
+    while (skipWhitespace && spanStart < text.length && WHITESPACE_CHAR.test(text[spanStart])) {
+      spanStart += 1;
+    }
+    // This line's tail was already searched from an earlier start and had no `close`.
+    if (spanStart < exhaustedUntil) continue;
+    lineBreak.lastIndex = spanStart;
+    const lineEnd = lineBreak.exec(text)?.index ?? text.length;
+    const closeAt = text.slice(spanStart, lineEnd).lastIndexOf(close);
+    if (closeAt === -1) {
+      exhaustedUntil = lineEnd;
+    } else {
+      count += 1;
+      open.lastIndex = spanStart + closeAt + close.length;
+    }
+  }
+  return count;
+}
+
+/** `import … from`, `SELECT … FROM` and `${…}` spans, counted like their greedy regexes. */
+function countCodeSpanIndicators(text: string): number {
+  const lower = text.toLowerCase();
+  return (
+    countGreedySpans(lower, /import\s/g, "from", true) +
+    countGreedySpans(lower, /select\s/g, "from", true) +
+    countGreedySpans(lower, /\$\{/g, "}", false)
+  );
+}
+
+export function detectCodeComplexity(input: RuleInput): number {
+  const allText = classifiableText(input);
 
   const codeFenceMatches = allText.match(/```[\s\S]*?```/g);
   const codeBlockCount = codeFenceMatches ? codeFenceMatches.length : 0;
@@ -38,27 +137,22 @@ export function detectCodeComplexity(input: RuleInput): number {
   const langIndicators = [
     /function\s+\w+\s*\(/gi,
     /const\s+\w+\s*=/gi,
-    /import\s+.*from/gi,
     /class\s+\w+/gi,
     /interface\s+\w+/gi,
     /async\s+function/gi,
     /def\s+\w+\s*\(/gi,
-    /SELECT\s+.*FROM/gi,
-    /\$\{.*\}/g,
   ];
   const langMatches = langIndicators.reduce((sum, re) => {
     const matches = allText.match(re);
     return sum + (matches ? matches.length : 0);
-  }, 0);
+  }, countCodeSpanIndicators(allText));
 
   const raw = codeBlockCount * 5 + inlineCodeCount * 0.5 + langMatches * 2;
   return Math.min(25, Math.round(raw));
 }
 
 export function detectMathComplexity(input: RuleInput): number {
-  const allText = input.messages
-    .map((m) => (typeof m.content === "string" ? m.content : ""))
-    .join("\n");
+  const allText = classifiableText(input);
 
   const latexMatches = allText.match(/\$\$[\s\S]*?\$\$|\$[^$]+\$/g);
   const latexCount = latexMatches ? latexMatches.length : 0;
@@ -81,16 +175,16 @@ export function detectMathComplexity(input: RuleInput): number {
 }
 
 export function detectReasoningDepth(input: RuleInput): number {
-  const allText = input.messages
-    .map((m) => (typeof m.content === "string" ? m.content : ""))
-    .join("\n");
+  const allText = classifiableText(input);
 
   const reasoningIndicators = [
     /\b(first|step\s*\d|secondly|finally|therefore|thus|consequently|because|since)\b/gi,
     /\b(let me think|let's reason|let's analyze|step by step|breaking this down)\b/gi,
     /\b(we need to|we must|we should|the approach is|the solution involves)\b/gi,
     /(?:\d+\.\s+)(?:\w+)/g,
-    /\b(if\s+.+\s+then\s+|assuming\s+|suppose\s+|consider\s+that)\b/gi,
+    // The condition starts at a non-space and the bounded wildcard absorbs extra spaces before
+    // `then`, so no two whitespace quantifiers can backtrack across the same run (#19881).
+    /\b(if\s+\S.{0,199}?\sthen\s+|assuming\s+|suppose\s+|consider\s+that)\b/gi,
   ];
 
   const reasonMatches = reasoningIndicators.reduce((sum, re) => {
@@ -127,9 +221,7 @@ export function detectToolCalling(input: RuleInput): number {
 }
 
 export function detectDomainSpecificity(input: RuleInput): number {
-  const allText = input.messages
-    .map((m) => (typeof m.content === "string" ? m.content : ""))
-    .join("\n");
+  const allText = classifiableText(input);
 
   const domainTerms: Record<string, RegExp[]> = {
     medical: [/\bdiagnosis\b/i, /\bsymptoms\b/i, /\btreatment\b/i, /\bpatient\b/i, /\bclinical\b/i],
@@ -177,9 +269,7 @@ export function detectConversationDepth(input: RuleInput): number {
 }
 
 export function detectFileReferences(input: RuleInput): number {
-  const allText = input.messages
-    .map((m) => (typeof m.content === "string" ? m.content : ""))
-    .join("\n");
+  const allText = classifiableText(input);
 
   const filePatterns = [
     /(?:\/[\w.-]+){2,}/g,
@@ -197,9 +287,7 @@ export function detectFileReferences(input: RuleInput): number {
 }
 
 export function detectErrorContext(input: RuleInput): number {
-  const allText = input.messages
-    .map((m) => (typeof m.content === "string" ? m.content : ""))
-    .join("\n");
+  const allText = classifiableText(input);
 
   const errorPatterns = [
     /\b(?:Error|Exception|TypeError|ReferenceError|SyntaxError)\b/g,

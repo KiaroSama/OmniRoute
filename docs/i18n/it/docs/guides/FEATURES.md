@@ -57,29 +57,19 @@ Le connessioni OpenRouter possono memorizzare un `preset` specifico per connessi
 
 ---
 
-## 🎨 Combinazioni
+## 🎨 Combo
 
-Crea combinazioni per l'instradamento dei modelli con 19 strategie pubbliche: priority, weighted, round-robin, context-relay, fill-first, p2c (scelta tra due opzioni), random, least-used, cost-optimized, reset-aware, reset-window, headroom, strict-random, auto, lkgp (ultimo provider noto come funzionante), context-optimized, cache-optimized, **fusion** (inoltra la richiesta in parallelo a un gruppo di modelli, quindi sintetizza un'unica risposta tramite un modello valutatore) e **pipeline**. Ogni combinazione concatena più modelli con fallback automatico e include modelli predefiniti rapidi e controlli di disponibilità.
+Crea combinazioni di routing del modello con 22 strategie pubbliche: priorità, ponderato, round-robin, context-relay, fill-first, p2c (scelte potenza di due), casuale, meno utilizzato, ottimizzato in termini di costi, reset-aware, reset-window, expiry-first, headroom, quota-weighted, strict-random, auto, lkgp (ultimo fornitore valido noto), ottimizzato per il contesto, ottimizzato per la cache,** fusione** (distribuirsi a un gruppo di modelli in parallelo, quindi sintetizzare una risposta tramite un giudice),** conduttura** , E** jev** (un'ammissione TypeSafe Jev opt-in sulla tua lista classificata). Ciascuna combinazione concatena più modelli con fallback automatico e include modelli rapidi e controlli di disponibilità.
 
-Miglioramenti recenti alle combinazioni:
+Miglioramenti combo recenti:
 
-- **Generatore strutturato di combinazioni** — crea ogni passaggio selezionando provider, modello e account/connessione esatti
-- **Supporto per provider ripetuti** — riutilizza più volte lo stesso provider in una combinazione, purché la tupla `(provider, model, connection)` sia univoca
-- **Stato delle destinazioni delle combinazioni** — le viste di analisi e dello stato ora distinguono le singole destinazioni/i singoli passaggi delle combinazioni, invece di raggruppare tutto in stringhe di modelli
-- **Ordinamento composito dei livelli** — `defaultTier -> fallbackTier` ora influisce sull'ordine di esecuzione/fallback in fase di runtime per i passaggi di primo livello delle combinazioni
-- **Modelli di prompt di sistema** — il `system_message` delle combinazioni supporta lato server i segnaposto
-  `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` e `{{FINGERPRINT}}`,
-  sostituiti usando la destinazione effettivamente selezionata subito prima dell'invio.
-  Sono consentiti solo i segnaposto inclusi nell'elenco autorizzato e la sostituzione non è ricorsiva; i segnaposto sconosciuti rimangono letterali, mentre i valori vuoti
-  vengono sostituiti con stringhe vuote; i prompt di sistema del client non vengono mai riscritti. `{{FINGERPRINT}}`
-  viene risolto solo per i provider gratuiti basati su fingerprint con un fingerprint fissato o
-  ruotato automaticamente; negli altri casi viene sostituito con una stringa vuota (ad esempio
-  connessioni con un singolo fingerprint, provider non basati su fingerprint). La sostituzione è applicata al
-  ciclo di invio standard, al round-robin e alle sessioni fissate della cache di contesto;
-  le strategie fusion, chaos, pipeline e nested-execute non supportano ancora la sostituzione dei
-  segnaposto.
+- **Costruttore di combo strutturato** — crea ogni passaggio selezionando fornitore, modello e account/connection esatto
+- **Supporto ripetuto del fornitore** — riutilizza lo stesso provider più volte in una combinazione purché la tupla `(provider, model, connection)` sia unica
+- **Salute del bersaglio combinato** L'analisi — e le superfici sanitarie ora distinguono le singole combo targets/steps invece di comprimere tutto in stringhe di modelli
+- **Ordinamento per livelli composito** — `defaultTier -> fallbackTier` ora influenza l'ordine execution/fallback di runtime per i passaggi combinati di livello superiore
+- **Modelli di prompt di sistema** — combo `system_message` supporta i segnaposto `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` e `{{FINGERPRINT}}` lato server, espansi dalla destinazione effettivamente instradata subito prima dell'invio. Consentito e non ricorsivo; i segnaposto sconosciuti rimangono letterali; i valori vuoti si espandono fino a diventare vuoti; i prompt del sistema client non vengono mai riscritti. `{{FINGERPRINT}}` si risolve solo per i provider gratuiti basati su impronte digitali con un'impronta digitale fissata o ruotata automaticamente. — si espande per svuotarsi altrove (ad esempio connessioni con impronta singola, provider non Fp). L'espansione copre il ciclo di invio standard, il round robin e le sessioni di cache di contesto bloccate; la fusione, il caos, la pipeline e le strategie di esecuzione annidata non espandono ancora i segnaposto.
 
-![Dashboard delle combinazioni](../screenshots/02-combos.png)
+![Combos Dashboard](../screenshots/02-combos.png)
 
 ---
 
@@ -200,23 +190,23 @@ Gli indirizzi email degli account OAuth vengono mascherati per impostazione pred
 
 ---
 
-## 👁️ Controllo della visibilità dei modelli _(v3.5.6+)_
+## 👁️ Attiva/disattiva visibilità modello _(v3.5.6 +)_
 
-L'elenco dei modelli nella pagina del provider ora include:
+L'elenco dei modelli di pagine del provider ora include:
 
-- **Barra di ricerca/filtro in tempo reale** — Trova rapidamente modelli specifici
-- **Controllo della visibilità per ogni modello** (icona 👁) — I modelli nascosti appaiono in grigio e vengono esclusi dal catalogo `/v1/models`
-- **Badge del conteggio dei modelli attivi** (`N/M attivi`) — Mostra immediatamente quanti modelli sono abilitati rispetto al totale
+- **Barra search/filter in tempo reale** — Trova rapidamente modelli specifici
+- **Attiva/disattiva la visibilità per modello** (icona 👁 ) — I modelli nascosti sono disattivati ed esclusi dal catalogo `/v1/models`
+- **Badge di conteggio attivo** (`N/M active`) — Mostra a colpo d'occhio quanti modelli sono abilitati rispetto al totale
 
 ---
 
-## 🔧 Riparazione delle variabili d'ambiente OAuth _(v3.6.1+)_
+## 🔧 OAuth Riparazione busta _(v3.6.1 +)_
 
-Azione "Ripara env" con un solo clic per i provider OAuth, che ripristina le variabili d'ambiente mancanti e corregge lo stato di autenticazione danneggiato. Accessibile da `Dashboard → Provider → [Provider OAuth] → Ripara env`. Rileva e corregge automaticamente:
+Azione "Ripara env" con un clic per i provider OAuth che ripristina le variabili di ambiente mancanti e corregge lo stato di autenticazione interrotto. Accessibile da `Dashboard → Providers → [OAuth Provider] → Repair env`. Rileva e ripara automaticamente:
 
 - Credenziali client OAuth mancanti
-- Voci danneggiate nel file env
-- Sanitizzazione del percorso di backup
+- Voci del file env danneggiate
+- Sanificazione del percorso di backup
 
 ---
 
@@ -298,13 +288,13 @@ Comportamenti principali:
 
 ## 🔑 Token di sincronizzazione e bundle di configurazione _(v3.6.6+)_
 
-L'accesso da più dispositivi e da parte di operatori esterni è ora possibile tramite **token di sincronizzazione con ambito definito**:
+L'accesso da più dispositivi e da parte di operatori esterni è ora possibile tramite **token di sincronizzazione con ambiti definiti**:
 
-- **`POST /api/sync/tokens`** — Emette un nuovo token di sincronizzazione (con ambito definito e scadenza opzionale)
+- **`POST /api/sync/tokens`** — Emette un nuovo token di sincronizzazione (con ambiti definiti e scadenza facoltativa)
 - **`DELETE /api/sync/tokens/:id`** — Revoca un token
-- **`GET /api/sync/bundle`** — Scarica uno snapshot JSON con versione e identificato tramite ETag di tutte le impostazioni non sensibili (password oscurate)
+- **`GET /api/sync/bundle`** — Scarica uno snapshot JSON della configurazione, dotato di versione e identificato tramite ETag (autenticato esclusivamente con un token di sincronizzazione). Le impostazioni di autenticazione, come la password della dashboard, vengono rimosse, ma le credenziali dei provider e le chiavi API sono incluse; pertanto, il file deve essere trattato come un segreto
 
-Il bundle di configurazione viene generato da `src/lib/sync/bundle.ts`. I client confrontano l'header di risposta `ETag` per rilevare le modifiche senza scaricare nuovamente l'intero payload.
+Il bundle di configurazione viene generato da `src/lib/sync/bundle.ts`. I client confrontano l'header di risposta `ETag` per rilevare le modifiche senza scaricare nuovamente l'intero payload. Dalla CLI, `omniroute sync bundle <outPath> --token <syncToken>` (oppure `OMNIROUTE_SYNC_TOKEN`) lo salva in un file accessibile esclusivamente al proprietario.
 
 ---
 
@@ -316,14 +306,14 @@ Con la v3.6.6 arriva anche il **conteggio ibrido dei token**: quando un provider
 
 ---
 
-## 🛡️ Recupero sicuro in uscita e protezione SSRF _(v3.6.6+)_
+## 🛡️ Fetch in uscita sicuro e protezione SSRF _(v3.6.6+)_
 
-Tutte le chiamate di convalida dei provider e di individuazione dei modelli passano ora attraverso una protezione in uscita a due livelli:
+Tutte le chiamate di convalida dei provider e di rilevamento dei modelli passano ora attraverso una protezione in uscita a due livelli:
 
-1. **Protezione URL** (`src/shared/network/outboundUrlGuard.ts`) — Blocca gli intervalli di indirizzi IP privati, di loopback e link-local prima dell'apertura del socket.
-2. **Wrapper per il recupero sicuro** (`src/shared/network/safeOutboundFetch.ts`) — Applica la protezione URL, normalizza i timeout e ritenta gli errori transitori con backoff esponenziale.
+1. **Protezione URL** (`src/shared/network/outboundUrlGuard.ts`) — Controlla innanzitutto il nome host o l'indirizzo IP letterale della destinazione così come è scritto; in modalità solo pubblica, il wrapper di fetch sicuro risolve anche il nome e rifiuta gli indirizzi privati risultanti. Per impostazione predefinita, blocca gli endpoint dei metadati cloud, ossia l'intero intervallo 169.254.0.0/16 più i nomi host noti dei metadati; `OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS=false` blocca anche gli host privati e di loopback; `OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS=true` (o la variabile legacy `OUTBOUND_SSRF_GUARD_ENABLED=false`) disattiva i controlli. Un valore salvato tramite l'interruttore di un flag nella dashboard ha la precedenza sulla relativa variabile, mentre i provider locali integrati ignorano la protezione durante la convalida della chiave. Consulta `docs/reference/ENVIRONMENT.md`.
+2. **Wrapper di fetch sicuro** (`src/shared/network/safeOutboundFetch.ts`) — Applica la protezione URL, normalizza i timeout e riprova in caso di errori transitori con backoff esponenziale.
 
-Le violazioni della protezione vengono segnalate come HTTP 422 (`URL_GUARD_BLOCKED`) e registrate nel log di audit della conformità tramite `providerAudit.ts`.
+Le violazioni della protezione vengono segnalate come `URL_GUARD_BLOCKED` — HTTP 503 tramite `getSafeOutboundFetchErrorStatus` (400 sulla route di rilevamento dei modelli) — e i blocchi SSRF effettivi durante la convalida vengono registrati nel log di audit come eventi `provider.validation.ssrf_blocked`.
 
 ---
 

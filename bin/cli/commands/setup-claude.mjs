@@ -21,17 +21,35 @@ import { join } from "node:path";
 import os from "node:os";
 import { printHeading, printInfo, printSuccess, printError, printWarning } from "../io.mjs";
 import { guardHostConfigTarget } from "../utils/config-home-guard.mjs";
+import { detectLocalCliProvider } from "../utils/localCliAvailability.mjs";
+import { loadAvailableProviders } from "../provider-catalog.mjs";
+import { isLoopbackUrl } from "../api.mjs";
+import { claudeWindowEnv } from "../utils/claudeWindowEnv.mjs";
 import {
   categoriseModel,
   isCodexCompatibleTextModel,
   profileNameFromModelId,
 } from "./setup-codex.mjs";
 
-/** Map a Codex-style effort to a Claude Code settings.json effortLevel. */
-function effortLevelFor(cfg) {
-  // Codex categories use xhigh/high/low/undefined; Claude Code accepts the same
-  // names (low|medium|high|xhigh). Pass through, omit for the "simple" tier.
-  return cfg.effort || undefined;
+// Claude Code effortLevel values, lowest first. `minimal`/`none` are catalog tiers but not
+// Claude Code levels, so they are never a clamp target.
+const CLAUDE_EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max"];
+
+/**
+ * Map a Codex-style effort to a Claude Code settings.json effortLevel.
+ * Codex categories use xhigh/high/low/undefined; Claude Code accepts the same names. Omitted
+ * for the "simple" tier. When the catalog row lists the model's `effort_tiers`, a level it
+ * does not offer is lowered to the highest listed level below it, and omitted when none fits.
+ */
+function effortLevelFor(cfg, effortTiers) {
+  const wanted = cfg?.effort || undefined;
+  const tiers = Array.isArray(effortTiers) ? effortTiers : [];
+  if (!wanted || tiers.length === 0 || tiers.includes(wanted)) return wanted;
+  const rank = CLAUDE_EFFORT_LEVELS.indexOf(wanted);
+  if (rank < 0) return wanted;
+  return CLAUDE_EFFORT_LEVELS.slice(0, rank)
+    .reverse()
+    .find((level) => tiers.includes(level));
 }
 
 /**
@@ -91,27 +109,40 @@ export function inheritedAnthropicKeyWarning(env = process.env) {
   if (!key || !String(key).trim()) return null;
   return (
     "ANTHROPIC_API_KEY is set in this shell. Claude Code sends it as x-api-key and asks " +
-    "\"Detected a custom API key in your environment\" — if ANTHROPIC_BASE_URL is not " +
+    '"Detected a custom API key in your environment" — if ANTHROPIC_BASE_URL is not ' +
     "picked up, that key goes to api.anthropic.com and you get a real Anthropic 401. " +
     "Unset it, or use `omniroute launch --profile <name>` (it strips every inherited " +
     "ANTHROPIC_* var before spawning claude)."
   );
 }
 
-/** Build the settings.json content for one Claude Code profile. */
-export function buildProfileSettings(modelId, baseUrl, cfg) {
+/**
+ * Build the settings.json content for one Claude Code profile.
+ * `contextWindow` is the model's real window from the catalog; without it the profile table's
+ * `cfg.ctx` is used. The window rule (compact at 85% below 200k, else 190000) is the one
+ * `omniroute launch` applies; it lives in claudeWindowEnv, shared by both.
+ * `effortTiers` is the catalog row's `capabilities.effort_tiers`; it keeps `effortLevel` within
+ * the levels the model offers.
+ */
+export function buildProfileSettings(modelId, baseUrl, cfg, contextWindow, effortTiers) {
+  const window = claudeWindowEnv(contextWindow ?? cfg?.ctx);
   const env = {
     ANTHROPIC_BASE_URL: baseUrl,
     ANTHROPIC_MODEL: modelId,
     CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY: "1",
-    CLAUDE_CODE_AUTO_COMPACT_WINDOW: "190000",
+    ...(window.CLAUDE_CODE_AUTO_COMPACT_WINDOW
+      ? { CLAUDE_CODE_AUTO_COMPACT_WINDOW: window.CLAUDE_CODE_AUTO_COMPACT_WINDOW }
+      : {}),
+    ...(window.CLAUDE_CODE_MAX_CONTEXT_TOKENS
+      ? { CLAUDE_CODE_MAX_CONTEXT_TOKENS: window.CLAUDE_CODE_MAX_CONTEXT_TOKENS }
+      : {}),
   };
   const settings = {
     $schema: "https://json.schemastore.org/claude-code-settings.json",
     model: modelId,
     env,
   };
-  const effort = effortLevelFor(cfg);
+  const effort = effortLevelFor(cfg, effortTiers);
   if (effort) settings.effortLevel = effort;
   // NOTE: ANTHROPIC_AUTH_TOKEN is intentionally NOT written here — `omniroute
   // launch --profile` injects it from the active context, keeping the secret off
@@ -120,13 +151,33 @@ export function buildProfileSettings(modelId, baseUrl, cfg) {
 }
 
 /**
+ * Map every registry id and alias of an `isLocalCli` provider to its id, so a
+ * catalog model id (`zc/glm-5.2`, `auggie/...`) resolves by its prefix.
+ * @param {Array<{id:string, alias?:string|null, isLocalCli?:boolean}>} providers
+ * @returns {Map<string,string>}
+ */
+export function buildLocalCliPrefixMap(providers) {
+  const map = new Map();
+  for (const p of providers) {
+    if (!p?.isLocalCli) continue;
+    map.set(p.id, p.id);
+    if (p.alias) map.set(p.alias, p.id);
+  }
+  return map;
+}
+
+/**
  * Generate Claude Code profile files for a live model catalog. Shared by the
  * `setup-claude` CLI command and the post-model-sync auto-sync so both stay
  * behaviorally identical. Writes `<claudeHome>/profiles/<name>/settings.json`
  * (directory-per-profile); never touches the active/default Claude config.
+ *
+ * Models of `isLocalCli` providers are skipped unless the provider is usable on
+ * this host (#14363); `includeLocal: true` restores the write-everything
+ * behaviour. `providers` and `detectLocalProvider` are injectable for tests.
  * @param {Array} models
- * @param {{claudeHome?:string, baseUrl:string, dryRun?:boolean, only?:string, log?:(line:string)=>void}} opts
- * @returns {Promise<{written:number, skipped:number, profiles:Array<{name:string, model:string, filePath:string}>}>}
+ * @param {{claudeHome?:string, baseUrl:string, dryRun?:boolean, only?:string, includeLocal?:boolean, providers?:Array, detectLocalProvider?:(providerId:string)=>{available:boolean, reason?:string}, log?:(line:string)=>void}} opts
+ * @returns {Promise<{written:number, skipped:number, profiles:Array<{name:string, model:string, filePath:string}>, unavailable:Array<{provider:string, reason:string, models:string[]}>}>}
  */
 export async function syncClaudeProfilesFromModels(models, opts = {}) {
   const claudeHome = opts.claudeHome || join(os.homedir(), ".claude");
@@ -140,6 +191,13 @@ export async function syncClaudeProfilesFromModels(models, opts = {}) {
   // version"). Tests inject a collector; the CLI default stays console.log.
   const log = opts.log ?? console.log;
   const onlyFilter = opts.only ? opts.only.split(",").map((s) => s.trim()) : null;
+  const includeLocal = Boolean(opts.includeLocal);
+  const localCliPrefixes = includeLocal
+    ? new Map()
+    : buildLocalCliPrefixMap(opts.providers ?? loadAvailableProviders());
+  const detectLocalProvider = opts.detectLocalProvider ?? ((id) => detectLocalCliProvider(id));
+  const localVerdicts = new Map();
+  const unavailable = new Map();
 
   if (!dryRun && !existsSync(profilesRoot)) {
     mkdirSync(profilesRoot, { recursive: true });
@@ -160,6 +218,25 @@ export async function syncClaudeProfilesFromModels(models, opts = {}) {
       continue;
     }
 
+    const localProvider = localCliPrefixes.get(id.split("/")[0]);
+    if (localProvider) {
+      if (!localVerdicts.has(localProvider)) {
+        localVerdicts.set(localProvider, detectLocalProvider(localProvider));
+      }
+      const verdict = localVerdicts.get(localProvider);
+      if (!verdict.available) {
+        const entry = unavailable.get(localProvider) ?? {
+          provider: localProvider,
+          reason: verdict.reason || "not available on this host",
+          models: [],
+        };
+        entry.models.push(id);
+        unavailable.set(localProvider, entry);
+        skipped++;
+        continue;
+      }
+    }
+
     const cfg = categoriseModel(id) ?? fallbackClaudeProfile(id, m);
     if (!cfg) {
       skipped++;
@@ -168,7 +245,11 @@ export async function syncClaudeProfilesFromModels(models, opts = {}) {
 
     const dir = join(profilesRoot, cfg.name);
     const filePath = join(dir, "settings.json");
-    const content = buildProfileSettings(id, baseUrl, cfg);
+    // Same order as `omniroute launch`: max_input_tokens, then context_length.
+    const catalogWindow =
+      typeof m === "string" ? undefined : (m.max_input_tokens ?? m.context_length);
+    const effortTiers = typeof m === "string" ? undefined : m.capabilities?.effort_tiers;
+    const content = buildProfileSettings(id, baseUrl, cfg, catalogWindow, effortTiers);
 
     if (dryRun) {
       log(`\n── [dry-run] ${filePath} ──`);
@@ -181,11 +262,18 @@ export async function syncClaudeProfilesFromModels(models, opts = {}) {
     written++;
   }
 
-  return { written, skipped, profiles };
+  return { written, skipped, profiles, unavailable: [...unavailable.values()] };
+}
+
+/** One-line summary of the local-CLI providers the host gate skipped. */
+export function formatUnavailableSummary(unavailable) {
+  return unavailable
+    .map((u) => `${u.provider}: ${u.reason} (${u.models.length} model(s))`)
+    .join("; ");
 }
 
 /**
- * @param {{remote?:string, port?:string, apiKey?:string, claudeHome?:string, dryRun?:boolean, only?:string}} opts
+ * @param {{remote?:string, port?:string, apiKey?:string, claudeHome?:string, dryRun?:boolean, only?:string, includeLocal?:boolean, all?:boolean}} opts
  * @returns {Promise<number>}
  */
 export async function runSetupClaudeCommand(opts = {}) {
@@ -222,8 +310,7 @@ export async function runSetupClaudeCommand(opts = {}) {
       let detail = `HTTP ${res.status}`;
       try {
         const errorBody = await res.json();
-        const serverMsg =
-          errorBody?.error?.message || errorBody?.error || errorBody?.message || "";
+        const serverMsg = errorBody?.error?.message || errorBody?.error || errorBody?.message || "";
         if (serverMsg) detail += ` — ${serverMsg}`;
       } catch {}
       throw new Error(detail);
@@ -241,12 +328,23 @@ export async function runSetupClaudeCommand(opts = {}) {
 
   printInfo(`Received ${models.length} models from ${baseUrl}`);
 
-  const { written, skipped, profiles } = await syncClaudeProfilesFromModels(models, {
+  // The local-CLI gate probes THIS machine, so it only answers for a server on
+  // this machine. Against a remote OmniRoute the binaries live on the server,
+  // and a local probe would drop profiles that work there (#14363).
+  const includeLocalFlag = Boolean(opts.includeLocal ?? opts["include-local"] ?? opts.all);
+  const remoteTarget = !isLoopbackUrl(baseUrl);
+  if (remoteTarget && !includeLocalFlag) {
+    printInfo("Remote target: local-CLI provider availability is not checked on this host");
+  }
+
+  const { written, skipped, profiles, unavailable } = await syncClaudeProfilesFromModels(models, {
     claudeHome,
     baseUrl,
     dryRun,
     only: opts.only,
+    includeLocal: includeLocalFlag || remoteTarget,
   });
+  const unavailableCount = unavailable.reduce((n, u) => n + u.models.length, 0);
 
   if (!dryRun) {
     for (const profile of profiles) {
@@ -254,7 +352,8 @@ export async function runSetupClaudeCommand(opts = {}) {
     }
     console.log("");
     printSuccess(`${written} Claude Code profiles written to ${profilesRoot}`);
-    if (skipped > 0) printInfo(`${skipped} models skipped (no matching profile pattern)`);
+    const unmatched = skipped - unavailableCount;
+    if (unmatched > 0) printInfo(`${unmatched} models skipped (no matching profile pattern)`);
     console.log("\nTo use a profile:");
     console.log("  omniroute launch --profile <name>     # e.g. omniroute launch --profile glm52");
     // Absolute path, host-shell syntax: Claude Code does not expand `~` in
@@ -270,6 +369,12 @@ export async function runSetupClaudeCommand(opts = {}) {
     }
   } else {
     console.log(`\n[dry-run] ${written} profiles would be written (${skipped} skipped)`);
+  }
+  if (unavailableCount > 0) {
+    printInfo(
+      `${unavailableCount} models skipped, provider not usable on this host ` +
+        `(${formatUnavailableSummary(unavailable)}). Pass --include-local to write them anyway.`
+    );
   }
 
   return 0;
@@ -290,6 +395,11 @@ export function registerSetupClaude(program) {
       "--only <patterns>",
       "Comma-separated substrings — only matching model IDs (e.g. glm,kimi)"
     )
+    .option(
+      "--include-local",
+      "Also write profiles for local-CLI providers (zcode, auggie, ...) not detected on this host"
+    )
+    .option("--all", "Alias of --include-local")
     .option("--dry-run", "Print what would be written without touching the filesystem")
     .option(
       "--allow-container-write",

@@ -2,6 +2,8 @@ import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import {
   isClaudeCodeClient,
+  providerUsesAutomaticPrefixCaching,
+  providerHonorsOpenAIFormatCacheControl,
   providerSupportsCaching,
   isDeterministicStrategy,
   shouldPreserveCacheControl,
@@ -45,6 +47,46 @@ describe("Cache Control Policy", () => {
       assert.equal(providerSupportsCaching("openai"), true);
       assert.equal(providerSupportsCaching("codex"), true);
       assert.equal(providerSupportsCaching("azure"), true);
+      assert.equal(
+        providerSupportsCaching("antigravity", "gemini", null, "gemini-3.7-flash"),
+        true
+      );
+      assert.equal(providerSupportsCaching("agy", "gemini", null, "gemini-3.7-flash"), true);
+      assert.equal(
+        providerSupportsCaching(
+          "antigravity",
+          "gemini",
+          { supportsPromptCaching: true },
+          "claude-opus-4-6"
+        ),
+        false
+      );
+      assert.equal(
+        providerSupportsCaching(
+          "antigravity",
+          "gemini",
+          null,
+          "antigravity/gemini-3.7-flash-tiered"
+        ),
+        true
+      );
+      assert.equal(
+        providerSupportsCaching(
+          "antigravity",
+          "gemini",
+          null,
+          "antigravity/antigravity/gemini-3.8-flash-tiered"
+        ),
+        true
+      );
+      assert.equal(
+        providerSupportsCaching("antigravity", "claude", null, "claude-opus-4-6"),
+        false
+      );
+      assert.equal(
+        providerSupportsCaching("antigravity", "openai", null, "gpt-oss-120b-medium"),
+        false
+      );
       // Vertex is mixed-format: only Claude partner models use cache_control.
       assert.equal(providerSupportsCaching("vertex", "claude"), true);
       assert.equal(providerSupportsCaching("vertex-partner", "claude"), true);
@@ -606,6 +648,18 @@ describe("Cache Control Policy", () => {
       assert.equal(result.byStrategy.priority.inputTokens, 4500);
       assert.equal(result.byStrategy.priority.cachedTokens, 1800);
       assert.equal(result.byStrategy.priority.cacheCreationTokens, 900);
+    });
+  });
+
+  describe("mistral automatic prefix caching", () => {
+    test("counts as a caching provider with automatic prefix caching", () => {
+      assert.equal(providerSupportsCaching("mistral", "openai"), true);
+      assert.equal(providerSupportsCaching("mistral", "openai-responses"), true);
+      assert.equal(providerUsesAutomaticPrefixCaching("mistral"), true);
+    });
+
+    test("never forwards explicit cache_control markers to Mistral", () => {
+      assert.equal(providerHonorsOpenAIFormatCacheControl("mistral"), false);
     });
   });
 });

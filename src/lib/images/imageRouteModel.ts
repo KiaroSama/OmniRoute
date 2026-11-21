@@ -21,6 +21,10 @@ import { getComboByName, getCombos } from "@/lib/db/combos";
 import { getCachedProviderNodes } from "@/lib/db/readCache";
 import { assertMicrosoftDesignerWebProviderAvailable } from "@/shared/constants/designerWebRetirement";
 import { assertCommonChatGptWebModelAvailable } from "@/shared/constants/chatgptWebRetirement";
+import {
+  fetchUntrustedRemoteImage,
+  type RemoteImageFetchOptions,
+} from "@/shared/network/remoteImageFetch";
 
 /**
  * Rewrite a `prefix/model` custom image model to its internal `<nodeId>/<model>` form.
@@ -116,7 +120,12 @@ interface ParsedImageEditInput {
 }
 
 export const MAX_CODEX_IMAGE_EDIT_BYTES = 20 * 1024 * 1024;
-export const MAX_CODEX_IMAGE_EDIT_REFERENCES = 8;
+// A bounded input guard, NOT the backend's absolute maximum. On 2026-11-10,
+// the hosted Codex Responses image_generation edit returned real PNGs with
+// 9, 17, 24, 32, 64 and 128 ordered PNG references in isolated OAuth smokes.
+export const MAX_CODEX_IMAGE_EDIT_REFERENCES = 128;
+// Dedicated GPT Image edits use the separate Images API, documented at 16 inputs.
+export const MAX_CODEX_GPT_IMAGE_EDIT_REFERENCES = 16;
 export const MAX_CODEX_IMAGE_EDIT_TOTAL_BYTES = 20 * 1024 * 1024;
 
 const CODEX_IMAGE_MIME_MAGIC: Readonly<Record<string, (bytes: Buffer) => boolean>> = {
@@ -199,11 +208,157 @@ export function parseDataUrl(value: unknown): { bytes: Buffer; mime: string } | 
   }
 }
 
+const REMOTE_IMAGE_EDIT_MIME_MAGIC: Readonly<Record<string, (bytes: Buffer) => boolean>> = {
+  ...CODEX_IMAGE_MIME_MAGIC,
+  "image/gif": (bytes) => bytes.length >= 6 && bytes.subarray(0, 4).toString("ascii") === "GIF8",
+};
+
+function isRemoteImageUrl(value: unknown): value is string {
+  return typeof value === "string" && /^https?:\/\//i.test(value.trim());
+}
+
+/** Test seams and cancellation forwarded to the SSRF-hardened fetcher. */
+export type RemoteImageEditFetchOptions = Pick<
+  RemoteImageFetchOptions,
+  "fetchImpl" | "lookup" | "signal" | "timeoutMs"
+> & { maxReferences?: number };
+
+/**
+ * Download one caller-supplied http(s) reference as a data URL, or null when it cannot be
+ * used. The MIME type comes from the magic bytes, never from the remote `content-type`.
+ */
+async function fetchRemoteImageEditReference(
+  url: string,
+  options: RemoteImageEditFetchOptions,
+  maxBytes = MAX_CODEX_IMAGE_EDIT_BYTES
+): Promise<{ dataUrl: string; bytes: number } | null> {
+  try {
+    const { buffer } = await fetchUntrustedRemoteImage(url.trim(), {
+      ...options,
+      maxBytes,
+    });
+    const mime = Object.entries(REMOTE_IMAGE_EDIT_MIME_MAGIC).find(([, matches]) =>
+      matches(buffer)
+    )?.[0];
+    return mime
+      ? { dataUrl: "data:" + mime + ";base64," + buffer.toString("base64"), bytes: buffer.length }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Extract image candidates without changing the JSON edit input's original shape. */
+function inlineImageEditValues(
+  body: Record<string, unknown>,
+  imageList: unknown[] | null,
+  imagesList: unknown[] | null
+): unknown[] {
+  const direct = imageList ?? (body.image !== undefined ? [body.image] : []);
+  const nested = (imagesList ?? []).map((entry) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) return entry;
+    const object = entry as Record<string, unknown>;
+    return object.image_url ?? object.url ?? object.b64_json;
+  });
+  return [...direct, ...nested];
+}
+
+function remainingInlineImageEditBytes(values: readonly unknown[]): number {
+  let remaining = MAX_CODEX_IMAGE_EDIT_TOTAL_BYTES;
+  for (const value of values) {
+    const inline = parseDataUrl(value);
+    if (inline) remaining -= inline.bytes.length;
+  }
+  return remaining;
+}
+
+/** The captured budget is shared across sequential fetches of both input arrays. */
+function createRemoteImageEditResolver(
+  options: RemoteImageEditFetchOptions,
+  initialRemainingBytes: number
+): (value: unknown) => Promise<unknown> {
+  let remainingBytes = initialRemainingBytes;
+  return async (value) => {
+    if (!isRemoteImageUrl(value) || remainingBytes <= 0) return value;
+    const fetched = await fetchRemoteImageEditReference(
+      value,
+      options,
+      Math.min(MAX_CODEX_IMAGE_EDIT_BYTES, remainingBytes)
+    );
+    if (!fetched) return value;
+    remainingBytes -= fetched.bytes;
+    return fetched.dataUrl;
+  };
+}
+
+async function resolveRemoteImageEditEntry(
+  entry: unknown,
+  resolve: (value: unknown) => Promise<unknown>
+): Promise<unknown> {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) return resolve(entry);
+  const e = entry as Record<string, unknown>;
+  const key = e.image_url != null ? "image_url" : e.url != null ? "url" : null;
+  return key ? { ...e, [key]: await resolve(e[key]) } : entry;
+}
+
+async function resolveImageEditValuesInOrder(
+  values: readonly unknown[],
+  resolve: (value: unknown) => Promise<unknown>
+): Promise<unknown[]> {
+  const next: unknown[] = [];
+  for (const value of values) next.push(await resolve(value));
+  return next;
+}
+
+/**
+ * Replace public http(s) references in a JSON edit body (`image: "https://..."`,
+ * `image: ["https://..."]`, `images: [{ image_url | url: "https://..." }]`,
+ * `images: ["https://..."]`) with data URLs so `extractImageEditInputFromJson` can parse
+ * them. Fetches go through `fetchUntrustedRemoteImage` (public-only guard, pinned DNS,
+ * checked redirects, bounded body). References that cannot be fetched are left in place,
+ * so the route still reports them as invalid instead of silently dropping them.
+ */
+export async function resolveRemoteImageEditReferences(
+  body: Record<string, unknown>,
+  options: RemoteImageEditFetchOptions = {}
+): Promise<Record<string, unknown>> {
+  const imageList = Array.isArray(body.image) ? body.image : null;
+  const imagesList = Array.isArray(body.images) ? body.images : null;
+  const referenceCount =
+    (imageList?.length ?? (body.image !== undefined ? 1 : 0)) + (imagesList?.length ?? 0);
+  // Default to the dedicated GPT Image limit. The reader opts in to the
+  // larger bound only for a registered hosted Codex model.
+  const maxReferences = Math.min(
+    options.maxReferences ?? MAX_CODEX_GPT_IMAGE_EDIT_REFERENCES,
+    MAX_CODEX_IMAGE_EDIT_REFERENCES
+  );
+  if (referenceCount > maxReferences) return body;
+
+  // Count existing inline bytes before any network I/O, then fetch serially
+  // under a single 20 MiB aggregate budget.
+  const remainingBytes = remainingInlineImageEditBytes(
+    inlineImageEditValues(body, imageList, imagesList)
+  );
+  if (remainingBytes < 0) return body;
+  const resolve = createRemoteImageEditResolver(options, remainingBytes);
+
+  const next: Record<string, unknown> = { ...body };
+  if (imageList) next.image = await resolveImageEditValuesInOrder(imageList, resolve);
+  else if (body.image !== undefined) next.image = await resolve(body.image);
+  if (imagesList)
+    next.images = await resolveImageEditValuesInOrder(imagesList, (entry) =>
+      resolveRemoteImageEditEntry(entry, resolve)
+    );
+  return next;
+}
+
 /**
  * Extract an OpenAI-compatible image-edit payload from a JSON body. Some clients send
  * edit input as JSON with data-URL images instead of multipart/form-data; accept the
- * common shapes (`image: "data:..."`, `images: [{ image_url: "data:..." }]` or
- * `images: ["data:..."]`) and surface the same fields the multipart reader produces.
+ * common shapes (`image: "data:..."`, `image: ["data:..."]`,
+ * `images: [{ image_url: "data:..." }]` or `images: ["data:..."]`) and surface the same
+ * fields the multipart reader produces. Remote http(s) references must be resolved first
+ * with `resolveRemoteImageEditReferences`.
  */
 export function extractImageEditInputFromJson(body: unknown): ParsedImageEditInput {
   const obj = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
@@ -215,7 +370,9 @@ export function extractImageEditInputFromJson(body: unknown): ParsedImageEditInp
   const responseFormat = str(obj.response_format);
 
   const candidates: unknown[] = [];
-  if (obj.image !== undefined) candidates.push(obj.image);
+  // `image` may be one reference or an array of references; count each one separately.
+  if (Array.isArray(obj.image)) candidates.push(...obj.image);
+  else if (obj.image !== undefined) candidates.push(obj.image);
   const images = obj.images;
   if (Array.isArray(images)) {
     for (const entry of images) {

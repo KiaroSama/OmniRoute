@@ -57,29 +57,19 @@ OpenRouter ryšiams išplėstiniuose nustatymuose galima išsaugoti kiekvienam r
 
 ---
 
-## 🎨 Deriniai
+## 🎨 Combos
 
-Kurkite modelių maršruto parinkimo derinius naudodami 19 viešų strategijų: priority, weighted, round-robin, context-relay, fill-first, p2c (dviejų pasirinkimų principas), random, least-used, cost-optimized, reset-aware, reset-window, headroom, strict-random, auto, lkgp (paskutinis žinomas geras teikėjas), context-optimized, cache-optimized, **fusion** (lygiagrečiai išsiunčia užklausą modelių grupei, tada pasitelkia vertintoją vienam atsakymui susintetinti) ir **pipeline**. Kiekvienas derinys sujungia kelis modelius su automatiniu atsarginiu perjungimu, taip pat turi greituosius šablonus ir parengties patikras.
+Kurkite modelio maršruto parinkimo derinius su 22 viešosiomis strategijomis: prioritetas, svertinis, apvalus, konteksto relė, užpildymas pirmiausia, p2c (dviejų pasirinkimų galia), atsitiktinis, mažiausiai naudojamas, optimizuotas sąnaudoms, iš naujo nustatomas, iš naujo nustatytas langas, galiojimo laikas pirmiausia, aukštis, pagal kvotą, griežtai žinomas, optimizuotas pagal kontekstą, optimizuotas talpykloje,** susiliejimas** (lygiagrečiai perkelkite į modelių grupę, tada surinkite vieną atsakymą per teisėją),** dujotiekis** , ir** jev** (pasirenkamas TypeSafe Jev priėmimas virš jūsų reitinguojamo sąrašo). Kiekvienas derinys sujungia kelis modelius su automatiniu atsarginiu režimu ir apima greitus šablonus bei parengties patikras.
 
-Naujausi derinių patobulinimai:
+Naujausi kombinuoti patobulinimai:
 
-- **Struktūrizuota derinių kūrimo priemonė** — kiekvieną veiksmą kurkite pasirinkdami teikėją, modelį ir konkrečią paskyrą / ryšį
-- **Pakartotinio teikėjų naudojimo palaikymas** — tame pačiame derinyje tą patį teikėją naudokite kelis kartus, jei `(provider, model, connection)` trejetas yra unikalus
-- **Derinio paskirties būklė** — analizės ir būklės rodiniuose dabar atskiriamos konkrečios derinio paskirtys / veiksmai, užuot viską sujungus į modelių eilutes
-- **Sudėtinė pakopų tvarka** — `defaultTier -> fallbackTier` dabar turi įtakos aukščiausio lygio derinio veiksmų vykdymo ir atsarginio perjungimo tvarkai vykdymo metu
-- **Sistemos raginimų šablonai** — derinio `system_message` serverio pusėje palaiko
-  `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` ir `{{FINGERPRINT}}`
-  vietaženklius, kurie prieš pat išsiunčiant išskleidžiami pagal faktiškai parinktą paskirtį.
-  Leidžiami tik į leidžiamųjų sąrašą įtraukti vietaženkliai, jie nėra rekursyvūs; nežinomi vietaženkliai paliekami nepakeisti; tuščios reikšmės
-  išskleidžiamos į tuščią tekstą; kliento sistemos raginimai niekada neperrašomi. `{{FINGERPRINT}}`
-  nustatomas tik kontroliniais identifikatoriais pagrįstiems nemokamiems teikėjams, turintiems prisegtą arba
-  automatiškai keičiamą kontrolinį identifikatorių — kitais atvejais jis išskleidžiamas į tuščią tekstą (pvz.,
-  ryšiams su vienu kontroliniu identifikatoriumi, ne fp teikėjams). Išskleidimas taikomas
-  standartiniam išsiuntimo ciklui, round-robin ir prisegtiems konteksto talpyklos seansams;
-  fusion, chaos, pipeline ir įdėtojo vykdymo strategijos vietaženklių
-  kol kas neišskleidžia.
+- **Struktūrinis kombinuotas statytojas** — sukurkite kiekvieną veiksmą pasirinkdami tiekėją, modelį ir tikslų account/connection
+- **Pakartotinis teikėjo palaikymas** — pakartotinai naudoti tą patį teikėją daug kartų vienoje kombinacijoje, kol `(provider, model, connection)` eilutė yra unikali
+- **Kombinuotas tikslas sveikata** — analytics ir sveikatos paviršiai dabar išskiria individualų kombinuotą targets/steps o ne viską sutraukia į modelio eilutes
+- **Sudėtinis pakopų užsakymas** — `defaultTier -> fallbackTier` dabar turi įtakos vykdymo laiko execution/fallback tvarkai aukščiausio lygio kombinuotiems žingsniams
+- **Sistemos raginimo šablonai** — combo `system_message` palaiko serverio `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` ir `{{FINGERPRINT}}` vietos rezervavimo ženklus, išplėstus iš faktiškai nukreipto tikslo prieš pat išsiuntimą. Leidžiamas sąrašas ir nerekursyvus; nežinomi vietos žymekliai lieka tiesioginiai; tuščios reikšmės išplečiamos į tuščias; kliento sistemos raginimai niekada neperrašomi. `{{FINGERPRINT}}` išsprendžia tik pirštų atspaudais pagrįstus nemokamus teikėjus, turinčius prisegtą arba automatiškai pasuktą piršto atspaudą. — jis išplečiamas ir tuščias kitur (pvz., vieno piršto atspaudo ryšiai, ne fp teikėjai). Išplėtimas apima standartinę siuntimo ciklo, apvalaus veikimo ir prisegtos konteksto talpyklos seansus; sintezė, chaosas, vamzdynas ir įdėtos vykdymo strategijos dar neišplečia vietos rezervavimo ženklų.
 
-![Derinių valdymo skydas](../screenshots/02-combos.png)
+![Combos Dashboard](../screenshots/02-combos.png)
 
 ---
 
@@ -200,23 +190,23 @@ Pagal numatytuosius nustatymus OAuth paskyrų el. pašto adresai yra maskuojami 
 
 ---
 
-## 👁️ Modelių matomumo perjungiklis _(v3.5.6+)_
+## 👁️ modelio matomumo perjungiklis _(v3.5.6 +)_
 
 Teikėjo puslapio modelių sąraše dabar yra:
 
-- **Paieškos ir filtravimo realiuoju laiku juosta** — Greitai raskite konkrečius modelius
-- **Kiekvieno modelio matomumo perjungiklis** (👁 piktograma) — Paslėpti modeliai rodomi papilkinti ir neįtraukiami į `/v1/models` katalogą
-- **Aktyvių modelių skaičiaus ženklelis** (`N/M aktyvūs`) — Leidžia iš karto matyti, kiek modelių įjungta, palyginti su bendru jų skaičiumi
+- **Realaus laiko search/filter baras** — Greitai raskite konkrečius modelius
+- **Matomumo perjungimas pagal modelį** (👁 piktograma) — Paslėpti modeliai yra pilki ir neįtraukti į `/v1/models` katalogą
+- **Aktyvaus skaičiaus ženklelis** (`N/M active`) — Iš pirmo žvilgsnio parodo, kiek modelių įgalinta, palyginti su iš viso
 
 ---
 
-## 🔧 OAuth aplinkos taisymas _(v3.6.1+)_
+## 🔧 OAuth Env remontas _(v3.6.1 +)_
 
-Vieno spustelėjimo veiksmas „Taisyti aplinką“, skirtas OAuth teikėjams, atkuriantis trūkstamus aplinkos kintamuosius ir pataisantis sugadintą autentifikavimo būseną. Pasiekiamas per `Valdymo skydas → Teikėjai → [OAuth teikėjas] → Taisyti aplinką`. Automatiškai aptinka ir pataiso:
+Vieno spustelėjimo veiksmas „Pataisyti env“, skirtas OAuth teikėjams, atkuriantis trūkstamus aplinkos kintamuosius ir pataisantis sugadintą autentifikavimo būseną. Galima pasiekti iš `Dashboard → Providers → [OAuth Provider] → Repair env`. Automatiškai aptinka ir taiso:
 
-- Trūkstamus OAuth kliento prisijungimo duomenis
-- Sugadintus aplinkos failo įrašus
-- Atsarginės kopijos kelio išvalymą
+- Trūksta OAuth kliento kredencialų
+- Sugadinti env failo įrašai
+- Atsarginio kelio dezinfekavimas
 
 ---
 
@@ -298,13 +288,13 @@ Pagrindinės veikimo ypatybės:
 
 ## 🔑 Sinchronizavimo prieigos raktai ir konfigūracijos paketas _(v3.6.6+)_
 
-Prieiga iš kelių įrenginių ir išoriniams operatoriams dabar galima naudojant **ribotos aprėpties sinchronizavimo prieigos raktus**:
+Prieiga iš kelių įrenginių ir išoriniams operatoriams dabar galima naudojant **apribotos apimties sinchronizavimo prieigos raktus**:
 
-- **`POST /api/sync/tokens`** — Išduoda naują sinchronizavimo prieigos raktą (ribotos aprėpties, su pasirenkamu galiojimo laiku)
+- **`POST /api/sync/tokens`** — Išduoda naują sinchronizavimo prieigos raktą (apribotos apimties, su pasirenkamu galiojimo terminu)
 - **`DELETE /api/sync/tokens/:id`** — Atšaukia prieigos raktą
-- **`GET /api/sync/bundle`** — Atsisiunčia versijuotą visų neskelbtinų nuostatų JSON momentinę kopiją su `ETag` raktu (slaptažodžiai paslėpti)
+- **`GET /api/sync/bundle`** — Atsiunčia versijuotą, pagal ETag identifikuojamą konfigūracijos JSON momentinę kopiją (autentifikuojama tik sinchronizavimo prieigos raktu). Autentifikavimo nustatymai, pvz., valdymo skydelio slaptažodis, pašalinami, tačiau teikėjų prisijungimo duomenys ir API raktai įtraukiami, todėl failą laikykite slaptu
 
-Konfigūracijos paketą sukuria `src/lib/sync/bundle.ts`. Klientai lygina `ETag` atsako antraštę, kad aptiktų pakeitimus iš naujo neatsisiųsdami viso turinio.
+Konfigūracijos paketą sukuria `src/lib/sync/bundle.ts`. Klientai lygina `ETag` atsako antraštę, kad aptiktų pakeitimus iš naujo neatsisiųsdami viso turinio. Naudojant CLI, `omniroute sync bundle <outPath> --token <syncToken>` (arba `OMNIROUTE_SYNC_TOKEN`) išsaugo jį faile, kurį gali pasiekti tik savininkas.
 
 ---
 
@@ -316,14 +306,14 @@ v3.6.6 taip pat pristatytas **hibridinis prieigos raktų skaičiavimas**: kai su
 
 ---
 
-## 🛡️ Saugios siunčiamosios užklausos ir SSRF apsauga _(v3.6.6+)_
+## 🛡️ Saugus išorinis duomenų gavimas ir SSRF apsauga _(v3.6.6+)_
 
-Visos teikėjų tikrinimo ir modelių aptikimo užklausos dabar vykdomos per dviejų sluoksnių siunčiamųjų užklausų apsaugą:
+Visos teikėjų tikrinimo ir modelių aptikimo užklausos dabar vykdomos per dviejų sluoksnių išorinių užklausų apsaugą:
 
-1. **URL apsauga** (`src/shared/network/outboundUrlGuard.ts`) — Blokuoja privačius, atgalinio ryšio ir vietinio ryšio IP diapazonus prieš atveriant lizdą.
-2. **Saugios užklausos apvalkalas** (`src/shared/network/safeOutboundFetch.ts`) — Taiko URL apsaugą, suvienodina skirtuosius laikus ir, įvykus laikinosioms klaidoms, pakartoja užklausas naudodamas eksponentinį delsos didinimą.
+1. **URL apsauga** (`src/shared/network/outboundUrlGuard.ts`) — Pirmiausia patikrina tikslinio objekto pagrindinio kompiuterio vardą arba IP literalą tokį, koks jis nurodytas; tik viešosios prieigos režimu saugaus duomenų gavimo apgaubas taip pat nustato vardo IP adresą ir atmeta privačius adresus. Pagal numatytuosius nustatymus jis blokuoja debesijos metaduomenų galinius taškus — visą 169.254.0.0/16 diapazoną ir žinomus metaduomenų pagrindinių kompiuterių vardus; `OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS=false` taip pat blokuoja privačius ir grįžtamojo ryšio pagrindinius kompiuterius; `OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS=true` (arba senesnis `OUTBOUND_SSRF_GUARD_ENABLED=false`) išjungia patikras. Iš vėliavėlės valdymo skydelio perjungiklio išsaugota reikšmė turi pirmenybę prieš jos kintamąjį, o integruotieji vietiniai teikėjai rakto tikrinimo metu apsaugą praleidžia. Žr. `docs/reference/ENVIRONMENT.md`.
+2. **Saugaus duomenų gavimo apgaubas** (`src/shared/network/safeOutboundFetch.ts`) — Taiko URL apsaugą, normalizuoja skirtąjį laiką ir, įvykus laikinosioms klaidoms, kartoja bandymus taikydamas eksponentinį delsos didinimą.
 
-Apsaugos pažeidimai pateikiami kaip HTTP 422 (`URL_GUARD_BLOCKED`) ir per `providerAudit.ts` įrašomi į atitikties audito žurnalą.
+Apsaugos pažeidimai pateikiami kaip `URL_GUARD_BLOCKED` — HTTP 503 per `getSafeOutboundFetchErrorStatus` (400 modelių aptikimo maršrute) — o tikri SSRF blokavimo atvejai tikrinimo metu įrašomi į audito žurnalą kaip `provider.validation.ssrf_blocked` įvykiai.
 
 ---
 

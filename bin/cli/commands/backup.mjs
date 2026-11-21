@@ -11,7 +11,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "node:crypto";
-import { dirname, join, extname, basename } from "node:path";
+import { dirname, join, extname, basename, resolve } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { resolveDataDir } from "../data-dir.mjs";
@@ -56,6 +56,7 @@ export function registerBackup(program) {
     .option("--cron <expr>", t("backup.auto.cronOpt"), "0 3 * * *")
     .option("--cloud", t("backup.cloudOpt"))
     .option("--encrypt", t("backup.encryptOpt"))
+    .option("--key-file <path>", t("backup.keyFileOpt"))
     .option("--retention <n>", t("backup.retentionOpt"), parseInt)
     .action(async (opts) => {
       const exitCode = await runBackupAutoEnableCommand(opts);
@@ -192,7 +193,16 @@ export async function runBackupCommand(opts = {}) {
   let passphrase = null;
   if (opts.encrypt) {
     if (opts.keyFile) {
-      passphrase = readFileSync(opts.keyFile, "utf8").trim();
+      try {
+        passphrase = readFileSync(opts.keyFile, "utf8").trim();
+      } catch (err) {
+        console.error(`Cannot read key file ${opts.keyFile}: ${err?.code || "read error"}`);
+        return 1;
+      }
+      if (!passphrase) {
+        console.error(t("backup.noPassphrase"));
+        return 1;
+      }
     } else {
       passphrase = await promptPassphrase();
       if (!passphrase) {
@@ -336,11 +346,29 @@ function getSchedulePath() {
 
 export async function runBackupAutoEnableCommand(opts = {}) {
   const schedulePath = getSchedulePath();
+  let keyFile;
+  if (opts.encrypt) {
+    // A scheduled run has no TTY, so an encrypted schedule needs a key file.
+    // Persist the absolute PATH only (never the passphrase): the server cwd
+    // differs from the CLI cwd.
+    if (!opts.keyFile) {
+      console.error("Encrypted automatic backups need --key-file <path> (no TTY on a schedule).");
+      return 1;
+    }
+    keyFile = resolve(String(opts.keyFile));
+    try {
+      if (!readFileSync(keyFile, "utf8").trim()) throw new Error("empty");
+    } catch {
+      console.error(`Key file ${keyFile} is missing, unreadable or empty.`);
+      return 1;
+    }
+  }
   const schedule = {
     enabled: true,
     cron: opts.cron || "0 3 * * *",
     cloud: !!opts.cloud,
     encrypt: !!opts.encrypt,
+    ...(keyFile ? { keyFile } : {}),
     retention: opts.retention || null,
     updatedAt: new Date().toISOString(),
   };
@@ -375,7 +403,10 @@ export async function runBackupAutoStatusCommand() {
   console.log(`  cron:      ${schedule.cron}`);
   console.log(`  cloud:     ${schedule.cloud ? "yes" : "no"}`);
   console.log(`  encrypt:   ${schedule.encrypt ? "yes" : "no"}`);
+  if (schedule.keyFile) console.log(`  key-file:  ${schedule.keyFile}`);
   console.log(`  retention: ${schedule.retention ?? "unlimited"}`);
+  if (schedule.lastRunAt) console.log(`  last run:  ${schedule.lastRunAt}`);
+  if (schedule.lastError) console.log(`  last error: ${schedule.lastError}`);
   return 0;
 }
 
@@ -431,7 +462,21 @@ export async function runRestoreCommand(backupId, opts = {}) {
   }
 
   const infoPath = join(backupPath, "backup-info.json");
-  const ts = existsSync(infoPath) ? JSON.parse(readFileSync(infoPath, "utf8")).timestamp : backupId;
+  const info = existsSync(infoPath) ? JSON.parse(readFileSync(infoPath, "utf8")) : null;
+  const ts = info ? info.timestamp : backupId;
+
+  // restore has no passphrase option, so it cannot read `.enc` payloads. Refuse before
+  // asking to overwrite anything. shortcut: no decryption here; add a --key-file option
+  // that decrypts every file to a temp dir first if restoring encrypted backups is needed.
+  if (
+    info?.encrypted === true ||
+    FILES_TO_BACKUP.some((f) => existsSync(join(backupPath, `${f.name}.enc`)))
+  ) {
+    console.error(
+      `Backup ${backupId} is encrypted. restore cannot decrypt it; nothing was changed.`
+    );
+    return 1;
+  }
 
   if (!opts.yes) {
     const readline = await import("node:readline");
@@ -450,12 +495,18 @@ export async function runRestoreCommand(backupId, opts = {}) {
 
   const dataDir = resolveDataDir();
   try {
+    let restored = 0;
     for (const file of FILES_TO_BACKUP) {
       const sourcePath = join(backupPath, file.name);
       if (existsSync(sourcePath)) {
         copyFileSync(sourcePath, join(dataDir, file.name));
+        restored++;
         console.log(`\x1b[2m  Restored: ${file.name}\x1b[0m`);
       }
+    }
+    if (restored === 0) {
+      console.error(`Backup ${backupId} holds no restorable files; nothing was changed.`);
+      return 1;
     }
     console.log(t("backup.restored"));
     return 0;

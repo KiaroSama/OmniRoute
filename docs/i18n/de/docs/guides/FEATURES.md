@@ -57,29 +57,19 @@ OpenRouter-Verbindungen können in den erweiterten Einstellungen pro Verbindung 
 
 ---
 
-## 🎨 Kombinationen
+## 🎨 Combos
 
-Erstelle Modell-Routing-Kombinationen mit 19 öffentlichen Strategien: priority, weighted, round-robin, context-relay, fill-first, p2c (Auswahl aus zwei Optionen), random, least-used, cost-optimized, reset-aware, reset-window, headroom, strict-random, auto, lkgp (zuletzt funktionierender Anbieter), context-optimized, cache-optimized, **fusion** (Anfragen werden parallel an eine Gruppe von Modellen verteilt und anschließend wird über ein Bewertungsmodell eine einzelne Antwort synthetisiert) und **pipeline**. Jede Kombination verkettet mehrere Modelle mit automatischem Fallback und umfasst Schnellvorlagen sowie Bereitschaftsprüfungen.
+Erstellen Sie Modell-Routing-Kombinationen mit 22 öffentlichen Strategien: Priorität, gewichtet, Round-Robin, Kontext-Relay, Fill-First, P2C (Power-of-Two-Choice), Random, Least-Used, Kostenoptimiert, Reset-Aware, Reset-Window, Expiry-First, Headroom, Quotengewichtet, Strict-Random, Auto, Lkgp (Last-known-good-Provider), Kontextoptimiert, Cache-optimiert,** Fusion** (verteilt sich parallel zu einer Gruppe von Modellen und synthetisiert dann über einen Juror eine Antwort),** Pipeline** , Und** jev** (eine Opt-in- TypeSafe Jev-Zulassung über Ihre Rangliste). Jede Kombination verkettet mehrere Modelle mit automatischem Fallback und umfasst schnelle Vorlagen und Bereitschaftsprüfungen.
 
-Aktuelle Verbesserungen bei Kombinationen:
+Aktuelle Combo-Verbesserungen:
 
-- **Strukturierter Kombinations-Builder** — erstelle jeden Schritt durch Auswahl von Anbieter, Modell und genauem Konto bzw. genauer Verbindung
-- **Unterstützung wiederholter Anbieter** — verwende denselben Anbieter mehrfach innerhalb einer Kombination, solange das Tupel `(provider, model, connection)` eindeutig ist
-- **Zustand von Kombinationszielen** — Analyse- und Zustandsansichten unterscheiden jetzt einzelne Kombinationsziele bzw. -schritte, anstatt alles zu Modellzeichenfolgen zusammenzufassen
-- **Zusammengesetzte Ebenenreihenfolge** — `defaultTier -> fallbackTier` beeinflusst jetzt die Ausführungs- und Fallback-Reihenfolge zur Laufzeit für Kombinationsschritte der obersten Ebene
-- **System-Prompt-Vorlagen** — `system_message` einer Kombination unterstützt serverseitige
-  Platzhalter vom Typ `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` und `{{FINGERPRINT}}`,
-  die unmittelbar vor dem Versand anhand des tatsächlich ausgewählten Ziels ersetzt werden.
-  Sie sind auf einer Zulassungsliste definiert und nicht rekursiv; unbekannte Platzhalter bleiben unverändert; leere Werte
-  werden durch leere Inhalte ersetzt; System-Prompts des Clients werden niemals umgeschrieben. `{{FINGERPRINT}}`
-  wird nur bei Fingerprint-basierten kostenlosen Anbietern mit einem angehefteten oder
-  automatisch rotierenden Fingerprint aufgelöst — andernfalls wird es durch einen leeren Inhalt ersetzt (z. B.
-  bei Verbindungen mit einem einzelnen Fingerprint oder Anbietern ohne Fingerprint-Unterstützung). Die Ersetzung wird in der
-  standardmäßigen Versand-Schleife, bei round-robin und in angehefteten Kontext-Cache-Sitzungen durchgeführt;
-  die Strategien fusion, chaos, pipeline und nested-execute ersetzen
-  Platzhalter derzeit noch nicht.
+- **Strukturierter Combo-Builder** — erstellt jeden Schritt, indem Sie Anbieter, Modell und genaue account/connection auswählen
+- **Wiederholter Provider-Support** — verwendet denselben Anbieter viele Male in einer Kombination, solange das `(provider, model, connection)` Tupel eindeutig ist
+- **Kombinierte Zielgesundheit** — -Analyse- und Gesundheitsoberflächen unterscheiden jetzt einzelne Combo- targets/steps, anstatt alles in Modellzeichenfolgen zusammenzufassen
+- **Reihenfolge der zusammengesetzten Ebenen** — `defaultTier -> fallbackTier` beeinflusst jetzt die Laufzeit execution/fallback Reihenfolge für Kombinationsschritte der obersten Ebene
+- **Vorlagen für Systemaufforderungen** — Combo `system_message` unterstützt serverseitige Platzhalter `{{MODEL_ID}}`, `{{PROVIDER_ID}}`, `{{ACCOUNT}}` und `{{FINGERPRINT}}`, erweitert vom tatsächlich weitergeleiteten Ziel direkt vor dem Versand. Auf der Zulassungsliste und nicht rekursiv; unbekannte Platzhalter bleiben wörtlich; leere Werte werden zu leer erweitert; Client-Systemaufforderungen werden nie neu geschrieben. `{{FINGERPRINT}}` wird nur für fingerabdruckbasierte kostenlose Anbieter mit einem angehefteten oder automatisch gedrehten Fingerabdruck aufgelöst. — wird an anderer Stelle erweitert (z. B. Single-Fingerprint-Verbindungen, Nicht-FP-Anbieter). Die Erweiterung umfasst die Standard-Dispatch-Loop-, Round-Robin- und angehefteten Kontext-Cache-Sitzungen. Fusions-, Chaos-, Pipeline- und Nested-Execute-Strategien erweitern Platzhalter noch nicht.
 
-![Kombinations-Dashboard](../screenshots/02-combos.png)
+![Combos Dashboard](../screenshots/02-combos.png)
 
 ---
 
@@ -200,23 +190,23 @@ E-Mail-Adressen von OAuth-Konten werden standardmäßig maskiert (z. B. `di*****
 
 ---
 
-## 👁️ Umschalter für die Modellsichtbarkeit _(v3.5.6+)_
+## Sichtbarkeit 👁️ Modells umschalten _(v3.5.6 +)_
 
-Die Modellliste auf der Anbieterseite enthält jetzt:
+Die Liste der Anbieterseitenmodelle umfasst jetzt:
 
-- **Such-/Filterleiste in Echtzeit** — Bestimmte Modelle schnell finden
-- **Sichtbarkeitsumschalter pro Modell** (👁-Symbol) — Ausgeblendete Modelle werden ausgegraut und aus dem `/v1/models`-Katalog ausgeschlossen
-- **Badge für die Anzahl aktiver Modelle** (`N/M aktiv`) — Zeigt auf einen Blick, wie viele Modelle im Verhältnis zur Gesamtzahl aktiviert sind
+- **Echtzeit- search/filter Leiste** — Finden Sie schnell bestimmte Modelle
+- **Umschalten der Sichtbarkeit pro Modell** (👁 Symbol) — Ausgeblendete Modelle sind ausgegraut und aus dem `/v1/models` Katalog ausgeschlossen
+- **Abzeichen für aktive Zählung** (`N/M active`) — Zeigt auf einen Blick, wie viele Modelle im Vergleich zur Gesamtzahl aktiviert sind
 
 ---
 
-## 🔧 OAuth-Umgebungsreparatur _(v3.6.1+)_
+## 🔧 OAuth Env Repair _(v3.6.1 +)_
 
-Ein-Klick-Aktion „Umgebung reparieren“ für OAuth-Anbieter, die fehlende Umgebungsvariablen wiederherstellt und einen fehlerhaften Authentifizierungsstatus behebt. Erreichbar über `Dashboard → Anbieter → [OAuth-Anbieter] → Umgebung reparieren`. Erkennt und repariert automatisch:
+Ein-Klick-Aktion „Umgebung reparieren“ für OAuth -Anbieter, die fehlende Umgebungsvariablen wiederherstellt und einen fehlerhaften Authentifizierungsstatus behebt. Zugänglich über `Dashboard → Providers → [OAuth Provider] → Repair env`. Erkennt und repariert automatisch:
 
-- Fehlende OAuth-Client-Anmeldedaten
-- Beschädigte Einträge in der Umgebungsdatei
-- Bereinigung des Sicherungspfads
+- Es fehlen die Anmeldeinformationen OAuth Clients
+- Beschädigte Env-Dateieinträge
+- Bereinigung des Backup-Pfads
 
 ---
 
@@ -296,15 +286,15 @@ Wichtige Verhaltensweisen:
 
 ---
 
-## 🔑 Sync-Tokens & Konfigurationspaket _(v3.6.6+)_
+## 🔑 Sync-Tokens & Konfigurations-Bundle _(v3.6.6+)_
 
-Der Zugriff über mehrere Geräte und durch externe Betreiber ist jetzt über **bereichsgebundene Sync-Tokens** möglich:
+Der Zugriff über mehrere Geräte und durch externe Operatoren ist jetzt über **bereichsgebundene Sync-Tokens** möglich:
 
 - **`POST /api/sync/tokens`** — Stellt ein neues Sync-Token aus (bereichsgebunden, mit optionalem Ablaufdatum)
 - **`DELETE /api/sync/tokens/:id`** — Widerruft ein Token
-- **`GET /api/sync/bundle`** — Lädt einen versionierten, über ETag identifizierten JSON-Snapshot aller nicht vertraulichen Einstellungen herunter (Passwörter werden unkenntlich gemacht)
+- **`GET /api/sync/bundle`** — Lädt einen versionierten, über einen ETag identifizierten JSON-Snapshot der Konfiguration herunter (Authentifizierung ausschließlich mit einem Sync-Token). Authentifizierungseinstellungen wie das Dashboard-Passwort werden entfernt, Anbieter-Zugangsdaten und API-Schlüssel sind jedoch enthalten. Behandeln Sie die Datei daher als vertrauliches Geheimnis
 
-Das Konfigurationspaket wird von `src/lib/sync/bundle.ts` erstellt. Clients vergleichen den `ETag`-Antwortheader, um Änderungen zu erkennen, ohne die vollständigen Nutzdaten erneut herunterzuladen.
+Das Konfigurations-Bundle wird von `src/lib/sync/bundle.ts` erstellt. Clients vergleichen den `ETag`-Antwortheader, um Änderungen zu erkennen, ohne die vollständigen Daten erneut herunterzuladen. Über die CLI speichert `omniroute sync bundle <outPath> --token <syncToken>` (oder `OMNIROUTE_SYNC_TOKEN`) das Bundle in einer Datei, auf die nur der Eigentümer zugreifen kann.
 
 ---
 
@@ -316,14 +306,14 @@ Mit v3.6.6 wird außerdem die **hybride Token-Zählung** eingeführt: Wenn ein C
 
 ---
 
-## 🛡️ Sicherer ausgehender Abruf & SSRF-Schutz _(v3.6.6+)_
+## 🛡️ Sicherer ausgehender Abruf und SSRF-Schutz _(v3.6.6+)_
 
-Alle Aufrufe zur Provider-Validierung und Modellerkennung durchlaufen jetzt einen zweistufigen Schutz für ausgehende Verbindungen:
+Alle Aufrufe zur Anbieterüberprüfung und Modellerkennung werden jetzt durch einen zweistufigen Schutz für ausgehende Verbindungen geleitet:
 
-1. **URL-Schutz** (`src/shared/network/outboundUrlGuard.ts`) — Blockiert private, Loopback- und linklokale IP-Bereiche, bevor der Socket geöffnet wird.
-2. **Wrapper für sichere Abrufe** (`src/shared/network/safeOutboundFetch.ts`) — Wendet den URL-Schutz an, vereinheitlicht Timeouts und wiederholt Anfragen bei vorübergehenden Fehlern mit exponentiellem Backoff.
+1. **URL-Schutz** (`src/shared/network/outboundUrlGuard.ts`) — Prüft zunächst den Hostnamen oder das IP-Literal des Ziels in der angegebenen Form; im Modus „Nur öffentlich“ löst der Wrapper für sichere Abrufe außerdem den Namen auf und lehnt private Adressen ab. Standardmäßig blockiert er Cloud-Metadaten-Endpunkte — den gesamten Bereich 169.254.0.0/16 sowie die bekannten Metadaten-Hostnamen; `OMNIROUTE_ALLOW_LOCAL_PROVIDER_URLS=false` blockiert zusätzlich private Hosts und Loopback-Hosts; `OMNIROUTE_ALLOW_PRIVATE_PROVIDER_URLS=true` (oder die veraltete Einstellung `OUTBOUND_SSRF_GUARD_ENABLED=false`) deaktiviert die Prüfungen. Ein über den Umschalter im Dashboard gespeicherter Wert hat Vorrang vor der entsprechenden Variable, und integrierte lokale Anbieter überspringen den Schutz während der Schlüsselüberprüfung. Siehe `docs/reference/ENVIRONMENT.md`.
+2. **Wrapper für sichere Abrufe** (`src/shared/network/safeOutboundFetch.ts`) — Wendet den URL-Schutz an, vereinheitlicht Zeitüberschreitungen und wiederholt den Vorgang bei vorübergehenden Fehlern mit exponentiellem Backoff.
 
-Schutzverletzungen werden als HTTP 422 (`URL_GUARD_BLOCKED`) ausgegeben und über `providerAudit.ts` in das Compliance-Auditprotokoll geschrieben.
+Schutzverletzungen werden als `URL_GUARD_BLOCKED` ausgegeben — HTTP 503 über `getSafeOutboundFetchErrorStatus` (400 auf der Modellerkennungsroute) — und tatsächliche SSRF-Blockierungen während der Überprüfung werden als `provider.validation.ssrf_blocked`-Ereignisse im Audit-Protokoll erfasst.
 
 ---
 

@@ -4,10 +4,18 @@ import {
 } from "../../shared/constants/publicApiRoutes";
 import type { ClassificationReason, RouteClassification } from "./types";
 
-const CLIENT_API_ALIAS_PREFIXES: ReadonlyArray<{ alias: string; canonical: string }> = [
-  { alias: "/chat/completions", canonical: "/api/v1/chat/completions" },
-  { alias: "/responses", canonical: "/api/v1/responses" },
-  { alias: "/models", canonical: "/api/v1/models" },
+const ALIAS_PREFIXES: ReadonlyArray<{
+  alias: string;
+  canonical: string;
+  reason: ClassificationReason;
+}> = [
+  { alias: "/chat/completions", canonical: "/api/v1/chat/completions", reason: "client_api_alias" },
+  { alias: "/responses", canonical: "/api/v1/responses", reason: "client_api_alias" },
+  { alias: "/models", canonical: "/api/v1/models", reason: "client_api_alias" },
+  // CLIProxyAPI management compatibility: next.config.mjs rewrites /v0/management/* to
+  // /api/v0/management/*. Normalize here so the policy (and the ALWAYS_PROTECTED entry in
+  // routeGuard.ts) sees the same path for both spellings. Still MANAGEMENT, never client API.
+  { alias: "/v0/management", canonical: "/api/v0/management", reason: "cliproxy_management_alias" },
 ];
 
 function normalizePathname(rawPath: string): { path: string; reason?: ClassificationReason } {
@@ -43,12 +51,22 @@ function normalizePathname(rawPath: string): { path: string; reason?: Classifica
     return { path: "/api/v1" + tail, reason: "client_api_alias" };
   }
 
-  for (const { alias, canonical } of CLIENT_API_ALIAS_PREFIXES) {
+  if (lower === "/a2a" || lower.startsWith("/a2a/")) {
+    const tail = path.slice("/a2a".length) || "";
+    return { path: "/a2a" + tail, reason: "client_api_alias" };
+  }
+
+  if (lower === "/connect" || lower.startsWith("/connect/")) {
+    const tail = path.slice("/connect".length) || "";
+    return { path: "/connect" + tail, reason: "public_connect_page" };
+  }
+
+  for (const { alias, canonical, reason } of ALIAS_PREFIXES) {
     if (lower === alias) {
-      return { path: canonical, reason: "client_api_alias" };
+      return { path: canonical, reason };
     }
     if (lower.startsWith(alias + "/")) {
-      return { path: canonical + path.slice(alias.length), reason: "client_api_alias" };
+      return { path: canonical + path.slice(alias.length), reason };
     }
   }
 
@@ -92,6 +110,14 @@ export function classifyRoute(rawPath: string, method: string = "GET"): RouteCla
     };
   }
 
+  if (normalizedPath === "/a2a" || normalizedPath.startsWith("/a2a/")) {
+    return {
+      routeClass: "CLIENT_API",
+      reason: aliasReason ?? "client_api_alias",
+      normalizedPath,
+    };
+  }
+
   if (normalizedPath === "/api/v1" || normalizedPath.startsWith("/api/v1/")) {
     return {
       routeClass: "CLIENT_API",
@@ -121,7 +147,7 @@ export function classifyRoute(rawPath: string, method: string = "GET"): RouteCla
 
     return {
       routeClass: "MANAGEMENT",
-      reason: "management_api",
+      reason: managementApiReason(aliasReason),
       normalizedPath,
     };
   }
@@ -131,6 +157,11 @@ export function classifyRoute(rawPath: string, method: string = "GET"): RouteCla
     reason: "fallback_management",
     normalizedPath,
   };
+}
+
+// The CLIProxyAPI alias keeps its own reason so audit logs show which spelling was used.
+function managementApiReason(aliasReason?: ClassificationReason): ClassificationReason {
+  return aliasReason === "cliproxy_management_alias" ? aliasReason : "management_api";
 }
 
 function matchesReadonlyPublic(path: string, method: string): boolean {

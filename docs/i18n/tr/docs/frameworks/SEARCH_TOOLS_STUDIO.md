@@ -37,34 +37,34 @@ Search Tools Studio, `/dashboard/search-tools` sayfasını temel bir arama denem
 
 ### Arama Sekmesi
 
-Mevcut `SearchForm` + `ResultsPanel` + `RerankPanel` bileşenlerini bir sekmeye dönüştürür:
+Mevcut `SearchForm` + `ResultsPanel` + `RerankPanel` bir sekmeye dönüştürür:
 
-- Sorgu → sonuçlar (başlık, URL, özet, alaka puanı).
+- → sonuçlarını sorgulayın (başlık, URL, snippet, alaka puanı).
 - Yapılandırma bölmesinde sağlayıcı meta verileri (maliyet, kota, durum).
-- Yeniden sıralama bölümü: bir yeniden sıralama modeli seçer, sonuçları yeniden sıralar ve `positionDelta` değerini gösterir.
-- Hiçbir arama sağlayıcısı yapılandırılmadığında eylem çağrısı içeren boş durum.
-- `SearchHistory.tsx` aracılığıyla arama geçmişi.
-- `POST /v1/search` çağrısı yapar (mevcut uç nokta, değişiklik yok).
+- Yeniden sıralama bölümü: bir yeniden sıralama modeli seçin, sonuçları yeniden sıralayın, `positionDelta` gösterin.
+- Hiçbir arama sağlayıcısı yapılandırılmadığında CTA ile boş durum.
+- `SearchHistory.tsx` aracılığıyla geçmişi arayın.
+- `POST /v1/search` çağırır (mevcut uç nokta, değişiklik yok).
 
-### İçerik Çıkarma Sekmesi
+### Kazıma Sekmesi
 
-`POST /v1/web/fetch` aracılığıyla bir URL'den içerik çıkarmak için yeni sekme (plan 05'te oluşturuldu):
+`POST /v1/web/fetch` aracılığıyla bir URL içerik çıkarmak için yeni sekme (plan 05'te oluşturuldu):
 
-- Girdi: URL + tam sayfa anahtarı + biçim seçici (markdown / metin / HTML).
-- Gönder → getir → `ScrapeResult.tsx` bileşeninde görüntüle.
-- `ScrapeResult`, markdown önizlemesini ve ham görünüm anahtarını görüntüler.
-- Sınır: Yanıt gövdesi **256 KB**'tan büyükse kullanıcı arayüzü `(kısaltıldı, ham hâlini görüntüle)` ifadesini gösterir ve ham içeriği bir Monaco modalında açar (D21).
-- Meta veri paneli: sağlayıcı (firecrawl/jina-reader/tavily-search/tinyfish/nimble-search/anysearch-search), gecikme, maliyet, yanıt boyutu, bağlantı sayısı.
+- Giriş: URL + tam sayfa geçişi + biçimi seçici (markdown / metin / HTML).
+- → gönder → render `ScrapeResult.tsx` getir.
+- `ScrapeResult` markdown önizlemesini oluşturur + ham geçiş.
+- Cap: if yanıt gövdesi >** 256 KB** , UI, `(truncated, view raw)` gösterir ve Monako modunda (D21) ham olarak açılır.
+- Meta veri paneli: sağlayıcı (firecrawl/jina-reader/tavily-search/tinyfish/nimble-search/anysearch-search/parallel-search/keenable-search), gecikme, maliyet, yanıt boyutu, bağlantı sayısı.
 - `useScrapeFetch.ts` kancasını kullanır.
 
-### Karşılaştırma Sekmesi
+### Karşılaştır Sekmesi
 
-Aynı sorguyu/URL'yi en fazla **4 sağlayıcıda paralel olarak** çalıştırır (D22):
+Aynı query/URL şu ana kadar çalıştırır:** Paralel olarak 4 sağlayıcı** (D22):
 
 - Sağlayıcı başına yan yana sütunlar.
-- Ölçümler: gecikme, maliyet, sonuç sayısı, yanıt boyutu.
-- Arama için URL örtüşmesi hesaplaması (ilk sonuca kıyasla ortak URL sayısı).
-- Sağlayıcı başına `POST /v1/search` (arama) veya `POST /v1/web/fetch` (içerik çıkarma) çağrısı yapar.
+- Metrikler: gecikme, maliyet, sonuç sayısı, yanıt boyutu.
+- Arama için URL örtüşme hesaplaması (paylaşılan URLs sayısı ve ilk sonuç).
+- Sağlayıcı başına `POST /v1/search` (arama) veya `POST /v1/web/fetch` (kazıma) çağrıları.
 
 ---
 
@@ -99,13 +99,13 @@ Aynı sorguyu/URL'yi en fazla **4 sağlayıcıda paralel olarak** çalıştırı
 
 ## Sağlayıcı Kataloğu
 
-`ProviderCatalog.tsx`, sağlayıcıların tam listesini `GET /api/search/providers` üzerinden sunar
-(F4 kapsamında getirme sağlayıcılarını içerecek şekilde genişletilmiştir):
+`ProviderCatalog.tsx` `GET /api/search/providers` tam sağlayıcı listesini gösterir (F4'te getirme sağlayıcılarını içerecek şekilde genişletilmiştir):
 
-| `kind` | `"search"` (20 sağlayıcı) veya `"fetch"` (firecrawl, jina-reader, tavily-search, tinyfish, nimble-search, anysearch-search) |
+| `kind` | `"search"` (24 sağlayıcı) veya `"fetch"` (firecrawl, jina-okuyucu, tavily-arama, minik balık, çevik arama, herhangi bir arama-arama, paralel arama, keskinleştirilebilir arama) |
 
-Durum, kimlik bilgilerinin mevcut olup olmadığı ve tüm anahtarların o anda bekleme süresinde olup olmadığı
-kontrol edilerek **istek sırasında türetilir**.
+Durum:** istek zamanında türetilmiştir** kimlik bilgilerinin mevcut olup olmadığını ve tüm anahtarların şu anda beklemede olup olmadığını kontrol ederek.
+
+`codex-search` (Codex Web Araması) kendine ait bir anahtarı yoktur: bağlı bir Codex (ChatGPT) hesabını yeniden kullanır, böylece her arama ChatGPT abonelik kotasını harcar ve yaklaşık 10-40 saniye sürer. Bir istek onu adlandırdığında çalışır; otomatik seçim `CODEX_SEARCH_AUTO_FALLBACK_ENABLED` özellik bayrağını gerektirir (varsayılan olarak kapalıdır).
 
 ---
 
@@ -119,16 +119,16 @@ API anahtarı yer tutucusu her zaman `$OMNIROUTE_API_KEY` şeklindedir (D11, Pla
 
 ## Arka Uç Değişiklikleri
 
-Bu özellik için yalnızca bir arka uç değişikliği gerekliydi:
+Bu özellik için yalnızca bir arka uç değişikliğine ihtiyaç vardı:
 
 ### Genişletilmiş `GET /api/search/providers`
 
 `src/app/api/search/providers/route.ts` şu şekilde genişletildi:
 
-- 6 getirme sağlayıcısının tamamı (`firecrawl`, `jina-reader`, `tavily-search`, `tinyfish`, `nimble-search`, `anysearch-search`) diziye eklendi.
-- Her öğeye `kind: "search" | "fetch"` eklendi.
-- Canlı kimlik bilgisi durumundan türetilen `status: "configured" | "missing" | "rate_limited"` eklendi.
-- Geriye dönük uyumluluk korundu — mevcut alanlar (`id`, `name` vb.) değiştirilmedi.
+- Dizideki her getirme sağlayıcısını (`firecrawl`, `jina-reader`, `tavily-search`, `tinyfish`, `nimble-search`, `anysearch-search`, `parallel-search`, `keenable-search`) ekleyin.
+- Her öğeye `kind: "search" | "fetch"` ekleyin.
+- Canlı kimlik bilgisi durumundan türetilen `status: "configured" | "missing" | "rate_limited"` ekleyin.
+- Mevcut alanların ( —, `name`, vb `id`) değişmeden geriye dönük uyumluluğunu koruyun.
 
 ---
 

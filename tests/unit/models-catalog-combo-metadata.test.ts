@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { installOfflineCatalogNetwork } from "../_helpers/offlineCatalogNetwork.ts";
+
+const network = installOfflineCatalogNetwork();
 
 const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-combo-metadata-"));
 process.env.DATA_DIR = TEST_DATA_DIR;
@@ -12,14 +15,112 @@ const core = await import("../../src/lib/db/core.ts");
 const providersDb = await import("../../src/lib/db/providers.ts");
 const combosDb = await import("../../src/lib/db/combos.ts");
 const modelsDb = await import("../../src/lib/db/models.ts");
+const settingsDb = await import("../../src/lib/db/settings.ts");
 const contextOverrides = await import("../../src/lib/db/modelContextOverrides.ts");
 const capabilityOverrides = await import("../../src/lib/db/modelCapabilityOverrides.ts");
 const overrideRoute = await import("../../src/app/api/model-capability-overrides/route.ts");
 const catalog = await import("../../src/app/api/v1/models/catalog.ts");
+const { getComboBuilderOptions } = await import("../../src/lib/combos/builderOptions.ts");
+const { buildGlobalModelList, buildManualComboModelStep } =
+  await import("../../src/lib/combos/builderDraft.ts");
 
-test.after(() => {
-  core.resetDbInstance();
-  fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+network.activate();
+
+test.before(async () => {
+  // These contracts cover saved combos. Built-in auto/* synthesis also refreshes
+  // live provider quota APIs; it has separate coverage and is outside this fixture.
+  await settingsDb.updateSettings({ hideAutoCombos: true });
+});
+
+test.after(async () => {
+  try {
+    await catalog.__flushCatalogBackgroundRefreshForTest();
+    assert.deepEqual(network.unexpectedRequests, [], "catalog contracts must stay offline");
+  } finally {
+    try {
+      core.resetDbInstance();
+      fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+    } finally {
+      await network.restore();
+    }
+  }
+});
+
+test("builder-saved provider-node combos preserve metadata with a public model prefix", async () => {
+  const nodeId = "openai-compatible-chat-builder-metadata";
+  const prefix = "builder-metadata";
+  const modelId = "gpt-5.6-luna";
+  await providersDb.createProviderNode({
+    id: nodeId,
+    type: "openai-compatible",
+    prefix,
+    name: "Builder Metadata",
+    apiType: "chat",
+    baseUrl: "https://example.com/v1",
+  });
+  const connection = await providersDb.createProviderConnection({
+    provider: nodeId,
+    authType: "api_key",
+    name: "builder-metadata-connection",
+    apiKey: "sk-test",
+    isActive: true,
+    testStatus: "active",
+  });
+  await modelsDb.replaceSyncedAvailableModelsForConnection(nodeId, connection.id, [
+    { id: modelId, name: "Builder Model" },
+  ]);
+  capabilityOverrides.setModelCapabilityOverride(
+    `${nodeId}/${modelId}`,
+    "reasoning_efforts",
+    "low,high"
+  );
+
+  const options = await getComboBuilderOptions();
+  const globalStep = buildGlobalModelList(options.providers).find(
+    (entry) => entry.providerId === nodeId && entry.modelId === modelId
+  )?.step;
+  const manualStep = buildManualComboModelStep({
+    value: `${prefix}/${modelId}`,
+    providers: options.providers,
+  });
+  assert.ok(globalStep);
+  assert.ok(manualStep);
+  for (const step of [globalStep, manualStep]) {
+    assert.equal(step.providerId, nodeId, "connection identity stays keyed to the node");
+    assert.equal(step.model, `${prefix}/${modelId}`);
+  }
+
+  for (const [suffix, step] of [
+    ["global", globalStep],
+    ["manual", manualStep],
+    ["legacy", { kind: "model", providerId: nodeId, model: `${nodeId}/${modelId}` }],
+    ["foreign", { kind: "model", providerId: nodeId, model: `other-node/${modelId}` }],
+  ] as const) {
+    await combosDb.createCombo({
+      name: `builder-metadata-${suffix}-combo`,
+      strategy: "priority",
+      models: [step],
+    });
+  }
+  const response = await catalog.getUnifiedModelsResponse(
+    new Request("http://localhost/api/v1/models")
+  );
+  const body = (await response.json()) as { data: Array<Record<string, unknown>> };
+  assert.equal(response.status, 200, JSON.stringify(body));
+  const direct = body.data.find((item) => item.id === `${prefix}/${modelId}`);
+  assert.ok(direct);
+  assert.ok(Number(direct.max_output_tokens) > 0);
+  for (const suffix of ["global", "manual", "legacy"]) {
+    const combo = body.data.find((item) => item.id === `builder-metadata-${suffix}-combo`);
+    assert.ok(combo);
+    for (const field of ["context_length", "max_output_tokens", "input_modalities"]) {
+      assert.deepEqual(combo[field], direct[field], `${suffix}: ${field}`);
+    }
+    assert.deepEqual((combo.capabilities as Record<string, unknown>).effort_tiers, ["low", "high"]);
+  }
+  const foreign = body.data.find((item) => item.id === "builder-metadata-foreign-combo");
+  assert.ok(foreign);
+  assert.equal((foreign.capabilities as Record<string, unknown>).effort_tiers, undefined);
 });
 
 test("single-target combo preserves its direct model metadata", async () => {

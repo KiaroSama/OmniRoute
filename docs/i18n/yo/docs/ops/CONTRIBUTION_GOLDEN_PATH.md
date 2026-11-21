@@ -4,95 +4,86 @@
 
 ---
 
-Lo ìtọ́sọ́nà yìí láti yan ìyípo ìdàgbàsókè tó kéré jù lọ tí ó sì ṣeé gbẹ́kẹ̀ lé fún pull request kan. Kò
-rọ́pò àwọn ìwé faaji àti ààbò pàtó fún ẹ̀ka tí a so mọ́ ní ìsàlẹ̀; ó so irú
-àtúnṣe tó wọ́pọ̀ kọ̀ọ̀kan pọ̀ mọ́ àwọn àdéhùn rẹ̀, àwọn àyẹ̀wò tó dojú kọ ohun pàtó, àti àgbègbè ìdánwò CI.
+Lo ìtọ́sọ́nà yìí láti yan ìlànà ìdàgbàsókè tó kéré jù ṣùgbọ́n tó ṣe é gbẹ́kẹ̀ lé fún pull request kan. Kò
+rọ́pò àwọn ìwé faaji àti ààbò tó jẹ́ ti agbègbè pàtó tí a so mọ́ ní ìsàlẹ̀; ó so irú ìyípadà
+kọ̀ọ̀kan tó wọ́pọ̀ mọ́ àwọn àdéhùn rẹ̀, àwọn àyẹ̀wò àfojúsùn, àti ìṣàkóso CI.
 
-## Ọ̀nà tí gbogbo àtúnṣe ń gbà
+## Ọ̀nà tí gbogbo ìyípadà ń gbà
 
-1. **Yan base kí o tó bẹ̀rẹ̀ sí í ṣàtúnṣe.** Wa branch `release/v*` tó ga jù lọ tí ó ṣì ń ṣiṣẹ́, kí o sì ṣẹ̀dá branch láti
-   tip rẹ̀. Kí branch yẹn ni target, kì í ṣe `main`. Bí release freeze bá ń lọ lọ́wọ́, má ṣe target branch tí a ti di
-   dúró; lo cycle tó ń ṣiṣẹ́ lẹ́yìn náà gẹ́gẹ́ bí a ti ṣàlàyé nínú
-   [Àwòṣe Branching àti Release](BRANCHING_MODEL.md).
-2. **Dárúkọ àwọn àdéhùn náà.** Ṣe ìdánimọ̀ gbogbo catalog, schema, artifact tí a ṣẹ̀dá, API gbangba, tàbí user
-   interface tí àtúnṣe náà kan. Tábìlì tó wà ní ìsàlẹ̀ fún ọ ní àkójọpọ̀ tó kéré jù lọ láti bẹ̀rẹ̀ pẹ̀lú.
-3. **Kọ tàbí ṣàfikún àwọn ìdánwò tó dojú kọ ohun pàtó.** Àwọn àtúnṣe production nínú `src/`, `open-sse/`, `electron/`, tàbí
-   `bin/` nílò ìdánwò aládàáṣiṣẹ́ nínú PR kan náà. Ṣiṣe àwọn fáìlì ìdánwò tó kéré jù lọ tí ó fi
-   ìhùwàsí náà hàn, lẹ́yìn náà kí o ṣe àwọn focused gate tí a tò sílẹ̀.
-4. **Jẹ́ kí CI ṣiṣẹ́ matrix tó gbòòrò.** Gbogbo unit shards, Vitest, coverage ratchet, àti
-   production build ni a máa ṣiṣẹ́ lórí PR náà. Ṣiṣe suite tó gbòòrò ní local kìkì nígbà tí focused failure bá tọ́ka sí
-   ipa tó gbòòrò sí i tàbí nígbà tí àtúnṣe náà bá kan ọ̀pọ̀ subsystem.
-5. **Mú wọn bára mu kí review tó bẹ̀rẹ̀.** Fetch base tó ń ṣiṣẹ́, ṣàyẹ̀wò àwọn commit tuntun rẹ̀ àti diff rẹ sí
-   i, lẹ́yìn náà rebase tàbí merge base náà gẹ́gẹ́ bí contributor workflow. Yanjú generated-file
-   àti ìtakora catalog láti source wọn, tún wọn ṣe, tún focused loop náà ṣiṣẹ́, kí o sì fìdí rẹ̀ múlẹ̀ pé
-   PR náà ṣì target branch release tó ń ṣiṣẹ́.
-6. **Ṣàkọsílẹ̀ ẹ̀rí.** Nínú template PR, ṣe àtòjọ àwọn command tí o ṣiṣẹ́, gbogbo fáìlì ìdánwò tí a fi kún un tàbí tí a yí padà,
-   àwọn migration tàbí feature flag, àti gbogbo validation CI-nìkan tí ó ṣì ń dúró.
+1. **Yan ẹ̀ka ìpìlẹ̀ kí o tó ṣàtúnṣe.** Wá ẹ̀ka `release/v*` tó ga jù tí ó sì ń ṣiṣẹ́, kí o dá ẹ̀ka rẹ
+   láti orí òpin rẹ̀. Dojú kọ ẹ̀ka yẹn, kì í ṣe `main`. Tí ìdádúró ìtújáde bá ń ṣiṣẹ́, má ṣe dojú kọ ẹ̀ka
+   tí a ti dá dúró; lo ìyípo tó ń ṣiṣẹ́ lẹ́yìn náà gẹ́gẹ́ bí a ti ṣàlàyé nínú
+   [Àwòṣe Ẹ̀ka & Ìtújáde](BRANCHING_MODEL.md).
+2. **Dárúkọ àwọn àdéhùn.** Ṣe ìdánimọ̀ gbogbo àkójọ, schema, ohun èlò tí a ṣe jáde, API gbogbogbò, tàbí
+   ojú ìṣàmúlò tí ìyípadà náà kan. Tábìlì tó wà ní ìsàlẹ̀ ń fúnni ní àkójọpọ̀ ìbẹ̀rẹ̀ tó kéré jù.
+3. **Kọ tàbí ṣàfikún àwọn ìdánwò àfojúsùn.** Àwọn ìyípadà production nínú `src/`, `open-sse/`, `electron/`, tàbí
+   `bin/` nílò ìdánwò aládàáṣiṣẹ́ nínú PR kan náà. Ṣiṣe àwọn fáìlì ìdánwò tó kéré jù tí ó fi ìhùwàsí náà
+   hàn, lẹ́yìn náà ṣe àwọn ẹnubodè àfojúsùn tí a tò sílẹ̀.
+4. **Jẹ́ kí CI ṣiṣẹ́ lórí matrix tó gbòòrò.** Àwọn shard unit pípé, Vitest, ratchet coverage, àti
+   ìkọ́lé production ń ṣiṣẹ́ lórí PR náà. Ṣiṣe suite gbòòrò ní agbègbè rẹ nìkan nígbà tí ìkùnà àfojúsùn bá tọ́ka sí
+   ipa tó gbòòrò sí i tàbí nígbà tí ìyípadà náà bá kan ọ̀pọ̀ subsystem.
+5. **Ṣe ìbámu kí àyẹ̀wò tó bẹ̀rẹ̀.** Fetch ìpìlẹ̀ tó ń ṣiṣẹ́, ṣàyẹ̀wò àwọn commit tuntun rẹ̀ àti diff rẹ ní ìfiwéra
+   pẹ̀lú rẹ̀, lẹ́yìn náà rebase tàbí merge ìpìlẹ̀ náà gẹ́gẹ́ bí ìlànà iṣẹ́ olùkópa. Yanjú àwọn ìforígbárí fáìlì
+   tí a ṣe jáde àti àkójọ láti orísun wọn, tún wọn ṣe jáde, tún ìlànà àfojúsùn náà ṣiṣẹ́, kí o sì jẹ́rìí pé
+   PR náà ṣì dojú kọ ẹ̀ka ìtújáde tó ń ṣiṣẹ́.
+6. **Ṣàkọsílẹ̀ ẹ̀rí.** Nínú àdàkọ PR, tò àwọn àṣẹ tí a ṣiṣẹ́, gbogbo fáìlì ìdánwò tí a ṣàfikún tàbí yí padà,
+   àwọn migration tàbí feature flag, àti ìfọwọ́sí CI-nìkan èyíkéyìí tó ṣì ń dúró.
 
-## Àwọn ọ̀nà àwòṣe gẹ́gẹ́ bí irú àtúnṣe
+## Awọn ọna goolu nipasẹ iru iyipada
 
-Àwọn command tó wà ní ìsàlẹ̀ ni àwọn focused check tó kéré jù lọ, kì í ṣe àṣẹ láti foju ìdánwò tó bo
-ìhùwàsí tí o yí padà ní tààràtà.
+Awọn aṣẹ ti o wa ni isalẹ jẹ awọn sọwedowo idojukọ ti o kere ju, kii ṣe igbanilaaye lati fo idanwo kan ti o bo ihuwasi ti o yipada taara.
 
-### Provider
+### Olupese
 
-**Àwọn àdéhùn**
+**Awọn adehun**
 
-- Ìtumọ̀ provider nínú `src/shared/constants/providers/` àti bí a ṣe ṣàkójọpọ̀ rẹ̀ nínú
-  `src/shared/constants/providers.ts`.
-- Àwọn model àti capability nínú `open-sse/config/providerRegistry.ts` tàbí àwọn fáìlì registry rẹ̀ tí a yọ jáde.
-- Yíyan executor/translator, ìṣètò OAuth tàbí API-key, àwọn asset dashboard, àti
-  reference provider tí a ṣẹ̀dá níbi tí ó bá yẹ.
-- Àwọn credential gbangba gbọ́dọ̀ lo `resolvePublicCred()`; àwọn response error gbọ́dọ̀ lo àwọn helper error
-  tí a ti sọ di mímọ́ tí gbogbo ènìyàn ń lò. Wo `docs/security/PUBLIC_CREDS.md` (git; a kò compile rẹ̀ sínú `/docs`) àti
-  [Mímọ́ Error](../security/ERROR_SANITIZATION.md).
+- Itumọ olupese ni `src/shared/constants/providers/` ati akopọ rẹ ni `src/shared/constants/providers.ts`.
+- Awọn awoṣe ati awọn agbara ni `open-sse/config/providerRegistry.ts` tabi awọn faili iforukọsilẹ ti o jade.
+- yiyan Executor/translator, OAuth tabi iṣeto bọtini API ati awọn ohun-ini dasibodu. Maṣe ṣe atunda `docs/reference/PROVIDER_REFERENCE.md` tabi awọn aworan README : itusilẹ itusilẹ tun wọn kọ (`check:pr-derived-paths` kuna ẹya PR ti o gbe wọn).
+- Awọn iwe-ẹri gbogbo eniyan gbọdọ lo `resolvePublicCred()`; awọn idahun aṣiṣe gbọdọ lo awọn oluranlọwọ aṣiṣe mimọ ti a pin. Wo `docs/security/PUBLIC_CREDS.md` (git; ko ṣe akojọpọ sinu `/docs`) ati [Isọdi mimọ Aṣiṣe](../security/ERROR_SANITIZATION.md).
 
-**Focused loop**
+**Loop ti o ni idojukọ**
 
 ```bash
 npm run check:provider-consistency
 npm run check:provider-assets
 node --import tsx/esm --test tests/unit/provider-translate-path-golden.test.ts
 node --import tsx/esm --test tests/unit/<provider-or-executor>.test.ts
-npm run gen:provider-reference   # nígbà tí catalog bá yí padà; commit diff tí a ṣẹ̀dá
+npm run gen:provider-reference   # preview the generated reference; do not commit it
 npm run lint
 ```
 
-Tún dán gbogbo request family tí àtúnṣe náà kan wò: chat, Responses, images, embeddings, audio, tàbí video.
-Ṣàyẹ̀wò catalog tí a ṣẹ̀dá àti àwọn golden diff gẹ́gẹ́ bí àtúnṣe àdéhùn; má ṣe gba wọ́n láìṣàyẹ̀wò.
+Tun ṣe idanwo gbogbo ẹbi ibeere ti o kan: iwiregbe, Awọn idahun, awọn aworan, awọn ifibọ, ohun, tabi fidio. Atunwo ti ipilẹṣẹ katalogi ati goolu diffs bi guide ayipada; maṣe gba wọn ni afọju.
 
-### Routing
+### Ipa ọna
 
-**Àwọn àdéhùn**
+**Awọn adehun**
 
-- Àwọn iye strategy gbangba àti metadata UI nínú `src/shared/constants/routingStrategies.ts`.
-- Dispatch àti ordering lábẹ́ `open-sse/services/combo.ts` àti `open-sse/services/combo/`.
-- Àwọn schema combo, persistence, resilience state, capability model, àti àwọn control API/UI.
-- [Ẹ́ńjìnnì Auto-Combo](../routing/AUTO-COMBO.md) àti ìwé resilience nígbà tí ìhùwàsí bá yí padà.
+- Awọn iye ilana ilana gbogbogbo ati metadata UI ni `src/shared/constants/routingStrategies.ts`.
+- Firanṣẹ ati pipaṣẹ labẹ `open-sse/services/combo.ts` ati `open-sse/services/combo/`.
+- Awọn eto konbo, itẹramọṣẹ, ipo resilience, awọn agbara awoṣe, ati awọn iṣakoso API/UI.
+- [Enjini Konbo Aifọwọyi](../routing/AUTO-COMBO.md) ati iwe resilience nigbati ihuwasi yipada.
 
-**Focused loop**
+**Loop ti o ni idojukọ**
 
 ```bash
 node --import tsx/esm --test tests/unit/combo-<behavior>.test.ts
-npm run test:combo:matrix        # àwọn àtúnṣe strategy tàbí dispatch
-npm run check:known-symbols      # àwọn àtúnṣe registration strategy
+npm run test:combo:matrix        # strategy or dispatch changes
+npm run check:known-symbols      # strategy registration changes
 npm run lint
 ```
 
-Lo deterministic mocked-upstream test ní local. Live combo smoke nílò credential, wọ́n sì jẹ́
-manual, kì í ṣe ohun ìrọ́pò fún CI.
+Lo awọn idanwo ẹgan-ipinnu ipinnu ni agbegbe. Awọn eefin konbo laaye nilo awọn iwe-ẹri ati pe o jẹ afọwọṣe, kii ṣe awọn aropo CI.
 
 ### UI / UX
 
-**Àwọn àdéhùn**
+**Awọn adehun**
 
-- Next.js route/page àti ààlà shared component lábẹ́ `src/app/` àti
-  `src/shared/components/`.
-- Àwọn shape response API, state loading/empty/error, ìhùwàsí keyboard àti screen-reader,
-  responsive layout, theming, àti ìmúgbòòrò locale.
-- Àwọn string source UI Gẹ̀ẹ́sì nínú `src/i18n/messages/en.json`; má ṣe hard-code copy tuntun tí user máa rí.
+- Next.js route/page ati awọn aala ipin paati labẹ `src/app/` ati `src/shared/components/`.
+- awọn apẹrẹ idahun API, awọn ipinlẹ loading/empty/error, keyboard ati ihuwasi oluka iboju, iṣeto idahun, akori, ati imugboroja agbegbe.
+- English UI awọn gbolohun ọrọ orisun ni `src/i18n/messages/en.json`; maṣe koodu lile ẹda tuntun ti nkọju si olumulo.
 
-**Focused loop**
+**Loop ti o ni idojukọ**
 
 ```bash
 node --import tsx --test tests/unit/dashboard/<feature>.test.ts
@@ -101,69 +92,63 @@ npm run check:dashboard-typecheck
 npm run lint
 ```
 
-Ṣiṣe app náà fún àtúnṣe interaction tàbí visual, kí o sì ṣàyẹ̀wò viewport tóóró àti èyí tó fẹ̀. CI máa ṣiṣẹ́
-production build àti àwọn suite tó gbòòrò; ìhùwàsí visual ṣì nílò focused component, Playwright,
-tàbí àyẹ̀wò manual tí a ṣàkọsílẹ̀ tó bá àtúnṣe náà mu.
+Ṣiṣe awọn app fun ibaraenisepo tabi visual ayipada ati ki o ṣayẹwo mejeeji dín ati jakejado viewports. CI nṣiṣẹ iṣelọpọ iṣelọpọ ati awọn suites gbooro; ihuwasi wiwo tun nilo paati idojukọ, Playwright, tabi ṣayẹwo afọwọṣe ti o ni akọsilẹ ti o baamu si iyipada.
 
 ### i18n
 
-**Àwọn àdéhùn**
+**Awọn adehun**
 
-- `src/i18n/messages/en.json` ni source UI; `config/i18n.json` ni source locale.
-- Àwọn catalog CLI wà ní ọ̀tọ̀ lábẹ́ `bin/cli/locales/`.
-- Pa ICU placeholder àti tag mọ́ bí wọ́n ṣe rí gan-an. Má ṣe túmọ̀ orúkọ product/provider/model,
-  orúkọ protocol àti header, command, identifier code/JSON, URL, environment variable, tàbí
-  àwọn ọ̀rọ̀ tí a dáàbò bò bíi `OmniRoute`, `OAuth`, `MCP`, àti `A2A`. Àtòjọ source lọ́wọ́lọ́wọ́ ni
-  `scripts/i18n/glossary/protected-terms.json`.
+- `src/i18n/messages/en.json` ni orisun UI ; `config/i18n.json` ni orisun agbegbe.
+- CLI katalogi n gbe lọtọ labẹ `bin/cli/locales/`.
+- Ṣetọju awọn aaye ICU ati awọn afi ni pato. Ma ṣe tumọ awọn orukọ product/provider/model, Ilana ati awọn orukọ akọsori, awọn aṣẹ, awọn idamọ code/JSON, URLs, awọn oniyipada ayika, tabi awọn ọrọ aabo gẹgẹbi `OmniRoute`, `OAuth`, `MCP`, ati `A2A`. Akojọ orisun lọwọlọwọ jẹ `scripts/i18n/glossary/protected-terms.json`.
 
-**Focused loop**
+Ẹya PR kan ṣatunkọ `src/i18n/messages/en.json` nikan (CLI: `bin/cli/locales/en.json`); awọn agbegbe miiran ti pari ni ẹẹkan fun itusilẹ nipasẹ isọdọtun itusilẹ tabi igbi itumọ kan (`docs/guides/I18N.md` → “ẹya-ara PRs ifọwọkan `en.json` nikan”). `npm run check:pr-derived-paths` kuna ẹya PR ti o ṣatunkọ katalogi agbegbe miiran.
+
+**Loop ti o ni idojukọ**
 
 ```bash
-npm run i18n:sync-ui:dry
 npm run i18n:check-ui-coverage
-npm run i18n:check-value-drift
+npm run check:ui-icu
+node scripts/i18n/check-key-completeness.mjs --mode=pr      # what CI runs on your PR
+node scripts/i18n/check-ui-value-drift.mjs --mode=pr
+node scripts/check/check-cli-i18n.mjs --mode=pr              # when CLI strings change
 npm run i18n:check-glossary
-npm run check:cli-i18n          # nígbà tí àwọn string/catalog CLI bá yí padà
 npm run lint
 ```
 
-Èyí jẹ́ ìtọ́sọ́nà fún system tó wà tẹ́lẹ̀, kì í ṣe ìpè láti mú tooling tàbí key model rẹ̀ gbòòrò sí i.
-Jẹ́ kí patch i18n dojú kọ ohun pàtó nìkan nígbà tí a ṣì ń ṣe àpẹẹrẹ system ìrọ́pò. Má ṣe ṣiṣẹ́ translation
-command tó ń pe external service àyàfi tí iṣẹ́ náà bá béèrè ní pàtó fún translation tí a ṣẹ̀dá, tí
-o sì ti ṣàyẹ̀wò diff tó yọrí sí.
+Laisi `--mode=pr` awọn ẹnu-bode wọnyi nṣiṣẹ ni ipo idasilẹ ni agbegbe ati jabo gbogbo bọtini ọmọ ti a ṣafikun tabi tunkọ ni `en.json`; iyẹn ni iṣẹ isọdọtun itusilẹ, kii ṣe PR rẹ.
+
+Eyi jẹ itọnisọna fun eto ti o wa tẹlẹ, kii ṣe ifiwepe lati faagun awọn irinṣẹ irinṣẹ tabi awoṣe bọtini. Jeki i18n abulẹ abẹ nigba ti rirọpo eto ti wa ni apẹrẹ. Ma ṣe ṣisẹ awọn aṣẹ itumọ ti o pe awọn iṣẹ ita ayafi ti iṣẹ naa ba nilo awọn itumọ ti ipilẹṣẹ ati pe o ti ṣe atunyẹwo iyatọ ti o yọrisi.
 
 ### CLI
 
-**Àwọn àdéhùn**
+**Awọn adehun**
 
-- Àwọn àṣẹ àti àsìá gbogbogbò ní `bin/cli/`, àwọn àṣẹ API tí a ṣe àgbéjáde, àwọn kóòdù ìjáde, stdout/stderr àti
-  àwọn ìrísí àbájáde JSON, ìhùwàsí àtòpọ̀/àyíká, àti àwọn fáìlì tí a ṣàkójọpọ̀ sínú package.
-- Àwọn ọ̀rọ̀ tí CLI ń fi hàn fún olumulo gbọ́dọ̀ lo ìpele i18n CLI, kí àwọn àkójọ èdè `en`/`pt-BR` sì wà ní ìbámu.
-- Pa Node mọ́ gẹ́gẹ́ bí runtime tí a ṣe àtìlẹ́yìn fún, àti àdéhùn binary tí a tẹ̀jáde.
+- Awọn pipaṣẹ ti gbogbo eniyan ati awọn asia ni `bin/cli/`, awọn aṣẹ API ti ipilẹṣẹ, awọn koodu ijade, stdout/stderr ati awọn apẹrẹ igbejade JSON, ihuwasi config/environment, ati awọn faili akopọ.
+- CLI awọn gbolohun ọrọ ti nkọju si olumulo gbọdọ lo ipele CLI i18n (awọn bọtini `t()` ti o wa ni `bin/cli/locales/en.json`). Ẹya kan PR satunkọ `en.json` nikan; `pt-BR` ati awọn agbegbe miiran ti pari ni idasilẹ.
+- Tọju Node bi akoko ṣiṣe atilẹyin ati iwe adehun alakomeji ti a tẹjade.
 
-**Ìyípo àfojúsùn**
+**Loop ti o ni idojukọ**
 
 ```bash
 node --import tsx/esm --test tests/unit/cli/<command>.test.ts
-npm run check:cli-i18n
-npm run build:cli             # àwọn ìyípadà CLI tí a ṣe àgbéjáde/tí a ṣàkójọpọ̀
-npm run check:pack-policy     # àwọn ìyípadà sí ojú-ìfarahàn package
+node scripts/check/check-cli-i18n.mjs --mode=pr
+npm run build:cli             # generated/bundled CLI changes
+npm run check:pack-policy     # package-surface changes
 npm run lint
 ```
 
-Lo àṣẹ gangan náà nínú àkójọ data ìgbà díẹ̀ nígbà tí ìhùwàsí bá sinmi lórí ìtúpalẹ̀, àwọn fáìlì, tàbí ipò
-ìjáde. CI máa ń ṣe àwọn àyẹ̀wò tó gbòòrò sí i lórí artifact package àti ecosystem.
+Lo pipaṣẹ gangan ni ilana data igba diẹ nigbati ihuwasi da lori sisọ, awọn faili, tabi ipo ijade. CI ṣe ohun-ọṣọ package ti o gbooro ati awọn sọwedowo ilolupo.
 
-### Ibùdó data
+### Aaye data
 
-**Àwọn àdéhùn**
+**Awọn adehun**
 
-- Àwọn module domain lábẹ́ `src/lib/db/`; ṣe àgbéwọlé àwọn module pàtó ní tààrà (a ti yọ ìpele àtún-gbéjáde `localDb.ts` àtijọ́ kúrò).
-- Àwọn migration SQL tó ní nọ́mbà, tí a lè tún ṣiṣẹ́ láìfa ìyípadà míì, lábẹ́ `src/lib/db/migrations/`, ààbò transaction, ìhùwàsí
-  ìgbésókè, àwọn index, àti gbogbo caller tí schema náà kan.
-- Àwọn route àti handler kò gbọdọ̀ ṣiṣẹ́ raw SQL ní tààrà.
+- Awọn modulu agbegbe labẹ `src/lib/db/`; gbe wọle kan pato modulu taara (atijọ `localDb.ts` tun-okeere Layer kuro).
+- Nọmba, awọn iṣiwa SQL ti o lagbara labẹ `src/lib/db/migrations/`, ailewu idunadura, ihuwasi igbesoke, awọn atọka, ati gbogbo olupe ti o kan nipasẹ ero naa.
+- Awọn ipa-ọna ati awọn olutọju ko funni ni aise SQL taara.
 
-**Ìyípo àfojúsùn**
+**Loop ti o ni idojukọ**
 
 ```bash
 npm run check:migration-numbering
@@ -173,57 +158,115 @@ node --import tsx/esm --test tests/unit/db/migration-<number>.test.ts
 npm run lint
 ```
 
-Ṣe ìdánwò pẹ̀lú ibùdó data tuntun àti ìgbésókè láti schema tó ṣáájú nígbà tí o bá ń ṣàfikún migration. Àwọn ìdánwò ibùdó data
-gbọ́dọ̀ pa àwọn handle dé, kí wọ́n sì pe `resetDbInstance()` nígbà ìfọ̀mọ́. Ṣiṣe `npm run test:bun:db` nìkan ni
-nígbà tí ipa-ọ̀nà adapter Bun tí kò ní ìdánilójú kíkún bá yí padà; Node ṣì ni orísun àṣẹ tó ga jù.
+Ṣe idanwo mejeeji aaye data tuntun ati igbesoke lati ero iṣaaju nigbati o ṣafikun ijira kan. Awọn idanwo aaye data gbọdọ pa awọn imudani ati pe `resetDbInstance()` lakoko ṣiṣe mimọ. Ṣiṣe `npm run test:bun:db` nikan nigbati ipa ọna ohun ti nmu badọgba Bun ti o dara julọ yipada; Node si maa wa alaṣẹ.
 
-### Kíkó / fífi sílò
+### Kọ / ransogun
 
-**Àwọn àdéhùn**
+**Awọn adehun**
 
-- Àwọn manifest/lockfile ní root àti workspace, `scripts/build/`, àkójọpọ̀ standalone Next.js, àwọn àkóónú package `dist/`,
-  metadata platform Electron, àwọn workflow CI, àti àwọn sentinel fífi sílò.
-- Àwọn ààlà Node tí a ṣe àtìlẹ́yìn fún àti lílo Bun tí a fọwọ́ sí nínú àkójọ ààyè ní `CLAUDE.md` gbọ́dọ̀ wà láìyípadà.
-- Àwọn artifact build kò gbọdọ̀ jẹ́ títọ́pa; àwọn ìlànà dependency, license, workflow, àti package wúlò.
+- Gbongbo ati aaye iṣẹ manifests/lockfile, `scripts/build/`, apejọ adaduro Next.js, awọn akoonu package `dist/`, metadata Syeed Electron, ṣiṣan iṣẹ CI, ati awọn sentinels imuṣiṣẹ.
+- Awọn sakani Node ti o ni atilẹyin ati lilo Bun ti o gba laaye ni `CLAUDE.md` gbọdọ wa ni mimule.
+- Kọ artifacts duro untracked; igbẹkẹle, iwe-aṣẹ, ṣiṣan iṣẹ, ati awọn ilana idii lo.
 
-**Ìyípo àfojúsùn**
+**Loop ti o ni idojukọ**
 
 ```bash
 node --import tsx/esm --test tests/unit/build/<behavior>.test.ts
 npm run check:build-scope
-npm run check:lockfile         # àwọn ìyípadà dependency tàbí lockfile
-npm run check:pack-policy      # àwọn ìyípadà sí ojú-ìfarahàn package tí a tẹ̀jáde
+npm run check:lockfile         # dependency or lockfile changes
+npm run check:pack-policy      # published package surface changes
 npm run lint
 ```
 
-Lo `npm run build` ní agbègbè rẹ nìkan nígbà tí ìyípadà náà bá kan compilation, àkójọpọ̀ standalone, àwọn asset,
-tàbí bundling runtime. Lo `npm run build:release` nìkan fún ìfọwọ́sí release/fífi sílò. Build CI ni
-àmì ìkẹyìn tó kárí gbogbo platform; àwọn ìyípadà Electron tó jẹ́ ti platform pàtó nílò build àfojúsùn tó bá a mu
-tàbí ẹ̀rí smoke.
+Lo `npm run build` ni agbegbe nikan nigbati iyipada ba kan akopo, apejọ adaduro, awọn ohun-ini, tabi iṣakojọpọ akoko asiko. Lo `npm run build:release` nikan fun afọwọsi release/deploy. CI's Kọ ni ik agbelebu-Syeed ifihan agbara; awọn ayipada Electron pato ti iru ẹrọ nilo itumọ idojukọ ibaamu tabi ẹri ẹfin.
 
-## Ìyàtọ̀ láàárín ìyípo agbègbè àti CI
+## Àwọn script olùdàgbàsókè fún ẹ̀rọ tí a ń pín lò
 
-| Ṣíṣe ní agbègbè fún àtúnṣe kọ̀ọ̀kan                                                 | CI ń pèsè àmì ìwífún gbòòrò                                           |
-| --------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| Àwọn ìdánwò ìhùwàsí tààrà àti àwọn ẹnu-ọ̀nà ẹ̀ka tó wà lókè                         | Gbogbo àkójọpọ̀ ìdánwò ẹyọ tí a pín sí apá àti àwọn ìdánwò tẹ̀léra      |
-| `npm run lint`                                                                    | Àwọn àkójọpọ̀ Vitest àti àwọn ìdíwọ̀n ìlọsíwájú fún ìborí/ànímọ́         |
-| Ṣàyẹ̀wò irú tàbí kọ́ ẹ̀dà nígbà tí àdéhùn tí ó kan bá béèrè rẹ̀ nìkan                 | Ìkọ́ ẹ̀dà ìṣelọ́jáde, ààbò, àkọsílẹ̀, ìgbẹ́kẹ̀lé, àti àwọn ẹnu-ọ̀nà ìlànà PR |
-| Ìbáṣepọ̀ àfọwọ́ṣe/àyẹ̀wò lọ́wọ́lọ́wọ́ nígbà tí adaṣiṣẹ kò bá lè fi ìhùwàsí náà hàn nìkan | Ìṣọ̀kan láàárín àwọn iṣẹ́ àti àwọn àyẹ̀wò pẹpẹ tí ìṣàn-iṣẹ́ ti ṣètò       |
+Àwọn olùrànlọ́wọ́ méjì nínú `scripts/dev/` ṣàkójọpọ̀ ìyípo agbègbè lórí devbox kan níbi tí àwọn session mìíràn ti ń ṣiṣẹ́:
 
-Ìyípo àfojúsùn aláwọ̀ ewé jẹ́ ẹ̀rí nípa àdéhùn tí a yí padà, kì í ṣe ẹ̀rí pé àwọn àyẹ̀wò CI tí kò ní í ṣe pẹ̀lú rẹ̀
-yóò kọjá. Ní ìdàkejì, má ṣe jẹ́ kí gbogbo àtúnṣe agbègbè dúró de gbogbo àkójọpọ̀ ìdánwò ibi ìpamọ́.
+```bash
+scripts/dev/typecheck-touched.sh --base release/vX.Y.Z   # àwọn fáìlì láti merge-base(HEAD, base)..HEAD
+scripts/dev/typecheck-touched.sh src/a.ts tests/unit/b.test.ts   # àwọn fáìlì wọ̀nyí gan-an
+scripts/dev/new-worktree.sh fix/1234-slug release/vX.Y.Z  # worktree àdáni, tí ó láìléwu láti ṣiṣẹ́ ní afiwe
+```
+
+- `typecheck-touched.sh` ń ṣe àyẹ̀wò irúfẹ́ àwọn fáìlì `.ts/.tsx` tí a fọwọ́ kàn nìkan nípasẹ̀
+  `tsconfig.touched.tmp.json` fún ìgbà díẹ̀ (`extends ./tsconfig.json`, `types: ["node"]`, `noEmit`,
+  `incremental: false`) lábẹ́ heap 6 GB, nítorí náà ó rọ́pò `tsc -p tsconfig.json` gbogbo iṣẹ́-àkànṣe
+  tí ó máa ń jásí OOM lórí ẹ̀rọ tí ó kún fún iṣẹ́. Ó ń tẹ àwọn àṣìṣe inú àwọn fáìlì tí a fọwọ́ kàn jáde pẹ̀lú ìlà àkótán kan, ó sì ń jáde
+  pẹ̀lú `1` fún àwọn àṣìṣe inú àwọn fáìlì tí a fọwọ́ kàn, `2` nígbà tí àwọn àṣìṣe kan ṣoṣo bá wà nínú àwọn fáìlì tí a import tàbí tí tsc kú
+  láìsí àlàyé àṣìṣe (ka log tí ó dárúkọ lábẹ́ `_artifacts/typecheck-touched/`), àti `0` nígbà tí
+  kò sí àṣìṣe. A máa ń yọ tsconfig fún ìgbà díẹ̀ náà kúrò ní gbogbo ìgbà; má ṣe commit rẹ̀ láé.
+- `new-worktree.sh` ń ṣètò àwọn ìṣiṣẹ́ tí ń ṣẹlẹ̀ lẹ́ẹ̀kan náà ní ọ̀kọ̀ọ̀kan lórí `<git-common-dir>/omniroute-new-worktree.lock`
+  (ó máa ń dúró tó 600 s ní àkọ́kọ́, pẹ̀lú ìfiránṣẹ́ tí ó hàn; akọ́lé script náà ṣàkọsílẹ̀
+  bí a ṣe lè kọjá ìṣètò náà) ó sì ń
+  dá ẹ̀ka tí ó ṣẹ̀dá padà nígbà tí `git worktree add` bá kùnà kí worktree tó wà, nítorí náà àtún-gbìyànjú
+  kò nílò `git branch -D` lọ́wọ́. `node_modules` tí a fi hard-link ṣe àti ẹ̀dà `.husky/_` kò yí padà.
+
+## Ìyípo candidate agbègbè
+
+Àwọn ìdánwò source kò lè fi hàn pé artifact tí a package lè bẹ̀rẹ̀: àwọn àkójọ packaging, àwọn dependency tí a gé kúrò,
+àti àwọn binary abinibi máa ń kùnà lẹ́yìn tí a bá ti fi tarball náà sílẹ̀ tí a sì bẹ̀rẹ̀ rẹ̀. `npm run dev:candidate`
+(`scripts/dev/candidate.mjs`) ni apá agbègbè ti ìṣàn kọ́-lẹ́ẹ̀kan / fọwọ́sí / gbé-lókè láti
+RFC #8084: ó kọ candidate kan, ó fọwọ́sí artifact yẹn gan-an, ó gbé e lókè nípa yíyan orúkọ directory,
+ó sì dá a padà nígbà tí slot tí a gbé lókè bá kùnà àyẹ̀wò ìlera rẹ̀.
+
+```bash
+npm run dev:candidate -- run --dry-run --json  # tẹ ètò náà jáde, má ṣe yí ohunkóhun padà
+npm run dev:candidate -- run                   # kọ́ + fọwọ́sí + gbé-lókè, àtúnpadà aládàáṣiṣẹ́
+npm run dev:candidate -- build                 # npm pack + fi sí inú _artifacts/candidate/<id>/
+npm run dev:candidate -- validate --id <id>    # bẹ̀rẹ̀ lórí port ọ̀fẹ́ kan, /api/health + /v1/models
+npm run dev:candidate -- promote --id <id>     # <id> → current, current → previous
+npm run dev:candidate -- rollback              # pààrọ̀ current àti previous
+npm run dev:candidate -- run --from-tarball <file.tgz>  # tún tarball tí a kọ níbòmíràn lò (CI)
+```
+
+- **Kọ́ lẹ́ẹ̀kan.** `build` ń package tree lọ́wọ́lọ́wọ́ (ó nílò `dist/server.js`, nítorí náà ṣiṣẹ́
+  `npm run build:release` kọ́kọ́) tàbí ó da `--from-tarball` kọ, lẹ́yìn náà ó fi tarball náà sí
+  npm prefix àdáni kan, nítorí pé tarball náà kò ní `node_modules`. Id náà ni sha `HEAD`
+  kúkúrú (`-dirty` nígbà tí tree náà bá ní àwọn àyípadà agbègbè) tàbí `tgz-<sha256>` fún tarball kan. Id mímọ́ kan tí
+  a ti kọ tẹ́lẹ̀ ni a ó tún lò dípò kí a tún un kọ; fi `--force` ránṣẹ́ láti tún un kọ.
+- **Fọwọ́sí package náà, kì í ṣe source náà.** `validate` ń bẹ̀rẹ̀ CLI tí a fi sílẹ̀
+  (`serve --port <free port>`) pẹ̀lú `DATA_DIR=<candidate>/data` tuntun, àwọn secret èké, àti
+  `OMNIROUTE_API_KEY`, `STORAGE_ENCRYPTION_KEY` àti `INITIAL_PASSWORD` ti operator tí a yọ kúrò nínú
+  environment, kí ó lè ṣàyẹ̀wò ìṣètò loopback aláìní kọ́kọ́rọ́ fún fifi-sílẹ̀ tuntun. Ó máa ń dúró de
+  `GET /api/health` láti dá 200 padà, ó béèrè pé kí `GET /v1/models` dá 200 padà, ó dá process group dúró,
+  ó sì ṣàkọsílẹ̀ ìdájọ́ náà sínú `validation.json` papọ̀ pẹ̀lú hash tarball náà.
+- **Gbé artifact kan náà lókè.** `promote` kọ candidate tí kò ní validation tí ó ṣàṣeyọrí fún
+  hash tarball rẹ̀ lọ́wọ́lọ́wọ́. Slot tí ń ṣiṣẹ́ ní àkọ́kọ́ ni `_artifacts/candidate/current`; `--target <dir>`
+  yan directory mìíràn lórí filesystem kan náà, slot rẹ̀ tẹ́lẹ̀ sì ni `<dir>.previous`.
+  Rename kọ̀ọ̀kan jẹ́ atomic, ìkùnà ní àárín ìlànà sì máa ń yí àwọn rename tí ó ti ṣiṣẹ́ padà.
+- **Dá padà.** `run` tún ń fọwọ́sí slot tí a gbé lókè, ó sì ń pààrọ̀ `current` àti `previous` padà nígbà
+  tí àyẹ̀wò yẹn bá kùnà. Candidate tí ó kùnà validation àkọ́kọ́ kì í ṣe gbígbé lókè láé.
+
+A kọ gbogbo nǹkan sí abẹ́ `_artifacts/candidate/` tí git kọ̀ sí; fifi-sílẹ̀ OmniRoute
+tí ó ti wà àti data directory rẹ̀ kì í ṣe fífọwọ́ kàn láé. CLI tí a gbé lókè ni
+`_artifacts/candidate/current/prefix/bin/omniroute`; bẹ̀rẹ̀ rẹ̀ pẹ̀lú `DATA_DIR` tirẹ nígbà tí o bá ń lò
+ó. Àwọn exit code: `0` àṣeyọrí, `1` validation tàbí promotion tó kùnà, `2` àṣìṣe lílò tàbí build tí kò sí.
+
+## Lúùpù agbègbè ní ìfiwéra pẹ̀lú CI
+
+| Ṣiṣe ní agbègbè fún àtúnṣe kọ̀ọ̀kan                                                      | CI ń pèsè àmì àfihàn gbòòrò                                           |
+| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Àwọn ìdánwò ìhùwàsí tààrà àti àwọn ibodè ẹ̀ka tó wà lókè                                | Àkójọpọ̀ ìdánwò ẹyọ ní kíkún tí a pín sí apá àti àwọn ìdánwò tẹ̀lé-tẹ̀lé |
+| `npm run lint`                                                                         | Àwọn àkójọpọ̀ ìdánwò Vitest àti àwọn àmúlò ìdíwọ̀n ìbòmọ́lẹ̀/ànímọ́        |
+| Ṣàyẹ̀wò irú tàbí kọ́ nìkan nígbà tí àdéhùn tí ó kan bá béèrè fún un                      | Kíkó fún iṣelọpọ, ààbò, àkọsílẹ̀, ìgbẹ́kẹ̀lé, àti àwọn ibodè ìlànà PR    |
+| Ìbáṣepọ̀ àfọwọ́ṣe/àyẹ̀wò tààrà nìkan nígbà tí iṣẹ́ aládàáṣiṣẹ́ kò bá lè fi ìhùwàsí náà múlẹ̀ | Ìṣọ̀kan láàárín àwọn iṣẹ́ àti àwọn àyẹ̀wò pèpéle tí ìṣàn-iṣẹ́ ti ṣètò     |
+
+Lúùpù àfojúsùn tí ó jẹ́ aláwọ̀ ewé jẹ́ ẹ̀rí nípa àdéhùn tí a yí padà, kì í ṣe ẹ̀rí pé àwọn àyẹ̀wò CI tí kò ní í ṣe pẹ̀lú rẹ̀
+yóò kọjá. Ní ìdàkejì, má ṣe jẹ́ kí gbogbo àtúnṣe agbègbè dúró de àkójọpọ̀ ìdánwò ilé-ìpamọ́ ní kíkún.
 
 ## Àkójọ àyẹ̀wò ìbámu
 
 Ṣáájú kí o tó béèrè fún àyẹ̀wò:
 
 - Jẹ́rìí pé ìpìlẹ̀ PR ṣì jẹ́ ẹ̀ka `release/v*` tó ga jù lọ tí ó sì ń ṣiṣẹ́.
-- Fa ìpìlẹ̀ yẹn wọlé, kí o sì ṣàyẹ̀wò àwọn commit tí a fi kún un láti ìgbà tí o ti ṣẹ̀dá ẹ̀ka rẹ.
-- Ṣàyẹ̀wò `git diff <active-base>...HEAD` fún àwọn ìyípadà àìròtẹ́lẹ̀ tàbí èyí tí a ṣe ní aládàáṣiṣẹ́.
-- Yanjú ìforígbárí nínú katalogi àti àkọsílẹ̀ tí a ṣe ní aládàáṣiṣẹ́ nípa mímúdójúìwọ̀n orísun àti ṣíṣe àbájáde náà padà.
-- Ṣe gbogbo ìdánwò/ẹnu-ọ̀nà àfojúsùn tí a tò sínú àpèjúwe PR lẹ́ẹ̀kan sí i lẹ́yìn ìbámu.
-- Má ṣe dín agbára àwọn ìmúdájú kù tàbí yọ àwọn ìdánwò tó pọndandan kúrò nítorí láti bá ìpìlẹ̀ tí a ti ṣí kúrò nípò mu.
+- Fa ìpìlẹ̀ yẹn wá, kí o sì ṣàyẹ̀wò àwọn ìfìdímúlẹ̀ tí wọ́n wọlé láti ìgbà tí o ti ṣẹ̀dá ẹ̀ka rẹ.
+- Ṣàyẹ̀wò `git diff <active-base>...HEAD` fún àwọn ìyípadà àìròtẹ́lẹ̀ tàbí tí a ṣẹ̀dá láìfọwọ́ṣe.
+- Yanjú àwọn ìtakora nínú àkójọ àti ìwé tí a ṣẹ̀dá nípa mímúdójúìwọ̀n orísun àti ṣíṣe àtúnṣẹ̀dá àbájáde.
+- Ṣàtúnṣe gbogbo ìdánwò/ibodè àfojúsùn tí a tò sínú àpèjúwe PR lẹ́yìn ìbámu.
+- Má ṣe sọ àwọn ìfìdímúlẹ̀ di aláìlágbára tàbí yọ àwọn ìdánwò tí a nílò kúrò nítorí láti bá ìpìlẹ̀ tí a ti yí padà mu.
 
-Fún àwọn òfin dídì ìṣelọ́jáde àti àtúnṣe ibi-àfojúsùn, lo
-[Àwòṣe Ẹ̀ka & Ìṣelọ́jáde](BRANCHING_MODEL.md). Fún gbogbo àkójọ CI, lo
-[Ìtọ́kasí Àwọn Ẹnu-ọ̀nà Ànímọ́](../architecture/QUALITY_GATES.md).
+Fún àwọn òfin dídì ìtújáde àti yíyí àfojúsùn padà, lo
+[Àwòṣe Ẹ̀ka & Ìtújáde](BRANCHING_MODEL.md). Fún àkójọ CI ní kíkún, lo
+[Ìtọ́kasí Àwọn Ibodè Ànímọ́](../architecture/QUALITY_GATES.md).

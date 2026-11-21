@@ -16,60 +16,60 @@ Maskēšanās funkcijas pastāv, lai OmniRoute varētu darboties kā saderības 
 
 ---
 
-## TLS pirkstu nospiedumu veidošanas slānis
+## TLS digitālnospiedumu slānis
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-Pastāvīgas `wreq-js` sesijas tiek izveidotas atlikti katram konta tvērumam un atrisinātajam starpniekserverim. Procesa mēroga `TlsClient` pūlā ir ne vairāk kā 128 sesijas, kas augšupējiem pakalpojumiem aiz Cloudflare imitē **Chrome 124 operētājsistēmā macOS**. `TlsClient.fetch()` pārtrauc darbību, ja vietējā izpildvide nav pieejama; izsaucējs var nepārprotami atlasīt atkāpšanās variantu ārpus šī ietinēja.
+Pastāvīgas `wreq-js` sesijas tiek izveidotas atlikti katram konta tvērumam un atrisinātajam starpniekserverim. Procesa mēroga `TlsClient` pūlā ir ne vairāk kā 128 sesijas, kas augšupējiem pakalpojumiem aiz Cloudflare atdarina **Chrome 124 operētājsistēmā macOS**. `TlsClient.fetch()` droši pārtrauc darbību, ja vietējā izpildlaika vide nav pieejama; izsaucējs var tieši izvēlēties atkāpšanās risinājumu ārpus šī ietinēja.
 
 - Sesijas profils: `browser: "chrome_124", os: "macos"`
-- Starpniekservera noteikšana (prioritārā secībā): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (arī ar mazajiem burtiem)
-- Noildze: `TLS_CLIENT_TIMEOUT_MS` (manto no `FETCH_TIMEOUT_MS`, noklusējums — 600000)
+- Starpniekservera atrisināšana (prioritātes secībā): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (arī ar mazajiem burtiem)
+- Taimauts: `TLS_CLIENT_TIMEOUT_MS` (manto no `FETCH_TIMEOUT_MS`, noklusējums 600000)
 - `wreq-js` Response ir saderīga ar fetch (`headers`, `text()`, `json()`, `clone()`, `body`).
 - Pirmā baita uzraugs (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): `TlsClient.fetch()`
-  tiek izpildīts, tiklīdz saņemtas augšupējā pakalpojuma galvenes, tādēļ `TLS_CLIENT_TIMEOUT_MS` vien nevar ierobežot
-  pamattekstu, kas nekad neatgriež pirmo baitu. `guardTlsFirstByte()` sacenšas ar pamatteksta pirmo `read()`
-  par izpildi `TLS_FIRST_BYTE_WATCHDOG_MS` laikā (noklusējums `10000`, `0` to atspējo); darbspējīgs pamatteksts
-  netiek ietekmēts, savukārt iestrēdzis pamatteksts atceļ wreq lasītāju un ļauj `proxyFetch` esošajai
-  TLS atkāpšanās loģikai pāriet uz tiešo/starpniekservera dispečeru (atkārtotai atskaņošanai nedrošs pieprasījums, piem.,
-  POST ar pamattekstu, joprojām izmet kļūdu, nevis tiek nemanāmi atkārtots).
+  tiek atrisināts, tiklīdz pienāk augšupējā pakalpojuma galvenes, tāpēc `TLS_CLIENT_TIMEOUT_MS` viens pats nevar ierobežot
+  ķermeni, kas nekad neatgriež pirmo baitu. `guardTlsFirstByte()` sacensina ķermeņa pirmo `read()`
+  ar `TLS_FIRST_BYTE_WATCHDOG_MS` (noklusējums `10000`, `0` to atspējo); vesels ķermenis
+  netiek ietekmēts, savukārt iestrēdzis ķermenis atceļ wreq lasītāju un ļauj `proxyFetch` esošajai
+  TLS atkāpšanās loģikai pāriet uz tiešo/starpniekservera dispečeru (pieprasījums, kuru nav droši atkārtoti atskaņot, piemēram,
+  POST ar ķermeni, joprojām izraisa kļūdu, nevis tiek nemanāmi atkārtots).
 
-### Tīmekļa sīkdatņu pakalpojumu sniedzēju transports — wreq-js 3.2.0
+### Tīmekļa sīkdatņu nodrošinātāja transports — wreq-js 3.2.0
 
 `open-sse/services/tlsClientBase.ts` ir kopīgais adapteris pieciem tālāk norādītajiem specializētajiem
-tīmekļa sīkdatņu transportiem. Katrs plānais pakalpojumu sniedzēja ietinējs atlasa pārlūkprogrammas/OS profilu. Adapteris
-izmanto vienoto wreq izpildvides ielādētāju un transporta pūlu no `open-sse/utils/tlsClient.ts`, kas indeksēts pēc
-profila + OS + atrisinātā starpniekservera, savukārt katrs pieprasījums izmanto `cookieMode: "ephemeral"`. Tādējādi konti un
+tīmekļa sīkdatņu transportiem. Katrs vienkāršotais nodrošinātāja ietinējs izvēlas pārlūka/OS profilu. Adapteris
+izmanto vienoto wreq izpildlaika ielādētāju un transporta pūlu failā `open-sse/utils/tlsClient.ts`, kam
+atslēga tiek veidota pēc profila + OS + atrisinātā starpniekservera, savukārt katrs pieprasījums izmanto `cookieMode: "ephemeral"`. Tādēļ konti un
 pieprasījumi koplieto transporta līmeņa savienojumus, bet nekad nekoplieto wreq sesiju vai sīkdatņu krātuvi.
 
-| Pakalpojumu sniedzējs | Profils       | Emulētā OS | Straumes EOF politika                       |
-| --------------------- | ------------- | ---------- | ------------------------------------------- |
-| Claude                | `chrome_146`  | Linux      | iekļaut `[DONE]`                            |
-| Perplexity            | `firefox_148` | macOS      | iekļaut `event: end_of_stream`              |
-| Grok                  | `chrome_146`  | Linux      | neiekļaut `[DONE]`                          |
-| Notion                | `chrome_146`  | Windows    | iekļaut `[DONE]`                            |
-| LMArena               | `chrome_146`  | Windows    | nav kontrollieluma; aizvērt pie vietējā EOF |
+| Nodrošinātājs | Profils       | Emulētā OS | Straumes EOF politika                 |
+| ------------- | ------------- | ---------- | ------------------------------------- |
+| Claude        | `chrome_146`  | Linux      | iekļaut `[DONE]`                      |
+| Perplexity    | `firefox_151` | macOS      | iekļaut `event: end_of_stream`        |
+| Grok          | `chrome_146`  | Linux      | neiekļaut `[DONE]`                    |
+| Notion        | `chrome_146`  | Windows    | iekļaut `[DONE]`                      |
+| LMArena       | `chrome_146`  | Windows    | nav marķiera; aizvērt pie vietējā EOF |
 
 - Straumēšana tieši patērē vietējās atbildes `ReadableStream`; netiek izveidots ne pagaidu fails, ne blakusprocess.
-- Pirms straumes nodošanas tiek pārbaudīti līdz 256 sākotnējiem baitiem. SSE pakalpojumu sniedzēji buferē kļūdas, kas nav SSE;
-  Grok/LMArena kartē Cloudflare pārbaudes uz `403`, bet HTML starplapas — uz `502`.
-- Vietējā pieprasījuma noildzi joprojām aptver absolūts JS stingrais termiņš. Iestrēgšana padara nederīgu
-  un aizver tikai ietekmēto profila/OS/starpniekservera transportu, pirms nākamais pieprasījums to izveido no jauna.
-- Starpniekservera noteikšanas prioritāte ir katra izsaukuma `proxyUrl` → pieprasījuma tvēruma konta/informācijas paneļa konteksts →
-  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (tostarp varianti ar mazajiem burtiem). Atrisināšanas kļūdas pārtrauc
-  darbību, nevis pieļauj tiešā savienojuma noplūdi. LMArena apzināti veic atrisināšanu pret `arena.ai`.
-- `byteResponse` atgriež atbilstoši satura tipam formatētu `data:` URL bez UTF-8 bojājumiem.
+- Pirms straumes nodošanas tiek pārbaudīti līdz 256 sākotnējiem baitiem. SSE nodrošinātāji buferē kļūdas, kas nav SSE;
+  Grok/LMArena Cloudflare pārbaudes kartē uz `403`, bet HTML starplapas — uz `502`.
+- Vietējā pieprasījuma taimautu joprojām aptver absolūts JS stingrais termiņš. Iestrēgšana padara nederīgu
+  un aizver tikai skarto profila/OS/starpniekservera transportu, pirms nākamais pieprasījums to izveido no jauna.
+- Starpniekservera atrisināšanas prioritāte ir katra izsaukuma `proxyUrl` → pieprasījuma tvēruma konta/informācijas paneļa konteksts →
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (tostarp varianti ar mazajiem burtiem). Atrisināšanas kļūdas droši pārtrauc darbību,
+  nevis pieļauj tiešā savienojuma noplūdi. LMArena apzināti veic atrisināšanu pret `arena.ai`.
+- `byteResponse` atgriež saturam atbilstoši tipizētu `data:` URL bez UTF-8 bojājumiem.
 - Kļūdas ir `TlsClientUnavailableError` (pakotne/papildmodulis nav pieejams), `TlsClientHangError`
-  (pārsniegts termiņš) un `WreqTransportCapacityError` (koplietotais sesiju ietilpības kļūdas kods),
+  (termiņš pārsniegts) un `WreqTransportCapacityError` (koplietotās sesiju ietilpības kļūdas kods),
   ja visas 128 ierobežotās profila/OS/starpniekservera vietas ir aktīvas vai tiek aizvērtas.
 
-Iepriekš minētā vispārīgā `TlsClient` sesija joprojām ir specializēta pastāvīgam pārlūkprogrammas atbalstītam sīkdatņu
+Iepriekš minētais vispārīgais `TlsClient` joprojām ir specializēts pastāvīgam, pārlūka nodrošinātam sīkdatņu
 stāvoklim. Abi ceļi atkārtoti izmanto vienu kešotu wreq moduļa ielādētāju un procesa dzīves cikla āķi; to pūli paliek
-nodalīti, jo to sīkdatņu dzīves ilgumi ir apzināti atšķirīgi.
+nodalīti, jo to sīkdatņu dzīves cikli ir apzināti atšķirīgi.
 
-Profili tiek atbalstīti ar fiksēto pakotni, taču faktiskā WAF pieņemšana var mainīties neatkarīgi
-no vietējiem līguma testiem. Pirms apgalvojat paritāti ar augšupējo pārlūkprogrammu, pārbaudiet pirkstu nospiedumu izmaiņas,
-izmantojot nepārprotami autorizētu aktīvu kontu.
+Profili tiek atbalstīti piesaistītajā pakotnes versijā, taču faktiskā WAF akceptēšana var mainīties neatkarīgi
+no lokālajiem līguma testiem. Pirms apgalvot paritāti ar augšupējo pārlūku, pārbaudiet digitālnospiedumu izmaiņas,
+izmantojot nepārprotami autorizētu reālu kontu.
 
 ---
 
@@ -118,7 +118,7 @@ Tiek lietots: `system` blokiem, visam `messages[].content` saturam un `tools[].d
 
 Trešo pušu Anthropic relejiem, kas pieņem tikai „īstu Claude Code” datplūsmu:
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"` pēc noklusējuma
@@ -135,41 +135,63 @@ Saistītie moduļi tajā pašā komplektā:
 
 ---
 
-## Antigravity maskēšanās
+## Antigravity Stealth
 
-Antigravity pieprasījumi saglabā izsaucēja tekstu baitu pa baitam. OmniRoute uzvednēs neievieto nulles platuma rakstzīmes un nepārdēvē/neievieto rīkus, lai atdarinātu IDE klientu.
+Antigravity pieprasījumi saglabāt zvanītāja tekstu pa baitam. OmniRoute neievieto nulles platuma rakstzīmes uzvednēs vai rename/inject rīkos, lai atdarinātu IDE klientu.
 
 ### `antigravityHeaderScrub.ts`
 
-Pirms pārsūtīšanas noņem Stainless SDK marķierus (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`).
+Sloksnes nerūsējošā tērauda SDK marķierus (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) pirms pārsūtīšanas.
 
-### ⚠️ Risks: `ANTIGRAVITY_CREDITS=always` (īpaši augsts konta bloķēšanas risks)
+### ⚠️ risks: `ANTIGRAVITY_CREDITS=always` (konta aizlieguma karstais punkts)
 
-`ANTIGRAVITY_CREDITS=always` (to izmanto `open-sse/executors/antigravity.ts`) novirza **katru** pieprasījumu caur Antigravity AI Credit Overage mehānismu (maksas Google kredīti), nevis ļauj Google bezmaksas līmeņa kvotai ierobežot pieprasījumus. Tas ir dokumentēts kā funkcija, taču tas ir **visbiežākais mūsu redzētais ziņojumu iemesls par pakalpojuma noteikumu pārkāpumiem** — vairāki Google Ultra konti pēc dažu stundu darbības ar `=always` ir bloķēti ar `403 / "service disabled for ToS violation" / insufficient_quota`.
+`ANTIGRAVITY_CREDITS=always` (patērē `open-sse/executors/antigravity.ts`) maršruti** katru** pieprasiet, izmantojot Antigravity AI Credit Overages (apmaksātos Google kredītus), nevis ļaujiet Google brīvā līmeņa kvotu vārtiem. Tas ir dokumentēts kā iezīme, bet tā ir** vienīgais izplatītākais pakalpojumu sniegšanas noteikumu pārkāpumu ziņojums, ko mēs redzam** — vairāki Google Ultra konti ir aizliegti lietotnē `403 / "service disabled for ToS violation" / insufficient_quota` pēc tam, kad dažas stundas tika darbinātas ar `=always`.
 
-Ierobežojumus piemēro **Google pusē**, un OmniRoute to nevar novērst. Vides mainīgā nosaukums un esošā dokumentācija rada iespaidu, ka šo iestatījumu var droši ieslēgt; tā nav.
+Ir ieslēgta izpilde**Google pusē** , nekas OmniRoute nevar novērst. env var nosaukums un esošie dokumenti liek tam izklausīties kā drošai pārslēgšanai; tā nav.
 
-**Kāpēc tas aktivizē ļaunprātīgas izmantošanas noteikšanu agresīvāk nekā tikai bezmaksas līmeņa izmantošana:**
+**Kāpēc tādējādi ļaunprātīgas izmantošanas noteikšana tiek veikta daudz agresīvāk nekā tikai brīvā līmeņa lietojums:**
 
-- Ilgstoši automatizēti tēriņi vienā Google kontā tiek atzīmēti citādi nekā bezmaksas līmeņa izmantošana, kas sasniedz kvotu un apstājas.
-- Kredītu pārtēriņam nav ātruma ierobežojuma, tādēļ nepareizi konfigurēts klients dažu minūšu laikā var iztērēt vairākus simtus USD un izskatīties pēc API atslēgu tālākpārdošanas vai robotizētas datplūsmas.
-- Ja vairāki OmniRoute lietotāji paralēli izmanto pārtēriņa kredītus no vienas ārējās IP adreses, tas pastiprina signālu.
+- Ilgstoši automatizēti tēriņi vienā Google kontā tiek atzīmēti citādi nekā bezmaksas trāpījumi-kvota un apstāšanās.
+- Kredīta pārsniegumam nav likmes griestu, tāpēc nepareizi konfigurēts klients dažu minūšu laikā var sadedzināt vairākus simtus USD un izskatīties kā API atslēgas tālākpārdošana vai robotprogrammatūra.
+- Vairāki OmniRoute lietotāji, kas paralēli saņem pārsnieguma kredītus no viena un tā paša ārējā IP savieno signālu.
 
-**Ieteicamā pieeja:**
+**Ieteicamā poza:**
 
-1. Saglabājiet noklusējuma iestatījumu `ANTIGRAVITY_CREDITS=off`, ja vien operators nepārprotami nepiekrīt maksas kredītu un konta ierobežošanas riskam. `retry` vispirms nosūta parasto pieprasījumu un pēc atbilstošas kvotas kļūdas 429 ievieto kredītus ne vairāk kā vienu reizi; `always` ievieto kredītus jau pirmajā pieprasījumā.
-2. **Sadaliet slodzi starp nodrošinātājiem, izmantojot Auto-Combo** (`model: "auto"` vai `kr/glm/etc`-combo), nevis pārslogojiet vienu Antigravity kontu.
-3. **Iestatiet katram savienojumam RPM ierobežojumus** Antigravity nodrošinātāja rediģēšanas lapā (Informācijas panelis → Nodrošinātāji → Antigravity → savienojums → ātruma ierobežojums). 30–60 RPM ir pamatota ilgstošas lietošanas augšējā robeža.
-4. **Izmantojiet stabilu, operatora kontrolētu augšupstraumes tīklu** un izvairieties no viena konta koplietošanas starp savstarpēji nesaistītiem lietotājiem vai darba slodzēm.
-5. **Ja konts ir bloķēts**: iesniedziet apelāciju vietnē `support.google.com` → „Atjaunot piekļuvi Workspace/kontam”, pievienojot precīzu Google nosūtīto `quota_exceeded` / `service disabled` atbildes pamattekstu. Atjaunošana netiek garantēta.
+1. Saglabājiet noklusējuma `ANTIGRAVITY_CREDITS=off`, ja vien operators nepārprotami neuzņemas apmaksāta kredīta un konta izpildes risku. `retry` vispirms nosūta parasto pieprasījumu un ievada kredītus ne vairāk kā vienu reizi pēc atbilstošās kvotas 429; `always` ievada kredītus pēc pirmā pieprasījuma.
+2. **Izplatiet slodzi starp pakalpojumu sniedzējiem, izmantojot automātisko kombināciju** (`model: "auto"` vai `kr/glm/etc` -combo), tā vietā, lai piesātinātu vienu Antigravity kontu.
+3. **Iestatiet katra savienojuma RPM ierobežojumus** Antigravity nodrošinātāja rediģēšanas lapā (Informācijas panelis → Providers → Antigravity → savienojuma → ātruma ierobežojums). 30–60 RPM ir aizsargājama augšējā robeža ilgstošai lietošanai.
+4. **Izmantojiet stabilu, operatora kontrolētu augšupējo tīklu** un izvairieties no viena konta koplietošanas ar nesaistītiem lietotājiem vai darba slodzēm.
+5. **Ja aizliegts** : apelācija, izmantojot `support.google.com` → “Atjaunot Workspace/Account piekļuvi”, norādot precīzu nosūtīto `quota_exceeded` / `service disabled` atbildes pamattekstu Google. Atjaunošana netiek garantēta.
 
-Vides atsauces dokumentācijā ir aprakstīta katra kredītu režīma ietekme uz kontu un izdevumiem.
+Vides atsauce dokumentē katra kredītu režīma konta un tēriņu ietekmi.
 
-Saskares punkti:
+#### Ne tikai `=always`: Antigravity OAuth maršrutēšana kopumā
 
-- `open-sse/executors/antigravity.ts` — nolasa `process.env.ANTIGRAVITY_CREDITS`
-- `src/lib/oauth/providers/antigravity.ts` — akreditācijas datu savienošana
-- Sākotnējais incidenta ziņojums: diskusija [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
+Apturēšana attiecas ne tikai uz kredīta pārsniegšanu. 2026. gada novembra pārskatos (#19223, #19266) ir aprakstīti vairāki Google konti, kuru darbība ir apturēta maršrutēšanas laikā, izmantojot `antigravity` un `agy` (Antigravity CLI) pakalpojumu sniedzējus ar:
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+Abi pakalpojumu sniedzēji veic autentifikāciju, izmantojot Antigravity produkta OAuth sesiju, par ko pirms savienojuma pievienošanas brīdina informācijas paneļa riska paziņojums (“Šis pakalpojumu sniedzējs izmanto jūsu oficiālo produktu session/OAuth, kas nav autorizēts proxy/router lietošanai”). Neviens no iepriekš minētajiem ieteikumiem nepadara šo lietošanu atļautu; tie tikai samazina viena konta datplūsmu.
+
+**Autorizētas API saskarnes Gemini modeļiem.** Google piedāvā programmatisku piekļuvi Gemini, izmantojot savu APIs, ko OmniRoute atbalsta kā parastu API atslēgas nodrošinātāju:
+
+| Pakalpojumu sniedzēja id | Informācijas paneļa nosaukums | Akreditācijas dati                                                                       |
+| ------------------------ | ----------------------------- | ---------------------------------------------------------------------------------------- |
+| `gemini`                 | Gemini (Google AI Studio)     | Gemini API atslēga no Google AI Studio (pieejams bezmaksas līmenis)                      |
+| `vertex`                 | Virsotne AI                   | Pakalpojuma konts JSON, OAuth piekļuves pilnvara vai Vertex Express API atslēga (Gemini) |
+
+Šie pakalpojumu sniedzēji izmanto akreditācijas datu Google problēmas, lai piekļūtu API, atšķirībā no Antigravity produkta sesijas. Tie nepadara katru lietošanas veidu atbilstošu vai nenovērš izpildes risku: uz katru attiecas savi noteikumi, kas operatoram ir jāpārbauda, lai tos izmantotu. Piemēram, [Gemini API papildu pakalpojumu sniegšanas noteikumi](https://ai.google.dev/gemini-api/terms) atļauj tikai maksas pakalpojumus, ja API klienti ir pieejami lietotājiem Eiropas Ekonomikas zonā, Šveicē vai Apvienotajā Karalistē, un saturu, kas nosūtīts uz Bezmaksas pakalpojumiem, var izmantot, lai uzlabotu Google produktus. Tā vietā uz Vertex AI attiecas Google Cloud noteikumi ( [Pakalpojuma specifiskie noteikumi](https://cloud.google.com/terms/service-terms) ). Cenu noteikšana un kvotas atbilst šiem API noteikumiem, nevis Antigravity abonementam.
+
+Operatoriem, kuri vēlas izvairīties no iepriekš aprakstītās Antigravity apturēšanas, Gemini datplūsma ir jānovirza caur kādu no šiem pakalpojumu sniedzējiem, nevis `antigravity` / `agy`, pēc tam, kad ir pārbaudīts, vai to lietojums atbilst pakalpojumu sniedzēja noteikumiem.
+
+Pieskāriena punkti:
+
+- `open-sse/executors/antigravity.ts` — `process.env.ANTIGRAVITY_CREDITS`
+- `src/lib/oauth/providers/antigravity.ts` — akreditācijas santehnika
+- Sākotnējais incidenta ziņojums: Discussion [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
 
@@ -238,19 +260,18 @@ Visiem MITM galapunktiem ir nepieciešama pārvaldības autentifikācija (`requi
 
 ---
 
-## User-Agent pārrakstīšana — vides mainīgie (`.env.example` 12. sadaļa)
+## Lietotāja aģents ignorē — env vars (`.env.example` 12. sadaļa)
 
-| Mainīgais                | Noklusējuma vērtība                                             |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| Mainīgs             | Noklusējums                                   |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-Tos izmanto `open-sse/executors/base.ts::buildHeaders()`, veicot dinamisku uzmeklēšanu. **Atjauniniet tos, kad pakalpojumu sniedzēji izlaiž jaunas CLI versijas** — novecojušas UA virknes tiek noraidītas kā novecojuši klienti.
+Patērē `open-sse/executors/base.ts::buildHeaders()`, izmantojot dinamisko meklēšanu.** Sasitiet tos, kad pakalpojumu sniedzēji izlaiž jaunas CLI versijas** — novecojušas UA virknes tiek noraidītas kā novecojuši klienti.
 
 ## CLI saderības režīma slēdži (`.env.example` 13. sadaļa)
 

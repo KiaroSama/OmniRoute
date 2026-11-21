@@ -12,7 +12,7 @@
  *   - Skips commented lines from .env.example
  */
 
-import { copyFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { randomBytes } from "node:crypto";
 import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
@@ -64,24 +64,49 @@ const CRYPTO_SECRETS = {
  * Note: STORAGE_ENCRYPTION_KEY is no longer auto-generated in postinstall.
  * It's generated at server startup in bin/omniroute.mjs and persisted to
  * ~/.omniroute/.env to survive across upgrades.
- * @see https://github.com/diegosouzapw/OmniRoute/issues/1622
+ * @see https://github.com/cheaper-inference/OmniRoute/issues/1622
  */
 const ENCRYPTION_BOUND_KEYS = new Set([]);
 
-// ── Resolve DATA_DIR (mirrors bootstrap-env.mjs / dataPaths.ts) ─────────────
-function resolveDataDir(env = process.env) {
+// ── Resolve DATA_DIR (mirrors src/lib/dataPaths.ts::getDefaultDataDir) ─────────
+// Same self-contained copy as scripts/build/bootstrap-env.mjs (this file ships in the npm
+// package on its own). Order: explicit DATA_DIR → an EXISTING legacy ~/.omniroute →
+// %APPDATA% (Windows) → $XDG_CONFIG_HOME (when set) → ~/.omniroute.
+export function resolveDataDir(env = process.env) {
   const configured = env.DATA_DIR?.trim();
   if (configured) return resolve(configured);
 
-  if (process.platform === "win32") {
-    const appData = env.APPDATA || join(homedir(), "AppData", "Roaming");
-    return join(appData, "omniroute");
+  // Preserve an existing legacy dir so an upgrade never splits secrets from the database,
+  // unless the platform dir holds the database and the legacy dir does not.
+  const legacyDir = join(homedir(), ".omniroute");
+  let legacyIsDir = false;
+  try {
+    legacyIsDir = statSync(legacyDir).isDirectory();
+  } catch {
+    // absent or unreadable — fall through to the platform default
   }
 
-  const xdg = env.XDG_CONFIG_HOME?.trim();
-  if (xdg) return join(resolve(xdg), "omniroute");
+  let platformDir = null;
+  if (process.platform === "win32") {
+    const appData = env.APPDATA || join(homedir(), "AppData", "Roaming");
+    platformDir = join(appData, "omniroute");
+  } else {
+    const xdg = env.XDG_CONFIG_HOME?.trim();
+    if (xdg) platformDir = join(resolve(xdg), "omniroute");
+  }
 
-  return join(homedir(), ".omniroute");
+  if (legacyIsDir && !(platformDir && !hasDatabase(legacyDir) && hasDatabase(platformDir))) {
+    return legacyDir;
+  }
+  return platformDir ?? legacyDir;
+}
+
+function hasDatabase(dir) {
+  try {
+    return statSync(join(dir, "storage.sqlite")).isFile();
+  } catch {
+    return false;
+  }
 }
 
 /**

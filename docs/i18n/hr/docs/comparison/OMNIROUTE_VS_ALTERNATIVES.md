@@ -4,46 +4,45 @@
 
 ---
 
-Objektivna usporedba značajki s popularnim AI usmjerivačima otvorenog koda.
+Objektivna usporedba značajki s popularnim open-source AI usmjerivačima.
 
-> **Metodologija**: Javni repozitoriji pregledani su u 2026-Q2. Verzije su navedene.
-> Ispravke pošaljite putem PR-a — želimo da podaci budu točni.
+> **Metodologija** : Revidirani javni repo poslovi 2026.-Q2. Verzije kako su navedene. Pošaljite ispravke putem PR — želimo da ovo bude točno.
 
-| Značajka                                                    |                   OmniRoute 3.8                   |   LiteLLM 1.x    | OpenRouter (SaaS) |     Portkey      |
-| ----------------------------------------------------------- | :-----------------------------------------------: | :--------------: | :---------------: | :--------------: |
-| **Pružatelji usluga**                                       |                      **329**                      |       ~100       |        ~50        |       ~30        |
-| **Besplatne stavke kataloga / bez autentikacije**           |                      **155**                      | nije primjenjivo |  prosljeđivanje   | nije primjenjivo |
-| **Mogućnost samostalnog hostinga**                          |                        ✅                         |        ✅        |        ❌         |  ⚠ uz plaćanje   |
-| **Stavke OAuth kataloga**                                   |                      **23**                       |    djelomično    |        ❌         |        ❌        |
-| **Kombinacije automatskog prebacivanja**                    |                 **19 strategija**                 | prema prioritetu |  prema razinama   |   ponderirano    |
-| **Fuzija (paralelni panel + sinteza suca)**                 |                        ✅                         |        ❌        |        ❌         |        ❌        |
-| **Prebacivanje razine 1/2/3 (pretplata→jeftino→besplatno)** |              ✅ + korisničko sučelje              |      ručno       | nije primjenjivo  |      ručno       |
-| **Kompresija tokena**                                       | skup od 12 mehanizama (RTK + Caveman + LLMLingua) |       nema       |       nema        |       nema       |
-| **Multimodalno generiranje (govor/glazba/video)**           |                        ✅                         |        ❌        |  prosljeđivanje   |        ❌        |
-| **Ugrađeni MCP poslužitelj**                                |              ✅ 110 alata, 33 opsega              |        ❌        |        ❌         |        ❌        |
-| **A2A protokol**                                            |                   ✅ 6 vještina                   |        ❌        |        ❌         |        ❌        |
-| **Memorija (FTS5 + vektorska)**                             |                        ✅                         |        ❌        |        ❌         |        ❌        |
-| **Zaštitne mjere (PII, ubrizgavanje, vid)**                 |                        ✅                         |    djelomično    |        ❌         |  ✅ uz plaćanje  |
-| **Integracije s agentima u oblaku**                         |            Codex, Cursor, Devin, Jules            |        ❌        |        ❌         |        ❌        |
-| **Circuit breaker po pružatelju usluga**                    |          ✅ 3 stanja, odgođeni oporavak           |     osnovno      |        ❌         |        ✅        |
-| **Prikrivanje TLS otiska (JA3/JA4)**                        |                    ✅ wreq-js                     |        ❌        |        ❌         |        ❌        |
-| **Okvir za evaluaciju**                                     |                    ✅ ugrađen                     |        ❌        |        ❌         |  ⚠ uz plaćanje   |
-| **MITM proxy (presreće Cursor/Antigravity)**                |                ✅ višeplatformski                 |        ❌        |        ❌         |        ❌        |
-| **CLI sa sistemskom trakom (bez Electrona)**                |                        ✅                         |        ❌        | nije primjenjivo  | nije primjenjivo |
-| **CLI automatska autentikacija putem ID-ja stroja**         |                        ✅                         |        ❌        | nije primjenjivo  | nije primjenjivo |
-| **Nadzorna ploča**                                          |                    Next.js 16                     |     osnovna      |     vlasnička     |    vlasnička     |
-| **i18n**                                                    |                **42 lokalizacije**                |        ❌        |        ❌         |        ⚠         |
-| **Javne vještine agenata (SKILL.md)**                       |                       ✅ 45                       |        ❌        |        ❌         |        ❌        |
-| **Podrška za tunele (Cloudflared, Tailscale, Ngrok)**       |                        ✅                         |        ❌        | nije primjenjivo  | nije primjenjivo |
-| **Licenca**                                                 |                        MIT                        |       MIT        |     vlasnička     |    vlasnička     |
+| Značajka                                                  |                     OmniRoute 3.8                     |      LiteLLM 1.x      | OpenRouter (SaaS) | Portključ  |
+| --------------------------------------------------------- | :---------------------------------------------------: | :-------------------: | :---------------: | :--------: |
+| **Pružatelji usluga**                                     |                        **329**                        |         ~100          |        ~50        |    ~30     |
+| **Free/no-auth kataloški unosi**                          |                        **155**                        |          n/a          |    prolaz kroz    |    n/a     |
+| **Samodomaćin**                                           |                          ✅                           |          ✅           |        ❌         | ⚠ plaćeno  |
+| **OAuth kataloški unosi**                                 |                        **23**                         |      djelomičan       |        ❌         |     ❌     |
+| **Auto-zamjenske kombinacije**                            |                   **22 strategije**                   | na temelju prioriteta | na razini razine  | ponderiran |
+| **Fuzija (sinteza paralelnog panela + sudaca)**           |                          ✅                           |          ❌           |        ❌         |     ❌     |
+| **Tier 1/2/3 backback (pretplata → jeftino → besplatno)** |                        ✅ + UI                        |       priručnik       |        n/a        | priručnik  |
+| **Kompresija tokena**                                     | Skup od 12 motora (RTK + Pećinski čovjek + LLMLingua) |        nikakav        |      nikakav      |  nikakav   |
+| **Multimodalna generacija (speech/music/video)**          |                          ✅                           |          ❌           |    prolaz kroz    |     ❌     |
+| **Ugrađeni MCP poslužitelj**                              |                ✅ 110 alata, 33 nišana                |          ❌           |        ❌         |     ❌     |
+| **A2A protokol**                                          |                     ✅ 6 vještine                     |          ❌           |        ❌         |     ❌     |
+| **Memorija (FTS5 + vektor)**                              |                          ✅                           |          ❌           |        ❌         |     ❌     |
+| **Zaštitne ograde (PII, injekcija, vid)**                 |                          ✅                           |      djelomičan       |        ❌         | ✅ plaćeno |
+| **Integracije agenta u oblaku**                           |              Codex, Cursor, Devin, Jules              |          ❌           |        ❌         |     ❌     |
+| **Prekidač strujnog kruga po dobavljaču**                 |             ✅ 3-stanje, lijeni oporavak              |        osnovni        |        ❌         |     ✅     |
+| **TLS otisak prsta (JA3/JA4)**                            |                      ✅ wreq-js                       |          ❌           |        ❌         |     ❌     |
+| **Eval okvir**                                            |                      ✅ ugrađen                       |          ❌           |        ❌         | ⚠ plaćeno  |
+| **MITM proxy (presreće Cursor/Antigravity)**              |                   ✅ više platformi                   |          ❌           |        ❌         |     ❌     |
+| **CLI sa sistemskom trakom (bez Electron)**               |                          ✅                           |          ❌           |        n/a        |    n/a     |
+| **CLI strojna ID automatska autentifikacija**             |                          ✅                           |          ❌           |        n/a        |    n/a     |
+| **Nadzorna ploča**                                        |                      Next.js 16                       |        osnovni        |     vlasnički     | vlasnički  |
+| **i18n**                                                  |                   **67 lokaliteta**                   |          ❌           |        ❌         |     ⚠      |
+| **Vještine javnog agenta (SKILL.md)**                     |                         ✅ 45                         |          ❌           |        ❌         |     ❌     |
+| **Podrška za tunel (Cloudflared, Tailscale, Ngrok)**      |                          ✅                           |          ❌           |        n/a        |    n/a     |
+| **Licenca**                                               |                          MIT                          |          MIT          |     vlasnički     | vlasnički  |
 
 ## Kada odabrati OmniRoute
 
-- Samostalno hostate i želite **najveću pokrivenost pružatelja usluga** (329 pružatelja, 155 besplatnih stavki kataloga / bez autentikacije)
-- Trebate **ugrađeni MCP poslužitelj** (LLM alati, memorija i vještine izloženi kao alati)
-- Trebate **A2A protokol** za tijekove rada između agenata
-- Želite **prikrivanje otiska** (JA3/JA4) kako biste izbjegli otkrivanje putem CAPTCHA provjera nadređenih sustava
-- Trebate **značajke za poslovne korisnike** (zaštitne mjere, evaluacije, revizijski trag) bez računa za SaaS
+- Vi sami domaćin i želite** maksimalnu pokrivenost pružatelja usluga** (394 ponuđač, 155 free/no-auth kataloških unosa)
+- Trebate a** ugrađeni MCP poslužitelj** (LLM alati, memorija, vještine izložene kao alati)
+- Vama treba**A2A protokol** za tijekove rada između agenta
+- želite** skriveni otisak prsta** (JA3/JA4) kako bi se izbjeglo otkrivanje od strane uzvodnog CAPTCHAs
+- Vama treba** značajke poduzeća** (guardrails, evals, audit trail) bez SaaS računa
 
 ## Kada odabrati LiteLLM
 

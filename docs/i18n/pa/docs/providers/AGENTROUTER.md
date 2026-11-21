@@ -47,7 +47,7 @@ docker run -d --name omniroute \
   -p 20128:20128 \
   -v omniroute-data:/app/data \
   -e ENABLE_CC_COMPATIBLE_PROVIDER=true \
-  diegosouzapw/omniroute:latest
+  cheaperinference/omniroute:latest
 ```
 
 ਮੁੜ-ਚਾਲੂ ਕਰਨ ਤੋਂ ਬਾਅਦ, ਡੈਸ਼ਬੋਰਡ ਮੌਜੂਦਾ OpenAI-ਅਨੁਕੂਲ ਅਤੇ Anthropic-ਅਨੁਕੂਲ ਪ੍ਰਵਾਹਾਂ ਤੋਂ ਇਲਾਵਾ **Claude Code ਅਨੁਕੂਲ ਸ਼ਾਮਲ ਕਰੋ** ਵਿਕਲਪ ਦਿਖਾਉਂਦਾ ਹੈ।
@@ -104,7 +104,7 @@ curl -X POST http://localhost:20128/v1/chat/completions \
 | ਹੈਡਰ                                        | ਮੁੱਲ                                                                                                                     |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `Authorization`                             | `Bearer <api-key>`                                                                                                       |
-| `User-Agent`                                | `claude-cli/2.1.258 (external, sdk-cli)`                                                                                 |
+| `User-Agent`                                | `claude-cli/2.1.280 (external, sdk-cli)`                                                                                 |
 | `anthropic-version`                         | `2023-06-01`                                                                                                             |
 | `anthropic-beta`                            | `claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24`                                                 |
 | ਪ੍ਰਤੀ-ਕਨੈਕਸ਼ਨ redact-thinking ਬੀਟਾ ਟੌਗਲ     | ਉਹਨਾਂ ਅੱਪਸਟ੍ਰੀਮਾਂ ਲਈ `redact-thinking-2026-02-12` ਜੋ ਖ਼ਾਸ ਤੌਰ 'ਤੇ ਰੀਡੈਕਟ ਕੀਤੀਆਂ ਥਿੰਕਿੰਗ ਸਟ੍ਰੀਮਾਂ ਦੀ ਮੰਗ ਕਰਦੀਆਂ ਹਨ        |

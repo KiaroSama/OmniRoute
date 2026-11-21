@@ -33,8 +33,8 @@ open-sse/
 ├── index.ts              # 공개 진입점
 ├── types.d.ts            # 공개 타입 내보내기
 ├── package.json          # @omniroute/open-sse
-├── config/               # 제공자 설정, 상수, 레지스트리
-├── executors/            # 제공자별 HTTP 실행기(67개 + base.ts/index.ts)
+├── config/               # 제공업체 구성, 상수, 레지스트리
+├── executors/            # 제공업체별 HTTP 실행기(150개 모듈 + base.ts/index.ts)
 ├── handlers/             # 요청 핸들러(chatCore, responses 등)
 ├── lib/                  # 내부 유틸리티
 ├── mcp-server/           # Model Context Protocol 서버
@@ -47,13 +47,13 @@ open-sse/
 ### 모듈 수
 
 | 디렉터리 | 파일 수 | 용도 |
-| `executors/` | 167 | 제공자별 HTTP 실행기(DefaultExecutor 팩토리를 통해 통합) |
+| `executors/` | 167 | 제공업체별 HTTP 실행기(DefaultExecutor 팩토리를 통해 통합) |
 | `handlers/` | 157 | 요청 진입점(chatCore, responses, embeddings) |
-| `services/` | ~536 | 라우팅, 캐싱, 속도 제한, 갱신 등 |
+| `services/` | ~536 | 라우팅, 캐싱, 속도 제한, 새로 고침 등 |
 | `translator/` | 56 | 형식 변환(OpenAI ↔ Claude ↔ Gemini) |
 | `mcp-server/` | 44 | MCP 도구 및 전송 방식 |
 | `utils/` | ~108 | 공통 유틸리티(로깅, 오류, 스트림) |
-| `config/` | ~339 | 제공자 설정, 상수, 레지스트리 |
+| `config/` | ~339 | 제공업체 구성, 상수, 레지스트리 |
 
 ---
 
@@ -169,26 +169,26 @@ needsTranslation(source, target): boolean
 
 ### chatCore.ts (5977줄)
 
-**메인 요청 핸들러**입니다. 크기는 크지만 구조는 명확합니다.
+그만큼** 기본 요청 처리기** . 크기에도 불구하고 구조는 명확합니다.
 
 ```ts
-// chatCore.ts의 의사 구조
+// Pseudo-structure of chatCore.ts
 export async function handleChat(request: NextRequest) {
-  // 1. 인증 + CORS
+  // 1. Auth + CORS
   await authenticateRequest(request);
   applyCorsHeaders(response);
 
-  // 2. 본문 유효성 검사
+  // 2. Body validation
   const body = await parseRequestBody(request);
 
-  // 3. 형식 감지 + 변환
+  // 3. Format detection + translation
   const sourceFormat = detectFormat(request);
   const targetFormat = getTargetFormat(providerId);
   if (needsTranslation(sourceFormat, targetFormat)) {
     body = translateRequest(body, sourceFormat, targetFormat);
   }
 
-  // 4. 콤보 라우팅
+  // 4. Combo routing
   const targets = await resolveComboTargets(comboId, body);
   for (const target of targets) {
     try {
@@ -196,20 +196,20 @@ export async function handleChat(request: NextRequest) {
       await recordUsage(result);
       return result;
     } catch (err) {
-      // 다음 대상으로 계속 진행
+      // Continue to next target
     }
   }
 
-  // 5. 비상 폴백
+  // 5. Emergency fallback
   return await emergencyFallback(body);
 }
 ```
 
-하나의 거대한 함수이지만, 5단계 파이프라인에 대응하는 **주석이 달린 섹션**으로 구성되어 있습니다.
+하나의 거대한 기능임에도 불구하고 다음과 같이 구성됩니다.** 댓글이 달린 섹션** 이는 5단계 파이프라인에 매핑됩니다.
 
 ### combo.ts (4456 LOC)
 
-콤보를 순서가 지정된 대상 목록으로 해석하는 **라우팅 엔진**입니다.
+그만큼** 라우팅 엔진** 주문한 대상에 대한 콤보를 해결합니다.
 
 ```ts
 // services/combo.ts
@@ -219,98 +219,103 @@ export async function handleComboChat(body, comboId): Promise<ChatResult> {
     try {
       return await handleSingleModel(target, body);
     } catch (err) {
-      log.warn("대상 실패, 다음 대상 시도", { target, err });
+      log.warn("target failed, trying next", { target, err });
     }
   }
-  throw new ComboExhaustedError("모든 대상이 실패했습니다");
+  throw new ComboExhaustedError("All targets failed");
 }
 ```
 
-**19가지 라우팅 전략**을 지원합니다(`src/shared/constants/routingStrategies.ts` 참조).
+지원** 22가지 라우팅 전략** ( `src/shared/constants/routingStrategies.ts` 참조 ):
 
-| 전략                | 동작                                                    |
-| ------------------- | ------------------------------------------------------- |
-| `priority`          | 첫 번째 대상 우선의 순서 지정 목록                      |
-| `weighted`          | 대상별 가중치에 따른 확률적 선택                        |
-| `round-robin`       | 대상들을 순서대로 순환                                  |
-| `context-relay`     | 대상 간에 컨텍스트 전달                                 |
-| `fill-first`        | 다음 대상으로 이동하기 전에 할당량을 먼저 채움          |
-| `p2c`               | 두 개 선택지 중 최적 선택                               |
-| `random`            | 균등 무작위 선택                                        |
-| `least-used`        | 최근 사용 횟수가 가장 적은 대상 선택                    |
-| `cost-optimized`    | 정상 상태인 대상 중 가장 저렴한 대상을 우선 선택        |
-| `reset-aware`       | 제공자의 재설정 시간대를 고려                           |
-| `reset-window`      | 재설정 시간대 기반 라우팅                               |
-| `headroom`          | 남은 할당량 여유가 가장 큰 대상을 우선 선택             |
-| `strict-random`     | 완전 균등 선택(품질 가중치 없음)                        |
-| `auto`              | 16개 요소 기반 점수 산정 사용(`autoCombo/`)             |
-| `lkgp`              | 마지막으로 정상 작동이 확인된 제공자를 우선 선택        |
-| `context-optimized` | 긴 컨텍스트 요청에 가장 적합한 대상 선택                |
-| `fusion`            | 패널에 병렬로 요청한 후 판정자를 통해 종합(`fusion.ts`) |
+| 전략                | 행동                                                                             |
+| ------------------- | -------------------------------------------------------------------------------- |
+| `priority`          | 첫 번째 대상 순서 목록                                                           |
+| `weighted`          | 목표별 가중치별 확률                                                             |
+| `round-robin`       | 대상을 순서대로 순환합니다.                                                      |
+| `context-relay`     | 대상 전체에 걸쳐 컨텍스트 전달                                                   |
+| `fill-first`        | 다음으로 이동하기 전에 할당량을 채우세요                                         |
+| `p2c`               | 두 가지 선택의 힘                                                                |
+| `random`            | 균일한 무작위                                                                    |
+| `least-used`        | 최근 사용 횟수가 가장 적은 것을 선택하세요.                                      |
+| `cost-optimized`    | 가장 저렴한 건강한 대상 먼저                                                     |
+| `reset-aware`       | 공급자 재설정 창 인식                                                            |
+| `reset-window`      | 창 기반 라우팅 재설정                                                            |
+| `expiry-first`      | 할당량이 만료되는 계정을 사용하지 않고 먼저 사용하세요.                          |
+| `headroom`          | 가장 많이 남은 할당량 헤드룸이 먼저                                              |
+| `quota-weighted`    | 소진된 계정을 건너뛰고 남은 할당량 ÷ 기내 로드로 추첨                            |
+| `strict-random`     | 매우 균일함(품질 가중치 없음)                                                    |
+| `auto`              | 16요인 점수 매기기 사용(`autoCombo/`)                                            |
+| `lkgp`              | 마지막으로 알려진 양호한 공급자 먼저                                             |
+| `context-optimized` | 긴 컨텍스트 요청에 가장 적합                                                     |
+| `cache-optimized`   | 재사용 가능한 각 프롬프트 접두사를 동일한 계정에 고정합니다(프롬프트 캐시 적중). |
+| `fusion`            | 병렬로 패널로 팬아웃한 후 심사위원을 통해 합성(`fusion.ts`)                      |
+| `pipeline`          | 체인 단계 — 각 대상의 출력은 다음 대상에 공급됩니다.                             |
+| `jev`               | 선택: TypeSafe Jev는 어떤 순위 항목이 실행되는지 인정합니다. 그렇지 않으면 주문  |
 
 ### base.ts (1170 LOC)
 
-107개의 모든 실행기가 확장하는 **추상 실행기**입니다. 다음 항목을 포함합니다.
+그만큼** 추상 집행자** 모든 실행기 클래스는 (직접 또는 `DefaultExecutor` 및 기타 하위 클래스를 통해) 확장됩니다. 여기에는 다음이 포함됩니다.
 
-- `buildUrl()` — 기본 URL 구성(사용자 정의가 필요한 경우 하위 클래스에서 재정의)
-- `buildHeaders()` — 기본 헤더(인증, 콘텐츠 유형)
-- `transformRequest()` — 기본적으로 그대로 전달
-- `execute()` — 재시도/백오프/차단기를 포함하는 메인 HTTP 루프
+- `buildUrl()` — 기본 URL 구성(사용자 정의를 위해 하위 클래스 재정의)
+- `buildHeaders()` — 기본 헤더(auth, content-type)
+- 기본적으로 `transformRequest()` — 통과
+- `execute()` — retry/backoff/breaker 사용한 주요 HTTP 루프
 
 ```ts
 // open-sse/executors/default.ts
 export class DefaultExecutor extends BaseExecutor {
-  // 모든 OpenAI/Anthropic 호환 제공자 처리
-  // 제공자는 구성(URL, 인증, 헤더)을 등록하지만 실행기 로직은 공유함
+  // Handles all OpenAI/Anthropic-compatible providers
+  // Providers register configurations (URL, auth, headers) but share executor logic
 }
 ```
 
-제공자별 동작(인증 헤더, 기본 URL, 버전 헤더)은 별도의 실행기 클래스가 아니라 제공자 레지스트리를 통해 구성됩니다.
+공급자별 동작(인증 헤더, 기본 URL, 버전 헤더)은 별도의 실행자 클래스가 아닌 공급자 레지스트리를 통해 구성됩니다.
 
 ````
 
 ---
 
-## 서비스 (117개 모듈)
+## 서비스(117개 모듈)
 
-서비스는 핸들러가 조합하여 사용하는 **집중화된 단일 목적 모듈**입니다. 주요 범주는 다음과 같습니다.
+서비스는** 집중적인 단일 목적 모듈** 핸들러가 작성합니다. 큰 카테고리:
 
 ### 라우팅 및 콤보
 
-- `combo.ts` — 콤보 라우팅 요청의 진입점
-- `services/autoCombo/` — 16개 요소 기반 점수 산정, 8가지 자동 라우팅 전략
-- `wildcardRouter.ts` — 와일드카드 라우트(`gpt-*`) 일치 처리
-- `modelFamilyFallback.ts` — T5 패밀리 내 폴백
+- 콤보 라우팅 요청을 위한 `combo.ts` — 진입점
+- `services/autoCombo/` — 16요소 점수 매기기, 8가지 자동 라우팅 전략
+- `wildcardRouter.ts` — 와일드카드 경로(`gpt-*`)와 일치합니다.
+- `modelFamilyFallback.ts` — T5 제품군 내 폴백
 
 ### 속도 제한 및 할당량
 
-- `rateLimitManager.ts` — 키+제공자별 토큰 버킷
-- `usage.ts` — 사용량 기록
+- 키 + 공급자당 `rateLimitManager.ts` — 토큰 버킷
+- `usage.ts` — 사용 기록
 - `quotaCache.ts` — 인메모리 할당량 스냅샷
 
 ### 계정 및 토큰
 
-- `tokenRefresh.ts` — 401 응답 시 OAuth 갱신
+- `tokenRefresh.ts` — OAuth 고침 401
 - `accountFallback.ts` — 대체 계정으로 전환
-- `sessionManager.ts` — 멀티턴 세션 상태
+- `sessionManager.ts` — 다중 회전 세션 상태
 
-### 인텔리전스
+### 지능
 
-- `intentClassifier.ts` — 요청 의도 분류
-- `taskAwareRouter.ts` — 작업 유형별 라우팅
-- `thinkingBudget.ts` — 사고 토큰 할당
-- `contextManager.ts` — 라우팅 컨텍스트 주입
+- `intentClassifier.ts` — 분류 요청 의도
+- 작업 유형별 `taskAwareRouter.ts` — 경로
+- `thinkingBudget.ts` — 는 생각 토큰을 할당합니다.
+- `contextManager.ts` — 라우팅 컨텍스트 삽입
 
-### 복원력
+### 회복력
 
-- `resilience.ts` — 재시도, 백오프, 서킷 브레이커 오케스트레이션
-- `emergencyFallback.ts` — 최후 수단 폴백
+- `resilience.ts` — 재시도, 백오프, 차단기 오케스트레이션
+- `emergencyFallback.ts` — 최후의 수단 대체
 - `modelDeprecation.ts` — 후속 모델로 자동 라우팅
 
 ### 상태
 
-- `signatureCache.ts` — 요청 시그니처 기반 중복 제거
-- `volumeDetector.ts` — 부하 분산
+- 요청 서명을 통한 `signatureCache.ts` — 중복 제거
+- `volumeDetector.ts` — 로드 차단
 - `contextHandoff.ts` — 세션 직렬화
 
 ### 압축
@@ -318,43 +323,43 @@ export class DefaultExecutor extends BaseExecutor {
 - `compression/` (하위 디렉터리) — 전체 압축 파이프라인
 - 엔진, 규칙 팩, 어댑터를 포함하는 39개 파일
 
-### 스킬
+### 기술
 
-- ([SKILLS.md](./SKILLS.md)에서 다룸)
+- ( [SKILLS.md](./SKILLS.md) 에서 다룸)
 
 ### 메모리
 
-- ([MEMORY.md](./MEMORY.md)에서 다룸)
+- ( [MEMORY.md](./MEMORY.md) 에서 다룸)
 
 ---
 
-## 실행기 (75개 이상의 파일)
+## 실행기(150개 모듈)
 
-제공자마다 하나의 파일이 있습니다. 모두 `BaseExecutor`를 확장하고 서로 다른 부분을 오버라이드합니다.
+대부분 공급자당 하나의 파일입니다. 실행기 클래스는 모두 `BaseExecutor` 확장하고 차이점을 재정의합니다. 다른 모듈은 공급자별 도우미(도구 스키마, fetch/TTS 어댑터, 쿼크 처리기)입니다.
 
-### 공통 패턴
+### 일반적인 패턴
 
-제공자는 구성된 실행기를 반환하는 `getExecutor(providerId)`를 통해 확인됩니다. OpenAI/Anthropic 호환 제공자는 `DefaultExecutor`(`executors/default.ts`)를 사용합니다. 제공자별 동작(기본 URL, 인증 헤더, API 버전)은 `open-sse/config/providers/`에서 구성되며, 요청 본문 변환은 `open-sse/translator/`에서 처리됩니다.
+공급자는 구성된 실행기를 반환하는 `getExecutor(providerId)` 를 통해 확인됩니다. OpenAI/Anthropic-compatible 공급자는 `DefaultExecutor` (`executors/default.ts`)를 사용합니다. 공급자별 동작(기본 URL, 인증 헤더, API 버전)은 `open-sse/config/providers/` 에서 구성되고 요청 본문 변환은 `open-sse/translator/` 에서 처리됩니다.
 
-**사용자 지정 URL**은 제공자 구성을 통해 설정됩니다.
+**맞춤 URL** 공급자 구성을 통해 설정됩니다.
 
 ```ts
-// open-sse/config/providers/의 제공자 구성
+// Provider config in open-sse/config/providers/
 export default {
   id: "together",
   baseURL: "https://api.together.xyz/v1/chat/completions",
 }
 ````
 
-**사용자 지정 인증**은 제공자 레지스트리의 인증 구성(API 키, OAuth, 헤더 프로필)을 통해 처리됩니다.
+**맞춤 인증** 공급자 레지스트리의 인증 구성(API 키, OAuth, 헤더 프로필)을 통해 처리됩니다.
 
-**사용자 지정 요청 본문** 변환(예: Anthropic에서 `system`을 `messages`와 분리)은 `open-sse/translator/`에서 제공자별로 등록됩니다.
+**맞춤 요청 본문** 변환(예: `system` `messages` 에서 분리하는 Anthropic )은 `open-sse/translator/` 의 공급자별로 등록됩니다.
 
 ````
 
-### 실행기 팩토리
+### The Executor Factory
 
-`executors/index.ts`는 `getExecutor(providerId)`를 내보냅니다.
+`executors/index.ts` exports `getExecutor(providerId)`:
 
 ```ts
 import { getExecutor } from "@omniroute/open-sse/executors";
@@ -366,7 +371,7 @@ const result = await executor.execute({
 });
 ````
 
-확인은 `ExecutorRegistry`(`executors/registry.ts`)를 통해 이루어집니다. 모든 특수 실행기는 `executors/index.ts`의 기본 제공 테이블에 선언되며, 모듈 로드 시 `registerExecutor(alias, instance)`를 통해 등록됩니다. `getExecutor()`는 레지스트리를 조회하고, 특수 항목이 없는 제공자에 대해서는 메모이제이션된 `DefaultExecutor`로 폴백합니다. 전체 별칭 → 실행기 매핑은 골든 테스트 `tests/unit/executor-map-golden.test.ts`로 명세됩니다.
+해결 방법은 `ExecutorRegistry` (`executors/registry.ts`)를 통해 진행됩니다. 모든 특수 실행기는 `executors/index.ts` 의 내장 테이블에 선언되고 모듈 로드 시 `registerExecutor(alias, instance)` 통해 등록됩니다. `getExecutor()` 레지스트리를 참조하고 특별한 항목 없이 모든 공급자에 대해 기억된 `DefaultExecutor` 로 대체됩니다. 전체 별칭 → 실행기 매핑은 황금 테스트 `tests/unit/executor-map-golden.test.ts` 가 특징입니다.
 
 ---
 
@@ -481,17 +486,17 @@ createResponsesApiTransformStream(): TransformStream
 
 ## 구성
 
-`open-sse/config/`에는 구성 계층이 포함되어 있습니다.
+`open-sse/config/` 구성 레이어를 보유합니다.
 
-| 파일                          | 용도                                              |
-| ----------------------------- | ------------------------------------------------- |
-| `providerRegistry.ts`         | 352개 제공자 카탈로그 기반의 채팅 모델 레지스트리 |
-| `providerModels.ts`           | 모델 별칭, 형식 매핑                              |
-| `constants.ts`                | 시간 제한, 한도, 상태 코드                        |
-| `defaultThinkingSignature.ts` | 기본 Claude 사고 시그니처                         |
-| `modelStrip.ts` (서비스 내)   | 제공자별 필드 제거                                |
+| 파일                          | 목적                                      |
+| ----------------------------- | ----------------------------------------- |
+| `providerRegistry.ts`         | 394 제공자 카탈로그를 통한 채팅 모델 등록 |
+| `providerModels.ts`           | 모델 별칭, 형식 매핑                      |
+| `constants.ts`                | 시간 초과, 한도, 상태 코드                |
+| `defaultThinkingSignature.ts` | 기본 Claude 사고 서명                     |
+| `modelStrip.ts` (서비스 중)   | 공급자별 필드 제거                        |
 
-### 제공자 레지스트리 스키마
+### 공급자 레지스트리 스키마
 
 ```ts
 interface ProviderConfig {
@@ -506,7 +511,7 @@ interface ProviderConfig {
 }
 ```
 
-모듈 로드 시 Zod 검증을 수행하여 모든 제공자 구성이 유효한지 확인합니다.
+모듈 로드 시 Zod 유효성 검사를 통해 모든 공급자 구성이 유효한지 확인합니다.
 
 ---
 

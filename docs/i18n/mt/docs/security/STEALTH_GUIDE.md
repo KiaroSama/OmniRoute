@@ -16,68 +16,62 @@ Il-karatteristiċi ta’ diskrezzjoni jeżistu sabiex OmniRoute jkun jista’ ja
 
 ---
 
-## Saff tal-Fingerprinting TLS
+## Saff tal-Identifikazzjoni TLS
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-Sessjonijiet persistenti ta’ `wreq-js` jinħolqu b’mod għażżien għal kull ambitu ta’ kont u proxy riżolt. Il-pool `TlsClient` mifrux mal-proċess kollu jżomm mhux aktar minn 128 sessjoni li jimitaw **Chrome 124 fuq macOS** għal servizzi upstream wara Cloudflare. `TlsClient.fetch()` jagħlaq b’falliment meta r-runtime nattiv ma jkunx disponibbli; min isejjaħ jista’ jagħżel b’mod espliċitu fallback barra dan il-wrapper.
+Sessjonijiet persistenti ta’ `wreq-js` jinħolqu b’mod għażżien għal kull ambitu ta’ kont u proxy riżolt. Il-`TlsClient` mifrux mal-proċess kollu jiġbor f’pool mhux aktar minn 128 sessjoni li jimitaw **Chrome 124 fuq macOS** għal upstreams wara Cloudflare. `TlsClient.fetch()` ifalli b’mod magħluq meta r-runtime nattiv ma jkunx disponibbli; min isejjaħ jista’ jagħżel b’mod espliċitu fallback barra minn dan il-wrapper.
 
 - Profil tas-sessjoni: `browser: "chrome_124", os: "macos"`
 - Riżoluzzjoni tal-proxy (prijorità): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (ukoll b’ittri żgħar)
 - Timeout: `TLS_CLIENT_TIMEOUT_MS` (jiret minn `FETCH_TIMEOUT_MS`, valur predefinit 600000)
-- Ir-Response ta’ `wreq-js` huwa kompatibbli ma’ fetch (`headers`, `text()`, `json()`, `clone()`, `body`).
+- Ir-Response ta’ `wreq-js` hija kompatibbli ma’ fetch (`headers`, `text()`, `json()`, `clone()`, `body`).
 - Watchdog tal-ewwel byte (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): `TlsClient.fetch()`
-  jiġi riżolt malli jaslu l-headers mill-upstream, għalhekk `TLS_CLIENT_TIMEOUT_MS` waħdu ma jistax
-  jillimita body li qatt ma jipproduċi l-ewwel byte. `guardTlsFirstByte()` jikkompeti l-ewwel `read()`
-  tal-body ma’ `TLS_FIRST_BYTE_WATCHDOG_MS` (valur predefinit `10000`, `0` jiddiżattivah); body
-  f’saħħtu ma jiġix affettwat, filwaqt li body wieqaf jikkanċella l-reader ta’ wreq u jippermetti
-  lil-loġika eżistenti ta’ fallback TLS ta’ `proxyFetch` tkompli lejn id-dispatcher dirett/tal-proxy
-  (talba li ma tistax terġa’ tintbagħat b’mod sikur, eż. POST b’body, xorta tiġġenera żball minflok
-  ma terġa’ tintbagħat fis-skiet).
+  jirrisolvi malli jaslu l-headers tal-upstream, għalhekk `TLS_CLIENT_TIMEOUT_MS` waħdu ma jistax jillimita
+  body li qatt ma jipproduċi l-ewwel byte. `guardTlsFirstByte()` iqabbel f’tellieqa l-ewwel `read()`
+  tal-body ma’ `TLS_FIRST_BYTE_WATCHDOG_MS` (valur predefinit `10000`, `0` jiddiżattivah); body normali
+  ma jiġix affettwat, filwaqt li body imwaħħal jikkanċella l-reader ta’ wreq u jippermetti lil-loġika
+  eżistenti ta’ fallback TLS ta’ `proxyFetch` tgħaddi għad-dispatcher dirett/tal-proxy (talba li ma tistax
+  terġa’ tintbagħat b’mod sikur, eż. POST b’body, xorta tarmi żball minflok ma terġa’ tiġi ppruvata fis-skiet).
 
-### Trasport tal-fornitur b’web-cookie — wreq-js 3.2.0
+### Trasport tal-fornitur tal-web cookies — wreq-js 3.2.0
 
 `open-sse/services/tlsClientBase.ts` huwa l-adapter kondiviż għall-ħames trasporti speċjalizzati
-b’web-cookie ta’ hawn taħt. Kull wrapper irqiq tal-fornitur jagħżel profil tal-browser/OS. L-adapter
-juża l-loader uniku tar-runtime ta’ wreq u l-pool tat-trasport f’`open-sse/utils/tlsClient.ts`, keyed
-skont il-profil + OS + proxy riżolt, filwaqt li kull talba tuża `cookieMode: "ephemeral"`. Għalhekk,
-il-kontijiet u t-talbiet jaqsmu konnessjonijiet fil-livell tat-trasport, iżda qatt ma jaqsmu sessjoni
-wreq jew cookie jar.
+tal-web cookies hawn taħt. Kull wrapper irqiq ta’ fornitur jagħżel profil ta’ browser/OS. L-adapter
+juża l-loader uniku tar-runtime ta’ wreq u l-pool tat-trasport f’`open-sse/utils/tlsClient.ts`, b’ċavetta
+magħmula mill-profil + OS + proxy riżolt, filwaqt li kull talba tuża `cookieMode: "ephemeral"`. Għalhekk,
+il-kontijiet u t-talbiet jikkondividu konnessjonijiet fil-livell tat-trasport, iżda qatt sessjoni ta’ wreq
+jew kontenitur tal-cookies.
 
-| Fornitur   | Profil        | OS emulat | Politika tal-EOF tal-istream         |
-| ---------- | ------------- | --------- | ------------------------------------ |
-| Claude     | `chrome_146`  | Linux     | inkludi `[DONE]`                     |
-| Perplexity | `firefox_148` | macOS     | inkludi `event: end_of_stream`       |
-| Grok       | `chrome_146`  | Linux     | eskludi `[DONE]`                     |
-| Notion     | `chrome_146`  | Windows   | inkludi `[DONE]`                     |
-| LMArena    | `chrome_146`  | Windows   | ebda sentinel; agħlaq mal-EOF nattiv |
+| Fornitur   | Profil        | OS Emulat | Politika tal-EOF tal-Istream             |
+| ---------- | ------------- | --------- | ---------------------------------------- |
+| Claude     | `chrome_146`  | Linux     | inkludi `[DONE]`                         |
+| Perplexity | `firefox_151` | macOS     | inkludi `event: end_of_stream`           |
+| Grok       | `chrome_146`  | Linux     | eskludi `[DONE]`                         |
+| Notion     | `chrome_146`  | Windows   | inkludi `[DONE]`                         |
+| LMArena    | `chrome_146`  | Windows   | l-ebda sentinella; agħlaq mal-EOF nattiv |
 
-- L-istreaming jikkonsma direttament ir-`ReadableStream` tar-response nattiv; ma jinħoloq ebda fajl
-  temporanju jew sidecar.
+- L-istreaming jikkonsma r-`ReadableStream` tar-response nattiv direttament; ma jinħoloq l-ebda fajl temporanju jew sidecar.
 - Sa 256 byte inizjali jiġu spezzjonati qabel ma jiġi espost stream. Il-fornituri SSE jibbufferjaw
-  żbalji mhux SSE; Grok/LMArena jimmappjaw l-isfidi ta’ Cloudflare għal `403` u l-interstitials HTML
-  għal `502`.
-- It-timeout nattiv tat-talba jibqa’ mgeżwer b’limitu ta’ żmien assolut u strett ta’ JS. Hang
-  jinvalida u jagħlaq biss it-trasport affettwat tal-profil/OS/proxy qabel ma t-talba li jmiss
-  terġa’ toħloqu.
-- Il-prijorità tar-riżoluzzjoni tal-proxy hija `proxyUrl` għal kull sejħa → kuntest tal-kont/dashboard
-  limitat għat-talba → `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (inklużi l-varjanti b’ittri żgħar).
-  Żbalji fir-riżoluzzjoni jagħlqu b’falliment minflok ma jikxfu konnessjoni diretta. LMArena
-  deliberatament jirriżolvi ma’ `arena.ai`.
-- `byteResponse` jirritorna URL `data:` b’tip ta’ kontenut mingħajr korruzzjoni UTF-8.
-- L-iżbalji huma `TlsClientUnavailableError` (pakkett/addon mhux disponibbli), `TlsClientHangError`
-  (inqabeż il-limitu ta’ żmien), u `WreqTransportCapacityError` (il-kodiċi kondiviż tal-iżball
-  tal-kapaċità tas-sessjonijiet) meta l-128 slot limitati kollha tal-profil/OS/proxy jkunu attivi
-  jew qed jingħalqu.
+  żbalji mhux SSE; Grok/LMArena jimmappjaw l-isfidi ta’ Cloudflare għal `403` u l-paġni HTML intermedjarji għal `502`.
+- It-timeout nattiv tat-talba jibqa’ mgeżwer b’limitu ta’ żmien assolut u riġidu f’JS. Waqfien
+  jinvalida u jagħlaq biss it-trasport affettwat tal-profil/OS/proxy qabel ma t-talba li jmiss terġa’ toħolqu.
+- Il-prijorità tar-riżoluzzjoni tal-proxy hija `proxyUrl` għal kull sejħa → kuntest tal-kont/pannell limitat għat-talba →
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (inklużi l-varjanti b’ittri żgħar). Żbalji fir-riżoluzzjoni
+  jfallu b’mod magħluq minflok ma jħallu konnessjoni diretta tnixxi. LMArena apposta jirrisolvi ma’ `arena.ai`.
+- `byteResponse` jirritorna URL `data:` ikklassifikat skont it-tip tal-kontenut mingħajr korruzzjoni UTF-8.
+- L-iżbalji huma `TlsClientUnavailableError` (package/addon mhux disponibbli), `TlsClientHangError`
+  (inqabeż il-limitu taż-żmien), u `WreqTransportCapacityError` (il-kodiċi kondiviż tal-iżball tal-kapaċità tas-sessjonijiet)
+  meta l-128 slot limitati kollha tal-profil/OS/proxy jkunu attivi jew qed jingħalqu.
 
-Is-sessjoni ġenerika `TlsClient` ta’ hawn fuq tibqa’ speċjalizzata għal stat persistenti tal-cookies
-appoġġjat mill-browser. Iż-żewġ mogħdijiet jerġgħu jużaw loader wieħed cached tal-modulu wreq u hook
-taċ-ċiklu tal-ħajja tal-proċess; il-pools tagħhom jibqgħu separati minħabba li t-tul tal-ħajja
-tal-cookies tagħhom huwa intenzjonalment differenti.
+Is-sessjoni ġenerika ta’ `TlsClient` hawn fuq tibqa’ speċjalizzata għal stat persistenti tal-cookies
+ibbażat fuq browser. Iż-żewġ mogħdijiet jerġgħu jużaw loader wieħed tal-modulu wreq fil-cache u hook
+taċ-ċiklu tal-ħajja tal-proċess; il-pools tagħhom jibqgħu separati minħabba li t-tul tal-ħajja tal-cookies
+tagħhom huwa intenzjonalment differenti.
 
-Il-profili huma appoġġjati mill-pakkett ippinjat, iżda l-aċċettazzjoni reali mill-WAF tista’ tinbidel
+Il-profili huma appoġġjati mill-package ippinjat, iżda l-aċċettazzjoni reali mill-WAF tista’ tinbidel
 indipendentement mit-testijiet lokali tal-kuntratt. Ivvalida l-bidliet fil-fingerprint ma’ kont live
-awtorizzat b’mod espliċitu qabel ma tiddikjara parità ma’ browser upstream.
+awtorizzat b’mod espliċitu qabel ma tiddikjara parità ma’ browser tal-upstream.
 
 ---
 
@@ -126,7 +120,7 @@ Applikat għal: blokok `system`, il-`messages[].content` kollha, u `tools[].desc
 
 Għal relays Anthropic ta’ partijiet terzi li jaċċettaw biss traffiku ta’ “Claude Code reali”:
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"` b’mod predefinit
@@ -143,40 +137,62 @@ Moduli relatati fl-istess pakkett:
 
 ---
 
-## Stealth ta’ Antigravity
+## Antigravity Stealth
 
-It-talbiet Antigravity jippreservaw it-test tas-sejjieħ byte b’byte. OmniRoute ma jdaħħalx karattri b’wisa’ żero fil-prompts u ma jibdilx l-ismijiet tal-għodod jew jinjetta għodod biex jimita klijent IDE.
+Antigravity talbiet jippreservaw it-test tas-sejjieħ byte għal byte. OmniRoute ma jdaħħalx karattri ta' wisa' żero f'prompts jew għodod rename/inject biex jimitaw klijent IDE.
 
 ### `antigravityHeaderScrub.ts`
 
-Ineħħi l-markaturi tal-SDK Stainless (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) qabel ma jgħaddi t-talba.
+Strixxi Stainless SDK markers (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) qabel ma jintbagħtu.
 
-### ⚠️ Riskju: `ANTIGRAVITY_CREDITS=always` (punt kritiku għal projbizzjoni tal-kont)
+### ⚠️ Riskju: `ANTIGRAVITY_CREDITS=always` (hot spot tal-projbizzjoni tal-kont)
 
-`ANTIGRAVITY_CREDITS=always` (ikkonsmat minn `open-sse/executors/antigravity.ts`) jgħaddi **kull** talba minn Antigravity AI Credit Overages (krediti Google bi ħlas) minflok iħalli l-kwota tal-livell bla ħlas ta’ Google tikkontrolla l-użu. Dan huwa ddokumentat bħala karatteristika, iżda huwa **l-aktar rapport komuni ta’ ksur tat-ToS li naraw** — diversi kontijiet Google Ultra ġew ipprojbiti bi `403 / "service disabled for ToS violation" / insufficient_quota` wara li damu jaħdmu għal ftit sigħat b’`=always`.
+`ANTIGRAVITY_CREDITS=always` (consumed by `open-sse/executors/antigravity.ts`) rotot** kull** talba permezz ta' Antigravity AI Credit Overages (mħallsa Google credits) minflok ma tħalli l-affarijiet ta' gate ta' kwota b'xejn ta' Google. Dan huwa dokumentat bħala karatteristika, iżda huwa** ir-rapport waħdieni ta' ksur tat-ToS l-aktar komuni li naraw** — multiple Google Ultra accounts ġew ipprojbiti ma `403 / "service disabled for ToS violation" / insufficient_quota` wara li damu għal ftit sigħat ma `=always`.
 
-L-infurzar upstream isir **min-naħa ta’ Google**, u mhuwiex xi ħaġa li OmniRoute jista’ jipprevjeni. L-isem tal-varjabbli tal-ambjent u d-dokumentazzjoni eżistenti jagħtuh l-impressjoni li huwa kontroll sikur biex tattivah; mhuwiex.
+L-infurzar upstream huwa mixgħul** in-naha ta Google** , xejn OmniRoute jista jipprevjeni. L-isem env var u d-doks eżistenti jagħmluha ħoss bħal pum sikur biex taqleb; mhuwiex.
 
-**Għaliex dan jattira d-detezzjoni tal-abbuż b’mod aktar aggressiv mill-użu tal-livell bla ħlas biss:**
+**Għaliex dan jiġbed l-iskoperta tal-abbuż b'mod aktar aggressiv mill-użu ta' saff b'xejn biss:**
 
-- Infiq awtomatizzat u sostnut fuq kont Google wieħed jiġi mmarkat b’mod differenti minn meta l-livell bla ħlas jilħaq il-kwota u jieqaf.
-- L-infiq żejjed tal-krediti m’għandux limitu massimu tar-rata, għalhekk klijent ikkonfigurat ħażin jista’ jaħraq diversi mijiet ta’ USD f’minuti u jidher bħallikieku qed jerġa’ jbigħ API keys jew jiġġenera traffiku ta’ bots.
-- Diversi utenti ta’ OmniRoute li jużaw krediti żejda b’mod parallel mill-istess IP estern isaħħu s-sinjal.
+- L-infiq awtomatizzat sostnut fuq kont Google wieħed jimmarka b'mod differenti minn hits-quota-and-stops b'xejn.
+- L-eċċess tal-kreditu m'għandhom l-ebda limitu massimu tar-rata, għalhekk klijent ikkonfigurat ħażin jista' jaħraq diversi mijiet ta USD f'minuti u jidher qisu bejgħ mill-ġdid ta' API-key jew traffiku bot.
+- Utenti multipli OmniRoute li jolqtu krediti żejda b'mod parallel mill-istess IP esterni jikkomponu s-sinjal.
 
 **Pożizzjoni rakkomandata:**
 
-1. Żomm il-valur predefinit `ANTIGRAVITY_CREDITS=off` sakemm l-operatur ma jaċċettax b’mod espliċitu r-riskju tal-krediti bi ħlas u tal-infurzar fuq il-kont. `retry` jibgħat it-talba normali l-ewwel u jinjetta l-krediti mhux aktar minn darba wara żball 429 eliġibbli relatat mal-kwota; `always` jinjetta l-krediti mal-ewwel talba.
-2. **Qassam it-tagħbija bejn il-fornituri permezz ta’ Auto-Combo** (`model: "auto"` jew combo `kr/glm/etc`) minflok timmassimizza l-użu ta’ kont Antigravity wieħed.
-3. **Issettja limiti RPM għal kull konnessjoni** fil-paġna tal-editjar tal-fornitur Antigravity (Dashboard → Providers → Antigravity → connection → rate limit). 30–60 RPM huwa limitu massimu difendibbli għal użu sostnut.
-4. **Uża networking upstream stabbli u kkontrollat mill-operatur** u evita li taqsam kont wieħed bejn utenti jew workloads mhux relatati.
-5. **Jekk tiġi pprojbit**: appella permezz ta’ `support.google.com` → “Restore Workspace/Account access” bil-body eżatt tar-risposta `quota_exceeded` / `service disabled` li bagħtet Google. Ir-restawr mhuwiex garantit.
+1. Żomm `ANTIGRAVITY_CREDITS=off` default sakemm l-operatur ma jaċċettax b'mod espliċitu kreditu mħallas u riskju ta' infurzar tal-kont. `retry` l-ewwel jibgħat it-talba normali u jinjetta l-krediti l-aktar darba wara kwota eliġibbli 429; `always` jinjetta krediti fuq l-ewwel talba.
+2. **Ifrex it-tagħbija bejn il-fornituri permezz ta' Auto-Combo** (`model: "auto"` jew `kr/glm/etc` -combo) minflok satura kont Antigravity wieħed.
+3. **Issettja limiti RPM kull konnessjoni** fil-paġna tal-editjar tal-fornitur Antigravity (Dashboard → Providers → Antigravity → connection → rate limit). 30–60 RPM huwa limitu ta' fuq difiżibbli għal użu sostnut.
+4. **Uża netwerking upstream stabbli, ikkontrollat mill-operatur** u tevita li taqsam kont wieħed bejn utenti jew tagħbija tax-xogħol mhux relatati.
+5. **Jekk ipprojbit** : appell permezz ta `support.google.com` → "Restore Workspace/Account access" bl-eżatt `quota_exceeded` / `service disabled` response body Google mibgħut. Ir-restawr mhuwiex garantit.
 
-Ir-referenza tal-ambjent tiddokumenta l-implikazzjonijiet għal kull kont u għall-infiq ta’ kull modalità ta’ krediti.
+Ir-referenza tal-ambjent tiddokumenta l-implikazzjonijiet tal-kont u tal-infiq ta’ kull mod ta’ krediti.
 
-Punti ta’ kuntatt:
+#### Mhux biss `=always`: Antigravity OAuth routing in general
+
+Is-sospensjonijiet mhumiex limitati għal kreditu żejjed. Rapporti f'Novembru 2026 (#19223, #19266) jiddeskrivu diversi kontijiet Google sospiżi waqt ir-rotta permezz tal-fornituri `antigravity` u `agy` (Antigravity CLI), bi:
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+Iż-żewġ fornituri jawtentikaw mas-sessjoni Antigravity product OAuth, li huwa l-każ dwar l-avviż tar-riskju tad-dashboard ("Dan il-fornitur juża l-prodott uffiċjali tiegħek session/OAuth, li mhuwiex awtorizzat għall-użu proxy/router ") iwissi dwar qabel ma tiżdied konnessjoni. L-ebda waħda mir-rakkomandazzjonijiet ta' hawn fuq ma tagħmel dak l-użu awtorizzat; huma jnaqqsu biss kemm traffiku kont wieħed iġorr.
+
+**Interfaces API awtorizzati għal mudelli Gemini.** Google joffri aċċess programmatiku għal Gemini permezz ta' APIs tiegħu, li OmniRoute jappoġġja bħala fornituri ordinarji ta' API-key:
+
+| Id-fornitur | Isem tad-dashboard        | Kredenzjali                                                                           |
+| ----------- | ------------------------- | ------------------------------------------------------------------------------------- |
+| `gemini`    | Gemini (Google AI Studio) | ċavetta Gemini API minn Google AI Studio (livell b'xejn disponibbli)                  |
+| `vertex`    | Vertex AI                 | Kont tas-Servizz JSON, token ta' aċċess OAuth jew ċavetta API Vertex Express (Gemini) |
+
+Dawn il-fornituri jużaw kwistjonijiet ta 'kredenzjali Google għall-aċċess API, b'differenza mis-sessjoni tal-prodott Antigravity. Ma jagħmlux kull użu konformi jew ineħħu r-riskju tal-infurzar: kull wieħed huwa rregolat mit-termini tiegħu stess, li l-operatur irid jiċċekkja għall-iskjerament tagħhom. Pereżempju, it- [Termini ta’ Servizz Addizzjonali Gemini API](https://ai.google.dev/gemini-api/terms) jippermettu biss Servizzi Mħallsa meta l-klijenti API isiru disponibbli għall-utenti fiż-Żona Ekonomika Ewropea, l-Isvizzera jew ir-Renju Unit, u l-kontenut mibgħut lil Servizzi Mhux Imħallsa jista’ jintuża biex itejjeb il-prodotti ta’ Google. Vertex AI jaqa' taħt it-termini Google Cloud minflok ( [Termini Speċifiċi tas-Servizz](https://cloud.google.com/terms/service-terms) ). Il-prezzijiet u l-kwoti jsegwu dawk it-termini API aktar milli abbonament Antigravity.
+
+Operaturi li jridu jevitaw is-sospensjonijiet Antigravity deskritti hawn fuq għandhom iwasslu t-traffiku Gemini minn wieħed minn dawn il-fornituri minflok `antigravity` / `agy`, wara li jiċċekkjaw li l-użu tagħhom jaqbel mat-termini tal-fornitur.
+
+Punti ta' kuntatt:
 
 - `open-sse/executors/antigravity.ts` — jaqra `process.env.ANTIGRAVITY_CREDITS`
-- `src/lib/oauth/providers/antigravity.ts` — infrastruttura tal-kredenzjali
+- `src/lib/oauth/providers/antigravity.ts` — credential plumbing
 - Rapport oriġinali tal-inċident: Diskussjoni [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
@@ -244,19 +260,18 @@ Barra minn hekk, `updateNssDatabases()` jinstalla fid-databases NSS għal kull u
 
 L-endpoints MITM kollha jeħtieġu awtentikazzjoni tal-ġestjoni (`requireCliToolsAuth`). Il-password ta’ sudo tinżamm fil-cache fl-ambitu tal-modulu (qatt f’`globalThis`) u titħassar meta jiġi eżegwit `stopMitm()`.
 
-## Sostituzzjonijiet tal-User-Agent — varjabbli tal-ambjent (`.env.example` taqsima 12)
+## L-Aġent tal-Utent Jissostitwixxi — env vars (`.env.example` taqsima 12)
 
-| Varjabbli                | Valur predefinit                                                |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| Varjabbli           | Default                                       |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-Użati minn `open-sse/executors/base.ts::buildHeaders()` permezz ta’ tfittxija dinamika. **Aġġornahom meta l-fornituri joħorġu verżjonijiet ġodda tas-CLI** — strings tal-UA skaduti jibdew jiġu rrifjutati bħala klijenti mhux aġġornati.
+Ikkunsmat minn `open-sse/executors/base.ts::buildHeaders()` permezz ta' tfittxija dinamika.** Bump dawn meta l-fornituri jirrilaxxaw verżjonijiet ġodda CLI** — stale UA kordi jibdew jiġu miċħuda bħala klijenti antikwati.
 
 ## Swiċċijiet tal-Mod ta’ Kompatibbiltà tas-CLI (`.env.example` taqsima 13)
 

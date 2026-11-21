@@ -8,21 +8,26 @@ Thank you for your interest in contributing! This guide covers everything you ne
 
 ---
 
-## Configuración del entorno de desarrollo
+## Configuración de desarrollo
 
 ### Requisitos previos
 
-- **Node.js** `>=22.22.3 <23`, o `>=24.0.0 <27` (recomendado: 24 LTS)
+- **Node.js** `>=22.22.2 <23`, o `>=24.0.0 <27` (recomendado: 24 LTS)
 - **npm** 10+
 
-> **Usuarios de npm v11+ (Node 24+):** Después de ejecutar `npm install`, verifica que se hayan instalado los módulos nativos:
+> **Windows con Node 24:** usa la versión de parche actual de 24 LTS (al menos 24.20.0).
+> Las versiones anteriores pueden abortar después de pruebas exitosas cuando `--test-force-exit` cierra el
+> proceso. La [corrección de Windows para libuv de Node](https://github.com/nodejs/node/pull/61999) soluciona
+> este bloqueo del tiempo de ejecución; mantén habilitadas las aserciones de prueba y las comprobaciones de salida del ejecutor.
+
+> **Usuarios de npm v11+ (Node 24+):** Después de `npm install`, verifica que se instalaron los módulos nativos:
 > `node -e "require('better-sqlite3')"`. Si falla con `MODULE_NOT_FOUND`,
 > ejecuta `npm approve-scripts better-sqlite3 && npm install`. Consulta
 > [Solución de problemas](docs/guides/TROUBLESHOOTING.md#npm-v11-better-sqlite3-not-installed-cannot-find-module).
 
 - **Git**
 
-### Clonación e instalación
+### Clonar e instalar
 
 ```bash
 git clone https://github.com/diegosouzapw/OmniRoute.git
@@ -33,7 +38,7 @@ npm install
 ### Variables de entorno
 
 ```bash
-# Crea tu archivo .env a partir de la plantilla
+# Crea tu .env a partir de la plantilla
 cp .env.example .env
 
 # Genera los secretos necesarios
@@ -43,79 +48,79 @@ echo "API_KEY_SECRET=$(openssl rand -hex 32)" >> .env
 
 Variables clave para el desarrollo:
 
-| Variable               | Valor predeterminado de desarrollo | Descripción                            |
-| ---------------------- | ---------------------------------- | -------------------------------------- |
-| `PORT`                 | `20128`                            | Puerto del servidor                    |
-| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`           | URL base para el frontend              |
-| `JWT_SECRET`           | (generar arriba)                   | Secreto para firmar los JWT            |
-| `INITIAL_PASSWORD`     | `CHANGEME`                         | Contraseña del primer inicio de sesión |
-| `APP_LOG_LEVEL`        | `info`                             | Nivel de detalle de los registros      |
+| Variable               | Valor predeterminado de desarrollo | Descripción                  |
+| ---------------------- | ---------------------------------- | ---------------------------- |
+| `PORT`                 | `20128`                            | Puerto del servidor          |
+| `NEXT_PUBLIC_BASE_URL` | `http://localhost:20128`           | URL base del frontend        |
+| `JWT_SECRET`           | (genera arriba)                    | Secreto de firma de JWT      |
+| `INITIAL_PASSWORD`     | `CHANGEME`                         | Contraseña del primer inicio |
+| `APP_LOG_LEVEL`        | `info`                             | Nivel de detalle de los logs |
 
 ### Configuración del panel
 
-El panel proporciona controles de interfaz para funciones que también pueden configurarse mediante variables de entorno:
+El panel proporciona interruptores de UI para funciones que también pueden configurarse mediante variables de entorno:
 
-| Ubicación de la configuración | Control                         | Descripción                                                    |
-| ----------------------------- | ------------------------------- | -------------------------------------------------------------- |
-| Configuración → Avanzado      | Modo de depuración              | Habilita los registros de solicitudes de depuración (interfaz) |
-| Configuración → General       | Visibilidad de la barra lateral | Muestra/oculta secciones de la barra lateral                   |
+| Ubicación de la configuración | Interruptor                     | Descripción                                      |
+| ----------------------------- | ------------------------------- | ------------------------------------------------ |
+| Settings → Advanced           | Modo de depuración              | Habilitar logs de solicitudes de depuración (UI) |
+| Settings → General            | Visibilidad de la barra lateral | Mostrar/ocultar secciones de la barra lateral    |
 
-Esta configuración se almacena en la base de datos y persiste entre reinicios; cuando se establece, prevalece sobre los valores predeterminados de las variables de entorno.
+Esta configuración se almacena en la base de datos y persiste entre reinicios, sustituyendo los valores predeterminados de las variables de entorno cuando se establece.
 
 ### Ejecución local
 
 ```bash
-# Modo de desarrollo (recarga automática)
+# Modo de desarrollo (recarga en caliente)
 npm run dev
 
 # Compilación de producción
 npm run build    # next build → .build/next/ y luego assembleStandalone → dist/
 npm run start
 
-# Compilación rápida solo del backend/API para cambios de colaboradores
+# Compilación rápida únicamente del backend/API para cambios de colaboradores
 npm run build:contributor
 
-# Compilación de lanzamiento (recompilación limpia + centinela HEAD — obligatoria para el despliegue)
-npm run build:release   # rm -rf .build dist && build + escribe dist/BUILD_SHA
+# Compilación de lanzamiento (recompilación limpia + sentinel HEAD — requerida para el despliegue)
+npm run build:release   # rm -rf .build dist y luego build + escribe dist/BUILD_SHA
 
-# Configuración común del puerto
+# Configuración de puerto habitual
 PORT=20128 NEXT_PUBLIC_BASE_URL=http://localhost:20128 npm run dev
 ```
 
-La compilación para colaboradores realiza una validación únicamente mediante compilación: no ensambla la
-distribución independiente ni compila los recursos opcionales del empaquetado nativo. Usa la compilación normal de producción cuando
-necesites validar el paquete distribuible.
+La compilación para colaboradores realiza una validación únicamente de compilación: no ensambla la
+distribución independiente ni compila recursos opcionales de empaquetado nativo. Usa la compilación de producción
+normal cuando necesites validar el paquete listo para distribuir.
 
-### Estructura de la salida de compilación
+### Diseño de la salida de compilación
 
-| Directorio | Contenido                                                                                 | Con seguimiento |
-| ---------- | ----------------------------------------------------------------------------------------- | --------------- |
-| `src/`     | Código fuente de la aplicación (TypeScript / TSX)                                         | Sí              |
-| `.build/`  | Archivos intermedios — salida de `next build` (ignorada por git, `distDir = .build/next`) | No              |
-| `dist/`    | Paquete distribuible — ensamblado por `assembleStandalone` (ignorado por git)             | No              |
+| Directorio | Contenido                                                                             | Seguimiento |
+| ---------- | ------------------------------------------------------------------------------------- | ----------- |
+| `src/`     | Código fuente de la aplicación (TypeScript / TSX)                                     | Sí          |
+| `.build/`  | Intermedios: salida de `next build` (ignorado por git, `distDir = .build/next`)       | No          |
+| `dist/`    | Paquete listo para distribuir: ensamblado por `assembleStandalone` (ignorado por git) | No          |
 
-El proceso de compilación se realiza en una sola pasada:
+El flujo de compilación es de una sola pasada:
 
 ```
 npm run build
   └─ next build → .build/next/standalone  (salida de Next.js)
-  └─ assembleStandalone()                 (copia los archivos independientes + estáticos + públicos + recursos nativos)
+  └─ assembleStandalone()                 (copia standalone + static + public + recursos nativos)
        └─ salida: dist/                   (server.js, .next/static/, public/, node_modules/)
 ```
 
-`npm run build:release` también limpia primero ambos directorios y escribe
-`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) como centinela de integridad del despliegue.
+`npm run build:release` además limpia ambos directorios primero y escribe
+`dist/BUILD_SHA` (= `git rev-parse --short HEAD`) como indicador de integridad del despliegue.
 
-`npm run build:contributor` usa el perfil de compilación exclusivo para el backend. Sustituye temporalmente por archivos provisionales
-los archivos de la interfaz del panel durante la compilación, conserva los controladores de rutas de la API y restaura los archivos originales
-después de la compilación. Usa `npm run build` para los cambios que afecten a la interfaz del panel o para realizar una
-validación completa del lanzamiento; el perfil para colaboradores no sustituye la compilación de lanzamiento.
+`npm run build:contributor` utiliza el perfil de compilación exclusivo del backend. Sustituye temporalmente los
+archivos de la UI del panel mientras compila, conserva los controladores de rutas de la API y restaura los archivos
+originales después de la compilación. Usa `npm run build` para cambios que afecten a la UI del panel o para una
+validación completa del lanzamiento; el perfil para colaboradores no sustituye a la compilación de lanzamiento.
 
-> **Nota sobre el despliegue en VPS:** el directorio remoto de la imagen `/usr/lib/node_modules/omniroute/app/`
+> **Nota sobre el despliegue en VPS:** el directorio de imágenes remoto `/usr/lib/node_modules/omniroute/app/`
 > no cambia. Las herramientas de despliegue sincronizan mediante rsync el contenido de `dist/` en él.
 > Solo cambió la ruta de salida de compilación dentro del repositorio (`app/` → `dist/`).
 
-URL predeterminadas:
+URLs predeterminadas:
 
 - **Panel**: `http://localhost:20128/dashboard`
 - **API**: `http://localhost:20128/v1`
@@ -173,15 +178,15 @@ refactor(db): consolidate rate limit tables
 # Todas las pruebas (unitarias + vitest + ecosistema + e2e)
 npm run test:all
 
-# Un solo archivo de pruebas (ejecutor de pruebas nativo de Node.js; la mayoría de las pruebas usan este)
+# Un único archivo de prueba (ejecutor de pruebas nativo de Node.js; la mayoría de las pruebas usa este)
 node --import tsx/esm --test tests/unit/your-file.test.ts
 
-# Solo las pruebas unitarias afectadas por tu cambio (el mismo selector TIA que en la comprobación de CI, #8084)
+# Solo las pruebas unitarias afectadas por el cambio (el mismo selector TIA que la comprobación de CI, #8084)
 npm run test:scoped            # cambios en el último commit (o en el árbol de trabajo)
-npm run test:scoped:staged     # solo cambios en staging; combina bien con una ejecución previa al commit
-npm run test:scoped:full       # primero reconstruye el mapa del grafo de importaciones (tras añadir/mover archivos)
-# El código de salida 1 + «ejecuta la suite completa» significa que ha cambiado un archivo central (tsconfig, package.json, …) o
-# un archivo fuente no mapeado; el selector falla de forma segura, nunca omite pruebas silenciosamente.
+npm run test:scoped:staged     # solo cambios preparados; combina bien con una ejecución previa al commit
+npm run test:scoped:full       # primero vuelve a generar el mapa del grafo de importaciones (tras añadir/mover archivos)
+# Un código de salida 1 + "ejecutar la suite completa" significa que cambió un archivo central
+# (tsconfig, package.json, …) o código fuente sin asignar; el selector aplica un modo seguro y nunca omite pruebas silenciosamente.
 
 # Vitest (servidor MCP, autoCombo, caché)
 npm run test:vitest
@@ -189,7 +194,7 @@ npm run test:vitest
 # Pruebas E2E (requieren Playwright)
 npm run test:e2e
 
-# Pruebas E2E de clientes de protocolo (transportes MCP, A2A)
+# E2E de clientes de protocolo (transportes MCP, A2A)
 npm run test:protocols:e2e
 
 # Pruebas de compatibilidad del ecosistema
@@ -203,15 +208,15 @@ npm run coverage:report
 npm run lint
 npm run check
 
-# Prueba de humo combinada y controlada con servicios upstream reales (requiere acceso al VPS y créditos reales del proveedor)
-# Accede a proveedores REALES; tiene un pequeño coste. NUNCA se ejecuta en CI. Se omite correctamente sin la activación.
+# Prueba de humo combinada y controlada con servicios ascendentes reales (requiere acceso al VPS y créditos reales de proveedores)
+# Contacta con proveedores REALES; tiene un pequeño coste. NUNCA se ejecuta en CI. Se omite limpiamente sin la activación.
 # Requiere: acceso mediante ssh root@192.168.0.15 (obtiene del VPS una instantánea de la base de datos de solo lectura).
 RUN_COMBO_LIVE=1 npm run test:combo:live
 
-# Prueba de humo en vivo del VPS de la fase 3: scripts ESM de Node sin formato adicional que acceden directamente al servidor .15 en vivo.
-# Requiere: acceso mediante ssh root@192.168.0.15 (los combos se crean/eliminan mediante SQLite por SSH).
-# Accede a proveedores REALES (coste reducido). Crea/elimina únicamente combos __live_test__*. NUNCA se ejecuta en CI.
-# REQUIRE_API_KEY=false en .15, por lo que no se necesita ninguna clave de API, pero respeta COMBO_LIVE_BASE_URL / COMBO_LIVE_API_KEY si están definidos.
+# Prueba de humo en vivo de la fase 3 en el VPS: scripts ESM de Node sin intermediarios que acceden directamente al servidor .15 activo.
+# Requiere: acceso mediante ssh root@192.168.0.15 (las combinaciones se crean y eliminan mediante SQLite por SSH).
+# Contacta con proveedores REALES (coste reducido). Solo crea/elimina combinaciones __live_test__*. NUNCA se ejecuta en CI.
+# REQUIRE_API_KEY=false en .15, por lo que no se necesita ninguna clave de API, pero respeta COMBO_LIVE_BASE_URL / COMBO_LIVE_API_KEY si están establecidas.
 npm run test:combo:live:vps              # 7 escenarios HTTP (prioridad/round-robin/ponderado/coste/fusión/automático + estado)
 npm run test:combo:live:vps:failover     # añade un escenario real de conmutación por error entre proveedores (8 en total)
 ```
@@ -219,32 +224,33 @@ npm run test:combo:live:vps:failover     # añade un escenario real de conmutaci
 Notas sobre la cobertura:
 
 - `npm run test:coverage` mide la cobertura del código fuente para la suite principal de pruebas unitarias, excluye `tests/**` e incluye `open-sse/**`
-- Las solicitudes de incorporación de cambios deben mantener el umbral de cobertura en **60 % o más** de sentencias/líneas/funciones/ramas
-- Si un PR cambia código de producción en `src/`, `open-sse/`, `electron/` o `bin/`, debe añadir o actualizar pruebas automatizadas en el mismo PR
-- `npm run coverage:report` muestra el informe detallado archivo por archivo de la última ejecución de cobertura
-- `npm run test:coverage:legacy` conserva la métrica anterior para realizar comparaciones históricas
+- Las solicitudes de incorporación de cambios deben mantener el umbral de cobertura en **60 % o más** para sentencias/líneas/funciones/ramas
+- Si una solicitud de incorporación de cambios modifica código de producción en `src/`, `open-sse/`, `electron/` o `bin/`, debe añadir o actualizar pruebas automatizadas en la misma solicitud
+- `npm run coverage:report` muestra el informe detallado archivo por archivo de la ejecución de cobertura más reciente
+- `npm run test:coverage:legacy` conserva la métrica anterior para comparaciones históricas
 - Consulta `docs/ops/COVERAGE_PLAN.md` para ver la hoja de ruta por fases destinada a mejorar la cobertura
 
 ### Requisitos de las solicitudes de incorporación de cambios
 
-Antes de abrir un PR, usa la
+Antes de abrir una solicitud de incorporación de cambios, utiliza la
 [Ruta recomendada para contribuir](docs/ops/CONTRIBUTION_GOLDEN_PATH.md) para ejecutar el ciclo específico correspondiente a
-lo que hayas cambiado. La suite unitaria completa (4 particiones de CI), Vitest, el umbral de cobertura de **60 % o más** y
-la compilación de producción son responsabilidad de CI; ejecutarlos localmente no aporta ninguna señal que las
-comprobaciones del PR no vayan a proporcionar ya y, en máquinas más pequeñas, puede saturar el host (#8084):
+lo que hayas cambiado. La suite completa de pruebas unitarias (4 particiones de CI), Vitest, el umbral de cobertura de **60 % o más** y
+la compilación de producción son responsabilidad de CI; ejecutarlos localmente no aporta ninguna señal que las comprobaciones de la solicitud
+no vayan a proporcionar ya y, en equipos menos potentes, puede saturar el sistema (#8084):
 
-- Ejecuta los archivos de pruebas que cubren tu cambio: `node --import tsx/esm --test tests/unit/<file>.test.ts`
+- Ejecuta los archivos de prueba que cubran tu cambio: `node --import tsx/esm --test tests/unit/<file>.test.ts`
 - Ejecuta `npm run lint`
-- Incluye o actualiza pruebas automatizadas en el mismo PR siempre que cambie el código de producción
-- Incluye en la descripción del PR los archivos de pruebas modificados o añadidos cuando haya cambiado el código de producción
-- Comprueba el resultado de SonarQube en el PR cuando los secretos del proyecto estén configurados en CI
+- Incluye o actualiza pruebas automatizadas en la misma solicitud siempre que cambie el código de producción
+- En archivos de `node:test`, coloca cada `await` de nivel superior (como `await import(...)`) antes del primer `test()` / `describe()`: con `--test-force-exit`, las pruebas registradas después podrían no ejecutarse silenciosamente (#18045; aplicado mediante `npm run check:test-tla-order`)
+- Incluye en la descripción de la solicitud los archivos de prueba modificados o añadidos cuando haya cambiado el código de producción
+- Comprueba el resultado de SonarQube en la solicitud cuando los secretos del proyecto estén configurados en CI
 
 Estado actual de las pruebas: **122 archivos de pruebas unitarias** que cubren:
 
 - Traductores de proveedores y conversión de formatos
-- Limitación de velocidad, disyuntor y resiliencia
+- Limitación de frecuencia, disyuntor y resiliencia
 - Caché semántica, idempotencia y seguimiento del progreso
-- Operaciones de base de datos y esquema (21 módulos de base de datos)
+- Operaciones y esquema de la base de datos (21 módulos de base de datos)
 - Flujos de OAuth y autenticación
 - Validación de endpoints de API (Zod v4)
 - Herramientas del servidor MCP y aplicación de ámbitos
@@ -288,7 +294,7 @@ Consulta `open-sse/utils/stream.ts` y `open-sse/utils/streamHandler.ts` para ver
 
 ---
 
-## Project Structure
+## Estructura del proyecto
 
 ```
 src/                        # TypeScript (.ts / .tsx)
@@ -301,7 +307,7 @@ src/                        # TypeScript (.ts / .tsx)
 │   ├── a2a/                # Agent-to-Agent v0.3 protocol server
 │   ├── acp/                # Agent Communication Protocol registry
 │   ├── compliance/         # Compliance policy engine
-│   ├── db/                 # SQLite database layer (110 top-level modules + 130 migrations)
+│   ├── db/                 # SQLite domain modules + 130 migrations
 │   ├── memory/             # Persistent conversational memory
 │   ├── oauth/              # OAuth providers, services, and utilities
 │   ├── skills/             # Extensible skill framework
@@ -311,15 +317,15 @@ src/                        # TypeScript (.ts / .tsx)
 ├── mitm/                   # MITM proxy (cert, DNS, target routing)
 ├── shared/
 │   ├── components/         # React components (.tsx)
-│   ├── constants/          # Provider definitions (329), MCP scopes, routing strategies
+│   ├── constants/          # Provider definitions (329), MCP scopes, 22 routing strategies
 │   ├── utils/              # Circuit breaker, sanitizer, auth helpers
 │   └── validation/         # Zod v4 schemas
 └── sse/                    # SSE proxy pipeline
 
 open-sse/                   # @omniroute/open-sse workspace
-├── executors/              # 89 executor implementation modules
+├── executors/              # 150 executor modules (executor classes + per-provider helpers)
 ├── handlers/               # 11 request handlers (chat, responses, embeddings, images, etc.)
-├── mcp-server/             # MCP server (107 tools, 3 transports, 32 scopes)
+├── mcp-server/             # MCP server (110 unique tools, 3 transports, 33 scopes)
 ├── services/               # 178 top-level services (combo, autoCombo, rateLimitManager, etc.)
 ├── translator/             # Format translators (OpenAI ↔ Claude ↔ Gemini ↔ Responses ↔ Ollama)
 ├── transformer/            # Responses API transformer
@@ -328,25 +334,32 @@ open-sse/                   # @omniroute/open-sse workspace
 electron/                   # Electron desktop app (cross-platform)
 
 tests/
-├── unit/                   # Node.js test runner (122 test files)
+├── unit/                   # Node.js test runner (1,574 test files)
 ├── integration/            # Integration tests
 ├── e2e/                    # Playwright tests
 ├── security/               # Security tests
 ├── translator/             # Translator-specific tests
 └── load/                   # Load tests
 
-docs/                       # Documentation
-├── ARCHITECTURE.md         # System architecture
-├── API_REFERENCE.md        # All endpoints
-├── USER_GUIDE.md           # Provider setup, CLI integration
-├── TROUBLESHOOTING.md      # Common issues
-├── MCP-SERVER.md           # MCP server (107 tools)
-├── A2A-SERVER.md           # A2A agent protocol
-├── AUTO-COMBO.md           # Auto-combo engine
-├── CLI-TOOLS.md            # CLI tools integration
-├── COVERAGE_PLAN.md        # Test coverage improvement plan
-├── openapi.yaml            # OpenAPI specification
-└── adr/                    # Architecture Decision Records
+docs/
+├── adr/                     # Architecture Decision Records
+├── architecture/            # System architecture & resilience
+├── comparison/              # OmniRoute vs alternatives
+├── compression/             # Compression guides & rules
+├── dev/                     # Development guides
+├── diagrams/                # Architecture diagrams
+├── frameworks/              # MCP, A2A, OpenCode, Memory, Skills
+├── guides/                  # User guide, Docker, setup, troubleshooting
+├── i18n/                    # Internationalized README translations
+├── marketing/               # Marketing materials
+├── ops/                     # Deployment, proxy, coverage, releases
+├── providers/               # Provider-specific docs
+├── reference/               # API reference, env vars, CLI tools, free tiers
+├── releases/                # Release notes
+├── routing/                 # Auto-combo engine, reasoning replay
+├── screenshots/             # Dashboard screenshots
+├── security/                # Guardrails, compliance, stealth, tokens
+└── specs/                   # Design specs
 ```
 
 ---
@@ -387,28 +400,31 @@ Escribe pruebas unitarias en `tests/unit/` que cubran, como mínimo:
 
 ---
 
-## Lista de verificación de la solicitud de incorporación de cambios
+## Lista de verificación de solicitud de extracción
 
-- [ ] Las pruebas pasan (`npm test`)
-- [ ] El linting pasa (`npm run lint`)
-- [ ] La compilación se completa correctamente (`npm run build`)
-- [ ] Se añadieron tipos de TypeScript para las nuevas funciones e interfaces públicas
-- [ ] No hay secretos ni valores de respaldo codificados de forma fija
-- [ ] Las credenciales públicas de upstream están integradas mediante `resolvePublicCred()` (consulta [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md)), nunca como literales
-- [ ] Las respuestas de error pasan por `buildErrorBody()` / `sanitizeErrorMessage()`; no hay trazas de pila sin procesar en los cuerpos de las respuestas (consulta [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md))
-- [ ] Los comandos de shell (`exec` / `spawn`) pasan los valores en tiempo de ejecución mediante `env`, no mediante interpolación de cadenas
-- [ ] Todas las entradas se validan con esquemas de Zod
-- [ ] Se añadió un **fragmento** del registro de cambios en `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` para los cambios visibles para el usuario (consulta [`changelog.d/README.md`](./changelog.d/README.md)); **no** edites `CHANGELOG.md` directamente; los fragmentos se agregan en el momento de la publicación y nunca generan conflictos entre solicitudes de incorporación de cambios
-- [ ] Se actualizó la documentación (si corresponde)
-- [ ] No se abrieron nuevas alertas de CodeQL / Secret-Scanning, o cada una se descartó con una justificación técnica que hace referencia al documento pertinente de `docs/security/`
-- [ ] Las rutas que generan procesos secundarios (`/api/mcp/`, `/api/cli-tools/runtime/`) están clasificadas como `isLocalOnlyPath()` en `src/server/authz/routeGuard.ts`; consulta la [Regla estricta n.º 15](docs/security/ROUTE_GUARD_TIERS.md)
-- [ ] No hay pies `Co-Authored-By` en los mensajes de commit; los commits deben aparecer únicamente bajo la identidad de Git del propietario del repositorio (Regla estricta n.º 16)
+- [ ] Pasan las pruebas (`npm test`)
+- [ ] Pases de pelusa (`npm run lint`)
+- [ ] La construcción tiene éxito (`npm run build`)
+- [ ] Se agregaron tipos de TypeScript para nuevas funciones e interfaces públicas.
+- [ ] Sin secretos codificados ni valores alternativos
+- [ ] Credenciales públicas ascendentes integradas a través de `resolvePublicCred()` (consulte [`docs/security/PUBLIC_CREDS.md`](./docs/security/PUBLIC_CREDS.md) ), nunca como literales
+- [ ] Las respuestas de error se enrutan a través de `buildErrorBody()` / `sanitizeErrorMessage()` — sin rastros de pila sin procesar en los cuerpos de las respuestas (consulte [`docs/security/ERROR_SANITIZATION.md`](./docs/security/ERROR_SANITIZATION.md) )
+- [ ] Los comandos de Shell (`exec` / `spawn`) pasan valores de tiempo de ejecución a través de `env`, no a través de interpolación de cadenas.
+- [ ] Todas las entradas validadas con esquemas Zod
+- [ ] Registro de cambios** fragmento** agregado en `changelog.d/{features|fixes|maintenance}/<PR>-<slug>.md` para cambios de cara al usuario (ver [`changelog.d/README.md`](./changelog.d/README.md) ) — do** no** editar `CHANGELOG.md` directamente; Los fragmentos se agregan en el momento del lanzamiento y nunca entran en conflicto entre PRs
+- [ ] Documentación actualizada (si aplica)
+- [ ] No se abrieron nuevas alertas CodeQL /Escaneo secreto, o cada una se descartó con una justificación técnica que haga referencia al documento `docs/security/` relevante.
+- [ ] Rutas que generan procesos secundarios (`/api/mcp/`, `/api/cli-tools/runtime/`) clasificados como `isLocalOnlyPath()` en `src/server/authz/routeGuard.ts` — consulte [la regla estricta #15](docs/security/ROUTE_GUARD_TIERS.md)
+- [ ] No hay avances AI/bot `Co-authored-by` en los mensajes de confirmación (Regla estricta #16). A los colaboradores humanos de — cuyo trabajo se reutiliza se les acreditan avances `Co-authored-by: Name <email>` estándar.
 
 ---
 
-## Releasing
+## Publicación de versiones
 
-Releases are managed via the `/generate-release` workflow. When a new GitHub Release is created, the package is **automatically published to npm** via GitHub Actions.
+Las versiones se gestionan mediante el flujo de trabajo `/generate-release`. Cuando se crea una nueva versión en GitHub, el paquete se **publica automáticamente en npm** mediante GitHub Actions.
+
+Para despliegues en VPS, usa `npm run build:release` (no `npm run build`): realiza una recompilación limpia, ensambla el paquete en `dist/` y escribe el marcador `dist/BUILD_SHA`.
+Después, usa las habilidades `/deploy-vps-*-cc`, que sincronizan `dist/` mediante rsync con el directorio remoto `app/`.
 
 ---
 

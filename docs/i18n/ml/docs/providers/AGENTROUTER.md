@@ -47,7 +47,7 @@ docker run -d --name omniroute \
   -p 20128:20128 \
   -v omniroute-data:/app/data \
   -e ENABLE_CC_COMPATIBLE_PROVIDER=true \
-  diegosouzapw/omniroute:latest
+  cheaperinference/omniroute:latest
 ```
 
 പുനരാരംഭിച്ച ശേഷം, നിലവിലുള്ള OpenAI-ന് അനുയോജ്യമായതും Anthropic-ന് അനുയോജ്യമായതുമായ പ്രവാഹങ്ങൾക്ക് പുറമേ **Claude Code Compatible ചേർക്കുക** എന്ന ഓപ്ഷനും ഡാഷ്ബോർഡിൽ ലഭ്യമാകും.
@@ -103,7 +103,7 @@ curl -X POST http://localhost:20128/v1/chat/completions \
 | ഹെഡർ                                           | മൂല്യം                                                                                                                          |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
 | `Authorization`                                | `Bearer <api-key>`                                                                                                              |
-| `User-Agent`                                   | `claude-cli/2.1.258 (external, sdk-cli)`                                                                                        |
+| `User-Agent`                                   | `claude-cli/2.1.280 (external, sdk-cli)`                                                                                        |
 | `anthropic-version`                            | `2023-06-01`                                                                                                                    |
 | `anthropic-beta`                               | `claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24`                                                        |
 | ഓരോ കണക്ഷനിലുമുള്ള redact-thinking ബീറ്റ ടോഗിൾ | പ്രത്യേകം റിഡാക്റ്റ് ചെയ്ത തിങ്കിംഗ് സ്ട്രീമുകൾ ആവശ്യമായ അപ്സ്ട്രീമുകൾക്കായി `redact-thinking-2026-02-12` ചേർക്കുന്നു           |

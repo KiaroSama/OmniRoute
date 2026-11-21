@@ -1,6 +1,29 @@
 import { z } from "zod";
 
+import { DEFAULT_MODEL_CACHE_TTL_MS } from "./cache.js";
+import type { ResolvedOptions } from "./catalog.js";
+import {
+  CATALOG_ORDER_DIRECTIONS,
+  CATALOG_ORDER_KEYS,
+  type CatalogOrderSpec,
+} from "./catalog-order.js";
+import { DEFAULT_FREE_SIGNALS, FREE_SIGNALS } from "./shared/free-signals.js";
 import { isHttpUrl } from "./shared/models-map.js";
+
+const catalogOrderSpecSchema = z
+  .object({
+    key: z.enum(CATALOG_ORDER_KEYS, {
+      error: (issue) =>
+        `invalid modelOrder key ${JSON.stringify(issue.input)}: expected one of ${CATALOG_ORDER_KEYS.join(" | ")}`,
+    }),
+    direction: z
+      .enum(CATALOG_ORDER_DIRECTIONS, {
+        error: (issue) =>
+          `invalid modelOrder direction ${JSON.stringify(issue.input)}: expected one of ${CATALOG_ORDER_DIRECTIONS.join(" | ")}`,
+      })
+      .optional(),
+  })
+  .strict();
 
 const apiFormatSchema = z
   .object({
@@ -44,16 +67,53 @@ const pluginOptionsSchema = z
     modelCacheTtlMs: z.number().positive().optional(),
     visibleModels: z.array(z.string()).optional(),
     hiddenModels: z.array(z.string()).optional(),
+    providersAllow: z.array(z.string()).optional(),
     usableOnly: z.boolean().default(false),
+    // Hide every combo when false: no /api/combos request and no combo
+    // rows from /v1/models; models are unchanged.
+    combos: z.boolean().default(true),
+    // Combo source: "api" (default) folds /api/combos over each combo's
+    // members, so a combo publishes only when every member passes the
+    // filters. "models" skips that request and publishes the combo rows
+    // /v1/models serves; any member-level filter keeps the "api" source.
+    combosSource: z.enum(["api", "models"]).default("api"),
+    freeOnly: z.boolean().default(false),
+    // Extra signals that admit a model under `freeOnly` besides the declared
+    // free-tier catalog. Opt-in: the default keeps the declared-only rule.
+    freeSignals: z.array(z.enum(FREE_SIGNALS)).default([...DEFAULT_FREE_SIGNALS]),
+    // Provider prefixes whose models count as free under the
+    // `provider-named` signal (prefixes ending in `-free` always do).
+    freeProviders: z.array(z.string()).optional(),
+    toolsOnly: z.boolean().default(false),
+    visionOnly: z.boolean().default(false),
+    // Per-provider showcase size: how many models each provider keeps in
+    // the default view. Absent means the catalog default below.
+    showcasePerOwner: z.number().positive().optional(),
+    freshPerOwner: z.number().positive().optional(),
+    // Freshness window in days: entries dated within it publish via the
+    // fresh branch. Absent means the catalog default below.
+    freshWindowDays: z.number().positive().optional(),
+    // Restore statically dropped entries named by 30-day usage analytics.
+    // On by default; needs a management token.
+    usageMemory: z.boolean().optional(),
     // v1 parity: enrichment overlay on by default (names + pricing).
     enrichment: z.boolean().default(true),
     // v1 parity: strip the JSON-Schema keywords Gemini rejects from tool
     // declarations bound for a Gemini model. On by default — leaving them in
     // fails the whole request with 400 INVALID_ARGUMENT.
     geminiSanitization: z.boolean().default(true),
-    // v1 parity: prefix a model's display name with the upstream provider it
-    // routes to, so the same model sold through two connections is
-    // distinguishable in the picker.
+    // Ordered list of catalog sort criteria; each carries an optional
+    // direction. Absent applies the default chain (provider, name, recency);
+    // an empty list means the same. An unknown key or direction is rejected
+    // at load, naming the offending value and the supported set.
+    modelOrder: z.array(catalogOrderSpecSchema).optional(),
+    // Toggle for the trailing editor parenthesis. The provider (the route that
+    // serves the model: Openrouter, Opencode-go, Nvidia for `nvidia/...` ids)
+    // is always shown; the editor (who made the model: MoonshotAI, Meta,
+    // DeepSeek) appears only here. Example:
+    // `Openrouter - MoonshotAI: Kimi K 3.1 Pro` -> `Openrouter - Kimi K 3.1 Pro (MoonshotAI)`.
+    // The parenthesis is omitted when the editor shares the provider's name.
+    // true (default) shows the parenthesis, false drops it.
     providerTag: z.boolean().default(true),
     // Inference telemetry is off by default: the host must opt in before the
     // plugin touches the sdk domain at all.
@@ -81,13 +141,10 @@ export function resolveManagementReadToken(optionValue: string | undefined): str
 
 /** Per-endpoint timeout defaults (v1 parity). `timeoutMs` is the global fallback. */
 export const DEFAULT_TIMEOUT_MS = 10_000 as const;
-/** Auto-combos keep the v1 5s budget; the field is resolved now for the P3 port. */
-export const DEFAULT_AUTO_COMBOS_TIMEOUT_MS = 5_000 as const;
 
 export interface EndpointTimeouts {
   models: number;
   combos: number;
-  autoCombos: number;
   enrichment: number;
 }
 
@@ -99,7 +156,6 @@ export function resolveTimeouts(
   return {
     models: opts.timeouts?.models ?? fallback,
     combos: opts.timeouts?.combos ?? fallback,
-    autoCombos: opts.timeouts?.autoCombos ?? DEFAULT_AUTO_COMBOS_TIMEOUT_MS,
     enrichment: opts.timeouts?.enrichment ?? fallback,
   };
 }
@@ -122,6 +178,69 @@ export function parsePluginOptions(raw: unknown): PluginOptions {
     return unknown !== undefined ? `unknown option "${unknown}"` : `${at}: ${issue.message}`;
   });
   throw new Error(`[omniroute-v2] invalid plugin options — ${problems.join("; ")}`);
+}
+
+/**
+ * Map parsed options to the catalog's runtime shape. Lives here (not
+ * index.ts) so tests reach it without importing the plugin entrypoint, whose
+ * `@opencode/plugin` runtime import is a devDependency absent from the
+ * caller's tree — importing index.ts fails at module load there.
+ */
+export function toResolvedOptions(parsed: PluginOptions): ResolvedOptions {
+  return {
+    providerId: parsed.providerId,
+    baseURL: parsed.baseURL,
+    apiKey: parsed.apiKey ?? process.env.OMNIROUTE_API_KEY ?? "",
+    managementReadToken: resolveManagementReadToken(parsed.managementReadToken),
+    timeoutMs: parsed.timeoutMs,
+    timeouts: parsed.timeouts,
+    logLevel: parsed.logLevel,
+    startupDebug: parsed.startupDebug,
+    providerTag: parsed.providerTag,
+    modelCacheTtlMs:
+      typeof parsed.modelCacheTtlMs === "number" && parsed.modelCacheTtlMs > 0
+        ? parsed.modelCacheTtlMs
+        : DEFAULT_MODEL_CACHE_TTL_MS,
+    displayName: parsed.displayName,
+    apiFormat: parsed.apiFormat,
+    visibleModels: parsed.visibleModels,
+    hiddenModels: parsed.hiddenModels,
+    providersAllow: parsed.providersAllow,
+    usableOnly: parsed.usableOnly,
+    combos: parsed.combos ?? true,
+    combosSource: parsed.combosSource,
+    freeOnly: parsed.freeOnly,
+    freeSignals: parsed.freeSignals,
+    freeProviders: parsed.freeProviders,
+    toolsOnly: parsed.toolsOnly,
+    visionOnly: parsed.visionOnly,
+    showcasePerOwner: parsed.showcasePerOwner,
+    freshPerOwner: parsed.freshPerOwner,
+    freshWindowDays: parsed.freshWindowDays,
+    usageMemory: parsed.usageMemory,
+    enrichment: parsed.enrichment,
+    modelOrder: parsed.modelOrder,
+  };
+}
+
+/**
+ * Warn at startup when `freeSignals` is supplied without `freeOnly`. The extra
+ * signals only matter under `freeOnly`, so with it off they are accepted by the
+ * schema but ignored: tell the operator instead of failing silently. Pure —
+ * the caller owns the sink, so tests can observe the message without booting
+ * the plugin. The published catalog is never changed by this notice.
+ */
+export function warnOnIgnoredFreeSignals(
+  raw: unknown,
+  parsed: PluginOptions,
+  warn: (message: string) => void
+): void {
+  if (raw === null || typeof raw !== "object") return;
+  if (!("freeSignals" in raw)) return;
+  if (parsed.freeOnly === true) return;
+  warn(
+    "freeSignals is set but freeOnly is false; the extra signals are ignored and the published catalog is unchanged."
+  );
 }
 
 /**

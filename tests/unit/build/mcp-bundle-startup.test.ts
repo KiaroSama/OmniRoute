@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { buildSync } from "esbuild";
 
 // Regression guard for the Node 24 MCP startup crash caused by an ESM init cycle.
-// The published bundle is produced by this exact esbuild invocation in
+// The published bundle is produced with these esbuild options in
 // scripts/build/prepublish.ts. Importing the generated file in a fresh Node process
 // catches syntax/link failures that `node --check` does not report for this bundle.
 
@@ -19,19 +19,15 @@ test("MCP server bundle imports successfully on Node 24", () => {
   const outFile = join(outDir, "server.js");
 
   try {
-    execFileSync(
-      "npx",
-      [
-        "esbuild",
-        "open-sse/mcp-server/server.ts",
-        "--bundle",
-        "--platform=node",
-        "--packages=external",
-        "--format=esm",
-        `--outfile=${outFile}`,
-      ],
-      { cwd: repoRoot, stdio: "pipe" }
-    );
+    buildSync({
+      absWorkingDir: repoRoot,
+      entryPoints: ["open-sse/mcp-server/server.ts"],
+      bundle: true,
+      platform: "node",
+      packages: "external",
+      format: "esm",
+      outfile: outFile,
+    });
 
     const bundled = readFileSync(outFile, "utf8");
     assert.doesNotMatch(
@@ -40,9 +36,12 @@ test("MCP server bundle imports successfully on Node 24", () => {
       "MCP bundle must not contain the auth ↔ googApiKeyAuth circular initializer"
     );
 
-    const importScript = `await import(${JSON.stringify(pathToFileURL(outFile).href)});`;
+    // A file-based entry lets the bundle's workers inherit valid Node arguments
+    // while the child still runs under the same CI coverage preloads.
+    const importFile = join(outDir, "verify-import.mjs");
+    writeFileSync(importFile, 'import "./server.js";\n');
     assert.doesNotThrow(() => {
-      execFileSync(process.execPath, ["--input-type=module", "-e", importScript], {
+      execFileSync(process.execPath, [importFile], {
         cwd: repoRoot,
         env: {
           ...process.env,

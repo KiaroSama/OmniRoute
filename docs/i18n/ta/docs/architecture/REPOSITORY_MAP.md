@@ -4,577 +4,627 @@
 
 ---
 
-> **ஒவ்வொரு கோப்பகத்திற்கும் மூலக் கோப்பிற்கும் ஒரு வரி விளக்கம்.**
-> கடைசியாகப் புதுப்பிக்கப்பட்டது: 2026-06-28 — OmniRoute v3.8.40
+> **எங்கு வாழ்கிறது: கண்காணிக்கப்பட்ட ஒவ்வொரு உயர்மட்ட கோப்பகமும் ரூட் கோப்பும், ஒரு வரி நோக்கத்துடன்.** கடைசியாக புதுப்பிக்கப்பட்டது: 2026-11-13 (OmniRoute v3.8.54)
 >
-> குறியீட்டுத் தொகுப்பில் விரைவாகச் செல்ல இந்த வரைபடத்தைப் பயன்படுத்தவும். விரிவாக அறிய, பிரத்யேக ஆவணங்களுக்கான இணைப்புகளைப் பின்தொடரவும்.
+> கோட்பேஸைச் சுற்றி உங்கள் வழியைக் கண்டறிய இந்த வரைபடத்தைப் பயன்படுத்தவும், பின்னர் பிரத்யேக ஆவணங்களுக்கான இணைப்புகளைப் பின்பற்றவும். கோப்பு எண்ணிக்கைகள் மேலே உள்ள தேதியில் `git ls-files` உடன் அளவிடப்பட்டன. ஏறக்குறைய ஒவ்வொரு வெளியீட்டிலும் அவை மாறுகின்றன, எனவே அவற்றை அளவின் வரிசைகளாகக் கருதுகின்றன.
 
-## மேல்நிலை மரம்
+## மேல் நிலை மரம்
 
 ```
 OmniRoute/
-├── src/                  # Next.js 16 பயன்பாடு (UI + API வழித்தடங்கள் + நூலகங்கள் + களம் + சேவையகம்)
-├── open-sse/             # ஸ்ட்ரீமிங் எஞ்சின் பணியிடம் (கையாளிகள், செயல்படுத்திகள், மொழிபெயர்ப்பி, MCP சேவையகம்)
-├── electron/             # டெஸ்க்டாப் உறை (Electron 41 + electron-builder 26.10)
-├── bin/                  # CLI நுழைவுப் புள்ளி மற்றும் கட்டளைக் கையாளிகள்
-├── scripts/              # உருவாக்கம், சரிபார்ப்பு, ஒத்திசைவு மற்றும் ஒருமுறைப் பயன்பாட்டு ஸ்கிரிப்ட்கள்
-├── docs/                 # பொது ஆவணங்கள் (நீங்கள் இங்கே உள்ளீர்கள்)
-├── tests/                # அனைத்து சோதனைத் தொகுப்புகளும் (அலகு, ஒருங்கிணைப்பு, e2e, நெறிமுறை கிளையண்டுகள்)
-├── public/               # Next.js நிலையான வளங்கள், PWA மேனிஃபெஸ்ட், சேவைப் பணியாளர், ஐகான்கள்
-├── config/               # நிலையான உள்ளமைவு + தரக் கட்டுப்பாட்டு நிலை (i18n, payloadRules, quality/)
-├── images/               # சந்தைப்படுத்தல் / README பட வளங்கள்
-├── @omniroute/           # வெளியிடக்கூடிய துணைத் தொகுப்புகள் (opencode-plugin, opencode-provider)
-├── skills/               # CLI/முகவர் திறன் தொகுப்புகள் (cli-* + omni-* + config-codex-cli)
-├── examples/             # மாதிரி செருகுநிரல்கள் + omniroute-cmd-hello தொடக்க வார்ப்புரு
-├── contrib/              # சமூகப் பங்களிப்புகள் (podman/)
-├── .source/              # Fumadocs மூல உள்ளமைவு (source.config.mjs + server/browser/dynamic)
-├── .github/              # GitHub Actions பணிப்பாய்வுகள் + சிக்கல் வார்ப்புருக்கள் + PR வார்ப்புரு
-├── .husky/               # Git கொக்கிகள் (pre-commit, pre-push)
-├── .claude/              # Claude Code சாய்வுக்கோட்டுக் கட்டளைகள் (திட்ட வரம்புடையவை)
-├── .agents/              # Codex / பொதுவான முகவர் பணிப்பாய்வுகள் + திறன்கள் (.claude/ இன் பிரதிநகல்)
-├── .vscode/              # VS Code பணியிட அமைப்புகள்
-├── _ideia/               # திட்டமிடல் குறிப்புகள் (முறைசாராதவை; விநியோகிக்கப்படுவதில்லை)
-├── _mono_repo/           # வரலாற்றுத் துணைத்திட்டங்கள் (cloud, site, vscode-extension)
-├── _references/          # தொடர்புடைய OSS திட்டங்களிலிருந்து படிக்க மட்டும் இயலும் குறிப்புப் பிரதிகள்
-├── _tasks/               # ஒவ்வொரு வெளியீட்டிற்குமான பணிக் கண்காணிப்புக் கோப்புகள் (முறைசாராதவை)
-├── .build/ .worktrees/ dist/   # உள்ளூர் உருவாக்கம் / git-worktree / உருவாக்க வெளியீட்டுக்கான தற்காலிகப் பகுதி (gitignored)
-├── .issues/              # உள்ளூர் சிக்கல் இடைமாற்றகம் (gitignored)
-├── .playwright-mcp/      # Playwright MCP சோதனைக் கலைப்பொருட்கள்
-├── coverage/             # c8 சோதனை உள்ளடக்க வெளியீடு (gitignored)
-├── logs/                 # இயக்கநேரப் பதிவுகள் (gitignored)
-├── node_modules/         # சார்புகள் (gitignored)
-├── package/              # npm pack தயார்நிலைப் பகுதி (உருவாக்கக் கலைப்பொருள்)
-├── .next/                # Next.js உருவாக்க வெளியீடு (gitignored)
-└── (மூலக் கோப்புகள் — கீழே காண்க)
+├── src/              # Next.js 16 app: dashboard, /api and /v1 routes, server libs, domain, i18n
+├── open-sse/         # Streaming engine workspace (@omniroute/open-sse): handlers, executors, translator, services, MCP server
+├── packages/         # npm workspaces: ui-kit (vendored Keak CI UI Kit) and browser-pool
+├── @omniroute/       # Separately published npm packages (OpenCode plugins and provider)
+├── bin/              # Published `omniroute` CLI, MCP/bridge entry points, self-host ops scripts (*.sh)
+├── electron/         # Desktop app (Electron main/preload + helpers + icons)
+├── public/           # Static assets served by Next.js (provider logos, PWA icons, sw.js, openapi.yaml copy)
+├── skills/           # Agent Skills (SKILL.md) served by /api/agent-skills, MCP and A2A
+├── tests/            # All test suites: unit, integration, e2e, homolog, fixtures, snapshots
+├── scripts/          # Build, quality gates, i18n, release, ops, perf and one-off scripts (allow-listed subfolders)
+├── config/           # Versioned config: i18n, payload rules, CLI manifest, quality-gate baselines, release inventories
+├── changelog.d/      # Per-PR changelog fragments, aggregated into CHANGELOG.md at release time
+├── docs/             # Public documentation (served at /docs via Fumadocs) + translated mirrors in docs/i18n/
+├── examples/         # Example plugins and quickstart clients
+├── deploy/           # Kubernetes deployment: Helm chart + Kustomize base/overlays
+├── docker/           # Auxiliary container images (not the main image, which is the root Dockerfile)
+├── contrib/          # Community recipes: Podman quadlets, VPS compose, Windows launchers, session-sync note
+├── .github/          # GitHub Actions workflows, composite actions, issue/PR templates, CODEOWNERS, labels
+├── .husky/           # Tracked git hooks: commit-msg, pre-commit, pre-push
+├── .vale/            # Vale prose-lint vocabulary (styles/Vocab/OmniRoute/accept.txt)
+├── .vscode/          # Shared VS Code workspace settings (settings.json)
+└── (root files — see below)
+```
+
+உள்ளூர், உருவாக்கப்பட்ட அல்லது தனிப்பட்ட பாதைகள் (அனைத்தும் புறக்கணிக்கப்பட்டது, ஒருபோதும் செய்யப்படவில்லை, மேலும் விவரிக்கப்படவில்லை):
+
+```
+node_modules/            # npm dependencies
+.build/                  # Next.js build output (default distDir .build/next, see next.config.mjs)
+dist/                    # npm staging directory assembled by scripts/build/prepublish.ts
+.source/                 # fumadocs-mdx output that feeds the /docs viewer
+.husky/_/                # Husky runtime generated on install (core.hooksPath target)
+coverage/ logs/ test-results/ playwright-report/   # coverage, runtime logs, Playwright output
+.env                     # local secrets generated from .env.example
+_*/                      # private local-only folders (anchored /_* ignore); never tracked
+.claude/ .agents/        # local AI-assistant state and skills; never tracked
 ```
 
 ---
 
-## மூலக் கோப்புகள்
+## ரூட் கோப்புகள்
 
-| கோப்பு                                      | நோக்கம்                                                                                              |
-| ------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| **README.md**                               | சந்தைப்படுத்தல் முகப்புப் பக்கம் + விரைவுத் தொடக்கம் + அம்ச அட்டவணை (`llm.txt`-ஐயும் பார்க்கவும்)    |
-| **CHANGELOG.md**                            | ஒவ்வொரு வெளியீட்டிற்குமான மாற்றப் பதிவு (`/version-bump-cc` skill மூலம் தானாக உருவாக்கப்பட்டது)      |
-| **LICENSE**                                 | MIT உரிமத்தின் உரை                                                                                   |
-| **CLAUDE.md**                               | Claude Code முகவர்களுக்கான திட்ட விதிகள் (கட்டாய விதிகள், மரபுகள், சூழ்நிலைகள்)                      |
-| **AGENTS.md**                               | CLAUDE.md போன்றதே, ஆனால் Claude அல்லாத AI முகவர்களுக்கானது (Codex, Cursor போன்றவை)                   |
-| **GEMINI.md**                               | Gemini அடிப்படையிலான முகவர்களுக்கான சுருக்கமான விதிகள் (CLAUDE.md-இன் துணைத்தொகுப்பு)                |
-| **CONTRIBUTING.md**                         | பங்களிப்பாளர் வழிகாட்டி: அமைப்பு, conventional commits, சோதனை, PR செயல்முறை                          |
-| **SECURITY.md**                             | பாதிப்பு அறிக்கையிடல் கொள்கை, ஆதரிக்கப்படும் பதிப்புகள், அச்சுறுத்தல் மாதிரி                         |
-| **CODE_OF_CONDUCT.md**                      | Contributor Covenant — சமூக நடத்தை குறித்த எதிர்பார்ப்புகள்                                          |
-| **llm.txt**                                 | LLM crawler-களுக்காக உகப்பாக்கப்பட்ட எளிய உரை முகப்பு (AI உதவியாளர்களுக்கான SEO)                     |
-| **package.json**                            | npm manifest, scripts, சார்புகள், engines, c8 coverage gate                                          |
-| **package-lock.json**                       | பூட்டப்பட்ட சார்பு மரம்                                                                              |
-| **tsconfig.json**                           | மூல TypeScript உள்ளமைவு                                                                              |
-| **tsconfig.typecheck-core.json**            | `src/` மையத்திற்கான வகைச் சரிபார்ப்பு உள்ளமைவு                                                       |
-| **tsconfig.typecheck-noimplicit-core.json** | கடுமையான (`noImplicitAny`) வகைச் சரிபார்ப்பு                                                         |
-| **tsconfig.tsbuildinfo**                    | TS அதிகரிப்பு உருவாக்கத் தற்காலிகச் சேமிப்பு (gitignored)                                            |
-| **next.config.mjs**                         | Next.js 16 உருவாக்க உள்ளமைவு (தனித்த வெளியீடு)                                                       |
-| **next-env.d.ts**                           | Next.js தானாக உருவாக்கிய சூழல் வகைகள்                                                                |
-| **eslint.config.mjs**                       | ESLint flat config (ஒவ்வொரு திட்டப் பகுதிக்குமான விதிகள்)                                            |
-| **prettier.config.mjs**                     | Prettier வடிவமைப்பு விதிகள்                                                                          |
-| **postcss.config.mjs**                      | Tailwind/CSS pipeline-க்கான PostCSS config                                                           |
-| **playwright.config.ts**                    | Playwright E2E சோதனை உள்ளமைவு                                                                        |
-| **vitest.config.ts**                        | Vitest config (இயல்புநிலைச் சோதனைத் தொகுப்பு)                                                        |
-| **vitest.mcp.config.ts**                    | MCP server / autoCombo / cache தொகுப்புகளுக்கான Vitest config                                        |
-| **sonar-project.properties**                | SonarQube/SonarCloud config (குறியீட்டுத் தரம்)                                                      |
-| **Dockerfile**                              | பல-கட்ட Docker உருவாக்கம் (builder → runner-base → runner-cli)                                       |
-| **docker-compose.yml**                      | 4 profile-களுடன் கூடிய மேம்பாட்டு compose (base, cli, host, cliproxyapi) + redis sidecar             |
-| **docker-compose.prod.yml**                 | உற்பத்தி compose (port 20130, redis, பெயரிடப்பட்ட volumes)                                           |
-| **.dockerignore**                           | Docker context-இலிருந்து விலக்கப்பட்ட கோப்புகள்                                                      |
-| **fly.toml**                                | Fly.io deployment config (region `sin`, port 20128, /data volume)                                    |
-| **.env.example**                            | மாதிரி சூழல் கோப்பு (முதல் நிறுவலின்போது `.env`-க்கு தானாக நகலெடுக்கப்படும்)                         |
-| **.gitignore**                              | Git புறக்கணிப்பு வடிவங்கள்                                                                           |
-| **.npmignore**                              | npm publish விலக்குப் பட்டியல்                                                                       |
-| **.npmrc**                                  | npm config (registry, lockfile கொள்கை)                                                               |
-| **.node-version**                           | Node பதிப்பு நிலைநிறுத்தம் (nvm-இணக்கமான கருவிகள் பயன்படுத்துவது)                                    |
-| **.nvmrc**                                  | nvm-க்கான Node பதிப்பு நிலைநிறுத்தம்                                                                 |
-| **eslint.complexity.config.mjs**            | சிக்கல்தன்மை ratchet-க்கான ESLint config (`scripts/check/check-complexity.mjs --config`)             |
-| **eslint.sonarjs.config.mjs**               | SonarJS விதிகளுக்கான ESLint config (அறிவுணர்வு சிக்கல்தன்மை / நகலாக்கம்)                             |
-| **source.config.ts**                        | Fumadocs `defineDocs` மூல உள்ளமைவு (`.source/`-க்கு உள்ளீடளிக்கிறது)                                 |
-| **knip.json**                               | Knip config — பயன்படுத்தப்படாத கோப்புகள்/exports/deps (dead-code gate-க்கு உள்ளீடளிக்கிறது)          |
-| **stryker.conf.json**                       | Stryker mutation-testing config                                                                      |
-| **.size-limit.json**                        | size-limit தொகுப்பளவு வரம்பு உள்ளமைவு                                                                |
-| **promptfooconfig.yaml**                    | promptfoo மதிப்பீட்டு உள்ளமைவு                                                                       |
-| **.gitleaks.toml**                          | gitleaks ரகசிய-ஸ்கேன் விதித்தொகுப்பு                                                                 |
-| **.zizmor.yml**                             | zizmor GitHub-Actions பாதுகாப்பு-lint உள்ளமைவு                                                       |
-| **socket.yml**                              | Socket.dev விநியோகச் சங்கிலி உள்ளமைவு                                                                |
-| **news.json**                               | உள்ளூர்மயமாக்கப்பட்ட v2 அறிவிப்பு ஊட்டம்; Radar வெளியீட்டு உருப்படி செயலற்ற நிலையில் வழங்கப்படுகிறது |
-| **flake.nix** / **flake.lock**              | Nix dev-shell வரையறை + பூட்டு                                                                        |
-| **.env**                                    | உள்ளூர் ரகசியங்கள் (gitignored — `.env.example` இலிருந்து உருவாக்கப்பட்டது)                          |
+களஞ்சிய மூலத்தில் (`git ls-files | grep -v /`) கண்காணிக்கப்பட்ட அனைத்து கோப்புகளும் செயல்பாட்டின் அடிப்படையில் தொகுக்கப்பட்டுள்ளன.
 
-> **v3.8.26-இல் மூலக் கோப்பகத்திலிருந்து வெளியே நகர்த்தப்பட்டது (ஒழுங்குபடுத்தல்):**
->
-> - **→ `config/quality/`:** `quality-baseline.json`, `complexity-baseline.json`, `duplication-baseline.json`, `file-size-baseline.json`, `test-discovery-baseline.json`, `dependency-allowlist.json`, `.license-allowlist.json`, மற்றும் உருவாக்கப்பட்ட `quality-metrics.json` (gitignored). [`## config/`](#config--static-configs--quality-gate-state)-ஐப் பார்க்கவும்.
+### திட்ட ஆவணங்கள்
+
+| கோப்பு                   | நோக்கம்                                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------- |
+| `README.md`              | இறங்கும் பக்கம்: அம்ச மேலோட்டம், விரைவான தொடக்கம், நிறுவும் முறைகள்                               |
+| `CHANGELOG.md`           | ஒவ்வொரு வெளியீட்டிற்கும் சேஞ்ச்லாக் ( `changelog.d/` இலிருந்து துண்டுகள் இங்கே மடிக்கப்பட்டுள்ளன) |
+| `ROADMAP.md`             | பொது சாலை வரைபடம்                                                                                 |
+| `LICENSE`                | MIT உரிமம்                                                                                        |
+| `THIRD_PARTY_NOTICES.md` | தொகுக்கப்பட்ட மூன்றாம் தரப்பு குறியீட்டிற்கான அறிவிப்புகள் (உதாரணமாக wreq-js பிணைப்புகள்)         |
+| `CONTRIBUTING.md`        | பங்களிப்பாளர் வழிகாட்டி: அமைவு, வழக்கமான கமிட்கள், சோதனை அணி, PR ஓட்டம்                           |
+| `SECURITY.md`            | பாதிப்பு அறிக்கை கொள்கை                                                                           |
+| `CODE_OF_CONDUCT.md`     | சமூக நடத்தை எதிர்பார்ப்புகள்                                                                      |
+| `llm.txt`                | LLM கிராலர்கள் மற்றும் உதவியாளர்களுக்கான எளிய உரை திட்டச் சுருக்கம்                               |
+
+### AI-உதவி வழிமுறைகள்
+
+| கோப்பு      | நோக்கம்                                                                                    |
+| ----------- | ------------------------------------------------------------------------------------------ |
+| `AGENTS.md` | ஒவ்வொரு AI உதவியாளருக்கும் உண்மைக்கான ஒற்றை ஆதாரம்: மரபுகள், தர வாயில்கள், கடினமான விதிகள் |
+| `CLAUDE.md` | கிளாட் குறியீடு-குறிப்பிட்ட டெல்டாக்கள்; `AGENTS.md` இறக்குமதி செய்கிறது                   |
+| `GEMINI.md` | ஜெமினி-குறிப்பிட்ட டெல்டாக்கள்; `AGENTS.md` க்கு திரும்புகிறது                             |
+
+அவர்கள் விவரிக்கும் குறியீட்டிற்கு அடுத்ததாக உள்ளமைக்கப்பட்ட வழிகாட்டிகளும் உள்ளன: `open-sse/services/AGENTS.md` மற்றும் `src/lib/db/AGENTS.md`.
+
+### தொகுப்பு மேனிஃபெஸ்டுகள் மற்றும் நோட் டூல்செயின்
+
+| கோப்பு                     | நோக்கம்                                                                                   |
+| -------------------------- | ----------------------------------------------------------------------------------------- |
+| `package.json`             | npm மேனிஃபெஸ்ட்: ஸ்கிரிப்டுகள், சார்புகள், `engines`, `workspaces`, வெளியிடப்பட்ட `files` |
+| `package-lock.json`        | பூட்டிய சார்பு மரம்                                                                       |
+| `pnpm-workspace.yaml`      | pnpm பணியிட பட்டியல் (`packages/*`, `open-sse`) மற்றும் நேட்டிவ்-பில்ட் அனுமதிப் பட்டியல் |
+| `.npmrc` / `.npmignore`    | npm config மற்றும் வெளியீடு விலக்குகள்                                                    |
+| `.node-version` / `.nvmrc` | பதிப்பு மேலாளர்களுக்கான முனை பதிப்பு ஊசிகள்                                               |
+| `flake.nix` / `flake.lock` | நிக்ஸ் டெவ் ஷெல் மற்றும் அதன் பூட்டு                                                      |
+| `Makefile`                 | `make` குறுக்குவழிகள் npm ஸ்கிரிப்ட்களை வழங்குகின்றன                                      |
+
+### TypeScript, Next.js மற்றும் டாக்ஸ் உருவாக்கம்
+
+| கோப்பு                                    | நோக்கம்                                                                                     |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `tsconfig.json`                           | அடிப்படை TypeScript கட்டமைப்பு மற்றும் பாதை மாற்றுப்பெயர்கள் (`@/*`, `@omniroute/open-sse`) |
+| `tsconfig.typecheck-core.json`            | `npm run typecheck:core` துண்டு                                                             |
+| `tsconfig.typecheck-noimplicit-core.json` | `npm run typecheck:noimplicit:core` (கடுமையான `noImplicitAny`) துண்டு                       |
+| `tsconfig.typecheck-api.json`             | ஏபிஐ-வழி தட்டச்சு ஸ்லைஸ் (`scripts/check/check-api-typecheck.mjs`)                          |
+| `tsconfig.typecheck-dashboard.json`       | டாஷ்போர்டு தட்டச்சு சரிபார்ப்பு துண்டு (`npm run check:dashboard-typecheck`)                |
+| `tsconfig.build.json`                     | உற்பத்தி தட்டச்சுச் சரிபார்ப்பு (`npm run typecheck:build`, `check:build-typecheck`)        |
+| `tsconfig.mitm.json`                      | MITM உருவாக்க கட்டமைப்பு `scripts/build/buildMitm.mjs` ஆல் பயன்படுத்தப்படுகிறது             |
+| `next.config.mjs`                         | Next.js 16 கட்டமைப்பு (தனிப்பட்ட வெளியீடு, உருவாக்க சுயவிவர மாற்றுப்பெயர்கள்)               |
+| `source.config.ts`                        | Fumadocs `defineDocs` config: எந்த `docs/` பிரிவுகள் `/docs` இல் தொகுக்கப்படுகின்றன         |
+| `postcss.config.mjs`                      | PostCSS / Tailwind பைப்லைன்                                                                 |
+
+### லிண்ட் மற்றும் வடிவமைத்தல்
+
+| கோப்பு                                    | நோக்கம்                                                                                                   |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `eslint.config.mjs`                       | முதன்மை ESLint பிளாட் கட்டமைப்பு (`npm run lint`, `config/quality/eslint-suppressions.json` உடன்)         |
+| `eslint.complexity-ratchets.config.mjs`   | ஒரு ESLint பாஸில் சிக்கலான மற்றும் அறிவாற்றல்-சிக்கலான ராட்செட்களால் பயன்படுத்தப்படும் தனித்த கட்டமைப்பு  |
+| `eslint.complexity.config.mjs`            | ஒரே கோர் `complexity` + `max-lines-per-function` உடன் தனித்த கட்டமைப்பு (சோதனைகளால் பயன்படுத்தப்படுகிறது) |
+| `prettier.config.mjs` / `.prettierignore` | Prettier விதிகள் மற்றும் விலக்குகள்                                                                       |
+| `.editorconfig`                           | எடிட்டர் இயல்புநிலைகள் (2-ஸ்பேஸ் உள்தள்ளல்)                                                               |
+| `.markdownlint.json`                      | ஆலோசனை மார்க் டவுன் லிண்ட் (`npm run lint:md`)                                                            |
+| `.vale.ini`                               | ஆலோசனை உரைநடை லிண்ட் (`npm run lint:prose`), `.vale/` இல் சொல்லகராதி                                      |
+
+### சோதனைகள், மதிப்பீடு மற்றும் கவரேஜ்
+
+| கோப்பு                        | நோக்கம்                                                                                               |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `vitest.config.ts`            | jsdom Vitest தொகுப்பு: `npm run test:vitest:ui` (டாஷ்போர்டு `.tsx`, ஹூக்ஸ், memory/skills சோதனைகள்)   |
+| `vitest.mcp.config.ts`        | முனை Vitest தொகுப்பு: `npm run test:vitest` (MCP சர்வர், autoCombo, காம்போ, API `.spec.ts`)           |
+| `vitest.quarantine.config.ts` | `config/quality/vitest-exclusions.json` இல் பட்டியலிடப்பட்ட தனிமைப்படுத்தப்பட்ட கோப்புகளை இயக்குகிறது |
+| `vitest.e2e-live.config.ts`   | லைவ்-சர்வர் Vitest தொகுப்புகள் (`tests/e2e/ecosystem.test.ts`, `tests/e2e/protocol-clients.test.ts`)  |
+| `playwright.config.ts`        | Playwright E2E (`tests/e2e/**/*.spec.ts`, `npm run test:e2e`)                                         |
+| `stryker.conf.mjs`            | ஸ்ட்ரைக்கர் பிறழ்வு சோதனை (`npm run test:mutation`; `mutate` இலிருந்து `tap.testFiles` கணக்கிடுகிறது) |
+| `stryker.disablebail.mjs`     | சோதனை-பணிநீக்க அளவீட்டிற்காக, ஜாமீன் இல்லாத ஸ்ட்ரைக்கர் மாறுபாடு                                      |
+| `promptfooconfig.yaml`        | promptfoo LLM-பாதுகாப்பு தொகுப்பு                                                                     |
+| `codecov.yml`                 | கோட்கோவ் பேட்ச்-கவரேஜ் அமைப்புகள்                                                                     |
+
+### Docker மற்றும் வரிசைப்படுத்தல்
+
+| கோப்பு                            | நோக்கம்                                                                                 |
+| --------------------------------- | --------------------------------------------------------------------------------------- |
+| `Dockerfile`                      | பல-நிலை படம் (`builder` → `runner-base` → `runner-web` / `runner-cli*`)                 |
+| `Dockerfile.bun`                  | Bun இயக்க நேரத்தில் மாற்று படம் ( `docker-publish.yml` ஆல் கட்டப்பட்டது)                |
+| `docker-compose.yml`              | இயல்புநிலை சுயவிவரங்களுடன் (அடிப்படை, வலை, கிளி, ஹோஸ்ட், நினைவகம், கிளிப்ராக்ஸியாபி, …) |
+| `docker-compose.prod.yml`         | போர்ட் 20130 இல் தனி உற்பத்தி-ஸ்னாப்ஷாட் நிகழ்வு                                        |
+| `docker-compose.selfhost.yml`     | ஒரு-கட்டளை லூப்பேக் சுய-புரவலன் ( `.env.selfhost.example` உடன் ஜோடிகள்)                 |
+| `docker-compose.ollama-local.yml` | Docker OmniRoute ஹோஸ்ட்-நேட்டிவ் Ollama உடன் பேசுகிறது                                  |
+| `.dockerignore`                   | Docker உருவாக்க-சூழல் விலக்குகள்                                                        |
+| `fly.toml`                        | Fly.io பயன்பாட்டு கட்டமைப்பு (போர்ட் 20128, `/data` தொகுதி)                             |
+
+### பாதுகாப்பு, விநியோக சங்கிலி மற்றும் களஞ்சிய போட்கள்
+
+| கோப்பு                                       | நோக்கம்                                                                                      |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `.gitleaks.toml`                             | gitleaks ரகசிய ஸ்கேன் விதிகள் மற்றும் அனுமதி பட்டியல்கள்                                     |
+| `.trivyignore`                               | கொள்கலன் பட ஸ்கேனுக்கான ஏற்றுக்கொள்ளப்பட்ட-அபாய அடக்கங்கள்                                   |
+| `.zizmor.yml`                                | zizmor GitHub செயல்கள் பாதுகாப்பு-தணிக்கை கட்டமைப்பு                                         |
+| `socket.yml`                                 | Socket.dev பயன்பாட்டு கட்டமைப்பு (பாதை புறக்கணிக்கிறது; CI கேட் அல்ல)                        |
+| `sonar-project.properties`                   | SonarQube/SonarCloud திட்ட கட்டமைப்பு                                                        |
+| `knip.json`                                  | Knip unused files/exports/deps config (ஃபீட்ஸ் `npm run check:dead-code`)                    |
+| `.size-limit.json`                           | மூட்டை அளவு பட்ஜெட்கள்                                                                       |
+| `.mergify.yml`                               | Mergify merge-queue config                                                                   |
+| `.coderabbit.yaml`                           | CodeRabbit மறுஆய்வு கட்டமைப்பு                                                               |
+| `.cbmignore`                                 | codebase-memory-mcp குறியீடு குறியீட்டிற்கான பட்டியலைப் புறக்கணிக்கவும்                      |
+| `.gitignore` / `.gitattributes` / `.mailmap` | விதிகளை புறக்கணிக்கவும், ஸ்கிரிப்ட்களுக்கான LF வரி முடிவுகளும், நியமன ஆசிரியர் அடையாளங்களும் |
+
+### சுற்றுச்சூழல் வார்ப்புருக்கள், நிலை மற்றும் ஊட்டங்கள்
+
+| கோப்பு                      | நோக்கம்                                                                              |
+| --------------------------- | ------------------------------------------------------------------------------------ |
+| `.env.example`              | முதல் நிறுவலில் டெம்ப்ளேட் `.env` க்கு நகலெடுக்கப்பட்டது; env vars குறிப்பு பட்டியல் |
+| `.env.selfhost.example`     | `docker-compose.selfhost.yml` க்கான டெம்ப்ளேட்                                       |
+| `.env.homolog.example`      | ஹோமோலோகேஷன் ரன்னருக்கான டெம்ப்ளேட் (`npm run homolog`)                               |
+| `.env.devin-bridge.example` | Devin பிரிட்ஜ் அமைப்பிற்கான எடுத்துக்காட்டு env கோப்பு                               |
+| `.i18n-state.json`          | அதிகரிக்கும் மொழிபெயர்ப்பு நிலை (ஒரு ஆவணம் மற்றும் மொழிக்கான மூல ஹாஷ்கள்)            |
+| `news.json`                 | டாஷ்போர்டால் படிக்கப்படும் உள்ளூர் அறிவிப்பு ஊட்டம் (ஸ்கீமா v2).                     |
 
 ---
 
 ## `src/` — Next.js பயன்பாடு
 
+சுமார் 4,550 ட்ராக் செய்யப்பட்ட கோப்புகள். பாதை மாற்று `@/*` → `src/*`.
+
 ```
 src/
-├── app/                 # App Router (பக்கங்கள் + API வழித்தடங்கள் + நிலைப் பக்கங்கள் + இறங்கும் பக்கம்)
-├── lib/                 # மைய நூலகங்கள் / டொமைன் தொகுதிகள் (80 துணைக் கோப்பகங்கள் + ~70 மேல்-நிலைக் கோப்புகள்)
-├── domain/              # தூய டொமைன் தர்க்கம் (policy engine, fallback, cost, lockout, comboResolver, assessment)
-├── server/              # சர்வருக்கான தொகுதிகள் மட்டும் (authz pipeline, cors, auth middleware) — கிளையண்டிலிருந்து இறக்குமதி செய்ய முடியாது
-├── shared/              # பாதுகாப்பான இடங்களில் சர்வருக்கும் கிளையண்டுக்கும் இடையே பகிரப்படுபவை (மாறிலிகள், வகைகள், சரிபார்ப்பு, ஒப்பந்தங்கள், பயன்பாட்டுக் கருவிகள்)
-├── i18n/                # next-intl உள்ளமைவு + மொழிக்கான செய்தி JSON (42 மொழிகள்)
-├── middleware/          # Next.js middleware (கோரிக்கை செறிவூட்டல், மொழி கண்டறிதல்)
-├── mitm/                # MITM proxy மையம்: சான்றிதழ் உருவாக்கம்/நிறுவல், கையாளிகள், இலக்குகள், ஆய்வி, மறைப்புகள், நேரடிக் கடத்தல்
-│   ├── handlers/        # MitmHandlerBase-ஐ நீட்டிக்கும் 9 IDE-agent கையாளி வகுப்புகள் (antigravity, kiro, copilot, codex, cursor, zed, claudeCode, openCode, trae)
-│   └── inspector/       # போக்குவரத்துப் பதிவாக்க அடுக்கு: buffer (நினைவகத்திலுள்ள வளையம்), sseMerger, conversationNormalizer, kindDetector, contextKey, httpProxyServer, systemProxyConfig
-├── models/              # மாடல் அடாப்டர் இணைப்புக் குறியீடு (மரபு இணக்க அடுக்கு)
-├── scripts/             # மூலக் கட்டமைப்பிலுள்ள பராமரிப்பு ஸ்கிரிப்ட்கள் (எ.கா., backfillAggregation)
-├── sse/                 # மரபு SSE கையாளிகள்/சேவைகள் (chat.ts, chatHelpers.ts, services/auth.ts)
-├── store/               # மரபு நினைவகச் சேமிப்பகம் (src/lib/db-க்கு ஆதரவாகப் படிப்படியாக நீக்கப்படுகிறது)
-├── types/               # பகிரப்பட்ட TS வகைக் கோப்புகள்
-├── instrumentation.ts   # Next.js தொலைஅளவியல் hook (உலாவி + edge)
-├── instrumentation-node.ts  # Node-க்கு மட்டும் உரிய instrumentation
-└── proxy.ts             # HTTP-proxy நுழைவு இணக்க அடுக்கு
+├── app/                  # App Router: pages, layouts and route handlers (file-convention loaded)
+│   ├── (dashboard)/      # Route group for the dashboard: dashboard/<section>/ pages + home widgets
+│   ├── api/              # HTTP routes: v1/ (OpenAI-compatible), v1beta/ (Gemini-style), management routes
+│   ├── docs/             # Embedded docs viewer (lib/openapi.generated.ts is generated)
+│   ├── a2a/ .well-known/ # A2A JSON-RPC entry point and Agent Card discovery
+│   ├── healthz/ livez/ readyz/ status/   # Health probes and status page
+│   ├── landing/ login/ auth/ authorize/ callback/ connect/   # Public, auth and OAuth pages
+│   ├── miniapp/          # Telegram Mini App page
+│   └── 400/ … 503/       # Static HTTP error pages
+├── lib/                  # Server-side libraries and domain modules (largest folder)
+├── shared/               # Code shared by server and client: components, constants, validation, utils
+├── sse/                  # Next.js side of the SSE pipeline: handlers/ (chat*), services/ (auth, leases, quotas)
+├── mitm/                 # MITM / TPROXY capture: cert/, dns/, handlers/, targets/, inspector/, tproxy/ (C addon)
+├── server/               # Server-only: authz/ (route guard pipeline), auth/, cors/, origin/, ws/
+├── domain/               # Policy engine, fallback, cost rules, lockout, quota cache, assessment/
+├── i18n/                 # next-intl: messages/ (67 locales), global-error-messages/ (generated), routeNamespaces.generated.json
+├── store/                # Zustand client stores (theme, notifications, …)
+├── hooks/                # Client hooks (live dashboard, compression preview, breaker health)
+├── types/                # Ambient and shared type declarations
+├── models/               # Compatibility barrel re-exporting db functions
+├── middleware/           # promptInjectionGuard.ts (facade over the guardrail system)
+├── scripts/              # backfillAggregation.ts (`npm run backfill-aggregation`)
+├── proxy.ts              # Next.js 16 proxy: headless gate + authz pipeline for dashboard, /api and /v1-style paths
+├── instrumentation.ts    # Next.js instrumentation hook (delegates Node-only work)
+└── instrumentation-node.ts   # Node-only startup work
 ```
 
-### `src/app/` — App Router (Next.js 16)
+### `src/app/` — ஆப் ரூட்டர்
 
-| பாதை                                                                         | நோக்கம்                                                                                                                                                                                                                                                                                                                      |
-| ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/v1/`                                                                | பொது OpenAI-இணக்கமான API (~25 துணை வழித்தடங்கள்: அரட்டை, நிறைவுகள், உட்பொதிவுகள், கோப்புகள், தொகுதிகள், ஆடியோ, படங்கள், வீடியோக்கள், இசை, மறுதரவரிசைப்படுத்தல், கட்டுப்பாடுகள், தேடல், ws, முகவர்கள், கணக்குகள், வழங்குநர்கள் போன்றவை)                                                                                       |
-| `app/api/v1beta/`                                                            | Gemini-பாணி API முனைப்புள்ளிகள்                                                                                                                                                                                                                                                                                              |
-| `app/api/playground/`                                                        | Playground Studio வழித்தடங்கள்: `improve-prompt/` (POST — LLM தூண்டுதல் மறுஎழுதி), `presets/` (GET பட்டியல் / POST உருவாக்கம்), `presets/[id]/` (GET / PUT / DELETE) — `docs/frameworks/PLAYGROUND_STUDIO.md`-ஐப் பார்க்கவும்                                                                                                |
-| `app/api/` (v1 அல்லாதது)                                                     | மேலாண்மை/நிர்வாக வழித்தடங்கள் (~60 கோப்பகங்கள்: வழங்குநர்கள், சேர்க்கைகள், அமைப்புகள், mcp, a2a, மதிப்பீடுகள், நினைவகம், திறன்கள், வலைத்தூண்டிகள், இணக்கப்பாடு, மீட்சித்திறன், கண்காணிப்பு, சுரங்கங்கள், cli கருவிகள் போன்றவை)                                                                                               |
-| `app/api/tools/agent-bridge/`                                                | AgentBridge REST API — 12 வழித்தடங்கள் (சேவையகக் கட்டுப்பாடு, முகவர் நிலை/DNS/மேப்பிங்கள், தவிர்ப்பு, சான்றிதழ், மேல்நிலை-CA). LOCAL_ONLY + SPAWN_CAPABLE. `docs/frameworks/AGENTBRIDGE.md §7`-ஐப் பார்க்கவும்.                                                                                                              |
-| `app/api/tools/traffic-inspector/`                                           | Traffic Inspector REST + WS API — 16+ வழித்தடங்கள் (கோரிக்கைகள், அமர்வுகள், ஹோஸ்ட்கள், கைப்பற்றல் முறைகள், ஏற்றுமதி, ws). LOCAL_ONLY + SPAWN_CAPABLE. `docs/frameworks/TRAFFIC_INSPECTOR.md §8`-ஐப் பார்க்கவும்.                                                                                                             |
-| `app/a2a/`                                                                   | A2A JSON-RPC 2.0 நுழைவுப் புள்ளி (`POST /a2a`)                                                                                                                                                                                                                                                                               |
-| `app/.well-known/agent.json/`                                                | A2A முகவர் அட்டை (கண்டறிதல்)                                                                                                                                                                                                                                                                                                 |
-| `app/(dashboard)/dashboard/`                                                 | கட்டுப்பாட்டுப் பலகை UI பக்கங்கள் (50+ பிரிவுகள், ~118 page.tsx கோப்புகள்: வழங்குநர்கள், சேர்க்கைகள், அமைப்புகள், நினைவகம், திறன்கள், வலைத்தூண்டிகள், மதிப்பீடுகள், தணிக்கை, தொகுதி, இடைநினைவகம், செலவுகள், ஆரோக்கியம், அமைப்பு, செயல்பாடு போன்றவை)                                                                          |
-| `app/(dashboard)/dashboard/search-tools/`                                    | Search Tools Studio UI (3 தாவல்கள்: தேடல்/தரவு சேகரிப்பு/ஒப்பீடு + SearchConceptCard + ProviderCatalog) — `docs/frameworks/SEARCH_TOOLS_STUDIO.md`-ஐப் பார்க்கவும்                                                                                                                                                           |
-| `app/(dashboard)/dashboard/memory/`                                          | Memory Studio (திட்டம் 21): `page.tsx` (3-தாவல் கட்டமைப்பு), `components/` (MemoryConceptCard, MemoryEngineStatus, EmbeddingSourceSelector, EditMemoryModal, RetrievePreview, QdrantConfigCard, RerankConfigCard), `components/tabs/` (MemoriesTab, PlaygroundTab, EngineTab), `hooks/` (useEngineStatus, useMemorySettings) |
-| `app/(dashboard)/dashboard/tools/agent-bridge/`                              | AgentBridge கட்டுப்பாட்டுப் பலகைப் பக்கம் — சேவையக அட்டை, 9 முகவர் அட்டைகள், அமைவு வழிகாட்டி, மாதிரி மேப்பிங், தவிர்ப்புப் பட்டியல். i18n PT-BR + EN. `docs/frameworks/AGENTBRIDGE.md`-ஐப் பார்க்கவும்.                                                                                                                      |
-| `app/(dashboard)/dashboard/tools/traffic-inspector/`                         | Traffic Inspector கட்டுப்பாட்டுப் பலகைப் பக்கம் — DevTools பிரிப்பு, 7 விவரத் தாவல்கள், 4 கைப்பற்றல் முறை மாற்றிகள், அமர்வுப் பதிவி, சூழல் வண்ணமயமாக்கல். i18n PT-BR + EN. `docs/frameworks/TRAFFIC_INSPECTOR.md`-ஐப் பார்க்கவும்.                                                                                           |
-| `app/(dashboard)/dashboard/activity/`                                        | செயல்பாட்டு ஊட்டப் பக்கம் (குழு B): `page.tsx` (சர்வர்) + `ActivityFeedClient.tsx` + `components/{ActivityFeed,ActivityItem,DayHeader,EventTypeFilter}.tsx` — `docs/architecture/MONITORING_SECTIONS.md`-ஐப் பார்க்கவும்                                                                                                     |
-| `app/(dashboard)/dashboard/costs/quota-share/`                               | ஒதுக்கீட்டுப் பகிர்வுப் பக்கம் (குழு B): `QuotaSharePageClient.tsx` + `components/{PoolCard,DimensionBar,AllocationTable,BurnRateChart,QuotaConceptCard,CreatePoolModal,EditAllocationsModal}.tsx` + `hooks/{usePools,usePoolUsage,useLocalStoragePoolMigration}.ts`                                                         |
-| `app/(dashboard)/dashboard/costs/quota-share/plans/`                         | வழங்குநர் திட்ட உள்ளமைவுப் பக்கம் (குழு B): `page.tsx` + `ProviderPlanConfigClient.tsx` — ஒவ்வொரு இணைப்பிற்குமான ஒதுக்கீட்டுப் பரிமாண மேலெழுதல்கள்                                                                                                                                                                           |
-| `app/docs/`                                                                  | உட்பொதிக்கப்பட்ட ஆவணப் பார்வையாளர் (`docs/*.md` கோப்புகளை வழங்குகிறது)                                                                                                                                                                                                                                                       |
-| `app/landing/`                                                               | சந்தைப்படுத்தல் முகப்புப் பக்கம்                                                                                                                                                                                                                                                                                             |
-| `app/login/`, `forgot-password/`, `forbidden/`                               | அங்கீகாரம் தொடர்பான பக்கங்கள்                                                                                                                                                                                                                                                                                                |
-| `app/{400,401,403,408,429,500,502,503}/`                                     | HTTP பிழைப் பக்கங்கள்                                                                                                                                                                                                                                                                                                        |
-| `app/maintenance/`, `offline/`, `status/`, `privacy/`, `terms/`, `callback/` | நிலையான/நிலைப் பக்கங்கள்                                                                                                                                                                                                                                                                                                     |
-| `app/layout.tsx`, `page.tsx`, `manifest.ts`, `globals.css`                   | மூலத் தளவமைப்பு, முகப்புப் பக்கம், PWA மேனிஃபெஸ்ட், உலகளாவிய CSS                                                                                                                                                                                                                                                             |
-| `app/error.tsx`, `global-error.tsx`, `not-found.tsx`, `loading.tsx`          | பிழை எல்லைகள்                                                                                                                                                                                                                                                                                                                |
+| பாதை                                                                | நோக்கம்                                                                                                                                                                                                            |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `app/api/v1/`                                                       | பொது OpenAI-இணக்கமான API: அரட்டை, நிறைவுகள், பதில்கள், செய்திகள், உட்பொதிப்புகள், படங்கள், ஆடியோ, வீடியோக்கள், இசை, மறுவரிசைப்படுத்தல், மதிப்பாய்வுகள், தேடல், கோப்புகள், தொகுதிகள், ws, மாதிரிகள், …              |
+| `app/api/v1beta/`                                                   | ஜெமினி பாணி முடிவு புள்ளிகள்                                                                                                                                                                                       |
+| `app/api/` (மற்ற கோப்புறைகள்)                                       | மேலாண்மை மற்றும் நிர்வாக வழிகள்: வழங்குநர்கள், சேர்க்கைகள், அமைப்புகள், விசைகள், பயன்பாடு, பதிவுகள், mcp, a2a, acp, நினைவகம், திறன்கள், ஈவல்கள், வெப்ஹூக்குகள், சுரங்கங்கள், செருகுநிரல்கள், ரேடார், கருவிகள், ... |
+| `app/api/tools/agent-bridge/`                                       | AgentBridge REST API — பார்க்க [AGENTBRIDGE.md](../frameworks/AGENTBRIDGE.md)                                                                                                                                      |
+| `app/api/tools/traffic-inspector/`                                  | ட்ராஃபிக் இன்ஸ்பெக்டர் REST API — பார்க்க [TRAFFIC_INSPECTOR.md](../frameworks/TRAFFIC_INSPECTOR.md)                                                                                                               |
+| `app/(dashboard)/dashboard/`                                        | டாஷ்போர்டு பிரிவுக்கு ஒரு கோப்புறை (வழங்குபவர்கள், சேர்க்கைகள், பதிவுகள், பயன்பாடு, செலவுகள், கேச், சுருக்கம், நினைவகம், விளையாட்டு மைதானம், தேடல் கருவிகள், அமைப்புகள், கருவிகள், ...)                            |
+| `app/(dashboard)/home/`                                             | முகப்புத் திரை மற்றும் அதன் விட்ஜெட்டுகள்                                                                                                                                                                          |
+| `app/docs/`                                                         | `source.config.ts` இல் பட்டியலிடப்பட்டுள்ள Fumadocs பிரிவுகளை ஆவணப் பார்வையாளர் வழங்குகிறார்                                                                                                                       |
+| `app/layout.tsx`, `page.tsx`, `manifest.ts`, `globals.css`          | ரூட் தளவமைப்பு, ரூட் நுழைவு (வழிமாற்றுகள்), PWA மேனிஃபெஸ்ட், உலகளாவிய CSS                                                                                                                                          |
+| `app/error.tsx`, `global-error.tsx`, `not-found.tsx`, `loading.tsx` | பிழை எல்லைகள் மற்றும் பின்னடைவுகள்                                                                                                                                                                                 |
 
-### `src/lib/` — முதன்மை நூலகங்கள் (~50 தொகுதிகள்)
+API வழிகள் `Route → CORS → Zod validation → optional auth → policy → handler` ஐப் பின்பற்றுகின்றன; [ARCHITECTURE.md](ARCHITECTURE.md) மற்றும் [API_REFERENCE.md](../reference/API_REFERENCE.md) ஐப் பார்க்கவும்.
 
-| தொகுதி                                   | நோக்கம்                                                                                                                                                                                                                                                                                                                                     |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `a2a/`                                   | A2A நெறிமுறைப் பணி மேலாளர், திறன்கள் (5), ஸ்ட்ரீமிங்                                                                                                                                                                                                                                                                                        |
-| `acp/`                                   | CLI முகவர் பதிவகம் (உள்ளக CLI கண்டறிதல் — `docs/frameworks/AGENT_PROTOCOLS_GUIDE.md` ஐப் பார்க்கவும்)                                                                                                                                                                                                                                       |
-| `api/`                                   | பகிரப்பட்ட API உதவிகள் (`requireManagementAuth`, சரிபார்ப்பு)                                                                                                                                                                                                                                                                               |
-| `auth/`                                  | அமர்வு, கடவுச்சொல் ஹாஷிங், டோக்கன் சரிபார்ப்பு                                                                                                                                                                                                                                                                                              |
-| `batches/`                               | OpenAI Batches API கையாளிகள்                                                                                                                                                                                                                                                                                                                |
-| `catalog/`                               | வழங்குநர் பட்டியலுக்கான Zod சரிபார்ப்பு + திறன் தீர்மானம்                                                                                                                                                                                                                                                                                   |
-| `cloudAgent/`                            | கிளவுட் முகவர்கள் (Codex Cloud, Devin, Jules) — `docs/frameworks/CLOUD_AGENT.md` ஐப் பார்க்கவும்                                                                                                                                                                                                                                            |
-| `combos/`                                | சேர்க்கைத் தீர்மானம் + மறுவரிசைப்படுத்தல் உதவிகள்                                                                                                                                                                                                                                                                                           |
-| `audit/`                                 | செயல்பாட்டு ஊட்ட உதவிகள்: `highLevelActions.ts` (அனுமதிப்பட்டியல் + `isHighLevelAction()`), `activityIcons.ts` (செயல் → படவுரு/வினைச்சொல் வரைபடம்), `timeline.ts` (groupByDay/relativeTime) — `docs/architecture/MONITORING_SECTIONS.md` ஐப் பார்க்கவும்                                                                                    |
-| `compliance/`                            | தணிக்கைப் பதிவு + வழங்குநர் தணிக்கை — `docs/security/COMPLIANCE.md` ஐப் பார்க்கவும்                                                                                                                                                                                                                                                         |
-| `compression/`                           | சுருக்கப் பொறி இணைப்புக் குறியீடு (பொறிகள் `open-sse/services/compression/` இல் உள்ளன)                                                                                                                                                                                                                                                      |
-| `config/`                                | இயக்கநேர உள்ளமைவு உதவிகள்                                                                                                                                                                                                                                                                                                                   |
-| `db/`                                    | 120+ களஞ்சார்ந்த DB தொகுதிகள் + 168 இடம்பெயர்வுகள் (SQLite-க்கு எப்போதும் இதன் வழியாகவே செல்லவும்)                                                                                                                                                                                                                                          |
-| `quota/`                                 | ஒதுக்கீட்டுப் பகிர்வுப் பொறி: `dimensions.ts` (வகைகள்/Zod), `types.ts` (QuotaStore இடைமுகம்), `sqliteQuotaStore.ts`, `redisQuotaStore.ts`, `storeFactory.ts`, `fairShare.ts`, `burnRate.ts`, `planResolver.ts`, `planRegistry.ts`, `saturationSignals.ts`, `enforce.ts`, `spendRecorder.ts` — `docs/routing/QUOTA_SHARE.md` ஐப் பார்க்கவும் |
-| `radar/`                                 | Radar இலவச-மாதிரி பட்டியல் கிளையண்ட்: `feedSchema.ts`, `pinnedKeys.ts`, `verify.ts`, `sync.ts`, `applyFeed.ts`, `index.ts` (`getRadarCatalog()`) — `docs/frameworks/RADAR.md`-ஐப் பார்க்கவும்                                                                                                                                               |
-| `display/`                               | UI வடிவமைப்பு உதவிகள் (செலவு, தாமதம் போன்றவை)                                                                                                                                                                                                                                                                                               |
-| `embeddings/`                            | Embeddings சேவை உதவிகள்                                                                                                                                                                                                                                                                                                                     |
-| `env/`                                   | சூழல் மாறி பகுப்பாய்வு + சரிபார்ப்பு                                                                                                                                                                                                                                                                                                        |
-| `evals/`                                 | மதிப்பீட்டுக் கட்டமைப்பு (தொகுப்புகள், இயக்கி, இயக்கநேரம்) — `docs/frameworks/EVALS.md`-ஐப் பார்க்கவும்                                                                                                                                                                                                                                     |
-| `guardrails/`                            | PII மறைப்பான், prompt injection, vision bridge — `docs/security/GUARDRAILS.md`-ஐப் பார்க்கவும்                                                                                                                                                                                                                                              |
-| `jobs/`                                  | பின்னணிப் பணிகள் (cron போன்றவை)                                                                                                                                                                                                                                                                                                             |
-| `memory/`                                | உரையாடல் நினைவகம் (SQLite FTS5 + sqlite-vec கலப்பு RRF + Qdrant அடுக்கு 2) — `docs/frameworks/MEMORY.md`-ஐப் பார்க்கவும்                                                                                                                                                                                                                    |
-| `memory/embedding/`                      | பல-மூல embedding அடுக்கு: `index.ts` (தீர்வி), `remote.ts`, `staticPotion.ts`, `transformersLocal.ts`, `cache.ts`, `types.ts` (திட்டம் 21)                                                                                                                                                                                                  |
-| `memory/vectorStore.ts`                  | sqlite-vec v0.1.9 wrapper — KNN முழுமையான தேடல் + கலப்பு RRF (FTS5 + vector, k=60). தேவையின்போது தொடங்கும்; sqlite-vec கிடைக்காதபோது சீராகச் செயல்திறனைக் குறைத்துக்கொள்கிறது. (திட்டம் 21)                                                                                                                                                 |
-| `memory/reindex.ts`                      | `runReindexBatch()` — பின்னணியில் `needs_reindex=1` கொண்ட நினைவகங்களைச் செயலாக்குகிறது; `POST /api/memory/reindex` மற்றும் தேவையின்போது செய்யப்படும் backfill பாதையால் அழைக்கப்படுகிறது. (திட்டம் 21)                                                                                                                                       |
-| `monitoring/`                            | நிலைச் சரிபார்ப்புகள், metrics வெளியீடு                                                                                                                                                                                                                                                                                                     |
-| `oauth/`                                 | 22 provider modules-க்கான OAuth/import செயல்முறைகள் (agy, antigravity, claude, cline, codebuddy-cn, codex, cursor, devin-desktop, ghe-copilot, github, gitlab-duo, grok-cli-oauth, grok-cli, kilocode, kimi-coding, kiro, openference, qoder, trae, xai-oauth, zed-hosted, zed)                                                             |
-| `plugins/`                               | Plugin பதிவகம்                                                                                                                                                                                                                                                                                                                              |
-| `promptCache/`                           | Anthropic-பாணி prompt cache breakpoints                                                                                                                                                                                                                                                                                                     |
-| `skills/`                                | Skills கட்டமைப்பு (உள்ளமைந்தவை + marketplace + SkillsSH) — `docs/frameworks/SKILLS.md`-ஐப் பார்க்கவும்                                                                                                                                                                                                                                      |
-| `playground/`                            | Playground Studio பகிரப்பட்ட உதவிகள்: `codeExport.ts` (curl/Python/TS உருவாக்கி), `promptImprover.ts` (மெட்டா-ப்ராம்ப்ட் உருவாக்கி), `streamMetrics.ts` (தூய TTFT/TPS), `types.ts` (விலை நிர்ணய அட்டவணை) — `docs/frameworks/PLAYGROUND_STUDIO.md`-ஐப் பார்க்கவும்                                                                           |
-| `webhookDispatcher.ts`                   | HMAC webhook விநியோகம் — `docs/frameworks/WEBHOOKS.md`-ஐப் பார்க்கவும்                                                                                                                                                                                                                                                                      |
-| `cloudflaredTunnel.ts`, `ngrokTunnel.ts` | Tunnel மேலாளர்கள் — `docs/ops/TUNNELS_GUIDE.md`-ஐப் பார்க்கவும்                                                                                                                                                                                                                                                                             |
-| `cloudSync.ts`, `initCloudSync.ts`       | நிலையின் விருப்பத் தேர்வுக்குரிய cloud ஒத்திசைவு                                                                                                                                                                                                                                                                                            |
-| `localDb.ts`                             | db தொகுதிகளுக்கான மறுஏற்றுமதி barrel (தர்க்கம் இல்லை — மறுஏற்றுமதிகள் மட்டுமே)                                                                                                                                                                                                                                                              |
-| `cacheLayer.ts`, `idempotencyLayer.ts`   | கோரிக்கை தேக்ககம் + ஒரேவிளைவுத்தன்மை                                                                                                                                                                                                                                                                                                        |
-| (மேலும் ~30 உயர்மட்டக் கோப்புகள்)        | சிறப்புப் பயன்பாட்டு உதவிகள் (logEnv, modelsDevSync, piiSanitizer போன்றவை)                                                                                                                                                                                                                                                                  |
+### `src/lib/` — சேவையக நூலகங்கள்
 
-### `src/lib/db/` — தரவுத்தளம் (137 தொகுதிகள் + 193 இடம்பெயர்வுகள்)
+தோராயமாக 90 துணைக் கோப்புறைகள் மற்றும் 90 உயர்மட்ட தொகுதிகள். முக்கிய குழுக்கள்:
 
-| துணைக் கோப்பகம்           | நோக்கம்                                                                                                                                                                                 |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `db/core.ts`              | WAL பதிவேட்டுடன் கூடிய `getDbInstance()` singleton                                                                                                                                      |
-| `db/migrations/`          | பதிப்பிடப்பட்ட SQL கோப்புகள் (ஒரேவிளைவுத்தன்மை கொண்டவை, பரிவர்த்தனை சார்ந்தவை). `073_memory_vec.sql`, `memory_vec_meta` + `needs_reindex` நெடுவரிசையைச் சேர்க்கிறது (திட்டம் 21).       |
-| `db/playgroundPresets.ts` | Playground Studio முன்னமைவுகளுக்கான CRUD தொகுதி (`listPlaygroundPresets`, `getPlaygroundPreset`, `createPlaygroundPreset`, `updatePlaygroundPreset`, `deletePlaygroundPreset`)          |
-| `db/memoryVec.ts`         | `memory_vec_meta`-க்கான CRUD (active_dim, embedding_signature, last_reset_at, vec_loaded) + `markMemoryNeedsReindex`, `getMemoryReindexQueue` போன்றவை (திட்டம் 21)                      |
-| `db/<domain>.ts`          | ஒவ்வொரு களத்திற்கும் ஒரு தொகுதி: providers, combos, apiKeys, users, sessions, usage, audit*log, webhooks, skills, memory_entries, cloud_agent_tasks, evals*\*, reasoning_cache போன்றவை. |
+| பகுதி                              | கோப்புறைகள் / கோப்புகள்                                                                                             | ஆழமான டைவ்                                                                                                                                     |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| தரவுத்தளம்                         | `db/` — டொமைன் தொகுதிகள், `migrations/`, `adapters/`, `repositories/`, `migrationRunner/`                           | [`src/lib/db/AGENTS.md`](../../src/lib/db/AGENTS.md), [DATABASE_GUIDE.md](../ops/DATABASE_GUIDE.md)                                            |
+| பயன்பாடு, ஒதுக்கீடு மற்றும் செலவு  | `usage/`, `quota/`, `spend/`                                                                                        | [QUOTA_SHARE.md](../routing/QUOTA_SHARE.md), [COST_TRACKING.md](../guides/COST_TRACKING.md)                                                    |
+| வழங்குநர்கள் மற்றும் மாதிரிகள்     | `providers/`, `providerModels/`, `modelValidation/`, `catalog/`, `radar/`, `freeProxyProviders/`                    | [RADAR.md](../frameworks/RADAR.md), [MODEL-VALIDATION.md](../guides/MODEL-VALIDATION.md)                                                       |
+| OAuth மற்றும் சான்றுகள்            | `oauth/` (வழங்குபவர்கள்/, சேவைகள்/, utils/), `zed-oauth/`, `copilot/`, `cursor/`, `credentialHealth/`               | `resolvePublicCred()` (ஆபரேட்டர் ஆவணம், பொதுவில் வழங்கப்படவில்லை)                                                                              |
+| பாதுகாப்பு மற்றும் நிர்வாகம்       | `guardrails/`, `compliance/`, `pii/`, `security/`                                                                   | [GUARDRAILS.md](../security/GUARDRAILS.md), [COMPLIANCE.md](../security/COMPLIANCE.md)                                                         |
+| முகவர் அம்சங்கள்                   | `a2a/`, `acp/`, `cloudAgent/`, `memory/`, `skills/`, `agentSkills/`                                                 | [AGENT_PROTOCOLS_GUIDE.md](../frameworks/AGENT_PROTOCOLS_GUIDE.md), [MEMORY.md](../frameworks/MEMORY.md), [SKILLS.md](../frameworks/SKILLS.md) |
+| செருகுநிரல்கள் மற்றும் சேவைகள்     | `plugins/`, `services/` (உட்பொதிக்கப்பட்ட சேவை நிறுவிகள் மற்றும் மேற்பார்வையாளர்)                                   | [PLUGINS.md](../frameworks/PLUGINS.md), [EMBEDDED-SERVICES.md](../frameworks/EMBEDDED-SERVICES.md)                                             |
+| ரூட்டிங் மற்றும் மீள்தன்மை         | `combos/`, `routing/`, `resilience/`, `reasoningRouting/`, `promptCache/`                                           | [RESILIENCE_GUIDE.md](RESILIENCE_GUIDE.md)                                                                                                     |
+| ப்ராக்ஸிகள் மற்றும் நெட்வொர்க்கிங் | `proxyHealth/`, `proxySubscription/`, `proxyRelay/`, `proxyEvents/`, சுரங்கப்பாதை தொகுதிகள்                         | [PROXY_GUIDE.md](../ops/PROXY_GUIDE.md), [TUNNELS_GUIDE.md](../ops/TUNNELS_GUIDE.md)                                                           |
+| வேலைகள் மற்றும் திட்டமிடல்         | `jobs/`, `jobRegistry/`, `warmupScheduler/`                                                                         |                                                                                                                                                |
+| கவனிப்பு மற்றும் ஏற்றுமதி          | `monitoring/`, `logExport/`, `webhooks/`, `audit/`, `events/`                                                       | [LOG-EXPORT.md](../frameworks/LOG-EXPORT.md), [WEBHOOKS.md](../frameworks/WEBHOOKS.md)                                                         |
+| CLI மற்றும் IDE ஒருங்கிணைப்பு      | `cliTools/`, `cli-helper/`, `vscode/`, `inspector/`, `versionManager/`                                              | [CLI-TOOLS.md](../reference/CLI-TOOLS.md), [VSCODE-COPILOT.md](../guides/VSCODE-COPILOT.md)                                                    |
+| சூழல் ஆதாரங்கள்                    | `localCorpus/`, `notion/`, `obsidian/`                                                                              | [LOCAL_CORPUS_CONTEXT.md](../frameworks/LOCAL_CORPUS_CONTEXT.md)                                                                               |
+| மற்ற அம்சங்கள்                     | `evals/`, `playground/`, `gamification/`, `telegram/`, `conductor/`, `batches/`, `deploy/`, `transfer/`, `sync/`, … | [EVALS.md](../frameworks/EVALS.md), [PLAYGROUND_STUDIO.md](../frameworks/PLAYGROUND_STUDIO.md)                                                 |
 
-### `src/domain/`
+தெரிந்து கொள்ள வேண்டிய உயர்மட்ட தொகுதிகள்:
 
-| தொகுதி                 | நோக்கம்                                                    |
-| ---------------------- | ---------------------------------------------------------- |
-| `policy.ts`            | கொள்கை இயந்திரம்                                           |
-| `fallbackPolicy.ts`    | மாற்று முடிவு மரம்                                         |
-| `costRules.ts`         | செலவுக் கணக்கீட்டு விதிகள்                                 |
-| `lockoutPolicy.ts`     | மாதிரி/இணைப்பு முடக்கக் கொள்கை                             |
-| `tagRouter.ts`         | குறிச்சொல் அடிப்படையிலான வழிப்படுத்தல்                     |
-| `comboResolver.ts`     | Combo தீர்மானம் (combo இயந்திரத்தால் பயன்படுத்தப்படுகிறது) |
-| `modelAvailability.ts` | ஒவ்வொரு மாதிரிக்குமான கிடைப்புத்தன்மைச் சரிபார்ப்பு        |
-| `assessment/`          | மாதிரி மதிப்பீடு (RFC-AUTO-ASSESSMENT-இன் கட்டம் 1)        |
+| கோப்பு                                                         | நோக்கம்                                                                         |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `cacheLayer.ts`, `idempotencyLayer.ts`, `semanticCache.ts`     | பதிலளிப்பு கேச்சிங் மற்றும் ஐடியம்போடென்சி                                      |
+| `webhookDispatcher.ts`                                         | HMAC-கையொப்பமிட்ட வெப்ஹூக் டெலிவரி                                              |
+| `cloudflaredTunnel.ts`, `ngrokTunnel.ts`, `tailscaleTunnel.ts` | சுரங்கப்பாதை மேலாளர்கள்                                                         |
+| `tokenHealthCheck*.ts`, `tokenRefreshCircuit.ts`               | பின்னணி நற்சான்றிதழ் சுகாதார சோதனைகள் மற்றும் புதுப்பித்தல் சுற்று              |
+| `streamingPiiTransform.ts`, `streamingCredentialTransform.ts`  | ஸ்ட்ரீமிங் ரெஸ்பான்ஸ் சானிடைசர்கள்                                              |
+| `gracefulShutdown.ts`, `serverLifecycle.ts`                    | செயல்முறை வாழ்க்கை சுழற்சி                                                      |
+| `*.stub.ts`                                                    | `next.config.mjs` இல் மாற்றுப்பெயர்களால் பில்ட்-புரொஃபைல் ஸ்டப்கள் மாற்றப்பட்டன |
 
-### `src/server/`
+### `src/lib/db/` — தரவுத்தளம்
 
-| தொகுதி   | நோக்கம்                                                                                                         |
-| -------- | --------------------------------------------------------------------------------------------------------------- |
-| `authz/` | அங்கீகாரச் செயல்தொடர்: `classify` → `policies` → `enforce` — `docs/architecture/AUTHZ_GUIDE.md`-ஐப் பார்க்கவும் |
-| `cors/`  | CORS உள்ளமைவு                                                                                                   |
-| `auth/`  | அமர்வு middleware                                                                                               |
+| பாதை                  | நோக்கம்                                                                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `db/core.ts`          | `getDbInstance()` singleton (WAL ஜர்னலிங்)                                                                                                  |
+| `db/migrations/`      | எண்ணிடப்பட்ட, வலிமையற்ற `.sql` இடம்பெயர்வுகள் (எழுதும் நேரத்தில் 236 கோப்புகள்; `check-migration-numbering.mjs` காவலர்கள் எண்ணிடுதல்)       |
+| `db/migrationRunner/` | இடம்பெயர்வு ஓடுபவர்                                                                                                                         |
+| `db/adapters/`        | SQLite இயக்கி அடாப்டர்கள் (better-sqlite3, முனை:sqlite, bun:sqlite, sql.js)                                                                 |
+| `db/repositories/`    | SQLite களஞ்சிய செயலாக்கங்கள் (காம்போஸ், விளையாட்டு மைதான முன்னமைவுகள், ரூட்டிங் கட்டமைப்பு)                                                 |
+| `db/<domain>.ts`      | சுமார் 175 டொமைன் தொகுதிகள் (வழங்குபவர்கள், சேர்க்கைகள், apiKeys, அமைப்புகள், பயன்பாடு, ...) — எப்போதும் இவற்றை நேரடியாக இறக்குமதி செய்யும் |
 
-### `src/shared/`
+### `src/domain/`, `src/server/`, `src/shared/`
 
-| தொகுதி                           | நோக்கம்                                                                                   |
-| -------------------------------- | ----------------------------------------------------------------------------------------- |
-| `constants/providers.ts`         | Zod சரிபார்ப்புடன் கூடிய **355 வழங்குநர்கள்** (அதிகாரப்பூர்வ ஆதாரம்)                      |
-| `constants/cliTools.ts`          | வெளிப்புற CLI கருவிப் பதிவேடு                                                             |
-| `constants/routingStrategies.ts` | முன்னுரிமைகளுடன் கூடிய **19 வழிப்படுத்தல் உத்திகள்**                                      |
-| `constants/publicApiRoutes.ts`   | Bearer அங்கீகாரம் தேவைப்படும் வழித்தடங்கள் (மேலாண்மை அங்கீகாரத்திற்கு மாறாக)              |
-| `constants/upstreamHeaders.ts`   | மேல்நிலை கோரிக்கைகளுக்கான தலைப்புப் புல மறுப்புப் பட்டியல்                                |
-| `validation/schemas.ts`          | ~80 Zod திட்டவடிவங்கள் (API ஒப்பந்தங்களுக்கான ஒரே அதிகாரப்பூர்வ ஆதாரம்)                   |
-| `validation/helpers.ts`          | Zod சரிபார்ப்பு உதவியாளர்கள் (`validateBody`, முதலியன)                                    |
-| `types/`                         | பகிரப்பட்ட TS வகைகள்                                                                      |
-| `contracts/`                     | பொது API ஒப்பந்தங்கள் (`package.json`-இல் உள்ள `files:` மூலம் பயன்படுத்தப்படுபவை)         |
-| `utils/circuitBreaker.ts`        | வழங்குநர் சுற்றுத் துண்டிப்பான் (`docs/architecture/RESILIENCE_GUIDE.md`-ஐப் பார்க்கவும்) |
-| `utils/apiAuth.ts`               | API விசை சரிபார்ப்பு, அணுகல் வரம்புச் சரிபார்ப்பு                                         |
-| `utils/fetchTimeout.ts`          | மேல்நிலை fetch-க்கான காலக்கெடு/இடைநிறுத்த உறைகள்                                          |
-| `utils/releaseNotes.ts`          | மூடப்பட்ட v2/பழைய அறிவிப்பு பகுப்பாய்வி, உள்ளூர்மயமாக்கல் மற்றும் ID நீக்கம்              |
+| பாதை                                                           | நோக்கம்                                                                                                                                                      |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `domain/policyEngine.ts`                                       | கொள்கை இயந்திரம்                                                                                                                                             |
+| `domain/fallbackPolicy.ts`, `lockoutPolicy.ts`, `costRules.ts` | பின்னடைவு முடிவுகள், பூட்டுதல் கொள்கை, செலவு விதிகள்                                                                                                         |
+| `domain/quotaCache*.ts`, `quotaSnapshot*.ts`                   | ஒதுக்கீடு கேச் மற்றும் ஸ்னாப்ஷாட் நிலைத்தன்மை                                                                                                                |
+| `domain/assessment/`                                           | மாதிரி மதிப்பீடு (மதிப்பீட்டாளர், வகைப்படுத்துபவர், சுய-குணப்படுத்துபவர்)                                                                                    |
+| `server/authz/`                                                | அங்கீகார பைப்லைன் மற்றும் ரூட் கார்டு (`routeGuard.ts`) — பார்க்க [AUTHZ_GUIDE.md](AUTHZ_GUIDE.md), [ROUTE_GUARD_TIERS.md](../security/ROUTE_GUARD_TIERS.md) |
+| `server/origin/`, `server/cors/`                               | Public/MCP/WS தோற்றம் தீர்மானம் மற்றும் CORS — பார்க்க [CORS.md](../security/CORS.md)                                                                        |
+| `server/ws/`                                                   | நேரடி டாஷ்போர்டு WebSocket சர்வர்                                                                                                                            |
+| `shared/components/`                                           | `packages/ui-kit` — மீது டாஷ்போர்டு கூறுகள் மற்றும் அடாப்டர்கள் பார்க்க [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)                                                 |
+| `shared/constants/`                                            | வழங்குநர் பட்டியல் (`providers.ts`), ரூட்டிங் உத்திகள், CLI கருவிகள், ஐகான் வரைபடம், அப்ஸ்ட்ரீம் தலைப்பு மறுப்பாளர், …                                       |
+| `shared/validation/`                                           | Zod திட்டங்கள் மற்றும் சரிபார்ப்பு உதவியாளர்கள்                                                                                                              |
+| `shared/utils/`                                                | சர்க்யூட் பிரேக்கர், ஏபிஐ-விசை அங்கீகாரம், காலக்கெடுவைப் பெறுதல், அம்சக் கொடிகள், …                                                                          |
+| `shared/middleware/`, `network/`, `services/`, `hooks/`        | அரட்டை சேர்க்கை மிடில்வேர், நெட்வொர்க் உதவியாளர்கள், கிளையன்ட் சேவைகள், React கொக்கிகள்                                                                      |
 
 ---
 
-## `open-sse/` — ஸ்ட்ரீமிங் எஞ்சின் பணிப்பரப்பு
+## `open-sse/` — ஸ்ட்ரீமிங் என்ஜின் பணியிடம்
 
-தனியான npm பணிப்பரப்பு (`@omniroute/open-sse`). கோரிக்கை செயலாக்கம் + வழங்குநர் இயக்கத்தை நிர்வகிக்கிறது.
+npm பணியிடம் `@omniroute/open-sse` (சுமார் 2,390 கண்காணிக்கப்பட்ட கோப்புகள்). இது கோரிக்கை செயலாக்கம் மற்றும் வழங்குநரை செயல்படுத்துகிறது. கண்ணோட்டம்: [OPEN_SSE_ARCHITECTURE.md](../frameworks/OPEN_SSE_ARCHITECTURE.md).
 
 ```
 open-sse/
-├── handlers/            # 16 கோப்புகள் (12 கையாளிகள் + 4 உதவிகள்): chatCore, responsesHandler, embeddings, audio, image, video, music, rerank, moderations, search போன்றவை.
-├── executors/           # வழங்குநர் சார்ந்த 67 இயக்கிகள் (BaseExecutor-ஐ நீட்டிப்பவை)
-├── translator/          # வடிவமைப்பு மாற்றிகள் (9 கோரிக்கை, 9 பதில், 9 உதவிகள்)
-├── transformer/         # Responses API ↔ Chat Completions (TransformStream)
-├── services/            # ~80+ சேவைத் தொகுதிகள் (combo, accountFallback, autoCombo, reasoningCache, claude code/chatgpt stealth, modelDeprecation, taskAwareRouter, workflowFSM போன்றவை)
-├── mcp-server/          # MCP சேவையகம் (110 கருவிகள், 3 போக்குவரத்துகள், 33 வரம்புகள்)
-├── config/              # வழங்குநர்/மாதிரி பதிவகங்கள், தலைப்பு உள்ளமைவு, மாதிரி மாற்றுப்பெயர்கள்
-├── utils/               # TLS கிளையகம், ப்ராக்ஸி fetch/dispatcher, பிணைய உதவிகள்
-├── index.ts             # பணிப்பரப்பு நுழைவுப்புள்ளி
-├── package.json         # பணிப்பரப்பு விவரக்கோப்பு
-├── tsconfig.json        # பணிப்பரப்பு TS உள்ளமைவு
-└── types.d.ts           # பணிப்பரப்பு வகை அறிவிப்புகள்
+├── handlers/       # Request handlers: chatCore.ts + chatCore/, responses, embeddings, audio, imageGeneration/,
+│                   #   videoGeneration/, search/, fal/, mediaGeneration/, sseParser/, responseSanitizer/, …
+├── executors/      # Provider-specific HTTP dispatch, registered in executors/registry.ts; base/ holds shared recovery helpers
+├── translator/     # Format conversion: request/, response/, helpers/, image/, registry.ts, bootstrap.ts
+├── transformer/    # responsesTransformer.ts (Responses API ↔ Chat Completions TransformStream)
+├── services/       # Combo routing, rate limits, fallback, caching, usage, token refresh, compression (see below)
+├── config/         # Provider registry (config/providers/registry/<id>/), constants, model/media registries
+├── mcp-server/     # MCP server: tools/, schemas/, toolSearch/, transports, audit, scopes, __tests__/
+├── utils/          # Stream, error, TLS, proxy-fetch and logging utilities
+├── vendor/         # codex-chatgpt-web/ — vendored adapter (provenance in vendor.json)
+├── lib/            # DeepSeek proof-of-work worker and hash
+├── shared/         # zedAuth.ts
+├── index.ts        # Workspace entry
+└── package.json · tsconfig.json · types.d.ts
 ```
+
+### `open-sse/services/`
+
+| பாதை                                                                                           | நோக்கம்                                                                                                                                                              |
+| ---------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `combo.ts` + `combo/`                                                                          | காம்போ ரூட்டிங் உத்திகள் — பார்க்க [AUTO-COMBO.md](../routing/AUTO-COMBO.md)                                                                                         |
+| `autoCombo/`                                                                                   | ஆட்டோ-காம்போ ஸ்கோரிங் மற்றும் மோட் பேக்குகள்                                                                                                                         |
+| `accountFallback.ts` + `accountFallback/`                                                      | இணைப்பு கூல்டவுன் மற்றும் மாடல் லாக்அவுட் — பார்க்க [RESILIENCE_GUIDE.md](RESILIENCE_GUIDE.md)                                                                       |
+| `rateLimitManager.ts` + `rateLimitManager/`                                                    | விகித வரம்பு கண்காணிப்பு மற்றும் தலைப்பு பாகுபடுத்துதல்                                                                                                              |
+| `compression/`                                                                                 | சுருக்க இயந்திரங்கள் (`engines/`), ரூல் பேக்குகள் (`rules/`), `eval/`, `harness/`, `riskGate/` — பார்க்க [COMPRESSION_GUIDE.md](../compression/COMPRESSION_GUIDE.md) |
+| `tokenRefresh/`, `usage/`, `cache/`, `admission/`, `sessionPool/`, `codexAccount/`, `routing/` | டோக்கன் ரெஃப்ரெஷ், யூஸ் அக்கவுண்டிங், கேச்சிங், அட்மிஷன் லேன்கள், செஷன் பூல்கள், Codex கணக்குகள், ரூட்டிங் ஹெல்பர்கள்                                                |
+| `__tests__/`                                                                                   | இணைந்து அமைந்துள்ள Vitest தொகுப்புகள் ( Vitest கட்டமைப்புகளால் சேகரிக்கப்பட்டது)                                                                                     |
+| `AGENTS.md`                                                                                    | இந்தக் கோப்புறைக்கான முகவர் வழிகாட்டி                                                                                                                                |
+
+வடிவம்: `X/` கோப்புறைக்கு அடுத்துள்ள ஒரு பெரிய தொகுதி `X.ts` என்றால், தொகுதி சிறிய கோப்புகளாகப் பிரிக்கப்பட்டது (`handlers/chatCore.ts` + `handlers/chatCore/`, `services/combo.ts` + `services/combo/`).
 
 ### `open-sse/mcp-server/`
 
-| பாதை                        | நோக்கம்                                                                                         |
-| --------------------------- | ----------------------------------------------------------------------------------------------- |
-| `server.ts`                 | MCP சேவையக வாழ்க்கைச் சுழற்சி (stdio + HTTP போக்குவரத்துகள்)                                    |
-| `httpTransport.ts`          | HTTP Streamable + SSE போக்குவரத்துகள் (`/api/mcp/sse`, `/api/mcp/stream`)                       |
-| `audit.ts`                  | `mcp_tool_audit` அட்டவணையில் தணிக்கைப் பதிவேற்றம்                                               |
-| `scopeEnforcement.ts`       | ஒவ்வொரு கருவிக்குமான வரம்புச் சரிபார்ப்பு                                                       |
-| `runtimeHeartbeat.ts`       | `DATA_DIR/runtime/mcp-heartbeat.json`-க்கு ஆரோக்கிய நிலை இதயத்துடிப்பை அனுப்புதல்               |
-| `descriptionCompressor.ts`  | சூழல் இடத்தைச் சேமிக்க கருவி விளக்க மெட்டாதரவைச் சுருக்குதல்                                    |
-| `schemas/tools.ts`          | 36 அடிப்படைக் கருவி வரையறைகள் + வரம்புகள்                                                       |
-| `tools/advancedTools.ts`    | மேம்பட்ட கருவிச் செயலாக்கங்கள்                                                                  |
-| `tools/memoryTools.ts`      | 3 நினைவகக் கருவிகள் (தேடல்/சேர்த்தல்/அழித்தல்)                                                  |
-| `tools/skillTools.ts`       | 4 திறன் கருவிகள் (பட்டியலிடுதல்/இயக்குதல்/செயல்படுத்துதல்/செயல்பாடுகள்)                         |
-| `tools/compressionTools.ts` | 5 சுருக்கக் கருவிகள்                                                                            |
-| `README.md`                 | அக MCP சேவையக README (`docs/frameworks/MCP-SERVER.md`-இலிருந்து குறுக்கு இணைப்பு செய்யப்பட்டது) |
+| பாதை                  | நோக்கம்                                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------- |
+| `server.ts`           | MCP சேவையக வாழ்க்கைச் சுழற்சி                                                                     |
+| `httpTransport.ts`    | ஸ்ட்ரீம் செய்யக்கூடிய HTTP மற்றும் SSE போக்குவரத்து                                               |
+| `scopeEnforcement.ts` | ஒரு கருவியின் நோக்கம் சோதனைகள்                                                                    |
+| `audit.ts`            | கருவி-அழைப்பு தணிக்கை பதிவு                                                                       |
+| `schemas/`            | கருவி வரையறைகள் மற்றும் நோக்கங்கள்                                                                |
+| `tools/`              | கருவி செயலாக்கங்கள் (நினைவகம், திறன்கள், சுருக்கம், ...)                                          |
+| `toolSearch/`         | கருவி தேடல்                                                                                       |
+| `README.md`           | உள் கட்டமைப்பு குறிப்புகள்; முழு பட்டியல் [MCP-SERVER.md](../frameworks/MCP-SERVER.md) இல் உள்ளது |
 
 ---
 
-## `electron/` — மேசைக்கணினி உறை
+## `packages/` — npm பணியிடங்கள்
 
-| கோப்பு           | நோக்கம்                                                                                                          |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `main.js`        | Electron முதன்மைச் செயல்முறை (BrowserWindow, உட்பொதிக்கப்பட்ட Next.js சேவையகம், தட்டு, தானியங்குப் புதுப்பிப்பு) |
-| `preload.js`     | IPC பாலம் (contextBridge → `window.omniroute`)                                                                   |
-| `package.json`   | electron-builder உள்ளமைவு + Electron 41 + electron-builder 26.10 சார்புகள்                                       |
-| `assets/`        | செயலி சின்னங்கள் (Windows .ico, macOS .icns, Linux .png)                                                         |
-| `dist-electron/` | கட்டுமான வெளியீடு (gitignored)                                                                                   |
-| `types.d.ts`     | ரெண்டரர் பாலத்திற்கான வகை அறிவிப்புகள்                                                                           |
-| `README.md`      | அக Electron README (`docs/guides/ELECTRON_GUIDE.md`-ஐயும் பார்க்கவும்)                                           |
+| பாதை                     | நோக்கம்                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `packages/ui-kit/`       | `@omniroute/ui-kit`: Keak CI UI Kit இன் விற்பனையான ஸ்னாப்ஷாட், ஆதாரமாக உட்கொள்ளப்படுகிறது. `UPSTREAM.md` அப்ஸ்ட்ரீம் கமிட்டைப் பின் செய்கிறது, `PATCHES.md` உள்ளூர் இணைப்புகளை பட்டியலிடுகிறது. `src/` `scripts/dev/sync-ui-kit.sh` ஆல் மட்டுமே ஒத்திசைக்கப்படுகிறது மற்றும் `npm run check:ui-kit-snapshot` ஆல் பாதுகாக்கப்படுகிறது. [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) ஐப் பார்க்கவும் |
+| `packages/browser-pool/` | `@omniroute/browser-pool`: உலாவி பூல் இடைமுகங்கள் மற்றும் செயல்படுத்தல் (`packages/browser-pool/src/index.ts`, `packages/browser-pool/src/interfaces.ts`). `workspaces` இல் பட்டியலிடப்பட்டுள்ளது; கேட்வே பயன்படுத்தும் இயக்க நேர உலாவி குளம் `open-sse/services/` இல் உள்ளது                                                                                                              |
 
----
+## `@omniroute/` — தனித்தனியாக வெளியிடப்பட்ட தொகுப்புகள்
 
-## `bin/` — CLI
+இவை npm பணியிடங்கள் அல்ல. ஒவ்வொன்றும் அதன் சொந்த `package.json` மற்றும் lockfile உள்ளது; கோப்புறை `omniroute` டார்பால் (`files: ["@omniroute/"]`) இல் அனுப்பப்படுகிறது.
 
-| கோப்பு                                                                                                      | நோக்கம்                                                                                                                                   |
-| ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `omniroute.mjs`                                                                                             | முதன்மை CLI நுழைவுப்புள்ளி — `omniroute serve`, `omniroute setup`, `omniroute doctor`, `omniroute providers`, `omniroute combos` போன்றவை. |
-| `reset-password.mjs`                                                                                        | தனித்தியங்கும் கடவுச்சொல் மீட்டமைப்பு CLI                                                                                                 |
-| `cli/commands/setup.mjs`                                                                                    | ஊடாடும் + ஊடாடாத அமைவு வழிகாட்டி                                                                                                          |
-| `cli/commands/doctor.mjs`                                                                                   | கணினி நிலை கண்டறிதல் (8+ சோதனைகள்)                                                                                                        |
-| `cli/commands/providers.mjs`                                                                                | வழங்குநர் பட்டியல்/சோதனை/சரிபார்ப்பு                                                                                                      |
-| `cli/{args,data-dir,encryption,io,provider-catalog,provider-store,provider-test,settings-store,sqlite}.mjs` | CLI உதவித் தொகுதிகள்                                                                                                                      |
-| `cli/tray/tray.ts`                                                                                          | கணினித் தட்டு ஒருங்கிணைப்பு (பல தள ஆதரவு: Windows-இல் NotifyIcon, macOS/Linux-இல் systray2)                                               |
-| `cli/tray/tray.ps1`                                                                                         | PowerShell NotifyIcon பின்புலச் சேவை (Windows, புதிய இருமக் கோப்புகள் ஏதுமில்லை)                                                          |
-| `cli/tray/autostart.ts`                                                                                     | பல தளத் தானியக்கத் தொடக்கம் (LaunchAgent / .desktop / பதிவகம்)                                                                            |
-| `cli/runtime/sqliteRuntime.mjs`                                                                             | 5-படி SQLite இயக்கி தீர்மானச் சங்கிலி (தொகுக்கப்பட்டது → இயக்கநேரம் → தேவைக்கேற்ப நிறுவல் → node:sqlite → sql.js)                         |
-| `cli/runtime/magicBytes.mjs`                                                                                | இரும magic-byte சரிபார்ப்பு (ELF / Mach-O / Mach-O fat / PE)                                                                              |
-| `cli/runtime/index.mjs`                                                                                     | `warmUpRuntimes()` — postinstall / முதல் தொடக்கத்தின்போது இயக்கிகளை முன்கூட்டியே தீர்மானிக்கிறது                                          |
-| `nodeRuntimeSupport.mjs`                                                                                    | நிறுவலின்போது ஆதரிக்கப்படும் Node.js பதிப்பைச் சரிபார்த்தல்                                                                               |
+| பாதை                             | நோக்கம்                                                                                                                                                                    |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@omniroute/opencode-plugin/`    | OpenCode செருகுநிரல் (மாதிரி கண்டுபிடிப்பு, `/connect` அங்கீகாரம்); `omniroute setup-opencode` — ஆல் பயன்படுத்தப்படுகிறது பார்க்க [OPENCODE.md](../frameworks/OPENCODE.md) |
+| `@omniroute/opencode-plugin-v2/` | v2 ப்ராமிஸ் API க்கான OpenCode சொருகி — [OPENCODE-V2-PLUGIN.md](../guides/OPENCODE-V2-PLUGIN.md) பார்க்கவும்                                                               |
+| `@omniroute/opencode-provider/`  | நிலையான கட்டமைப்பு ஜெனரேட்டர்; `opencode-plugin` க்கு ஆதரவாக அதன் சொந்த `package.json` இல் நிறுத்தப்பட்டது                                                                 |
 
 ---
 
-## `skills/` — பொது Agent Skills
+## `bin/` — CLI மற்றும் ops ஸ்கிரிப்டுகள்
 
-| கோப்பு                       | நோக்கம்                                                                               |
-| ---------------------------- | ------------------------------------------------------------------------------------- |
-| `skills/omniroute*/SKILL.md` | வெளிப்புற AI agents-க்கான 10 skill manifests (Claude Desktop, ChatGPT, Cursor, Cline) |
+| பாதை                                                                        | நோக்கம்                                                                                                    |
+| --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `omniroute.mjs`                                                             | முதன்மை CLI நுழைவு (`omniroute serve`, `setup`, `doctor`, `providers`, `combo`, ...)                       |
+| `reset-password.mjs`                                                        | `omniroute-reset-password` பைனரி                                                                           |
+| `mcp-server.mjs`                                                            | MCP stdio நுழைவுப் புள்ளி                                                                                  |
+| `antigravity-bridge.mjs`, `chatgpt-web-codex-mcp.mjs`                       | துணை பாலம் / MCP நுழைவு புள்ளிகள்                                                                          |
+| `aliasResolver.mjs`, `aliasResolverHook.mjs`                                | உலகளாவிய நிறுவல்களுக்கான tsconfig பாதை மாற்றுப்பெயர்களை வரைபடமாக்கும்ESM தீர்வு கொக்கி                     |
+| `nodeRuntimeSupport.mjs`                                                    | ஆதரிக்கப்படும் Node.js பதிப்பு சரிபார்ப்பு                                                                 |
+| `snapshot-data.sh`, `restore-data.sh`, `restore-policies.sh`, `rollback.sh` | சுய-ஹோஸ்ட் சம்பவம்-மீட்பு ஸ்கிரிப்ட்கள் (பங்கு `_ops-common.sh`)                                           |
+| `cold-start-bench.sh`                                                       | கோல்ட்-ஸ்டார்ட் பெஞ்ச்மார்க் — பார்க்க [PERF_BASELINE.md](../ops/PERF_BASELINE.md)                         |
+| `cli/commands/`                                                             | ஒரு CLI கட்டளைக்கு ஒரு தொகுதி (சுமார் 100, `setup-*` ஒருங்கிணைப்புகள் உட்பட)                               |
+| `cli/api-commands/`                                                         | `docs/openapi.yaml` இலிருந்து `npm run build:cli-api` — உருவாக்கியது திருத்த வேண்டாம்                      |
+| `cli/locales/`                                                              | CLI செய்தி பட்டியல்கள் (67 இடங்கள்)                                                                        |
+| `cli/tui/`, `cli/tui-components/`                                           | முனையம் UI                                                                                                 |
+| `cli/tray/`                                                                 | கணினி தட்டு மற்றும் ஆட்டோஸ்டார்ட் (Windows PowerShell பின்தளத்தில், macOS/Linux இல் systray)               |
+| `cli/runtime/`                                                              | நேட்டிவ் இயக்க நேரத் தீர்மானம் (`sqliteRuntime.mjs`, `magicBytes.mjs`), செயல்முறை மேற்பார்வையாளர்          |
+| `cli/*.mjs`                                                                 | பகிரப்பட்ட உதவியாளர்கள் (args, API கிளையன்ட், டேட்டா dir, encryption, provider store, settings store, ...) |
+| `cli/README.md`, `cli/CONVENTIONS.md`                                       | CLI உள் மற்றும் மரபுகள்                                                                                    |
 
----
+[CLI-TOOLS.md](../reference/CLI-TOOLS.md) மற்றும் [CLI-COMPANION.md](../guides/CLI-COMPANION.md) ஐப் பார்க்கவும்.
 
-## `scripts/` — உருவாக்க மற்றும் சரிபார்ப்புக் Scripts
+## `electron/` — டெஸ்க்டாப் பயன்பாடு
 
-| Script                              | நோக்கம்                                                                                                |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `run-next.mjs`                      | env hydration உடன் Dev/start runner                                                                    |
-| `build-next-isolated.mjs`           | தனித்தியங்கும் build (Next.js 16 standalone)                                                           |
-| `prepublish.ts`                     | `npm pack`-க்கு முன் package தயாரிப்பு                                                                 |
-| `postinstall.mjs`                   | முதல் நிறுவலின்போது `.env.example`-இலிருந்து `.env`-ஐத் தானாக உருவாக்குதல்                             |
-| `sync-env.mjs`                      | `.env.example` உடன் `.env` keys-ஐ மீண்டும் ஒத்திசைத்தல்                                                |
-| `check-cycles.mjs`                  | சுழற்சி சார்புகளைக் கண்டறிதல்                                                                          |
-| `check-route-validation.mjs`        | அனைத்து API routes-லும் Zod validation இருப்பதைச் சரிபார்த்தல்                                         |
-| `check-t11-any-budget.mjs`          | ஒவ்வொரு கோப்பிற்குமான வெளிப்படையான `any` budget-ஐ அமல்படுத்துதல்                                       |
-| `check-docs-sync.mjs`               | ஆவணங்களின் version ஒத்திசைவைச் சரிபார்த்தல் (தற்போதுள்ள pre-commit)                                    |
-| **`check-env-doc-sync.mjs`**        | புதிது: code, `.env.example`, `ENVIRONMENT.md` ஆகியவற்றிலுள்ள env vars-ஐ குறுக்குச் சரிபார்த்தல்       |
-| **`check-docs-counts-sync.mjs`**    | புதிது: எண்ணிக்கைகள் (executors, strategies, OAuth, A2A skills) ஆவணங்களுடன் பொருந்துவதைச் சரிபார்த்தல் |
-| **`check-deprecated-versions.mjs`** | புதிது: ஆவணங்களிலுள்ள காலாவதியான versions/dates-ஐக் குறித்துக் காட்டுதல்                               |
-| `check-supported-node-runtime.ts`   | தற்போதைய Node version ஆதரிக்கப்படுகிறதா என்பதைச் சரிபார்த்தல்                                          |
-| `check-pr-test-policy.mjs`          | production code மாற்றங்களில் "tests required" விதியை அமல்படுத்துதல்                                    |
-| **`gen-provider-reference.ts`**     | புதிது: catalog-இலிருந்து `docs/reference/PROVIDER_REFERENCE.md`-ஐத் தானாக உருவாக்குதல்                |
-| `i18n/generate-multilang.mjs`       | Google Translate வழியாக UI strings + docs-ஐ மொழிபெயர்த்தல்                                             |
-| `i18n_autotranslate.py`             | LLM அடிப்படையிலான ஆவண மொழிபெயர்ப்பு pipeline                                                           |
-| `validate_translation.py`           | locale வாரியான மொழிபெயர்ப்புச் சரிபார்ப்பு                                                             |
-| `check_translations.py`             | code-side i18n key சரிபார்ப்பு                                                                         |
-| `run-playwright-tests.mjs`          | Playwright E2E runner                                                                                  |
-| `run-protocol-clients-tests.mjs`    | MCP/A2A E2E runner                                                                                     |
-| `run-ecosystem-tests.mjs`           | Ecosystem (provider integration) tests                                                                 |
-| `test-report-summary.mjs`           | coverage சுருக்க markdown-ஐ உருவாக்குதல்                                                               |
-| `smoke-electron-packaged.mjs`       | தொகுக்கப்பட்ட Electron build-ஐ smoke-test செய்தல்                                                      |
-| `native-binary-compat.mjs`          | native deps (`better-sqlite3`) Electron-இன் Node உடன் பொருந்துவதைச் சரிபார்த்தல்                       |
-| `validate-pack-artifact.ts`         | npm pack output-ஐச் சரிபார்த்தல்                                                                       |
-| `responses-ws-proxy.mjs`            | Codex Responses API-க்கான WebSocket bridge                                                             |
-| `v1-ws-bridge.mjs`                  | `/api/v1/ws` endpoint-க்கான WebSocket bridge                                                           |
-| `standalone-server-ws.mjs`          | தனித்தியங்கும் WS server runner                                                                        |
-| `system-info.mjs`                   | ஆதரவுக்காக system/runtime தகவலை அச்சிடுதல்                                                             |
-| `healthcheck.mjs`                   | ஒருமுறை health check (Docker HEALTHCHECK பயன்படுத்துகிறது)                                             |
-| `uninstall.mjs`                     | முழுமையாக அகற்றும் script                                                                              |
+| பாதை                                                       | நோக்கம்                                                                                      |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `main.js`                                                  | Electron முக்கிய செயல்முறை (சாளரம், உட்பொதிக்கப்பட்ட சர்வர், தட்டு, புதுப்பிப்புகள்)         |
+| `preload.js`                                               | IPC பாலம் வழங்குபவருக்கு வெளிப்பட்டது                                                        |
+| `lib/`                                                     | சாளர வாழ்க்கை சுழற்சி, சர்வர் தயார்நிலை, சுகாதார கண்காணிப்பு, தொலை சேவையக விருப்பத்தேர்வுகள் |
+| `remoteServerPrompt*.js`, `assets/remoteServerPrompt.html` | ரிமோட் சர்வர் ப்ராம்ட் விண்டோ                                                                |
+| `processTree.js`, `sqlite-inspection.js`                   | குழந்தை செயல்முறை சுத்தம் மற்றும் SQLite ஆய்வு உதவியாளர்கள்                                  |
+| `package.json` / `package-lock.json`                       | எலக்ட்ரான்-பில்டர் கட்டமைப்பு மற்றும் Electron சார்புகள்                                     |
+| `assets/`                                                  | பயன்பாடு மற்றும் தட்டு சின்னங்கள் (`.ico`, `.icns`, `.png`)                                  |
+| `README.md`                                                | உள் குறிப்புகள் — பார்க்க [ELECTRON_GUIDE.md](../guides/ELECTRON_GUIDE.md)                   |
 
----
+## `public/` — நிலையான சொத்துக்கள்
 
-## `docs/` — பொது ஆவணங்கள் (7 மூலக் கோப்புகள் + 17 துணை அடைவுகள்)
+| பாதை                                        | நோக்கம்                                                                                                                        |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `providers/`                                | ஐடி (`/providers/<id>.svg`) மூலம் ஏற்றப்பட்ட வழங்குநர் லோகோக்கள்; `config/quality/provider-assets-provenance.jsonl` இல் ஆதாரம் |
+| `favicon.*`, `apple-touch-icon.*`, `icon-*` | உலாவி மற்றும் PWA ஐகான்கள்                                                                                                     |
+| `sw.js`                                     | சேவை பணியாளர் — பார்க்க [PWA_GUIDE.md](../guides/PWA_GUIDE.md)                                                                 |
+| `openapi.yaml`                              | `npm run gen:public-openapi` ஆல் உருவாக்கப்பட்ட `docs/openapi.yaml` இன் நகல்                                                   |
+| `images/`, `sponsors/`, `deyin.svg`         | அடுக்கு ஓட்ட வரைபடங்கள், ஸ்பான்சர் பேனர், README கலைப்படைப்பு                                                                  |
 
-### உயர்நிலை வழிகாட்டிகள்
+## `skills/` — முகவர் திறன்கள்
 
-| ஆவணம்                       | நோக்கம்                                                                                                |
-| --------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `ARCHITECTURE.md`           | உயர்நிலை கட்டமைப்பு, துணைஅமைப்பு வரைபடம், கட்டுப்பாட்டுப் பலகை பரப்பு                                  |
-| `CODEBASE_DOCUMENTATION.md` | பொறியியல் மேற்கோள்: அடைவுகள், தொகுதிகள், மரபுகள்                                                       |
-| `FEATURES.md`               | v3.8 சிறப்பம்சங்களுடன் கூடிய அம்ச அணி                                                                  |
-| `USER_GUIDE.md`             | இறுதிப் பயனர் கையேடு (அமைப்பு, மாதிரிகள், சேர்க்கைகள், CLIs, ஒலி போன்றவை)                              |
-| `API_REFERENCE.md`          | அங்கீகார மாதிரியுடன் கூடிய API முனைப்புப் புள்ளி மேற்கோள்                                              |
-| `openapi.yaml`              | OpenAPI 3.0 விவரக்குறிப்பு (121 பாதைகள்)                                                               |
-| `SETUP_GUIDE.md`            | நிறுவல் முறைகள் (npm, npx, Docker, Electron, Termux, மூலக் குறியீடு)                                   |
-| `ENVIRONMENT.md`            | அனைத்து சூழல் மாறிகளும் (~800 ஆவணப்படுத்தப்பட்டவை, `.env.example`-இல் ~3,050 வரிகள்)                   |
-| `TROUBLESHOOTING.md`        | பொதுவான பிழைகள் + v3.8.0-இன் அறியப்பட்ட சிக்கல்கள்                                                     |
-| `RELEASE_CHECKLIST.md`      | முழுமையான வெளியீட்டுப் பணிப்பாய்வு (திறன்கள், husky, மரபுசார் commits, வரிசைப்படுத்தல்)                |
-| `COVERAGE_PLAN.md`          | கவரேஜ் இலக்குகள் மற்றும் தற்போதைய நிலை                                                                 |
-| `FREE_TIERS.md`             | தேர்ந்தெடுக்கப்பட்ட இலவச அடுக்கு வழங்குநர்கள் (48+ இலவசம் + 11 OAuth)                                  |
-| `CLI-TOOLS.md`              | வெளிப்புற CLI ஒருங்கிணைப்புகள் + உள் OmniRoute CLI                                                     |
-| `I18N.md`                   | i18n கட்டமைப்பு, ஒரு மொழியைச் சேர்த்தல், 42 மொழி அமைவுகள்                                              |
-| `UNINSTALL.md`              | முழுமையாக நிறுவல் நீக்கும் படிகள்                                                                      |
-| `PROVIDER_REFERENCE.md`     | 355 வழங்குநர்களின் **தானாக உருவாக்கப்பட்ட** பட்டியல் (மீளுருவாக்கம்: `npm run gen:provider-reference`) |
-
-### துணைஅமைப்புகளின் ஆழமான விளக்கங்கள்
-
-| ஆவணம்                                              | நோக்கம்                                                                                 |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `MCP-SERVER.md`                                    | MCP சேவையகம்: 110 கருவிகள், 3 போக்குவரத்துகள், 33 வரம்புகள், REST முனைப்புப் புள்ளிகள்  |
-| `A2A-SERVER.md`                                    | A2A v0.3: JSON-RPC, 6 திறன்கள், REST உதவிச் செயலிகள், முகவர் அட்டை                      |
-| `AGENT_PROTOCOLS_GUIDE.md`                         | ஒருங்கிணைந்த வழிகாட்டி: A2A எதிர் ACP எதிர் Cloud Agents                                |
-| `CLOUD_AGENT.md`                                   | Codex Cloud / Devin / Jules ஒருங்கமைப்பு                                                |
-| `SKILLS.md`                                        | திறன்கள் கட்டமைப்பு (உள்ளமைந்தவை + சந்தைத்தளம் + SkillsSH + தனிமைப்படுத்தப்பட்ட சூழல்)  |
-| `RADAR.md`                                         | Radar இலவச-மாதிரி பட்டியல் மேலடுக்கு (`RADAR_ENABLED`, இயல்புநிலையில் முடக்கப்பட்டது)   |
-| `MEMORY.md`                                        | நினைவக அமைப்பு (SQLite FTS5 + Qdrant)                                                   |
-| `EVALS.md`                                         | மதிப்பீட்டுக் கட்டமைப்பு (தொகுப்புகள், இயக்கங்கள், மதிப்பீட்டு வரையறைகள்)               |
-| `GUARDRAILS.md`                                    | PII மறைப்பி, prompt injection, பார்வைப் பாலம்                                           |
-| `COMPLIANCE.md`                                    | தணிக்கைப் பதிவு, தக்கவைப்பு, noLog விலகல் விருப்பம்                                     |
-| `WEBHOOKS.md`                                      | HMAC-கையொப்பமிடப்பட்ட webhook வழங்கல்                                                   |
-| `REASONING_REPLAY.md`                              | `reasoning_content`-க்கான கலப்பு நினைவகம்/SQLite தற்காலிகச் சேமிப்பு                    |
-| `AUTHZ_GUIDE.md`                                   | அங்கீகாரப் பணிக்குழாய் (`classify` → `policies` → `enforce`)                            |
-| `RESILIENCE_GUIDE.md`                              | சுற்றுத் துண்டிப்பான் + குளிர்விப்பு + மாதிரிப் பூட்டல்                                 |
-| `docs/security/STEALTH_GUIDE.md` (git-இல் மட்டும்) | TLS கைரேகைப் பதிவு (JA3/JA4), Claude Code CCH, MITM சான்றிதழ்                           |
-| `AUTO-COMBO.md`                                    | Auto Combo இயந்திரம் (16-காரணி மதிப்பீடு, 6 முறைமைத் தொகுப்புகள், மெய்நிகர் தொழிற்சாலை) |
-
-### சுருக்கம்
-
-| ஆவணம்                           | நோக்கம்                                                |
-| ------------------------------- | ------------------------------------------------------ |
-| `COMPRESSION_GUIDE.md`          | சுருக்க முறைகள் + செயல்திட்டத்தின் மேலோட்டம்           |
-| `COMPRESSION_ENGINES.md`        | Caveman + RTK இயந்திரங்கள், பதிவக ஒப்பந்தம்            |
-| `COMPRESSION_RULES_FORMAT.md`   | Caveman விதித் தொகுப்பு JSON schema                    |
-| `COMPRESSION_LANGUAGE_PACKS.md` | ஒவ்வொரு மொழிக்குமான விதித் தொகுப்பு இருப்புப் பட்டியல் |
-| `RTK_COMPRESSION.md`            | RTK அறிவிப்புசார் பணிக்குழாய் (49 வடிகட்டிகள்)         |
-
-### வரிசைப்படுத்தல்
-
-| ஆவணம்                        | நோக்கம்                                                                        |
-| ---------------------------- | ------------------------------------------------------------------------------ |
-| `DOCKER_GUIDE.md`            | Docker உருவாக்கம், சுயவிவரங்கள் (base/cli/host/cliproxyapi), Redis பக்கச் சேவை |
-| `VM_DEPLOYMENT_GUIDE.md`     | பொதுவான VM/VPS வரிசைப்படுத்தல் (Ubuntu/Debian + nginx + systemd)               |
-| `FLY_IO_DEPLOYMENT_GUIDE.md` | Fly.io வரிசைப்படுத்தல் (தற்போது சீன மொழியில் மட்டும்)                          |
-| `TERMUX_GUIDE.md`            | Termux வழியாக திரையற்ற Android இயக்கம்                                         |
-| `PWA_GUIDE.md`               | Progressive Web App நிறுவல் + service worker                                   |
-| `ELECTRON_GUIDE.md`          | Desktop app உருவாக்கம் + கையொப்பமிடல் + விநியோகம்                              |
-| `TUNNELS_GUIDE.md`           | Cloudflared + ngrok + Tailscale Funnel                                         |
-| `PROXY_GUIDE.md`             | 4-நிலை வெளிச்செல்லும் proxy + 1proxy சந்தைத்தளம்                               |
-
-### துணை அடைவுகள்
-
-| துணைஅடைவு             | நோக்கம்                                                                                                                                                                                                                                                                                                     |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/i18n/`          | உள்ளூர்மயமாக்கப்பட்ட ஆவண மொழிபெயர்ப்புகள் (41 மொழி-பிராந்தியங்கள்)                                                                                                                                                                                                                                          |
-| `docs/screenshots/`   | வழிகாட்டிகளுக்கான பட ஆதாரங்கள்                                                                                                                                                                                                                                                                              |
-| `_tasks/superpowers/` | superpowers-இலிருந்து திட்டங்கள்/விவரக்குறிப்புகள் (`writing-plans`/`brainstorming`) + ஆய்வு — தனிமைப்படுத்தப்பட்ட, தனியாகப் பதிப்புக் கட்டுப்பாடு செய்யப்படும் களஞ்சியம்; முதன்மைக் கோப்பக மரத்தால் gitignore செய்யப்பட்டது. CLAUDE.md → "திட்டமிடல் மற்றும் ஆய்வுக் கலைப்பொருட்கள்" என்பதைப் பார்க்கவும். |
+46 திறன்கள், ஒவ்வொன்றும் ஒரு `SKILL.md` (`cli-*`, `omni-*`, `config-codex-cli`, `ponytail`), மேலும் `skills/README.md` உடன் ஒரு கோப்புறை. `src/lib/agentSkills/catalog.ts` இயக்க நேரத்தில் அவற்றைப் படித்து அவற்றை `/api/agent-skills`, MCP மற்றும் A2A மூலம் வெளிப்படுத்துகிறது. பெரும்பாலான வெளிப்பாடுகள் `src/lib/agentSkills/generator.ts` (`scripts/skills/generate-agent-skills.mjs`; சறுக்கலுக்கான `npm run check:agent-skills-sync` சோதனைகள்) மூலம் உருவாக்கப்படுகின்றன. பார்க்க [AGENT-SKILLS.md](../frameworks/AGENT-SKILLS.md).
 
 ---
 
-## `tests/` — சோதனைத் தொகுப்புகள்
+## `scripts/` — உருவாக்கம், வாயில்கள் மற்றும் கருவிகள்
 
-| துணை அடைவு                           | வகை                                             | இயக்கி                                        |
-| ------------------------------------ | ----------------------------------------------- | --------------------------------------------- |
-| `tests/unit/`                        | அலகுச் சோதனைகள் (~4,800 கோப்புகள், அதிவேகமானவை) | Node நேட்டிவ் சோதனை இயக்கி                    |
-| `tests/integration/`                 | பல-தொகுதி + DB ஒருங்கிணைப்புச் சோதனைகள்         | Node நேட்டிவ் சோதனை இயக்கி (ஒருங்குநிகழ்வு 1) |
-| `tests/e2e/`                         | UI + பணிப்பாய்வு E2E                            | Playwright                                    |
-| `tests/e2e/protocol-clients.test.ts` | MCP + A2A உண்மையான-கிளையண்ட் E2E                | தனிப்பயன் நெறிமுறை கிளையண்ட்கள்               |
-| `tests/e2e/ecosystem.test.ts`        | வழங்குநர் ஒருங்கிணைப்பு (பிணையத்தை அணுகுவது)    | Node நேட்டிவ் சோதனை இயக்கி                    |
+சுமார் 435 கண்காணிக்கப்பட்ட கோப்புகள். புதிய ஸ்கிரிப்டுகள் `AGENTS.md` ஆல் அனுமதிக்கப்படும் துணைக் கோப்புறைகளில் ஒன்றில் செல்கின்றன; ஒரு முறை குறியீடு `scripts/ad-hoc/` இல் செல்கிறது.
+
+```
+scripts/
+├── check-permissions.sh   # Container ENTRYPOINT (copied to /app by the Dockerfile)
+├── postinstall.mjs        # Native-runtime warm-up run after scripts/build/postinstall.mjs
+├── start-ws-server.mjs    # Starts the live-dashboard WebSocket server as a separate process
+├── build/                 # Build, standalone assembly, npm pack/publish, postinstall, MITM, Electron prep
+├── check/                 # Quality gates behind most `npm run check:*` scripts; lib/ holds shared helpers
+├── quality/               # Ratchets, gate manifest, impact map, mutation tooling, release acceptance
+├── ci/                    # Steps invoked only by workflows (Docker publish, Release-Green, scanners)
+├── dev/                   # Dev runners (run-next, Playwright/protocol/ecosystem runners) and runtime helpers shipped in the package
+├── docs/                  # README SVG/diagram generators, OpenAPI module, provider reference, wiki sync
+├── i18n/                  # UI and docs translation pipeline, coverage checks, glossary/, lib/
+├── release/               # Changelog aggregation, contributors, merge train, LTS cut, publish verification
+├── ops/                   # Canary deploy, OpenCode free relay, runner janitor, allowlist sync
+├── perf/                  # Benchmarks and one-off performance A/B scripts
+├── cli/                   # CLI tooling (API-command generator, SSO, CLI smoke tests, media MCP)
+├── homolog/               # Homologation against a running instance + promptfoo config generation
+├── features/              # Feature-triage engine and its lib/
+├── router-eval/           # Offline router evaluation (`npm run eval:router*`)
+├── compression/           # Compression benchmark (`npm run bench:compression`, runs on Bun)
+├── compression-eval/      # Compression quality evaluation (`npm run eval:compression`)
+├── devin-bridge/          # Shell entry points for the Devin bridge (build, launch, tests)
+├── docker/                # Base-path patching for the standalone server inside containers
+├── integrations/          # MarkItDown MCP launchers — see docs/integrations/MARKITDOWN_MCP.md
+├── launchers/             # Double-click launchers and desktop-shortcut creators (Windows/macOS/Linux)
+├── packs/                 # Optional-pack manifest and installer (shipped in the npm package)
+├── test/                  # Live smoke scripts (combo-live, OpenCode/ChatGPT Web)
+├── sre/                   # On-call rotation, log redaction, TCP close analyzer
+├── vps/                   # Start/stop the release runner
+├── skills/                # Agent Skills generator CLI
+├── research/              # Free-tier budget card SVG generator
+└── ad-hoc/                # One-shot diagnostics and migrations
+```
+
+அடிக்கடி பயன்படுத்தப்படும் நுழைவு புள்ளிகள்:
+
+| ஸ்கிரிப்ட்                                                          | நோக்கம்                                                                                                                   |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `dev/run-next.mjs`                                                  | `npm run dev` / `npm start` ரன்னர்                                                                                        |
+| `build/build-next-isolated.mjs`                                     | `npm run build` (Next.js தனித்த உருவாக்கம்)                                                                               |
+| `build/prepublish.ts`                                               | `npm run build:cli`: npm `dist/` ஐ அசெம்பிள் செய்கிறது                                                                    |
+| `build/postinstall.mjs`                                             | npm `postinstall` கொக்கி                                                                                                  |
+| `build/publicOpenApi.mjs`                                           | `npm run gen:public-openapi`                                                                                              |
+| `docs/gen-provider-reference.ts`                                    | `npm run gen:provider-reference` ( PROVIDER_REFERENCE.md ஐ மீண்டும் உருவாக்குகிறது)                                       |
+| `docs/gen-openapi-module.mjs`                                       | `prebuild:docs` ( `src/app/docs/lib/openapi.generated.ts` ஐ உருவாக்குகிறது)                                               |
+| `i18n/run-translation.mjs`                                          | `npm run i18n:run` (டாக்ஸ் கண்ணாடிகள்)                                                                                    |
+| `i18n/generate-route-namespaces.mjs`                                | `npm run gen:i18n-routes`                                                                                                 |
+| `release/aggregate-changelog.mjs`                                   | `changelog.d/` துண்டுகளை `CHANGELOG.md` ஆக மடிக்கிறது                                                                     |
+| `check/check-fabricated-docs.mjs`                                   | `npm run check:fabricated-docs` (டாக் துல்லிய வாயில்)                                                                     |
+| `check/check-tracked-artifacts.mjs`                                 | `npm run check:tracked-artifacts` (கண்காணிக்கப்பட்ட ரூட் `_*` பாதைகளைத் தடுக்கிறது)                                       |
+| `quality/check-quality-ratchet.mjs`                                 | `npm run quality:ratchet` ( `config/quality/` க்கு எதிரான மெட்ரிக் ராட்செட்)                                              |
+| `dev/run-playwright-tests.mjs`                                      | `npm run test:e2e`                                                                                                        |
+| `dev/run-protocol-clients-tests.mjs`, `dev/run-ecosystem-tests.mjs` | `npm run test:protocols:e2e`, `npm run test:ecosystem`                                                                    |
+| `dev/new-worktree.sh`                                               | ஒரு தனிமைப்படுத்தப்பட்ட வளர்ச்சி பணிமரத்தை உருவாக்குகிறது — பார்க்க [WORKTREE_ISOLATION.md](../ops/WORKTREE_ISOLATION.md) |
+| `dev/sync-ui-kit.sh`                                                | பின் செய்யப்பட்ட அப்ஸ்ட்ரீம் கமிட்டுடன் `packages/ui-kit/src` ஒத்திசைக்கிறது                                              |
+
+கேட் சரக்கு மற்றும் கொள்கைகள்: [QUALITY_GATES.md](QUALITY_GATES.md).
+
+## `config/` — பதிப்பு கட்டமைப்பு மற்றும் கேட் நிலை
+
+| பாதை                                     | நோக்கம்                                                                                                                                 |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `i18n.json` / `i18n-schema.json`         | ஆதரிக்கப்படும் இடங்கள் (உள்ளூர் எண்ணிக்கையின் ஆதாரம்) மற்றும் அவற்றின் திட்டம்                                                          |
+| `payloadRules.json`                      | அப்ஸ்ட்ரீம் பேலோட் விதிகள் (`open-sse/services/payloadRules.ts`)                                                                        |
+| `cli-tools-manifest.json`                | ஒருங்கிணைந்த CLI கருவிகளின் வெளிப்பாடு (`bin/cli/cli-manifest.mjs`)                                                                     |
+| `alibaba-free-tier-allowlist.json`       | Alibaba கட்டற்ற அடுக்கு மாதிரி அனுமதிப்பட்டியல்                                                                                         |
+| `ci/toolchain.json`                      | CI டூல்செயின் பதிப்புகள்                                                                                                                |
+| `quality/quality-baseline.json`          | மல்டி-மெட்ரிக் ராட்செட் அடிப்படை (கவரேஜ், எச்சரிக்கைகள், நகல், ...)                                                                     |
+| `quality/*-baseline.json`                | தனிப்பட்ட வாயில்களுக்கான உறைந்த அடிப்படைகள் (சிக்கலானது, நகல், கோப்பு அளவு, தட்டச்சுச் சரிபார்ப்பு துண்டுகள், சோதனை கண்டுபிடிப்பு, ...) |
+| `quality/*-allowlist.json`               | கேட் அனுமதிப் பட்டியல்கள் (சார்புகள், உரிமங்கள், AI பண்புக்கூறு, மறக்கப்பட்ட உடன்பிறப்பு சோதனைகள், …)                                   |
+| `quality/eslint-suppressions.json`       | `npm run lint` ஆல் பயன்படுத்தப்படும் உறைந்த ESLint ஒடுக்கங்கள்                                                                          |
+| `quality/gate-manifest.json`             | கேட் மேனிஃபெஸ்ட் `scripts/quality/gate-manifest.mjs` ஆல் சரிபார்க்கப்பட்டது                                                             |
+| `quality/vitest-exclusions.json`         | `vitest.quarantine.config.ts` க்கான தனிமைப்படுத்தப்பட்ட இருப்பு                                                                         |
+| `quality/skill-templates/`               | நியமன SKILL.md வார்ப்புருக்கள் `scripts/quality/check-skill-contract.mjs` ஆல் சரிபார்க்கப்பட்டது                                        |
+| `quality/release-acceptance.schema.json` | [QUALITY_EVIDENCE_CONTRACT.md](QUALITY_EVIDENCE_CONTRACT.md) — பார்க்கவும்                                                              |
+| `release/`                               | சேஞ்ச்லாக் சமரசங்கள் மற்றும் wreq-js நேட்டிவ் மேனிஃபெஸ்ட், உரிமம் சரக்கு மற்றும் அறிவிப்புகள்                                           |
+
+## `changelog.d/` — சேஞ்ச்லாக் துண்டுகள்
+
+`CHANGELOG.md` திருத்துவதற்குப் பதிலாக ஒரு PR ஒரு பகுதியைச் சேர்க்கிறது: `features/`, `fixes/` அல்லது `maintenance/`, `<PR-number>-<slug>.md` என்று பெயரிடப்பட்டது. வெளியீட்டு நேரத்தில் `scripts/release/aggregate-changelog.mjs` அவற்றை `CHANGELOG.md` ஆக மடித்து நீக்குகிறது; `npm run check:changelog-integrity` அவற்றை சரிபார்க்கிறது. `changelog.d/README.md` இல் விவரங்கள்.
 
 ---
 
-## `public/` — நிலையான வளங்கள்
+## `docs/` — பொது ஆவணங்கள்
 
-| பாதை                | நோக்கம்                                                                 |
-| ------------------- | ----------------------------------------------------------------------- |
-| `public/` (மூலம்)   | Favicons, robots.txt, manifest, service worker, சந்தைப்படுத்தல் படங்கள் |
-| `public/providers/` | வழங்குநர் இலச்சினை PNG/SVG (முகப்புப் பலகையில் பயன்படுத்தப்படுகிறது)    |
+`source.config.ts` இல் பட்டியலிடப்பட்டுள்ள பிரிவுகள் `/docs` தளத்தில் தொகுக்கப்படுகின்றன (சில ஆபரேட்டர்கள் மட்டும் பாதுகாப்பு பக்கங்கள் தவிர்த்து); `docs/meta.json` பக்கப்பட்டி வரிசையை அமைக்கிறது. [README.md](../README.md) இல் தொடங்கவும்.
+
+| பாதை               | உள்ளடக்கம்                                                                                                                                                                                  |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getting-started/` | விரைவான தொடக்கம், சுய-ஹோஸ்ட், வழங்குநர்கள், இலவச அடுக்குகள், ஆட்டோ-காம்போ மற்றும் வெப்-குக்கீ வழிகாட்டிகள்                                                                                  |
+| `guides/`          | ஆபரேட்டர் மற்றும் டெவலப்பர் வழிகாட்டிகள்: அமைவு, Docker, Electron, PWA, Termux, CLIs, i18n, சரிசெய்தல், பயனர் வழிகாட்டி                                                                     |
+| `architecture/`    | கட்டிடக்கலை, கோட்பேஸ் குறிப்பு, மாற்றியமைத்தல் செய்முறைகள், authz, பின்னடைவு, தர வாயில்கள், வடிவமைப்பு அமைப்பு, இந்த வரைபடம்                                                                |
+| `reference/`       | API குறிப்பு, சூழல் மாறிகள், அம்சக் கொடிகள், CLI கருவிகள், இலவச அடுக்குகள், உருவாக்கப்பட்ட வழங்குநர் குறிப்பு, அகற்றப்பட்ட வழங்குநர்கள்                                                     |
+| `frameworks/`      | MCP, A2A, ACP, திறன்கள், நினைவகம், செருகுநிரல்கள், கிளவுட் முகவர்கள், வெப்ஹூக்குகள், ஏவல்கள், பதிவு ஏற்றுமதி, ரேடார், விளையாட்டு மைதானம், ...                                               |
+| `routing/`         | ஆட்டோ-காம்போ, பகுத்தறிவு replay/routing, ஒதுக்கீடு பங்கு, சந்தா ஏணி, கடுமையான பூஜ்ஜிய விலை, …                                                                                               |
+| `security/`        | காவலர்கள், பிழை சுத்திகரிப்பு, CORS, SSO, வெளியேற்றக் கொள்கை, வழி-பாதுகாப்பு அடுக்குகள், விநியோகச் சங்கிலி, ...                                                                             |
+| `compression/`     | சுருக்க வழிகாட்டி, இயந்திரங்கள், RTK, விதி வடிவம், மொழி தொகுப்புகள், சூழல் எடிட்டிங்                                                                                                        |
+| `ops/`             | வெளியீட்டு ஓட்டம், கிளைகள், ரயில்களை ஒன்றிணைத்தல், வரிசைப்படுத்தல் (VM, Fly.io, Kubernetes), தரவுத்தளம், ப்ராக்ஸிகள், பணிமரங்கள், கடினமான விதிகள் விவரம்                                    |
+| `providers/`       | ஒவ்வொரு வழங்குநருக்கும் வழிகாட்டிகள் (கிளாட் குறியீடு, ChatGPT வலை, Cursor, GitHub Copilot, …)                                                                                              |
+| `comparison/`      | மாற்றுகளுடன் ஒப்பிடும்போதுOmniRoute                                                                                                                                                         |
+| `integrations/`    | ஒருங்கிணைப்பு குறிப்புகள் (fal.ai நேட்டிவ், MarkItDown MCP); `/docs` இல் தொகுக்கப்படவில்லை                                                                                                  |
+| `openapi.yaml`     | OpenAPI மூல; `src/app/docs/lib/openapi.generated.ts`, `public/openapi.yaml` மற்றும் `bin/cli/api-commands/` ஊட்டுகிறது                                                                      |
+| `diagrams/`        | தேவதை மூலங்கள் (`.mmd`), ரெண்டர் செய்யப்பட்ட SVGs (`exported/`) மற்றும் README SVGs இலிருந்து `scripts/docs/gen-readme-*`                                                                   |
+| `assets/`          | மொழி-கொடி SVGs மற்றும் பிற README சொத்துக்கள்                                                                                                                                               |
+| `screenshots/`     | README மற்றும் வழிகாட்டிகளால் பயன்படுத்தப்படும் ஸ்கிரீன்ஷாட்கள்                                                                                                                             |
+| `i18n/`            | மொழிபெயர்க்கப்பட்ட கண்ணாடிகள்: ஒரு லோகேலுக்கு ஒரு கோப்புறை (66) ரூட் டாக்ஸ் மற்றும் `docs/` துணைக்குழுவுடன்; `npm run i18n:run` — ஆல் தயாரிக்கப்பட்டது பார்க்க [I18N.md](../guides/I18N.md) |
+| உயர்மட்ட `*.md`    | `README.md` (டாக் இன்டெக்ஸ்), `DEVELOPER-ENVIRONMENT.md` மற்றும் சில தனியான குறிப்புகள்                                                                                                     |
+
+முக்கிய நுழைவு புள்ளிகள்: [ARCHITECTURE.md](ARCHITECTURE.md), [CODEBASE_DOCUMENTATION.md](CODEBASE_DOCUMENTATION.md), [MODIFICATION_SCENARIOS.md](MODIFICATION_SCENARIOS.md), [ENVIRONMENT.md](../reference/ENVIRONMENT.md), [PROVIDER_REFERENCE.md](../reference/PROVIDER_REFERENCE.md) ( `npm run gen:provider-reference` ஆல் உருவாக்கப்பட்டது).
 
 ---
 
-## `config/` — நிலையான உள்ளமைவுகள் + தர-வாயில் நிலை
+## `tests/` — சோதனை தொகுப்புகள்
 
-வெளியிடப்படும் உள்ளமைவு வார்ப்புருக்களுடன், ஒப்புவிக்கப்பட்ட தர-வாயில் அடிப்படைகளும்
-(மூலத்தை இலகுவாக வைத்திருக்க v3.8.26-இல் களஞ்சியத்தின் மூலத்திலிருந்து இங்கு நகர்த்தப்பட்டன).
+சுமார் 9,670 ட்ராக் செய்யப்பட்ட கோப்புகள். சோதனைக் கோப்புகள் இங்கே உள்ளன, திட்ட மூலத்தில் இல்லை. விதிவிலக்குகள்: Vitest கட்டமைப்புகள் சேகரிக்கும் `src/` மற்றும் `open-sse/` இல் உள்ள `__tests__/` கோப்புறைகள்.
 
-| பாதை                                          | நோக்கம்                                                                                              |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `config/i18n.json`                            | மொழி வட்டாரப் பட்டியல் + மெட்டாதரவு (42-மொழி வட்டார எண்ணிக்கைக்கான அதிகாரப்பூர்வ மூலம்)              |
-| `config/i18n-schema.json`                     | `i18n.json`-ஐச் சரிபார்க்கும் JSON திட்டவடிவம்                                                       |
-| `config/payloadRules.json`                    | மேலோட்டத் தரவுச்சுமைத் தூய்மைப்படுத்தல் விதிகள்                                                      |
-| `config/quality/quality-baseline.json`        | பல-அளவீட்டு ராட்செட் அடிப்படை (`scripts/quality/check-quality-ratchet.mjs`)                          |
-| `config/quality/complexity-baseline.json`     | உறையவைக்கப்பட்ட ESLint-சிக்கல்தன்மை அடிப்படை (`check-complexity.mjs`)                                |
-| `config/quality/duplication-baseline.json`    | உறையவைக்கப்பட்ட jscpd நகலாக்க அடிப்படை (`check-duplication.mjs`)                                     |
-| `config/quality/file-size-baseline.json`      | உறையவைக்கப்பட்ட ஒவ்வொரு-கோப்புக்குமான அளவு அடிப்படை (`check-file-size.mjs`)                          |
-| `config/quality/test-discovery-baseline.json` | உறையவைக்கப்பட்ட தொடர்பற்ற-சோதனை அடிப்படை (`check-test-discovery.mjs`)                                |
-| `config/quality/dependency-allowlist.json`    | அங்கீகரிக்கப்பட்ட சார்புநிலைகளின் அனுமதிப் பட்டியல் (`check-deps.mjs`)                               |
-| `config/quality/.license-allowlist.json`      | SPDX உரிம அனுமதிப் பட்டியல் (`check-licenses.mjs`)                                                   |
-| `config/quality/quality-metrics.json`         | தற்காலிகமாகச் சேகரிக்கப்பட்ட அளவீடுகள் (`collect-metrics.mjs` மூலம் உருவாக்கப்படும்; **gitignored**) |
+| பாதை                                                   | உள்ளடக்கம்                                                                                                                                                                                             | ஓடுபவர்                                                                                 |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| `tests/unit/`                                          | அலகு சோதனைகள் (9,000 க்கும் மேற்பட்ட கோப்புகள்): உயர் மட்டத்தில் உள்ள பல, மேலும் டொமைன் கோப்புறைகள் (`ui/`, `compression/`, `build/`, `guardrails/`, `db/`, `cli/`, `api/`, `dashboard/`, `combo/`, …) | முனை சோதனை ரன்னர் (`npm run test:unit`); `*.tsx` வழியாக `test:vitest:ui`                |
+| `tests/unit/serial/`                                   | CPU-உணர்திறன் சோதனைகள் 1 உடன் இணைந்து இயங்கும்                                                                                                                                                         | `npm run test:unit:serial`                                                              |
+| `tests/unit/autoCombo/`, `tests/unit/api/**/*.spec.ts` | அலகு மரத்தின் உள்ளேVitest தொகுப்புகள்                                                                                                                                                                  | `npm run test:vitest`                                                                   |
+| `tests/integration/`                                   | பல தொகுதி மற்றும் DB ஒருங்கிணைப்பு சோதனைகள்; `combo-matrix/`, `combo-live/`, `services/`                                                                                                               | `npm run test:integration`, `test:combo:matrix`, `test:combo:live`, `test:services:int` |
+| `tests/e2e/`                                           | Playwright `*.spec.ts` + நேரடி தொகுப்புகள் `ecosystem.test.ts`, `protocol-clients.test.ts`                                                                                                             | `npm run test:e2e`, `test:ecosystem`, `test:protocols:e2e`                              |
+| `tests/boundary/`                                      | இயங்கும் நிகழ்விற்கு எதிராக `*.live.test.ts`                                                                                                                                                           | `npm run test:boundary:live`                                                            |
+| `tests/homolog/`                                       | ஹோமோலோகேஷன் தொகுப்புகள் (`api/`, `ui/` அதன் சொந்த Playwright config உடன்)                                                                                                                              | `npm run homolog` — பார்க்க [HOMOLOGATION.md](../ops/HOMOLOGATION.md)                   |
+| `tests/load/`                                          | ஸ்கிரிப்ட்களை ஏற்றி ஊறவைக்கவும் (k6)                                                                                                                                                                   | இரவு மீள்தன்மை பணிப்பாய்வு                                                              |
+| `tests/_setup/`                                        | `--import` / அமைவு கோப்புகள் (தனிமைப்படுத்தப்பட்ட தரவு dir, egress guard, Vitest UI polyfills)                                                                                                         | ஓட்டப்பந்தய வீரர்களால் ஏற்றப்பட்டது                                                     |
+| `tests/_helpers/`, `tests/helpers/`                    | பகிரப்பட்ட சோதனை உதவியாளர்கள் (கோல்டன் ஸ்னாப்ஷாட்கள், மேலாண்மை அமர்வு, ...)                                                                                                                            | சோதனைகள் மூலம் இறக்குமதி செய்யப்பட்டது                                                  |
+| `tests/fixtures/`                                      | நிலையான தரவு மற்றும் குழந்தை-செயல்முறை சாதனங்கள்                                                                                                                                                       | சோதனைகள் மூலம் இறக்குமதி செய்யப்பட்டது                                                  |
+| `tests/snapshots/`                                     | `tests/helpers/goldenSnapshot.ts` க்கான கோல்டன் கோப்புகள்                                                                                                                                              | சோதனைகள் மூலம் இறக்குமதி செய்யப்பட்டது                                                  |
+| `tests/manual/`                                        | கையேடு REST அழைப்புகளுக்கான `.http` கோப்புகள்                                                                                                                                                          | கையேடு                                                                                  |
+| `tests/security/`                                      | பாதுகாப்பு ஷெல் ஸ்கிரிப்டுகள்                                                                                                                                                                          | கையேடு / அலகு-சோதனை சாதனங்கள்                                                           |
+| `tests/types/`                                         | வகை-நிலை ஒப்பந்த சாதனங்கள்                                                                                                                                                                             | —                                                                                       |
+
+முழு அணி: `CONTRIBUTING.md` → "இயங்கும் சோதனைகள்" மற்றும் [COVERAGE_PLAN.md](../ops/COVERAGE_PLAN.md).
+
+---
+
+## `deploy/` — Kubernetes
+
+| பாதை                                               | நோக்கம்                                                                                                                                  |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `deploy/helm/omniroute/`                           | ஹெல்ம் விளக்கப்படம் (`Chart.yaml`, `values.yaml`, வரிசைப்படுத்தலுக்கான வார்ப்புருக்கள், சேவை, நுழைவு, PVC, இரகசியம், கட்டமைப்பு வரைபடம்) |
+| `deploy/kubernetes/base/`                          | தனிப்பயனாக்கு தளம் (பெயர்வெளி, வரிசைப்படுத்தல், சேவை, PVC, configmap, `secret.example.yaml`)                                             |
+| `deploy/kubernetes/overlays/k3s/`, `overlays/k8s/` | கிளஸ்டர்-குறிப்பிட்ட மேலடுக்குகள் (உள்ளீடு, சேமிப்பக வகுப்பு, வளங்கள், ஆய்வுகள்)                                                         |
+
+[KUBERNETES_DEPLOYMENT_GUIDE.md](../ops/KUBERNETES_DEPLOYMENT_GUIDE.md) ஐப் பார்க்கவும்.
+
+## `docker/` — துணைப் படங்கள்
+
+| பாதை                                | நோக்கம்                                                                                                                         |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `docker/chatgpt-web-codex-browser/` | ChatGPT வெப் எக்ஸிகியூட்டருக்கான CDP ப்ராக்ஸியுடன் ஹெட்லெஸ் உலாவி படம் — [CHATGPT_WEB](../providers/CHATGPT_WEB.md) பார்க்கவும் |
+| `docker/devin-bridge/`              | Devin பிரிட்ஜ் படம், கம்போஸ் பைல், மோக்ஸ் மற்றும் நெட்வொர்க் கார்டு                                                             |
+| `docker/vnc-browser/`               | ஊடாடும் உலாவி அமர்வுகளுக்கு VNC உடன் Chromium                                                                                   |
+
+முக்கிய படம் ரூட் `Dockerfile`; பார்க்க [DOCKER_GUIDE.md](../guides/DOCKER_GUIDE.md).
+
+## `contrib/` — சமூக சமையல் வகைகள் (அதிகாரப்பூர்வமாக ஆதரிக்கப்படவில்லை)
+
+| பாதை                    | நோக்கம்                                                                                                                                 |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `contrib/podman/`       | பாட்மேன் குவாட்லெட்டுகள் (கொள்கலன், தொகுதி, நெட்வொர்க், Redis)                                                                          |
+| `contrib/vps/`          | VPS `compose.yaml` + `.env.example`                                                                                                     |
+| `contrib/windows/`      | Windows செக் அவுட்டில் இருந்து இயங்குவதற்கான `.bat` துவக்கிகள்                                                                          |
+| `contrib/session-sync/` | README மூன்றாம் தரப்பு அமர்வு-ஒத்திசைவு உலாவி நீட்டிப்பு — [SESSION-SYNC-EXTENSION.md](../guides/SESSION-SYNC-EXTENSION.md) பார்க்கவும் |
+
+## `examples/`
+
+| பாதை                            | நோக்கம்                                                                                  |
+| ------------------------------- | ---------------------------------------------------------------------------------------- |
+| `examples/omniroute-cmd-hello/` | குறைந்தபட்ச கட்டளை சொருகி — பார்க்க [PLUGINS.md](../frameworks/PLUGINS.md)               |
+| `examples/plugins/`             | எடுத்துக்காட்டு செருகுநிரல்கள்: லாங்ஃப்யூஸ், கோரிக்கை-லாகர், தீம்-மேனேஜர், வெல்கம்-பேனர் |
+| `examples/quickstart/`          | கிளையண்ட் துணுக்குகள்: சுருட்டை, Node.js (axios), PHP, பைதான்                            |
 
 ---
 
 ## `.github/` — GitHub ஒருங்கிணைப்பு
 
-| பாதை                               | நோக்கம்                                                              |
-| ---------------------------------- | -------------------------------------------------------------------- |
-| `.github/workflows/`               | GitHub Actions CI/CD பணிப்பாய்வுகள் (lint, சோதனை, coverage, release) |
-| `.github/ISSUE_TEMPLATE/`          | பிழை/அம்ச issue வார்ப்புருக்கள்                                      |
-| `.github/pull_request_template.md` | PR வார்ப்புரு                                                        |
-| `.github/dependabot.yml`           | சார்பு புதுப்பிப்பு உள்ளமைவு                                         |
+| பாதை                                                         | நோக்கம்                                                                                                                                                                                                                                                                                              |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/`                                         | CI (`ci.yml`, `quality.yml`, `build.yml`), பாதுகாப்பு ஸ்கேன்கள் (`codeql.yml`, `semgrep.yml`, `scorecard.yml`, `dast-smoke.yml`), திட்டமிடப்பட்ட `nightly-*.yml` தொகுப்புகள், வெளியீடு (`npm-publish.yml`, `docker-publish.yml`, `electron-release.yml`), வெளியீடு மற்றும் பராமரிப்பு பணிப்பாய்வுகள் |
+| `.github/actions/npm-ci-retry/`                              | கூட்டுச் செயல்: தற்காலிக சேமிப்புடன் `npm ci` மற்றும் மீண்டும் முயற்சிக்கவும்                                                                                                                                                                                                                        |
+| `.github/actions/prepare-unit-storage/`                      | கூட்டு நடவடிக்கை: ரன்னர் வட்டு இடத்தை விடுவிக்கிறது, பின்னர் சார்புகளை நிறுவுகிறது                                                                                                                                                                                                                   |
+| `.github/ISSUE_TEMPLATE/`                                    | பிழை, அம்சம் மற்றும் சோதனை-கவரேஜ் வெளியீட்டு படிவங்கள்                                                                                                                                                                                                                                               |
+| `.github/pull_request_template.md`, `PULL_REQUEST_TEMPLATE/` | இயல்புநிலை PR டெம்ப்ளேட் மற்றும் bugfix/feature மாறுபாடுகள்                                                                                                                                                                                                                                          |
+| `.github/CODEOWNERS`, `FUNDING.yml`, `dependabot.yml`        | குறியீடு உரிமையாளர்கள், ஸ்பான்சர்ஷிப் இணைப்புகள், சார்பு புதுப்பிப்புகள்                                                                                                                                                                                                                             |
+| `.github/labels.yml`                                         | `npm run labels:sync` மூலம் பயன்படுத்தப்படும் லேபிள் வரையறைகள்                                                                                                                                                                                                                                       |
+| `.github/copilot-instructions.md`                            | GitHub Copilot வழிமுறைகள் (ஒரு முகவர்-அறிவுறுத்தல் மேற்பரப்பு)                                                                                                                                                                                                                                       |
 
----
+CI வேலை வரைபடம்: [QUALITY_GATES.md](QUALITY_GATES.md).
 
-## `.husky/` — Git Hooks
+## `.husky/` — git கொக்கிகள்
 
-| கோப்பு       | நோக்கம்                                                                            |
-| ------------ | ---------------------------------------------------------------------------------- |
-| `pre-commit` | `lint-staged + check-docs-sync + check:any-budget:t11`-ஐ இயக்குகிறது               |
-| `pre-push`   | தற்போது முடக்கப்பட்டுள்ளது (commented). `npm run test:unit`-ஐ கைமுறையாக இயக்கவும். |
-| `_/`         | Husky உள்கூறுகள்                                                                   |
+| கோப்பு       | நோக்கம்                                                                                                                                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pre-commit` | Git அடையாளச் சரிபார்ப்பு, லிண்ட்-ஸ்டேஜ், கேட் மேனிஃபெஸ்ட், டாக்ஸ் ஒத்திசைவு, எந்த பட்ஜெட், வகை அளவிலான ராட்செட், கண்காணிக்கப்பட்ட-கலைப்பொருட்கள் மற்றும் ui-கிட் ஸ்னாப்ஷாட் காசோலைகள் |
+| `commit-msg` | உறுதி செய்தியில்`scripts/check/check-ai-attribution.mjs`                                                                                                                              |
+| `pre-push`   | வேண்டுமென்றே ஒளி: 0 இலிருந்து வெளியேறும் ஒரு PATH/npm நல்லறிவு சோதனை                                                                                                                  |
 
----
-
-## `.claude/` — Claude Code Slash கட்டளைகள்
-
-| கோப்பு                                              | நோக்கம்                                                        |
-| --------------------------------------------------- | -------------------------------------------------------------- |
-| `commands/version-bump-cc.md`                       | `/version-bump-cc` — பதிப்பை உயர்த்துதல் + தானியங்கி changelog |
-| `commands/generate-release-cc.md`                   | `/generate-release-cc` — முழுமையான release பணிப்பாய்வு         |
-| `commands/deploy-vps-{local,akamai,both}-cc.md`     | VPS-க்கு deploy செய்தல்                                        |
-| `commands/capture-release-evidences-cc.md`          | புதிய அம்சங்களை WebP ஆக உலாவியில் பதிவு செய்தல்                |
-| `commands/review-{prs,discussions}-cc.md`           | GitHub PR-கள்/discussions-ஐ வகைப்படுத்துதல்                    |
-| `commands/{review-issues,implement-features}-cc.md` | Issue பணிப்பாய்வுகள்                                           |
-| `settings.local.json`                               | திட்டத்திற்கான தனிப்பட்ட Claude Code அமைப்புகள்                |
-
----
-
-## `.agents/` — பொதுவான Agent பணிப்பாய்வுகள் (Codex / Cursor / போன்றவை)
-
-| பாதை                     | நோக்கம்                                                     |
-| ------------------------ | ----------------------------------------------------------- |
-| `workflows/*-ag.md`      | 11 பணிப்பாய்வு வரையறைகள் (`.claude/commands/`-இன் பிரதிகள்) |
-| `skills/<name>/SKILL.md` | Codex செயல்படுத்தல் குறிப்புகளுடன் 9 திறன் வரையறைகள்        |
-
-> **குறிப்பு:** பணிப்பாய்வுகளும் கட்டளைகளும் தற்போது byte-by-byte முறையில் ஒரே மாதிரியாக உள்ளன. `.agents/` வேறொரு agent runtime-ஐ (Codex) இலக்காகக் கொண்டிருந்தால், அவற்றின் மாறுபாடுகள் அர்த்தமுள்ள வகையில் வேறுபட வேண்டும்.
-
----
-
-## `_ideia/`, `_mono_repo/`, `_references/`, `_tasks/` — பிரதான tree-க்கு வெளியே
-
-underscore முன்னொட்டு கொண்ட இந்த அடைவுகளில் வெளியீட்டில் சேராத உள்ளடக்கம் உள்ளது:
-
-- **`_ideia/`** — வடிவமைப்புக் குறிப்புகள் (defer / notfit / viable வகைகள்)
-- **`_mono_repo/`** — வரலாற்று துணைத்திட்டங்கள் (omnirouteCloud, omnirouteSite, vscode-extension)
-- **`_references/`** — உருவாக்கத்தின்போது குறுக்கு மேற்கோளுக்காகத் தொடர்புடைய OSS திட்டங்களின் (LiteLLM, 9router, ClawRouter, CLIProxyAPI, modelrelay, new-api, போன்றவை) படிக்க-மட்டுமான clones
-- **`_tasks/`** — ஒவ்வொரு release-க்குமான task கண்காணிப்புக் கோப்புகள் (முறைசாராதவை)
-
-`npm pack` வெளியீட்டில் சேர்க்கப்படவில்லை. `.npmignore`-ஐப் பார்க்கவும்.
-
----
-
-## உருவாக்கப்பட்டவை / Git புறக்கணித்தவை
-
-| பாதை                   | நோக்கம்                                 |
-| ---------------------- | --------------------------------------- |
-| `node_modules/`        | npm சார்புகள்                           |
-| `.next/`               | Next.js உருவாக்க வெளியீடு               |
-| `coverage/`            | c8 சோதனைப் பரவல் அறிக்கைகள்             |
-| `logs/`                | இயக்கநேரப் பதிவுகள்                     |
-| `package/`             | npm pack தயார்நிலைப் பகுதி              |
-| `.playwright-mcp/`     | Playwright MCP சோதனைக் கலைப்பொருட்கள்   |
-| `.issues/`             | உள்ளகச் சிக்கல் தற்காலிகச் சேமிப்பகம்   |
-| `tsconfig.tsbuildinfo` | TS அதிகரிப்புநிலை தற்காலிகச் சேமிப்பகம் |
+`.husky/_/` இல் ஹூக் இயக்க நேரம் நிறுவலின் போது உருவாக்கப்படுகிறது மற்றும் கண்காணிக்கப்படவில்லை.
 
 ---
 
 ## வழிசெலுத்தல் குறிப்புகள்
 
-- **புதிய பங்களிப்பாளரா?** `CONTRIBUTING.md` → `CLAUDE.md` → `docs/architecture/ARCHITECTURE.md` → `docs/architecture/CODEBASE_DOCUMENTATION.md` ஆகியவற்றைப் படிக்கவும்.
-- **ஒரு வழங்குநரைச் சேர்க்கிறீர்களா?** `docs/architecture/ARCHITECTURE.md § Adding a New Provider` என்பதைப் பின்பற்றி, `docs/reference/PROVIDER_REFERENCE.md` உடன் குறுக்குச் சரிபார்க்கவும்.
-- **ஒரு வழித்தடத்தைச் சேர்க்கிறீர்களா?** `docs/architecture/ARCHITECTURE.md § Adding a New API Route` + `src/shared/validation/schemas.ts`.
-- **ஒரு MCP கருவியைச் சேர்க்கிறீர்களா?** `docs/frameworks/MCP-SERVER.md § Adding a Tool`.
-- **ஒரு A2A திறனைச் சேர்க்கிறீர்களா?** `docs/frameworks/A2A-SERVER.md § Adding a New Skill`.
-- **உள்ளூரில் இயக்குகிறீர்களா?** `docs/guides/SETUP_GUIDE.md`.
-- **பணியமர்த்துகிறீர்களா?** `docs/guides/DOCKER_GUIDE.md` / `docs/ops/VM_DEPLOYMENT_GUIDE.md` / `docs/ops/FLY_IO_DEPLOYMENT_GUIDE.md`.
-- **வெளியிடுகிறீர்களா?** `docs/ops/RELEASE_CHECKLIST.md` (மேலும் `/generate-release-cc` Claude Code திறன்).
+- **புதிய பங்களிப்பாளரா?** `CONTRIBUTING.md` → `AGENTS.md` → [ARCHITECTURE.md](ARCHITECTURE.md) → [CODEBASE_DOCUMENTATION.md](CODEBASE_DOCUMENTATION.md).
+- **பொதுவான ஒன்றை மாற்றுதல்** (வழங்குபவர், வழி, DB தொகுதி, MCP கருவி, A2A திறன்)? [MODIFICATION_SCENARIOS.md](MODIFICATION_SCENARIOS.md) ஐப் பின்தொடரவும்.
+- **வழங்குநரைச் சேர்க்கிறீர்களா?** முதலில் [REMOVED_PROVIDERS.md ஐ](../reference/REMOVED_PROVIDERS.md) சரிபார்க்கவும், பின்னர் [PROVIDER_REFERENCE.md ஐ](../reference/PROVIDER_REFERENCE.md) சரிபார்க்கவும்.
+- **உள்ளூரில் இயங்குகிறதா?** [SETUP_GUIDE.md](../guides/SETUP_GUIDE.md)
+- **வரிசைப்படுத்துகிறதா?** [DOCKER_GUIDE.md](../guides/DOCKER_GUIDE.md), [SELF_HOST_GUIDE.md](../getting-started/SELF_HOST_GUIDE.md), [VM_DEPLOYMENT_GUIDE.md](../ops/VM_DEPLOYMENT_GUIDE.md), [FLY_IO_DEPLOYMENT_GUIDE.md](../ops/FLY_IO_DEPLOYMENT_GUIDE.md), [KUBERNETES_DEPLOYMENT_GUIDE.md](../ops/KUBERNETES_DEPLOYMENT_GUIDE.md)
+- **வெளியிடுகிறதா?** [RELEASE_CHECKLIST.md](../ops/RELEASE_CHECKLIST.md)
+- **தரமான கேட் தோல்வியடைந்ததா?** [QUALITY_GATES.md](QUALITY_GATES.md) மற்றும் [QUALITY_GATE_PLAYBOOK.md](../ops/QUALITY_GATE_PLAYBOOK.md)

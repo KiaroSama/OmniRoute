@@ -2,9 +2,88 @@
 // Family: leonardo | Module: leonardo | Lines: 3427-3558 (132 LOC)
 // Ref: see open-sse/handlers/imageGeneration.ts top-of-file comment for split rationale
 
-import { saveCallLog } from "@/lib/usageDb";
+import { saveCallLog } from "../../imageResult.ts";
 import { sleep } from "../../../utils/sleep.ts";
 import { sanitizeErrorMessage } from "../../../utils/error.ts";
+import {
+  UPSTREAM_MEDIA_LIMITS,
+  downloadUpstreamMedia,
+  upstreamMediaErrorText,
+} from "../../../utils/remoteMediaFetch.ts";
+
+// Leonardo's v1 API takes a platform-model UUID as `modelId` and answers a catalog id such
+// as "phoenix" with HTTP 500 "internal error". UUIDs from GET /api/rest/v1/platformModels.
+const LEONARDO_MODEL_IDS: Record<string, string> = {
+  phoenix: "de7d3faf-762f-48e0-b3b7-9d0ac3a3fcf3", // Phoenix 1.0
+  sdxl: "16e7060a-803e-4df3-97ee-edcfa5dc9cc8", // SDXL 1.0
+};
+
+/** The catalog id's platform-model UUID; anything else (e.g. a raw UUID) passes through. */
+export function resolveLeonardoModelId(model: string | undefined): string {
+  const id = model || "phoenix";
+  return LEONARDO_MODEL_IDS[id] ?? id;
+}
+
+/**
+ * Output size: explicit `width`/`height` win, then an OpenAI-style `size` ("576x1024"),
+ * then 1024 for whatever is still missing.
+ */
+export function resolveLeonardoImageSize(body: {
+  size?: unknown;
+  width?: number;
+  height?: number;
+}): { width: number; height: number } {
+  const match = typeof body.size === "string" ? body.size.trim().match(/^(\d+)x(\d+)$/i) : null;
+  return {
+    width: body.width || (match ? Number(match[1]) : 1024),
+    height: body.height || (match ? Number(match[2]) : 1024),
+  };
+}
+
+// init_strength (0.1-0.9) is how closely the output follows the edit reference. In a live
+// check 0.3 kept the reference's composition and still applied the edit prompt (#18671).
+const LEONARDO_EDIT_INIT_STRENGTH = 0.3;
+
+const LEONARDO_INIT_IMAGE_EXTENSIONS: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/webp": "webp",
+};
+
+/**
+ * Uploads an edit reference through Leonardo's init-image flow (a presigned S3 form post,
+ * which must not carry the Leonardo token) and returns the init image id.
+ */
+export async function uploadLeonardoInitImage(
+  generationsUrl: string,
+  token: string,
+  image: { bytes: Buffer; mime: string }
+): Promise<string> {
+  const res = await fetch(generationsUrl.replace(/\/generations$/, "/init-image"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ extension: LEONARDO_INIT_IMAGE_EXTENSIONS[image.mime] ?? "png" }),
+  });
+  if (!res.ok) throw new Error(`Leonardo init-image request failed: HTTP ${res.status}`);
+  const { uploadInitImage } = await res.json();
+  const form = new FormData();
+  for (const [key, value] of Object.entries(JSON.parse(uploadInitImage.fields))) {
+    form.append(key, String(value));
+  }
+  form.append("file", new Blob([new Uint8Array(image.bytes)], { type: image.mime }), "init");
+  // Send the multipart body pre-encoded: a FormData body handed to OmniRoute's patched
+  // fetch reached S3 as HTTP 412, while the same form as bytes plus its boundary header is
+  // accepted (204).
+  const encoded = new Response(form);
+  const upload = await fetch(uploadInitImage.url, {
+    method: "POST",
+    headers: { "Content-Type": encoded.headers.get("content-type") || "" },
+    body: Buffer.from(await encoded.arrayBuffer()),
+  });
+  if (!upload.ok) throw new Error(`Leonardo init-image upload failed: HTTP ${upload.status}`);
+  return uploadInitImage.id;
+}
 
 export async function handleLeonardoImageGeneration({
   model,
@@ -13,30 +92,40 @@ export async function handleLeonardoImageGeneration({
   body,
   credentials,
   log,
+  pollIntervalMs = 5000,
+  // An edit reference (/v1/images/edits): the generation becomes image-to-image.
+  initImage = null,
 }) {
   const startTime = Date.now();
+  const logPath = initImage ? "/v1/images/edits" : "/v1/images/generations";
   const token = credentials?.apiKey || "";
   const prompt = typeof body.prompt === "string" ? body.prompt : String(body.prompt ?? "");
   if (log) {
     log.info("IMAGE", `${provider}/${model} (leonardo) | prompt: "${prompt.slice(0, 60)}..."`);
   }
   try {
+    const initFields = initImage
+      ? {
+          init_image_id: await uploadLeonardoInitImage(providerConfig.baseUrl, token, initImage),
+          init_strength: LEONARDO_EDIT_INIT_STRENGTH,
+        }
+      : {};
     const res = await fetch(providerConfig.baseUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({
-        modelId: model || "phoenix",
+        modelId: resolveLeonardoModelId(model),
         prompt,
-        width: body.width || 1024,
-        height: body.height || 1024,
+        ...resolveLeonardoImageSize(body),
         num_images: 1,
+        ...initFields,
       }),
     });
     if (!res.ok) {
       const errorText = await res.text();
       saveCallLog({
         method: "POST",
-        path: "/v1/images/generations",
+        path: logPath,
         status: res.status,
         model: `${provider}/${model}`,
         provider,
@@ -50,7 +139,7 @@ export async function handleLeonardoImageGeneration({
     if (!genId) {
       saveCallLog({
         method: "POST",
-        path: "/v1/images/generations",
+        path: logPath,
         status: 502,
         model: `${provider}/${model}`,
         provider,
@@ -61,7 +150,7 @@ export async function handleLeonardoImageGeneration({
     }
     const deadline = Date.now() + 300000;
     while (Date.now() < deadline) {
-      await sleep(5000);
+      await sleep(pollIntervalMs);
       const statusRes = await fetch(`${providerConfig.baseUrl}/${genId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -70,18 +159,19 @@ export async function handleLeonardoImageGeneration({
       if (gen.status === "COMPLETE") {
         const imgUrl = gen.generated_images?.[0]?.url;
         if (imgUrl) {
-          const imgRes = await fetch(imgUrl);
-          if (!imgRes.ok) {
+          let buf: Buffer;
+          try {
+            ({ buffer: buf } = await downloadUpstreamMedia(imgUrl, UPSTREAM_MEDIA_LIMITS.image));
+          } catch (err) {
             return {
               success: false,
-              status: imgRes.status,
-              error: `Failed to download image: ${imgRes.status}`,
+              status: 502,
+              error: `Failed to download image: ${sanitizeErrorMessage(upstreamMediaErrorText(err))}`,
             };
           }
-          const buf = await imgRes.arrayBuffer();
           saveCallLog({
             method: "POST",
-            path: "/v1/images/generations",
+            path: logPath,
             status: 200,
             model: `${provider}/${model}`,
             provider,
@@ -91,7 +181,7 @@ export async function handleLeonardoImageGeneration({
             success: true,
             data: {
               created: Math.floor(Date.now() / 1000),
-              data: [{ b64_json: Buffer.from(buf).toString("base64") }],
+              data: [{ b64_json: buf.toString("base64") }],
             },
           };
         }
@@ -99,7 +189,7 @@ export async function handleLeonardoImageGeneration({
       if (gen.status === "FAILED") {
         saveCallLog({
           method: "POST",
-          path: "/v1/images/generations",
+          path: logPath,
           status: 502,
           model: `${provider}/${model}`,
           provider,
@@ -111,7 +201,7 @@ export async function handleLeonardoImageGeneration({
     }
     saveCallLog({
       method: "POST",
-      path: "/v1/images/generations",
+      path: logPath,
       status: 504,
       model: `${provider}/${model}`,
       provider,
@@ -123,7 +213,7 @@ export async function handleLeonardoImageGeneration({
     if (log) log.error("IMAGE", `${provider} leonardo error: ${err.message}`);
     saveCallLog({
       method: "POST",
-      path: "/v1/images/generations",
+      path: logPath,
       status: 502,
       model: `${provider}/${model}`,
       provider,
@@ -137,4 +227,3 @@ export async function handleLeonardoImageGeneration({
     };
   }
 }
-

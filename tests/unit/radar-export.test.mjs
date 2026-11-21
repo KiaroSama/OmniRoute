@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { nativeCoverageArgs } from "../_helpers/nativeCoverageArgs.ts";
 
 // Gera o export estável do catálogo (scripts/release/radar-export.mjs) e valida
 // o contrato consumido pelo OmniRoute Radar + a proveniência (D16: desconhecido
@@ -17,7 +18,7 @@ const SCRIPT = path.join(REPO, "scripts/release/radar-export.mjs");
 function runExport(extraEnv = {}) {
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "radar-export-"));
   const outPath = path.join(outDir, "export-omniroute.json");
-  execFileSync("node", ["--import", "tsx/esm", SCRIPT, outPath], {
+  execFileSync("node", [...nativeCoverageArgs(), "--import", "tsx/esm", SCRIPT, outPath], {
     cwd: REPO,
     stdio: ["ignore", "ignore", "inherit"],
     // Base limpa: sem herdar GITHUB_* do ambiente do CI que roda os testes.
@@ -77,12 +78,12 @@ test("radar export provenance reflects the GitHub Actions environment when prese
     GITHUB_SHA: sha,
     GITHUB_REF_NAME: "release/v9.9.9",
     GITHUB_SERVER_URL: "https://github.com",
-    GITHUB_REPOSITORY: "diegosouzapw/OmniRoute",
+    GITHUB_REPOSITORY: "cheaper-inference/OmniRoute",
     GITHUB_RUN_ID: "42",
   });
   const p = data.provenance;
   assert.equal(p.generatedBy, "github-actions");
   assert.equal(p.sourceCommit, sha);
   assert.equal(p.sourceRef, "release/v9.9.9");
-  assert.equal(p.runUrl, "https://github.com/diegosouzapw/OmniRoute/actions/runs/42");
+  assert.equal(p.runUrl, "https://github.com/cheaper-inference/OmniRoute/actions/runs/42");
 });

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { CORS_HEADERS, handleCorsOptions } from "@/shared/utils/cors";
-import { callCloudWithMachineId } from "@/shared/utils/cloud";
 import { handleChat } from "@/sse/handlers/chat";
+import { logAdmissionRejection } from "@/sse/handlers/admissionRejectionLog";
 import { generateRequestId } from "@/shared/utils/requestId";
 import { resolveIncomingCorrelationId } from "@/shared/utils/correlationPreserve.ts";
 import { errorResponse } from "@omniroute/open-sse/utils/error.ts";
@@ -34,6 +34,7 @@ import {
 } from "@/shared/utils/compressionHeaderEcho";
 import { resolveModelAliasWithSeedFallbackOnBody } from "@/lib/modelAliasResolver";
 import { enforceApiKeyPolicy } from "@/shared/utils/apiKeyPolicy";
+import { enforceClientApiRouteAuth } from "@/shared/utils/clientApiRouteAuth";
 import {
   assertRuntimeModelProviderAvailable,
   isRuntimeProviderRetirementError,
@@ -43,11 +44,27 @@ import {
   isCommonChatGptWebRetirementError,
 } from "@/shared/constants/chatgptWebRetirement";
 import { ensureSemanticCacheDbBridge } from "@/lib/cache/semanticCacheDbBridge";
+import { maybeQueueQuotaSessionRecovery } from "@/lib/quota/quotaSessionRecovery";
+import {
+  getBifrostRoutingConfig,
+  resolveRelayRoutingBackend,
+  shouldTryBifrostForRequest,
+  getActiveBifrostCooldown,
+  recordBifrostFailure,
+  clearBifrostFailure,
+  getRoutingFallbackHeader,
+  getRoutingFallbackReasonHeader,
+} from "@/shared/services/bifrost/bifrostRouting";
+import { dispatchToBifrost } from "@/shared/services/bifrost/bifrostClient";
+import { gateBifrostFastPath } from "@/shared/services/bifrost/bifrostFastPathGate";
+
+import { buildInjectionBlockedBody } from "@/lib/guardrails/injectionBlockedResponse";
 
 let initPromise = null;
 
-// Singleton injection guard instance. `logger: null` — the guardrail registry
-// re-evaluates this request inside handleChat with the pino logger (#11936 dedupe).
+// Singleton injection guard instance. `logger: null` — warn/log-mode flags are re-evaluated by the
+// guardrail registry inside handleChat (#11936 dedupe), but BLOCKED requests return here before it
+// runs, so the block itself is logged via buildInjectionBlockedBody (#20526).
 const injectionGuard = createInjectionGuard({ logger: null });
 
 /**
@@ -99,6 +116,13 @@ export async function OPTIONS() {
 export async function POST(request) {
   await ensureInitialized();
 
+  // Defense-in-depth: the authz proxy (src/proxy.ts) is the primary gate, but
+  // its matcher can miss path variants (e.g. uppercase /V1/ aliases), so the
+  // handler enforces authentication independently. Without this, a proxy
+  // bypass means unauthenticated upstream dispatch.
+  const authRejection = await enforceClientApiRouteAuth(request);
+  if (authRejection) return authRejection;
+
   // Content-Type guard (#6414) — reject non-JSON POST bodies with 415 per RFC 7231.
   // OpenAI/Anthropic reject `text/plain` or missing Content-Type at the edge; matching
   // that behavior prevents a text/plain body from silently reaching provider lookup.
@@ -127,7 +151,17 @@ export async function POST(request) {
     sessionId,
     queueMs: CHAT_ADMISSION_QUEUE_MAX_MS,
   });
-  if (admissionResult.admit === false) return admissionResult.response;
+  if (admissionResult.admit === false) {
+    void logAdmissionRejection(admissionResult.response, {
+      path: new URL(request.url).pathname,
+      model: "-",
+      requestBody: null,
+      apiKeyId: null,
+      apiKeyName: null,
+      correlationId: resolveIncomingCorrelationId(request.headers.get("x-correlation-id")),
+    });
+    return admissionResult.response;
+  }
   const admission = admissionResult;
   request = admission.request;
   const finishAdmission = (response: Response) =>
@@ -218,6 +252,15 @@ export async function POST(request) {
           signal: request.signal,
         });
         if (structuralAdmission.admit === false) {
+          void logAdmissionRejection(structuralAdmission.response, {
+            path: new URL(request.url).pathname,
+            model:
+              typeof parsedBody?.model === "string" && parsedBody.model ? parsedBody.model : "-",
+            requestBody: parsedBody ?? null,
+            apiKeyId: null,
+            apiKeyName: null,
+            correlationId: resolveIncomingCorrelationId(request.headers.get("x-correlation-id")),
+          });
           admission.lease?.release();
           return finishAdmission(structuralAdmission.response);
         }
@@ -251,14 +294,7 @@ export async function POST(request) {
         if (blocked) {
           return finishAdmission(
             new Response(
-              JSON.stringify({
-                error: {
-                  message: "Request blocked: potential prompt injection detected",
-                  type: "injection_detected",
-                  code: "SECURITY_001",
-                  detections: result.detections.length,
-                },
-              }),
+              JSON.stringify(buildInjectionBlockedBody(result.detections, parsedBody?.model)),
               { status: 400, headers: { ...CORS_HEADERS, "Content-Type": "application/json" } }
             )
           );
@@ -288,13 +324,76 @@ export async function POST(request) {
     const callerCorrelationId = resolveIncomingCorrelationId(
       request.headers.get("x-correlation-id")
     );
+    const reqId = callerCorrelationId ?? generateRequestId();
+
+    // Bifrost Go sidecar fast-path routing check
+    const relayBackend = resolveRelayRoutingBackend();
+    const bifrostConfig = getBifrostRoutingConfig();
+    let fallbackHeaderValue: string | undefined = undefined;
+
+    if (parsedBodyIsRecord && bifrostConfig) {
+      const bifrostDecision = shouldTryBifrostForRequest(relayBackend, bifrostConfig, parsedBody);
+
+      if (bifrostDecision.tryBifrost) {
+        const cooldown =
+          relayBackend === "auto" ? getActiveBifrostCooldown(bifrostConfig.baseUrl) : null;
+        // The sidecar answers before handleChat(), which owns the API-key policy
+        // (allowedModels, budget, schedule, rate limit): gate it first, or a disabled
+        // key would be served with the server's BIFROST_API_KEY. Skipped during a
+        // cooldown, where handleChat() serves (and polices) the request itself.
+        const fastPathGate = cooldown
+          ? null
+          : await gateBifrostFastPath(request, parsedBody as Record<string, unknown>);
+        if (fastPathGate?.rejection) {
+          return finishAdmission(fastPathGate.rejection);
+        }
+        if (cooldown) {
+          fallbackHeaderValue = `bifrost-cooldown; remaining=${cooldown.remainingMs}`;
+        } else if (fastPathGate && !fastPathGate.allow) {
+          fallbackHeaderValue = "bifrost-ineligible";
+        } else {
+          try {
+            const bifrostResult = await dispatchToBifrost({
+              request,
+              body: parsedBody as Record<string, unknown>,
+              config: bifrostConfig,
+            });
+
+            if (bifrostResult.statusCode < 500) {
+              clearBifrostFailure(bifrostConfig.baseUrl);
+              return finishAdmission(
+                withCompressionHeaderEcho(bifrostResult.response, compressionRequestHeader)
+              );
+            }
+
+            // Bifrost returned 5xx -> trip circuit cooldown & fall through to native handleChat
+            recordBifrostFailure(bifrostConfig.baseUrl, `http_${bifrostResult.statusCode}`);
+            fallbackHeaderValue = "bifrost-error";
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            recordBifrostFailure(bifrostConfig.baseUrl, message);
+            fallbackHeaderValue = "bifrost-error";
+          }
+        }
+      }
+    }
+
+    const applyFallbackHeaders = (res: Response) => {
+      if (!bifrostConfig) return res;
+      const fallbackHeader = getRoutingFallbackHeader(relayBackend, bifrostConfig);
+      if (fallbackHeader || fallbackHeaderValue) {
+        res.headers.set("X-Routing-Fallback", fallbackHeaderValue || fallbackHeader || "bifrost");
+        const reasonCode = getRoutingFallbackReasonHeader(fallbackHeaderValue);
+        if (reasonCode) {
+          res.headers.set("X-Routing-Fallback-Reason", reasonCode);
+        }
+      }
+      return res;
+    };
 
     if (wantsStreaming) {
-      const reqId = callerCorrelationId ?? generateRequestId();
-      const {
-        signal: routeDeadlineSignal,
-        deadlineController: routeDeadlineController,
-      } = createStreamDeadlineSignal(request.signal);
+      const { signal: routeDeadlineSignal, deadlineController: routeDeadlineController } =
+        createStreamDeadlineSignal(request.signal);
       // Wrap the real handler response, not the synthetic early-keepalive response. If the
       // client cancels while handleChat is still pending, earlyStreamKeepalive will cancel the
       // eventual handler body; only that confirmed cleanup releases heavyweight capacity.
@@ -313,14 +412,21 @@ export async function POST(request) {
         extraHeaders: { "X-Correlation-Id": reqId },
         deadlineController: routeDeadlineController,
       });
-      return withCompressionHeaderEcho(streamedResponse, compressionRequestHeader);
+      return withCompressionHeaderEcho(
+        applyFallbackHeaders(streamedResponse),
+        compressionRequestHeader
+      );
     }
 
+    const handlerResponse = await handleChat(request, null, parsedBody, reqId);
+    const recoveryResponse = await maybeQueueQuotaSessionRecovery({
+      request,
+      body: parsedBody,
+      response: handlerResponse,
+      endpoint: "chat/completions",
+    });
     return finishAdmission(
-      withCompressionHeaderEcho(
-        await handleChat(request, null, parsedBody, callerCorrelationId ?? undefined),
-        compressionRequestHeader
-      )
+      withCompressionHeaderEcho(applyFallbackHeaders(recoveryResponse), compressionRequestHeader)
     );
   } catch (error) {
     admission.lease?.release();

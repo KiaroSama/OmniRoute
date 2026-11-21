@@ -16,68 +16,61 @@ Tá gnéithe ceilteachta ann ionas gur féidir le OmniRoute feidhmiú mar shrait
 
 ---
 
-## Sraith Méarlorgaireachta TLS
+## Ciseal Méarlorgaireachta TLS
 
 ### `open-sse/utils/tlsClient.ts` — wreq-js (Chrome 124)
 
-Cruthaítear seisiúin mharthanacha `wreq-js` go leisciúil de réir scóip an chuntais agus an tseachfhreastalaí réitithe. Coimeádann linnte uile-phróisis `TlsClient` uasmhéid 128 seisiún a dhéanann aithris ar **Chrome 124 ar macOS** le haghaidh réamhtheachtaithe atá taobh thiar de Cloudflare. Teipeann `TlsClient.fetch()` go dúnta nuair nach bhfuil an t-am rite dúchasach ar fáil; féadfaidh glaoiteoir cúltaca lasmuigh den fhillteán seo a roghnú go sainráite.
+Cruthaítear seisiúin mharthanacha `wreq-js` go leisciúil de réir raon feidhme an chuntais agus an tseachfhreastalaí réitithe. Comhthiomsaíonn an `TlsClient` uile-phróisis uasmhéid 128 seisiún a dhéanann aithris ar **Chrome 124 ar macOS** le haghaidh seirbhísí réamhtheachtacha taobh thiar de Cloudflare. Teipeann `TlsClient.fetch()` ar bhealach dúnta nuair nach mbíonn an t-am rite dúchasach ar fáil; féadfaidh glaoiteoir cúlchiste lasmuigh den fhillteán seo a roghnú go sainráite.
 
 - Próifíl seisiúin: `browser: "chrome_124", os: "macos"`
-- Réiteach seachfhreastalaí (tosaíocht): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (i gcás íochtair freisin)
-- Teorainn ama: `TLS_CLIENT_TIMEOUT_MS` (faighte le hoidhreacht ó `FETCH_TIMEOUT_MS`, réamhshocrú 600000)
-- Tá Response `wreq-js` comhoiriúnach le fetch (`headers`, `text()`, `json()`, `clone()`, `body`).
-- Faireoir an chéad bhirt (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): réitíonn `TlsClient.fetch()`
-  a luaithe a thagann ceanntásca ón réamhtheachtaí, mar sin ní féidir le `TLS_CLIENT_TIMEOUT_MS` amháin
-  teorainn a chur le corp nach dtugann an chéad bheart choíche. Cuireann `guardTlsFirstByte()` an chéad
-  `read()` den chorp in aghaidh `TLS_FIRST_BYTE_WATCHDOG_MS` (réamhshocrú `10000`, díchumasaíonn `0` é);
-  ní dhéanann sé difear do chorp sláintiúil, ach cealaíonn corp stoptha léitheoir wreq agus ligeann sé do
-  loighic chúltaca TLS reatha `proxyFetch` titim ar aghaidh chuig an seoltóir díreach/seachfhreastalaí
-  (caitheann iarratas nach bhfuil sábháilte lena athsheinm, m.sh. POST le corp, earráid fós in ionad é a
-  atriail go ciúin).
+- Réiteach seachfhreastalaí (tosaíocht): `HTTPS_PROXY` → `HTTP_PROXY` → `ALL_PROXY` (na leaganacha cás íochtair freisin)
+- Teorainn ama: `TLS_CLIENT_TIMEOUT_MS` (faighte mar oidhreacht ó `FETCH_TIMEOUT_MS`, réamhshocrú 600000)
+- Tá Freagra `wreq-js` comhoiriúnach le fetch (`headers`, `text()`, `json()`, `clone()`, `body`).
+- Faireoir an chéad bheart (`open-sse/utils/tlsFirstByteWatchdog.ts`, #12656): réitítear `TlsClient.fetch()`
+  a luaithe a thagann na ceanntásca réamhtheachtacha, mar sin ní féidir le `TLS_CLIENT_TIMEOUT_MS` amháin teorainn a chur le
+  corp nach dtugann an chéad bheart uaidh riamh. Cuireann `guardTlsFirstByte()` an chéad `read()` den chorp
+  i rás in aghaidh `TLS_FIRST_BYTE_WATCHDOG_MS` (réamhshocrú `10000`, díchumasaíonn `0` é); ní dhéantar difear do chorp
+  sláintiúil, agus cealaíonn corp stoptha léitheoir wreq agus ligeann sé don loighic chúlchiste TLS atá ann cheana in
+  `proxyFetch` leanúint ar aghaidh chuig an seoltóir díreach/seachfhreastalaí (caitheann iarratas nach bhfuil sábháilte
+  lena athsheinm, e.g. POST a bhfuil corp aige, earráid fós seachas atriail chiúin a dhéanamh).
 
 ### Iompar soláthraí fianán gréasáin — wreq-js 3.2.0
 
 Is é `open-sse/services/tlsClientBase.ts` an cuibheoir comhroinnte do na cúig iompar speisialaithe
-fianán gréasáin thíos. Roghnaíonn gach fillteán tanaí soláthraí próifíl brabhsálaí/OS. Úsáideann an
-cuibheoir an lódálaí aonair ama rite wreq agus an linn iompar in `open-sse/utils/tlsClient.ts`, agus
-eochair á socrú de réir próifíle + OS + seachfhreastalaí réitithe, agus úsáideann gach iarratas
-`cookieMode: "ephemeral"`. Dá bhrí sin, comhroinneann cuntais agus iarratais naisc ar leibhéal an
-iompair, ach ní chomhroinneann siad seisiún wreq ná próca fianán riamh.
+fianán gréasáin thíos. Roghnaíonn gach fillteán éadrom soláthraí próifíl brabhsálaí/OS. Úsáideann an cuibheoir
+an lódálaí aonair ama rite wreq agus an comhthiomsú iompair in `open-sse/utils/tlsClient.ts`, agus iad eochraithe de réir
+próifíle + OS + seachfhreastalaí réitithe, fad a úsáideann gach iarratas `cookieMode: "ephemeral"`. Dá bhrí sin,
+comhroinneann cuntais agus iarratais naisc ar leibhéal an iompair, ach ní chomhroinneann siad seisiún wreq ná stór fianán riamh.
 
-| Soláthraí  | Próifíl       | OS aithrise | Beartas EOF an tsrutha                  |
-| ---------- | ------------- | ----------- | --------------------------------------- |
-| Claude     | `chrome_146`  | Linux       | cuir `[DONE]` san áireamh               |
-| Perplexity | `firefox_148` | macOS       | cuir `event: end_of_stream` san áireamh |
-| Grok       | `chrome_146`  | Linux       | fág `[DONE]` as                         |
-| Notion     | `chrome_146`  | Windows     | cuir `[DONE]` san áireamh               |
-| LMArena    | `chrome_146`  | Windows     | gan fairtheoir; dún ar EOF dúchasach    |
+| Soláthraí  | Próifíl       | OS aithrise | Beartas EOF an tsrutha                   |
+| ---------- | ------------- | ----------- | ---------------------------------------- |
+| Claude     | `chrome_146`  | Linux       | cuir `[DONE]` san áireamh                |
+| Perplexity | `firefox_151` | macOS       | cuir `event: end_of_stream` san áireamh  |
+| Grok       | `chrome_146`  | Linux       | fág `[DONE]` as                          |
+| Notion     | `chrome_146`  | Windows     | cuir `[DONE]` san áireamh                |
+| LMArena    | `chrome_146`  | Windows     | gan mharcóir faire; dún ar EOF dúchasach |
 
-- Ídíonn sruthú `ReadableStream` dúchasach an fhreagra go díreach; ní chruthaítear comhad sealadach ná
-  taobhcharr.
-- Scrúdaítear suas le 256 beart tosaigh sula nochtar sruth. Maolaíonn soláthraithe SSE earráidí nach
-  earráidí SSE iad; mapálann Grok/LMArena dúshláin Cloudflare go `403` agus leathanaigh idirmheánacha
-  HTML go `502`.
-- Fanann teorainn ama dhúchasach an iarratais fillte i sprioc-am crua absalóideach JS. Déanann
-  crochadh an t-iompar próifíle/OS/seachfhreastalaí atá buailte amháin a neamhbhailíochtú agus a
-  dhúnadh sula n-athchruthaíonn an chéad iarratas eile é.
-- Is í tosaíocht réitigh an tseachfhreastalaí `proxyUrl` in aghaidh an ghlao → comhthéacs
-  cuntais/deais atá scóipeáilte don iarratas → `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (le malairtí
-  cás íochtair san áireamh). Teipeann earráidí réitigh go dúnta seachas nasc díreach a sceitheadh.
-  Réitíonn LMArena d'aon ghnó i gcoinne `arena.ai`.
-- Tugann `byteResponse` URL `data:` ar ais a bhfuil cineál inneachair aige gan truailliú UTF-8.
-- Is iad na hearráidí `TlsClientUnavailableError` (pacáiste/breiseán gan fáil),
-  `TlsClientHangError` (sáraíodh an sprioc-am), agus `WreqTransportCapacityError` (cód earráide
-  comhroinnte thoilleadh an tseisiúin) nuair atá gach ceann de na 128 sliotán teoranta
-  próifíle/OS/seachfhreastalaí gníomhach nó á dhúnadh.
+- Ídíonn sruthú `ReadableStream` dúchasach an fhreagra go díreach; ní chruthaítear comhad sealadach ná seachcharr.
+- Scrúdaítear suas le 256 beart tosaigh sula nochtar sruth. Maolánaíonn soláthraithe SSE earráidí nach earráidí SSE iad;
+  mapálann Grok/LMArena dúshláin Cloudflare go `403` agus leathanaigh idirlinne HTML go `502`.
+- Fanann teorainn ama an iarratais dhúchasaigh fillte ag sprioc-am crua absalóideach JS. Má théann sé i bhfostú,
+  déantar neamhbhailí agus dúntar iompar na próifíle/OS/seachfhreastalaí lena mbaineann amháin sula n-athchruthaíonn
+  an chéad iarratas eile é.
+- Is í tosaíocht réitigh an tseachfhreastalaí ná `proxyUrl` in aghaidh an ghlao → comhthéacs cuntais/deais atá scópáilte don iarratas →
+  `HTTPS_PROXY`/`HTTP_PROXY`/`ALL_PROXY` (na leaganacha cás íochtair san áireamh). Teipeann earráidí réitigh
+  ar bhealach dúnta seachas nasc díreach a ligean amach. Réitíonn LMArena in aghaidh `arena.ai` d'aon ghnó.
+- Tugann `byteResponse` URL `data:` ar ais a bhfuil cineál inneachair aige, gan truailliú UTF-8.
+- Is iad na hearráidí ná `TlsClientUnavailableError` (níl an pacáiste/breiseán ar fáil), `TlsClientHangError`
+  (sáraíodh an sprioc-am), agus `WreqTransportCapacityError` (cód earráide acmhainne an tseisiúin chomhroinnte)
+  nuair atá gach ceann de na 128 sliotán teoranta próifíle/OS/seachfhreastalaí gníomhach nó á dhúnadh.
 
-Fanann an seisiún cineálach `TlsClient` thuas speisialaithe do staid mharthanach fianán a fhaigheann
-tacaíocht ó bhrabhsálaí. Athúsáideann an dá chonair lódálaí modúil wreq amháin atá i dtaisce agus
-crúca saolré próisis amháin; fanann a linnte ar leithligh toisc go bhfuil a saolréanna fianán
-éagsúil d'aon ghnó.
+Fanann an seisiún cineálach `TlsClient` thuas speisialaithe do staid mharthanach fianán a bhfuil brabhsálaí mar thaca aici.
+Athúsáideann an dá chonair lódálaí modúil wreq taiscthe amháin agus crúca saolré próisis amháin; fanann a gcomhthiomsuithe
+ar leith toisc go bhfuil saolréanna a bhfianán difriúil d'aon ghnó.
 
-Tacaíonn an pacáiste pionnáilte leis na próifílí, ach féadfaidh glacadh WAF san fhíorshaol athrú go
-neamhspleách ar thástálacha conartha áitiúla. Bailíochtaigh athruithe méarloirg i gcoinne cuntais
-bheo atá údaraithe go sainráite sula maítear comhionannas le brabhsálaí réamhtheachtach.
+Tacaíonn an pacáiste pionnáilte leis na próifílí, ach is féidir le glacadh WAF iarbhír athrú go neamhspleách
+ar thástálacha conartha áitiúla. Bailíochtaigh athruithe méarloirg in aghaidh cuntais bheo atá údaraithe go sainráite
+sula maítear paireacht le brabhsálaí réamhtheachtach.
 
 ---
 
@@ -126,7 +119,7 @@ Cuirtear i bhfeidhm é ar: bloic `system`, gach `messages[].content`, agus `tool
 
 Le haghaidh athsheachadáin Anthropic tríú páirtí nach nglacann ach le trácht “fíor-Claude Code”:
 
-- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.258 (external, sdk-cli)"`
+- `CLAUDE_CODE_COMPATIBLE_USER_AGENT = "claude-cli/2.1.280 (external, sdk-cli)"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_PACKAGE_VERSION = "0.112.1"`
 - `CLAUDE_CODE_COMPATIBLE_STAINLESS_RUNTIME_VERSION = "v26.3.0"`
 - `anthropic-beta = "claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24"` de réir réamhshocraithe
@@ -143,41 +136,63 @@ Modúil ghaolmhara sa bheart céanna:
 
 ---
 
-## Rúndacht Antigravity
+## Antigravity Stealth
 
-Caomhnaíonn iarratais Antigravity téacs an ghlaoiteora beart ar bheart. Ní chuireann OmniRoute carachtair nialasleithead isteach i leid ná ní athainmníonn/insteallann sé uirlisí chun aithris a dhéanamh ar chliant IDE.
+iarratais Antigravity caomhnú téacs an ghlaoiteora beart-do-bheart. Ní chuireann OmniRoute carachtair nial-leithead isteach i leideanna nó uirlisí rename/inject chun aithris a dhéanamh ar chliant IDE.
 
 ### `antigravityHeaderScrub.ts`
 
-Baineann sé marcóirí SDK Stainless (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) sula gcuirtear ar aghaidh iad.
+Stiallacha marcóirí SDK dhosmálta (`x-stainless-lang`, `x-stainless-package-version`, `x-stainless-os`, `x-stainless-arch`, `x-stainless-runtime`, `x-stainless-runtime-version`, `x-stainless-timeout`, `x-stainless-retry-count`, `x-stainless-helper-method`) sula gcuirtear ar aghaidh iad.
 
-### ⚠️ Riosca: `ANTIGRAVITY_CREDITS=always` (pointe baolach do thoirmeasc cuntais)
+### Riosca ⚠️ : `ANTIGRAVITY_CREDITS=always` (láthair te toirmeasc cuntais)
 
-Treoraíonn `ANTIGRAVITY_CREDITS=always` (a úsáideann `open-sse/executors/antigravity.ts`) **gach** iarratas trí Bharrachais Chreidmheasanna AI Antigravity (creidmheasanna íoctha Google), seachas ligean do chuóta sraithe in aisce Google na hiarratais a theorannú. Tá sé seo doiciméadaithe mar ghné, ach is é **an tuairisc is coitianta ar shárú na dTéarmaí Seirbhíse a fheicimid** — cuireadh toirmeasc ar roinnt cuntas Google Ultra le `403 / "service disabled for ToS violation" / insufficient_quota` tar éis dóibh rith ar feadh cúpla uair an chloig le `=always`.
+bealaí `ANTIGRAVITY_CREDITS=always` ( arna gcaitheamh ag `open-sse/executors/antigravity.ts`).** gach** iarratas trí fhorchostais chreidmheasa Antigravity AI (creidmheasanna Google íoctha) in ionad rudaí geata cuóta saorshraith Google a ligean ar cíos. Tá sé seo doiciméadaithe mar ghné, ach tá sé** an tuarascáil aonair is coitianta ar shárú ToS a fheicimid** Tá cosc ar chuntais — iolracha Google Ultra le `403 / "service disabled for ToS violation" / insufficient_quota` tar éis dóibh a bheith ag rith le `=always` ar feadh cúpla uair an chloig .
 
-Déantar an forfheidhmiú réamhtheachtach ar **thaobh Google**, agus ní féidir le OmniRoute é a chosc. Tugann ainm na hathróige timpeallachta agus an doiciméadacht reatha le tuiscint gur socrú sábháilte é seo le casadh air; ní hea.
+Tá an forfheidhmiú in aghaidh an tsrutha ar siúl** taobh Google** , ní féidir aon rud OmniRoute a chosc. Fágann an t-ainm env var agus na doiciméid atá ann cheana go bhfuil sé cosúil le cnapán sábháilte le smeach; nach bhfuil sé.
 
-**An fáth a dtarraingíonn sé seo brath mí-úsáide níos ionsaithí ná úsáid na sraithe in aisce amháin:**
+**Cén fáth a tharraingíonn sé seo braite mí-úsáide níos ionsaithí ná úsáid saorshraith amháin:**
 
-- Marcáiltear caiteachas uathoibrithe leanúnach ar chuntas aonair Google ar bhealach eile seachas úsáid na sraithe in aisce a shroicheann an cuóta agus a stopann.
-- Níl aon uasteorainn ráta ar bharrachais chreidmheasa, mar sin is féidir le cliant míchumraithe na céadta USD a chaitheamh i gceann nóiméad agus cuma athdhíola eochracha API nó tráchta róbait a bheith air.
-- Méadaítear an comhartha nuair a úsáideann roinnt úsáideoirí OmniRoute creidmheasanna barrachais go comhthreomhar ón seoladh IP seachtrach céanna.
+- Léiríonn caiteachas uathoibríoch marthanach ar chuntas Google amháin ar bhealach difriúil ná amas-chuóta agus stadanna saorshraitheanna.
+- Níl aon uasteorainn ráta ag ró-íocaíochtaí creidmheasa, mar sin is féidir le cliant míchumraithe sruthán trí na céadta USD i nóiméid agus cuma tráchta athdhíola nó bot API-eochair.
+- Comhdhúile an comhartha ag úsáideoirí iolracha OmniRoute a bhuaileann creidmheasanna overage go comhthreomhar ón IP seachtrach céanna.
 
-**Cur chuige molta:**
+**Staidiúir mholta:**
 
-1. Coinnigh an réamhshocrú `ANTIGRAVITY_CREDITS=off` mura nglacann an t-oibreoir go sainráite le riosca creidmheasanna íoctha agus forfheidhmithe cuntais. Seolann `retry` an gnáthiarratas ar dtús agus insteallann sé creidmheasanna uair amháin ar a mhéad tar éis 429 cuóta incháilithe; insteallann `always` creidmheasanna ar an gcéad iarratas.
-2. **Dáil an t-ualach ar sholáthraithe trí Auto-Combo** (`model: "auto"` nó teaglama `kr/glm/etc`) in ionad cuntas aonair Antigravity a sháithiú.
-3. **Socraigh teorainneacha RPM in aghaidh an naisc** ar leathanach eagarthóireachta sholáthraí Antigravity (Deais → Soláthraithe → Antigravity → nasc → teorainn ráta). Is uasteorainn inchosanta é 30–60 RPM d’úsáid leanúnach.
-4. **Úsáid líonrú réamhtheachtach cobhsaí atá faoi rialú an oibreora** agus seachain cuntas amháin a roinnt idir úsáideoirí nó ualaí oibre neamhghaolmhara.
-5. **Má chuirtear toirmeasc ort**: déan achomharc trí `support.google.com` → “Restore Workspace/Account access” leis an gcorp freagartha cruinn `quota_exceeded` / `service disabled` a sheol Google. Ní ráthaítear go n-athbhunófar an cuntas.
+1. Coinnigh an `ANTIGRAVITY_CREDITS=off` réamhshocraithe mura nglacann an t-oibreoir go sainráite le creidmheas íoctha agus riosca forghníomhaithe cuntais. cuireann `retry` an gnáthiarratas ar aghaidh ar dtús agus cuireann sé isteach creidmheasanna uair amháin ar a mhéad tar éis cuóta incháilithe 429; `always` instealladh creidmheasanna ar an gcéad iarratas.
+2. **Scaip an t-ualach trasna soláthraithe trí Auto-Combo** (`model: "auto"` nó `kr/glm/etc` -combo) in ionad cuntas Antigravity amháin a sháithiú.
+3. **Socraigh teorainneacha RPM in aghaidh an cheangail** i leathanach eagarthóireachta an tsoláthraí Antigravity (Teorainn ráta → nasc Soláthraithe → → Antigravity → ). Is teorainn inchosanta uachtair é 30–60 RPM le haghaidh úsáide marthanach.
+4. **Úsáid líonraithe in aghaidh an tsrutha cobhsaí, arna rialú ag oibreoir** agus seachain cuntas amháin a roinnt thar úsáideoirí nó ualaí oibre nach mbaineann leo.
+5. **Má toirmeasc** : achomharc trí `support.google.com` → "Athchóirigh rochtain Workspace/Account " leis an gcomhlacht freagra cruinn `quota_exceeded` / `service disabled` Google seolta. Níl athchóiriú ráthaithe.
 
-Déantar impleachtaí gach móid creidmheasa do chuntais agus do chaiteachas a dhoiciméadú sa tagairt timpeallachta.
+Déanann an tagairt comhshaoil doiciméadú ar impleachtaí cuntais agus caiteachais gach modh creidmheasa.
 
-Pointí teagmhála:
+#### Ní hamháin `=always`: ródú Antigravity OAuth go ginearálta
 
-- `open-sse/executors/antigravity.ts` — léann sé `process.env.ANTIGRAVITY_CREDITS`
-- `src/lib/oauth/providers/antigravity.ts` — sreangú dintiúr
-- Buntuairisc teagmhais: Plé [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
+Níl na fionraíochta teoranta do ró-íocaíochtaí creidmheasa. Déanann tuarascálacha i mí na Samhna 2026 (#19223, #19266) cur síos ar roinnt cuntas Google a cuireadh ar fionraí agus iad ag dul tríd na soláthraithe `antigravity` agus `agy` (Antigravity CLI), le:
+
+```
+403: This service has been disabled in this account for violation of Terms of Service.
+Please submit an appeal to continue using this product.
+```
+
+Fíordheimhníonn an dá sholáthraí leis an seisiún táirge Antigravity OAuth, is é sin an cás fógra riosca an deais ("Úsáideann an soláthraí seo do tháirge oifigiúil session/OAuth, nach bhfuil údaraithe le haghaidh úsáide proxy/router ") rabhadh faoi sula gcuirtear nasc leis. Níl an úsáid sin údaraithe in aon cheann de na moltaí thuas; ní laghdaíonn siad ach an méid tráchta a iompraíonn cuntas amháin.
+
+**Comhéadain údaraithe API le haghaidh samhlacha Gemini.** Cuireann Google rochtain ríomhchláraithe ar fáil ar Gemini trína APIs, a thacaíonn OmniRoute mar ghnáthsholáthraithe API-eochair:
+
+| Aitheantas an tsoláthraí | Ainm an phainéil            | Dintiúir                                                                               |
+| ------------------------ | --------------------------- | -------------------------------------------------------------------------------------- |
+| `gemini`                 | Gemini (Google AI Stiúideo) | eochair Gemini API ó Google AI Studio (sraith saor in aisce ar fáil)                   |
+| `vertex`                 | vertex AI                   | Cuntas Seirbhíse JSON, comhartha rochtana OAuth nó eochair Vertex Express API (Gemini) |
+
+Úsáideann na soláthraithe seo ceisteanna Google dintiúir le haghaidh rochtain API, murab ionann agus an seisiún táirge Antigravity. Ní ghéilleann siad do gach úsáid agus ní chuireann siad deireadh leis an riosca forghníomhaithe: tá gach ceann díobh á rialú ag a théarmaí féin, a chaithfidh an t-oibreoir a sheiceáil lena n-imscaradh. Mar shampla, ní cheadaíonn [Téarmaí Seirbhíse Breise Gemini API](https://ai.google.dev/gemini-api/terms) ach Seirbhísí Íoctha nuair a chuirtear cliaint API ar fáil d’úsáideoirí sa Limistéar Eorpach Eacnamaíoch, san Eilvéis nó sa Ríocht Aontaithe, agus féadfar ábhar a sheoltar chuig Seirbhísí Neamhíoctha a úsáid chun táirgí Google a fheabhsú. Tagann Vertex AI faoi na téarmaí Google Cloud ina ionad sin ( [Téarmaí Seirbhíse Sonracha](https://cloud.google.com/terms/service-terms) ). Leanann praghsanna agus cuótaí na téarmaí API sin seachas síntiús Antigravity.
+
+Ba chóir d'oibreoirí atá ag iarraidh na fionraí Antigravity a bhfuil cur síos orthu thuas a sheachaint an trácht Gemini a chur trí cheann de na soláthraithe seo in ionad `antigravity` / `agy`, tar éis dóibh a sheiceáil go n-oireann a n-úsáid do théarmaí an tsoláthraí.
+
+Pointí tadhaill:
+
+- `open-sse/executors/antigravity.ts` — léann `process.env.ANTIGRAVITY_CREDITS`
+- pluiméireacht inchreidte `src/lib/oauth/providers/antigravity.ts` —
+- Tuairisc bhunaidh teagmhais: Plé [#1183](https://github.com/diegosouzapw/OmniRoute/discussions/1183)
 
 ---
 
@@ -244,19 +259,18 @@ Ina theannta sin, suiteálann `updateNssDatabases()` i mbunachair sonraí NSS in
 
 Éilíonn gach críochphointe MITM fíordheimhniú bainistíochta (`requireCliToolsAuth`). Cuirtear an focal faire sudo i dtaisce i scóip an mhodúil (`globalThis` riamh) agus glantar é ar `stopMitm()`.
 
-## Sáruithe User-Agent — athróga timpeallachta (`.env.example` rannán 12)
+## Sáraíonn Gníomhaire Úsáideora — env vars (`.env.example` alt 12)
 
-| Athróg                   | Réamhshocrú                                                     |
-| ------------------------ | --------------------------------------------------------------- |
-| `CLAUDE_USER_AGENT`      | `claude-cli/2.1.258 (external, cli)`                            |
-| `CODEX_USER_AGENT`       | `codex-cli/0.155.0 (Windows 10.0.26200; x64)`                   |
-| `GITHUB_USER_AGENT`      | `GitHubCopilotChat/0.54.0`                                      |
-| `ANTIGRAVITY_USER_AGENT` | `antigravity/2.0.1 linux/arm64 google-api-nodejs-client/10.3.0` |
-| `KIRO_USER_AGENT`        | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`                               |
-| `QODER_USER_AGENT`       | `Qoder-Cli`                                                     |
-| `CURSOR_USER_AGENT`      | `Cursor/3.4`                                                    |
+| Athróg              | Réamhshocrú                                   |
+| ------------------- | --------------------------------------------- |
+| `CLAUDE_USER_AGENT` | `claude-cli/2.1.280 (external, cli)`          |
+| `CODEX_USER_AGENT`  | `codex-cli/0.155.0 (Windows 10.0.26200; x64)` |
+| `GITHUB_USER_AGENT` | `GitHubCopilotChat/0.54.0`                    |
+| `KIRO_USER_AGENT`   | `AWS-SDK-JS/3.0.0 kiro-ide/1.0.0`             |
+| `QODER_USER_AGENT`  | `Qoder-Cli`                                   |
+| `CURSOR_USER_AGENT` | `Cursor/3.4`                                  |
 
-Úsáideann `open-sse/executors/base.ts::buildHeaders()` iad trí chuardach dinimiciúil. **Nuashonraigh iad seo nuair a eisíonn soláthraithe leaganacha nua dá CLI** — tosaítear ar theaghráin UA atá as dáta a dhiúltú mar chliaint atá as dáta.
+Arna ithe ag `open-sse/executors/base.ts::buildHeaders()` trí chuardach dinimiciúil.** Buail iad seo nuair a scaoileann soláthraithe leaganacha nua CLI** tosaíonn teaghráin — stale UA ag fáil diúltaithe mar chliaint atá as dáta.
 
 ## Scoránaigh Mhód Comhoiriúnachta CLI (`.env.example` rannán 13)
 

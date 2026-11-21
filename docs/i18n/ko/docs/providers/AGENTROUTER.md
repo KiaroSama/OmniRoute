@@ -67,7 +67,7 @@ docker run -d --name omniroute \
   -p 20128:20128 \
   -v omniroute-data:/app/data \
   -e ENABLE_CC_COMPATIBLE_PROVIDER=true \
-  diegosouzapw/omniroute:latest
+  cheaperinference/omniroute:latest
 ```
 
 재시작하면 대시보드에 기존 OpenAI 호환 및 Anthropic 호환 흐름과 함께
@@ -127,7 +127,7 @@ curl -X POST http://localhost:20128/v1/chat/completions \
 | 헤더                                        | 값                                                                                            |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `Authorization`                             | `Bearer <api-key>`                                                                            |
-| `User-Agent`                                | `claude-cli/2.1.258 (external, sdk-cli)`                                                      |
+| `User-Agent`                                | `claude-cli/2.1.280 (external, sdk-cli)`                                                      |
 | `anthropic-version`                         | `2023-06-01`                                                                                  |
 | `anthropic-beta`                            | `claude-code-20250219,interleaved-thinking-2025-05-14,effort-2025-11-24`                      |
 | 연결별 redact-thinking 베타 토글            | 수정된 사고 스트림을 명시적으로 요구하는 업스트림에 `redact-thinking-2026-02-12`를 추가합니다 |

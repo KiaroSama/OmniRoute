@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   assertNoLargeBacking,
@@ -15,6 +16,7 @@ import {
   summarizeSettledGrowth,
   withRawSnapshotCleanup,
 } from "../../scripts/perf/messages-route-memory-profile.ts";
+import { nativeCoverageArgs } from "../_helpers/nativeCoverageArgs.ts";
 
 const SCRIPT = new URL("../../scripts/perf/messages-route-memory-profile.ts", import.meta.url);
 
@@ -61,6 +63,8 @@ test("JON-562 worker environment is an allowlist and drops credential-shaped var
     LINEAR_API_KEY: "must-not-cross",
     OPENAI_API_KEY: "must-not-cross",
     OMNIROUTE_MANAGEMENT_TOKEN: "must-not-cross",
+    NODE_OPTIONS: "--no-warnings",
+    OMNIROUTE_CI_SYNC_TSX_CACHE: "/tmp/operator-tsx-cache",
   });
 
   assert.deepEqual(env, {
@@ -167,7 +171,7 @@ test("JON-562 standalone analyzer deletes an invalid raw snapshot on failure", (
       [
         "--import",
         "tsx/esm",
-        SCRIPT.pathname,
+        fileURLToPath(SCRIPT),
         "--analyze-snapshot",
         "--snapshot",
         snapshot,
@@ -202,7 +206,7 @@ test("JON-562 standalone analyzer deletes raw input when required arguments are 
       [
         "--import",
         "tsx/esm",
-        SCRIPT.pathname,
+        fileURLToPath(SCRIPT),
         "--analyze-snapshot",
         "--snapshot",
         snapshot,
@@ -233,7 +237,7 @@ test("JON-562 standalone analyzer deletes raw input when size validation fails",
       [
         "--import",
         "tsx/esm",
-        SCRIPT.pathname,
+        fileURLToPath(SCRIPT),
         "--analyze-snapshot",
         "--snapshot",
         snapshot,
@@ -259,6 +263,81 @@ test("JON-562 standalone analyzer deletes raw input when size validation fails",
 });
 
 test(
+  "JON-562 driver startup sweep deletes interrupted-run raw snapshots before a new run",
+  // The driver's earliest raw snapshot is written by the first worker only after its ~4m route
+  // boot, so a bounded case cannot wait for a real mid-run kill to produce one. The leftover is
+  // seeded exactly where an interrupted run leaves it (context-*/post-gc.heapsnapshot); the new
+  // driver run must sweep it during startup, before spawning any worker, and the child is
+  // SIGKILLed as soon as the sweep is observed to stay well under the ~4m canary wall time.
+  { timeout: 90_000 },
+  async () => {
+    const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-JON-562-sweep-"));
+    const dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-JON-562-sweep-data-"));
+    const staleSnapshot = path.join(outputDir, "context-100000", "post-gc.heapsnapshot");
+    const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+    let child: ReturnType<typeof spawn> | null = null;
+    fs.mkdirSync(path.dirname(staleSnapshot), { recursive: true });
+    fs.writeFileSync(staleSnapshot, "synthetic interrupted-run leftover");
+    try {
+      assert.equal(fs.existsSync(staleSnapshot), true, "leftover must exist before the new run");
+      child = spawn(
+        process.execPath,
+        [
+          ...nativeCoverageArgs(),
+          "--import",
+          "tsx/esm",
+          // fileURLToPath, not SCRIPT.pathname: URL pathname is not a spawnable entry path on
+          // Windows (it resolves to C:\C:\...); a real path works on every platform.
+          fileURLToPath(SCRIPT),
+          "--tokens",
+          "100000",
+          "--iterations",
+          "1",
+          "--output-dir",
+          outputDir,
+        ],
+        {
+          cwd: new URL("../..", import.meta.url),
+          env: {
+            ...buildWorkerEnv(process.env),
+            DATA_DIR: dataDir,
+            DISABLE_SQLITE_AUTO_BACKUP: "1",
+          },
+          stdio: "ignore",
+        }
+      );
+
+      // The startup sweep runs before the first worker spawn, so the seeded leftover must
+      // disappear within the driver's boot (~seconds). Poll until then, then kill.
+      const deadline = Date.now() + 45_000;
+      while (fs.existsSync(staleSnapshot) && Date.now() < deadline) {
+        await delay(100);
+      }
+      child.kill("SIGKILL");
+      assert.equal(
+        fs.existsSync(staleSnapshot),
+        false,
+        "driver startup sweep must delete stale raw snapshots before a new run"
+      );
+      const survivors = fs
+        .readdirSync(outputDir, { recursive: true })
+        .filter((entry) => entry.endsWith(".heapsnapshot"));
+      assert.deepEqual(survivors, [], "no raw snapshot may survive the new run's startup sweep");
+    } finally {
+      child?.kill("SIGKILL");
+      // Best-effort: the SIGKILLed driver may leave an orphaned worker grandchild briefly
+      // holding paths under the temp dirs on Windows.
+      try {
+        fs.rmSync(outputDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+        fs.rmSync(dataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+      } catch {
+        // Temp dirs are disposable.
+      }
+    }
+  }
+);
+
+test(
   "JON-562 real /v1/messages path rejects context-sized post-GC retention",
   // Measured ~4m12s end-to-end (2 iterations @ 100k tokens, including tsx/esm transpile of
   // the full handler chain, allocation sampling and a post-GC heap snapshot) on an idle
@@ -271,10 +350,11 @@ test(
       const result = spawnSync(
         process.execPath,
         [
+          ...nativeCoverageArgs(),
           "--expose-gc",
           "--import",
           "tsx/esm",
-          SCRIPT.pathname,
+          fileURLToPath(SCRIPT),
           "--tokens",
           "100000",
           "--iterations",

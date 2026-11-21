@@ -4,46 +4,45 @@
 
 ---
 
-Popüler açık kaynaklı yapay zekâ yönlendiricileriyle nesnel özellik karşılaştırması.
+Popüler açık kaynaklı AI yönlendiricileriyle objektif özellik karşılaştırması.
 
-> **Metodoloji**: Herkese açık depolar 2026-Q2 döneminde denetlendi. Sürümler listelendiği gibidir.
-> Düzeltmeleri PR aracılığıyla gönderin — bunun doğru olmasını istiyoruz.
+> **Metodoloji** : Halka açık repolar denetlendi 2026-Q2. Sürümler listelendiği gibidir. Düzeltmeleri PR — aracılığıyla gönderin, bunun doğru olmasını istiyoruz.
 
-| Özellik                                             |                OmniRoute 3.8                 |   LiteLLM 1.x   | OpenRouter (SaaS) |  Portkey   |
-| --------------------------------------------------- | :------------------------------------------: | :-------------: | :---------------: | :--------: |
-| **Sağlayıcılar**                                    |                   **329**                    |      ~100       |        ~50        |    ~30     |
-| **Ücretsiz/kimlik doğrulamasız katalog girdileri**  |                   **155**                    |       yok       |  doğrudan geçiş   |    yok     |
-| **Kendi sunucunuzda barındırılabilir**              |                      ✅                      |       ✅        |        ❌         | ⚠ ücretli  |
-| **OAuth katalog girdileri**                         |                    **23**                    |      kısmi      |        ❌         |     ❌     |
-| **Otomatik yedekleme kombinasyonları**              |               **19 strateji**                | öncelik tabanlı |  kademe tabanlı   | ağırlıklı  |
-| **Birleştirme (paralel panel + hakem sentezi)**     |                      ✅                      |       ❌        |        ❌         |     ❌     |
-| **Kademe 1/2/3 yedekleme (abonelik→ucuz→ücretsiz)** |                   ✅ + UI                    |     manuel      |        yok        |   manuel   |
-| **Token sıkıştırma**                                | 12 motorlu yığın (RTK + Caveman + LLMLingua) |       yok       |        yok        |    yok     |
-| **Çok modlu üretim (konuşma/müzik/video)**          |                      ✅                      |       ❌        |  doğrudan geçiş   |     ❌     |
-| **Yerleşik MCP sunucusu**                           |            ✅ 110 araç, 33 kapsam            |       ❌        |        ❌         |     ❌     |
-| **A2A protokolü**                                   |                 ✅ 6 beceri                  |       ❌        |        ❌         |     ❌     |
-| **Bellek (FTS5 + vektör)**                          |                      ✅                      |       ❌        |        ❌         |     ❌     |
-| **Koruma önlemleri (PII, enjeksiyon, görsel)**      |                      ✅                      |      kısmi      |        ❌         | ✅ ücretli |
-| **Bulut ajanı entegrasyonları**                     |         Codex, Cursor, Devin, Jules          |       ❌        |        ❌         |     ❌     |
-| **Sağlayıcı başına devre kesici**                   |       ✅ 3 durumlu, gecikmeli kurtarma       |      temel      |        ❌         |     ✅     |
-| **TLS parmak izi gizleme (JA3/JA4)**                |                  ✅ wreq-js                  |       ❌        |        ❌         |     ❌     |
-| **Değerlendirme çerçevesi**                         |                 ✅ yerleşik                  |       ❌        |        ❌         | ⚠ ücretli  |
-| **MITM proxy (Cursor/Antigravity'yi yakalar)**      |             ✅ platformlar arası             |       ❌        |        ❌         |     ❌     |
-| **Sistem tepsili CLI (Electron olmadan)**           |                      ✅                      |       ❌        |        yok        |    yok     |
-| **CLI makine kimliğiyle otomatik doğrulama**        |                      ✅                      |       ❌        |        yok        |    yok     |
-| **Kontrol paneli**                                  |                  Next.js 16                  |      temel      |     tescilli      |  tescilli  |
-| **i18n**                                            |              **42 yerel ayar**               |       ❌        |        ❌         |     ⚠      |
-| **Herkese açık ajan becerileri (SKILL.md)**         |                    ✅ 45                     |       ❌        |        ❌         |     ❌     |
-| **Tünel desteği (Cloudflared, Tailscale, Ngrok)**   |                      ✅                      |       ❌        |        yok        |    yok     |
-| **Lisans**                                          |                     MIT                      |       MIT       |     tescilli      |  tescilli  |
+| Özellik                                                   |                OmniRoute 3.8                 |  LiteLLM 1.x  | OpenRouter (SaaS) |  Anahtar  |
+| --------------------------------------------------------- | :------------------------------------------: | :-----------: | :---------------: | :-------: |
+| **Sağlayıcılar**                                          |                   **329**                    |     ~100      |        ~50        |    ~30    |
+| **Free/no-auth katalog girişleri**                        |                   **155**                    |      n/a      |       geçiş       |    n/a    |
+| **Kendi kendine barındırılabilir**                        |                      ✅                      |      ✅       |        ❌         | ⚠ ödendi  |
+| **OAuth katalog girişleri**                               |                    **23**                    |     kısmi     |        ❌         |    ❌     |
+| **Otomatik geri dönüş kombinasyonları**                   |               **22 strateji**                | öncelik bazlı |   katman bazlı    | ağırlıklı |
+| **Füzyon (paralel panel + yargıç sentezi)**               |                      ✅                      |      ❌       |        ❌         |    ❌     |
+| **Katman 1/2/3 geri dönüşü (abonelik → ucuz → ücretsiz)** |                   ✅ + UI                    |    manuel     |        n/a        |  manuel   |
+| **Jeton sıkıştırması**                                    | 12 motorlu yığın (RTK + Caveman + LLMLingua) |    hiçbiri    |      hiçbiri      |  hiçbiri  |
+| **Çok modlu nesil (speech/music/video)**                  |                      ✅                      |      ❌       |       geçiş       |    ❌     |
+| **Yerleşik MCP sunucusu**                                 |            ✅ 110 araç, 33 kapsam            |      ❌       |        ❌         |    ❌     |
+| **A2A protokolü**                                         |               ✅ 6 becerileri                |      ❌       |        ❌         |    ❌     |
+| **Bellek (FTS5 + vektörü)**                               |                      ✅                      |      ❌       |        ❌         |    ❌     |
+| **Korkuluklar (PII, enjeksiyon, görüş)**                  |                      ✅                      |     kısmi     |        ❌         | ✅ ödendi |
+| **Bulut aracısı entegrasyonları**                         |         Codex, Cursor, Devin, Jules          |      ❌       |        ❌         |    ❌     |
+| **Sağlayıcı başına devre kesici**                         |        ✅ 3 durumlu, tembel kurtarma         |     temel     |        ❌         |    ✅     |
+| **TLS parmak izi gizliliği (JA3/JA4)**                    |                  ✅ wreq-js                  |      ❌       |        ❌         |    ❌     |
+| **Değerlendirme çerçevesi**                               |                 ✅ yerleşik                  |      ❌       |        ❌         | ⚠ ödendi  |
+| **MITM proxy (intercepts Cursor/Antigravity)**            |              ✅ çapraz platform              |      ❌       |        ❌         |    ❌     |
+| **sistem tepsisiyle CLI ( Electron yok)**                 |                      ✅                      |      ❌       |        n/a        |    n/a    |
+| **CLI makine kimliği otomatik kimlik doğrulaması**        |                      ✅                      |      ❌       |        n/a        |    n/a    |
+| **Kontrol Paneli**                                        |                  Next.js 16                  |     temel     |     tescilli      | tescilli  |
+| **i18n**                                                  |              **67 yerel ayar**               |      ❌       |        ❌         |     ⚠     |
+| **Kamu temsilcisi becerileri (SKILL.md)**                 |                    ✅ 45                     |      ❌       |        ❌         |    ❌     |
+| **Tünel desteği (Cloudflared, Tailscale, Ngrok)**         |                      ✅                      |      ❌       |        n/a        |    n/a    |
+| **Lisans**                                                |                     MIT                      |      MIT      |     tescilli      | tescilli  |
 
-## OmniRoute ne zaman tercih edilmeli?
+## OmniRoute ne zaman seçmelisiniz?
 
-- Kendi sunucunuzda barındırıyor ve **azami sağlayıcı kapsamı** istiyorsanız (329 sağlayıcı, 155 ücretsiz/kimlik doğrulamasız katalog girdisi)
-- **Yerleşik bir MCP sunucusuna** ihtiyacınız varsa (araç olarak sunulan LLM araçları, bellek ve beceriler)
-- Ajanlar arası iş akışları için **A2A protokolüne** ihtiyacınız varsa
-- Üst sistemlerdeki CAPTCHA'lar tarafından algılanmamak için **parmak izi gizleme** (JA3/JA4) istiyorsanız
-- SaaS faturası olmadan **kurumsal özelliklere** (koruma önlemleri, değerlendirmeler, denetim izi) ihtiyacınız varsa
+- Kendini barındırıyorsun ve istiyorsun** maksimum sağlayıcı kapsamı** (394 sağlayıcı, 155 free/no-auth katalog girişi)
+- ihtiyacın var** yerleşik MCP sunucusu** (LLM araçları, hafıza, araç olarak ortaya çıkan beceriler)
+- ihtiyacın var**A2A protokolü** temsilciden temsilciye iş akışları için
+- Sen istiyorsun** parmak izi gizliliği** (JA3/JA4) yukarı akışlı CAPTCHAs tarafından tespit edilmekten kaçınmak için
+- ihtiyacın var** kurumsal özellikler** (korkuluklar, değerlendirmeler, denetim izi) SaaS tasarısı olmadan
 
 ## LiteLLM ne zaman tercih edilmeli?
 

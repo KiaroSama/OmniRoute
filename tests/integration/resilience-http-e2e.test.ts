@@ -558,18 +558,32 @@ test("resilience API only exposes configuration, not runtime breaker state", asy
   // Exact key set — this is the whole point of the test: configuration only.
   // `providerQuotaOverrides` joined the projection in #9871;
   // `quotaPreflight` joined in #12014 (Settings → Routing Quota Preflight card);
-  // `credentialHealthCheck` joined in #12043 (the sweep's intervalMinutes setting).
+  // `credentialHealthCheck` joined in #12043 (the sweep's intervalMinutes setting);
+  // `streamStallCooldown` decides whether a stream content stall cools the account;
+  // `p2cLatency` is the opt-in latency weight for p2c account selection.
+  // `streamRecovery` joined the projection with this change: the route stores the
+  // block on every PATCH, so GET exposes it like every other stored block.
+  // `antigravityTimingTelemetry` is the stored opt-in for sanitized physical-send timing
+  // (`{ enabled }`, open-sse/services/antigravityTimingConfig.ts), not runtime state.
+  // `preferredAccountFailover` is the stored per provider/model failover preference
+  // added in #19259, also configuration rather than runtime state.
   assert.deepEqual(Object.keys(json).sort(), [
+    "antigravityTimingTelemetry",
     "comboCooldownWait",
     "connectionCooldown",
     "credentialHealthCheck",
     "legacy",
+    "p2cLatency",
+    "preferredAccountFailover",
     "providerBreaker",
     "providerCooldown",
     "providerQuotaOverrides",
     "quotaPreflight",
     "quotaShareConcurrencyLimit",
     "requestQueue",
+    "streamRecovery",
+    "streamStallCooldown",
+    "tokenRefreshBreaker",
     "waitForCooldown",
   ]);
   assert.equal("providerBreakers" in json, false);

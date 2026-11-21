@@ -4,13 +4,20 @@ import os from "os";
 import path from "path";
 import { spawn } from "child_process";
 import { getHermesHome } from "@/lib/cli-helper/config-generator/hermesHome";
+import { getPiModelsPath } from "./piConfig";
 import { getCachedLoginShellPath, mergeShellPath } from "./loginShellPath";
 import { withSettingsFallback } from "./cliInstallFallback";
 import { GROK_BUILD_RUNTIME_ENTRY, AMP_RUNTIME_ENTRY } from "./cliRuntimeGrokBuild";
+import { WHYCODES_RUNTIME_ENTRY } from "./cliRuntimeWhyCodes";
 import { isLocationTrusted, findKnownPathMatch } from "./cliRuntimeKnownPath";
 import { buildHealthcheckPath } from "./cliRuntimeHealthcheckPath";
 import { appendWindowsKnownBinPaths, mergeWindowsLookupPath } from "./cliRuntimeWindowsNode";
 import { getNpmGlobalPrefix } from "./cliRuntimeNpmPrefix";
+import {
+  findRunnableAlternate,
+  listPosixPathCandidates,
+  parseWhereCandidates,
+} from "./cliRuntimeFallthrough";
 import {
   describeContainerTarget,
   hasBindMountAt,
@@ -32,7 +39,9 @@ const CLI_TOOLS: Record<string, any> = {
     defaultCommand: "claude",
     envBinKey: "CLI_CLAUDE_BIN",
     requiresBinary: true,
-    healthcheckTimeoutMs: 4000,
+    // `claude --version` is a full Node CLI boot and takes ~5s warm on Windows,
+    // past the 4s default, which reported a working install as healthcheck_failed.
+    healthcheckTimeoutMs: 15000,
     paths: {
       settings: ".claude/settings.json",
       auth: [".claude/.credentials.json", ".config/claude/credentials.json"],
@@ -313,7 +322,12 @@ const CLI_TOOLS: Record<string, any> = {
     requiresBinary: true,
     healthcheckTimeoutMs: 8000,
     paths: {
-      config: ".pi/config.json",
+      // Pi (>= 1.0) loads custom providers from `<agent-dir>/models.json`, not
+      // the pre-1.0 ~/.pi/config.json. The agent dir defaults to ~/.pi/agent and
+      // moves with PI_CODING_AGENT_DIR; getPiModelsPath() resolves both, this
+      // entry keeps the batch status + config-path surfaces pointed at the same
+      // file the pi-settings route writes.
+      config: ".pi/agent/models.json",
     },
   },
   // Config path reconciled with bin/cli/commands/setup-crush.mjs::resolveCrushTarget's
@@ -342,6 +356,7 @@ const CLI_TOOLS: Record<string, any> = {
       authProfiles: "auth-profiles",
     },
   },
+  whycodes: WHYCODES_RUNTIME_ENTRY,
 };
 
 /**
@@ -369,7 +384,11 @@ export const normalizeCliToolId = (toolId: string): string => {
   return CLI_TOOL_ALIASES[normalized] || normalized;
 };
 
-const isWindows = () => process.platform === "win32";
+// This module is bundled on Linux for Windows installations. Turbopack can
+// constant-fold process.platform at build time and strip the Windows discovery
+// and where.exe branches, leaving CLI binaries undetectable on Windows (#17157).
+// os.platform() is evaluated at runtime, preserving both platform paths.
+const isWindows = () => os.platform() === "win32";
 
 /**
  * (#510) Normalize MSYS2/Git-Bash style paths to Windows-native paths.
@@ -395,12 +414,12 @@ const parseBoolean = (value: unknown, defaultValue = true) => {
 };
 
 export const shouldUseShellForCommand = (command: string): boolean => {
-  if (!isWindows()) return false;
-
   // Windows npm CLI wrappers are usually .cmd/.bat files and require cmd.exe.
   // Direct executables should not go through the shell: absolute paths with spaces
   // (for example C:\Users\Name With Spaces\...\claude.exe) are split by cmd.exe.
-  return /\.(?:cmd|bat)$/i.test(command);
+  // Keep the platform guard in the expression: Turbopack can drop the return
+  // after an early platform branch in a Linux-built Windows bundle (#16547).
+  return isWindows() && /\.(?:cmd|bat)$/i.test(command);
 };
 
 const runProcess = (
@@ -1157,6 +1176,15 @@ export const getCliConfigPaths = (toolId: string) => {
     };
   }
 
+  // pi: the agent dir is ~/.pi/agent by default and moves with
+  // PI_CODING_AGENT_DIR, which is not the same knob as CLI_CONFIG_HOME.
+  // getPiModelsPath() resolves both exactly the way pi itself does.
+  if (toolId === "pi") {
+    return {
+      config: getPiModelsPath(),
+    };
+  }
+
   const home = getCliConfigHome();
   return Object.fromEntries(
     Object.entries(tool.paths).map(([key, relativePath]) => {
@@ -1188,6 +1216,44 @@ export const getCliPrimaryConfigPath = (toolId: string) => {
   if (!paths) return null;
   const firstKey = Object.keys(paths)[0];
   return firstKey ? paths[firstKey] : null;
+};
+
+const listAlternateCandidates = async (
+  command: string,
+  env: Record<string, string | undefined>
+): Promise<string[]> => {
+  if (command.includes("/") || command.includes("\\")) return [];
+  if (!isWindows()) return listPosixPathCandidates(command, env.PATH || "");
+  const located = await runProcess("where.exe", [command], {
+    env,
+    timeoutMs: 3000,
+    useShell: false,
+  });
+  return located.ok ? parseWhereCandidates(located.stdout, normalizeMsys2Path) : [];
+};
+
+// #20452: a stale shim must not hide a working binary later on PATH.
+const healthcheckWithFallthrough = async (
+  command: string | null | undefined,
+  commandPath: string | null | undefined,
+  env: Record<string, string | undefined>,
+  healthTimeout: number
+) => {
+  let healthcheck = await checkRunnable(commandPath || command || "", env, healthTimeout);
+  let resolvedPath = commandPath;
+  if (!healthcheck.runnable && command) {
+    const alt = await findRunnableAlternate(
+      await listAlternateCandidates(command, env),
+      commandPath ?? null,
+      isSafePath,
+      (candidate) => checkRunnable(candidate, env, healthTimeout)
+    );
+    if (alt) {
+      healthcheck = alt.healthcheck as typeof healthcheck;
+      resolvedPath = alt.commandPath;
+    }
+  }
+  return { healthcheck, resolvedPath };
 };
 
 export const getCliRuntimeStatus = async (toolId: string) => {
@@ -1252,8 +1318,9 @@ export const getCliRuntimeStatus = async (toolId: string) => {
     };
   }
 
-  const healthcheck = await checkRunnable(
-    located.commandPath || command || "", // located + executable ⇒ commandPath set
+  const { healthcheck, resolvedPath } = await healthcheckWithFallthrough(
+    command,
+    located.commandPath,
     env,
     Number(tool.healthcheckTimeoutMs || 4000)
   );
@@ -1262,7 +1329,7 @@ export const getCliRuntimeStatus = async (toolId: string) => {
     runnable: healthcheck.runnable,
     version: healthcheck.version,
     command,
-    commandPath: located.commandPath,
+    commandPath: resolvedPath,
     reason: healthcheck.reason,
     runtimeMode,
     requiresBinary,

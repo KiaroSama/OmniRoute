@@ -4,46 +4,45 @@
 
 ---
 
-Àfiwé àwọn ẹ̀ya ara ní ojúlówó pẹ̀lú àwọn olulana AI orísun-ṣíṣí tó gbajúgbajà.
+Ifiwera ẹya ara ẹrọ pẹlu awọn olulana AI ìmọ-orisun olokiki.
 
-> **Ọ̀nà ìwádìí**: A ṣe àyẹ̀wò àwọn ibi ìpamọ́ kóòdù gbogbogbò ní 2026-Q2. Àwọn ẹ̀dà jẹ́ bí a ṣe ṣe àkójọ wọn.
-> Fi àwọn àtúnṣe ránṣẹ́ nípasẹ̀ PR — a fẹ́ kí èyí péye.
+> **Ilana** : Àkọsílẹ repos audited 2026-Q2. Awọn ẹya bi akojọ. Fi awọn atunṣe silẹ nipasẹ PR — a fẹ ki eyi jẹ deede.
 
-| Ẹ̀ya ara                                                 |                OmniRoute 3.8                 | LiteLLM 1.x  | OpenRouter (SaaS) |      Portkey      |
-| ------------------------------------------------------- | :------------------------------------------: | :----------: | :---------------: | :---------------: |
-| **Àwọn olùpèsè**                                        |                   **329**                    |     ~100     |        ~50        |        ~30        |
-| **Àwọn àkọọ́lẹ̀ kátálọ́ọ̀gù ọ̀fẹ́/tí kò nílò ìfàṣẹsí**        |                   **155**                    |     n/a      |      ìrékọjá      |        n/a        |
-| **Ó ṣeé gbàlejò fúnra ẹni**                             |                      ✅                      |      ✅      |        ❌         |      ⚠ ọlọ́wọ́      |
-| **Àwọn àkọọ́lẹ̀ kátálọ́ọ̀gù OAuth**                         |                    **23**                    |   apá kan    |        ❌         |        ❌         |
-| **Àwọn àkópọ̀ ìpadà-sẹ́yìn aládàáṣe**                     |                 **ọgbọ́n 19**                 | lórí ìpàtàkì |    lórí ìpele     |     pẹ̀lú ìwọ̀n     |
-| **Àkópọ̀ (pánẹ́ẹ̀lì tó ń ṣiṣẹ́ papọ̀ + àkópọ̀ onídájọ́)**      |                      ✅                      |      ❌      |        ❌         |        ❌         |
-| **Ìpadà-sẹ́yìn Ìpele 1/2/3 (alábàápín→olówó-pọ́ọ́kú→ọ̀fẹ́)** |                   ✅ + UI                    |   afọwọ́ṣe    |        n/a        |      afọwọ́ṣe      |
-| **Ìfúnpọ̀ token**                                        | àkójọpọ̀ ẹ́ńjìn 12 (RTK + Caveman + LLMLingua) |    kò sí     |       kò sí       |       kò sí       |
-| **Ìṣẹ̀dá onírúurú mídíà (ọ̀rọ̀/orin/fídíò)**               |                      ✅                      |      ❌      |      ìrékọjá      |        ❌         |
-| **Sẹ́fà MCP inú-ẹ̀rọ**                                    |         ✅ irinṣẹ́ 110, ìwọ̀n-ààyè 33          |      ❌      |        ❌         |        ❌         |
-| **Ìlànà A2A**                                           |                  ✅ ọgbọ́n 6                  |      ❌      |        ❌         |        ❌         |
-| **Ìrántí (FTS5 + vector)**                              |                      ✅                      |      ❌      |        ❌         |        ❌         |
-| **Àwọn ìdènà ààbò (PII, injection, ìríran)**            |                      ✅                      |   apá kan    |        ❌         |     ✅ ọlọ́wọ́      |
-| **Àwọn ìṣọ̀kan aṣojú cloud**                             |         Codex, Cursor, Devin, Jules          |      ❌      |        ❌         |        ❌         |
-| **Olùjá-circuit fún olùpèsè kọ̀ọ̀kan**                    |           ✅ ipò 3, ìmúpadàbọ̀ ọ̀lẹ            |    ìpìlẹ̀     |        ❌         |        ✅         |
-| **Ìfarapamọ́ ìtẹ̀wọ́-ọ́ TLS (JA3/JA4)**                     |                  ✅ wreq-js                  |      ❌      |        ❌         |        ❌         |
-| **Ìlànà eval**                                          |                  ✅ inú-ẹ̀rọ                  |      ❌      |        ❌         |      ⚠ ọlọ́wọ́      |
-| **Aṣojú MITM (ń dá Cursor/Antigravity dúró)**           |             ✅ orí ọ̀pọ̀ platform              |      ❌      |        ❌         |        ❌         |
-| **CLI pẹ̀lú àpótí ètò (kò sí Electron)**                 |                      ✅                      |      ❌      |        n/a        |        n/a        |
-| **Ìfàṣẹsí aládàáṣe CLI pẹ̀lú machine-ID**                |                      ✅                      |      ❌      |        n/a        |        n/a        |
-| **Pátákó ìṣàkóso**                                      |                  Next.js 16                  |    ìpìlẹ̀     | ohun-ìní aládàáni | ohun-ìní aládàáni |
-| **i18n**                                                |              **agbègbè èdè 42**              |      ❌      |        ❌         |         ⚠         |
-| **Àwọn ọgbọ́n aṣojú gbogbogbò (SKILL.md)**               |                    ✅ 45                     |      ❌      |        ❌         |        ❌         |
-| **Àtìlẹ́yìn tunnel (Cloudflared, Tailscale, Ngrok)**     |                      ✅                      |      ❌      |        n/a        |        n/a        |
-| **Ìwé-àṣẹ**                                             |                     MIT                      |     MIT      | ohun-ìní aládàáni | ohun-ìní aládàáni |
+| Ẹya ara ẹrọ                                            |                OmniRoute 3.8                | LiteLLM 1.x | OpenRouter (SaaS) | Portkey  |
+| ------------------------------------------------------ | :-----------------------------------------: | :---------: | :---------------: | :------: |
+| **Awọn olupese**                                       |                   **329**                   |    ~100     |        ~50        |   ~30    |
+| **Free/no-auth katalogi awọn titẹ sii**                |                   **155**                   |     n/a     |      irekọja      |   n/a    |
+| **Ti ara ẹni alejo gbigba**                            |                     ✅                      |     ✅      |        ❌         |  ⚠ san   |
+| **OAuth katalogi awọn titẹ sii**                       |                   **23**                    |   apa kan   |        ❌         |    ❌    |
+| **Aifọwọyi-fallback combos**                           |                **22 ogbon**                 | ayo-orisun  |   ipele-orisun    |  òṣuwọn  |
+| **Fusion (apakan to jọra + idajo kolaginni)**          |                     ✅                      |     ❌      |        ❌         |    ❌    |
+| **Ipadabọ ipele 1/2/3 ( ṣiṣe alabapin → poku → ọfẹ)**  |                   ✅ + UI                   |   Afowoyi   |        n/a        | Afowoyi  |
+| **Àmi funmorawon**                                     | 12-engine akopọ (RTK + Caveman + LLMLingua) |    ko si    |       ko si       |  ko si   |
+| **Iran multimodal (speech/music/video)**               |                     ✅                      |     ❌      |      irekọja      |    ❌    |
+| **Olupin MCP ti a ṣe sinu**                            |          ✅ 110 irinṣẹ, 33 scopes           |     ❌      |        ❌         |    ❌    |
+| **A2A Ilana**                                          |                 ✅ 6 ogbon                  |     ❌      |        ❌         |    ❌    |
+| **Iranti (FTS5 + fekito)**                             |                     ✅                      |     ❌      |        ❌         |    ❌    |
+| **Awọn ọna opopona (PII, abẹrẹ, iran)**                |                     ✅                      |   apa kan   |        ❌         |  ✅ san  |
+| **Awọsanma oluranlowo integrations**                   |         Codex, Cursor, Devin, Jules         |     ❌      |        ❌         |    ❌    |
+| **Olupin Circuit fun olupese**                         |         ✅ 3-ipinle, ọlẹ imularada          |    ipilẹ    |        ❌         |    ✅    |
+| **lilọ ni ifura ika TLS (JA3/JA4)**                    |                 ✅ wreq-js                  |     ❌      |        ❌         |    ❌    |
+| **Ilana Eval**                                         |                ✅ -itumọ ti                 |     ❌      |        ❌         |  ⚠ san   |
+| **MITM aṣoju (awọn idilọwọ Cursor/Antigravity)**       |              ✅ agbelebu-Syeed              |     ❌      |        ❌         |    ❌    |
+| **CLI pẹlu atẹ eto (ko si Electron)**                  |                     ✅                      |     ❌      |        n/a        |   n/a    |
+| **CLI ẹrọ-ID auto-auth**                               |                     ✅                      |     ❌      |        n/a        |   n/a    |
+| **Dasibodu**                                           |                 Next.js 16                  |    ipilẹ    |     ohun-ini      | ohun-ini |
+| **i18n**                                               |               **67 agbegbe**                |     ❌      |        ❌         |    ⚠     |
+| **Awọn ọgbọn aṣoju gbogbo eniyan (SKILL.md)**          |                    ✅ 45                    |     ❌      |        ❌         |    ❌    |
+| **Atilẹyin oju eefin (Cloudflared, Tailscale, Ngrok)** |                     ✅                      |     ❌      |        n/a        |   n/a    |
+| **Iwe-aṣẹ**                                            |                     MIT                     |     MIT     |     ohun-ini      | ohun-ini |
 
-## Ìgbà tí ó yẹ kí o yan OmniRoute
+## Nigbati lati yan OmniRoute
 
-- O ń gbàlejò fúnra rẹ, o sì fẹ́ **àgbègbè àtìlẹ́yìn olùpèsè tó pọ̀ jù** (olùpèsè 329, àkọọ́lẹ̀ kátálọ́ọ̀gù ọ̀fẹ́/tí kò nílò ìfàṣẹsí 155)
-- O nílò **sẹ́fà MCP inú-ẹ̀rọ** (àwọn irinṣẹ́ LLM, ìrántí, àti ọgbọ́n tí a ṣí sílẹ̀ gẹ́gẹ́ bí irinṣẹ́)
-- O nílò **ìlànà A2A** fún àwọn ìṣàn-iṣẹ́ láti aṣojú kan sí aṣojú mìíràn
-- O fẹ́ **ìfarapamọ́ ìtẹ̀wọ́-ọ́** (JA3/JA4) láti yẹra fún ìṣàwárí láti ọ̀dọ̀ àwọn CAPTCHA olùpèsè òkè
-- O nílò **àwọn ẹ̀ya ara ilé-iṣẹ́ ńlá** (àwọn ìdènà ààbò, àwọn eval, àkọsílẹ̀ àyẹ̀wò) láìsí owó SaaS
+- O ara-ogun ati ki o fẹ** o pọju agbegbe olupese** (awọn olupese 394, awọn titẹ sii katalogi 155 free/no-auth )
+- O nilo a** olupin MCP ti a ṣe sinu** (awọn irinṣẹ LLM, iranti, awọn ọgbọn ti a fi han bi awọn irinṣẹ)
+- O nilo**A2A Ilana** fun aṣoju-si-aṣoju workflows
+- O fẹ** lilọ ni ifura ika** (JA3/JA4) lati yago fun wiwa nipasẹ CAPTCHAs oke
+- O nilo** kekeke awọn ẹya ara ẹrọ** (guardrails, evals, se ayewo itọpa) lai a SaaS owo
 
 ## Ìgbà tí ó yẹ kí o yan LiteLLM
 

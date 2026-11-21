@@ -1,31 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Icon from "@/shared/components/Icon";
+import { Spinner } from "@/shared/components/Loading";
+
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import ReactMarkdown, { type Components } from "react-markdown";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@omniroute/ui-kit/table";
 import { Modal, Button } from "@/shared/components";
+
+/** A table of the guide: named for its scroll region (the markdown gives no title). */
+function GuideTable({ children }: { children?: ReactNode }) {
+  const tc = useTranslations("common");
+  return (
+    // Markdown tables keep the native scroller (no kit scrollbar label to translate here).
+    <Table
+      className="text-sm"
+      containerClassName="my-3"
+      persistentScrollbars={false}
+      scrollLabel={tc("table")}
+    >
+      {children}
+    </Table>
+  );
+}
 
 const markdownComponents: Components = {
   h1({ children }) {
-    return <h1 className="mb-4 text-xl font-bold text-text-main">{children}</h1>;
+    return <h1 className="mb-4 text-xl text-text-main">{children}</h1>;
   },
   h2({ children }) {
     return (
-      <h2 className="mt-6 mb-3 flex items-center gap-2 text-base font-bold text-text-main first:mt-0">
-        <span className="material-symbols-outlined text-[16px] text-primary">terminal</span>
+      <h2 className="mt-6 mb-3 flex items-center gap-2 text-base text-text-main first:mt-0">
+        <Icon name="terminal" size={16} className="text-primary" />
         {children}
       </h2>
     );
   },
   h3({ children }) {
-    return <h3 className="mt-4 mb-2 text-sm font-semibold text-text-main/80">{children}</h3>;
+    return <h3 className="mt-4 mb-2 text-sm text-text-main/80">{children}</h3>;
   },
   h4({ children }) {
-    return (
-      <h4 className="mt-3 mb-1 text-xs font-semibold uppercase tracking-wide text-text-muted">
-        {children}
-      </h4>
-    );
+    return <h4 className="mt-3 mb-1 text-xs uppercase text-text-muted">{children}</h4>;
   },
   p({ children }) {
     return <p className="mb-2 text-sm leading-relaxed text-text-muted">{children}</p>;
@@ -57,7 +80,7 @@ const markdownComponents: Components = {
       );
     }
     return (
-      <code className="rounded border border-black/5 bg-bg-subtle px-1 py-0.5 font-mono text-[12px] text-text-main dark:border-white/5">
+      <code className="rounded border border-border bg-bg-subtle px-1 py-0.5 font-mono text-[12px] text-text-main">
         {children}
       </code>
     );
@@ -77,23 +100,22 @@ const markdownComponents: Components = {
     );
   },
   table({ children }) {
-    return (
-      <div className="my-3 overflow-x-auto rounded-lg border border-border">
-        <table className="w-full text-sm">{children}</table>
-      </div>
-    );
+    return <GuideTable>{children}</GuideTable>;
   },
   thead({ children }) {
-    return <thead className="bg-bg-subtle text-xs text-text-muted">{children}</thead>;
+    return <TableHeader>{children}</TableHeader>;
+  },
+  tbody({ children }) {
+    return <TableBody>{children}</TableBody>;
   },
   tr({ children }) {
-    return <tr className="border-b border-border last:border-0">{children}</tr>;
+    return <TableRow>{children}</TableRow>;
   },
   th({ children }) {
-    return <th className="px-3 py-2 text-left font-semibold">{children}</th>;
+    return <TableHead>{children}</TableHead>;
   },
   td({ children }) {
-    return <td className="px-3 py-2 text-text-muted">{children}</td>;
+    return <TableCell className="text-text-muted">{children}</TableCell>;
   },
   hr() {
     return <hr className="my-4 border-border" />;
@@ -156,10 +178,8 @@ export default function CodexCliGuideModal({ isOpen, onClose }: CodexCliGuideMod
     <Modal isOpen={isOpen} title={text("codexCliGuideTitle", "Codex CLI Guide")} onClose={onClose}>
       <div className="max-h-[70vh] overflow-y-auto pr-1">
         {loading && (
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <span className="material-symbols-outlined animate-spin text-[28px] text-text-muted/50">
-              sync
-            </span>
+          <div role="status" className="flex flex-col items-center justify-center py-16 gap-3">
+            <Spinner decorative size="md" className="text-text-muted/50" />
             <p className="text-sm text-text-muted">
               {text("codexCliGuideLoading", "Loading guide...")}
             </p>
@@ -167,9 +187,7 @@ export default function CodexCliGuideModal({ isOpen, onClose }: CodexCliGuideMod
         )}
         {error && (
           <div className="flex flex-col items-center justify-center py-12 text-text-muted gap-3">
-            <span className="material-symbols-outlined text-[40px] text-red-500/50">
-              error_outline
-            </span>
+            <Icon name="error_outline" size={40} className="text-error/50" />
             <p className="text-sm">
               {text("codexCliGuideLoadFailed", "Could not load the guide.")}
             </p>

@@ -4,577 +4,627 @@
 
 ---
 
-> **Однострочное описание каждого каталога и файла в корне.**
-> Последнее обновление: 2026-06-28 — OmniRoute v3.8.40
+> **Что и где находится: каждый отслеживаемый каталог верхнего уровня и корневой файл с однострочной целью.** Последнее обновление: 13 ноября 2026 г. (OmniRoute v3.8.54)
 >
-> Используйте эту карту для быстрой навигации по кодовой базе. Для подробного изучения переходите по ссылкам на специализированную документацию.
+> Используйте эту карту, чтобы ориентироваться в базе кода, а затем следуйте ссылкам на специальную документацию. Количество файлов было измерено с помощью `git ls-files` на указанную выше дату. Они меняются почти с каждым выпуском, поэтому относитесь к ним как к порядку величины.
 
 ## Дерево верхнего уровня
 
 ```
 OmniRoute/
-├── src/                  # Приложение Next.js 16 (интерфейс + маршруты API + библиотеки + предметная область + сервер)
-├── open-sse/             # Рабочее пространство потокового движка (обработчики, исполнители, транслятор, сервер MCP)
-├── electron/             # Обёртка настольного приложения (Electron 41 + electron-builder 26.10)
-├── bin/                  # Точка входа CLI и обработчики команд
-├── scripts/              # Скрипты сборки, проверки, синхронизации и разовых задач
-├── docs/                 # Общедоступная документация (вы находитесь здесь)
-├── tests/                # Все наборы тестов (модульные, интеграционные, e2e, клиенты протоколов)
-├── public/               # Статические ресурсы Next.js, манифест PWA, сервис-воркер, значки
-├── config/               # Статическая конфигурация + состояние контрольных точек качества (i18n, payloadRules, quality/)
-├── images/               # Изображения для маркетинговых материалов / README
-├── @omniroute/           # Публикуемые сопутствующие пакеты (opencode-plugin, opencode-provider)
-├── skills/               # Пакеты навыков CLI/агентов (cli-* + omni-* + config-codex-cli)
-├── examples/             # Примеры плагинов + стартовый шаблон omniroute-cmd-hello
-├── contrib/              # Вклад сообщества (podman/)
-├── .source/              # Конфигурация исходников Fumadocs (source.config.mjs + server/browser/dynamic)
-├── .github/              # Рабочие процессы GitHub Actions + шаблоны задач + шаблон PR
-├── .husky/               # Git-хуки (pre-commit, pre-push)
-├── .claude/              # Слеш-команды Claude Code (на уровне проекта)
-├── .agents/              # Рабочие процессы и навыки Codex / универсальных агентов (зеркало .claude/)
-├── .vscode/              # Настройки рабочего пространства VS Code
-├── _ideia/               # Заметки по планированию (неформальные; не входят в поставку)
-├── _mono_repo/           # Исторические подпроекты (cloud, site, vscode-extension)
-├── _references/          # Доступные только для чтения клоны связанных OSS-проектов
-├── _tasks/               # Файлы отслеживания задач для отдельных выпусков (неформальные)
-├── .build/ .worktrees/ dist/   # Локальные временные данные сборки / рабочих деревьев git / результатов сборки (игнорируются git)
-├── .issues/              # Локальный кеш задач (игнорируется git)
-├── .playwright-mcp/      # Артефакты тестирования Playwright MCP
-├── coverage/             # Результаты покрытия c8 (игнорируются git)
-├── logs/                 # Журналы среды выполнения (игнорируются git)
-├── node_modules/         # Зависимости (игнорируются git)
-├── package/              # Промежуточная область npm pack (артефакт сборки)
-├── .next/                # Результаты сборки Next.js (игнорируются git)
-└── (корневые файлы — см. ниже)
+├── src/              # Next.js 16 app: dashboard, /api and /v1 routes, server libs, domain, i18n
+├── open-sse/         # Streaming engine workspace (@omniroute/open-sse): handlers, executors, translator, services, MCP server
+├── packages/         # npm workspaces: ui-kit (vendored Keak CI UI Kit) and browser-pool
+├── @omniroute/       # Separately published npm packages (OpenCode plugins and provider)
+├── bin/              # Published `omniroute` CLI, MCP/bridge entry points, self-host ops scripts (*.sh)
+├── electron/         # Desktop app (Electron main/preload + helpers + icons)
+├── public/           # Static assets served by Next.js (provider logos, PWA icons, sw.js, openapi.yaml copy)
+├── skills/           # Agent Skills (SKILL.md) served by /api/agent-skills, MCP and A2A
+├── tests/            # All test suites: unit, integration, e2e, homolog, fixtures, snapshots
+├── scripts/          # Build, quality gates, i18n, release, ops, perf and one-off scripts (allow-listed subfolders)
+├── config/           # Versioned config: i18n, payload rules, CLI manifest, quality-gate baselines, release inventories
+├── changelog.d/      # Per-PR changelog fragments, aggregated into CHANGELOG.md at release time
+├── docs/             # Public documentation (served at /docs via Fumadocs) + translated mirrors in docs/i18n/
+├── examples/         # Example plugins and quickstart clients
+├── deploy/           # Kubernetes deployment: Helm chart + Kustomize base/overlays
+├── docker/           # Auxiliary container images (not the main image, which is the root Dockerfile)
+├── contrib/          # Community recipes: Podman quadlets, VPS compose, Windows launchers, session-sync note
+├── .github/          # GitHub Actions workflows, composite actions, issue/PR templates, CODEOWNERS, labels
+├── .husky/           # Tracked git hooks: commit-msg, pre-commit, pre-push
+├── .vale/            # Vale prose-lint vocabulary (styles/Vocab/OmniRoute/accept.txt)
+├── .vscode/          # Shared VS Code workspace settings (settings.json)
+└── (root files — see below)
+```
+
+Локальные, сгенерированные или частные пути (все игнорируются git, никогда не фиксируются, далее не описываются):
+
+```
+node_modules/            # npm dependencies
+.build/                  # Next.js build output (default distDir .build/next, see next.config.mjs)
+dist/                    # npm staging directory assembled by scripts/build/prepublish.ts
+.source/                 # fumadocs-mdx output that feeds the /docs viewer
+.husky/_/                # Husky runtime generated on install (core.hooksPath target)
+coverage/ logs/ test-results/ playwright-report/   # coverage, runtime logs, Playwright output
+.env                     # local secrets generated from .env.example
+_*/                      # private local-only folders (anchored /_* ignore); never tracked
+.claude/ .agents/        # local AI-assistant state and skills; never tracked
 ```
 
 ---
 
 ## Корневые файлы
 
-| Файл                                        | Назначение                                                                                         |
-| ------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| **README.md**                               | Маркетинговая посадочная страница + быстрый старт + матрица возможностей (см. также `llm.txt`)     |
-| **CHANGELOG.md**                            | Журнал изменений для каждого релиза (автоматически создаётся навыком `/version-bump-cc`)           |
-| **LICENSE**                                 | Текст лицензии MIT                                                                                 |
-| **CLAUDE.md**                               | Правила проекта для агентов Claude Code (строгие правила, соглашения, сценарии)                    |
-| **AGENTS.md**                               | То же, что и CLAUDE.md, но для ИИ-агентов, отличных от Claude (Codex, Cursor и т. д.)              |
-| **GEMINI.md**                               | Краткие правила для агентов на базе Gemini (подмножество CLAUDE.md)                                |
-| **CONTRIBUTING.md**                         | Руководство для участников: настройка, conventional commits, тестирование, процесс PR              |
-| **SECURITY.md**                             | Политика сообщения об уязвимостях, поддерживаемые версии, модель угроз                             |
-| **CODE_OF_CONDUCT.md**                      | Contributor Covenant — требования к поведению участников сообщества                                |
-| **llm.txt**                                 | Текстовая посадочная страница, оптимизированная для поисковых роботов LLM (SEO для ИИ-ассистентов) |
-| **package.json**                            | Манифест npm, скрипты, зависимости, движки, порог покрытия c8                                      |
-| **package-lock.json**                       | Зафиксированное дерево зависимостей                                                                |
-| **tsconfig.json**                           | Корневая конфигурация TypeScript                                                                   |
-| **tsconfig.typecheck-core.json**            | Конфигурация проверки типов для ядра `src/`                                                        |
-| **tsconfig.typecheck-noimplicit-core.json** | Строгая проверка типов (`noImplicitAny`)                                                           |
-| **tsconfig.tsbuildinfo**                    | Кеш инкрементальной сборки TS (игнорируется Git)                                                   |
-| **next.config.mjs**                         | Конфигурация сборки Next.js 16 (автономный вывод)                                                  |
-| **next-env.d.ts**                           | Автоматически создаваемые Next.js типы переменных окружения                                        |
-| **eslint.config.mjs**                       | Плоская конфигурация ESLint (правила для каждой области проекта)                                   |
-| **prettier.config.mjs**                     | Правила форматирования Prettier                                                                    |
-| **postcss.config.mjs**                      | Конфигурация PostCSS для конвейера Tailwind/CSS                                                    |
-| **playwright.config.ts**                    | Конфигурация сквозных тестов Playwright                                                            |
-| **vitest.config.ts**                        | Конфигурация Vitest (набор тестов по умолчанию)                                                    |
-| **vitest.mcp.config.ts**                    | Конфигурация Vitest для наборов тестов MCP-сервера / autoCombo / кеша                              |
-| **sonar-project.properties**                | Конфигурация SonarQube/SonarCloud (качество кода)                                                  |
-| **Dockerfile**                              | Многоэтапная сборка Docker (builder → runner-base → runner-cli)                                    |
-| **docker-compose.yml**                      | Конфигурация Compose для разработки с 4 профилями (base, cli, host, cliproxyapi) + сервис Redis    |
-| **docker-compose.prod.yml**                 | Конфигурация Compose для рабочей среды (порт 20130, Redis, именованные тома)                       |
-| **.dockerignore**                           | Файлы, исключённые из контекста Docker                                                             |
-| **fly.toml**                                | Конфигурация развёртывания Fly.io (регион `sin`, порт 20128, том /data)                            |
-| **.env.example**                            | Шаблон файла переменных окружения (автоматически копируется в `.env` при первой установке)         |
-| **.gitignore**                              | Шаблоны игнорирования Git                                                                          |
-| **.npmignore**                              | Список исключений при публикации npm                                                               |
-| **.npmrc**                                  | Конфигурация npm (реестр, политика lock-файлов)                                                    |
-| **.node-version**                           | Закреплённая версия Node (используется инструментами, совместимыми с nvm)                          |
-| **.nvmrc**                                  | Закреплённая версия Node для nvm                                                                   |
-| **eslint.complexity.config.mjs**            | Конфигурация ESLint для контроля сложности (`scripts/check/check-complexity.mjs --config`)         |
-| **eslint.sonarjs.config.mjs**               | Конфигурация ESLint для правил SonarJS (когнитивная сложность / дублирование)                      |
-| **source.config.ts**                        | Конфигурация источника Fumadocs `defineDocs` (формирует `.source/`)                                |
-| **knip.json**                               | Конфигурация Knip — неиспользуемые файлы/экспорты/зависимости (для проверки мёртвого кода)         |
-| **stryker.conf.json**                       | Конфигурация мутационного тестирования Stryker                                                     |
-| **.size-limit.json**                        | Конфигурация бюджета размера бандла size-limit                                                     |
-| **promptfooconfig.yaml**                    | Конфигурация оценки promptfoo                                                                      |
-| **.gitleaks.toml**                          | Набор правил gitleaks для сканирования секретов                                                    |
-| **.zizmor.yml**                             | Конфигурация zizmor для проверки безопасности GitHub Actions                                       |
-| **socket.yml**                              | Конфигурация Socket.dev для защиты цепочки поставок                                                |
-| **news.json**                               | Локализованная лента объявлений v2; элемент запуска Radar поставляется неактивным                  |
-| **flake.nix** / **flake.lock**              | Определение dev-оболочки Nix + файл блокировки                                                     |
-| **.env**                                    | Локальные секреты (игнорируются Git — генерируется из `.env.example`)                              |
+Все отслеживаемые файлы в корне репозитория (`git ls-files | grep -v /`), сгруппированные по функциям.
 
-> **Перемещено из корневого каталога в v3.8.26 (для упорядочивания):**
->
-> - **→ `config/quality/`:** `quality-baseline.json`, `complexity-baseline.json`, `duplication-baseline.json`, `file-size-baseline.json`, `test-discovery-baseline.json`, `dependency-allowlist.json`, `.license-allowlist.json` и генерируемый файл `quality-metrics.json` (игнорируется Git). См. [`## config/`](#config--static-configs--quality-gate-state).
+### Проектная документация
+
+| Файл                     | Цель                                                                                    |
+| ------------------------ | --------------------------------------------------------------------------------------- |
+| `README.md`              | Целевая страница: обзор функций, быстрый старт, способы установки                       |
+| `CHANGELOG.md`           | Журнал изменений для каждой версии (фрагменты из `changelog.d/` собраны здесь)          |
+| `ROADMAP.md`             | Общественная дорожная карта                                                             |
+| `LICENSE`                | лицензия MIT                                                                            |
+| `THIRD_PARTY_NOTICES.md` | Уведомления о связанном стороннем коде (например, привязках wreq-js)                    |
+| `CONTRIBUTING.md`        | Руководство для участников: настройка, обычные фиксации, матрица тестирования, поток PR |
+| `SECURITY.md`            | Политика сообщения об уязвимостях                                                       |
+| `CODE_OF_CONDUCT.md`     | Ожидания от поведения сообщества                                                        |
+| `llm.txt`                | Краткое описание проекта в виде простого текста для сканеров и помощников LLM           |
+
+### Инструкции AI-помощника
+
+| Файл        | Цель                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------ |
+| `AGENTS.md` | Единый источник истины для каждого помощника AI : соглашения, контроль качества, жесткие правила |
+| `CLAUDE.md` | Дельты, специфичные для Клода Кода; импорт `AGENTS.md`                                           |
+| `GEMINI.md` | Дельты, характерные для Близнецов; указывает на `AGENTS.md`                                      |
+
+Рядом с кодом, который они описывают, также существуют вложенные руководства: `open-sse/services/AGENTS.md` и `src/lib/db/AGENTS.md`.
+
+### Манифесты пакетов и набор инструментов Node
+
+| Файл                       | Цель                                                                                             |
+| -------------------------- | ------------------------------------------------------------------------------------------------ |
+| `package.json`             | Манифест npm: скрипты, зависимости, `engines`, `workspaces`, опубликованный `files`              |
+| `package-lock.json`        | Заблокированное дерево зависимостей                                                              |
+| `pnpm-workspace.yaml`      | список рабочих пространств pnpm (`packages/*`, `open-sse`) и список разрешений встроенной сборки |
+| `.npmrc` / `.npmignore`    | Конфигурация npm и исключения публикации                                                         |
+| `.node-version` / `.nvmrc` | Пины версии узла для менеджеров версий                                                           |
+| `flake.nix` / `flake.lock` | Оболочка Nix dev и ее блокировка                                                                 |
+| `Makefile`                 | Ярлыки `make`, которые делегируют скриптам npm                                                   |
+
+### TypeScript, Next.js и сборка документации
+
+| Файл                                      | Цель                                                                               |
+| ----------------------------------------- | ---------------------------------------------------------------------------------- |
+| `tsconfig.json`                           | Базовая конфигурация TypeScript и псевдонимы путей (`@/*`, `@omniroute/open-sse`)  |
+| `tsconfig.typecheck-core.json`            | `npm run typecheck:core` кусочек                                                   |
+| `tsconfig.typecheck-noimplicit-core.json` | фрагмент `npm run typecheck:noimplicit:core` (строгий `noImplicitAny`)             |
+| `tsconfig.typecheck-api.json`             | Срез проверки типа API-маршрута (`scripts/check/check-api-typecheck.mjs`)          |
+| `tsconfig.typecheck-dashboard.json`       | Срез проверки типа информационной панели (`npm run check:dashboard-typecheck`)     |
+| `tsconfig.build.json`                     | Проверка типа продукции (`npm run typecheck:build`, `check:build-typecheck`)       |
+| `tsconfig.mitm.json`                      | Конфигурация сборки MITM используемая `scripts/build/buildMitm.mjs`                |
+| `next.config.mjs`                         | Конфигурация Next.js 16 (автономный вывод, псевдонимы профилей сборки)             |
+| `source.config.ts`                        | Конфигурация Fumadocs `defineDocs` : какие разделы `docs/` компилируются в `/docs` |
+| `postcss.config.mjs`                      | конвейер PostCSS / Tailwind                                                        |
+
+### Линт и форматирование
+
+| Файл                                      | Цель                                                                                                      |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `eslint.config.mjs`                       | Основная плоская конфигурация ESLint (`npm run lint`, с `config/quality/eslint-suppressions.json`)        |
+| `eslint.complexity-ratchets.config.mjs`   | Автономная конфигурация, используемая храповиками сложности и когнитивной сложности за один проход ESLint |
+| `eslint.complexity.config.mjs`            | Автономная конфигурация только с ядром `complexity` + `max-lines-per-function` (используется в тестах)    |
+| `prettier.config.mjs` / `.prettierignore` | правила и исключения Prettier                                                                             |
+| `.editorconfig`                           | Значения редактора по умолчанию (отступ в 2 пробела)                                                      |
+| `.markdownlint.json`                      | Консультативный анализ уценки (`npm run lint:md`)                                                         |
+| `.vale.ini`                               | Консультативный прозаический ворс (`npm run lint:prose`), словарь в `.vale/`                              |
+
+### Тесты, оценка и покрытие
+
+| Файл                          | Цель                                                                                                   |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `vitest.config.ts`            | jsdom Vitest suite: `npm run test:vitest:ui` (панель мониторинга `.tsx`, хуки, тесты memory/skills )   |
+| `vitest.mcp.config.ts`        | Пакет Node Vitest : `npm run test:vitest` (сервер MCP, autoCombo, комбо, API `.spec.ts`)               |
+| `vitest.quarantine.config.ts` | Запускает помещенные в карантин файлы, перечисленные в `config/quality/vitest-exclusions.json`         |
+| `vitest.e2e-live.config.ts`   | Пакеты Vitest для живых серверов (`tests/e2e/ecosystem.test.ts`, `tests/e2e/protocol-clients.test.ts`) |
+| `playwright.config.ts`        | Playwright E2E (`tests/e2e/**/*.spec.ts`, `npm run test:e2e`)                                          |
+| `stryker.conf.mjs`            | Тестирование мутаций Страйкера (`npm run test:mutation`; вычисляет `tap.testFiles` из `mutate`)        |
+| `stryker.disablebail.mjs`     | Вариант Stryker без залога, для измерения избыточности испытаний                                       |
+| `promptfooconfig.yaml`        | Promptfoo Пакет LLM-безопасности                                                                       |
+| `codecov.yml`                 | Настройки покрытия исправлений Codecov                                                                 |
+
+### Docker и развертывание
+
+| Файл                              | Цель                                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------------------- |
+| `Dockerfile`                      | Многоэтапное изображение (`builder` → `runner-base` → `runner-web` / `runner-cli*`)         |
+| `Dockerfile.bun`                  | Альтернативный образ среды выполнения Bun (создан `docker-publish.yml`)                     |
+| `docker-compose.yml`              | Создание по умолчанию с профилями (база, веб, cli, хост, память, cliproxyapi,…)             |
+| `docker-compose.prod.yml`         | Отдельный экземпляр производственного моментального снимка на порту 20130.                  |
+| `docker-compose.selfhost.yml`     | Самостоятельный хостинг с обратной связью одной командой (в паре с `.env.selfhost.example`) |
+| `docker-compose.ollama-local.yml` | Docker OmniRoute разговаривает с Ollama, родным для хоста                                   |
+| `.dockerignore`                   | исключения контекста сборки Docker                                                          |
+| `fly.toml`                        | Конфигурация приложения Fly.io (порт 20128, том `/data` )                                   |
+
+### Боты безопасности, цепочки поставок и репозитория
+
+| Файл                                         | Цель                                                                                      |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `.gitleaks.toml`                             | правила и белые списки секретного сканирования gitleaks                                   |
+| `.trivyignore`                               | Подавление допустимых рисков для сканирования образа контейнера                           |
+| `.zizmor.yml`                                | zizmor GitHub Действия конфигурация аудита безопасности                                   |
+| `socket.yml`                                 | Конфигурация приложения Socket.dev (путь игнорируется, а не шлюз CI )                     |
+| `sonar-project.properties`                   | конфигурация проекта SonarQube/SonarCloud                                                 |
+| `knip.json`                                  | Удалить неиспользуемую конфигурацию files/exports/deps (каналы `npm run check:dead-code`) |
+| `.size-limit.json`                           | Пакетные бюджеты                                                                          |
+| `.mergify.yml`                               | Конфигурация очереди слияния Mergify                                                      |
+| `.coderabbit.yaml`                           | конфигурация проверки CodeRabbit                                                          |
+| `.cbmignore`                                 | Список игнорирования для индекса кода codebase-memory-mcp                                 |
+| `.gitignore` / `.gitattributes` / `.mailmap` | Игнорировать правила, окончания строк LF для скриптов, канонические личности авторов.     |
+
+### Шаблоны среды, состояние и каналы
+
+| Файл                        | Цель                                                                                    |
+| --------------------------- | --------------------------------------------------------------------------------------- |
+| `.env.example`              | Шаблон скопирован в `.env` при первой установке; справочный список переменных окружения |
+| `.env.selfhost.example`     | Шаблон для `docker-compose.selfhost.yml`                                                |
+| `.env.homolog.example`      | Шаблон для бегуна омологации (`npm run homolog`)                                        |
+| `.env.devin-bridge.example` | Пример env-файла для настройки моста Devin                                              |
+| `.i18n-state.json`          | Инкрементное состояние перевода (хэши источника для каждого документа и локали)         |
+| `news.json`                 | Локализованный канал объявлений (схема v2), считываемый с панели управления             |
 
 ---
 
-## `src/` — приложение Next.js
+## Приложение `src/` — Next.js
+
+Около 4550 отслеживаемых файлов. Псевдоним пути `@/*` → `src/*`.
 
 ```
 src/
-├── app/                 # App Router (страницы + маршруты API + страницы состояния + лендинг)
-├── lib/                 # Основные библиотеки / доменные модули (80 подкаталогов + ~70 файлов верхнего уровня)
-├── domain/              # Чистая доменная логика (механизм политик, резервирование, стоимость, блокировка, comboResolver, оценка)
-├── server/              # Только серверные модули (конвейер авторизации, CORS, ПО промежуточного слоя аутентификации) — нельзя импортировать в клиент
-├── shared/              # Общий код для сервера и клиента, когда это безопасно (константы, типы, валидация, контракты, утилиты)
-├── i18n/                # Конфигурация next-intl + JSON-файлы сообщений для каждой локали (42 локали)
-├── middleware/          # ПО промежуточного слоя Next.js (обогащение запросов, определение локали)
-├── mitm/                # Ядро MITM-прокси: генерация/установка сертификатов, обработчики, цели, инспектор, маски, сквозная передача
-│   ├── handlers/        # 9 классов обработчиков IDE-агентов, расширяющих MitmHandlerBase (antigravity, kiro, copilot, codex, cursor, zed, claudeCode, openCode, trae)
-│   └── inspector/       # Уровень захвата трафика: буфер (кольцевой, в памяти), sseMerger, conversationNormalizer, kindDetector, contextKey, httpProxyServer, systemProxyConfig
-├── models/              # Связующий код адаптеров моделей (устаревший слой совместимости)
-├── scripts/             # Внутренние скрипты обслуживания (например, backfillAggregation)
-├── sse/                 # Устаревшие обработчики/сервисы SSE (chat.ts, chatHelpers.ts, services/auth.ts)
-├── store/               # Устаревшее хранилище в памяти (поэтапно заменяется на src/lib/db)
-├── types/               # Общие файлы типов TS
-├── instrumentation.ts   # Перехватчик телеметрии Next.js (браузер + edge-среда)
-├── instrumentation-node.ts  # Инструментирование только для Node
-└── proxy.ts             # Входной слой совместимости HTTP-прокси
+├── app/                  # App Router: pages, layouts and route handlers (file-convention loaded)
+│   ├── (dashboard)/      # Route group for the dashboard: dashboard/<section>/ pages + home widgets
+│   ├── api/              # HTTP routes: v1/ (OpenAI-compatible), v1beta/ (Gemini-style), management routes
+│   ├── docs/             # Embedded docs viewer (lib/openapi.generated.ts is generated)
+│   ├── a2a/ .well-known/ # A2A JSON-RPC entry point and Agent Card discovery
+│   ├── healthz/ livez/ readyz/ status/   # Health probes and status page
+│   ├── landing/ login/ auth/ authorize/ callback/ connect/   # Public, auth and OAuth pages
+│   ├── miniapp/          # Telegram Mini App page
+│   └── 400/ … 503/       # Static HTTP error pages
+├── lib/                  # Server-side libraries and domain modules (largest folder)
+├── shared/               # Code shared by server and client: components, constants, validation, utils
+├── sse/                  # Next.js side of the SSE pipeline: handlers/ (chat*), services/ (auth, leases, quotas)
+├── mitm/                 # MITM / TPROXY capture: cert/, dns/, handlers/, targets/, inspector/, tproxy/ (C addon)
+├── server/               # Server-only: authz/ (route guard pipeline), auth/, cors/, origin/, ws/
+├── domain/               # Policy engine, fallback, cost rules, lockout, quota cache, assessment/
+├── i18n/                 # next-intl: messages/ (67 locales), global-error-messages/ (generated), routeNamespaces.generated.json
+├── store/                # Zustand client stores (theme, notifications, …)
+├── hooks/                # Client hooks (live dashboard, compression preview, breaker health)
+├── types/                # Ambient and shared type declarations
+├── models/               # Compatibility barrel re-exporting db functions
+├── middleware/           # promptInjectionGuard.ts (facade over the guardrail system)
+├── scripts/              # backfillAggregation.ts (`npm run backfill-aggregation`)
+├── proxy.ts              # Next.js 16 proxy: headless gate + authz pipeline for dashboard, /api and /v1-style paths
+├── instrumentation.ts    # Next.js instrumentation hook (delegates Node-only work)
+└── instrumentation-node.ts   # Node-only startup work
 ```
 
-### `src/app/` — App Router (Next.js 16)
+### `src/app/` — Маршрутизатор приложений
 
-| Путь                                                                         | Назначение                                                                                                                                                                                                                                                                                                                    |
-| ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/api/v1/`                                                                | Публичный API, совместимый с OpenAI (~25 подмаршрутов: chat, completions, embeddings, files, batches, audio, images, videos, music, rerank, moderations, search, ws, agents, accounts, providers и т. д.)                                                                                                                     |
-| `app/api/v1beta/`                                                            | Конечные точки API в стиле Gemini                                                                                                                                                                                                                                                                                             |
-| `app/api/playground/`                                                        | Маршруты Playground Studio: `improve-prompt/` (POST — переформулировка промпта с помощью LLM), `presets/` (GET списка / POST для создания), `presets/[id]/` (GET / PUT / DELETE) — см. `docs/frameworks/PLAYGROUND_STUDIO.md`                                                                                                 |
-| `app/api/` (не v1)                                                           | Маршруты управления и администрирования (~60 каталогов: providers, combos, settings, mcp, a2a, evals, memory, skills, webhooks, compliance, resilience, monitoring, tunnels, cli-tools и т. д.)                                                                                                                               |
-| `app/api/tools/agent-bridge/`                                                | REST API AgentBridge — 12 маршрутов (управление сервером, состояние агента/DNS/сопоставления, обход, сертификат, вышестоящий центр сертификации). LOCAL_ONLY + SPAWN_CAPABLE. См. `docs/frameworks/AGENTBRIDGE.md §7`.                                                                                                        |
-| `app/api/tools/traffic-inspector/`                                           | REST + WS API Traffic Inspector — более 16 маршрутов (requests, sessions, hosts, capture-modes, export, ws). LOCAL_ONLY + SPAWN_CAPABLE. См. `docs/frameworks/TRAFFIC_INSPECTOR.md §8`.                                                                                                                                       |
-| `app/a2a/`                                                                   | Точка входа A2A JSON-RPC 2.0 (`POST /a2a`)                                                                                                                                                                                                                                                                                    |
-| `app/.well-known/agent.json/`                                                | Карточка агента A2A (обнаружение)                                                                                                                                                                                                                                                                                             |
-| `app/(dashboard)/dashboard/`                                                 | Страницы пользовательского интерфейса панели мониторинга (более 50 разделов, ~118 файлов page.tsx: providers, combos, settings, memory, skills, webhooks, evals, audit, batch, cache, costs, health, system, activity и т. д.)                                                                                                |
-| `app/(dashboard)/dashboard/search-tools/`                                    | Интерфейс Search Tools Studio (3 вкладки: Search/Scrape/Compare + SearchConceptCard + ProviderCatalog) — см. `docs/frameworks/SEARCH_TOOLS_STUDIO.md`                                                                                                                                                                         |
-| `app/(dashboard)/dashboard/memory/`                                          | Memory Studio (план 21): `page.tsx` (оболочка с 3 вкладками), `components/` (MemoryConceptCard, MemoryEngineStatus, EmbeddingSourceSelector, EditMemoryModal, RetrievePreview, QdrantConfigCard, RerankConfigCard), `components/tabs/` (MemoriesTab, PlaygroundTab, EngineTab), `hooks/` (useEngineStatus, useMemorySettings) |
-| `app/(dashboard)/dashboard/tools/agent-bridge/`                              | Страница панели мониторинга AgentBridge — карточка сервера, 9 карточек агентов, мастер настройки, сопоставление моделей, список обхода. Интернационализация PT-BR + EN. См. `docs/frameworks/AGENTBRIDGE.md`.                                                                                                                 |
-| `app/(dashboard)/dashboard/tools/traffic-inspector/`                         | Страница панели мониторинга Traffic Inspector — разделённый интерфейс DevTools, 7 вкладок с подробными данными, 4 переключателя режимов захвата, средство записи сеансов, цветовое выделение контекста. Интернационализация PT-BR + EN. См. `docs/frameworks/TRAFFIC_INSPECTOR.md`.                                           |
-| `app/(dashboard)/dashboard/activity/`                                        | Страница ленты активности (группа B): `page.tsx` (сервер) + `ActivityFeedClient.tsx` + `components/{ActivityFeed,ActivityItem,DayHeader,EventTypeFilter}.tsx` — см. `docs/architecture/MONITORING_SECTIONS.md`                                                                                                                |
-| `app/(dashboard)/dashboard/costs/quota-share/`                               | Страница совместного использования квот (группа B): `QuotaSharePageClient.tsx` + `components/{PoolCard,DimensionBar,AllocationTable,BurnRateChart,QuotaConceptCard,CreatePoolModal,EditAllocationsModal}.tsx` + `hooks/{usePools,usePoolUsage,useLocalStoragePoolMigration}.ts`                                               |
-| `app/(dashboard)/dashboard/costs/quota-share/plans/`                         | Страница настройки тарифного плана провайдера (группа B): `page.tsx` + `ProviderPlanConfigClient.tsx` — переопределение измерений квоты для каждого подключения                                                                                                                                                               |
-| `app/docs/`                                                                  | Встроенный просмотрщик документации (отображает `docs/*.md`)                                                                                                                                                                                                                                                                  |
-| `app/landing/`                                                               | Маркетинговая целевая страница                                                                                                                                                                                                                                                                                                |
-| `app/login/`, `forgot-password/`, `forbidden/`                               | Страницы, связанные с аутентификацией                                                                                                                                                                                                                                                                                         |
-| `app/{400,401,403,408,429,500,502,503}/`                                     | Страницы ошибок HTTP                                                                                                                                                                                                                                                                                                          |
-| `app/maintenance/`, `offline/`, `status/`, `privacy/`, `terms/`, `callback/` | Статические страницы и страницы состояния                                                                                                                                                                                                                                                                                     |
-| `app/layout.tsx`, `page.tsx`, `manifest.ts`, `globals.css`                   | Корневой макет, главная страница, манифест PWA, глобальные стили CSS                                                                                                                                                                                                                                                          |
-| `app/error.tsx`, `global-error.tsx`, `not-found.tsx`, `loading.tsx`          | Границы ошибок                                                                                                                                                                                                                                                                                                                |
+| Путь                                                                | Цель                                                                                                                                                                                                       |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/api/v1/`                                                       | Публичный OpenAI-совместимый API: чат, дополнения, ответы, сообщения, встраивания, изображения, аудио, видео, музыка, изменение рейтинга, модерация, поиск, файлы, пакеты, ws, модели,…                    |
+| `app/api/v1beta/`                                                   | Конечные точки в стиле Gemini                                                                                                                                                                              |
+| `app/api/` (другие папки)                                           | Маршруты управления и администрирования: поставщики, комбинации, настройки, ключи, использование, журналы, mcp, a2a, acp, память, навыки, оценки, веб-перехватчики, туннели, плагины, радар, инструменты,… |
+| `app/api/tools/agent-bridge/`                                       | AgentBridge REST API — см [AGENTBRIDGE.md](../frameworks/AGENTBRIDGE.md)                                                                                                                                   |
+| `app/api/tools/traffic-inspector/`                                  | Инспектор дорожного движения REST API — см. [TRAFFIC_INSPECTOR.md](../frameworks/TRAFFIC_INSPECTOR.md)                                                                                                     |
+| `app/(dashboard)/dashboard/`                                        | Одна папка на каждый раздел панели управления (провайдеры, комбинации, журналы, использование, затраты, кеш, сжатие, память, игровая площадка, инструменты поиска, настройки, инструменты и т. д.)         |
+| `app/(dashboard)/home/`                                             | Главный экран и его виджеты                                                                                                                                                                                |
+| `app/docs/`                                                         | Средство просмотра документов, отображающее разделы Fumadocs, перечисленные в `source.config.ts`                                                                                                           |
+| `app/layout.tsx`, `page.tsx`, `manifest.ts`, `globals.css`          | Корневой макет, корневая запись (перенаправление), манифест PWA, глобальный CSS                                                                                                                            |
+| `app/error.tsx`, `global-error.tsx`, `not-found.tsx`, `loading.tsx` | Границы ошибок и резервные варианты                                                                                                                                                                        |
 
-### `src/lib/` — Основные библиотеки (~50 модулей)
+Маршруты API следуют `Route → CORS → Zod validation → optional auth → policy → handler`; см. [ARCHITECTURE.md](ARCHITECTURE.md) и [API_REFERENCE](../reference/API_REFERENCE.md)
 
-| Модуль                                   | Назначение                                                                                                                                                                                                                                                                                                                    |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `a2a/`                                   | Менеджер задач протокола A2A, навыки (5), потоковая передача                                                                                                                                                                                                                                                                  |
-| `acp/`                                   | Реестр CLI-агентов (локальное обнаружение CLI — см. `docs/frameworks/AGENT_PROTOCOLS_GUIDE.md`)                                                                                                                                                                                                                               |
-| `api/`                                   | Общие вспомогательные средства API (`requireManagementAuth`, валидация)                                                                                                                                                                                                                                                       |
-| `auth/`                                  | Сеансы, хеширование паролей, проверка токенов                                                                                                                                                                                                                                                                                 |
-| `batches/`                               | Обработчики OpenAI Batches API                                                                                                                                                                                                                                                                                                |
-| `catalog/`                               | Валидация каталога провайдеров с помощью Zod + определение возможностей                                                                                                                                                                                                                                                       |
-| `cloudAgent/`                            | Облачные агенты (Codex Cloud, Devin, Jules) — см. `docs/frameworks/CLOUD_AGENT.md`                                                                                                                                                                                                                                            |
-| `combos/`                                | Разрешение комбинаций + вспомогательные средства изменения порядка                                                                                                                                                                                                                                                            |
-| `audit/`                                 | Вспомогательные средства ленты активности: `highLevelActions.ts` (список разрешённых действий + `isHighLevelAction()`), `activityIcons.ts` (сопоставление действия со значком/глаголом), `timeline.ts` (groupByDay/relativeTime) — см. `docs/architecture/MONITORING_SECTIONS.md`                                             |
-| `compliance/`                            | Журнал аудита + аудит провайдеров — см. `docs/security/COMPLIANCE.md`                                                                                                                                                                                                                                                         |
-| `compression/`                           | Связующий слой движка сжатия (движки находятся в `open-sse/services/compression/`)                                                                                                                                                                                                                                            |
-| `config/`                                | Вспомогательные средства конфигурации среды выполнения                                                                                                                                                                                                                                                                        |
-| `db/`                                    | Более 120 модулей БД предметных областей + 168 миграций (для работы с SQLite всегда используйте их)                                                                                                                                                                                                                           |
-| `quota/`                                 | Механизм распределения квот: `dimensions.ts` (типы/Zod), `types.ts` (интерфейс QuotaStore), `sqliteQuotaStore.ts`, `redisQuotaStore.ts`, `storeFactory.ts`, `fairShare.ts`, `burnRate.ts`, `planResolver.ts`, `planRegistry.ts`, `saturationSignals.ts`, `enforce.ts`, `spendRecorder.ts` — см. `docs/routing/QUOTA_SHARE.md` |
-| `radar/`                                 | Клиент каталога бесплатных моделей Radar: `feedSchema.ts`, `pinnedKeys.ts`, `verify.ts`, `sync.ts`, `applyFeed.ts`, `index.ts` (`getRadarCatalog()`) — см. `docs/frameworks/RADAR.md`                                                                                                                                         |
-| `display/`                               | Вспомогательные средства форматирования интерфейса (стоимость, задержка и т. д.)                                                                                                                                                                                                                                              |
-| `embeddings/`                            | Вспомогательные средства сервиса эмбеддингов                                                                                                                                                                                                                                                                                  |
-| `env/`                                   | Разбор и проверка переменных окружения                                                                                                                                                                                                                                                                                        |
-| `evals/`                                 | Фреймворк оценивания (наборы тестов, исполнитель, среда выполнения) — см. `docs/frameworks/EVALS.md`                                                                                                                                                                                                                          |
-| `guardrails/`                            | Маскирование персональных данных, защита от инъекций в промпты, мост для обработки изображений — см. `docs/security/GUARDRAILS.md`                                                                                                                                                                                            |
-| `jobs/`                                  | Фоновые задачи (аналогичные cron)                                                                                                                                                                                                                                                                                             |
-| `memory/`                                | Диалоговая память (гибридный RRF на основе SQLite FTS5 и sqlite-vec + Qdrant второго уровня) — см. `docs/frameworks/MEMORY.md`                                                                                                                                                                                                |
-| `memory/embedding/`                      | Слой эмбеддингов из нескольких источников: `index.ts` (модуль разрешения), `remote.ts`, `staticPotion.ts`, `transformersLocal.ts`, `cache.ts`, `types.ts` (план 21)                                                                                                                                                           |
-| `memory/vectorStore.ts`                  | Обёртка для sqlite-vec v0.1.9 — полный перебор KNN + гибридный RRF (FTS5 + векторы, k=60). Ленивая инициализация, корректно снижает функциональность при недоступности sqlite-vec. (план 21)                                                                                                                                  |
-| `memory/reindex.ts`                      | `runReindexBatch()` — обрабатывает в фоновом режиме записи памяти с `needs_reindex=1`; вызывается через `POST /api/memory/reindex` и механизм ленивого заполнения. (план 21)                                                                                                                                                  |
-| `monitoring/`                            | Проверки работоспособности, отправка метрик                                                                                                                                                                                                                                                                                   |
-| `oauth/`                                 | Потоки OAuth/импорта для 22 модулей провайдеров (agy, antigravity, claude, cline, codebuddy-cn, codex, cursor, devin-desktop, ghe-copilot, github, gitlab-duo, grok-cli-oauth, grok-cli, kilocode, kimi-coding, kiro, openference, qoder, trae, xai-oauth, zed-hosted, zed)                                                   |
-| `plugins/`                               | Реестр плагинов                                                                                                                                                                                                                                                                                                               |
-| `promptCache/`                           | Точки разделения кэша промптов в стиле Anthropic                                                                                                                                                                                                                                                                              |
-| `skills/`                                | Фреймворк навыков (встроенные навыки + маркетплейс + SkillsSH) — см. `docs/frameworks/SKILLS.md`                                                                                                                                                                                                                              |
-| `playground/`                            | Общие вспомогательные модули Playground Studio: `codeExport.ts` (генератор curl/Python/TS), `promptImprover.ts` (конструктор метапромптов), `streamMetrics.ts` (чистые функции TTFT/TPS), `types.ts` (таблица цен) — см. `docs/frameworks/PLAYGROUND_STUDIO.md`                                                               |
-| `webhookDispatcher.ts`                   | Доставка вебхуков с HMAC — см. `docs/frameworks/WEBHOOKS.md`                                                                                                                                                                                                                                                                  |
-| `cloudflaredTunnel.ts`, `ngrokTunnel.ts` | Менеджеры туннелей — см. `docs/ops/TUNNELS_GUIDE.md`                                                                                                                                                                                                                                                                          |
-| `cloudSync.ts`, `initCloudSync.ts`       | Необязательная облачная синхронизация состояния                                                                                                                                                                                                                                                                               |
-| `localDb.ts`                             | Модуль повторного экспорта для модулей БД (без логики — только повторный экспорт)                                                                                                                                                                                                                                             |
-| `cacheLayer.ts`, `idempotencyLayer.ts`   | Кэширование запросов и идемпотентность                                                                                                                                                                                                                                                                                        |
-| (ещё около 30 файлов верхнего уровня)    | Специализированные вспомогательные модули (logEnv, modelsDevSync, piiSanitizer и т. д.)                                                                                                                                                                                                                                       |
+### Библиотеки сервера `src/lib/` —
 
-### `src/lib/db/` — База данных (137 модулей + 193 миграции)
+Примерно 90 подпапок плюс около 90 модулей верхнего уровня. Основные группы:
 
-| Подкаталог                | Назначение                                                                                                                                                                       |
-| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `db/core.ts`              | Одиночка `getDbInstance()` с журналированием WAL                                                                                                                                 |
-| `db/migrations/`          | Версионируемые SQL-файлы (идемпотентные, транзакционные). `073_memory_vec.sql` добавляет таблицу `memory_vec_meta` и столбец `needs_reindex` (план 21).                          |
-| `db/playgroundPresets.ts` | CRUD-модуль для пресетов Playground Studio (`listPlaygroundPresets`, `getPlaygroundPreset`, `createPlaygroundPreset`, `updatePlaygroundPreset`, `deletePlaygroundPreset`)        |
-| `db/memoryVec.ts`         | CRUD для `memory_vec_meta` (active_dim, embedding_signature, last_reset_at, vec_loaded), а также `markMemoryNeedsReindex`, `getMemoryReindexQueue` и т. д. (план 21)             |
-| `db/<domain>.ts`          | По одному модулю на домен: providers, combos, apiKeys, users, sessions, usage, audit*log, webhooks, skills, memory_entries, cloud_agent_tasks, evals*\*, reasoning_cache и т. д. |
+| Область                        | Папки/файлы                                                                                                         | Глубокое погружение                                                                                                                            |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| База данных                    | Модули домена `db/` —, `migrations/`, `adapters/`, `repositories/`, `migrationRunner/`                              | [`src/lib/db/AGENTS.md`](../../src/lib/db/AGENTS.md), [DATABASE_GUIDE](../ops/DATABASE_GUIDE.md)                                               |
+| Использование, квота и расходы | `usage/`, `quota/`, `spend/`                                                                                        | [QUOTA_SHARE.md](../routing/QUOTA_SHARE.md), [COST_TRACKING.md](../guides/COST_TRACKING.md)                                                    |
+| Провайдеры и модели            | `providers/`, `providerModels/`, `modelValidation/`, `catalog/`, `radar/`, `freeProxyProviders/`                    | [RADAR.md](../frameworks/RADAR.md), [MODEL-VALIDATION.md](../guides/MODEL-VALIDATION.md)                                                       |
+| OAuth и учетные данные         | `oauth/` (поставщики/, услуги/, утилиты/), `zed-oauth/`, `copilot/`, `cursor/`, `credentialHealth/`                 | `resolvePublicCred()` (документ оператора, не предоставляется публично)                                                                        |
+| Безопасность и управление      | `guardrails/`, `compliance/`, `pii/`, `security/`                                                                   | [GUARDRAILS.md](../security/GUARDRAILS.md), [COMPLIANCE.md](../security/COMPLIANCE.md)                                                         |
+| Возможности агента             | `a2a/`, `acp/`, `cloudAgent/`, `memory/`, `skills/`, `agentSkills/`                                                 | [AGENT_PROTOCOLS_GUIDE.md](../frameworks/AGENT_PROTOCOLS_GUIDE.md), [MEMORY.md](../frameworks/MEMORY.md), [SKILLS.md](../frameworks/SKILLS.md) |
+| Плагины и сервисы              | `plugins/`, `services/` (установщики встроенных сервисов и супервизор)                                              | [PLUGINS.md](../frameworks/PLUGINS.md), [EMBEDDED-SERVICES.md](../frameworks/EMBEDDED-SERVICES.md)                                             |
+| Маршрутизация и устойчивость   | `combos/`, `routing/`, `resilience/`, `reasoningRouting/`, `promptCache/`                                           | [RESILIENCE_GUIDE.md](RESILIENCE_GUIDE.md)                                                                                                     |
+| Прокси и сеть                  | `proxyHealth/`, `proxySubscription/`, `proxyRelay/`, `proxyEvents/`, туннельные модули                              | [PROXY_GUIDE.md](../ops/PROXY_GUIDE.md), [TUNNELS_GUIDE.md](../ops/TUNNELS_GUIDE.md)                                                           |
+| Вакансии и планирование        | `jobs/`, `jobRegistry/`, `warmupScheduler/`                                                                         |                                                                                                                                                |
+| Наблюдаемость и экспорт        | `monitoring/`, `logExport/`, `webhooks/`, `audit/`, `events/`                                                       | [LOG-EXPORT.md](../frameworks/LOG-EXPORT.md), [WEBHOOKS.md](../frameworks/WEBHOOKS.md)                                                         |
+| интеграция CLI и IDE           | `cliTools/`, `cli-helper/`, `vscode/`, `inspector/`, `versionManager/`                                              | [CLI-TOOLS.md](../reference/CLI-TOOLS.md), [VSCODE-COPILOT.md](../guides/VSCODE-COPILOT.md)                                                    |
+| Источники контекста            | `localCorpus/`, `notion/`, `obsidian/`                                                                              | [LOCAL_CORPUS_CONTEXT.md](../frameworks/LOCAL_CORPUS_CONTEXT.md)                                                                               |
+| Другие особенности             | `evals/`, `playground/`, `gamification/`, `telegram/`, `conductor/`, `batches/`, `deploy/`, `transfer/`, `sync/`, … | [EVALS.md](../frameworks/EVALS.md), [PLAYGROUND_STUDIO](../frameworks/PLAYGROUND_STUDIO.md)                                                    |
 
-### `src/domain/`
+Модули верхнего уровня, которые стоит знать:
 
-| Модуль                 | Назначение                                                 |
-| ---------------------- | ---------------------------------------------------------- |
-| `policy.ts`            | Механизм политик                                           |
-| `fallbackPolicy.ts`    | Дерево решений для отката                                  |
-| `costRules.ts`         | Правила расчёта стоимости                                  |
-| `lockoutPolicy.ts`     | Политика блокировки моделей/подключений                    |
-| `tagRouter.ts`         | Маршрутизация на основе тегов                              |
-| `comboResolver.ts`     | Разрешение комбинаций (используется механизмом комбинаций) |
-| `modelAvailability.ts` | Проверка доступности для каждой модели                     |
-| `assessment/`          | Оценка модели (фаза 1 RFC-AUTO-ASSESSMENT)                 |
+| Файл                                                           | Цель                                                                 |
+| -------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `cacheLayer.ts`, `idempotencyLayer.ts`, `semanticCache.ts`     | Кэширование ответов и идемпотентность                                |
+| `webhookDispatcher.ts`                                         | Доставка веб-перехватчика, подписанного HMAC                         |
+| `cloudflaredTunnel.ts`, `ngrokTunnel.ts`, `tailscaleTunnel.ts` | Менеджеры туннелей                                                   |
+| `tokenHealthCheck*.ts`, `tokenRefreshCircuit.ts`               | Фоновые проверки работоспособности учетных данных и схема обновления |
+| `streamingPiiTransform.ts`, `streamingCredentialTransform.ts`  | Дезинфицирующие средства потокового ответа                           |
+| `gracefulShutdown.ts`, `serverLifecycle.ts`                    | Жизненный цикл процесса                                              |
+| `*.stub.ts`                                                    | Заглушки профиля сборки заменены псевдонимами в `next.config.mjs`    |
 
-### `src/server/`
+### база данных `src/lib/db/` —
 
-| Модуль   | Назначение                                                                                         |
-| -------- | -------------------------------------------------------------------------------------------------- |
-| `authz/` | Конвейер авторизации: `classify` → `policies` → `enforce` — см. `docs/architecture/AUTHZ_GUIDE.md` |
-| `cors/`  | Конфигурация CORS                                                                                  |
-| `auth/`  | Промежуточное ПО для сеансов                                                                       |
+| Путь                  | Цель                                                                                                                             |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `db/core.ts`          | `getDbInstance()` синглтон (ведение журнала WAL )                                                                                |
+| `db/migrations/`      | Пронумерованные идемпотентные миграции `.sql` (236 файлов на момент написания; нумерация `check-migration-numbering.mjs` Guards) |
+| `db/migrationRunner/` | Бегун по миграции                                                                                                                |
+| `db/adapters/`        | Адаптеры драйвера SQLite (better-sqlite3, node:sqlite, Bun:sqlite, sql.js)                                                       |
+| `db/repositories/`    | Реализации репозитория SQLite (комбо, пресеты игровой площадки, конфигурация маршрутизации)                                      |
+| `db/<domain>.ts`      | Около 175 модулей домена (провайдеры, комбинации, apiKeys, настройки, использование и т. д.) — всегда импортирует их напрямую.   |
 
-### `src/shared/`
+### `src/domain/`, `src/server/`, `src/shared/`
 
-| Модуль                           | Назначение                                                                           |
-| -------------------------------- | ------------------------------------------------------------------------------------ |
-| `constants/providers.ts`         | **355 провайдеров** с валидацией Zod (источник истины)                               |
-| `constants/cliTools.ts`          | Реестр внешних инструментов CLI                                                      |
-| `constants/routingStrategies.ts` | **19 стратегий маршрутизации** с приоритетами                                        |
-| `constants/publicApiRoutes.ts`   | Маршруты, требующие аутентификации Bearer (в отличие от управляющей)                 |
-| `constants/upstreamHeaders.ts`   | Список запрещённых заголовков для вышестоящих запросов                               |
-| `validation/schemas.ts`          | ~80 схем Zod (единый источник истины для контрактов API)                             |
-| `validation/helpers.ts`          | Вспомогательные средства валидации Zod (`validateBody` и т. д.)                      |
-| `types/`                         | Общие типы TS                                                                        |
-| `contracts/`                     | Публичные контракты API (используются через `files:` в `package.json`)               |
-| `utils/circuitBreaker.ts`        | Автоматический выключатель провайдеров (см. `docs/architecture/RESILIENCE_GUIDE.md`) |
-| `utils/apiAuth.ts`               | Проверка ключей API и областей доступа                                               |
-| `utils/fetchTimeout.ts`          | Обёртки для тайм-аутов и прерывания вышестоящих запросов `fetch`                     |
-| `utils/releaseNotes.ts`          | Парсер закрытых объявлений v2/legacy, локализация и скрытие по ID                    |
+| Путь                                                           | Цель                                                                                                                                                |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain/policyEngine.ts`                                       | Механизм политики                                                                                                                                   |
+| `domain/fallbackPolicy.ts`, `lockoutPolicy.ts`, `costRules.ts` | Решения об отступлении, политика блокировки, правила расчета стоимости                                                                              |
+| `domain/quotaCache*.ts`, `quotaSnapshot*.ts`                   | Кэш квот и сохранение моментальных снимков                                                                                                          |
+| `domain/assessment/`                                           | Модельная оценка (оценщик, классификатор, самоисцелитель)                                                                                           |
+| `server/authz/`                                                | Конвейер авторизации и защита маршрута (`routeGuard.ts`) — см. [AUTHZ_GUIDE](AUTHZ_GUIDE.md), [ROUTE_GUARD_TIERS](../security/ROUTE_GUARD_TIERS.md) |
+| `server/origin/`, `server/cors/`                               | Разрешение происхождения Public/MCP/WS и CORS — см [CORS.md](../security/CORS.md)                                                                   |
+| `server/ws/`                                                   | Живая панель мониторинга сервера WebSocket                                                                                                          |
+| `shared/components/`                                           | Компоненты информационной панели и адаптеры для `packages/ui-kit` — см. [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)                                        |
+| `shared/constants/`                                            | Каталог провайдеров (`providers.ts`), стратегии маршрутизации, инструменты CLI, карта значков, список запрещенных заголовков восходящего потока,…   |
+| `shared/validation/`                                           | схемы Zod и помощники проверки                                                                                                                      |
+| `shared/utils/`                                                | Автоматический выключатель, аутентификация с помощью API-ключа, таймауты выборки, флаги функций и т. д.                                             |
+| `shared/middleware/`, `network/`, `services/`, `hooks/`        | Промежуточное ПО для доступа в чат, сетевые помощники, клиентские службы, перехватчики React                                                        |
 
 ---
 
-## `open-sse/` — Рабочее пространство потокового движка
+## `open-sse/` Рабочая область потокового движка —
 
-Отдельное рабочее пространство npm (`@omniroute/open-sse`). Обрабатывает запросы и выполнение операций провайдерами.
+рабочее пространство npm `@omniroute/open-sse` (около 2390 отслеживаемых файлов). Он выполняет обработку запросов и выполнение поставщика. Обзор: [OPEN_SSE_ARCHITECTURE](../frameworks/OPEN_SSE_ARCHITECTURE.md)
 
 ```
 open-sse/
-├── handlers/            # 16 файлов (12 обработчиков + 4 вспомогательных модуля): chatCore, responsesHandler, embeddings, audio, image, video, music, rerank, moderations, search и т. д.
-├── executors/           # 67 исполнителей для конкретных провайдеров (расширяют BaseExecutor)
-├── translator/          # Конвертеры форматов (9 для запросов, 9 для ответов, 9 вспомогательных)
-├── transformer/         # Responses API ↔ Chat Completions (TransformStream)
-├── services/            # ~80+ сервисных модулей (combo, accountFallback, autoCombo, reasoningCache, claude code/chatgpt stealth, modelDeprecation, taskAwareRouter, workflowFSM и т. д.)
-├── mcp-server/          # Сервер MCP (110 инструментов, 3 транспорта, 33 области доступа)
-├── config/              # Реестры провайдеров/моделей, конфигурация заголовков, псевдонимы моделей
-├── utils/               # Клиент TLS, proxy fetch/dispatcher, сетевые вспомогательные модули
-├── index.ts             # Точка входа рабочего пространства
-├── package.json         # Манифест рабочего пространства
-├── tsconfig.json        # Конфигурация TS рабочего пространства
-└── types.d.ts           # Объявления типов рабочего пространства
+├── handlers/       # Request handlers: chatCore.ts + chatCore/, responses, embeddings, audio, imageGeneration/,
+│                   #   videoGeneration/, search/, fal/, mediaGeneration/, sseParser/, responseSanitizer/, …
+├── executors/      # Provider-specific HTTP dispatch, registered in executors/registry.ts; base/ holds shared recovery helpers
+├── translator/     # Format conversion: request/, response/, helpers/, image/, registry.ts, bootstrap.ts
+├── transformer/    # responsesTransformer.ts (Responses API ↔ Chat Completions TransformStream)
+├── services/       # Combo routing, rate limits, fallback, caching, usage, token refresh, compression (see below)
+├── config/         # Provider registry (config/providers/registry/<id>/), constants, model/media registries
+├── mcp-server/     # MCP server: tools/, schemas/, toolSearch/, transports, audit, scopes, __tests__/
+├── utils/          # Stream, error, TLS, proxy-fetch and logging utilities
+├── vendor/         # codex-chatgpt-web/ — vendored adapter (provenance in vendor.json)
+├── lib/            # DeepSeek proof-of-work worker and hash
+├── shared/         # zedAuth.ts
+├── index.ts        # Workspace entry
+└── package.json · tsconfig.json · types.d.ts
 ```
+
+### `open-sse/services/`
+
+| Путь                                                                                           | Цель                                                                                                                                                        |
+| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `combo.ts` + `combo/`                                                                          | Стратегии комбинированной маршрутизации — см. [AUTO-COMBO.md](../routing/AUTO-COMBO.md)                                                                     |
+| `autoCombo/`                                                                                   | Автоматическое комбинирование очков и пакетов режимов                                                                                                       |
+| `accountFallback.ts` + `accountFallback/`                                                      | Время восстановления соединения и блокировка модели — см. [RESILIENCE_GUIDE.md](RESILIENCE_GUIDE.md)                                                        |
+| `rateLimitManager.ts` + `rateLimitManager/`                                                    | Отслеживание ограничения скорости и анализ заголовков                                                                                                       |
+| `compression/`                                                                                 | Механизмы сжатия (`engines/`), пакеты правил (`rules/`), `eval/`, `harness/`, `riskGate/` — см [.COMPRESSION_GUIDE.md](../compression/COMPRESSION_GUIDE.md) |
+| `tokenRefresh/`, `usage/`, `cache/`, `admission/`, `sessionPool/`, `codexAccount/`, `routing/` | Обновление токенов, учет использования, кеширование, полосы доступа, пулы сеансов, учетные записи Codex, помощники маршрутизации                            |
+| `__tests__/`                                                                                   | Совместно расположенные пакеты Vitest (собранные конфигурациями Vitest )                                                                                    |
+| `AGENTS.md`                                                                                    | Руководство агента для этой папки                                                                                                                           |
+
+Шаблон: большой модуль `X.ts` рядом с папкой `X/` означает, что модуль был разделен на более мелкие файлы (`handlers/chatCore.ts` + `handlers/chatCore/`, `services/combo.ts` + `services/combo/`).
 
 ### `open-sse/mcp-server/`
 
-| Путь                        | Назначение                                                                                  |
-| --------------------------- | ------------------------------------------------------------------------------------------- |
-| `server.ts`                 | Жизненный цикл сервера MCP (транспорты stdio + HTTP)                                        |
-| `httpTransport.ts`          | Транспорты HTTP Streamable + SSE (`/api/mcp/sse`, `/api/mcp/stream`)                        |
-| `audit.ts`                  | Журналирование аудита в таблицу `mcp_tool_audit`                                            |
-| `scopeEnforcement.ts`       | Проверка области доступа для каждого инструмента                                            |
-| `runtimeHeartbeat.ts`       | Отправка сигнала работоспособности в `DATA_DIR/runtime/mcp-heartbeat.json`                  |
-| `descriptionCompressor.ts`  | Сжатие метаданных описаний инструментов для экономии контекста                              |
-| `schemas/tools.ts`          | 36 определений базовых инструментов + области доступа                                       |
-| `tools/advancedTools.ts`    | Реализации расширенных инструментов                                                         |
-| `tools/memoryTools.ts`      | 3 инструмента памяти (поиск/добавление/очистка)                                             |
-| `tools/skillTools.ts`       | 4 инструмента навыков (список/включение/выполнение/выполнения)                              |
-| `tools/compressionTools.ts` | 5 инструментов сжатия                                                                       |
-| `README.md`                 | Внутренний файл README сервера MCP (перекрёстная ссылка из `docs/frameworks/MCP-SERVER.md`) |
+| Путь                  | Цель                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `server.ts`           | Жизненный цикл сервера MCP                                                                                    |
+| `httpTransport.ts`    | Потоковые транспорты HTTP и SSE                                                                               |
+| `scopeEnforcement.ts` | Проверка объема каждого инструмента                                                                           |
+| `audit.ts`            | Журналирование аудита вызовов инструментов                                                                    |
+| `schemas/`            | Определения и области применения инструментов                                                                 |
+| `tools/`              | Реализации инструментов (память, навыки, сжатие,…)                                                            |
+| `toolSearch/`         | Поиск инструмента                                                                                             |
+| `README.md`           | Примечания по внутренней архитектуре; полный каталог находится в [MCP-SERVER.md](../frameworks/MCP-SERVER.md) |
 
 ---
 
-## `electron/` — Оболочка настольного приложения
+## Рабочие области npm `packages/` —
 
-| Файл             | Назначение                                                                                                      |
-| ---------------- | --------------------------------------------------------------------------------------------------------------- |
-| `main.js`        | Основной процесс Electron (BrowserWindow, встроенный сервер Next.js, системный трей, автоматическое обновление) |
-| `preload.js`     | Мост IPC (contextBridge → `window.omniroute`)                                                                   |
-| `package.json`   | Конфигурация electron-builder + зависимости Electron 41 + electron-builder 26.10                                |
-| `assets/`        | Значки приложения (Windows .ico, macOS .icns, Linux .png)                                                       |
-| `dist-electron/` | Результаты сборки (игнорируются Git)                                                                            |
-| `types.d.ts`     | Объявления типов для моста рендерера                                                                            |
-| `README.md`      | Внутренний файл README Electron (см. также `docs/guides/ELECTRON_GUIDE.md`)                                     |
+| Путь                     | Цель                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/ui-kit/`       | `@omniroute/ui-kit`: поставляемый снимок комплекта Keak CI UI Kit, используемый в качестве источника. `UPSTREAM.md` фиксирует восходящий коммит, `PATCHES.md` перечисляет локальные исправления. `src/` синхронизируется только `scripts/dev/sync-ui-kit.sh` и охраняется `npm run check:ui-kit-snapshot`. См. [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) |
+| `packages/browser-pool/` | `@omniroute/browser-pool`: интерфейсы и реализация пула браузеров (`packages/browser-pool/src/index.ts`, `packages/browser-pool/src/interfaces.ts`). Перечислено в `workspaces`; пул браузеров времени выполнения, используемый шлюзом, находится в `open-sse/services/`                                                                            |
 
----
+## `@omniroute/` — отдельно публикуемые пакеты
 
-## `bin/` — CLI
+Это не рабочие области npm. У каждого есть свой `package.json` и файл блокировки; папка поставляется в архиве `omniroute` (`files: ["@omniroute/"]`).
 
-| Файл                                                                                                        | Назначение                                                                                                                             |
-| ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `omniroute.mjs`                                                                                             | Основная точка входа CLI — `omniroute serve`, `omniroute setup`, `omniroute doctor`, `omniroute providers`, `omniroute combos` и т. д. |
-| `reset-password.mjs`                                                                                        | Автономный CLI для сброса пароля                                                                                                       |
-| `cli/commands/setup.mjs`                                                                                    | Интерактивный и неинтерактивный мастер настройки                                                                                       |
-| `cli/commands/doctor.mjs`                                                                                   | Диагностика состояния системы (более 8 проверок)                                                                                       |
-| `cli/commands/providers.mjs`                                                                                | Просмотр списка, тестирование и проверка поставщиков                                                                                   |
-| `cli/{args,data-dir,encryption,io,provider-catalog,provider-store,provider-test,settings-store,sqlite}.mjs` | Вспомогательные модули CLI                                                                                                             |
-| `cli/tray/tray.ts`                                                                                          | Интеграция с системным треем (кроссплатформенная: NotifyIcon в Windows, systray2 в macOS/Linux)                                        |
-| `cli/tray/tray.ps1`                                                                                         | Бэкенд NotifyIcon на PowerShell (Windows, без новых двоичных файлов)                                                                   |
-| `cli/tray/autostart.ts`                                                                                     | Кроссплатформенный автозапуск (LaunchAgent / .desktop / реестр)                                                                        |
-| `cli/runtime/sqliteRuntime.mjs`                                                                             | Пятиэтапная цепочка разрешения драйвера SQLite (встроенный → среда выполнения → отложенная установка → node:sqlite → sql.js)           |
-| `cli/runtime/magicBytes.mjs`                                                                                | Проверка сигнатурных байтов двоичных файлов (ELF / Mach-O / универсальный Mach-O / PE)                                                 |
-| `cli/runtime/index.mjs`                                                                                     | `warmUpRuntimes()` — предварительно разрешает драйверы при postinstall / первом запуске                                                |
-| `nodeRuntimeSupport.mjs`                                                                                    | Проверка поддерживаемой версии Node.js при установке                                                                                   |
+| Путь                             | Цель                                                                                                                                                    |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@omniroute/opencode-plugin/`    | плагин OpenCode (обнаружение модели, аутентификация `/connect` ); используется `omniroute setup-opencode` — см [OPENCODE.md](../frameworks/OPENCODE.md) |
+| `@omniroute/opencode-plugin-v2/` | Плагин OpenCode для Promise v2 API — см [OPENCODE-V2-PLUGIN.md](../guides/OPENCODE-V2-PLUGIN.md)                                                        |
+| `@omniroute/opencode-provider/`  | Генератор статических конфигов; помечен как устаревший в собственном `package.json` в пользу `opencode-plugin`                                          |
 
 ---
 
-## `skills/` — Публичные навыки агентов
+## `bin/` — CLI и сценарии ops
 
-| Файл                         | Назначение                                                                            |
-| ---------------------------- | ------------------------------------------------------------------------------------- |
-| `skills/omniroute*/SKILL.md` | 10 манифестов навыков для внешних ИИ-агентов (Claude Desktop, ChatGPT, Cursor, Cline) |
+| Путь                                                                        | Цель                                                                                                        |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `omniroute.mjs`                                                             | Основная запись CLI (`omniroute serve`, `setup`, `doctor`, `providers`, `combo`, …)                         |
+| `reset-password.mjs`                                                        | `omniroute-reset-password` двоичный файл                                                                    |
+| `mcp-server.mjs`                                                            | точка входа MCP stdio                                                                                       |
+| `antigravity-bridge.mjs`, `chatgpt-web-codex-mcp.mjs`                       | Вспомогательный мост / точки входа MCP                                                                      |
+| `aliasResolver.mjs`, `aliasResolverHook.mjs`                                | Перехватчик разрешения ESM, который сопоставляет псевдонимы путей tsconfig для глобальных установок         |
+| `nodeRuntimeSupport.mjs`                                                    | Поддерживаемая проверка версии Node.js                                                                      |
+| `snapshot-data.sh`, `restore-data.sh`, `restore-policies.sh`, `rollback.sh` | Самостоятельные сценарии восстановления после инцидентов (поделиться `_ops-common.sh`)                      |
+| `cold-start-bench.sh`                                                       | Тест холодного запуска — см. [PERF_BASELINE.md](../ops/PERF_BASELINE.md)                                    |
+| `cli/commands/`                                                             | Один модуль на команду CLI (около 100, включая интеграцию `setup-*` )                                       |
+| `cli/api-commands/`                                                         | Сгенерировано из `docs/openapi.yaml` пользователем `npm run build:cli-api` — не редактировать               |
+| `cli/locales/`                                                              | Каталоги сообщений CLI (67 языков)                                                                          |
+| `cli/tui/`, `cli/tui-components/`                                           | Терминал UI                                                                                                 |
+| `cli/tray/`                                                                 | Системный трей и автозапуск (серверная часть Windows PowerShell, системный трей на macOS/Linux)             |
+| `cli/runtime/`                                                              | Собственное разрешение во время выполнения (`sqliteRuntime.mjs`, `magicBytes.mjs`), диспетчер процессов     |
+| `cli/*.mjs`                                                                 | Общие помощники (args, клиент API, каталог данных, шифрование, хранилище поставщиков, хранилище настроек,…) |
+| `cli/README.md`, `cli/CONVENTIONS.md`                                       | Внутреннее устройство и соглашения CLI                                                                      |
 
----
+См. [CLI-TOOLS.md](../reference/CLI-TOOLS.md) и [CLI-COMPANION.md](../guides/CLI-COMPANION.md).
 
-## `scripts/` — Скрипты сборки и проверки
+## настольное приложение `electron/` —
 
-| Скрипт                              | Назначение                                                                                                       |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `run-next.mjs`                      | Средство запуска в режиме разработки/обычном режиме с загрузкой переменных окружения                             |
-| `build-next-isolated.mjs`           | Автономная сборка (автономный режим Next.js 16)                                                                  |
-| `prepublish.ts`                     | Подготовка пакета перед `npm pack`                                                                               |
-| `postinstall.mjs`                   | Автоматическое создание `.env` из `.env.example` при первой установке                                            |
-| `sync-env.mjs`                      | Повторная синхронизация ключей `.env` с `.env.example`                                                           |
-| `check-cycles.mjs`                  | Обнаружение циклических зависимостей                                                                             |
-| `check-route-validation.mjs`        | Проверка наличия валидации Zod во всех маршрутах API                                                             |
-| `check-t11-any-budget.mjs`          | Обеспечение соблюдения явного лимита `any` для каждого файла                                                     |
-| `check-docs-sync.mjs`               | Проверка синхронизации версий документации (существующая проверка перед коммитом)                                |
-| **`check-env-doc-sync.mjs`**        | НОВОЕ: перекрёстная проверка переменных окружения в коде, `.env.example` и `ENVIRONMENT.md`                      |
-| **`check-docs-counts-sync.mjs`**    | НОВОЕ: проверка соответствия документации количественных показателей (исполнители, стратегии, OAuth, навыки A2A) |
-| **`check-deprecated-versions.mjs`** | НОВОЕ: выявление устаревших версий/дат в документации                                                            |
-| `check-supported-node-runtime.ts`   | Проверка поддержки текущей версии Node                                                                           |
-| `check-pr-test-policy.mjs`          | Обеспечение соблюдения правила «тесты обязательны» при изменениях рабочего кода                                  |
-| **`gen-provider-reference.ts`**     | НОВОЕ: автоматическое создание `docs/reference/PROVIDER_REFERENCE.md` из каталога                                |
-| `i18n/generate-multilang.mjs`       | Перевод строк интерфейса и документации через Google Translate                                                   |
-| `i18n_autotranslate.py`             | Конвейер перевода документации на основе LLM                                                                     |
-| `validate_translation.py`           | Проверка перевода для каждой локали                                                                              |
-| `check_translations.py`             | Проверка ключей i18n в коде                                                                                      |
-| `run-playwright-tests.mjs`          | Средство запуска E2E-тестов Playwright                                                                           |
-| `run-protocol-clients-tests.mjs`    | Средство запуска E2E-тестов MCP/A2A                                                                              |
-| `run-ecosystem-tests.mjs`           | Тесты экосистемы (интеграции с провайдерами)                                                                     |
-| `test-report-summary.mjs`           | Создание сводки покрытия в формате Markdown                                                                      |
-| `smoke-electron-packaged.mjs`       | Дымовое тестирование упакованной сборки Electron                                                                 |
-| `native-binary-compat.mjs`          | Проверка соответствия нативных зависимостей (`better-sqlite3`) версии Node в Electron                            |
-| `validate-pack-artifact.ts`         | Проверка результата упаковки npm                                                                                 |
-| `responses-ws-proxy.mjs`            | WebSocket-мост для Codex Responses API                                                                           |
-| `v1-ws-bridge.mjs`                  | WebSocket-мост для конечной точки `/api/v1/ws`                                                                   |
-| `standalone-server-ws.mjs`          | Средство запуска автономного WS-сервера                                                                          |
-| `system-info.mjs`                   | Вывод информации о системе/среде выполнения для технической поддержки                                            |
-| `healthcheck.mjs`                   | Однократная проверка работоспособности (используется Docker HEALTHCHECK)                                         |
-| `uninstall.mjs`                     | Скрипт полного удаления                                                                                          |
+| Путь                                                       | Цель                                                                                              |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `main.js`                                                  | Основной процесс Electron (окно, встроенный сервер, трей, обновления)                             |
+| `preload.js`                                               | Мост IPC доступен рендереру                                                                       |
+| `lib/`                                                     | Жизненный цикл окна, готовность сервера, контроль работоспособности, настройки удаленного сервера |
+| `remoteServerPrompt*.js`, `assets/remoteServerPrompt.html` | Окно подсказки удаленного сервера                                                                 |
+| `processTree.js`, `sqlite-inspection.js`                   | Помощники по очистке дочерних процессов и проверке SQLite                                         |
+| `package.json` / `package-lock.json`                       | Конфигурация электронного строителя и зависимости Electron                                        |
+| `assets/`                                                  | Значки приложений и лотка (`.ico`, `.icns`, `.png`)                                               |
+| `README.md`                                                | Внутренние примечания — см. [ELECTRON_GUIDE.md](../guides/ELECTRON_GUIDE.md)                      |
 
----
+## статические ресурсы `public/` —
 
-## `docs/` — Публичная документация (7 корневых файлов + 17 подкаталогов)
+| Путь                                        | Цель                                                                                                                                      |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `providers/`                                | Логотипы провайдера, загруженные по идентификатору (`/providers/<id>.svg`); Провенанс в `config/quality/provider-assets-provenance.jsonl` |
+| `favicon.*`, `apple-touch-icon.*`, `icon-*` | Значки браузера и PWA                                                                                                                     |
+| `sw.js`                                     | Сервисный работник — см. [PWA_GUIDE.md](../guides/PWA_GUIDE.md)                                                                           |
+| `openapi.yaml`                              | Копия `docs/openapi.yaml` созданная `npm run gen:public-openapi`                                                                          |
+| `images/`, `sponsors/`, `deyin.svg`         | Диаграммы многоуровневого потока, баннер спонсора, изображение README                                                                     |
 
-### Основные руководства
+## `skills/` — Навыки агента
 
-| Документ                    | Назначение                                                                                                       |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `ARCHITECTURE.md`           | Высокоуровневая архитектура, карта подсистем, интерфейс панели управления                                        |
-| `CODEBASE_DOCUMENTATION.md` | Инженерный справочник: каталоги, модули, соглашения                                                              |
-| `FEATURES.md`               | Матрица функций с обзором ключевых возможностей v3.8                                                             |
-| `USER_GUIDE.md`             | Руководство пользователя (настройка, модели, комбинации, CLI, аудио и т. д.)                                     |
-| `API_REFERENCE.md`          | Справочник по конечным точкам API с моделью аутентификации                                                       |
-| `openapi.yaml`              | Спецификация OpenAPI 3.0 (121 маршрут)                                                                           |
-| `SETUP_GUIDE.md`            | Способы установки (npm, npx, Docker, Electron, Termux, из исходного кода)                                        |
-| `ENVIRONMENT.md`            | Все переменные окружения (документировано ~800, ~3 050 строк в `.env.example`)                                   |
-| `TROUBLESHOOTING.md`        | Распространённые ошибки + известные проблемы v3.8.0                                                              |
-| `RELEASE_CHECKLIST.md`      | Полный процесс выпуска (навыки, husky, conventional commits, развёртывание)                                      |
-| `COVERAGE_PLAN.md`          | Цели покрытия и текущее состояние                                                                                |
-| `FREE_TIERS.md`             | Подобранные провайдеры с бесплатными тарифами (48+ бесплатных + 11 OAuth)                                        |
-| `CLI-TOOLS.md`              | Интеграции с внешними CLI + внутренний CLI OmniRoute                                                             |
-| `I18N.md`                   | Архитектура i18n, добавление языка, 42 локали                                                                    |
-| `UNINSTALL.md`              | Шаги по полному удалению                                                                                         |
-| `PROVIDER_REFERENCE.md`     | **Автоматически создаваемый** каталог из 355 провайдеров (повторная генерация: `npm run gen:provider-reference`) |
-
-### Подробные обзоры подсистем
-
-| Документ                                        | Назначение                                                                            |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `MCP-SERVER.md`                                 | Сервер MCP: 110 инструментов, 3 транспорта, 33 области, конечные точки REST           |
-| `A2A-SERVER.md`                                 | A2A v0.3: JSON-RPC, 6 навыков, вспомогательные средства REST, карточка агента         |
-| `AGENT_PROTOCOLS_GUIDE.md`                      | Единое руководство: A2A, ACP и облачные агенты                                        |
-| `CLOUD_AGENT.md`                                | Оркестрация Codex Cloud / Devin / Jules                                               |
-| `SKILLS.md`                                     | Система навыков (встроенные + маркетплейс + SkillsSH + песочница)                     |
-| `RADAR.md`                                      | Наложение каталога бесплатных моделей Radar (`RADAR_ENABLED`, по умолчанию отключено) |
-| `MEMORY.md`                                     | Система памяти (SQLite FTS5 + Qdrant)                                                 |
-| `EVALS.md`                                      | Система оценки (наборы, запуски, рубрики)                                             |
-| `GUARDRAILS.md`                                 | Маскирование PII, защита от инъекций промптов, мост для компьютерного зрения          |
-| `COMPLIANCE.md`                                 | Журнал аудита, хранение данных, отказ от журналирования через noLog                   |
-| `WEBHOOKS.md`                                   | Доставка вебхуков с подписью HMAC                                                     |
-| `REASONING_REPLAY.md`                           | Гибридный кэш памяти/SQLite для `reasoning_content`                                   |
-| `AUTHZ_GUIDE.md`                                | Конвейер авторизации (`classify` → `policies` → `enforce`)                            |
-| `RESILIENCE_GUIDE.md`                           | Автоматический выключатель + период восстановления + блокировка модели                |
-| `docs/security/STEALTH_GUIDE.md` (только в git) | Цифровые отпечатки TLS (JA3/JA4), Claude Code CCH, сертификат MITM                    |
-| `AUTO-COMBO.md`                                 | Движок Auto Combo (оценка по 16 факторам, 6 наборов режимов, виртуальная фабрика)     |
-
-### Сжатие
-
-| Документ                        | Назначение                                |
-| ------------------------------- | ----------------------------------------- |
-| `COMPRESSION_GUIDE.md`          | Обзор режимов сжатия + план развития      |
-| `COMPRESSION_ENGINES.md`        | Движки Caveman + RTK, контракт реестра    |
-| `COMPRESSION_RULES_FORMAT.md`   | JSON-схема набора правил Caveman          |
-| `COMPRESSION_LANGUAGE_PACKS.md` | Перечень наборов правил для каждого языка |
-| `RTK_COMPRESSION.md`            | Декларативный конвейер RTK (49 фильтров)  |
-
-### Развёртывание
-
-| Документ                     | Назначение                                                        |
-| ---------------------------- | ----------------------------------------------------------------- |
-| `DOCKER_GUIDE.md`            | Сборка Docker, профили (base/cli/host/cliproxyapi), сайдкар Redis |
-| `VM_DEPLOYMENT_GUIDE.md`     | Развёртывание на типовой VM/VPS (Ubuntu/Debian + nginx + systemd) |
-| `FLY_IO_DEPLOYMENT_GUIDE.md` | Развёртывание на Fly.io (в настоящее время только на китайском)   |
-| `TERMUX_GUIDE.md`            | Работа без графического интерфейса на Android через Termux        |
-| `PWA_GUIDE.md`               | Установка Progressive Web App + сервис-воркер                     |
-| `ELECTRON_GUIDE.md`          | Сборка + подписание + распространение настольного приложения      |
-| `TUNNELS_GUIDE.md`           | Cloudflared + ngrok + Tailscale Funnel                            |
-| `PROXY_GUIDE.md`             | Четырёхуровневый исходящий прокси + маркетплейс 1proxy            |
-
-### Подкаталоги
-
-| Подкаталог            | Назначение                                                                                                                                                                                                                        |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/i18n/`          | Локализованные переводы документации (41 локаль)                                                                                                                                                                                  |
-| `docs/screenshots/`   | Изображения для руководств                                                                                                                                                                                                        |
-| `_tasks/superpowers/` | Планы/спецификации из superpowers (`writing-plans`/`brainstorming`) + исследования — изолированный репозиторий с отдельным версионированием, игнорируемый Git в основном дереве. См. CLAUDE.md → «Planning & Research Artifacts». |
+46 навыков, по одной папке с `SKILL.md` (`cli-*`, `omni-*`, `config-codex-cli`, `ponytail`), плюс `skills/README.md`. `src/lib/agentSkills/catalog.ts` считывает их во время выполнения и предоставляет их через `/api/agent-skills`, MCP и A2A. Большинство манифестов генерируется с помощью `src/lib/agentSkills/generator.ts` (`scripts/skills/generate-agent-skills.mjs`; `npm run check:agent-skills-sync` проверяет наличие отклонений). См. [AGENT-SKILLS.md](../frameworks/AGENT-SKILLS.md).
 
 ---
 
-## `tests/` — Наборы тестов
+## `scripts/` — сборка, ворота и инструменты
 
-| Подкаталог                           | Тип                                            | Средство запуска                                  |
-| ------------------------------------ | ---------------------------------------------- | ------------------------------------------------- |
-| `tests/unit/`                        | Модульные тесты (~4 800 файлов, самые быстрые) | Встроенное средство запуска тестов Node           |
-| `tests/integration/`                 | Интеграционные тесты нескольких модулей и БД   | Встроенное средство запуска тестов Node (1 поток) |
-| `tests/e2e/`                         | E2E-тесты интерфейса и рабочих процессов       | Playwright                                        |
-| `tests/e2e/protocol-clients.test.ts` | E2E-тесты MCP и A2A с реальными клиентами      | Специализированные клиенты протоколов             |
-| `tests/e2e/ecosystem.test.ts`        | Интеграция с провайдерами (с доступом к сети)  | Встроенное средство запуска тестов Node           |
+Около 435 отслеживаемых файлов. Новые сценарии помещаются в одну из подпапок, разрешенных `AGENTS.md`; одноразовый код находится в `scripts/ad-hoc/`.
 
----
+```
+scripts/
+├── check-permissions.sh   # Container ENTRYPOINT (copied to /app by the Dockerfile)
+├── postinstall.mjs        # Native-runtime warm-up run after scripts/build/postinstall.mjs
+├── start-ws-server.mjs    # Starts the live-dashboard WebSocket server as a separate process
+├── build/                 # Build, standalone assembly, npm pack/publish, postinstall, MITM, Electron prep
+├── check/                 # Quality gates behind most `npm run check:*` scripts; lib/ holds shared helpers
+├── quality/               # Ratchets, gate manifest, impact map, mutation tooling, release acceptance
+├── ci/                    # Steps invoked only by workflows (Docker publish, Release-Green, scanners)
+├── dev/                   # Dev runners (run-next, Playwright/protocol/ecosystem runners) and runtime helpers shipped in the package
+├── docs/                  # README SVG/diagram generators, OpenAPI module, provider reference, wiki sync
+├── i18n/                  # UI and docs translation pipeline, coverage checks, glossary/, lib/
+├── release/               # Changelog aggregation, contributors, merge train, LTS cut, publish verification
+├── ops/                   # Canary deploy, OpenCode free relay, runner janitor, allowlist sync
+├── perf/                  # Benchmarks and one-off performance A/B scripts
+├── cli/                   # CLI tooling (API-command generator, SSO, CLI smoke tests, media MCP)
+├── homolog/               # Homologation against a running instance + promptfoo config generation
+├── features/              # Feature-triage engine and its lib/
+├── router-eval/           # Offline router evaluation (`npm run eval:router*`)
+├── compression/           # Compression benchmark (`npm run bench:compression`, runs on Bun)
+├── compression-eval/      # Compression quality evaluation (`npm run eval:compression`)
+├── devin-bridge/          # Shell entry points for the Devin bridge (build, launch, tests)
+├── docker/                # Base-path patching for the standalone server inside containers
+├── integrations/          # MarkItDown MCP launchers — see docs/integrations/MARKITDOWN_MCP.md
+├── launchers/             # Double-click launchers and desktop-shortcut creators (Windows/macOS/Linux)
+├── packs/                 # Optional-pack manifest and installer (shipped in the npm package)
+├── test/                  # Live smoke scripts (combo-live, OpenCode/ChatGPT Web)
+├── sre/                   # On-call rotation, log redaction, TCP close analyzer
+├── vps/                   # Start/stop the release runner
+├── skills/                # Agent Skills generator CLI
+├── research/              # Free-tier budget card SVG generator
+└── ad-hoc/                # One-shot diagnostics and migrations
+```
 
-## `public/` — Статические ресурсы
+Часто используемые точки входа:
 
-| Путь                | Назначение                                                                   |
-| ------------------- | ---------------------------------------------------------------------------- |
-| `public/` (корень)  | Значки сайта, robots.txt, манифест, сервис-воркер, маркетинговые изображения |
-| `public/providers/` | Логотипы провайдеров в форматах PNG/SVG (используются в панели управления)   |
+| Скрипт                                                              | Цель                                                                                                         |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `dev/run-next.mjs`                                                  | бегун `npm run dev` / `npm start`                                                                            |
+| `build/build-next-isolated.mjs`                                     | `npm run build` (автономная сборка Next.js )                                                                 |
+| `build/prepublish.ts`                                               | `npm run build:cli`: собирает npm `dist/`                                                                    |
+| `build/postinstall.mjs`                                             | перехватчик npm `postinstall`                                                                                |
+| `build/publicOpenApi.mjs`                                           | `npm run gen:public-openapi`                                                                                 |
+| `docs/gen-provider-reference.ts`                                    | `npm run gen:provider-reference` (восстанавливает PROVIDER_REFERENCE.md)                                     |
+| `docs/gen-openapi-module.mjs`                                       | `prebuild:docs` (генерирует `src/app/docs/lib/openapi.generated.ts`)                                         |
+| `i18n/run-translation.mjs`                                          | `npm run i18n:run` (зеркала документов)                                                                      |
+| `i18n/generate-route-namespaces.mjs`                                | `npm run gen:i18n-routes`                                                                                    |
+| `release/aggregate-changelog.mjs`                                   | Складывает фрагменты `changelog.d/` в `CHANGELOG.md`                                                         |
+| `check/check-fabricated-docs.mjs`                                   | `npm run check:fabricated-docs` (ворота точности документа)                                                  |
+| `check/check-tracked-artifacts.mjs`                                 | `npm run check:tracked-artifacts` (блокирует отслеживаемые корневые пути `_*` )                              |
+| `quality/check-quality-ratchet.mjs`                                 | `npm run quality:ratchet` (метрическая трещотка против `config/quality/`)                                    |
+| `dev/run-playwright-tests.mjs`                                      | `npm run test:e2e`                                                                                           |
+| `dev/run-protocol-clients-tests.mjs`, `dev/run-ecosystem-tests.mjs` | `npm run test:protocols:e2e`, `npm run test:ecosystem`                                                       |
+| `dev/new-worktree.sh`                                               | Создает изолированное рабочее дерево разработки — см. [WORKTREE_ISOLATION.md.](../ops/WORKTREE_ISOLATION.md) |
+| `dev/sync-ui-kit.sh`                                                | Синхронизирует `packages/ui-kit/src` с закрепленным восходящим коммитом                                      |
 
----
+Инвентаризация и политика ворот: [QUALITY_GATES.md](QUALITY_GATES.md).
 
-## `config/` — Статические конфигурации и состояние проверок качества
+## `config/` конфигурация версий — и состояние шлюза
 
-Поставляемые шаблоны конфигурации и зафиксированные базовые показатели проверок качества
-(перемещены сюда из корня репозитория в v3.8.26, чтобы не перегружать корневой каталог).
+| Путь                                     | Цель                                                                                                                                              |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `i18n.json` / `i18n-schema.json`         | Поддерживаемые локали (источник количества локалей) и их схема.                                                                                   |
+| `payloadRules.json`                      | Правила полезной нагрузки восходящего потока (`open-sse/services/payloadRules.ts`)                                                                |
+| `cli-tools-manifest.json`                | Манифест интегрируемых инструментов CLI (`bin/cli/cli-manifest.mjs`)                                                                              |
+| `alibaba-free-tier-allowlist.json`       | Белый список моделей бесплатного уровня Alibaba                                                                                                   |
+| `ci/toolchain.json`                      | Версии набора инструментов CI                                                                                                                     |
+| `quality/quality-baseline.json`          | Базовый уровень по мультиметрическому храповому механизму (охват, предупреждения, дублирование и т. д.)                                           |
+| `quality/*-baseline.json`                | Замороженные базовые показатели для отдельных элементов (сложность, дублирование, размер файла, срезы проверки типов, обнаружение тестов и т. д.) |
+| `quality/*-allowlist.json`               | Списки разрешенных шлюзов (зависимости, лицензии, атрибуция AI, тесты «забытый брат» и т. д.)                                                     |
+| `quality/eslint-suppressions.json`       | Замороженные подавления ESLint, применяемые `npm run lint`                                                                                        |
+| `quality/gate-manifest.json`             | Манифест шлюза проверен `scripts/quality/gate-manifest.mjs`                                                                                       |
+| `quality/vitest-exclusions.json`         | Карантинный инвентарь для `vitest.quarantine.config.ts`                                                                                           |
+| `quality/skill-templates/`               | Канонические шаблоны SKILL.md, проверенные `scripts/quality/check-skill-contract.mjs`                                                             |
+| `quality/release-acceptance.schema.json` | Схема свидетельства о выпуске-приемке — см. [QUALITY_EVIDENCE_CONTRACT.md](QUALITY_EVIDENCE_CONTRACT.md)                                          |
+| `release/`                               | Согласование журнала изменений и собственный манифест wreq-js, перечень лицензий и уведомления.                                                   |
 
-| Путь                                          | Назначение                                                                                        |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `config/i18n.json`                            | Список локалей и метаданные (канонический источник количества локалей — 42)                       |
-| `config/i18n-schema.json`                     | Схема JSON для проверки `i18n.json`                                                               |
-| `config/payloadRules.json`                    | Правила очистки входящих данных от вышестоящих систем                                             |
-| `config/quality/quality-baseline.json`        | Базовый уровень многофакторного храпового механизма (`scripts/quality/check-quality-ratchet.mjs`) |
-| `config/quality/complexity-baseline.json`     | Зафиксированный базовый уровень сложности ESLint (`check-complexity.mjs`)                         |
-| `config/quality/duplication-baseline.json`    | Зафиксированный базовый уровень дублирования jscpd (`check-duplication.mjs`)                      |
-| `config/quality/file-size-baseline.json`      | Зафиксированный базовый размер для каждого файла (`check-file-size.mjs`)                          |
-| `config/quality/test-discovery-baseline.json` | Зафиксированный базовый уровень потерянных тестов (`check-test-discovery.mjs`)                    |
-| `config/quality/dependency-allowlist.json`    | Список разрешённых зависимостей (`check-deps.mjs`)                                                |
-| `config/quality/.license-allowlist.json`      | Список разрешённых лицензий SPDX (`check-licenses.mjs`)                                           |
-| `config/quality/quality-metrics.json`         | Временные собранные метрики (создаётся `collect-metrics.mjs`; **игнорируется Git**)               |
+## `changelog.d/` фрагменты журнала изменений —
 
----
-
-## `.github/` — Интеграция с GitHub
-
-| Путь                               | Назначение                                                                  |
-| ---------------------------------- | --------------------------------------------------------------------------- |
-| `.github/workflows/`               | Рабочие процессы GitHub Actions для CI/CD (линтинг, тесты, покрытие, релиз) |
-| `.github/ISSUE_TEMPLATE/`          | Шаблоны сообщений об ошибках и запросов функций                             |
-| `.github/pull_request_template.md` | Шаблон PR                                                                   |
-| `.github/dependabot.yml`           | Конфигурация обновления зависимостей                                        |
-
----
-
-## `.husky/` — Git-хуки
-
-| Файл         | Назначение                                                                            |
-| ------------ | ------------------------------------------------------------------------------------- |
-| `pre-commit` | Запускает `lint-staged + check-docs-sync + check:any-budget:t11`                      |
-| `pre-push`   | В настоящее время отключён (закомментирован). Запускайте `npm run test:unit` вручную. |
-| `_/`         | Внутренние компоненты Husky                                                           |
-
----
-
-## `.claude/` — Slash-команды Claude Code
-
-| Файл                                                | Назначение                                                   |
-| --------------------------------------------------- | ------------------------------------------------------------ |
-| `commands/version-bump-cc.md`                       | `/version-bump-cc` — повышение версии + автосписок изменений |
-| `commands/generate-release-cc.md`                   | `/generate-release-cc` — полный процесс выпуска релиза       |
-| `commands/deploy-vps-{local,akamai,both}-cc.md`     | Развёртывание на VPS                                         |
-| `commands/capture-release-evidences-cc.md`          | Запись новых функций в браузере в формате WebP               |
-| `commands/review-{prs,discussions}-cc.md`           | Разбор PR и обсуждений GitHub                                |
-| `commands/{review-issues,implement-features}-cc.md` | Рабочие процессы для задач                                   |
-| `settings.local.json`                               | Настройки Claude Code для конкретного проекта                |
-
----
-
-## `.agents/` — Универсальные рабочие процессы агентов (Codex / Cursor / и т. д.)
-
-| Путь                     | Назначение                                                     |
-| ------------------------ | -------------------------------------------------------------- |
-| `workflows/*-ag.md`      | 11 определений рабочих процессов (зеркало `.claude/commands/`) |
-| `skills/<name>/SKILL.md` | 9 определений навыков с примечаниями по выполнению в Codex     |
-
-> **Примечание:** Рабочие процессы и команды в настоящее время побайтово идентичны. Если `.agents/` предназначен для другой среды выполнения агентов (Codex), варианты должны существенно различаться.
-
----
-
-## `_ideia/`, `_mono_repo/`, `_references/`, `_tasks/` — Вне основного дерева
-
-Эти каталоги с префиксом подчёркивания содержат материалы, не входящие в поставку:
-
-- **`_ideia/`** — заметки по проектированию (категории defer / notfit / viable)
-- **`_mono_repo/`** — исторические подпроекты (omnirouteCloud, omnirouteSite, vscode-extension)
-- **`_references/`** — доступные только для чтения клоны связанных OSS-проектов (LiteLLM, 9router, ClawRouter, CLIProxyAPI, modelrelay, new-api и т. д.) для перекрёстной сверки во время разработки
-- **`_tasks/`** — неформальные файлы отслеживания задач для каждого релиза
-
-Не включаются в вывод `npm pack`. См. `.npmignore`.
+PR добавляет один фрагмент вместо редактирования `CHANGELOG.md`: `features/`, `fixes/` или `maintenance/` с именем `<PR-number>-<slug>.md`. Во время выпуска `scripts/release/aggregate-changelog.mjs` сворачивает их в `CHANGELOG.md` и удаляет; `npm run check:changelog-integrity` проверяет их. Подробности в `changelog.d/README.md`.
 
 ---
 
-## Генерируемое / игнорируемое Git
+## общедоступная документация `docs/` —
 
-| Путь                   | Назначение                      |
-| ---------------------- | ------------------------------- |
-| `node_modules/`        | Зависимости npm                 |
-| `.next/`               | Результаты сборки Next.js       |
-| `coverage/`            | Отчёты c8 о покрытии            |
-| `logs/`                | Журналы выполнения              |
-| `package/`             | Промежуточные файлы npm pack    |
-| `.playwright-mcp/`     | Артефакты тестов Playwright MCP |
-| `.issues/`             | Локальный кеш задач             |
-| `tsconfig.tsbuildinfo` | Инкрементный кеш TS             |
+Разделы, перечисленные в `source.config.ts` компилируются в сайт `/docs` (за исключением нескольких страниц безопасности, доступных только для оператора); `docs/meta.json` устанавливает порядок боковой панели. Начните с [README.md](../README.md).
+
+| Путь                   | Содержание                                                                                                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `getting-started/`     | Быстрый старт, самостоятельное размещение, поставщики, уровни бесплатного пользования, автоматическое комбинирование и руководства по веб-куки.                                |
+| `guides/`              | Руководства оператора и разработчика: настройка, Docker, Electron, PWA, Termux, CLIs, i18n, устранение неполадок, руководство пользователя                                     |
+| `architecture/`        | Архитектура, ссылка на кодовую базу, рецепты модификации, аутентификация, устойчивость, контроль качества, система проектирования, эта карта                                   |
+| `reference/`           | ссылка на API, переменные среды, флаги функций, инструменты CLI, уровни бесплатного пользования, созданная ссылка на поставщика, удаленные поставщики                          |
+| `frameworks/`          | MCP, A2A, ACP, навыки, память, плагины, облачные агенты, веб-перехватчики, оценки, экспорт журналов, радар, игровая площадка, …                                                |
+| `routing/`             | Авто-комбинирование, рассуждение replay/routing, доля квот, лестница подписки, строгая нулевая стоимость,…                                                                     |
+| `security/`            | Ограждения, очистка ошибок, CORS, SSO, выходная политика, уровни защиты маршрутов, цепочка поставок,…                                                                          |
+| `compression/`         | Руководство по сжатию, механизмы, RTK, формат правил, языковые пакеты, редактирование контекста                                                                                |
+| `ops/`                 | Поток выпуска, ветвление, поезд слияния, развертывание (VM, Fly.io, Kubernetes), база данных, прокси, рабочие деревья, подробности жестких правил                              |
+| `providers/`           | Руководства для каждого поставщика (Claude Code, ChatGPT Web, Cursor, GitHub Copilot, …)                                                                                       |
+| `comparison/`          | OmniRoute по сравнению с альтернативами                                                                                                                                        |
+| `integrations/`        | Примечания по интеграции (родной fal.ai, MarkItDown MCP); не скомпилирован в `/docs`                                                                                           |
+| `openapi.yaml`         | источник OpenAPI ; подает `src/app/docs/lib/openapi.generated.ts`, `public/openapi.yaml` и `bin/cli/api-commands/`                                                             |
+| `diagrams/`            | Исходники русалок (`.mmd`), рендеринг SVGs (`exported/`) и README SVGs из `scripts/docs/gen-readme-*`                                                                          |
+| `assets/`              | Языковой флаг SVGs и другие ресурсы README                                                                                                                                     |
+| `screenshots/`         | Скриншоты, используемые README, и руководства                                                                                                                                  |
+| `i18n/`                | Переведенные зеркала: по одной папке для каждой локали (66) с корневыми документами и подмножеством `docs/` ; произведено `npm run i18n:run` — см [I18N.md](../guides/I18N.md) |
+| `*.md` верхнего уровня | `README.md` (указатель документа), `DEVELOPER-ENVIRONMENT.md` и несколько отдельных заметок                                                                                    |
+
+Ключевые точки входа: [ARCHITECTURE.md](ARCHITECTURE.md), [CODEBASE_DOCUMENTATION](CODEBASE_DOCUMENTATION.md), [MODIFICATION_SCENARIOS](MODIFICATION_SCENARIOS.md), [ENVIRONMENT.md](../reference/ENVIRONMENT.md), [PROVIDER_REFERENCE](../reference/PROVIDER_REFERENCE.md) (генерируются `npm run gen:provider-reference`).
+
+---
+
+## комплекты тестов `tests/` —
+
+Около 9670 отслеживаемых файлов. Тестовые файлы находятся здесь, а не в корне проекта. Исключения: совмещенные папки `__tests__/` в `src/` и `open-sse/`, которые собираются конфигурациями Vitest.
+
+| Путь                                                   | Содержание                                                                                                                                                                             | бегун                                                                                   |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `tests/unit/`                                          | Модульные тесты (более 9000 файлов): многие на верхнем уровне, а также папки домена (`ui/`, `compression/`, `build/`, `guardrails/`, `db/`, `cli/`, `api/`, `dashboard/`, `combo/`, …) | Средство запуска тестов узла (`npm run test:unit`); `*.tsx` через `test:vitest:ui`      |
+| `tests/unit/serial/`                                   | Тесты, чувствительные к ЦП, выполняются с параллелизмом 1                                                                                                                              | `npm run test:unit:serial`                                                              |
+| `tests/unit/autoCombo/`, `tests/unit/api/**/*.spec.ts` | Vitest suites внутри дерева юнитов                                                                                                                                                     | `npm run test:vitest`                                                                   |
+| `tests/integration/`                                   | Интеграционные тесты мультимодулей и DB ; `combo-matrix/`, `combo-live/`, `services/`                                                                                                  | `npm run test:integration`, `test:combo:matrix`, `test:combo:live`, `test:services:int` |
+| `tests/e2e/`                                           | Playwright `*.spec.ts` + live suites `ecosystem.test.ts`, `protocol-clients.test.ts`                                                                                                   | `npm run test:e2e`, `test:ecosystem`, `test:protocols:e2e`                              |
+| `tests/boundary/`                                      | `*.live.test.ts` для работающего экземпляра                                                                                                                                            | `npm run test:boundary:live`                                                            |
+| `tests/homolog/`                                       | Пакеты омологации (`api/`, `ui/` с собственной конфигурацией Playwright )                                                                                                              | `npm run homolog` — см [HOMOLOGATION.md](../ops/HOMOLOGATION.md)                        |
+| `tests/load/`                                          | Загрузка и загрузка скриптов (k6)                                                                                                                                                      | Ночной рабочий процесс устойчивости                                                     |
+| `tests/_setup/`                                        | `--import` /файлы настройки (каталог изолированных данных, защита выхода, полифилы Vitest UI )                                                                                         | Загружено бегунами                                                                      |
+| `tests/_helpers/`, `tests/helpers/`                    | Общие помощники по тестированию (золотые снимки, сеанс управления и т. д.)                                                                                                             | Импортировано тестами                                                                   |
+| `tests/fixtures/`                                      | Данные фикстур и фикстуры дочерних процессов                                                                                                                                           | Импортировано тестами                                                                   |
+| `tests/snapshots/`                                     | Золотые файлы для `tests/helpers/goldenSnapshot.ts`                                                                                                                                    | Импортировано тестами                                                                   |
+| `tests/manual/`                                        | файлы `.http` для ручных вызовов REST                                                                                                                                                  | Руководство                                                                             |
+| `tests/security/`                                      | Скрипты оболочки безопасности                                                                                                                                                          | Ручные/юнит-тестовые приспособления                                                     |
+| `tests/types/`                                         | Условия контракта на уровне типа                                                                                                                                                       | —                                                                                       |
+
+Полная матрица: `CONTRIBUTING.md` → «Выполнение тестов» и [COVERAGE_PLAN.md](../ops/COVERAGE_PLAN.md).
+
+---
+
+## `deploy/` — Кубернетес
+
+| Путь                                               | Цель                                                                                                           |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `deploy/helm/omniroute/`                           | Хелм-диаграмма (`Chart.yaml`, `values.yaml`, шаблоны для развертывания, службы, входа, PVC, secret, configmap) |
+| `deploy/kubernetes/base/`                          | Настройка базы (пространство имен, развертывание, сервис, PVC, configmap, `secret.example.yaml`)               |
+| `deploy/kubernetes/overlays/k3s/`, `overlays/k8s/` | Наложения, специфичные для кластера (вход, класс хранилища, ресурсы, зонды)                                    |
+
+См. [KUBERNETES_DEPLOYMENT_GUIDE](../ops/KUBERNETES_DEPLOYMENT_GUIDE.md)
+
+## вспомогательные изображения `docker/` —
+
+| Путь                                | Цель                                                                                                                         |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `docker/chatgpt-web-codex-browser/` | Безголовый образ браузера с прокси-сервером CDP для веб-исполнителя ChatGPT — см. [CHATGPT_WEB](../providers/CHATGPT_WEB.md) |
+| `docker/devin-bridge/`              | Образ моста Devin, создание файла, макеты и защита сети                                                                      |
+| `docker/vnc-browser/`               | Chromium с VNC для интерактивных сеансов браузера                                                                            |
+
+Основное изображение — корень `Dockerfile`; см. [DOCKER_GUIDE](../guides/DOCKER_GUIDE.md)
+
+## Рецепты сообщества `contrib/` — (официально не поддерживаются)
+
+| Путь                    | Цель                                                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `contrib/podman/`       | Квадлеты Podman (контейнер, том, сеть, Redis)                                                                                               |
+| `contrib/vps/`          | VPS `compose.yaml` + `.env.example`                                                                                                         |
+| `contrib/windows/`      | Программы запуска `.bat` для запуска из кассы Windows                                                                                       |
+| `contrib/session-sync/` | README для стороннего расширения браузера для синхронизации сеансов. — см. [SESSION-SYNC-EXTENSION.md](../guides/SESSION-SYNC-EXTENSION.md) |
+
+## `examples/`
+
+| Путь                            | Цель                                                                                   |
+| ------------------------------- | -------------------------------------------------------------------------------------- |
+| `examples/omniroute-cmd-hello/` | Минимальный командный плагин — см. [PLUGINS.md](../frameworks/PLUGINS.md)              |
+| `examples/plugins/`             | Примеры плагинов: langfuse, регистратор запросов, менеджер тем, приветственный баннер. |
+| `examples/quickstart/`          | Клиентские фрагменты: Curl, Node.js (axios), PHP, Python                               |
+
+---
+
+## `.github/` — интеграция GitHub
+
+| Путь                                                         | Цель                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `.github/workflows/`                                         | CI (`ci.yml`, `quality.yml`, `build.yml`), сканирование безопасности (`codeql.yml`, `semgrep.yml`, `scorecard.yml`, `dast-smoke.yml`), запланированные пакеты `nightly-*.yml`, публикация (`npm-publish.yml`, `docker-publish.yml`, `electron-release.yml`), рабочие процессы выпуска и обслуживания. |
+| `.github/actions/npm-ci-retry/`                              | Составное действие: `npm ci` с кешем и повтором                                                                                                                                                                                                                                                       |
+| `.github/actions/prepare-unit-storage/`                      | Составное действие: освобождает место на диске бегуна, затем устанавливает зависимости.                                                                                                                                                                                                               |
+| `.github/ISSUE_TEMPLATE/`                                    | Формы проблем с ошибками, функциями и покрытием тестов                                                                                                                                                                                                                                                |
+| `.github/pull_request_template.md`, `PULL_REQUEST_TEMPLATE/` | Шаблон PR по умолчанию плюс варианты bugfix/feature                                                                                                                                                                                                                                                   |
+| `.github/CODEOWNERS`, `FUNDING.yml`, `dependabot.yml`        | Владельцы кода, спонсорские ссылки, обновления зависимостей                                                                                                                                                                                                                                           |
+| `.github/labels.yml`                                         | Определения меток, применяемые `npm run labels:sync`                                                                                                                                                                                                                                                  |
+| `.github/copilot-instructions.md`                            | инструкции GitHub Copilot (поверхность инструкций агента)                                                                                                                                                                                                                                             |
+
+Карта вакансий CI : [QUALITY_GATES.md](QUALITY_GATES.md).
+
+## `.husky/` — git-хуки
+
+| Файл         | Цель                                                                                                                                                                                      |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pre-commit` | Проверка идентичности Git, lint-staged, Gate Manifest, синхронизация документов, любой бюджет, храповой механизм масштабирования типов, отслеживаемые артефакты и проверки снимков ui-kit |
+| `commit-msg` | `scripts/check/check-ai-attribution.mjs` в сообщении о фиксации                                                                                                                           |
+| `pre-push`   | Намеренно легкий: проверка работоспособности PATH/npm, которая завершает 0                                                                                                                |
+
+Среда выполнения перехватчика в `.husky/_/` создается при установке и не отслеживается.
 
 ---
 
 ## Советы по навигации
 
-- **Новый участник?** Прочитайте `CONTRIBUTING.md` → `CLAUDE.md` → `docs/architecture/ARCHITECTURE.md` → `docs/architecture/CODEBASE_DOCUMENTATION.md`.
-- **Добавляете провайдера?** Следуйте разделу `docs/architecture/ARCHITECTURE.md § Adding a New Provider` и сверьтесь с `docs/reference/PROVIDER_REFERENCE.md`.
-- **Добавляете маршрут?** См. `docs/architecture/ARCHITECTURE.md § Adding a New API Route` и `src/shared/validation/schemas.ts`.
-- **Добавляете инструмент MCP?** См. `docs/frameworks/MCP-SERVER.md § Adding a Tool`.
-- **Добавляете навык A2A?** См. `docs/frameworks/A2A-SERVER.md § Adding a New Skill`.
-- **Запускаете локально?** См. `docs/guides/SETUP_GUIDE.md`.
-- **Выполняете развёртывание?** См. `docs/guides/DOCKER_GUIDE.md` / `docs/ops/VM_DEPLOYMENT_GUIDE.md` / `docs/ops/FLY_IO_DEPLOYMENT_GUIDE.md`.
-- **Выпускаете релиз?** См. `docs/ops/RELEASE_CHECKLIST.md` (и навык Claude Code `/generate-release-cc`).
+- **Новый участник?** `CONTRIBUTING.md` → `AGENTS.md` → [ARCHITECTURE.md](ARCHITECTURE.md) → [CODEBASE_DOCUMENTATION.md](CODEBASE_DOCUMENTATION.md).
+- **Изменение чего-то общего** (поставщик, маршрут, модуль DB, инструмент MCP, навык A2A )? Следуйте [MODIFICATION_SCENARIOS](MODIFICATION_SCENARIOS.md)
+- **Добавляем провайдера?** Сначала проверьте [REMOVED_PROVIDERS.md](../reference/REMOVED_PROVIDERS.md), затем перепроверьте [PROVIDER_REFERENCE.md](../reference/PROVIDER_REFERENCE.md).
+- **Работаете локально?** [SETUP_GUIDE](../guides/SETUP_GUIDE.md)
+- **Развертывание?** [DOCKER_GUIDE.md](../guides/DOCKER_GUIDE.md), [SELF_HOST_GUIDE.md](../getting-started/SELF_HOST_GUIDE.md), [VM_DEPLOYMENT_GUIDE.md](../ops/VM_DEPLOYMENT_GUIDE.md), [FLY_IO_DEPLOYMENT_GUIDE.md](../ops/FLY_IO_DEPLOYMENT_GUIDE.md), [KUBERNETES_DEPLOYMENT_GUIDE.md](../ops/KUBERNETES_DEPLOYMENT_GUIDE.md).
+- **Выпускаем?** [RELEASE_CHECKLIST](../ops/RELEASE_CHECKLIST.md)
+- **Качественные ворота вышли из строя?** [QUALITY_GATES](QUALITY_GATES.md) и [QUALITY_GATE_PLAYBOOK](../ops/QUALITY_GATE_PLAYBOOK.md)

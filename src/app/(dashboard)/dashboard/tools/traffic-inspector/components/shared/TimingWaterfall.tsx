@@ -20,12 +20,12 @@ export function TimingWaterfall({ request }: TimingWaterfallProps) {
     {
       label: t("timingProxyOverhead"),
       ms: proxyLatencyMs ?? 0,
-      color: "bg-blue-500",
+      color: "bg-chart-1",
     },
     {
       label: t("timingUpstreamResponse"),
       ms: upstreamLatencyMs ?? 0,
-      color: "bg-green-500",
+      color: "bg-chart-2",
     },
   ];
 
@@ -38,9 +38,19 @@ export function TimingWaterfall({ request }: TimingWaterfallProps) {
             <div key={seg.label} className="space-y-1">
               <div className="flex justify-between text-xs text-text-muted">
                 <span>{seg.label}</span>
-                <span>{seg.ms}ms ({pct.toFixed(1)}%)</span>
+                <span>
+                  {seg.ms}ms ({pct.toFixed(1)}%)
+                </span>
               </div>
-              <div className="h-4 w-full rounded bg-bg-subtle">
+              <div
+                role="progressbar"
+                aria-label={seg.label}
+                aria-valuemin={0}
+                aria-valuemax={total}
+                aria-valuenow={seg.ms}
+                aria-valuetext={`${seg.ms}ms (${pct.toFixed(1)}%)`}
+                className="h-4 w-full rounded bg-bg-subtle"
+              >
                 <div
                   className={`h-full rounded ${seg.color}`}
                   style={{ width: `${Math.max(pct, 0.5)}%` }}

@@ -34,8 +34,22 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const workflowDir = path.join(repoRoot, ".github/workflows");
 
-/** The only owner whose namespaces this repository may publish to or gate on. */
-const OWNER = "diegosouzapw";
+/**
+ * The GitHub owner of this repository (transferred to the organization on 2026-10-21): every
+ * `github.repository` guard and every GHCR namespace must name it.
+ */
+const OWNER = "cheaper-inference";
+/**
+ * Docker Hub cannot move a repository between namespaces: the legacy personal repository keeps
+ * its pull history and receives every release, and the organization repository is published in
+ * parallel (docker-org-mirror.yml).
+ */
+const DOCKERHUB_OWNERS = ["diegosouzapw", "cheaperinference"];
+const REGISTRY_OWNERS: Record<string, string[]> = {
+  "ghcr.io": [OWNER],
+  "docker.io": DOCKERHUB_OWNERS,
+  "index.docker.io": DOCKERHUB_OWNERS,
+};
 
 function workflowFiles(): string[] {
   return fs
@@ -51,9 +65,9 @@ test("no workflow publishes to another owner's container registry", () => {
     const text = fs.readFileSync(file, "utf-8");
     // ghcr.io/<owner>/... and index.docker.io/<owner>/... — the owner is the segment
     // right after the registry host.
-    for (const m of text.matchAll(/\b(?:ghcr\.io|(?:index\.)?docker\.io)\/([A-Za-z0-9_.-]+)/g)) {
-      const owner = m[1];
-      if (owner.toLowerCase() !== OWNER) {
+    for (const m of text.matchAll(/\b(ghcr\.io|(?:index\.)?docker\.io)\/([A-Za-z0-9_.-]+)/g)) {
+      const [, host, owner] = m;
+      if (!REGISTRY_OWNERS[host].includes(owner.toLowerCase())) {
         offenders.push(`${path.basename(file)} → ${m[0]}`);
       }
     }
@@ -62,7 +76,7 @@ test("no workflow publishes to another owner's container registry", () => {
   assert.deepEqual(
     offenders,
     [],
-    `workflow(s) target a registry namespace that is not ${OWNER}'s:\n  ${offenders.join("\n  ")}\n` +
+    `workflow(s) target a registry namespace that is not ours (${JSON.stringify(REGISTRY_OWNERS)}):\n  ${offenders.join("\n  ")}\n` +
       `A fork's publish workflow does not belong in the canonical repository — it cannot ` +
       `authenticate anyway, and it pollutes every release check board.`
   );

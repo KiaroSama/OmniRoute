@@ -1,0 +1,86 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { buildChecks, tallyDrift } from "../../scripts/check/check-docs-counts-sync.mjs";
+import { loadFactsSnapshot } from "../../scripts/release/facts.mjs";
+
+// Provider prose validation runs on the committed facts snapshot: it is deterministic between
+// releases and keeps the test off the runtime-facts subprocess, which these asserts never need.
+const facts = loadFactsSnapshot();
+assert.ok(
+  facts,
+  "docs/reference/derived-facts.json is missing — run npm run release:refresh-derived"
+);
+const checks = buildChecks({ facts });
+const check = checks.find((entry) => entry.label === "Provider count");
+assert.ok(check);
+const expected = check.actual;
+assert.ok(Number(expected) >= 300, `implausible provider total from the snapshot: ${expected}`);
+const evaluate = (content) => tallyDrift([{ ...check, files: ["README.md"] }], () => content);
+
+for (const stale of [
+  "355 providers",
+  "**352-provider catalog**",
+  "327 AI Providers",
+  "329 registered providers",
+  "**358** LLM providers",
+]) {
+  test(`rejects mixed current and stale aggregate claims: ${stale}`, () => {
+    assert.equal(evaluate(`${expected} providers. Also: ${stale}.`).strict, 1);
+  });
+}
+
+test("checks all reported documentation and skill surfaces", () => {
+  for (const file of [
+    "docs/architecture/ARCHITECTURE.md",
+    "docs/architecture/CODEBASE_DOCUMENTATION.md",
+    "docs/architecture/REPOSITORY_MAP.md",
+    "docs/frameworks/A2A-SERVER.md",
+    "docs/frameworks/ACP.md",
+    "docs/frameworks/AGENTBRIDGE.md",
+    "docs/frameworks/OPEN_SSE_ARCHITECTURE.md",
+    "docs/getting-started/FREE-TIERS-GUIDE.md",
+    "docs/comparison/OMNIROUTE_VS_ALTERNATIVES.md",
+    "docs/guides/FREE_PROVIDER_RANKINGS.md",
+  ]) {
+    assert.ok(
+      checks.some((entry) => entry.docKey === "providers" && entry.files.includes(file)),
+      `provider-count gate must cover ${file}`
+    );
+  }
+  // The skill surfaces are agent-instruction files (plan 2026-11-13, phase 2): they carry no
+  // provider count at all, and a STRICT invariant fails one that comes back.
+  for (const file of [
+    "src/shared/constants/agentSkills.ts",
+    "skills/README.md",
+    "skills/omni-auth/SKILL.md",
+    "skills/omni-providers/SKILL.md",
+  ]) {
+    const guard = checks.find(
+      (entry) =>
+        entry.label.startsWith("No derived counts (agent-instruction file ") &&
+        entry.files.includes(file)
+    );
+    assert.ok(guard, `the instruction-surface invariant must cover ${file}`);
+    assert.equal(guard.strict, true);
+    assert.equal(guard.validate(`across 393 providers`).ok, false, `${file}: a count must fail`);
+  }
+});
+
+test("accepts current aggregate claims with distinct free-tier denominators", () => {
+  const text = `${expected} AI providers; 154 catalog-marked free providers, 34 provider pools, 444 per-model rows, 100+ providers in an example.`;
+  assert.equal(evaluate(text).strict, 0);
+});
+
+test("a matching unrelated number cannot hide a missing provider claim", () => {
+  assert.equal(evaluate(`There are ${expected} test cases.`).strict, 1);
+});
+
+test("preserves the distinct chat-model registry denominator", () => {
+  const text = `${expected} registered providers. The chat model registry covers **237 providers / 3,009 provider-model pairs**.`;
+  assert.equal(evaluate(text).strict, 0);
+});
+
+test("preserves explicitly versioned historical catalog snapshots", () => {
+  const text = `${expected} providers. A sample of the 351 registered providers in\n> OmniRoute v3.8.0.`;
+  assert.equal(evaluate(text).strict, 0);
+});

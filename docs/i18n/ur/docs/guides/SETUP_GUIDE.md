@@ -18,7 +18,7 @@
 
 ---
 
-## تنصیب کے طریقے
+## انسٹال کرنے کے طریقے
 
 ### npm (تجویز کردہ)
 
@@ -27,7 +27,9 @@ npm install -g omniroute
 omniroute
 ```
 
-ڈیش بورڈ `http://localhost:20128` پر کھلتا ہے اور API کا بنیادی URL `http://localhost:20128/v1` ہے۔
+ڈیش بورڈ `http://localhost:20128` پر کھلتا ہے اور API بیس URL `http://localhost:20128/v1` ہے۔
+
+> **این پی ایم صارفین:** اگر npm انتباہ کرتا ہے کہ انسٹال اسکرپٹس کو مسدود کردیا گیا تھا (مثال کے طور پر، `omniroute`، `better-sqlite3`)، دیکھیں [ٹربل شوٹنگ — npm install-scripts blocked](./TROUBLESHOOTING.md#npm-install-scripts-blocked-warning-global-install) ۔
 
 ### pnpm
 
@@ -36,77 +38,77 @@ pnpm add -g omniroute@latest --allow-build=better-sqlite3 --allow-build=@swc/cor
 omniroute
 ```
 
-> **pnpm صارفین:** `better-sqlite3` اور `@swc/core` کے لیے مقامی بلڈ اسکرپٹس فعال کرنے کی خاطر `--allow-build` فلیگ درکار ہے۔ pnpm v11 پر عالمی تنصیبات کے لیے `pnpm approve-builds -g` کمانڈ معاونت یافتہ نہیں ہے۔
+> **pnpm صارفین:** `--allow-build` پرچم کو `better-sqlite3` اور `@swc/core` کے لیے مقامی تعمیراتی اسکرپٹ کو فعال کرنے کی ضرورت ہے۔ `pnpm approve-builds -g` کمانڈ pnpm v11 پر عالمی انسٹال کے لیے تعاون یافتہ نہیں ہے۔
 
-### Arch Linux (AUR)
+### محراب Linux (AUR)
 
 ```bash
 yay -S omniroute-bin
 systemctl --user enable --now omniroute.service
 ```
 
-[AUR پیکیج](https://aur.archlinux.org/packages/omniroute-bin) OmniRoute انسٹال کرتا ہے اور systemd صارف سروس فراہم کرتا ہے۔
+[AUR پیکیج](https://aur.archlinux.org/packages/omniroute-bin) OmniRoute کو انسٹال کرتا ہے اور سسٹمڈ صارف کی خدمت فراہم کرتا ہے۔
 
-### سورس سے
+### ماخذ سے
 
 ```bash
 npm install
 PORT=20128 DASHBOARD_PORT=20129 NEXT_PUBLIC_BASE_URL=http://localhost:20129 npm run dev
 ```
 
-> **Windows نوٹ:** بطور ڈیفالٹ، اگر پرانی `%USERPROFILE%\.omniroute` ڈائریکٹری موجود نہ ہو تو OmniRoute `%APPDATA%\omniroute` استعمال کرتا ہے۔ ڈیٹا ڈائریکٹری کا مختلف مقام منتخب کرنے کے لیے `DATA_DIR` سیٹ کریں۔
+> **Windows نوٹ:** پہلے سے طے شدہ طور پر، OmniRoute `%APPDATA%\omniroute` استعمال کرتا ہے جب لیگیسی `%USERPROFILE%\.omniroute` ڈائرکٹری موجود نہیں ہے۔ ایک مختلف ڈیٹا ڈائرکٹری مقام کا انتخاب کرنے کے لیے `DATA_DIR` سیٹ کریں۔
 
-> **نوٹ:** پہلی بار چلانے پر `npm install`، `.env.example` سے `.env` خودکار طور پر تیار کرتا ہے۔ بعد کی تنصیبات موجودہ `.env` کو اوور رائٹ نہیں کریں گی، اس لیے تخصیصات محفوظ رہتی ہیں۔ اسے دوبارہ ابتدائی حالت سے بنانے کے لیے، دوبارہ چلانے سے پہلے `.env` حذف کریں۔
+> **نوٹ:** `npm install` پہلی بار `.env.example` سے `.env` خود بخود تیار کرتا ہے۔ بعد کے انسٹالز موجودہ `.env` اوور رائٹ نہیں کریں گے، اس لیے تخصیصات محفوظ ہیں۔ دوبارہ بیج لگانے کے لیے، دوبارہ چلانے سے پہلے `.env` حذف کریں۔
 
 ### Docker
 
-Compose پروفائلز اور Caddy HTTPS سمیت Docker کے مکمل سیٹ اپ کے لیے [Docker گائیڈ](./DOCKER_GUIDE.md) دیکھیں۔
+کمپوز پروفائلز اور Caddy HTTPS سمیت مکمل Docker سیٹ اپ کے لیے [Docker گائیڈ](./DOCKER_GUIDE.md) دیکھیں۔
 
 ### ڈیسک ٹاپ ایپ (Electron)
 
-OmniRoute کے ساتھ Electron 41 + electron-builder 26.10 پر بنایا گیا ایک ڈیسک ٹاپ ریپر فراہم کیا جاتا ہے۔ دستیاب اسکرپٹس (ورک اسپیس روٹ):
+OmniRoute ایک ڈیسک ٹاپ ریپر بھیجتا ہے جو Electron 41 + الیکٹران بلڈر 26.10 پر بنایا گیا ہے۔ دستیاب اسکرپٹس (ورک اسپیس روٹ):
 
 ```bash
-npm run electron:dev          # ہاٹ ری لوڈ کے ساتھ ڈیسک ٹاپ چلائیں
-npm run electron:build        # موجودہ OS کے لیے بلڈ کریں (خودکار طور پر شناخت شدہ)
-npm run electron:build:win    # Windows انسٹالر (NSIS + پورٹیبل)
-npm run electron:build:mac    # macOS (dmg + zip، arm64+x64)
+npm run electron:dev          # Run desktop with hot-reload
+npm run electron:build        # Build for current OS (auto-detected)
+npm run electron:build:win    # Windows installer (NSIS + portable)
+npm run electron:build:mac    # macOS (dmg + zip, arm64+x64)
 npm run electron:build:linux  # Linux (AppImage + deb + rpm)
-npm run electron:smoke:packaged  # پیکیج شدہ بلڈ کا اسموک ٹیسٹ کریں
+npm run electron:smoke:packaged  # Smoke-test packaged build
 ```
 
-ڈیسک ٹاپ انسٹالرز کی ریلیزز GitHub Releases کے ساتھ منسلک ہوتی ہیں۔ Electron کی مکمل تفصیلی رہنمائی (سائننگ، IPC برج، ڈسٹری بیوشنز) کے لیے، [`ELECTRON_GUIDE.md`](./ELECTRON_GUIDE.md) دیکھیں _(بعد کے مرحلے میں تیار کیا گیا)_۔
+ڈیسک ٹاپ انسٹالرز کی ریلیز GitHub ریلیز کے ساتھ منسلک ہیں۔ مکمل Electron deep-dive (signing, IPC bridge, distros) کے لیے [`ELECTRON_GUIDE.md`](./ELECTRON_GUIDE.md) _(criado em fase posterior)_ دیکھیں۔
 
-### ہیڈ لیس سرور (CI/خودکاری)
+### بغیر سر سرور (CI/automation)
 
-بلا نگرانی سیٹ اپس (Docker، Kubernetes، CI) کے لیے، استعمال کریں:
+غیر حاضر سیٹ اپ کے لیے (Docker, Kubernetes , CI)، استعمال کریں:
 
 ```bash
 omniroute setup --non-interactive
 omniroute providers test-batch
 ```
 
-env vars (`INITIAL_PASSWORD`، `OMNIROUTE_WS_BRIDGE_SECRET` وغیرہ) کے ساتھ ملا کر، اس سے آپ مکمل طور پر اسکرپٹ کیے جا سکنے والے انداز میں OmniRoute انسٹینس چلا سکتے ہیں۔
+env vars (`INITIAL_PASSWORD`، `OMNIROUTE_WS_BRIDGE_SECRET`، وغیرہ) کے ساتھ مل کر، یہ آپ کو ایک OmniRoute مثال کو مکمل طور پر اسکرپٹ کرنے دیتا ہے۔
 
 ### CLI اختیارات
 
-| کمانڈ                   | وضاحت                                                           |
-| ----------------------- | --------------------------------------------------------------- |
-| `omniroute`             | سرور شروع کریں (`PORT=20128`، API اور ڈیش بورڈ ایک ہی پورٹ پر)  |
-| `omniroute setup`       | پاس ورڈ اور پہلے پرووائیڈر کے لیے رہنمائی پر مبنی CLI آن بورڈنگ |
-| `omniroute doctor`      | سرور شروع کیے بغیر مقامی صحت کی جانچیں چلائیں                   |
-| `omniroute providers`   | CLI سے پرووائیڈرز دریافت، فہرست، توثیق اور ٹیسٹ کریں            |
-| `omniroute config`      | CLI ٹول کی تشکیل — کنفیگز کی فہرست، حصول، ترتیب اور توثیق       |
-| `omniroute status`      | آف لائن اسٹیٹس ڈیش بورڈ — ورژن، DB، ٹولز، کنفیگ                 |
-| `omniroute logs`        | API سے استعمال کے لاگز اسٹریم کریں (`--follow` معاونت یافتہ ہے) |
-| `omniroute update`      | OmniRoute اپ ڈیٹس تلاش یا لاگو کریں                             |
-| `omniroute provider`    | پرووائیڈر کنکشنز کا نظم کریں — شامل، فہرست، حذف، ٹیسٹ، ڈیفالٹ   |
-| `omniroute --port 3000` | کینونیکل/API پورٹ کو 3000 پر سیٹ کریں                           |
-| `omniroute --mcp`       | MCP سرور شروع کریں (stdio ٹرانسپورٹ)                            |
-| `omniroute --no-open`   | براؤزر خودکار طور پر نہ کھولیں                                  |
-| `omniroute --help`      | مدد دکھائیں                                                     |
+| حکم                     | تفصیل                                                                                   |
+| ----------------------- | --------------------------------------------------------------------------------------- |
+| `omniroute`             | سرور شروع کریں ( ایک ہی پورٹ پر `PORT=20128`، API اور ڈیش بورڈ)                         |
+| `omniroute setup`       | پاس ورڈ اور پہلے فراہم کنندہ کے لیے گائیڈڈ CLI آن بورڈنگ                                |
+| `omniroute doctor`      | سرور شروع کیے بغیر مقامی صحت کی جانچ کریں۔                                              |
+| `omniroute providers`   | CLI سے فراہم کنندگان کو دریافت کریں، فہرست بنائیں، تصدیق کریں اور جانچ کریں۔            |
+| `omniroute config`      | CLI ٹول کنفیگریشن — فہرست، حاصل کریں، سیٹ کریں، کنفیگرز کی توثیق کریں۔                  |
+| `omniroute status`      | آف لائن اسٹیٹس ڈیش بورڈ — ورژن، DB، ٹولز، تشکیل                                         |
+| `omniroute logs`        | API سے سٹریم استعمال لاگز ( `--follow` کی حمایت کرتا ہے)                                |
+| `omniroute update`      | OmniRoute اپ ڈیٹس کو چیک کریں یا لاگو کریں۔                                             |
+| `omniroute provider`    | فراہم کنندہ کنکشنز کا نظم کریں — شامل کریں، فہرست کریں، ہٹائیں، ٹیسٹ کریں، ڈیفالٹ کریں۔ |
+| `omniroute --port 3000` | canonical/API پورٹ کو 3000 پر سیٹ کریں۔                                                 |
+| `omniroute --mcp`       | MCP سرور شروع کریں (stdio ٹرانسپورٹ)                                                    |
+| `omniroute --no-open`   | براؤزر کو خود بخود نہ کھولیں۔                                                           |
+| `omniroute --help`      | مدد دکھائیں۔                                                                            |
 
-ہیڈ لیس سیٹ اپ کو فلیگز یا ماحولیاتی متغیرات کے ذریعے اسکرپٹ کیا جا سکتا ہے:
+ہیڈ لیس سیٹ اپ کو جھنڈوں یا ماحولیاتی متغیرات کے ساتھ اسکرپٹ کیا جا سکتا ہے:
 
 ```bash
 omniroute setup --non-interactive --password "$OMNIROUTE_PASSWORD"
@@ -114,7 +116,7 @@ omniroute setup --non-interactive --add-provider --provider openai --api-key "$O
 omniroute setup --non-interactive --add-provider --provider openai --api-key "$OPENAI_API_KEY" --test-provider
 ```
 
-ڈیش بورڈ کھولے بغیر مقامی تشخیصی جانچیں چلائیں:
+ڈیش بورڈ کھولے بغیر مقامی تشخیص چلائیں:
 
 ```bash
 omniroute doctor
@@ -122,7 +124,7 @@ omniroute doctor --json
 omniroute doctor --no-liveness
 ```
 
-ڈیش بورڈ کھولے بغیر SSH یا اسکرپٹس سے پرووائیڈرز کا نظم کریں:
+ڈیش بورڈ کھولے بغیر SSH یا اسکرپٹس سے فراہم کنندگان کا نظم کریں:
 
 ```bash
 omniroute providers available
@@ -140,11 +142,11 @@ omniroute providers validate
 
 ### 1) فراہم کنندگان کو منسلک کریں اور API کلید بنائیں
 
-1. Dashboard → `Providers` کھولیں اور کم از کم ایک فراہم کنندہ منسلک کریں (OAuth یا API کلید)۔
-2. Dashboard → `Endpoints` کھولیں اور ایک API کلید بنائیں۔
-3. (اختیاری) Dashboard → `Combos` کھولیں اور اپنی فال بیک چین مقرر کریں۔
+1. Dashboard کھولیں → `Providers` پر جائیں اور کم از کم ایک فراہم کنندہ (OAuth یا API کلید) منسلک کریں۔
+2. Dashboard کھولیں → `Endpoints` پر جائیں اور ایک API کلید بنائیں۔
+3. (اختیاری) Dashboard کھولیں → `Combos` پر جائیں اور اپنی فال بیک چین مرتب کریں۔
 
-### 2) اپنے کوڈنگ ٹول کو ہدف کی طرف متوجہ کریں
+### 2) اپنے کوڈنگ ٹول کو مربوط کریں
 
 ```txt
 بنیادی URL: http://localhost:20128/v1
@@ -152,20 +154,21 @@ API کلید:  [Endpoint صفحے سے کاپی کریں]
 ماڈل:    if/qwen3.8-max-preview (یا کوئی بھی provider/model سابقہ)
 ```
 
-اگر آپ کا ایڈیٹر `Authorization: Bearer ...` نہیں بھیج سکتا تو اس کے بجائے ٹوکن پر مبنی مطابقتی بنیاد استعمال کریں:
+اگر آپ کا ایڈیٹر `Authorization: Bearer ...` نہیں بھیج سکتا، تو اس کے بجائے ٹوکن پر مبنی مطابقتی بنیادی URL استعمال کریں:
 
 ```txt
 بنیادی URL: http://localhost:20128/api/v1/vscode/YOUR_KEY/
 ماڈلز کا URL: http://localhost:20128/api/v1/vscode/YOUR_KEY/models
-چیٹ کا URL: http://localhost:20128/api/v1/vscode/YOUR_KEY/chat/completions
-Ollama ٹیگز کا URL: http://localhost:20128/api/v1/vscode/YOUR_KEY/api/tags
+چیٹ URL: http://localhost:20128/api/v1/vscode/YOUR_KEY/chat/completions
+Ollama ٹیگز URL: http://localhost:20128/api/v1/vscode/YOUR_KEY/api/tags
 ```
 
 Claude Code، Codex CLI، Cursor، Cline، OpenClaw، OpenCode، اور OpenAI سے مطابقت رکھنے والی SDKs کے ساتھ کام کرتا ہے۔
 
-#### `setup-*` کے ذریعے خودکار کنفیگریشن
+#### `setup-*` کے ساتھ خودکار کنفیگریشن
 
-بنیادی URL اور کلید کو دستی طور پر پیسٹ کرنے کے بجائے، OmniRoute کو لائیو ماڈل کیٹلاگ سے ہر ٹول کی اپنی کنفیگ لکھنے دیں۔ ہر ٹول کے لیے ایک کمانڈ:
+بنیادی URL اور کلید کو دستی طور پر پیسٹ کرنے کے بجائے، OmniRoute کو لائیو ماڈل کیٹلاگ سے ہر ٹول کی
+اپنی کنفیگ لکھنے دیں۔ ہر ٹول کے لیے ایک کمانڈ:
 
 ```bash
 omniroute setup-codex        # ~/.codex/<name>.config.toml پروفائلز
@@ -174,17 +177,23 @@ omniroute setup-opencode     # ~/.config/opencode/opencode.json (OpenAI سے م�
 omniroute setup-cline        # Cline CLI + VS Code ایکسٹینشن کی ترتیبات
 omniroute setup-kilo         # Kilo Code
 omniroute setup-continue     # ~/.continue/config.yaml (Continue / cn)
-omniroute setup-cursor       # Cursor کے اندرونِ ایپ مراحل پرنٹ کرتا ہے
+omniroute setup-cursor       # Cursor کے اندر موجود مراحل پرنٹ کرتا ہے
 omniroute setup-roo          # Roo Code درآمد + autoImport پوائنٹر
 omniroute setup-crush        # ~/.config/crush/crush.json
+omniroute setup-zed          # ~/.config/zed/settings.json (openai_compatible)
 omniroute setup-goose        # ~/.config/goose/config.yaml
 omniroute setup-aider        # ~/.aider.conf.yml
 omniroute setup-qwen         # ~/.qwen/settings.json + ~/.qwen/.env
 ```
 
-مقامی ٹول کو **ریموٹ** OmniRoute کے لیے کنفیگر کرنے کی خاطر ہر کمانڈ `--remote <url> --api-key <key>` قبول کرتی ہے، نیز پیش منظر دیکھنے کے لیے `--dry-run` بھی۔ درست env شامل کر کے اور کوئی کنفیگ لکھے بغیر CLI چلانے کے لیے عمومی لانچر `omniroute run <target>` (claude, codex, aider, goose, opencode, qwen, gemini) استعمال کریں؛ پرانے فی ٹول لانچرز `omniroute launch` (Claude Code) اور `omniroute launch-codex` (Codex) بدستور دستیاب ہیں۔
+ہر کمانڈ ایک مقامی ٹول کو **ریموٹ** OmniRoute کے مطابق کنفیگر کرنے کے لیے `--remote <url> --api-key <key>`،
+اور پیش منظر دیکھنے کے لیے `--dry-run` قبول کرتی ہے۔ درست env شامل کرکے اور کوئی کنفیگ لکھے بغیر CLI
+چلانے کے لیے عمومی لانچر `omniroute run <target>` (claude، codex، aider، goose، opencode، qwen، gemini)
+استعمال کریں؛ پرانے، ہر ٹول کے لیے مخصوص لانچرز `omniroute launch` (Claude Code) اور
+`omniroute launch-codex` (Codex) بدستور دستیاب ہیں۔
 
-مکمل جدول (ہر کمانڈ کیا لکھتی ہے، تمام فلیگز، مقامی بمقابلہ ریموٹ، بنیادی URL کے `/v1` اصول) کے لیے **[CLI انٹیگریشنز](./CLI-INTEGRATIONS.md)** دیکھیں۔
+مکمل جدول کے لیے (ہر کمانڈ کیا لکھتی ہے، تمام فلیگز، مقامی بمقابلہ ریموٹ، بنیادی URL
+`/v1` کے اصول)، **[CLI انٹیگریشنز](./CLI-INTEGRATIONS.md)** دیکھیں۔
 
 ہر ٹول کی تفصیلی کنفیگریشن (Claude Code، Codex CLI، Cursor، Cline، OpenClaw، Kilo Code، Copilot، اور مزید) کے لیے مخصوص **[CLI ٹولز گائیڈ](../reference/CLI-TOOLS.md)** دیکھیں۔
 
@@ -192,7 +201,7 @@ omniroute setup-qwen         # ~/.qwen/settings.json + ~/.qwen/.env
 
 ## پروٹوکول سیٹ اپ (MCP + A2A)
 
-### MCP سیٹ اپ (Model Context Protocol)
+### MCP سیٹ اپ (ماڈل سیاق و سباق پروٹوکول)
 
 stdio موڈ میں MCP ٹرانسپورٹ شروع کریں:
 
@@ -200,31 +209,35 @@ stdio موڈ میں MCP ٹرانسپورٹ شروع کریں:
 omniroute --mcp
 ```
 
-تجویز کردہ توثیقی عمل:
+تجویز کردہ توثیق کا بہاؤ:
 
 ```bash
-# 1. MCP سرور شروع کریں
+# 1. Start MCP server
 omniroute --mcp
 
-# 2. اپنے MCP کلائنٹ سے یہ کال کریں:
-omniroute_get_health        # اسے سسٹم کی صحت واپس کرنی چاہیے
-omniroute_list_combos       # اسے فعال combos واپس کرنے چاہییں
+# 2. From your MCP client, call:
+omniroute_get_health        # Should return system health
+omniroute_list_combos       # Should return active combos
 
-# 3. یا مکمل E2E سوٹ چلائیں:
+# 3. Or run the full E2E suite:
 npm run test:protocols:e2e
 ```
 
-#### MCP کلائنٹ کی کنفیگریشن
+#### MCP کلائنٹ کنفیگریشن
 
-**Claude Code:**
+**Claude کوڈ:**
+
+Claude کوڈ HTTP سے جڑتا ہے، جو `omniroute --mcp` (stdio) شروع نہیں ہوتا ہے۔ HTTP ٹرانسپورٹ بذریعہ ڈیفالٹ آف ہے: پہلے اسے چلانے والے سرور پر فعال کریں۔ جب ڈیش بورڈ لاگ ان کو فعال کیا جاتا ہے تو، بغیر کسی سند کے درخواست کو `401` مل جاتا ہے، لہذا ایک API کلید پاس کریں جس میں `mcp:connect` (یا `manage`) ہو؛ `manage`/`admin` کے بغیر ایک کلید کو بھی ہر ٹول کے دائرہ کار کی ضرورت ہوتی ہے (دیکھیں [MCP Server → MCP ٹول اسکوپس](../frameworks/MCP-SERVER.md#mcp-tool-scopes) )۔
 
 ```bash
-claude mcp add-server omniroute --type http --url http://localhost:20128/api/mcp/stream
+omniroute mcp enable --transport streamable-http
+claude mcp add --transport http omniroute http://localhost:20128/api/mcp/stream \
+  --header "Authorization: Bearer your-key"
 ```
 
 **Cursor / Cline:**
 
-اپنی MCP ترتیبات میں شامل کریں:
+اپنی MCP سیٹنگز میں شامل کریں (stdio، کلید کے ساتھ تاکہ کال کرنے والے کے پاس پرنسپل ہو):
 
 ```json
 {
@@ -232,23 +245,30 @@ claude mcp add-server omniroute --type http --url http://localhost:20128/api/mcp
     "omniroute": {
       "command": "omniroute",
       "args": ["--mcp"],
-      "env": {}
+      "env": {
+        "OMNIROUTE_API_KEY": "your-key",
+        "OMNIROUTE_BASE_URL": "http://localhost:20128"
+      }
     }
   }
 }
 ```
 
-**MCP کی مکمل دستاویزات:** [MCP سرور README](../../open-sse/mcp-server/README.md) — 110 ٹولز، IDE کنفیگز، Python/TS/Go کلائنٹس۔
+یا، جب `mcpTransport` `streamable-http` ہو (اسے `/dashboard/mcp` پر سیٹ کریں یا `omniroute mcp enable --transport streamable-http` کے ساتھ)، کلائنٹ کے ریموٹ MCP سرور کے اندراج کو `http://localhost:20128/api/mcp/stream` پر اشارہ کریں۔
 
-### A2A سیٹ اپ (Agent-to-Agent Protocol)
+کلید `Authorization: Bearer <api-key>` کے طور پر سفر کرتی ہے (دیکھیں [MCP سرور → دور دراز کے میزبانوں کے لیے ریموٹ رسائی](../frameworks/MCP-SERVER.md#remote-access-manage-scope-bypass) ؛ ایک ریموٹ کلید کو `mcp:connect` کے علاوہ اس کے read/write اسکوپس کی ضرورت ہوتی ہے)۔
 
-Agent Card کی توثیق کریں:
+**مکمل MCP دستاویزات:** [MCP سرور README](../../open-sse/mcp-server/README.md) — 110 ٹولز، IDE کنفیگرز، Python/TS/Go کلائنٹس۔ کمپریشن CCR/dedup ٹولز کے لیے آپریٹر کا حوالہ (مارکر، ضروری شرائط، فی ٹول اسکوپس، بازیافت صفحہ بندی، تشخیص): [کمپریشن انجنز → شرطیں / آپریٹر گائیڈ](../compression/COMPRESSION_ENGINES.md#prerequisites--operator-guide-ccr--session-dedup) ۔
+
+### A2A سیٹ اپ (ایجنٹ سے ایجنٹ پروٹوکول)
+
+ایجنٹ کارڈ کی تصدیق کریں:
 
 ```bash
 curl http://localhost:20128/.well-known/agent.json
 ```
 
-ایک ٹاسک بھیجیں:
+ایک کام بھیجیں:
 
 ```bash
 curl -X POST http://localhost:20128/a2a \
@@ -256,7 +276,7 @@ curl -X POST http://localhost:20128/a2a \
   -d '{"jsonrpc":"2.0","id":"quickstart","method":"message/send","params":{"skill":"quota-management","messages":[{"role":"user","content":"Give me a short quota summary."}]}}'
 ```
 
-**A2A کی مکمل دستاویزات:** [A2A سرور README](../../src/lib/a2a/README.md) — JSON-RPC 2.0، مہارتیں، اسٹریمنگ، ٹاسک لائف سائیکل۔
+**مکمل A2A دستاویزات:** [A2A سرور README](../../src/lib/a2a/README.md) — JSON-RPC 2.0، مہارت، سلسلہ بندی، ٹاسک لائف سائیکل۔
 
 ---
 
@@ -315,12 +335,12 @@ PORT=20128 DASHBOARD_PORT=20129 omniroute
 
 ---
 
-## Void Linux (`xbps-src`) ٹیمپلیٹ
+## باطل Linux (xbps-src) ٹیمپلیٹ
 
-Void Linux کے صارفین `xbps-src` استعمال کرکے ایک مقامی پیکیج بنا سکتے ہیں۔ اس بلاک کو `srcpkgs/omniroute/template` کے طور پر محفوظ کریں:
+Void Linux صارفین کے لیے، آپ `xbps-src` کا استعمال کرتے ہوئے ایک مقامی پیکیج بنا سکتے ہیں۔ اس بلاک کو بطور `srcpkgs/omniroute/template` محفوظ کریں:
 
 ```bash
-# 'omniroute' کے لیے ٹیمپلیٹ فائل
+# Template file for 'omniroute'
 pkgname=omniroute
 version=3.8.0
 revision=1
@@ -331,7 +351,7 @@ maintainer="zenobit <zenobit@disroot.org>"
 license="MIT"
 homepage="https://github.com/diegosouzapw/OmniRoute"
 distfiles="https://github.com/diegosouzapw/OmniRoute/archive/refs/tags/v${version}.tar.gz"
-# ہر ریلیز کے لیے checksum کو اس کے ذریعے دوبارہ بنائیں:
+# Regenerate the checksum for each release with:
 #   curl -L -o /tmp/omniroute.tar.gz "https://github.com/diegosouzapw/OmniRoute/archive/refs/tags/v${version}.tar.gz" && sha256sum /tmp/omniroute.tar.gz
 checksum=PLACEHOLDER_REGENERATE_PER_RELEASE
 system_accounts="_omniroute"

@@ -4,228 +4,296 @@
 
 ---
 
-> **स्थिति:** सन्दर्भ — यहाँ वर्णन गरिएको मानकीकरण **कार्यान्वयन भइसकेको छ** (चरणहरू 1–6: ग्रिड वालपेपर, आधारभूत कम्पोनेन्टहरू, स्थिति-रङ केन्द्रीकरण, मोनो टोकन, DataTable टोकन माइग्रेसन, focus-ring → accent, Checkbox/Textarea आधारभूत कम्पोनेन्टहरू, `cn()` → tailwind-merge, प्रत्येक स्वतन्त्र स्क्रिनमा ग्रिड, तरल 4K सामग्री शेल, अपारदर्शी डेटा-टेबल सतहहरू)। यो कागजात ड्यासबोर्डका डिजाइन टोकन, कम्पोनेन्ट र परम्पराहरूको आधिकारिक विवरण हो; तलको चरणगत संरचना प्रत्येक निर्णयको तर्कका रूपमा कायम राखिएको छ।
-> **दायरा:** OmniRoute ड्यासबोर्ड (`src/`) र मार्केटिङ साइट (`_mono_repo/omnirouteSite/`) ले **एउटै दृश्य पहिचान** साझा गर्छन् — उही ग्राफ-पेपर ग्रिड पृष्ठभूमि (32px), उही रङ टोकनहरू र मानकीकृत कम्पोनेन्टहरू।
->
-> मर्मतकर्ताहरूका लागि व्यावहारिक टिप्पणीहरू:
->
-> - बाँकी रहेका केही हार्डकोड गरिएका hex मानहरू **जानीजानी** राखिएका हुन् (सधैँ-अँध्यारो कन्सोल टर्मिनल, ReactFlow SVG स्ट्रोकहरू) र तिनलाई टोकनमा **रूपान्तरण गर्नु हुँदैन**।
-> - चलिरहेको इन्स्ट्यान्समा देखिने "ठूलो" ग्रिड पुरानो बिल्डका कारण हो, कोडका कारण होइन — ग्रिडको आकार साइटसँग समान 32px हो।
-> - गाढा थिमका `--table-*` मानहरू माइग्रेसनअघिका हार्डकोड गरिएका rgba मानहरूसँग बाइट-दर-बाइट समान छन्; हल्का थिमलाई सुधार गरिएको छ (निष्क्रिय `var()` फल्ब्याकका कारण यो त्रुटिपूर्वक सधैँ-अँध्यारो थियो)।
+> **स्थिति:** ड्यासबोर्ड **Keak CI UI Kit** (`@keak/cheaper-inference-ui-kit`) मा निर्माण गरिएको छ, जसलाई
+> कार्यस्थान `packages/ui-kit` (`@omniroute/ui-kit`; अपस्ट्रिम स्न्यापसटलाई
+> `packages/ui-kit/UPSTREAM.md` मा पिन गरिएको छ र `npm run check:ui-kit-snapshot` द्वारा सुरक्षित गरिएको छ) का रूपमा भेन्डर गरिएको छ।
+> लाइट क्यानोनिकल थिम हो; पूर्वनिर्धारित प्राथमिकता `system` हो। पूर्वनिर्धारित प्यालेट किटको **Editions** स्वरूप
+> (न्यानो कागजी तटस्थ रङहरू र कपर एक्सेन्ट `#e5ac82`, `packages/ui-kit/src/ci-editions.css`) हो; सेटिङहरू →
+> स्वरूप → रङ प्यालेटमा **Classic**, अर्थात् लाइम एक्सेन्टसहितका किटका आधारभूत टोकनहरू, उपलब्ध छन्। UI,
+> डिस्प्ले र कोड पाठका लागि Switzer एकमात्र फन्ट परिवार हो (`--ci-font-ui`; `--ci-font-display` र
+> `--ci-font-mono` यसैमा रिजल्भ हुन्छन्), जसलाई किटले आफैँ होस्ट गर्छ (`packages/ui-kit/src/ci-fonts.css`,
+> जसलाई `ci-tokens.css` ले इम्पोर्ट गर्छ)। Switzer मा नभएका लिपिहरू ग्लिफअनुसार फल-थ्रु हुन्छन्
+> (`src/app/globals.css`): सिरिलिक, ग्रीक र भियतनामीका लागि Inter र `html[dir="rtl"]` अन्तर्गत मात्र
+> अरबी लिपिका लागि Vazirmatn। प्रत्येक आइकन Lucide ग्लिफ हो।
 
----
+## 1. कुराहरू कहाँ हुन्छन्
 
-## 1. उद्देश्य
+- **किट।** `packages/ui-kit/src` कमिटमा पिन गरिएको upstream `src/` को byte-for-byte प्रतिलिपि हो, जसको विवरण
+  `packages/ui-kit/UPSTREAM.md` मा (लाइसेन्स अनुमतिसहित) अभिलेखित छ; `PATCHES.md` ले स्थानीय
+  प्याचहरू सूचीबद्ध गर्छ (कुनै पनि छैन)। यसलाई build बिना source का रूपमा प्रयोग गरिन्छ:
+  `next.config.mjs` ले यसलाई transpile गर्छ, र `tsconfig.json` ले `@omniroute/ui-kit` →
+  `packages/ui-kit/src` तथा `@omniroute/ui-kit/*` → `packages/ui-kit/src/*` म्याप गर्छ
+  (`vitest.config.ts` र `vitest.mcp.config.ts` मा पनि यही alias छ)। किटको component लाई यसको
+  subpath (`@omniroute/ui-kit/table`, `@omniroute/ui-kit/page-header`…) बाट import गर्नुहोस्,
+  `@omniroute/ui-kit` barrel मार्फत कहिल्यै होइन: barrel ले प्रत्येक importer मा date picker
+  सहित सबै component हरू तान्छ। किटको stylesheet `src/app/globals.css` मार्फत प्रवेश गर्छ
+  (`@import "../../packages/ui-kit/src/ci-styles.css"`, पूर्ण sheet: core `ci-ui.css` र प्रत्येक
+  pattern family सहित)।
+- **Tokens।** `packages/ui-kit/src/ci-tokens.css` ले `--ci-*` tokens घोषणा गर्छ;
+  `src/app/globals.css` ले तिनलाई पुराना OmniRoute नामहरू (`--color-*`, `--radius-*`,
+  `--font-sans`/`--font-mono`, `--table-*`, `--orch-status-*`, `--color-fd-*`) मा bridge गर्छ,
+  त्यसैले विद्यमान `var(--color-*)` reads र Tailwind utilities ले काम गरिरहन्छन्। नयाँ code ले
+  Tailwind utilities (`bg-surface`, `text-text-muted`, `border-border`, `text-success`,
+  `bg-success-bg`, `bg-chart-1`…) वा kit classes प्रयोग गर्छ — hex value कहिल्यै होइन
+  (`tests/unit/design-kit-bridge.test.ts` ले bridge लागू भएको सुनिश्चित गर्छ)। `text-primary` ले
+  `--text-color-primary` मार्फत `--color-primary-ink` resolve गर्छ, त्यसैले primary text पढ्नयोग्य
+  रहन्छ, जबकि `bg-primary`/`border-primary` ले accent surface कायम राख्छन्: Editions अन्तर्गत यो
+  kit को `--ci-color-accent-active` हो (light मा गाढा copper `#99562f`, dark मा copper accent);
+  Classic अन्तर्गत light मा lime-800 र dark मा lime accent हुन्छ। Chart series ले
+  `--color-chart-1` … `--color-chart-8` प्रयोग गर्छन्, प्रत्येकमा text-safe
+  `--color-chart-N-ink` र opaque `--color-chart-N-subtle` chip tint हुन्छ, र तिनलाई kit series
+  order (`ciChartSeriesOrder`) अनुसार assign गरिन्छ।
+- **Themes।** `<html className="ci-theme">` (`src/app/layout.tsx`) ले document लाई kit theme मा
+  opt-in गराउँछ। Preference `light`, `dark` वा `system` हो
+  (`src/shared/constants/appConfig.ts` मा `THEME_CONFIG.defaultTheme = "system"`); `system` ले
+  `prefers-color-scheme` पछ्याउँछ। `src/store/themeStore.ts` को `applyTheme()` (hydration अघि
+  चल्ने र `src/app/layout.tsx` मा inline गरिएको `THEME_BOOT_SCRIPT` ले mirror गर्ने) ले
+  `data-theme="dark"|"light"` सेट गर्छ र `<html>` मा `.dark` class लाई एकसाथ toggle गर्छ।
+  Kit को dark token set `data-theme="dark"` मा आधारित छ (`packages/ui-kit/src/ci-tokens.css`);
+  OmniRoute का आफ्नै dark overrides (`globals.css` को `.dark` block) र पुराना Tailwind `dark:`
+  utilities `.dark` class मा आधारित छन्। Accent color presets छैनन्: accent सधैँ kit बाट आउँछ,
+  र पुरानो build बाट persist गरिएको preset store load हुँदा हटाइन्छ।
+- **Palettes।** दुईवटा छन्, दुवै kit बाट (`src/shared/constants/appearancePalette.ts`):
+  `editions`, default, र `classic`। Editions भनेको `<html>` मा रहेको kit को
+  `data-ci-appearance="editions"` attribute हो, जसलाई `ci-editions.css`
+  (`ci-ui.css` ले import गर्ने) ले `data-theme` सँग संयोजन गर्छ; Classic भनेको उक्त attribute
+  अनुपस्थित हुनु हो। Root layout ले attribute server-render गर्छ, त्यसैले केही पनि stored नभएको
+  (वा JS नभएको) visitor ले प्रत्येक surface — dashboard, login, `/status`, error pages, `/docs`
+  र PWA — मा Editions पाउँछ। यो choice theme कै छेउमा उही `theme` store मा persist गरिन्छ
+  (`src/store/themeStore.ts` मा `palette`, `setPalette()`, `applyPalette()`), र
+  `THEME_BOOT_SCRIPT` (`src/shared/utils/themeBootScript.ts`, layout को `<head>` मा inline गरिएको)
+  ले paint अघि लागू गर्छ; stored palette `"classic"` हुँदा मात्र attribute हटाउँछ;
+  root layout बाहिर रहेको `src/app/global-error.tsx` ले पनि उही store बाट यसलाई लागू गर्छ।
+  `data-ci-appearance` लाई कुनै अन्य element मा नराख्नुहोस्: kit ले यसलाई
+  `html:root:has([data-ci-appearance="editions"])` सँग match गर्छ, त्यसैले एउटा descendant ले
+  सम्पूर्ण document switch गर्नेछ। Editions को `data-ci-editions-variant="landing"` variant
+  marketing pages का लागि हो, dashboard का लागि होइन। Browser chrome: server ले default, Editions,
+  लाई `viewport.themeColor` (प्रत्येक `prefers-color-scheme` का लागि एक tag) र web manifest मा
+  render गर्छ — `src/shared/constants/pwaThemeColors.ts` मा रहेको `PWA_THEME_COLORS`, जुन
+  Editions को `--ci-color-background` (`#f3f1e9` / `#11120f`) को एकमात्र mirror हो र
+  `tests/unit/pwa-theme-colors.test.ts` द्वारा `ci-editions.css` मा pinned छ। त्यसपछि live
+  `<meta name="theme-color">` ले stored palette र mode पछ्याउँछ: `THEME_BOOT_SCRIPT` ले paint अघि
+  tags rewrite गर्छ र theme store का actions ले प्रत्येक परिवर्तनमा त्यसो गर्छन्
+  (`src/shared/utils/themeColorMeta.ts` मा `resolveThemeColor()` /
+  `applyThemeColor()`, तथा kit को `ciTokens` बाट पढिएको `CLASSIC_PAGE_BACKGROUND` सहित)। Explicit
+  light/dark theme ले प्रत्येक tag लाई उक्त mode मा सेट गर्छ; `system` ले प्रत्येक scheme का लागि
+  एउटा colour कायम राख्छ। Manifest Editions मै रहन्छ: यो preference बिना, प्रत्येक install मा
+  एकपटक fetch गरिन्छ। Monaco ले probe (`monacoKitTheme.ts`) बाट आफ्ना colours पढ्छ;
+  Editions अन्तर्गत probe read ले एक synchronous pass का लागि root को `data-theme` flip गर्छ,
+  किनकि kit ले root बाट Editions light/dark resolve गर्छ।
+- **Components (adapters)।** `src/shared/components/index.tsx` ले OmniRoute component API
+  (उही names, default exports र props) कायम राख्छ, र त्यस पछाडिका primitives kit माथिका
+  adapters हुन्: forms (`Button`, `Input`, `Textarea`, `Checkbox`, `Select`, `Toggle`, `Badge`,
+  `Card`), overlays र feedback (`Modal`/`ConfirmModal`, `Tooltip`/`InfoTooltip`,
+  `NotificationToast`, `EmptyState`, `Loading`), structure (`Collapsible`,
+  `CollapsibleSection`, `SegmentedControl`, `Breadcrumbs`, `Avatar`) र tables (`DataTable`,
+  `FilterBar`, `ColumnToggle`, `FilterPills`, `PresetSlider`)। Adapter ले kit component लाई
+  subpath बाट import गर्छ र legacy props लाई त्यसमा म्याप गर्छ — उदाहरणका लागि
+  `Button variant="primary"` kit को `default` button हो (`--ci-button-primary-*`: light मा inverse
+  surface, dark मा यसको `--ci-color-accent-foreground` ink सहित accent); `danger` भने
+  `destructive` हो, र `warning` kit को `warning` button हो। `Badge` का status variants kit tones
+  हुन्, र `<option>` children भएको `Select` ले kit को `NativeSelect` render गर्छ।
+  दुईवटा adapter index बाट होइन, path मार्फत import गरिन्छ: `InteractiveTableRow`
+  (`src/shared/components/InteractiveTableRow.tsx`), kit को `TableRow` जसले `onActivate` र
+  `selected` लिन्छ र Tab, Enter तथा Space मा प्रतिक्रिया दिन्छ; र `CodePreview`
+  (`src/shared/components/CodePreview.tsx`), copy labels अनुवाद गरिएको kit code block।
+  `tests/unit/ui/adapters/*.test.tsx` ले प्रत्येक adapter लाई pinned राख्छ।
+- **शेल।** `src/app/(dashboard)/layout.tsx` ले `DashboardLayout` रेंडर गर्छ, जसले
+  `src/shared/components/layouts/DashboardShell.tsx` रेंडर गर्छ: किटको `SidebarProvider` / `Sidebar` /
+  `SidebarInset` (`packages/ui-kit/src/sidebar.tsx`), जसमा OmniRoute को नेभिगेसन तर्क
+  `src/shared/components/Sidebar.tsx` मा रहेको छ। `#main-content` मा जाने "सामग्रीमा जानुहोस्" लिङ्क पहिलो फोकस गर्न मिल्ने
+  एलिमेन्ट हो। `src/shared/components/Header.tsx` मा किटको `SidebarTrigger` (शेलको एक मात्र sidebar
+  टगल), Keak को `ProductSwitcher` र command-palette खोल्ने तत्व हुन्छ; `#main-content` भित्र किटको
+  `PageHeader` (`.ci-page-header`) माउन्ट नभएको अवस्थामा मात्र यसले रुटको शीर्षक देखाउँछ, त्यसैले आफ्नै
+  `PageHeader` भएको पृष्ठमा एउटा मात्र `h1` हुन्छ। `src/shared/components/CommandPalette.tsx` किटको `Dialog` हो।
+- **आइकनहरू।** `<Icon name="material_name">` (`src/shared/components/Icon.tsx`) ले स्क्रिनहरूले प्रयोग गर्ने
+  Material Symbols शब्दावलीअनुसार नामलाई `ICON_MAP` (`src/shared/constants/iconMap.ts`) मार्फत Lucide glyph मा
+  समाधान गर्छ। Material Symbols फन्ट र प्याकेज हटाइएका छन्: नक्सामा नभएको नामले तटस्थ placeholder glyph
+  (`data-icon-missing="true"`) रेंडर गर्छ र production बाहिर console warning लग गर्छ।
+  `npm run gen:icon-map` ले प्रयोगमा रहेका तर नक्सामा नभएका नामहरू प्रिन्ट गर्छ
+  (`tests/unit/icon-map-coverage.test.ts` ले Lucide आइकन नभएको कुनै पनि नाममा असफल हुन्छ;
+  `tests/unit/icon-map-object-values.test.ts` ले lookup objects मा भण्डारण गरिएका नामहरू समेट्छ);
+  `scripts/dev/codemod-material-icons.mjs <dir|file>... [--write]` ले शाब्दिक
+  `<span className="material-symbols-outlined">` spans लाई `<Icon>` मा पुनर्लेखन गर्छ।
+- **ब्रान्ड।** `src/shared/components/OmniRouteLogo.tsx` ले किटलाई wrap गर्छ: default export `OmniRouteLogo` ले
+  `ProductIcon product="omniroute" variant="glyph"` (inline SVG, `basePath`-safe) रेंडर गर्छ, अनि
+  `OmniRouteLockup` ले `ProductLockup product="omniroute"` (पहुँचयोग्य नाम "Keak OmniRoute") वा white-label
+  operator का लागि उनीहरूको आफ्नै `name`/`logoSrc` रेंडर गर्छ। Product-switcher गन्तव्यहरू
+  `src/shared/constants/keakProducts.ts` (`KEAK_PRODUCT_LINKS`, `KEAK_ACTIVE_PRODUCT`) मा रहेका छन्। standalone
+  स्क्रिनहरू — `src/app/login/page.tsx`, `src/app/status/page.tsx`, `src/app/maintenance/page.tsx`,
+  `src/app/offline/page.tsx`, `src/app/not-found.tsx` र `src/shared/components/ErrorPageScaffold.tsx`
+  — ले lockup देखाउँछन्; `tests/unit/brand-pages-static.test.ts` ले यसको सुरक्षा गर्छ।
 
-मार्केटिङ साइट (`viral.omniroute.online`, `why.omniroute.online`, `omniroute.online`) र उत्पादन ड्यासबोर्ड **एउटै उत्पादन** जस्ता देखिनुपर्छ। साइटले पहिले नै ड्यासबोर्डबाट आफ्नो रङ संयोजन लिएको छ — यसको `css/tokens.css` मा _"रङ संयोजनले OmniRoute ड्यासबोर्डलाई प्रतिबिम्बित गर्छ (src/app/globals.css)"_ समेत भनिएको छ। त्यसैले रङको स्तरमा यी दुई पहिलेदेखि नै ~80% समान छन्। ड्यासबोर्डमा छुटेका कुराहरू:
+## २. नियमहरू
 
-1. साइटले प्रत्येक पृष्ठमा प्रयोग गर्ने **ग्राफ-पेपर ग्रिड वालपेपर**।
-2. साइटमा भएका तर ड्यासबोर्डमा नभएका केही **साझा डिजाइन टोकनहरू** (रेडियस स्केल, ब्रान्ड ग्रेडियन्ट, `surface-2`, मोनो फन्ट)।
-3. **कम्पोनेन्ट-स्तरीय एकरूपता** — धेरै ड्यासबोर्ड कम्पोनेन्टहरूले हार्डकोड गरिएका hex/rgba प्रयोग गरेर थिम टोकनहरूलाई बाइपास गर्छन्।
+1. लिटरलहरू होइन, टोकनहरू प्रयोग गर्नुहोस्। जानाजानी राखिएका अपवादहरू: सधैँ अँध्यारो रहने कन्सोल टर्मिनल र
+   `STATUS_HEX` (`src/shared/constants/statusColors.ts`), लिटरल हेक्स आवश्यक पर्ने caller हरूका लागि
+   किटको status palette को resolved-hex mirror। Categorical palettes अब कुनै अपवाद होइनन्:
+   तिनीहरू किटका आठवटा chart tokens (`--color-chart-1..8`, साथै `-ink`/`-subtle`) मा, किटको
+   series order अनुसार, `src/shared/utils/categoricalPalette.ts` मार्फत र routing strategies का लागि
+   `src/app/(dashboard)/dashboard/combos/strategyPalette.ts` मार्फत आधारित हुन्छन्; ReactFlow edges
+   र orchestration canvas ले theme-aware `--orch-status-*` variables
+   (`src/shared/components/flow/edgeStyles.ts`) पढ्छन्।
+2. `packages/ui-kit/src` लाई हातैले कहिल्यै patch नगर्नुहोस्: `scripts/dev/sync-ui-kit.sh <commit>` सँग
+   sync गर्नुहोस्; pre-commit gate `npm run check:ui-kit-snapshot` (`.husky/pre-commit`) ले pinned upstream commit
+   भन्दा फरक भएको कुनै पनि byte मा असफल हुन्छ (upstream clone,
+   `UI_KIT_CLONE` वा `_references/cheaper-inference-ui-kit` अनुपस्थित हुँदा चेतावनीसहित skip गर्छ)। किटमा
+   केही नभएमा adapter वा screen मा workaround गर्नुहोस् र upstream सँग त्यसका लागि अनुरोध गर्नुहोस्।
+3. किटका text defaults अंग्रेजीमा हुन्छन् (`label = "Loading"`, `loadingLabel = "Loading table"`…) — किट
+   component ले text render गर्दा `useTranslations(...)` बाट अनुवादित strings पठाउनुहोस्।
+4. Tailwind utilities ले किट component classes माथि प्राथमिकता पाउँछन् (किटले
+   `@layer theme, base, components, utilities` घोषणा गर्छ र यसका rules `components` मा हुन्छन्) — spacing
+   र layout का लागि utilities प्रयोग गर्नुहोस्, किट components लाई पुनःरङ्ग्याउन होइन। Typography यसको अपवाद हो:
+   `packages/ui-kit/src/ci-typography.css` कुनै layer बाहिर import गरिन्छ, त्यसैले यसका tag rules ले
+   utilities माथि प्राथमिकता पाउँछन्। `h1`–`h6` मा weight, `tracking-*` र `leading-*` classes को
+   कुनै प्रभाव हुँदैन, table cells मा weight र `tracking-*` को कुनै प्रभाव हुँदैन, र buttons मा weight को
+   कुनै प्रभाव हुँदैन
+   (`tests/unit/dead-typography-classes.test.ts` ले त्यहाँ तिनलाई अस्वीकार गर्छ); `th`, `td`, `button`, `input`
+   र `textarea` मा `font-mono` को कुनै प्रभाव हुँदैन। Size, colour र `uppercase` utilities भने लागू हुन्छन्।
+5. Headings: page र section titles का लागि `.ci-heading`; error-page status code जस्ता ठूला, विरल
+   display text का लागि मात्र `.ci-dashboard-display`। दुवैले Switzer प्रयोग गर्छन्।
+6. `tests/unit/dashboard-kit-sweep.test.ts` ले किट adoption को निगरानी गर्छ: `src/app` वा
+   `src/shared/components` अन्तर्गत Material ligature span हुनुहुँदैन; dashboard tree
+   (`src/app/(dashboard)` र `src/shared/components`) मा raw `<select>`, `<textarea>` वा `<table>` हुनुहुँदैन र
+   सूचीबद्ध exceptions (`Select` adapter को native branch,
+   `RequestLoggerDetail`) बाहेक हातैले बनाइएको `role="dialog"` हुनुहुँदैन; त्यहाँका प्रत्येक raw `<button>` वा
+   `<input>` माथि बढीमा 3 lines भित्र अन्त्य हुने, कारणसहित `kit-exception:` समावेश भएको comment
+   आवश्यक हुन्छ; palette hues र `dark:` variants test ले सूचीबद्ध गरेका files मा मात्र हुन सक्छन्।
+7. PR अघि दुवै themes र 390 px viewport जाँच गर्नुहोस् (screenshots); `tests/e2e/a11y.spec.ts` ले
+   axe चलाउँछ।
+8. एउटा colour utility ले `src/app/globals.css` को `@theme` block मा भएको token को नाम दिनुपर्छ:
+   त्यहाँ नभएको नाम (`text-text`, `bg-bg-muted`, `text-danger`…) ले CSS उत्पन्न गर्दैन र element ले inherited
+   colour नै राख्छ (`tests/unit/theme-color-classes.test.ts`)। `card` class छैन: `Card` adapter प्रयोग गर्नुहोस्
+   (`tests/unit/no-bare-card-class.test.ts`)। chart colour मा रहेको text का लागि `text-chart-N-ink`;
+   `text-chart-N` icons र strokes का लागि हो
+   (`tests/unit/chart-ink-for-text.test.ts`)। Translucent colour `color-mix` प्रयोग गरेर बनाउनुहोस्, `var()` हुन
+   सक्ने value मा hex alpha थपेर कहिल्यै होइन
+   (`tests/unit/color-alpha-concatenation.test.ts`)।
+9. Tables: प्रत्येक kit `Table` ले `scrollLabel`, आफ्नो scroll region को नाम, र persistent scrollbar
+   draw गर्दा `scrollbarLabel` पास गर्नुपर्छ
+   (`tests/unit/kit-tables-have-accessible-name.test.ts`)। क्लिक गर्न मिल्ने row भनेको `onActivate` भएको
+   `InteractiveTableRow` हो, `<TableRow onClick>` कहिल्यै होइन
+   (`tests/unit/table-row-click-needs-keyboard.test.ts`)। card भित्र वा कुनै bordered box भित्रको table ले
+   `containerClassName="rounded-none border-0"` प्रयोग गरेर आफ्नो frame हटाउनुपर्छ
+   (`tests/unit/datatable-not-framed-inside-card.test.ts`)।
+10. कुनै amount देखाउने bar भनेको kit `Progress` हुनुपर्छ, वा kit bar ले त्यसलाई draw गर्न नसक्दा नाम र
+    value सहित `role="progressbar"` राख्नुपर्छ
+    (`tests/unit/progress-bars-have-semantics.test.ts`)। Menus, popovers र tooltips किटबाट
+    (`Popover`, `SearchableSelect`, `Tooltip` adapter) आउनुपर्छ, local state बाट खोलिने absolute-positioned panel
+    बाट होइन
+    (`tests/unit/hand-positioned-overlays.test.ts`)।
+11. `Input` adapter मा `className` ले field wrapper लाई style गर्छ; control का लागि अभिप्रेत class
+    `inputClassName` मा राख्नुहोस्
+    (`tests/unit/input-adapter-classname-destination.test.ts`)।
 
-यो कागजात विश्लेषण र योजना हो।
+## ३. स्क्रिन थप्दै
 
----
+1. kit को `PageHeader` भएको पृष्ठ खोल्नुहोस् (`@omniroute/ui-kit/page-header`, ड्यासबोर्डभित्र `compact`) — शीर्षक, विवरण र `actions`। त्यसपछि shell header ले आफ्नै शीर्षक हटाउँछ, र १०२४ px भन्दा कममा लुक्छ, त्यसैले `PageHeader` नभएको route मा फोनमा शीर्षक हुँदैन
+   (`tests/unit/dashboard-page-header-coverage.test.ts`)। आफ्नै page नभएको path segment लाई `src/shared/utils/breadcrumbTrail.ts` मा `ROUTE_PREFIXES_WITHOUT_PAGE` भित्र राख्नुहोस्, ताकि त्यसको crumb dead link नभई पाठ होस् (`tests/unit/breadcrumb-trail-routes.test.ts`)।
+2. `@/shared/components` (adapters) बाट controls बनाउनुहोस् र adapter नभएको ठाउँमा subpath मार्फत kit components प्रयोग गर्नुहोस् (`Table`/`TableScrollArea`/`DataTableShell`, `Field`, `Alert`, `Tabs`, `RadioGroup`, `Slider`…)।
+3. Icons: `<Icon name="…" />`। नयाँ नामलाई अर्थसँग मिल्ने Lucide component सहित `ICON_MAP` मा राख्नुहोस्; अझै नभएका नामहरूको सूची हेर्न `npm run gen:icon-map` चलाउनुहोस्।
+4. रङहरू: semantic utilities (`text-success`, `bg-warning-bg`, `border-border`…) र chart series का लागि `var(--color-chart-N)` प्रयोग गर्नुहोस्; hex values र रङ मात्र दोहोर्याउने `dark:` variants प्रयोग नगर्नुहोस्।
+5. पाठ: kit components मा पठाइने labels सहित प्रत्येक string `useTranslations` बाट आउनुपर्छ। नयाँ keys केवल `src/i18n/messages/en.json` मा राख्नुहोस्; release refresh ले अन्य locales भर्छ
+   (`tests/_helpers/localeParityMode.ts` ले दुईवटा modes वर्णन गर्छ)। वास्तविक non-English catalog mount गर्ने test ले runtime ले जस्तै आफ्ना messages बनाउँछ, `src/i18n/request.ts` को `deepMergeFallback` प्रयोग गरेर; त्यसैले अझै English-only रहेको key ले error नदिई fallback गर्छ।
+6. PR अघि guards चलाउनुहोस्: `tests/unit/dashboard-kit-sweep.test.ts`,
+   `tests/unit/icon-map-coverage.test.ts`, `tests/unit/icon-map-object-values.test.ts`,
+   `npm run check:dashboard-typecheck` (`iconMap.ts` मा duplicated import पत्ता लगाउने एक मात्र check),
+   `npm run check:ui-icu`, नियम 4 र 8–11 मा उल्लेख गरिएका guards, र स्क्रिनका आफ्नै tests।
 
-## 2. सिद्धान्तहरू
+## 4. एडाप्टर थप्ने वा परिवर्तन गर्ने
 
-- **सत्यको एकल स्रोत = `src/app/globals.css`।** साइटले ड्यासबोर्डलाई प्रतिबिम्बित गर्छ, यसको विपरीत कहिल्यै हुँदैन। नयाँ टोकनहरू पहिले `globals.css` मा थपिन्छन्।
-- **लिटरल होइन, टोकनहरू।** कम्पोनेन्टहरूले कच्चा `#hex` होइन, अर्थपूर्ण टोकनहरू (`bg-surface`, `text-primary`, `border-border`) प्रयोग गर्छन्।
-- **सूक्ष्म, भड्किलो होइन।** ग्रिड सामग्रीको पछाडि रहने मधुरो वालपेपर हो — यसले पाठको कन्ट्रास्ट कहिल्यै घटाउनु वा UI सँग दृश्य प्रतिस्पर्धा गर्नु हुँदैन।
-- **थिम-सचेत।** सबै कुरा `.dark` (उत्पादनको विशिष्ट स्वरूप) र हल्का थिम दुवैमा काम गर्छ।
-- **सटीक चरणबद्ध कार्यान्वयन।** पहिले ग्रिड + टोकनहरू सार्वजनिक गर्नुहोस् (कम जोखिम, उच्च दृश्य प्रभाव), त्यसपछि चरणबद्ध रूपमा कम्पोनेन्टहरू सफा गर्नुहोस्।
+1. `src/shared/components/index.tsx` को सार्वजनिक API यथावत् राख्नुहोस्: उही export नामहरू, default exportहरू र स्वीकार गरिने propsहरू। पुराना (legacy) propsहरूलाई एडाप्टरभित्रै किटमा म्याप गर्नुहोस् (`Button.tsx` हेर्नुहोस्: `VARIANT_TO_KIT`, `SIZE_TO_KIT`)।
+2. किटलाई subpath बाट import गर्नुहोस् (`@omniroute/ui-kit/<component>`)।
+3. किटका कमीहरूका workaroundहरू एडाप्टरमै रहन्छन् (वा समाधान स्टाइल सम्बन्धी भए `globals.css` को `@layer components` मा), कहिल्यै `packages/ui-kit/src` मा होइन।
+4. `tests/unit/ui/adapters/<name>.test.tsx` थप्नुहोस् वा अपडेट गर्नुहोस्। धेरै callerहरू भएको एडाप्टरको हकमा, परिवर्तनअघि र परिवर्तनपछिको rendered markup तुलना गर्नुहोस् — padding वा wrapper परिवर्तनहरू हरेक स्क्रिनमा फैलिन्छन्।
 
----
+## 5. किट अद्यावधिक गर्दै
 
-## 3. हालको अवस्था — के पहिले नै समान छ र के छैन
+`npm run check:ui-kit-upstream` `packages/ui-kit/UPSTREAM.md` मा पिन गरिएको संस्करणलाई अपस्ट्रिम रेपोको सबैभन्दा नयाँ `v*` ट्यागसँग तुलना गर्छ र रिलीज बाहिर हुँदा सिङ्क आदेश छाप्छ।
 
-### 3.1 रङहरू — पहिले नै एकीकृत ✅
+दैनिक `UI Kit upstream watch` कार्यप्रवाह (`.github/workflows/ui-kit-upstream-watch.yml`) ले उही जाँच चलाउँछ। पिन पछाडि हुँदा, `scripts/ci/ui-kit-sync-pr.sh` एउटा सिंक PR उच्चतम `release/vX.Y.Z` शाखा विरुद्ध, रोलिङ शाखा `chore/ui-kit-sync-latest` मा खुला राख्छ। यो कहिल्यै मर्ज हुँदैन: प्रत्येक किट रिलीजलाई अझै पनि स्थानीय VPS मा भिजुअल जाँच चाहिन्छ। शाखा पुन: निर्माण गरिन्छ जब नयाँ रिलीज बाहिर हुन्छ र अन्यथा एक्लै छोडिन्छ। हातले धकेलिएको कमिट सहितको खुला PR ओभरराइट हुँदैन, र एक PR संस्करणको लागि जुन एक मर्मतकर्ताले अनमर्ज नगरेको नयाँ रिलीज नभएसम्म बन्द रहन्छ।
 
-प्रत्येक ब्रान्ड रङ र सतह साइटसँग **मानको आधारमा** पहिले नै मेल खान्छ (नामहरू मात्र फरक छन् — ड्यासबोर्डले `--color-` उपसर्ग प्रयोग गर्छ)। `src/app/globals.css:30-128` मा प्रमाणीकरण गरिएको:
+जब कुनै PR खोल्न सकिँदैन (लक्ष्य रिलीज फ्रिज गरिएको छ, PR ले हातले धकेलिएको छ, PR बन्द गरिएको छ, वा कुनै PR टोकन सेट गरिएको छैन) कार्यप्रवाहले एउटा ट्र्याकिङ मुद्दालाई खुला राख्छ जसले किन भन्छ।
 
-| अवधारणा                       | साइट टोकन (`tokens.css`)                    | ड्यासबोर्ड टोकन (`globals.css`) | मिलान           |
-| ----------------------------- | ------------------------------------------- | ------------------------------- | --------------- |
-| प्राथमिक                      | `--primary #e54d5e`                         | `--color-primary #e54d5e`       | ✅              |
-| प्राथमिक-होभर                 | `--primary-hover #c93d4e`                   | `--color-primary-hover #c93d4e` | ✅              |
-| एक्सेन्ट                      | `--accent #6366f1`                          | `--color-accent #6366f1`        | ✅              |
-| एक्सेन्ट-2                    | `--accent-2 #8b5cf6`                        | `--color-accent-hover #8b5cf6`  | ✅ (पुनःनामकरण) |
-| एक्सेन्ट-3                    | `--accent-3 #a855f7`                        | `--color-accent-light #a855f7`  | ✅ (पुनःनामकरण) |
-| सफलता / चेतावनी / त्रुटि      | `#22c55e / #f59e0b / #ef4444`               | समान                            | ✅              |
-| ट्राफिक बत्तीहरू              | `#ff5f56 / #ffbd2e / #27c93f`               | समान                            | ✅              |
-| गाढा पृष्ठभूमि / सतह / किनारा | `#0b0e14 / #161b22 / rgba(255,255,255,.08)` | समान                            | ✅              |
-| हल्का पृष्ठभूमि / सतह / पाठ   | `#f9f9fb / #fff / #1a1a2e`                  | समान                            | ✅              |
+कार्यप्रवाहले दुई रहस्यहरू प्रयोग गर्दछ:
 
-**निष्कर्ष:** कुनै रङ माइग्रेसन गर्नुपर्ने छैन। पहिचान पहिले नै साझा छ; हामी यसलाई पुनर्निर्माण होइन, _पूर्ण_ गर्दैछौँ।
+- `secrets.UI_KIT_READ_TOKEN`: निजी अपस्ट्रीम रिपोको लागि पढ्ने मात्र टोकन। जब कार्यप्रवाहले अपस्ट्रीम पढ्न सक्दैन (कुनै टोकन, टोकन जसले काम गर्न रोकेको छ, वा GitHub पहुँचयोग्य छैन) रन हरियो रहन्छ तर चेतावनी लेख्छ र एउटा छुट्टै मुद्दा खुला राख्छ, जुन पछि रनले फेरि अपस्ट्रीम पढ्न सक्छ।
+- `secrets.UI_KIT_SYNC_PR_TOKEN`: यस भण्डारमा सामग्री र पुल अनुरोधहरू लेख्न पहुँचको साथमा राम्रो-दाना भएको टोकन। पूर्वनिर्धारित `GITHUB_TOKEN` यहाँ PRs सिर्जना गर्न सक्दैन, र यो खोलिएको PR ले CI ट्रिगर गर्दैन। यो टोकन बिना कार्यप्रवाहले शाखालाई मात्र धक्का दिन्छ।
 
-### 3.2 रिक्तताहरू — ड्यासबोर्डमा के छुटेको छ
+`scripts/dev/sync-ui-kit.sh <commit|latest> [clone]` अपस्ट्रिम `src/` त्यो कमिटमा (`latest` = सबैभन्दा नयाँ `v*` ट्याग) लाई `packages/ui-kit/src` मा प्रतिलिपि गर्दछ, एकल अनुमति दिइएको रूपान्तरण लागू गर्दछ (यसले सापेक्ष आयातबाट `.js` प्रत्यय छोड्छ), र कार्यस्थान संस्करणलाई `packages/ui-kit/package.json` र `package-lock.json` मा अपस्ट्रीममा सेट गर्दछ। त्यसपछि: `git diff packages/ui-kit` समीक्षा गर्नुहोस्, प्रदायकहरू, सेटिङहरू, कम्बोहरू, प्रयोग र दुवै थिमहरूमा अन्तिम बिन्दुमा भिजुअल पास गर्नुहोस्, `npm run check:ui-kit-snapshot` र `npm run test:vitest:ui` चलाउनुहोस्, र अपस्ट्रिम चेन्जलगको साथ PR खोल्नुहोस्।
 
-| अन्तर                    | साइटमा रहेको                                                                  | ड्यासबोर्ड                                                      | कार्य                   |
-| ------------------------ | ----------------------------------------------------------------------------- | --------------------------------------------------------------- | ----------------------- |
-| **ग्रिड वालपेपर**        | `body::before` ग्राफ-पेपर, `--grid-line`, `--grid-size 32px`, `--section-alt` | **✅ थपियो (चरण 1)**                                            | **भाग A**               |
-| **रेडियस स्केल**         | `--radius 14px`, `--radius-sm 9px`                                            | `--radius 14px` थपियो; `-sm` + कम्पोनेन्ट पुनःलक्षित गर्न बाँकी | **भाग B / चरण 2**       |
-| **ब्रान्ड ग्रेडियन्ट**   | `--grad-brand 135deg primary→accent-3`                                        | **✅ टोकन थपियो (चरण 1)**; चरण 2 मा प्रयोग गरिनेछ               | **भाग B**               |
-| **नेस्टेड सतह**          | `--surface-2 #1c2230`                                                         | **✅ थपियो (चरण 1)**                                            | **भाग B**               |
-| **मोनो फन्ट**            | `--font-mono` (ui-monospace स्ट्याक)                                          | बाँकी (चरण 4, प्रयोगकर्ताहरूसँगै)                               | **भाग B**               |
-| **`text-muted` (डार्क)** | `#8b8b9e`                                                                     | `#a1a1aa` (zinc-400)                                            | मिलान गर्ने — **भाग B** |
+## ६. README का आरेखहरू
 
-### 3.3 थिमिङ कार्यविधि (ताकि हामीले केही नबिगारौँ)
+मूल `README.md` ले समावेश गर्ने बाह्रवटा आरेखहरू (`docs/diagrams/*.svg`) स्थिर
+छविमा लागू गरिएको किट हुन्, र यी हातैले कोरिएका होइनन्: `scripts/docs/gen-readme-*.mjs`
+मा रहेका १३ वटा जनरेटर फाइलहरू (बाह्रवटा आरेख र `gen-readme-diagrams.mjs` ड्राइभर) तथा
+`tests/unit/docs/readme-*-svg.test.ts` मा रहेका १२ वटा पुरानो अवस्थाका परीक्षणहरू, प्रत्येक
+आरेखका लागि एउटा, ले कमिट गरिएको फाइललाई त्यसको जनरेटरको आउटपुटसँग byte-by-byte तुलना गर्छन्
+(job `test-unit`)।
 
-- **Tailwind v4, CSS-first** (`tailwind.config.*` छैन)। टोकनहरू `:root`/`.dark` मा परिभाषित छन् र `@theme inline` मार्फत युटिलिटीहरूमा उपलब्ध गराइएका छन् (`globals.css:130-179`)।
-- `<html>` मा **`.dark` क्लासमार्फत डार्क मोड** (`globals.css:22` मा `@custom-variant dark`), जसलाई कस्टम Zustand स्टोर (`src/store/themeStore.ts`) द्वारा टगल गरिन्छ, पूर्वनिर्धारित थिम = `system` (`src/shared/constants/appConfig.ts:11`)। यसको सट्टा साइटले `html[data-theme="light"]` प्रयोग गर्छ — **कार्यविधिहरू फरक छन् तर कहिल्यै एकअर्कासँग जोडिँदैनन्** (अलग-अलग उत्पत्ति), त्यसैले कुनै द्वन्द्व हुँदैन। हामी ड्यासबोर्डको `.dark` कार्यविधि कायम राख्छौँ।
-- **रनटाइम प्राथमिक ओभरराइड** उपलब्ध छ (`themeStore.ts:85-97`, `COLOR_THEMES` मा प्रिसेटहरू) — प्रयोगकर्ताहरूले `--color-primary` परिवर्तन गर्न सक्छन्। `--color-primary` लाई सन्दर्भ गर्ने कुनै पनि नयाँ टोकन (ग्रेडियन्ट आदि) ले ती ओभरराइडहरू स्वतः प्राप्त गर्छ। ✅
-- **Tailwind v4 का आरक्षित रेडियस नामहरू:** `--radius-sm/md/lg/...` ले `rounded-*` युटिलिटीहरूलाई आधार दिन्छन्। तिनलाई पुनःपरिभाषित गर्दा पहिलेदेखि रहेका प्रत्येक `rounded-*` पछाडिबाट परिवर्तन हुन्छन् (उदाहरणका लागि, `rounded-sm` 12 फाइलमा प्रयोग गरिएको छ)। त्यसैले सानो-रेडियस मान र कम्पोनेन्ट पुनःलक्ष्यीकरणलाई जानाजानी चरण 2 सम्मका लागि स्थगित गरिएको छ, जहाँ प्रयोगकर्ताहरू पनि सँगसँगै परिवर्तन हुन्छन्।
+- **टोकनहरू।** `scripts/docs/readme-diagram-theme.mjs` ले Editions प्यालेट (पूर्वनिर्धारित
+  रूप) `packages/ui-kit/src/ci-editions.css` बाट प्रतिलिपि गर्छ (`tests/unit/docs/readme-diagram-theme.test.ts`
+  ले उक्त फाइलसँग बाँधेर राख्छ, र दुवै योजनामा प्रत्येक सतहमा रहेका सबै पाठका रङहरूका लागि
+  WCAG AA पनि जाँच्छ; एउटा अपवाद, हल्का `warn`, किटको warning लाई १० % गाढा पारिएको हो,
+  किनकि किटको मान canvas मा 4.46:1 छ) र किटको टाइप स्केल (`ci-tokens.css`) मा पाठका
+  भूमिकाहरू परिभाषित गर्छ: सबै कुराका लागि किटका तौलहरू (400/500/600, display का लागि 500)
+  र tracking सहित Switzer, तर code भूमिकाहरू (`.cmd`, `.term`, `.term-lg`, `.mono`, `.mono-sm`, `.mono-xs`)
+  का लागि IBM Plex Mono मात्र प्रयोग हुन्छ, र यी commands, URLs, identifiers तथा terminal
+  screens का लागि मात्र हुन्।
+  हल्का मानहरू `:root` मा र गाढा मानहरू फाइलभित्र `prefers-color-scheme: dark` पछाडि राखिएका
+  छन्, त्यसैले GitHub मा प्रत्येक छविले दर्शकको योजना पछ्याउँछ।
+- **फन्टहरू।** GitHub Markdown ले CSS बोक्दैन र camo proxy ले हरेक बाह्य fetch रोक्छ, त्यसैले
+  किटको टाइप फाइलभित्रै राखिनुपर्छ। प्रत्येक जनरेटरको अन्तिम चरण
+  `scripts/docs/readme-outline.mjs` ले HarfBuzz प्रयोग गरेर Switzer भूमिकाहरूको आकार निर्धारण
+  गर्छ र तिनलाई vector outlines (`<defs>` paths र `<use>`) का रूपमा कोर्छ; Switzer मा नभएका
+  arrows र geometric symbols पनि आफ्नै metrics प्रयोग गरेर कोरिन्छन्। फन्ट embed गर्ने होइन,
+  outlines प्रयोग गर्ने: Switzer को licence (`packages/ui-kit/src/fonts/FFL.txt`) ले लिखित
+  सहमतिबिना subsetting र format conversion निषेध गर्छ र vector drawings लाई अनुमति दिन्छ,
+  त्यसैले Switzer को `@font-face` वा `data:` URI पुनः नथप्नुहोस्। फाइलमा बाँकी रहने एउटै
+  फन्ट OFL IBM Plex Mono subset हो, जुन वास्तविक code text का रूपमा रहने सामग्रीका लागि
+  हो (`scripts/docs/readme-fonts.mjs`); यसले embed गर्न नसक्ने कुनै glyph भएमा त्रुटि
+  उत्पन्न हुन्छ।
+- **पुनः उत्पन्न गर्नुहोस्।** `npm run docs:readme-diagrams` ले README को क्रममा सबै बाह्रवटालाई
+  पुनर्लेखन गर्छ र प्रत्येक फाइलको आकारसहित एउटा पङ्क्ति छाप्छ। एउटा जनरेटरलाई पनि
+  एक्लै चलाउन सकिन्छ (`node scripts/docs/gen-readme-<name>.mjs`;
+  `free-tier-budget` लाई `node --import tsx/esm` आवश्यक पर्छ, किनकि यसका figures
+  `open-sse/config/freeModelCatalog.ts` मा रहेको live catalog loader बाट आउँछन्;
+  catalog परिवर्तनको CI परिणाम `docs/architecture/QUALITY_GATES.md` → `docs-sync-strict`
+  मा छ)। जनरेटर र SVG दुवै कमिट गर्नुहोस्।
+  पुरानो SVG ले release mode मा परीक्षण असफल बनाउँछ; feature PR मा
+  `npm run check:generated-artifacts` ले PR ले सम्पादन गरेको SVG मात्र जाँच्छ
+  (`docs/architecture/QUALITY_GATES.md` → "Generated files and derived baselines")।
+- **प्रमाण।** `scripts/docs/readme-svg-shots.mjs <file.svg> <outdir>` ले GitHub ले सेवा गर्ने
+  तरिकामा फाइल render गर्छ (`<img>` tag, camo को `Content-Security-Policy`,
+  `image/svg+xml`), हल्का र गाढा frame capture गर्छ र पृष्ठले गरेका बाह्य font requests
+  रिपोर्ट गर्छ (० हुनुपर्छ)।
+- **बजेट।** प्रत्येक फाइल 200 KB भन्दा कम हुनुपर्छ (प्रत्येक staleness test ले यसलाई
+  सुनिश्चित गर्छ); कुनै पनि README image का लागि 500 KB कडा सीमा हो (SVG studio validator
+  को नियम)।
+- **परिवर्तन नगरी प्रतिलिपि गर्नुहोस्, gate बाट गणना लिनुहोस्।** Rebrand ले शब्दहरू होइन,
+  type र palette परिवर्तन गरेको हो: प्रत्येक जनरेटरले आफ्नो आरेखको copy लाई
+  `*_COPY` constant मा राख्छ (वा live catalog बाट बनाउँछ), जुन कोरिएको पाठ र outlining
+  चरणको input दुवै हो। Canonical figures `<text>` nodes मै रहन्छन् (outline गरिसकेपछि
+  अदृश्य, `fill-opacity:0`), र `check:docs-counts`
+  (`scripts/check/check-docs-counts-sync.mjs`) ले तिनलाई पढ्छ; reads लाई gate गर्ने
+  आरेखका staleness tests ले उत्पन्न फाइलमा यसका validators पनि चलाउँछन्, त्यसैले code बाट
+  फरक परेको figure ले परीक्षण असफल बनाउँछ — gate ले पढ्ने source सच्याउनुहोस्, generator
+  भित्रको संख्या कहिल्यै होइन।
 
----
+## 7. सन्दर्भ अनुक्रमणिका
 
-## 4. भाग A — ग्राफ-पेपर ग्रिड पृष्ठभूमि (मुख्य माग) — कार्यान्वयन गरिएको (चरण 1)
-
-### 4.1 यो के हो
-
-साइट (`_mono_repo/omnirouteSite/css/base.css`) बाट लिइएको ठ्याक्कै उही विधि: दुईवटा 1px रेखीय ग्रेडियन्ट कोर्ने, सम्पूर्ण भ्यूपोर्ट ढाक्ने **स्थिर pseudo-element**, जुन सबै सामग्रीको पछाडि `z-index:-1` मा रहन्छ।
-
-```css
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
-  background-size: var(--grid-size) var(--grid-size);
-}
-```
-
-**`body` मा अपारदर्शी `background-color` भए तापनि यसले किन काम गर्छ:** `z-index:-1` भएको `::before`, एलिमेन्टको आफ्नै पृष्ठभूमिको _माथि_ तर त्यसको in-flow सामग्रीको _तल_ कोरिन्छ। त्यसैले `--color-bg` आधारभूत भराइ हो, ग्रिड त्यसमाथि तहबद्ध हुन्छ, र एप ग्रिडभन्दा माथि रेन्डर हुन्छ।
-
-### 4.2 कोडबेसमा पहिल्यै रहेको उदाहरण
-
-`src/app/landing/page.tsx:16-26` ले **पहिल्यै प्रत्येक पृष्ठमा यही ग्रिड कार्यान्वयन गरेको छ** — तर **राता** रेखाहरू (`#E54D5E`, अपारदर्शिता `0.06`) **50px** मा, साथै एनिमेटेड ओर्बहरू सहित। त्यसैले यो ढाँचा उत्पादनमा प्रमाणित भइसकेको छ; यस कार्यले यसलाई **विश्वव्यापी, थिम-अनुकूल** वालपेपरमा रूपान्तरण गर्छ।
-
-### 4.3 थपिएका टोकनहरू (`globals.css` मा)
-
-```css
-:root {
-  /* उज्यालो — साइटको 0.045 बाट ग्रिडको अपारदर्शिता बढाइएको छ, ताकि वालपेपर
-     बाक्लो ड्यासबोर्डमा वास्तवमै देखियोस् (कार्ड/क्रोमले भ्यूपोर्टको अधिकांश भाग ढाक्छन्) */
-  --grid-line: rgba(0, 0, 0, 0.07);
-  --grid-size: 32px;
-  --section-alt: rgba(0, 0, 0, 0.022);
-}
-.dark {
-  /* अँध्यारो — उही कारणले 0.035 बाट बढाइएको */
-  --grid-line: rgba(255, 255, 255, 0.06);
-  --section-alt: rgba(255, 255, 255, 0.018);
-}
-```
-
-### 4.4 एकमात्र अवरोध — हटाइयो
-
-ग्रिड संरचनागत रूपमै विश्वव्यापी छ (यसले प्यानल, `auth`/`login`, त्रुटि पृष्ठहरू — सबै रुटहरू — एकैपटक समेट्छ)। प्यानलभित्र यसलाई ठ्याक्कै **एउटा** एलिमेन्टले लुकाएको थियो:
-
-- `src/shared/components/layouts/DashboardLayout.tsx` — बाहिरी wrapper ले अपारदर्शी `bg-bg` कोरेको थियो। त्यसभन्दा तलका सबै कुरा पहिल्यै पारदर्शी छन् (`<main>`, स्क्रोल कन्टेनर, भित्री `max-w-7xl`), त्यसैले **`bg-bg` हटाउँदा** body को ग्रिड सामग्री क्षेत्रमा देखिन्छ (body को `--color-bg` आधारभूत भराइकै रूपमा रहन्छ)।
-
-  ```diff
-  - <div className="flex h-dvh min-h-0 w-full overflow-hidden bg-bg">
-  + <div className="flex h-dvh min-h-0 w-full overflow-hidden">
-  ```
-
-### 4.5 क्रोम अन्तरक्रिया (साइडबार / हेडर)
-
-- `Header` (`Header.tsx:207`, `bg-bg`) र `Sidebar` (`Sidebar.tsx:430`, `bg-sidebar`) **अपारदर्शी** नै रहन्छन् → ग्रिड **सामग्री क्षेत्रमा मात्र** देखिन्छ, जसलाई ठोस क्रोमले फ्रेम गर्छ। शान्त पूर्वनिर्धारित रूप, साइटले क्रोमलाई क्यानभासबाट अलग गर्ने तरिकासँग मेल खान्छ (निर्णय D3 = ठोस)।
-
-### 4.6 लगइन / प्रमाणीकरण / त्रुटि पृष्ठहरू
-
-यी `<body>` मुनि सिधै रेन्डर हुन्छन् (प्यानल क्रोम बिना), त्यसैले विश्वव्यापी ग्रिड यिनको पछाडि स्वचालित रूपमा देखिनुपर्छ। **चरण 5 — सम्पन्न:** छुट्टाछुट्टै पूर्ण-स्क्रिन wrapper हरू वास्तवमै अपारदर्शी थिए (`min-h-screen … bg-bg`, जहाँ `bg-bg`, `<body>` को जस्तै ठोस भराइ हो), जसले लगइनमा मात्र होइन — प्रत्येक गैर-ड्यासबोर्ड स्क्रिनमा ग्रिड लुकाएको थियो। ती सबैलाई अब पारदर्शी बनाइएको छ, ताकि साझा वालपेपर देखियोस्: `login`, `forgot-password`, `callback`, `maintenance`, `offline`, `status`, `terms`, `privacy`, `onboarding`, र `ErrorPageScaffold` (`400`/`401` समेट्छ)। यसले **D4** पूरा गर्छ (लगइनमा मात्र सीमित नराखी प्रत्येक छुट्टै स्क्रिनमा विस्तार गरिएको)। `tests/unit/design-grid-background.test.ts` द्वारा सुरक्षित गरिएको।
-
-### 4.7 ल्यान्डिङ पृष्ठ
-
-`landing/page.tsx` ले आफ्नो अझ समृद्ध एनिमेटेड पृष्ठभूमि (ओर्बहरू + भिन्येट) कायम राख्छ — यसको आफ्नै मार्केटिङ स्प्ल्यास (निर्णय D5 = जस्ताको तस्तै छोड्ने)।
-
----
-
-## 5. भाग B — टोकन एकीकरण
-
-चरण 1 ले निष्क्रिय, टकराव-रहित पहिचान टोकनहरू (`--surface-2`/`--color-surface-2`, `--grad-brand`, `--radius`) थप्छ। चरण 2 ले रेडियस स्केललाई Tailwind मा जडान गरेर कम्पोनेन्टहरूलाई पुनः लक्षित गर्छ; चरण 4 ले यसका प्रयोगकर्ताहरूसहित `--font-mono` थप्छ।
-
-| टोकन                       | किन                                                                      | चरण                                  |
-| -------------------------- | ------------------------------------------------------------------------ | ------------------------------------ |
-| `--radius` / `--radius-sm` | स्वेच्छाचारी 6/8/12 को सट्टा एउटै रेडियस स्केल (14/9)                    | 1 (मान) / 2 (जडान + पुनः लक्ष्यीकरण) |
-| `--grad-brand`             | साइटसँग मेल खाने प्राथमिक CTA हरूका लागि ब्रान्ड ग्रेडियन्ट (रातो→बैजनी) | 1 (टोकन) / 2 (Button)                |
-| `--surface-2`              | नेस्टेड प्यानलहरू / तालिका हेडरहरू / इन्सेट पङ्क्तिहरू                   | 1                                    |
-| `--font-mono`              | कोड ब्लकहरू, टर्मिनल, ID हरू, एन्डपोइन्टहरू                              | 4                                    |
-| `--text-muted` सामञ्जस्य   | साइट↔प्यानलका लागि एउटै मान रोज्नुहोस् (`#a1a1aa` सिफारिस गरिएको)        | 2                                    |
-
-**D2 (text-muted):** साइटको `#8b8b9e` र ड्यासबोर्डको `#a1a1aa`। **ड्यासबोर्डको `#a1a1aa`** कायम राख्न र मिलानका लागि _साइट_ अद्यावधिक गर्न सिफारिस गरिन्छ। प्रसाधनात्मक परिवर्तन।
-
----
-
-## 6. भाग C — कम्पोनेन्ट मानकीकरण (चरणहरू 2–4)
-
-अनुकूलन कम्पोनेन्टहरू (shadcn/Radix बिना), Tailwind v4, अर्थगत टोकनहरू **अधिकांशतः** अपनाइएका छन् (195 फाइलहरूले साझा ब्यारेल इम्पोर्ट गर्छन्)। मुख्य काम भनेको **बाइपासहरू** हटाउनु हो। गृह: `src/shared/components/`।
-
-| #   | विषय                                      | फाइल(हरू)                                                                                                                 | समस्या → लक्ष्य                                                                                                                    | चरण |
-| --- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --- |
-| C1  | **रेडियस पङ्क्तिबद्धता**                  | `Button.tsx:14-18`, `Card.tsx:39`, `Modal.tsx`, `Input.tsx`, `Select.tsx`                                                 | मिश्रित 6/8/12px → `--radius`/`--radius-sm` (14/9)                                                                                 | 2   |
-| C2  | **Button ग्रेडियन्ट + `accent` भेरियन्ट** | `Button.tsx:5-12`                                                                                                         | प्राथमिक रातो→रातो समतल छ; `--grad-brand` सँग पङ्क्तिबद्ध गर्ने; छुटेको `accent` भेरियन्ट थप्ने। ~195 इम्पोर्टर — सर्वाधिक दृश्यता | 2   |
-| C3  | **तालिकाहरू**                             | `DataTable.tsx:122-176`, `logTableStyles.ts`, `globals.css:405-414`                                                       | 100% इनलाइन हार्डकोड गरिएको rgba + अस्तित्वमा नभएका भेरिएबलहरू; टोकनहरूमा माइग्रेट गर्ने, भिन्न शैलीहरू हटाउने                     | 3   |
-| C4  | **स्थिति रङहरू केन्द्रीकृत गर्ने**        | `flow/edgeStyles.ts`, `TokenHealthBadge.tsx`, `DegradationBadge.tsx`, `ProviderCascadeNode.tsx`, `Badge.tsx` + 5 सहायकहरू | एउटै hex का 6+ प्रतिलिपिहरू → `--color-success/warning/error` मा आधारित एउटै मोड्युल                                               | 3   |
-| C5  | **Card बोर्डर**                           | `Card.tsx:39`                                                                                                             | `border-white/5` → ब्रान्ड `/8`                                                                                                    | 2   |
-| C6  | **फोकस रिङ सामञ्जस्य** ✅ सम्पन्न         | `globals.css` `--focus-ring` (accent) र फारम कन्ट्रोलहरूको `ring-primary/30`                                              | विश्वव्यापी रिङसँग मेल गर्न + रातो त्रुटि रिङबाट छुट्याउन **accent (बैजनी)** मा एकीकृत; त्रुटि रातो नै रहन्छ                       | 4   |
-| C7  | **`Checkbox` + `Textarea` थप्ने**         | इनलाइन `accentColor:#6366f1` भएका कच्चा `<input>`/`<textarea>`                                                            | टोकन-सञ्चालित आधारभूत कम्पोनेन्टहरू                                                                                                | 4   |
-| C8  | **हार्डकोड गरिएको hex स्वीप**             | `ConsoleLogViewer.tsx:240`, `ComboLiveStudio.tsx:306`, Modal डटहरू, ~14 चार्ट फाइलहरू                                     | लिटरलहरू → टोकनहरू                                                                                                                 | 4   |
-| C9  | **`cn()` → clsx + tailwind-merge**        | `src/shared/utils/cn.ts`                                                                                                  | विरोधाभासी क्लासहरू एकमाथि अर्को थपिन्छन्; C1 ओभरराइडहरूका लागि आवश्यक                                                             | 2   |
-
-**पहिल्यै ब्रान्डअनुरूप (टोकन-सञ्चालित, रेडियस मात्र आवश्यक):** `Badge`, `Toggle`, `SegmentedControl`, `Input`, `Select`.
-
----
-
-## 7. रोलआउट योजना
-
-- **चरण 1 — ग्रिड + पहिचान टोकनहरू (यो PR)।** `globals.css` ग्रिड + `--surface-2`/`--grad-brand`/`--radius` टोकनहरू; `body::before` वालपेपर; `bg-bg` अवरोधक हटाउने; स्थिर गार्ड परीक्षण। न्यून जोखिम, एउटै कमिटमा उल्टाउन मिल्ने।
-- **चरण 2 — आधारभूत कम्पोनेन्टहरू (C1, C2, C5) — यो PR मा सम्पन्न।** `@theme` मार्फत सिमान्टिक रेडियस युटिलिटीहरू `rounded-card` (14px) / `rounded-control` (9px) थपिएका छन् (अनुकूल नामहरू भएकाले पूर्वनिर्धारित `rounded-sm/md/lg/xl` अपरिवर्तित रहन्छन् — 400 फाइलमा असर पर्ने व्यापक परिवर्तन छैन); Card/Modal → 14px, Button/Input/Select → 9px; Button primary → `--grad-brand` (रातो→बैजनी) + नयाँ `accent` भेरियन्ट; Card बोर्डरहरू → `border-border` टोकन (0.08)। **पछि सारिएको:** `cn()`→tailwind-merge (C9) का लागि नयाँ निर्भरताहरू चाहिन्छ; अनौपचारिक `rounded-lg` स्वीप (326 फाइल) जस्ताको तस्तै छोडिएको छ, किनकि आधारभूत कम्पोनेन्टहरूले सतहको अधिकांश भाग समेट्छन्।
-- **चरण 3 — स्थिति रङहरू + तालिकाहरू (C3, C4) — यो PR मा सम्पन्न।** ✅ **C4** (`src/shared/constants/statusColors.ts` — `STATUS_HEX` एकल स्रोत; `flow/edgeStyles.ts` + `TokenHealthBadge` लाई त्यसतर्फ पुनःनिर्देशित गरिएको, उही/ठ्याक्कै समान hex)। ✅ **`--font-mono`** टोकन। ✅ **C3 (DataTable)** — प्रत्येक inline rgba र प्रयोग नभएका `var(--bg-table-header)` / `var(--text-secondary)` fallback हरूलाई `--table-*` टोकन सेट (`--table-header-bg/-row-zebra/-row-hover/-cell-border/-row-selected`) ले प्रतिस्थापन गरिएको छ, जसका **dark मानहरू पुराना hardcoded rgba सँग ठ्याक्कै बराबर छन्** (dark बाइट-दर-बाइट समान) र light मानहरूले पहिले सधैँ dark देखिने light theme लाई सच्याउँछन्। Header बोर्डर → `--color-border`, सहायक पाठ → `--color-text-muted`। **मर्ज गर्नुअघि दृश्यात्मक समीक्षा चाहिन्छ।** (नछोइएका: `logTableStyles.ts` र पुराना Ant `.ant-table` नियमहरू — छुट्टै, कम प्राथमिकताका।)
-- **चरण 4 — सफाइ (C6, C7, C9 सम्पन्न; C8 बाँकी)।** ✅ **C9** `cn()` → `twMerge(clsx(...))` (clsx + tailwind-merge निर्भरताका रूपमा थपिएका) — अब कलरको `className` ले आधारभूत कम्पोनेन्टको बाझिने class थुपार्नुको सट्टा सही रूपमा _प्रतिस्थापन_ गर्छ। ✅ **C7** नयाँ `Checkbox` + `Textarea` आधारभूत कम्पोनेन्टहरू (टोकनद्वारा सञ्चालित, barrel बाट export गरिएका; थपात्मक — 32 वटा raw checkbox / 41 वटा raw textarea क्रमिक रूपमा अपनाउन सकिन्छ)। ✅ **C6** focus-ring सामञ्जस्य — form control हरू (`Input`/`Select`/`Textarea`/`Toggle`/`Checkbox`) अब global `--focus-ring` सँग मेल खान र रातो error ring सँग नबाझिन **accent (बैजनी)** ring मा focus हुन्छन्; रातो error अवस्था अपरिवर्तित छ। ⏳ **C8 hex-sweep अन्धाधुन्ध find/replace होइन** — _जानीजानी राखिएका_ र यथावत् रहनुपर्ने पुष्टि भएका स्थानहरू: `ConsoleLogViewer.tsx:240` (सधैँ-dark terminal), `TokenHealthBadge` popover, ReactFlow SVG stroke हरू। theme-aware हुनुपर्ने वास्तविक hex मात्र migrate गर्ने।
-
-प्रत्येक चरणमा: `npm run lint` + `npm run typecheck:core` + दृश्यात्मक समीक्षा।
-
----
-
-## 8. खुला निर्णयहरू (सिफारिसहरू)
-
-- **D1 — Button primary:** रातो→रातो राख्ने वा **रातो→बैजनी `--grad-brand`** मा बदल्ने? सिफारिस: **रातो→बैजनी** (चरण 2)।
-- **D2 — ग्रिड लाइनको रङ:** **neutral** (साइट शैली) — चयन गरिएको — वा brand-red। आकार **32px** (स्वामीको प्रतिक्रियापछि मूल 46px बाट ~30% घटाइएको — dashboard layout मा 46px cell हरू अत्यधिक ठूला देखिन्थे)।
-- **D3 — Chrome vibrancy:** sidebar/header **solid** — चयन गरिएको।
-- **D4 — Auth/login ग्रिड:** ✅ **सम्पन्न (चरण 5)** — प्रत्येक standalone full-screen wrapper बाट opaque `bg-bg` हटाइएको छ (login बाट मात्र होइन), त्यसैले ग्रिड सबै screen मा देखिन्छ। §4.6 हेर्नुहोस्।
-- **D5 — Landing page:** animated splash जस्ताको तस्तै राख्ने। चयन गरिएको।
-- **D6 — उत्पादनभरि Radius 14/9:** सिफारिस: हो (चरण 2)।
-- **D7 — चरण 1 पहिले ship गर्ने:** चयन गरिएको।
-- **D8 — Layout width (चरण 5):** dashboard content shell लाई `max-w-7xl` (1280px) मा सीमित गरिएको थियो, जसले ठूला monitor मा दुवै छेउमा फराकिला खाली gutter सहित सामग्रीलाई बीचमा राख्थ्यो। ✅ **सम्पन्न** — fluid `max-w-[3840px]` (वास्तविक 4K) सम्म बढाइएको: अब सामग्रीले ~4K सम्म viewport पछ्याउँछ र त्यसभन्दा बाहिर मात्र बीचमा रहन्छ (`DashboardLayout.tsx`)। जानीजानी साँघुरा राखिएका page हरू डिजाइनअनुसार साँघुरै रहन्छन् (`ProviderOnboardingWizard` max-w-5xl, `Rtk`/`CavemanContextPageClient` max-w-6xl)।
-- **D9 — Opaque data table हरू (चरण 6):** dashboard content area अब transparent भएकाले (ग्रिड वालपेपर आरपार देखियोस् भनेर, चरण 5), opaque surface नभएका container भित्रका data table हरूको transparent even-row / कम-alpha zebra बाट ग्रिड आरपार देखिन्थ्यो। ✅ **सम्पन्न** — Card बाहिरका प्रत्येक table ले अब `bg-surface` पेन्ट गर्छ (वा `<DataTable>` आधारभूत कम्पोनेन्टका लागि यसको scroll container मा `background: var(--color-surface)`)। सच्याइएका: `DataTable` (आधारभूत कम्पोनेन्ट), `ProxyLogger`/`RequestLoggerV2` (तिनका `<Card>` का `bg-black/5 dark:bg-black/20` tint ले tailwind-merge मार्फत Card को `bg-surface` माथि प्राथमिकता पाइरहेको थियो → ~95% transparent), `BatchListTab`/`FilesListTab`/`CacheEntriesTab`/`ReasoningCacheTab`/`cache page`/`FreePoolTab`/`ModelMappingTable`/`HeaderTable`, साथै cache view हरूका दुई CSS-grid "table" (`bg-surface/35` → `bg-surface`)। पहिल्यै `<Card>`/Modal भित्र रहेका table हरू opaque भएको प्रमाणित गरियो र जानीजानी नछोइयो (त्यहाँ bg-surface दोहोरिएको no-op हुन्छ)। ग्रिड आफैँमा **कुनै परिवर्तन आवश्यक परेन** — dashboard को `body::before` साइटसँग बाइट-दर-बाइट समान छ (`--grid-size: 32px`); चलिरहेको instance मा देखिने कुनै पनि "ठूलो ग्रिड" पुरानो pre-`#4143` build हो, code होइन। `tests/unit/design-grid-background.test.ts` (चरण 6 block) द्वारा सुरक्षित गरिएको।
-
----
-
-## 9. कार्यक्षेत्र बाहिर / जोखिमहरू
-
-- **प्यालेट परिवर्तन हुँदैन** — रङहरू पहिले नै मेल खान्छन्; हामी छुटेका टोकनहरू मात्र थप्छौँ। उत्पादनको रङ परिवर्तन हुने जोखिम शून्य छ।
-- **थिम-इन्जिन परिवर्तन हुँदैन** — `.dark` + Zustand स्टोर कायम राख्नुहोस्।
-- **रेडियस परिवर्तन (चरण 2) व्यापक छ** — यसले प्रत्येक कार्ड/बटन/इनपुटलाई छुन्छ; मर्ज गर्नुअघि व्यस्त स्क्रिनहरू (तालिकाहरू, मोडलहरू) दृश्य रूपमा जाँच गर्नुहोस्।
-- **तालिकाहरू (C3)** मा सबैभन्दा धेरै हार्डकोड गरिएको स्टाइलिङ र रिग्रेसनको सबैभन्दा ठूलो सम्भावित क्षेत्र छ — तिनलाई छुट्टै PR मा अलग राख्नुहोस्।
-
----
-
-## 10. सन्दर्भ अनुक्रमणिका
-
-| क्षेत्र                               | पथ                                                                                                                   |
-| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| ड्यासबोर्ड टोकनहरू                    | `src/app/globals.css` (`:root`, `.dark`, `@theme inline`, `body`, `body::before`)                                    |
-| थिम स्टोर                             | `src/store/themeStore.ts`, `src/shared/components/ThemeProvider.tsx`, `src/shared/constants/appConfig.ts:9-11`       |
-| प्यानल शेल (यहाँ ग्रिड अनब्लक गरिएको) | `src/shared/components/layouts/DashboardLayout.tsx`                                                                  |
-| क्रोम                                 | `src/shared/components/Header.tsx:207`, `src/shared/components/Sidebar.tsx:430`                                      |
-| ग्रिडको पूर्वप्रयोग                   | `src/app/landing/page.tsx:16-26`                                                                                     |
-| आधारभूत कम्पोनेन्टहरू                 | `src/shared/components/{Button,Card,Input,Select,Badge,Modal,Toggle,SegmentedControl,Loading,Tooltip,DataTable}.tsx` |
-| स्थिति-रङ स्रोतहरू                    | `flow/edgeStyles.ts`, `TokenHealthBadge.tsx`, `DegradationBadge.tsx`, `logTableStyles.ts`                            |
-| `cn` युटिलिटी                         | `src/shared/utils/cn.ts`                                                                                             |
-| चरण 1 गार्ड परीक्षण                   | `tests/unit/design-grid-background.test.ts`                                                                          |
-| साइट सन्दर्भ                          | `_mono_repo/omnirouteSite/css/tokens.css`, `css/base.css`                                                            |
+- `src/app/globals.css` — टोकन ब्रिज, `.dark` ओभरराइडहरू, OmniRoute `@layer components` विस्तारहरू
+- `packages/ui-kit/UPSTREAM.md` — पिन गरिएको अपस्ट्रिम कमिट र इजाजतपत्र प्राधिकरण; `packages/ui-kit/PATCHES.md`
+- `packages/ui-kit/src/ci-tokens.css`, `packages/ui-kit/src/ci-editions.css`, `packages/ui-kit/src/ci-ui.css`,
+  `packages/ui-kit/src/keak-brand.tsx`
+- `src/shared/components/index.tsx` र यसको छेउमा रहेका एडाप्टरहरू; `src/shared/components/layouts/DashboardShell.tsx`,
+  `src/shared/components/Sidebar.tsx`, `src/shared/components/Header.tsx`, `src/shared/components/CommandPalette.tsx`
+- `src/shared/components/Icon.tsx`, `src/shared/constants/iconMap.ts`, `scripts/dev/gen-icon-map.mjs`,
+  `scripts/dev/codemod-material-icons.mjs`
+- `src/shared/components/OmniRouteLogo.tsx`, `src/shared/constants/keakProducts.ts`
+- `src/store/themeStore.ts`, `src/shared/utils/themeBootScript.ts`, `src/shared/constants/appearancePalette.ts`,
+  `src/shared/constants/pwaThemeColors.ts`, `src/shared/constants/appConfig.ts`,
+  `src/shared/constants/statusColors.ts`
+- `tests/unit/design-kit-bridge.test.ts`, `tests/unit/dashboard-kit-sweep.test.ts`,
+  `tests/unit/icon-map-coverage.test.ts`, `tests/unit/icon-map-object-values.test.ts`,
+  `tests/unit/brand-pages-static.test.ts`, `tests/unit/ui/adapters/*.test.tsx`

@@ -27,6 +27,19 @@
  * cannot be parsed (or whose upstream call fails) is retried string by
  * string, so the worst case degrades to the default per-string behaviour.
  *
+ * Keys the source no longer has are dropped from every target locale (the merge walks the
+ * source tree). `--prune-extra` names that default explicitly; `--keep-extra` keeps them.
+ *
+ * --rewritten-since=<ref> marks as `__MISSING__:<new english>` every translation whose English
+ * value changed since <ref> (merge base with HEAD, like check-ui-value-drift.mjs) and that the
+ * locale left untouched — the stale translations check-ui-value-drift reports, computed by the
+ * same `findStaleTranslations`. With --translate-markers they are retranslated in the same run.
+ *
+ * Who runs it (plan "derived numbers and texts resolved only at release", 2026-11-13): a feature
+ * PR adds keys to en.json only and does NOT run this script. The locales are completed once per
+ * release by `release:refresh-derived`, which calls the programmatic API `syncUiKeys()` below,
+ * and by translation waves on their own branches.
+ *
  * Output examples:
  *   [i18n-ui-sync] pt-BR: +589 missing keys (589 __MISSING__, 0 translated)
  *   [i18n-ui-sync] pt-BR: +0 missing keys (already in sync)
@@ -37,14 +50,35 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { backendConfig, translateBatch, translateString } from "./lib/translate-backend.mjs";
+import { execFileSync } from "node:child_process";
+
+import { findStaleTranslations, flattenLeaves } from "./check-ui-value-drift.mjs";
+import {
+  ROUTE_HANDLER_MESSAGES_PATH,
+  ROUTE_HANDLER_MESSAGE_KEYS,
+  renderGlobalErrorCatalog,
+  renderRouteHandlerMessages,
+} from "./generate-global-error-messages.mjs";
+import {
+  backendConfig,
+  translateBatch,
+  translateMultiLocaleBatch,
+  translateString,
+} from "./lib/translate-backend.mjs";
+
+const translateBatchDefault = translateBatch;
+const translateStringDefault = translateString;
 
 // ----- .env loader --------------------------------------------------------
-// Loads variables from a local `.env` (gitignored) into process.env without
-// pulling dotenv as a dependency. Already-set env vars take precedence so the
-// shell / CI environment can still override.
-(function loadDotEnv() {
-  const envPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", ".env");
+// Loads variables from a local `.env` (gitignored) into `env` without pulling dotenv as a
+// dependency. Already-set env vars take precedence so the shell / CI environment can still
+// override. Called by the CLI and by syncUiKeys() only on the path that talks to the
+// translation backend — importing this module (release:refresh-derived, tests) never copies
+// the operator's .env into the importer's process.
+export function loadDotEnv(
+  envPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", ".env"),
+  env = process.env
+) {
   if (!existsSync(envPath)) return;
   try {
     const raw = readFileSync(envPath, "utf8");
@@ -54,7 +88,7 @@ import { backendConfig, translateBatch, translateString } from "./lib/translate-
       const eq = line.indexOf("=");
       if (eq <= 0) continue;
       const key = line.slice(0, eq).trim();
-      if (!key || process.env[key] !== undefined) continue;
+      if (!key || env[key] !== undefined) continue;
       let value = line.slice(eq + 1);
       if (
         (value.startsWith('"') && value.endsWith('"')) ||
@@ -62,12 +96,12 @@ import { backendConfig, translateBatch, translateString } from "./lib/translate-
       ) {
         value = value.slice(1, -1);
       }
-      process.env[key] = value;
+      env[key] = value;
     }
   } catch {
     /* ignore — script will fall back to the requireEnv error path */
   }
-})();
+}
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(SCRIPT_DIR, "..", "..");
@@ -76,11 +110,13 @@ const CONFIG_PATH = path.join(ROOT, "config", "i18n.json");
 const CATALOGS = {
   ui: {
     name: "ui",
+    rel: "src/i18n/messages",
     dir: path.join(ROOT, "src", "i18n", "messages"),
     allowlistPath: path.join(SCRIPT_DIR, "untranslatable-keys.json"),
   },
   cli: {
     name: "cli",
+    rel: "bin/cli/locales",
     dir: path.join(ROOT, "bin", "cli", "locales"),
     allowlistPath: path.join(SCRIPT_DIR, "untranslatable-cli-keys.json"),
   },
@@ -94,6 +130,11 @@ export function resolveCatalog(name = "ui") {
 }
 
 let MESSAGES_DIR = CATALOGS.ui.dir; // reassigned in main() from --catalog
+
+/** Points the catalog reads/writes at `dir` (main() passes the --catalog dir; tests pass a temp dir). */
+export function setMessagesDir(dir) {
+  MESSAGES_DIR = dir;
+}
 const SOURCE_LOCALE = "en";
 const PLACEHOLDER_PREFIX = "__MISSING__:";
 
@@ -109,7 +150,7 @@ function logError(...parts) {
   console.error("[i18n-ui-sync] ERROR", ...parts);
 }
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const opts = {
     locales: null,
     dryRun: false,
@@ -117,13 +158,20 @@ function parseArgs(argv) {
     retranslateIdentical: false,
     concurrency: null,
     batchSize: 1,
+    localesPerRequest: 1,
     catalog: "ui",
+    pruneExtra: true,
+    rewrittenSince: null,
   };
   for (const arg of argv.slice(2)) {
     if (arg === "--dry-run" || arg === "--dryrun") opts.dryRun = true;
     else if (arg === "--translate-markers") opts.translateMarkers = true;
     else if (arg === "--retranslate-identical") opts.retranslateIdentical = true;
-    else if (arg.startsWith("--catalog=")) opts.catalog = arg.slice(10).trim();
+    else if (arg === "--prune-extra") opts.pruneExtra = true;
+    else if (arg === "--keep-extra") opts.pruneExtra = false;
+    else if (arg.startsWith("--rewritten-since=")) {
+      opts.rewrittenSince = arg.slice("--rewritten-since=".length).trim() || null;
+    } else if (arg.startsWith("--catalog=")) opts.catalog = arg.slice(10).trim();
     else if (arg.startsWith("--locale=")) {
       opts.locales = arg
         .slice(9)
@@ -142,6 +190,10 @@ function parseArgs(argv) {
       // Whole numbers only: a fractional size would make the slice windows
       // overlap; NaN / 0 / negatives mean "per-string" (1).
       opts.batchSize = Math.max(1, Math.floor(Number(arg.slice(13))) || 1);
+    } else if (arg.startsWith("--locales-per-request=")) {
+      // How many locales one translation request covers. Whole numbers only;
+      // NaN / 0 / negatives mean "one locale per request" (1, the default).
+      opts.localesPerRequest = Math.max(1, Math.floor(Number(arg.slice(22))) || 1);
     } else if (arg === "--help" || arg === "-h") {
       console.log(
         [
@@ -152,6 +204,11 @@ function parseArgs(argv) {
           "  --retranslate-identical Flag leaves still identical to English (outside",
           "                          untranslatable-keys.json) as __MISSING__ so they get",
           "                          retranslated — only meaningful with --translate-markers",
+          "  --prune-extra           Drop keys en.json no longer has (the default, named)",
+          "  --keep-extra            Keep keys en.json no longer has",
+          "  --rewritten-since=<ref> Mark as __MISSING__:<new english> the translations of",
+          "                          values rewritten in English since <ref> (merge base)",
+          "                          that the locale left untouched",
           "  --dry-run               Report what would change, write nothing",
           "  --translate-markers     Call the translation backend to translate every",
           "                          __MISSING__:<en> placeholder",
@@ -159,6 +216,10 @@ function parseArgs(argv) {
           "  --batch-size=<n>        Placeholders per translation request (default: 1).",
           "                          n>1 sends up to n strings as one JSON object; a batch",
           "                          that fails or cannot be parsed falls back to one-by-one",
+          "  --locales-per-request=<n> Locales per translation request (default: 1).",
+          "                          n>1 translates up to n locales per request, one JSON",
+          "                          object per locale per line; a locale whose line cannot",
+          "                          be parsed falls back to one locale at a time",
         ].join("\n")
       );
       process.exit(0);
@@ -226,11 +287,27 @@ const FORBIDDEN_KEYS = new Set(["__proto__", "prototype", "constructor"]);
  * prefixing scalar values with PLACEHOLDER_PREFIX. Existing translated keys
  * are preserved verbatim.
  *
- * Returns a tuple: { merged, addedPaths } so the caller can report the
- * additions and (optionally) translate them.
+ * Returns { merged, addedPaths, extraPaths } so the caller can report the
+ * additions and (optionally) translate them. `extraPaths` lists the target
+ * leaves the source no longer has: with `pruneExtra` (the default, and the
+ * only behaviour before the option existed) they are left out of `merged`;
+ * with `pruneExtra: false` they are kept, appended after the source keys of
+ * their object.
  */
-function mergeMissing(source, target) {
+export function mergeMissing(source, target, { pruneExtra = true } = {}) {
   const addedPaths = [];
+  const extraPaths = [];
+
+  function collectLeafPaths(node, prefix) {
+    if (!isPlainObject(node)) {
+      extraPaths.push(prefix);
+      return;
+    }
+    for (const [key, value] of Object.entries(node)) {
+      if (FORBIDDEN_KEYS.has(key)) continue;
+      collectLeafPaths(value, `${prefix}.${key}`);
+    }
+  }
 
   function walk(srcNode, tgtNode, prefix) {
     if (!isPlainObject(srcNode)) {
@@ -253,18 +330,107 @@ function mergeMissing(source, target) {
       const nextPrefix = prefix ? `${prefix}.${key}` : key;
       let tgtChild;
       if (isPlainObject(tgtNode) && Object.prototype.hasOwnProperty.call(tgtNode, key)) {
-        // Read the property via Object.entries instead of dynamic bracket
-        // access to keep static analyzers happy.
-        const entry = Object.entries(tgtNode).find(([k]) => k === key);
-        tgtChild = entry ? entry[1] : undefined;
+        tgtChild = tgtNode[key];
       }
       out[key] = walk(value, tgtChild, nextPrefix);
+    }
+    if (isPlainObject(tgtNode)) {
+      for (const [key, value] of Object.entries(tgtNode)) {
+        if (FORBIDDEN_KEYS.has(key) || Object.prototype.hasOwnProperty.call(srcNode, key)) continue;
+        collectLeafPaths(value, prefix ? `${prefix}.${key}` : key);
+        if (!pruneExtra) out[key] = value;
+      }
     }
     return out;
   }
 
   const merged = walk(source, target, "");
-  return { merged, addedPaths };
+  return { merged, addedPaths, extraPaths };
+}
+
+/**
+ * Sets every `staleKeys` leaf of `merged` to `__MISSING__:<current english>` — the translations
+ * of English values rewritten since a ref (see `findRewrittenTranslations`). A leaf that is
+ * absent, not a string, or already a placeholder is left alone. Mutates `merged`; returns the
+ * marked paths, sorted.
+ *
+ * @param {object} merged          locale tree (output of mergeMissing)
+ * @param {Iterable<string>} staleKeys  dotted paths
+ * @param {Record<string, unknown>} sourceFlat  flattened en.json (current English)
+ */
+export function markRewrittenAsMissing(merged, staleKeys, sourceFlat) {
+  const marked = [];
+  for (const key of staleKeys ?? []) {
+    const english = sourceFlat[key];
+    if (typeof english !== "string") continue;
+    const parts = key.split(".");
+    if (parts.some((part) => FORBIDDEN_KEYS.has(part))) continue;
+    let node = merged;
+    for (const part of parts.slice(0, -1)) {
+      node = isPlainObject(node) ? node[part] : undefined;
+    }
+    const leaf = parts[parts.length - 1];
+    if (!isPlainObject(node) || !Object.prototype.hasOwnProperty.call(node, leaf)) continue;
+    const value = node[leaf];
+    if (typeof value !== "string" || value.startsWith(PLACEHOLDER_PREFIX)) continue;
+    node[leaf] = `${PLACEHOLDER_PREFIX}${english}`;
+    marked.push(key);
+  }
+  return marked.sort();
+}
+
+function gitOut(args, cwd) {
+  return execFileSync("git", args, {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+    maxBuffer: 256 * 1024 * 1024,
+  });
+}
+
+function readJsonAtRef(root, ref, relPath) {
+  try {
+    return JSON.parse(gitOut(["show", `${ref}:${relPath}`], root));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Stale translations of English values rewritten since `ref`, per locale — the exact set
+ * check-ui-value-drift.mjs reports (same `findStaleTranslations`, same merge-base rule: the
+ * merge base of HEAD and `ref`, or `ref` itself when there is none).
+ *
+ * @param {object} args
+ * @param {string} args.root        repository root
+ * @param {string} args.catalogRel  e.g. "src/i18n/messages"
+ * @param {string} args.ref         git ref the English is compared against
+ * @param {object} args.headEn      en.json of the working tree
+ * @param {Record<string, object>} args.headLocales  locale -> working-tree catalog
+ * @returns {{ base: string, staleByLocale: Map<string, Set<string>> }}
+ */
+export function findRewrittenTranslations({ root, catalogRel, ref, headEn, headLocales }) {
+  let base = ref;
+  try {
+    base = gitOut(["merge-base", "HEAD", ref], root).trim() || ref;
+  } catch {
+    /* no common history (shallow clone) — compare against the ref itself, like the gate */
+  }
+  const baseEn = readJsonAtRef(root, base, `${catalogRel}/en.json`);
+  if (!baseEn) {
+    throw new Error(`--rewritten-since: cannot read ${catalogRel}/en.json at ${ref}`);
+  }
+  const baseLocales = {};
+  for (const locale of Object.keys(headLocales)) {
+    baseLocales[locale] = readJsonAtRef(root, base, `${catalogRel}/${locale}.json`) ?? {};
+  }
+  const stale = findStaleTranslations({ baseEn, headEn, baseLocales, headLocales });
+  const staleByLocale = new Map();
+  for (const { key, locale } of stale) {
+    if (!staleByLocale.has(locale)) staleByLocale.set(locale, new Set());
+    staleByLocale.get(locale).add(key);
+  }
+  return { base, staleByLocale };
 }
 
 function countPlaceholders(node) {
@@ -281,7 +447,7 @@ function countPlaceholders(node) {
 // tooling can share it. Only the concurrency limiter stays here.
 
 // Simple promise-based semaphore (avoid runtime deps).
-function createLimiter(max) {
+export function createLimiter(max) {
   let active = 0;
   const queue = [];
   const next = () => {
@@ -308,6 +474,71 @@ function createLimiter(max) {
 }
 
 /**
+ * Slices locale codes into consecutive groups of up to `size` codes, keeping
+ * the input order (config / on-disk order). An empty input emits no chunk.
+ */
+export function chunkLocales(codes, size) {
+  const n = Math.max(1, Math.floor(Number(size) || 1));
+  const chunks = [];
+  for (let i = 0; i < codes.length; i += n) chunks.push(codes.slice(i, i + n));
+  return chunks;
+}
+
+function stripPlaceholder(value) {
+  return typeof value === "string" && value.startsWith(PLACEHOLDER_PREFIX)
+    ? value.slice(PLACEHOLDER_PREFIX.length)
+    : value;
+}
+
+/**
+ * Unions the placeholder maps of one locale chunk into translation tasks.
+ * `placeholdersByLocale` maps each locale code to its `path → english` map
+ * (walked from that locale's merged tree, same order as `translatePlaceholders`
+ * uses). Tasks keep first-seen walk order, extras appended in encounter order,
+ * and each task names the locales that carry the path.
+ *
+ * A path whose English source diverges across the chunk is excluded from the
+ * multi-locale request and reported in `divergent` (same path with a
+ * different source text per locale cannot share one request); the caller
+ * translates those one locale at a time.
+ *
+ * @returns {{ tasks: Array<{ path: string, en: string, locales: string[] }>, divergent: Array<{ path: string, perLocale: Map<string, string> }> }}
+ */
+export function collectChunkTasks(placeholdersByLocale, { splitDivergent = false } = {}) {
+  const order = [];
+  const seen = new Map();
+  for (const [code, byPath] of placeholdersByLocale) {
+    for (const [path, rawEn] of byPath) {
+      const en = stripPlaceholder(rawEn);
+      if (!seen.has(path)) {
+        seen.set(path, { en, locales: [code], perLocale: new Map([[code, en]]) });
+        order.push(path);
+      } else {
+        const entry = seen.get(path);
+        entry.perLocale.set(code, en);
+        if (entry.en === en) {
+          if (!entry.locales.includes(code)) entry.locales.push(code);
+        } else if (!splitDivergent) {
+          if (!entry.locales.includes(code)) entry.locales.push(code);
+        }
+      }
+    }
+  }
+  const tasks = [];
+  const divergent = [];
+  for (const path of order) {
+    const entry = seen.get(path);
+    const distinct = new Set(entry.perLocale.values());
+    if (splitDivergent && distinct.size > 1) {
+      divergent.push({ path, perLocale: entry.perLocale });
+    } else {
+      tasks.push({ path, en: entry.en, locales: entry.locales });
+    }
+  }
+  return { tasks, divergent };
+}
+
+/**
  * Walks a merged tree, finding every leaf that starts with PLACEHOLDER_PREFIX
  * and replacing it with the translation produced by the backend.
  *
@@ -319,7 +550,50 @@ function createLimiter(max) {
  * cannot be parsed — or whose upstream call fails — is retried one string at
  * a time, so a bad batch never loses more than the per-string path would.
  */
+export function collectPlaceholderPaths(merged) {
+  const paths = [];
+  function walk(node, prefix) {
+    if (typeof node === "string") {
+      if (node.startsWith(PLACEHOLDER_PREFIX)) paths.push(prefix);
+      return;
+    }
+    if (!isPlainObject(node)) return;
+    for (const [key, value] of Object.entries(node)) {
+      walk(value, prefix ? `${prefix}.${key}` : key);
+    }
+  }
+  walk(merged, "");
+  return paths;
+}
+
+function getByPath(root, dotted) {
+  return dotted
+    .split(".")
+    .reduce((node, key) => (isPlainObject(node) ? node[key] : undefined), root);
+}
+
+function setByPath(root, dotted, value) {
+  const keys = dotted.split(".");
+  let node = root;
+  for (let i = 0; i < keys.length - 1; i++) node = node[keys[i]];
+  node[keys[keys.length - 1]] = value;
+}
+
 async function translatePlaceholders(merged, localeEntry, backend, concurrency, batchSize = 1) {
+  return translatePlaceholdersExport(merged, localeEntry, backend, concurrency, batchSize);
+}
+
+export async function translatePlaceholdersExport(
+  merged,
+  localeEntry,
+  backend,
+  concurrency,
+  batchSize = 1,
+  fns = {}
+) {
+  // Injectable for tests (no translation backend in unit tests); the defaults are the real client.
+  const translateBatch = fns.translateBatch ?? translateBatchDefault;
+  const translateString = fns.translateString ?? translateStringDefault;
   const tasks = [];
   function collect(node, parent, key) {
     if (typeof node === "string") {
@@ -397,28 +671,197 @@ async function translatePlaceholders(merged, localeEntry, backend, concurrency, 
   return { translated: translatedCount, failed };
 }
 
+/**
+ * Builds one chunk's translation work without submitting anything: divergent
+ * paths are kept aside for the single-locale fallback, convergent paths are
+ * sliced into groups of `batchSize` keys sharing one multi-locale request.
+ * Pure planning — every network call happens in `runLocaleGroup`, submitted
+ * through the shared limiter by `runLocaleChunks` (never nested).
+ *
+ * @returns {{ divergent: Array<{ path: string, perLocale: Map<string, string> }>, groups: Array<{ entries: Array<{ id: string, text: string }>, codes: string[], tasks: Array<{ path: string, en: string, locales: string[] }> }> }}
+ */
+export function planLocaleChunk(chunk, ctx) {
+  const { mergedByLocale, config, opts } = ctx;
+  const batchSize = opts.batchSize ?? 1;
+  const byLocale = new Map();
+  for (const code of chunk) {
+    const merged = mergedByLocale.get(code);
+    if (!merged) continue;
+    const byPath = new Map();
+    for (const p of collectPlaceholderPaths(merged)) {
+      byPath.set(p, getByPath(merged, p));
+    }
+    if (byPath.size > 0) byLocale.set(code, byPath);
+  }
+  if (byLocale.size === 0) return { divergent: [], groups: [] };
+  const known = (code) => config.locales.some((l) => l.code === code);
+  const { tasks, divergent } = collectChunkTasks(byLocale, { splitDivergent: true });
+  const kept = tasks.filter((task) => task.locales.some(known));
+  const groups = [];
+  for (let i = 0; i < kept.length; i += batchSize) {
+    const slice = kept.slice(i, i + batchSize);
+    groups.push({
+      entries: slice.map((task) => ({ id: task.path, text: task.en })),
+      codes: [...new Set(slice.flatMap((task) => task.locales))].filter(known),
+      tasks: slice,
+    });
+  }
+  return { divergent, groups };
+}
+
+/**
+ * Runs one planned group: one multi-locale request, then the single-locale
+ * fallback for every (locale, path) still untranslated. Returns per-locale
+ * translated and failed counts so the caller never shares one stats object
+ * across locales. Counts successful wrapper calls (`multiRequests` /
+ * `singleRequests`) plus locales whose line could not be read
+ * (`failedLocales`); the 6-request-vs-66 gateway count stays with the live
+ * measurement, which also sees retries inside the chat client.
+ */
+export async function runLocaleGroup(plan, ctx) {
+  const { mergedByLocale, config, backend, counters } = ctx;
+  const multi = ctx.multi ?? translateMultiLocaleBatch;
+  const singleBatch = ctx.singleBatch ?? translateBatch;
+  const singleString = ctx.singleString ?? translateString;
+  const perLocale = new Map();
+  const failedBy = new Map();
+  const bump = (code, n = 1) => perLocale.set(code, (perLocale.get(code) ?? 0) + n);
+  const fail = (code, n = 1) => failedBy.set(code, (failedBy.get(code) ?? 0) + n);
+
+  for (const { path: p, perLocale: sources } of plan.divergent ?? []) {
+    for (const [code, en] of sources) {
+      const localeEntry = config.locales.find((l) => l.code === code);
+      if (!localeEntry) {
+        logWarn(`${code}: not present in config/i18n.json — skipping translation`);
+        failedBy.set(code, (failedBy.get(code) ?? 0) + 1);
+        continue;
+      }
+      try {
+        const out = await singleBatch([{ id: "s0", text: en }], localeEntry, backend);
+        setByPath(mergedByLocale.get(code), p, out.get("s0"));
+        counters.singleRequests++;
+        bump(code);
+      } catch {
+        try {
+          const value = await singleString(en, localeEntry, backend);
+          setByPath(mergedByLocale.get(code), p, value);
+          counters.singleRequests++;
+          bump(code);
+        } catch (inner) {
+          fail(code);
+          logWarn(`translation failed for ${code}: ${inner.message}`);
+        }
+      }
+    }
+  }
+
+  for (const group of plan.groups ?? []) {
+    const localeEntries = group.codes
+      .map((code) => config.locales.find((l) => l.code === code))
+      .filter(Boolean);
+    const missingCodes = group.codes.filter((code) => !config.locales.some((l) => l.code === code));
+    for (const code of missingCodes) {
+      logWarn(`${code}: not present in config/i18n.json — skipping translation`);
+      fail(code, group.tasks.filter((task) => task.locales.includes(code)).length);
+    }
+    if (localeEntries.length === 0) continue;
+    const done = new Set();
+    try {
+      const out = await multi(group.entries, localeEntries, backend);
+      counters.multiRequests++;
+      for (const [code, values] of out.perLocale) {
+        for (const task of group.tasks) {
+          if (!task.locales.includes(code)) continue;
+          const value = values.get(task.path);
+          if (typeof value === "string") {
+            setByPath(mergedByLocale.get(code), task.path, value);
+            bump(code);
+            done.add(`${code}::${task.path}`);
+          }
+        }
+      }
+      for (const code of out.failedLocales ?? []) {
+        logWarn(`multi-locale line unreadable for ${code} — retrying one locale at a time`);
+        counters.failedLocales++;
+      }
+      // Locales the answer never mentioned fail the same way.
+      const answered = new Set([...out.perLocale.keys(), ...(out.failedLocales ?? [])]);
+      for (const entry of localeEntries) {
+        if (!answered.has(entry.code)) {
+          logWarn(`multi-locale answer missing ${entry.code} — retrying one locale at a time`);
+          counters.failedLocales++;
+        }
+      }
+    } catch (err) {
+      logWarn(
+        `multi-locale batch of ${group.tasks.length} keys x ${localeEntries.length} locales failed (${err.message}) — retrying one locale at a time`
+      );
+    }
+    // Per-locale fallback for every (locale, path) still untranslated.
+    const pending = new Map();
+    for (const task of group.tasks) {
+      for (const entry of localeEntries) {
+        if (!task.locales.includes(entry.code)) continue;
+        if (done.has(`${entry.code}::${task.path}`)) continue;
+        if (!pending.has(entry.code)) pending.set(entry.code, []);
+        pending.get(entry.code).push({ task, entry });
+      }
+    }
+    for (const [code, items] of pending) {
+      const entry = items[0].entry;
+      const batchEntries = items.map(({ task: pendingTask }, i) => ({
+        id: `s${i}`,
+        text: pendingTask.en,
+      }));
+      try {
+        const out = await singleBatch(batchEntries, entry, backend);
+        counters.singleRequests++;
+        items.forEach(({ task }, i) => {
+          setByPath(mergedByLocale.get(code), task.path, out.get(`s${i}`));
+          bump(code);
+          done.add(`${code}::${task.path}`);
+        });
+      } catch {
+        for (const { task } of items) {
+          try {
+            const value = await singleString(task.en, entry, backend);
+            counters.singleRequests++;
+            setByPath(mergedByLocale.get(code), task.path, value);
+            bump(code);
+          } catch (inner) {
+            fail(code);
+            logWarn(`translation failed for ${code}: ${inner.message}`);
+          }
+        }
+      }
+    }
+  }
+  return { perLocale, failedBy };
+}
+
+/**
+ * Runs every chunk's planned groups through the shared limiter — one limiter
+ * hop per group, never nested, so more chunks than slots cannot deadlock.
+ * Small helper kept so tests can drive the exact fan-out `main` uses.
+ */
+export async function runLocaleChunks(plans, ctx) {
+  const { limit } = ctx;
+  const jobs = [];
+  for (const plan of plans) {
+    if (plan.divergent.length > 0) {
+      jobs.push(limit(() => runLocaleGroup({ divergent: plan.divergent, groups: [] }, ctx)));
+    }
+    for (const group of plan.groups) {
+      jobs.push(limit(() => runLocaleGroup({ divergent: [], groups: [group] }, ctx)));
+    }
+  }
+  return Promise.all(jobs);
+}
+
 // ----- Main ----------------------------------------------------------------
 
-async function processLocale(locale, source, config, opts, backend) {
-  const localePath = path.join(MESSAGES_DIR, `${locale}.json`);
-  let target = {};
-  if (existsSync(localePath)) {
-    try {
-      target = await loadJson(localePath);
-    } catch (err) {
-      logWarn(`${locale}: failed to parse existing JSON — starting fresh (${err.message})`);
-      target = {};
-    }
-  } else {
-    logWarn(`${locale}: messages file did not exist — creating it`);
-  }
-
-  const { merged, addedPaths } = mergeMissing(source, target);
-  if (opts.retranslateIdentical && locale !== SOURCE_LOCALE) {
-    const allow = new Set((await loadJson(resolveCatalog(opts.catalog).allowlistPath)).keys ?? []);
-    const flagged = markIdenticalAsMissing(merged, source, allow);
-    logInfo(`${locale}: ${flagged} English leaves flagged for retranslation`);
-  }
+export async function processLocale(locale, source, config, opts, backend) {
+  const { merged, addedPaths } = await loadMergedLocale(locale, source, opts);
   const placeholderCountBefore = countPlaceholders(merged);
 
   let translateStats = { translated: 0, failed: 0 };
@@ -439,33 +882,227 @@ async function processLocale(locale, source, config, opts, backend) {
     }
   }
 
-  const placeholderCountAfter = countPlaceholders(merged);
-  const totalMissing = addedPaths.length;
-  const stillPlaceholder = placeholderCountAfter;
+  return writeLocaleResult(locale, merged, addedPaths, translateStats, opts);
+}
 
-  const summary = `${locale}: +${totalMissing} missing keys (${stillPlaceholder} __MISSING__, ${translateStats.translated} translated${translateStats.failed ? `, ${translateStats.failed} failed` : ""})`;
+/**
+ * Programmatic entry point for `release:refresh-derived` (plan "derived numbers and texts
+ * resolved only at release", 2026-11-13): completes the non-English catalogs of one family from
+ * its en.json in a single pass. Feature PRs no longer do this; the release refresh and the
+ * translation waves do.
+ *
+ * Per target locale, in order: add the keys en.json has and the locale lacks (as
+ * `__MISSING__:<en>`); with `pruneExtra`, drop the keys en.json no longer has; with
+ * `rewrittenSinceRef`, mark as `__MISSING__:<new en>` the translations of values rewritten in
+ * English since that ref (merge base with HEAD) that the locale left untouched; with
+ * `translate`, translate every marker through the translation backend
+ * (`OMNIROUTE_TRANSLATION_*`, see lib/translate-backend.mjs — throws when it is not configured).
+ * A dashboard (`ui`) run that changed a catalog also regenerates the compact error-boundary
+ * catalogs under src/i18n/global-error-messages (renderGlobalErrorCatalog in
+ * generate-global-error-messages.mjs) and the route-handler catalog
+ * src/i18n/route-handler-messages.json (renderRouteHandlerMessages, same module); they are
+ * rendered in memory, so a dry run lists in
+ * `changedFiles` exactly the files a real run writes.
+ *
+ * @param {object} [options]
+ * @param {"ui" | "cli"} [options.catalog="ui"]
+ * @param {string[] | null} [options.locales]  subset of locale codes (default: every locale of
+ *   config/i18n.json that has a file, except en). A code outside that set — a typo, a locale
+ *   missing from config/i18n.json or without a catalog file, or `en` — throws before anything
+ *   is written.
+ * @param {boolean} [options.translate=false]
+ * @param {boolean} [options.pruneExtra=false]
+ * @param {string | null} [options.rewrittenSinceRef]
+ * @param {boolean} [options.dryRun=false]  compute everything, write nothing
+ * @param {string} [options.root]  repository root (default: this checkout)
+ * @param {number} [options.batchSize=40]  placeholders per translation request
+ * @param {number} [options.concurrency]   default OMNIROUTE_TRANSLATION_CONCURRENCY or 4
+ * @param {{ translateBatch?: Function, translateString?: Function }} [options.translateFns]
+ *   test seam; defaults to the real backend client
+ * @param {(line: string) => void} [options.log]
+ * @returns {Promise<{
+ *   catalog: "ui" | "cli",
+ *   dryRun: boolean,
+ *   changedFiles: string[],
+ *   added: number, pruned: number, markedRewritten: number, translated: number, failed: number,
+ *   locales: Array<{ locale: string, file: string, changed: boolean, added: string[],
+ *     pruned: string[], markedRewritten: string[], translated: number, failed: number,
+ *     placeholders: number }>
+ * }>}  paths are repo-relative POSIX paths
+ */
+export async function syncUiKeys(options = {}) {
+  const {
+    catalog: catalogName = "ui",
+    locales = null,
+    translate = false,
+    pruneExtra = false,
+    rewrittenSinceRef = null,
+    dryRun = false,
+    root = ROOT,
+    batchSize = 40,
+    concurrency = null,
+    translateFns = {},
+    log = (line) => logInfo(line),
+  } = options;
+  const catalog = resolveCatalog(catalogName);
+  const dir = path.join(root, catalog.rel);
+  const rel = (abs) => path.relative(root, abs).split(path.sep).join("/");
+  const config = JSON.parse(await fs.readFile(path.join(root, "config", "i18n.json"), "utf8"));
+  const source = await loadJson(path.join(dir, `${SOURCE_LOCALE}.json`));
+  const sourceFlat = flattenLeaves(source);
 
-  if (opts.dryRun) {
-    logInfo(`[DRY] ${summary}`);
-    return { addedPaths, translated: translateStats.translated };
+  const onDisk = new Set(
+    (await fs.readdir(dir)).filter((f) => f.endsWith(".json")).map((f) => f.slice(0, -5))
+  );
+  let targets = config.locales
+    .map((l) => l.code)
+    .filter((code) => code !== SOURCE_LOCALE && onDisk.has(code));
+  if (locales) {
+    // A typo in the release refresh must not read as "nothing to do".
+    const unknown = locales.filter((code) => !targets.includes(code));
+    if (unknown.length) {
+      throw new Error(
+        `syncUiKeys: unknown locale(s) for the ${catalog.name} catalog: ${unknown.join(", ")} (not in config/i18n.json, the source locale, or no ${catalog.rel}/<code>.json)`
+      );
+    }
+    targets = targets.filter((code) => locales.includes(code));
   }
 
-  // Only write when something changed. (json-stable serialization)
-  const before = existsSync(localePath) ? await fs.readFile(localePath, "utf8") : "";
-  const after = JSON.stringify(merged, null, 2) + "\n";
-  if (before === after) {
-    logInfo(`${locale}: already in sync (no changes)`);
-    return { addedPaths, translated: translateStats.translated };
+  const heads = new Map();
+  for (const code of targets) heads.set(code, await loadJson(path.join(dir, `${code}.json`)));
+
+  let staleByLocale = new Map();
+  if (rewrittenSinceRef) {
+    ({ staleByLocale } = findRewrittenTranslations({
+      root,
+      catalogRel: catalog.rel,
+      ref: rewrittenSinceRef,
+      headEn: source,
+      headLocales: Object.fromEntries(heads),
+    }));
   }
-  await fs.writeFile(localePath, after, "utf8");
-  logInfo(summary);
-  return { addedPaths, translated: translateStats.translated };
+
+  let backend = null;
+  const injected = Boolean(translateFns.translateBatch || translateFns.translateString);
+  if (translate && !dryRun && !injected) {
+    loadDotEnv();
+    backend = backendConfig();
+  }
+  // Read after loadDotEnv(), so a concurrency set in the local .env still applies.
+  const translateConcurrency =
+    concurrency ?? Number(process.env.OMNIROUTE_TRANSLATION_CONCURRENCY || 4);
+
+  const results = [];
+  const changedFiles = [];
+  const mergedByCode = new Map();
+  for (const code of targets) {
+    const file = path.join(dir, `${code}.json`);
+    const before = await fs.readFile(file, "utf8");
+    const { merged, addedPaths, extraPaths } = mergeMissing(source, heads.get(code), {
+      pruneExtra,
+    });
+    const markedRewritten = markRewrittenAsMissing(merged, staleByLocale.get(code), sourceFlat);
+    let stats = { translated: 0, failed: 0 };
+    if (translate && !dryRun) {
+      const localeEntry = config.locales.find((l) => l.code === code);
+      stats = await translatePlaceholdersExport(
+        merged,
+        localeEntry,
+        backend,
+        translateConcurrency,
+        batchSize,
+        translateFns
+      );
+    }
+    mergedByCode.set(code, merged);
+    const after = JSON.stringify(merged, null, 2) + "\n";
+    const changed = before !== after;
+    if (changed) {
+      changedFiles.push(rel(file));
+      if (!dryRun) await fs.writeFile(file, after, "utf8");
+    }
+    results.push({
+      locale: code,
+      file: rel(file),
+      changed,
+      added: addedPaths,
+      pruned: pruneExtra ? extraPaths : [],
+      markedRewritten,
+      translated: stats.translated,
+      failed: stats.failed,
+      placeholders: countPlaceholders(merged),
+    });
+  }
+
+  // The compact error-boundary catalogs are derived from the full ones: rendered in memory from
+  // the merged catalogs (and from disk for the locales outside this run), so a dry run reports
+  // exactly the files a real run writes.
+  if (catalog.name === "ui" && changedFiles.length && source.publicSystem?.globalError) {
+    const compactDir = path.join(root, "src", "i18n", "global-error-messages");
+    if (!dryRun) await fs.mkdir(compactDir, { recursive: true });
+    for (const { code } of config.locales) {
+      const full =
+        code === SOURCE_LOCALE
+          ? source
+          : (mergedByCode.get(code) ??
+            (onDisk.has(code) ? await loadJson(path.join(dir, `${code}.json`)) : null));
+      if (!full) continue;
+      const file = path.join(compactDir, `${code}.json`);
+      const next = renderGlobalErrorCatalog(source, full);
+      const previous = existsSync(file) ? await fs.readFile(file, "utf8") : null;
+      if (next === previous) continue;
+      changedFiles.push(rel(file));
+      if (!dryRun) await fs.writeFile(file, next, "utf8");
+    }
+  }
+
+  // Same for the route-handler catalog (one file, every locale): regenerated from the merged
+  // catalogs whenever this run changed one, and only when en.json has any of its keys.
+  const routeHandlerKeysInSource = ROUTE_HANDLER_MESSAGE_KEYS.some(
+    (key) => typeof key.split(".").reduce((node, part) => node?.[part], source) === "string"
+  );
+  if (catalog.name === "ui" && changedFiles.length && routeHandlerKeysInSource) {
+    const catalogsByCode = [];
+    for (const { code } of config.locales) {
+      const full =
+        code === SOURCE_LOCALE
+          ? source
+          : (mergedByCode.get(code) ??
+            (onDisk.has(code) ? await loadJson(path.join(dir, `${code}.json`)) : null));
+      catalogsByCode.push([code, full]);
+    }
+    const file = path.join(root, ROUTE_HANDLER_MESSAGES_PATH);
+    const next = renderRouteHandlerMessages(source, catalogsByCode);
+    const previous = existsSync(file) ? await fs.readFile(file, "utf8") : null;
+    if (next !== previous) {
+      changedFiles.push(rel(file));
+      if (!dryRun) await fs.writeFile(file, next, "utf8");
+    }
+  }
+
+  const sum = (pick) => results.reduce((total, r) => total + pick(r), 0);
+  const summary = {
+    catalog: catalog.name,
+    dryRun,
+    changedFiles,
+    added: sum((r) => r.added.length),
+    pruned: sum((r) => r.pruned.length),
+    markedRewritten: sum((r) => r.markedRewritten.length),
+    translated: sum((r) => r.translated),
+    failed: sum((r) => r.failed),
+    locales: results,
+  };
+  log(
+    `${dryRun ? "[DRY] " : ""}syncUiKeys ${catalog.name}: locales=${results.length}, changed=${changedFiles.length}, added=${summary.added}, pruned=${summary.pruned}, marked-rewritten=${summary.markedRewritten}, translated=${summary.translated}${summary.failed ? `, failed=${summary.failed}` : ""}`
+  );
+  return summary;
 }
 
 async function main() {
+  loadDotEnv();
   const opts = parseArgs(process.argv);
   const catalog = resolveCatalog(opts.catalog);
-  MESSAGES_DIR = catalog.dir;
+  setMessagesDir(catalog.dir);
   logInfo(`catalog: ${catalog.name} (${path.relative(ROOT, catalog.dir)})`);
   const config = await loadConfig();
 
@@ -493,6 +1130,30 @@ async function main() {
     targetLocales = targetLocales.filter((code) => opts.locales.includes(code));
   }
 
+  if (opts.rewrittenSince) {
+    const headLocales = {};
+    for (const code of targetLocales) {
+      const file = path.join(MESSAGES_DIR, `${code}.json`);
+      try {
+        headLocales[code] = await loadJson(file);
+      } catch {
+        headLocales[code] = {};
+      }
+    }
+    const { base, staleByLocale } = findRewrittenTranslations({
+      root: ROOT,
+      catalogRel: catalog.rel,
+      ref: opts.rewrittenSince,
+      headEn: source,
+      headLocales,
+    });
+    opts.staleByLocale = staleByLocale;
+    const total = [...staleByLocale.values()].reduce((sum, keys) => sum + keys.size, 0);
+    logInfo(
+      `rewritten-since: ${opts.rewrittenSince} (base ${base.slice(0, 12)}) — ${total} stale translation(s) in ${staleByLocale.size} locale(s)`
+    );
+  }
+
   logInfo(`source: ${path.relative(ROOT, sourcePath)}`);
   logInfo(`locales: ${targetLocales.length} (${targetLocales.join(", ")})`);
   logInfo(
@@ -505,26 +1166,141 @@ async function main() {
     backend.concurrency =
       opts.concurrency ?? Number(process.env.OMNIROUTE_TRANSLATION_CONCURRENCY || 4);
     const batchInfo = opts.batchSize > 1 ? `, batch=${opts.batchSize}` : "";
+    const localesInfo =
+      (opts.localesPerRequest ?? 1) > 1 ? `, locales-per-request=${opts.localesPerRequest}` : "";
     logInfo(
-      `backend: ${backend.apiUrl} (model=${backend.model}, concurrency=${backend.concurrency}${batchInfo}, timeout=${backend.timeoutMs}ms)`
+      `backend: ${backend.apiUrl} (model=${backend.model}, concurrency=${backend.concurrency}${batchInfo}${localesInfo}, timeout=${backend.timeoutMs}ms)`
     );
   }
 
   const startMs = Date.now();
   let totalAdded = 0;
   let totalTranslated = 0;
-  for (const locale of targetLocales) {
-    const result = await processLocale(locale, source, config, opts, backend);
-    totalAdded += result.addedPaths.length;
-    totalTranslated += result.translated;
+  let multiRequests = 0;
+  let singleRequests = 0;
+  let failedLocales = 0;
+  const localesPerRequest = opts.localesPerRequest ?? 1;
+  if (localesPerRequest > 1 && opts.translateMarkers && !opts.dryRun && backend) {
+    // Multi-locale path: merge every locale first, fan every planned group
+    // out through one shared limiter (one hop per group, never nested),
+    // then write each file sequentially in config order (same order and
+    // same write rule as the single-locale loop below).
+    const mergedByLocale = new Map();
+    const addedByLocale = new Map();
+    for (const locale of targetLocales) {
+      const loaded = await loadMergedLocale(locale, source, opts);
+      mergedByLocale.set(locale, loaded.merged);
+      addedByLocale.set(locale, loaded.addedPaths);
+    }
+    const concurrency =
+      opts.concurrency ?? Number(process.env.OMNIROUTE_TRANSLATION_CONCURRENCY || 4);
+    const limit = createLimiter(concurrency);
+    const counters = { multiRequests: 0, singleRequests: 0, failedLocales: 0 };
+    const chunkCtx = { config, opts, backend, limit, counters, mergedByLocale };
+    const chunks = chunkLocales(targetLocales, localesPerRequest);
+    // Per-locale translated counts: groups land on disjoint (locale, path)
+    // sets, so increments below never race on one key.
+    const translatedByLocale = new Map(targetLocales.map((code) => [code, 0]));
+    const failedByLocale = new Map(targetLocales.map((code) => [code, 0]));
+    const plans = chunks.map((chunk) => planLocaleChunk(chunk, chunkCtx));
+    const results = await runLocaleChunks(plans, chunkCtx);
+    for (const stats of results) {
+      for (const [code, n] of stats.perLocale) {
+        translatedByLocale.set(code, (translatedByLocale.get(code) ?? 0) + n);
+      }
+      for (const [code, n] of stats.failedBy) {
+        failedByLocale.set(code, (failedByLocale.get(code) ?? 0) + n);
+      }
+    }
+    multiRequests = counters.multiRequests;
+    singleRequests = counters.singleRequests;
+    failedLocales = counters.failedLocales;
+    for (const locale of targetLocales) {
+      const merged = mergedByLocale.get(locale);
+      const addedPaths = addedByLocale.get(locale);
+      const stats = {
+        translated: translatedByLocale.get(locale) ?? 0,
+        failed: failedByLocale.get(locale) ?? 0,
+      };
+      totalAdded += addedPaths.length;
+      totalTranslated += stats.translated;
+      await writeLocaleResult(locale, merged, addedPaths, stats, opts);
+    }
+  } else {
+    for (const locale of targetLocales) {
+      const result = await processLocale(locale, source, config, opts, backend);
+      totalAdded += result.addedPaths.length;
+      totalTranslated += result.translated;
+    }
   }
   const elapsedSec = ((Date.now() - startMs) / 1000).toFixed(1);
+  const requestsInfo =
+    localesPerRequest > 1 && multiRequests + singleRequests > 0
+      ? `, requests=${multiRequests + singleRequests} (multi=${multiRequests}, single=${singleRequests}${failedLocales ? `, failed-locales=${failedLocales}` : ""})`
+      : "";
   logInfo(
-    `summary: locales=${targetLocales.length}, added=${totalAdded}, translated=${totalTranslated}, elapsed=${elapsedSec}s`
+    `summary: locales=${targetLocales.length}, added=${totalAdded}, translated=${totalTranslated}${localesPerRequest > 1 ? `, locales-per-request=${localesPerRequest}` : ""}${requestsInfo}, elapsed=${elapsedSec}s`
   );
 }
 
-const isDirectRun = import.meta.url === pathToFileURL(process.argv[1]).href;
+/**
+ * Loads one locale file, merges the missing keys and flags identical leaves
+ * for retranslation. Shared by the single-locale `processLocale` and the
+ * multi-locale fan-out in `main` so both read files the same way.
+ */
+async function loadMergedLocale(locale, source, opts) {
+  const localePath = path.join(MESSAGES_DIR, `${locale}.json`);
+  let target = {};
+  if (existsSync(localePath)) {
+    try {
+      target = await loadJson(localePath);
+    } catch (err) {
+      logWarn(`${locale}: failed to parse existing JSON — starting fresh (${err.message})`);
+      target = {};
+    }
+  } else {
+    logWarn(`${locale}: messages file did not exist — creating it`);
+  }
+  const { merged, addedPaths, extraPaths } = mergeMissing(source, target, {
+    pruneExtra: opts.pruneExtra !== false,
+  });
+  if (opts.pruneExtra === false && extraPaths.length) {
+    logInfo(`${locale}: ${extraPaths.length} keys en.json no longer has kept (--keep-extra)`);
+  }
+  const stale = opts.staleByLocale?.get(locale);
+  if (stale && stale.size) {
+    const marked = markRewrittenAsMissing(merged, stale, flattenLeaves(source));
+    logInfo(`${locale}: ${marked.length} translations of rewritten English marked __MISSING__`);
+  }
+  if (opts.retranslateIdentical && locale !== SOURCE_LOCALE) {
+    const allow = new Set((await loadJson(resolveCatalog(opts.catalog).allowlistPath)).keys ?? []);
+    const flagged = markIdenticalAsMissing(merged, source, allow);
+    logInfo(`${locale}: ${flagged} English leaves flagged for retranslation`);
+  }
+  return { merged, addedPaths };
+}
+
+async function writeLocaleResult(locale, merged, addedPaths, stats, opts) {
+  const localePath = path.join(MESSAGES_DIR, `${locale}.json`);
+  const placeholderCountAfter = countPlaceholders(merged);
+  const summary = `${locale}: +${addedPaths.length} missing keys (${placeholderCountAfter} __MISSING__, ${stats.translated} translated${stats.failed ? `, ${stats.failed} failed` : ""})`;
+  if (opts.dryRun) {
+    logInfo(`[DRY] ${summary}`);
+    return { addedPaths, translated: stats.translated };
+  }
+  const before = existsSync(localePath) ? await fs.readFile(localePath, "utf8") : "";
+  const after = JSON.stringify(merged, null, 2) + "\n";
+  if (before === after) {
+    logInfo(`${locale}: already in sync (no changes)`);
+    return { addedPaths, translated: stats.translated };
+  }
+  await fs.writeFile(localePath, after, "utf8");
+  logInfo(summary);
+  return { addedPaths, translated: stats.translated };
+}
+
+const isDirectRun =
+  Boolean(process.argv[1]) && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isDirectRun) {
   main().catch((err) => {
     logError(err?.stack || err?.message || String(err));

@@ -33,6 +33,8 @@
  * one upstream 4xx.
  */
 
+import { lruMap } from "../utils/lruMap.ts";
+
 export const REASONING_EFFORT_ORDER: readonly string[] = [
   "none",
   "minimal",
@@ -45,7 +47,7 @@ export const REASONING_EFFORT_ORDER: readonly string[] = [
 ];
 
 // key: `${provider}:${model}` lowercased → accepted set.
-const learnedCaps = new Map<string, Set<string>>();
+const learnedCaps = lruMap<Set<string>>(1000);
 
 function buildKey(provider: string | null | undefined, model: string | null | undefined): string {
   const p = typeof provider === "string" ? provider.trim().toLowerCase() : "";
@@ -279,7 +281,8 @@ export function recordLearnedProbeReasoningEffort(
 // Matches prose shapes: OVH's "@ai-sdk/openai-compatible" deserializer
 // ("expected one of `a`, `b`"), generic ("Supported types are a, b, and c"),
 // and "please use a, b, or c".
-const LIST_INTRO = /(?:expected one of|supported (?:types|values) are|please use)[:\s]*([^.]+)/i;
+const LIST_INTRO =
+  /(?:expected one of|supported (?:types|values) are|please use|use (?=['"`]))[:\s]*([^.]+?)(?:\s+instead\b|\.|$)/i;
 
 /**
  * Extract the upstream-advertised accepted reasoning_effort values from a 4xx

@@ -2,6 +2,8 @@
 import { useCallback, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { PageHeader } from "@omniroute/ui-kit/page-header";
+import { Tabs, TabsList, TabsTrigger } from "@omniroute/ui-kit/tabs";
 import { useLiveComboStatus } from "@/hooks/useLiveDashboard";
 import { useProviderBreakerHealth } from "@/hooks/useProviderBreakerHealth";
 import { useOrchestrationSnapshot } from "./hooks/useOrchestrationSnapshot";
@@ -83,24 +85,22 @@ function TabList({
   onSelect: (tab: Tab) => void;
 }) {
   return (
-    <div role="tablist" className="flex gap-1 border-b border-border">
-      {TABS.map((tb) => (
-        <button
-          key={tb}
-          role="tab"
-          aria-selected={tab === tb}
-          className={`px-3 py-1.5 text-sm rounded-t ${tab === tb ? "border border-b-0 border-border bg-surface font-medium" : "text-muted"}`}
-          onClick={() => onSelect(tb)}
-        >
-          {t(TAB_KEY[tb])}
-        </button>
-      ))}
-    </div>
+    <Tabs variant="underline" value={tab} onValueChange={(next) => onSelect(next as Tab)}>
+      <TabsList className="max-w-full overflow-x-auto">
+        {TABS.map((tb) => (
+          // No TabsContent: the panels below are rendered by the page itself.
+          <TabsTrigger key={tb} value={tb} aria-controls={undefined}>
+            {t(TAB_KEY[tb])}
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </Tabs>
   );
 }
 
 export default function OrchestrationPageClient() {
   const t = useTranslations("orchestration");
+  const tSidebar = useTranslations("sidebar");
   const { tab, nodeId, filter, collapsed, setParams } = useOrchUrlState();
 
   const { snapshot, showCompleted, setShowCompleted, refetch } = useOrchestrationSnapshot();
@@ -145,6 +145,7 @@ export default function OrchestrationPageClient() {
 
   return (
     <div className="flex flex-col h-[calc(100dvh-6rem)] min-h-[480px] p-4 gap-3">
+      <PageHeader compact title={tSidebar("orchestration")} />
       <TabList tab={tab} t={t} onSelect={onSelectTab} />
       <div className="flex-1 min-h-0 flex flex-col gap-2">
         {(tab === "agents" || tab === "overview") && (

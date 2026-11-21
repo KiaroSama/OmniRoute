@@ -1,4 +1,4 @@
-import { flattenNamespaceToolName } from "./namespaceFlatten.ts";
+import { collectFlatToolNames, flattenNamespaceToolName } from "./namespaceFlatten.ts";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -86,8 +86,14 @@ export function collectResponsesTools(rootTools: unknown, inputItems: unknown[])
       if (toolRecord.type === "namespace") {
         const namespaceName = toolName(tool);
         const existingIndex = namespaceName ? namespaceIndexes.get(namespaceName) : undefined;
+        // A member yields to an explicit tool only when both get the same Chat wire name: the
+        // Chat conversion qualifies a member as `<namespace>__<leaf>` (the default `functions`
+        // namespace keeps the bare leaf), so a flat `search` does not shadow `mcp__x.search`.
         const namespaceTools = Array.isArray(toolRecord.tools)
-          ? toolRecord.tools.filter((member) => !explicitNames.has(toolName(member)))
+          ? toolRecord.tools.filter((member) => {
+              const leaf = toolName(member);
+              return !(leaf && explicitNames.has(flattenNamespaceToolName(namespaceName, leaf)));
+            })
           : toolRecord.tools;
         if (existingIndex !== undefined) {
           const existing = toRecord(merged[existingIndex]);
@@ -119,19 +125,21 @@ export function collectResponsesCustomToolNames(
   inputItems: unknown[]
 ): Set<string> {
   const names = new Set<string>();
+  const allTools = collectResponsesTools(rootTools, inputItems);
+  const flatNames = collectFlatToolNames(allTools);
   const visit = (tools: unknown[], namespaceName = "") => {
     for (const toolValue of tools) {
       const tool = toRecord(toolValue);
       const name = toolName(toolValue);
       if (tool.type === "custom" && name) {
-        names.add(flattenNamespaceToolName(namespaceName, name));
+        names.add(flattenNamespaceToolName(namespaceName, name, flatNames));
       }
       if (tool.type === "namespace" && Array.isArray(tool.tools)) {
         visit(tool.tools, name);
       }
     }
   };
-  visit(collectResponsesTools(rootTools, inputItems));
+  visit(allTools);
   return names;
 }
 

@@ -36,36 +36,36 @@ Studio a tre schede che unifica ricerca web, web scraping e confronto affiancato
 
 ## Schede
 
-### Scheda Ricerca
+### Scheda Cerca
 
-Trasforma gli attuali `SearchForm` + `ResultsPanel` + `RerankPanel` in una scheda:
+Evolve l'esistente `SearchForm` + `ResultsPanel` + `RerankPanel` in una scheda:
 
-- Query → risultati (titolo, URL, snippet, punteggio di rilevanza).
-- Metadati del provider nel pannello Configurazione (costo, quota, stato).
-- Sezione di rerank: selezione di un modello di rerank, riordinamento dei risultati, visualizzazione di `positionDelta`.
+- Risultati della query → (titolo, URL, snippet, punteggio di pertinenza).
+- Metadati del provider nel riquadro Configurazione (costo, quota, stato).
+- Sezione Riclassifica: scegli un modello di riclassificazione, riordina i risultati, mostra `positionDelta`.
 - Stato vuoto con CTA quando non è configurato alcun provider di ricerca.
-- Cronologia delle ricerche tramite `SearchHistory.tsx`.
+- Cerca nella cronologia tramite `SearchHistory.tsx`.
 - Chiama `POST /v1/search` (endpoint esistente, nessuna modifica).
 
-### Scheda Scraping
+### Scheda Raschiatura
 
-Nuova scheda per estrarre contenuti da un URL tramite `POST /v1/web/fetch` (creato nel piano 05):
+Nuova scheda per estrarre il contenuto da uno URL tramite `POST /v1/web/fetch` (creato nel piano 05):
 
-- Input: URL + interruttore per la pagina intera + selettore del formato (markdown / testo / HTML).
-- Invio → recupero → rendering di `ScrapeResult.tsx`.
-- `ScrapeResult` mostra l'anteprima markdown e un interruttore per i dati grezzi.
-- Limite: se il corpo della risposta supera **256 KB**, l'interfaccia mostra `(troncato, visualizza dati grezzi)` e apre i dati grezzi in una finestra modale Monaco (D21).
-- Pannello dei metadati: provider (firecrawl/jina-reader/tavily-search/tinyfish/nimble-search/anysearch-search), latenza, costo, dimensione della risposta, numero di link.
-- Utilizza l'hook `useScrapeFetch.ts`.
+- Input: URL + selettore formato + a pagina intera (markdown / text / HTML).
+- Invia → fetch → render `ScrapeResult.tsx`.
+- `ScrapeResult` esegue il rendering dell'anteprima del markdown + attiva/disattiva raw.
+- Cap: se il corpo della risposta >** 256 KB** , UI mostra `(truncated, view raw)` e si apre grezzo in un modale Monaco (D21).
+- Pannello dei metadati: provider (firecrawl/jina-reader/tavily-search/tinyfish/nimble-search/anysearch-search/parallel-search/keenable-search), latenza, costo, dimensione della risposta, conteggio dei collegamenti.
+- Utilizza il gancio `useScrapeFetch.ts`.
 
-### Scheda Confronto
+### Confronta la scheda
 
-Esegue la stessa query o lo stesso URL su un massimo di **4 provider in parallelo** (D22):
+Esegue lo stesso query/URL fino a** 4 fornitori in parallelo** (D22):
 
-- Colonne affiancate per ciascun provider.
-- Metriche: latenza, costo, numero di risultati, dimensione della risposta.
-- Calcolo della sovrapposizione degli URL per la ricerca (numero di URL condivisi rispetto al risultato iniziale).
-- Chiama `POST /v1/search` (ricerca) o `POST /v1/web/fetch` (scraping) per ciascun provider.
+- Colonne affiancate per provider.
+- Metriche: latenza, costo, conteggio dei risultati, dimensione della risposta.
+- Calcolo della sovrapposizione URL per la ricerca (numero di URLs condivisi rispetto al risultato iniziale).
+- Chiama `POST /v1/search` (ricerca) o `POST /v1/web/fetch` (scrape) per provider.
 
 ---
 
@@ -98,15 +98,15 @@ Esegue la stessa query o lo stesso URL su un massimo di **4 provider in parallel
 
 ---
 
-## Catalogo dei provider
+## Catalogo dei fornitori
 
-`ProviderCatalog.tsx` espone l'elenco completo dei provider da `GET /api/search/providers`
-(esteso in F4 per includere i provider di recupero):
+`ProviderCatalog.tsx` espone l'elenco completo dei provider da `GET /api/search/providers` (esteso in F4 per includere i provider di recupero):
 
-| `kind` | `"search"` (20 provider) o `"fetch"` (firecrawl, jina-reader, tavily-search, tinyfish, nimble-search, anysearch-search) |
+| `kind` | `"search"` (24 fornitori) o `"fetch"` (firecrawl, jina-reader, tavily-search, tinyfish, nimble-search, anysearch-search, parallel-search, awareable-search) |
 
-Lo stato viene **derivato al momento della richiesta** verificando se esistono credenziali e se
-tutte le chiavi sono attualmente in cooldown.
+Lo stato è** derivato al momento della richiesta** controllando se esistono credenziali e se tutte le chiavi sono attualmente in fase di raffreddamento.
+
+`codex-search` (Codex Web Search) non ha una chiave propria: riutilizza un account Codex (ChatGPT) connesso, quindi ogni ricerca consuma la quota di abbonamento ChatGPT e richiede circa 10–40 secondi. Viene eseguito quando una richiesta lo nomina; la selezione automatica richiede il flag di funzionalità `CODEX_SEARCH_AUTO_FALLBACK_ENABLED` (disattivato per impostazione predefinita).
 
 ---
 
@@ -118,18 +118,18 @@ Il segnaposto della chiave API è sempre `$OMNIROUTE_API_KEY` (D11, condiviso co
 
 ---
 
-## Modifiche al backend
+## Modifiche al back-end
 
 Per questa funzionalità è stata necessaria una sola modifica al backend:
 
-### Estensione di `GET /api/search/providers`
+### `GET /api/search/providers` estesa
 
-`src/app/api/search/providers/route.ts` è stato esteso per:
+`src/app/api/search/providers/route.ts` è stato esteso a:
 
-- Includere nell'array tutti e 6 i provider di recupero (`firecrawl`, `jina-reader`, `tavily-search`, `tinyfish`, `nimble-search`, `anysearch-search`).
-- Aggiungere `kind: "search" | "fetch"` a ogni elemento.
-- Aggiungere `status: "configured" | "missing" | "rate_limited"`, derivato dallo stato corrente delle credenziali.
-- Mantenere la compatibilità con le versioni precedenti — i campi esistenti (`id`, `name`, ecc.) rimangono invariati.
+- Includere ogni provider di recupero (`firecrawl`, `jina-reader`, `tavily-search`, `tinyfish`, `nimble-search`, `anysearch-search`, `parallel-search`, `keenable-search`) nell'array.
+- Aggiungi `kind: "search" | "fetch"` a ogni articolo.
+- Aggiungi `status: "configured" | "missing" | "rate_limited"` derivato dallo stato delle credenziali attive.
+- Mantenere invariati la compatibilità con le versioni precedenti — dei campi esistenti (`id`, `name`, ecc.).
 
 ---
 

@@ -1,5 +1,5 @@
 import type { LegacyModel as ModelV2 } from "../legacy-model.js";
-import { normaliseFreeLabel } from "./naming.js";
+import { buildModelDisplayName } from "./naming.js";
 
 export interface OmniRouteRawModelEntry {
   id: string;
@@ -292,11 +292,13 @@ export function mapRawModelToModelV2(
     // `providerId` so credentials resolve as `(omniroute, model)`.
     id: raw.id.includes("/") || raw.owned_by === "combo" ? raw.id : `${ctx.providerId}/${raw.id}`,
     /**
-     * Display name. Falls back to raw.id when no enrichment is available;
-     * the caller overlays `/api/pricing/models` data via enrichment when
-     * the enrichment feature is enabled.
+     * Display name. Falls back to the raw gateway id through the compact
+     * naming rule when no enrichment is available.
      */
-    name: normaliseFreeLabel(raw.id),
+    name: buildModelDisplayName({
+      rawId: raw.id,
+      providerDisplayName: raw.id.includes("/") ? undefined : ctx.providerId,
+    }),
     capabilities: {
       temperature: caps.temperature ?? true,
       reasoning: Boolean(caps.reasoning || caps.thinking),
@@ -326,7 +328,7 @@ export function mapRawModelToModelV2(
     limit: {
       context: typeof raw.context_length === "number" ? raw.context_length : 0,
       ...(typeof raw.max_input_tokens === "number" ? { input: raw.max_input_tokens } : {}),
-      output: typeof raw.max_output_tokens === "number" ? raw.max_output_tokens : 0,
+      ...(typeof raw.max_output_tokens === "number" ? { output: raw.max_output_tokens } : {}),
     },
     ...(variants ? { variants } : {}),
     status: "active",

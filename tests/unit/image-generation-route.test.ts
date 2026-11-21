@@ -3,10 +3,13 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import dns from "node:dns";
+import { getSettledModelCatalogRouteResponse } from "../_setup/modelCatalogFixture.ts";
 
 const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "omniroute-image-route-"));
 process.env.DATA_DIR = TEST_DATA_DIR;
 process.env.API_KEY_SECRET = process.env.API_KEY_SECRET || "image-route-test-api-key-secret";
+process.env.GROK_SUBSCRIPTION_IMAGES_ENABLED = "true";
 
 const core = await import("../../src/lib/db/core.ts");
 const providersDb = await import("../../src/lib/db/providers.ts");
@@ -207,7 +210,7 @@ test("v1 image models GET exposes image-only modalities for credential-backed im
   await seedConnection("topaz", { apiKey: "topaz-key" });
   await seedConnection("stability-ai", { apiKey: "stability-key" });
 
-  const response = await imageRoute.GET();
+  const response = await getSettledModelCatalogRouteResponse(v1ModelsCatalog, imageRoute.GET);
   const body = (await response.json()) as { data: ImageModelRow[] };
   const byId = new Map(body.data.map((item) => [item.id, item]));
 
@@ -220,22 +223,35 @@ test("v1 image models GET exposes image-only modalities for credential-backed im
 test("v1 image models GET exposes current Codex image models and hides inactive providers", async () => {
   await seedConnection("codex", { apiKey: "codex-key" });
 
-  const response = await imageRoute.GET();
+  const response = await getSettledModelCatalogRouteResponse(v1ModelsCatalog, imageRoute.GET);
   const body = (await response.json()) as { data: Array<{ id: string }> };
   const ids = body.data.map((item) => item.id);
 
   assert.equal(response.status, 200);
   assert.deepEqual(
     ids.filter((id) => id.startsWith("codex/")),
-    ["codex/gpt-5.6-sol-image", "codex/gpt-5.6-terra-image", "codex/gpt-5.6-luna-image"]
+    [
+      "codex/gpt-6.1-sol-image",
+      "codex/gpt-5.6-sol-image",
+      "codex/gpt-5.6-terra-image",
+      "codex/gpt-5.6-luna-image",
+      "codex/gpt-image-2.5-flare",
+      "codex/gpt-image-2.5-sunburst",
+      "codex/gpt-image-2.6-sunburst",
+      "codex/gpt-image-2",
+    ]
   );
   assert.ok(!ids.includes("codex/gpt-5.5"));
   assert.ok(!ids.includes("openai/gpt-image-2"));
   assert.ok(!ids.some((id: string) => id.startsWith("xai/")));
 });
 
-test("v1 image generation POST accepts promptless requests for image-only models", async () => {
+test("v1 image generation POST accepts promptless requests for image-only models", async (t) => {
   await seedConnection("topaz", { apiKey: "topaz-key" });
+  t.mock.method(dns.promises, "lookup", async (hostname) => {
+    assert.equal(hostname, "example.com");
+    return [{ address: "93.184.216.34", family: 4 }];
+  });
 
   const mockFetchImpl = async (url, options: RequestInit = {}) => {
     const stringUrl = String(url);
@@ -509,6 +525,54 @@ test("v1 image edit POST defaults Codex results to b64_json when response_format
   assert.equal(body.data[0].url, undefined);
 });
 
+test("v1 image edit POST forwards 128 hosted Codex references without truncation", async () => {
+  await seedConnection("codex", { apiKey: "codex-oauth-token" });
+  let forwardedReferences = -1;
+
+  globalThis.fetch = async (url, options: RequestInit = {}) => {
+    assert.equal(String(url), "https://chatgpt.com/backend-api/codex/responses");
+    const upstream = JSON.parse(String(options.body || "{}")) as CapturedResponsesBody;
+    forwardedReferences = upstream.input[0].content.filter(
+      (item) => item.type === "input_image"
+    ).length;
+    assert.deepEqual(upstream.tools, [
+      { type: "image_generation", output_format: "png", action: "edit" },
+    ]);
+    const event = {
+      type: "response.output_item.done",
+      item: {
+        type: "image_generation_call",
+        id: "ig_128_refs",
+        status: "completed",
+        result: "ZWRpdGVkLTEyOA==",
+      },
+    };
+    return new Response(`data: ${JSON.stringify(event)}\n\ndata: [DONE]\n\n`, {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    });
+  };
+
+  const formData = createCodexEditForm("combine all 128 references");
+  for (let index = 2; index <= 128; index += 1) {
+    formData.append(
+      "image[]",
+      new File([VALID_PNG_BYTES], `reference-${index}.png`, { type: "image/png" })
+    );
+  }
+
+  const response = await imageEditRoute.POST(
+    new Request("http://localhost/api/v1/images/edits", {
+      method: "POST",
+      body: formData,
+    })
+  );
+  const body = (await response.json()) as ImageResponseBody;
+  assert.equal(response.status, 200);
+  assert.equal(forwardedReferences, 128);
+  assert.equal(body.data[0].b64_json, "ZWRpdGVkLTEyOA==");
+});
+
 test("v1 image edit POST rejects excessive or malformed Codex reference sets", async () => {
   await seedConnection("codex", { apiKey: "codex-oauth-token" });
   globalThis.fetch = async () => {
@@ -516,7 +580,7 @@ test("v1 image edit POST rejects excessive or malformed Codex reference sets", a
   };
 
   const formData = createCodexEditForm("combine these references");
-  for (let index = 2; index <= 9; index += 1) {
+  for (let index = 2; index <= 129; index += 1) {
     formData.append(
       "image[]",
       new File([VALID_PNG_BYTES], `reference-${index}.png`, { type: "image/png" })
@@ -532,7 +596,7 @@ test("v1 image edit POST rejects excessive or malformed Codex reference sets", a
   const body = (await response.json()) as ErrorResponseBody;
 
   assert.equal(response.status, 400);
-  assert.match(body.error.message, /at most 8 reference images/i);
+  assert.match(body.error.message, /at most 128 reference images/i);
 
   const jsonResponse = await imageEditRoute.POST(
     new Request("http://localhost/api/v1/images/edits", {
@@ -586,6 +650,35 @@ test("v1 image edit POST keeps non-Codex providers single-reference", async () =
   const body = (await response.json()) as ErrorResponseBody;
   assert.equal(response.status, 400);
   assert.match(body.error.message, /only one reference image/i);
+});
+
+test("v1 image edit POST accepts Codex cx/gpt-6.1-sol (#18687)", async () => {
+  await seedConnection("codex", { apiKey: "codex-oauth-token" });
+
+  let upstreamModel: unknown = null;
+  globalThis.fetch = async (_url, options: RequestInit = {}) => {
+    upstreamModel = JSON.parse(String(options.body || "{}")).model;
+    const event = {
+      type: "response.output_item.done",
+      item: { type: "image_generation_call", id: "ig_sol", status: "completed", result: "c29s" },
+    };
+    return new Response(`data: ${JSON.stringify(event)}\n\ndata: [DONE]\n\n`, {
+      status: 200,
+      headers: { "content-type": "text/event-stream" },
+    });
+  };
+
+  const response = await imageEditRoute.POST(
+    new Request("http://localhost/api/v1/images/edits", {
+      method: "POST",
+      body: createCodexEditForm("make the apple green", { model: "cx/gpt-6.1-sol" }),
+    })
+  );
+  const body = (await response.json()) as ImageResponseBody;
+
+  assert.equal(response.status, 200);
+  assert.equal(body.data[0].b64_json, "c29s");
+  assert.equal(upstreamModel, "gpt-6.1-sol");
 });
 
 test("v1 image edit POST rejects unsupported Codex models and MIME mismatches", async () => {
@@ -954,4 +1047,145 @@ test("v1 image generation POST refreshes an expired Antigravity token before dis
   assert.equal(response.status, 200);
   assert.equal(body.data[0].b64_json, "ZnJlc2gtaW1hZ2U=");
   assert.equal(calls.filter((call) => call.url.includes("oauth2.googleapis.com/token")).length, 1);
+});
+
+// grok-cli (Grok Build OAuth, #15305) sends the same xAI image body through the Grok Build
+// proxy with the CLI token-auth header; xai-oauth and xai keep api.x.ai.
+const GROK_IMAGE_ENDPOINTS: Record<string, string> = {
+  "grok-cli": "https://cli-chat-proxy.grok.com/v1/images/generations",
+  "xai-oauth": "https://api.x.ai/v1/images/generations",
+  xai: "https://api.x.ai/v1/images/generations",
+};
+
+for (const [provider, alias] of [
+  ["grok-cli", "gc"],
+  ["xai-oauth", "xao"],
+  ["xai", "xai"],
+]) {
+  test(`image route uses ${provider} credentials for Grok Imagine and exposes its catalog`, async () => {
+    await seedConnection(
+      provider,
+      provider === "xai"
+        ? { apiKey: "xai-image-key" }
+        : {
+            authType: "oauth",
+            accessToken: "grok-image-token",
+            expiresAt: new Date(Date.now() + 86400000).toISOString(),
+          }
+    );
+    let imageCalls = 0;
+    globalThis.fetch = async (url, options = {}) => {
+      assert.equal(String(url), GROK_IMAGE_ENDPOINTS[provider]);
+      if (provider === "grok-cli") {
+        assert.equal(new Headers(options.headers).get("X-XAI-Token-Auth"), "xai-grok-cli");
+      }
+      imageCalls += 1;
+      assert.equal(
+        new Headers(options.headers).get("Authorization"),
+        `Bearer ${provider === "xai" ? "xai-image-key" : "grok-image-token"}`
+      );
+      assert.deepEqual(JSON.parse(String(options.body)), {
+        model: "grok-imagine-image-2.0",
+        prompt: "A chef preparing pho",
+        n: 1,
+        aspect_ratio: "3:2",
+        resolution: "1k",
+        quality: "medium",
+        response_format: "b64_json",
+      });
+      return Response.json({ data: [{ b64_json: "ZmFrZQ==" }] });
+    };
+    const response = await imageRoute.POST(
+      new Request("http://localhost/v1/images/generations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: `${alias}/grok-imagine-image-2.0`,
+          prompt: "A chef preparing pho",
+          n: 1,
+          size: "1536x1024",
+          resolution: "1k",
+          quality: "high",
+          response_format: "b64_json",
+        }),
+      })
+    );
+    assert.equal(response.status, 200, await response.clone().text());
+    assert.equal(imageCalls, 1);
+    assert.deepEqual(((await response.json()) as ImageResponseBody).data, [
+      { b64_json: "ZmFrZQ==" },
+    ]);
+    const catalog = await getSettledModelCatalogRouteResponse(v1ModelsCatalog, () =>
+      imageRoute.GET(new Request("http://localhost/v1/images/generations"))
+    );
+    assert.equal(catalog.status, 200);
+    const payload = (await catalog.json()) as { data: ImageModelRow[] };
+    assert.ok(payload.data.some((row) => row.id === `${provider}/grok-imagine-image-2.0`));
+  });
+}
+
+test("Grok image route refreshes and persists OAuth credentials before generation", async () => {
+  const connection = await seedConnection("grok-cli", {
+    authType: "oauth",
+    accessToken: "expired-grok-token",
+    refreshToken: "grok-refresh-token",
+    expiresAt: new Date(Date.now() - 60000).toISOString(),
+  });
+  const calls: string[] = [];
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push(String(url));
+    if (String(url) === "https://auth.x.ai/oauth2/token") {
+      assert.equal(
+        new URLSearchParams(String(options.body)).get("refresh_token"),
+        "grok-refresh-token"
+      );
+      return Response.json({
+        access_token: "fresh-grok-token",
+        refresh_token: "rotated-grok-token",
+        expires_in: 3600,
+      });
+    }
+    assert.equal(String(url), GROK_IMAGE_ENDPOINTS["grok-cli"]);
+    assert.equal(new Headers(options.headers).get("Authorization"), "Bearer fresh-grok-token");
+    return Response.json({ data: [{ url: "https://example.com/grok-image.jpg" }] });
+  };
+  const response = await imageRoute.POST(
+    new Request("http://localhost/v1/images/generations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "grok-cli/grok-imagine-image-2.0",
+        prompt: "A chef preparing pho",
+      }),
+    })
+  );
+  assert.equal(response.status, 200, await response.clone().text());
+  assert.deepEqual(calls, ["https://auth.x.ai/oauth2/token", GROK_IMAGE_ENDPOINTS["grok-cli"]]);
+  const saved = await providersDb.getProviderConnectionById(connection.id);
+  assert.equal(saved?.accessToken, "fresh-grok-token");
+  assert.equal(saved?.refreshToken, "rotated-grok-token");
+});
+
+test("Grok image route rejects invalid options before contacting upstream", async () => {
+  await seedConnection("grok-cli", { authType: "oauth", accessToken: "grok-image-token" });
+  let called = false;
+  globalThis.fetch = async () => {
+    called = true;
+    throw new Error("must not dispatch");
+  };
+  const response = await imageRoute.POST(
+    new Request("http://localhost/v1/images/generations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "grok-cli/grok-imagine-image-2.0",
+        prompt: "A chef",
+        resolution: "4k-secret",
+      }),
+    })
+  );
+  assert.equal(response.status, 400);
+  assert.equal(called, false);
+  const body = (await response.json()) as ErrorResponseBody;
+  assert.doesNotMatch(body.error.message, /4k-secret|at \//);
 });

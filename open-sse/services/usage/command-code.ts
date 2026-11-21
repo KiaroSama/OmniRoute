@@ -12,6 +12,7 @@
  */
 
 import { sanitizeErrorMessage } from "../../utils/error.ts";
+import { fetchWithConnectionProxy } from "../connectionProxyFetch.ts";
 import { toNumber, toRecord } from "./scalars.ts";
 import { createQuotaFromUsage, parseResetTime, type UsageQuota } from "./quota.ts";
 
@@ -28,6 +29,34 @@ const PLAN_LABELS: Record<string, string> = {
   "individual-max-10x": "Command Code · Max 10×",
   "individual-max-20x": "Command Code · Max 20×",
   "team-pro": "Command Code · Team Pro",
+};
+
+/** Short plan ids the /alpha/billing endpoints can report, mapped to their
+ * canonical individual- or team- plan ids. */
+const PLAN_ID_ALIASES: Record<string, string> = {
+  go: "individual-go",
+  "go-v1": "individual-go-v1",
+  goat: "individual-goat",
+  pro: "individual-pro",
+  "pro-v1": "individual-pro-v1",
+  provider: "individual-provider",
+  max: "individual-max",
+  ultra: "individual-ultra",
+  "teams-pro": "team-pro",
+};
+
+/** Fixed monthly credit caps per canonical plan id. When the cap is known the
+ * credits pool total IS the cap and used follows from remaining: the usage
+ * summary spend only covers part of the window. */
+const PLAN_CREDIT_CAPS: Record<string, number> = {
+  "individual-go": 10,
+  "individual-goat": 70,
+  "individual-pro": 30,
+  "individual-pro-v1": 80,
+  "individual-provider": 15,
+  "individual-max": 150,
+  "individual-ultra": 300,
+  "team-pro": 40,
 };
 
 function withCurrency(quota: UsageQuota, displayName: string): UsageQuota {
@@ -59,12 +88,13 @@ function orgQuery(orgId: string | null | undefined): string {
 
 async function fetchJson(
   path: string,
-  apiKey: string
+  apiKey: string,
+  connectionId?: string
 ): Promise<{ ok: boolean; status: number; body: JsonRecord | null }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const response = await fetch(`${COMMAND_CODE_API_BASE}${path}`, {
+    const commandInit: RequestInit = {
       method: "GET",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -72,7 +102,11 @@ async function fetchJson(
         "Content-Type": "application/json",
       },
       signal: controller.signal,
-    });
+    };
+    const response = connectionId
+      ? await fetchWithConnectionProxy(connectionId, `${COMMAND_CODE_API_BASE}${path}`, commandInit)
+      : await globalThis.fetch(`${COMMAND_CODE_API_BASE}${path}`, commandInit);
+    if (!response) return { ok: false, status: 0, body: null };
     const text = await response.text();
     let body: JsonRecord | null = null;
     if (text) {
@@ -107,7 +141,7 @@ function windowQuota(window: unknown, displayName: string): UsageQuota | null {
 /**
  * Command Code Usage — monthly credit pool + 5h/weekly rolling windows.
  */
-export async function getCommandCodeUsage(apiKey: string) {
+export async function getCommandCodeUsage(apiKey: string, connectionId?: string) {
   if (!apiKey) {
     return { message: "Command Code API key not available. Add a key to view usage." };
   }
@@ -115,7 +149,7 @@ export async function getCommandCodeUsage(apiKey: string) {
   try {
     let orgId: string | null = null;
     try {
-      const whoami = await fetchJson("/alpha/whoami", apiKey);
+      const whoami = await fetchJson("/alpha/whoami", apiKey, connectionId);
       if (whoami.status === 401 || whoami.status === 403) {
         return {
           message:
@@ -132,7 +166,7 @@ export async function getCommandCodeUsage(apiKey: string) {
     }
 
     const q = orgQuery(orgId);
-    const creditsRes = await fetchJson(`/alpha/billing/credits${q}`, apiKey);
+    const creditsRes = await fetchJson(`/alpha/billing/credits${q}`, apiKey, connectionId);
 
     if (creditsRes.status === 401 || creditsRes.status === 403) {
       return {
@@ -154,7 +188,7 @@ export async function getCommandCodeUsage(apiKey: string) {
     let periodEnd: string | null = null;
 
     try {
-      const subRes = await fetchJson(`/alpha/billing/subscriptions${q}`, apiKey);
+      const subRes = await fetchJson(`/alpha/billing/subscriptions${q}`, apiKey, connectionId);
       if (subRes.ok && subRes.body) {
         const data = toRecord(subRes.body.data);
         if (typeof data.planId === "string" && data.planId.trim()) {
@@ -173,7 +207,7 @@ export async function getCommandCodeUsage(apiKey: string) {
     try {
       const sinceQ =
         periodStart != null ? `${q ? `${q}&` : "?"}since=${encodeURIComponent(periodStart)}` : q;
-      const summaryRes = await fetchJson(`/alpha/usage/summary${sinceQ}`, apiKey);
+      const summaryRes = await fetchJson(`/alpha/usage/summary${sinceQ}`, apiKey, connectionId);
       if (summaryRes.ok && summaryRes.body) {
         const cost = toNumber(summaryRes.body.totalCost, Number.NaN);
         if (Number.isFinite(cost) && cost >= 0) {
@@ -187,6 +221,8 @@ export async function getCommandCodeUsage(apiKey: string) {
       // summary enrichment is soft-fail
     }
 
+    const canonicalPlanId = (planId && PLAN_ID_ALIASES[planId]) || planId;
+    const creditCap = canonicalPlanId != null ? PLAN_CREDIT_CAPS[canonicalPlanId] : undefined;
     const quotas: Record<string, UsageQuota> = {};
 
     const fiveHour = windowQuota(windowLimits.fiveHour, "5-hour window");
@@ -195,7 +231,17 @@ export async function getCommandCodeUsage(apiKey: string) {
     const weekly = windowQuota(windowLimits.weekly, "Weekly window");
     if (weekly) quotas.weekly = weekly;
 
-    const creditsTotal = periodUsed + remaining;
+    // The cap bounds the monthly allowance only. Purchased/free credits are a
+    // separate pool: they never shrink the monthly usage (cap - monthly), but
+    // they stay spendable, so they extend the total next to `remaining`.
+    const monthlyRemaining = Math.max(0, toNumber(creditsObj.monthlyCredits, 0));
+    const extraRemaining = remaining - monthlyRemaining;
+    const creditsTotal =
+      creditCap != null
+        ? Math.max(creditCap, monthlyRemaining) + extraRemaining
+        : periodUsed + remaining;
+    const creditsUsed =
+      creditCap != null ? Math.max(0, creditCap - monthlyRemaining) : Math.max(0, periodUsed);
     const creditsRemainingPct =
       creditsTotal > 0
         ? Math.round((remaining / creditsTotal) * 1000) / 10
@@ -203,7 +249,7 @@ export async function getCommandCodeUsage(apiKey: string) {
           ? 100
           : 0;
     quotas.credits = {
-      used: Math.max(0, periodUsed),
+      used: creditsUsed,
       total: Math.max(0, creditsTotal),
       remaining,
       remainingPercentage: creditsRemainingPct,
@@ -218,7 +264,7 @@ export async function getCommandCodeUsage(apiKey: string) {
     };
 
     return {
-      plan: humanizePlanId(planId),
+      plan: humanizePlanId(canonicalPlanId),
       quotas,
       windowExceeded: typeof windowLimits.exceeded === "string" ? windowLimits.exceeded : null,
       limited: windowLimits.limited === true,

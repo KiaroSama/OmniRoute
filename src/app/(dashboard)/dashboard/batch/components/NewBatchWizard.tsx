@@ -2,11 +2,19 @@
 
 import { useEffect, useReducer } from "react";
 import { useTranslations } from "next-intl";
+import Button from "@/shared/components/Button";
+import Modal from "@/shared/components/Modal";
+import ModalWizard, { MODAL_WIZARD_BODY_CLASS } from "@/shared/components/ModalWizard";
 import DestinationStep from "./wizard/DestinationStep";
 import InputStep from "./wizard/InputStep";
 import JsonlValidationStep from "./wizard/JsonlValidationStep";
 import CostEstimateStep from "./wizard/CostEstimateStep";
-import type { WizardDestination, WizardInput, ValidationResult, CostEstimate } from "@/lib/batches/types";
+import type {
+  WizardDestination,
+  WizardInput,
+  ValidationResult,
+  CostEstimate,
+} from "@/lib/batches/types";
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -92,50 +100,14 @@ function isStep3Valid(state: WizardState): boolean {
   return state.validation !== null && state.validation.ok;
 }
 
-// ── Stepper indicator ─────────────────────────────────────────────────────────
+// ── Steps ─────────────────────────────────────────────────────────────────────
 
-const STEPS = [1, 2, 3, 4] as const;
-const STEP_LABELS: Record<number, string> = {
-  1: "wizardStep1Destination",
-  2: "wizardStep2Input",
-  3: "wizardStep3Validate",
-  4: "wizardStep4Cost",
-};
-
-function StepIndicator({ current, t }: { current: 1 | 2 | 3 | 4; t: ReturnType<typeof useTranslations<"common">> }) {
-  return (
-    <div className="flex items-center gap-1 sm:gap-2">
-      {STEPS.map((s) => {
-        const isDone = s < current;
-        const isCurrent = s === current;
-        return (
-          <div key={s} className="flex items-center gap-1 sm:gap-2">
-            <div
-              className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-colors
-                ${isDone ? "bg-emerald-500 text-white" : isCurrent ? "bg-[var(--color-accent)] text-white" : "bg-[var(--color-border)] text-[var(--color-text-muted)]"}`}
-            >
-              {isDone ? (
-                <span className="material-symbols-outlined text-sm">check</span>
-              ) : (
-                s
-              )}
-            </div>
-            <span
-              className={`hidden sm:inline text-xs ${isCurrent ? "text-[var(--color-text)]" : "text-[var(--color-text-muted)]"}`}
-            >
-              {t(STEP_LABELS[s] as Parameters<typeof t>[0])}
-            </span>
-            {s < 4 && (
-              <div
-                className={`w-6 h-px ${isDone ? "bg-emerald-500" : "bg-[var(--color-border)]"}`}
-              />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+const STEPS = [
+  { id: "destination", titleKey: "wizardStep1Destination" },
+  { id: "input", titleKey: "wizardStep2Input" },
+  { id: "validate", titleKey: "wizardStep3Validate" },
+  { id: "cost", titleKey: "wizardStep4Cost" },
+] as const;
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 
@@ -155,31 +127,28 @@ export default function NewBatchWizard({
   const t = useTranslations("common");
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  // Escape closes wizard; Enter advances to next step when allowed (A-5).
-  // Skip Enter when focus is inside form controls so it doesn't interfere with typing.
+  // ── Next button state ───────────────────────────────────────────────────────
+
+  const canGoNext =
+    (state.step === 1 && isStep1Valid(state)) ||
+    (state.step === 2 && isStep2Valid(state)) ||
+    (state.step === 3 && isStep3Valid(state));
+
+  // Escape is the Modal adapter's (kit Dialog; ignored while creating, see `requestClose`);
+  // Enter advances to the next step when allowed (A-5).
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (state.creating) return;
-      if (e.key === "Escape") {
-        onClose();
-        return;
-      }
-      if (e.key === "Enter") {
-        const tag = (e.target as HTMLElement | null)?.tagName;
-        // Skip form controls (typing) AND buttons — a focused button (Next/Back/Cancel/
-        // Create) already activates natively on Enter; firing the global Next click too
-        // would double-dispatch and conflict with Back/Cancel. Only advance when focus is
-        // on a non-interactive element (the modal body).
-        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tag === "BUTTON") return;
-        const nextBtn = document.querySelector<HTMLButtonElement>(
-          'button[data-wizard-next="true"]'
-        );
-        if (nextBtn && !nextBtn.disabled) nextBtn.click();
-      }
+      if (e.key !== "Enter" || state.creating || !canGoNext) return;
+      const tag = (e.target as HTMLElement | null)?.tagName;
+      // Skip form controls (typing) AND buttons — a focused button (Next/Back/Cancel/Create)
+      // already activates natively on Enter; advancing here too would double-dispatch and
+      // conflict with Back/Cancel. Only advance when focus is on a non-interactive element.
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || tag === "BUTTON") return;
+      dispatch({ type: "SET_STEP", step: (state.step + 1) as 1 | 2 | 3 | 4 });
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onClose, state.creating]);
+  }, [canGoNext, state.creating, state.step]);
 
   // ── Navigation ──────────────────────────────────────────────────────────────
 
@@ -204,12 +173,15 @@ export default function NewBatchWizard({
     dispatch({ type: "SET_ERROR", error: null });
 
     try {
-      // Step 1: upload input file
+      // Step 1: upload the original JSONL, never its sampled preview.
+      // CSV input is uploaded as the complete converted JSONL.
       const formData = new FormData();
       formData.append("purpose", "batch");
       formData.append(
         "file",
-        new Blob([state.input.rawContent], { type: "application/jsonl" }),
+        state.input.kind === "jsonl" && state.input.originalFile
+          ? state.input.originalFile
+          : new Blob([state.input.rawContent], { type: "application/jsonl" }),
         "batch-input.jsonl"
       );
 
@@ -248,13 +220,6 @@ export default function NewBatchWizard({
       dispatch({ type: "SET_ERROR", error: t("wizardErrorCreate") });
     }
   }
-
-  // ── Next button state ───────────────────────────────────────────────────────
-
-  const canGoNext =
-    (state.step === 1 && isStep1Valid(state)) ||
-    (state.step === 2 && isStep2Valid(state)) ||
-    (state.step === 3 && isStep3Valid(state));
 
   // ── Step content ────────────────────────────────────────────────────────────
 
@@ -300,78 +265,44 @@ export default function NewBatchWizard({
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
+  const requestClose = () => {
+    if (!state.creating) onClose();
+  };
+
+  const steps = STEPS.map((step) => ({ id: step.id, title: t(step.titleKey) }));
+  const activeStep = state.step - 1;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={() => !state.creating && onClose()}
-      />
-
-      {/* Panel */}
-      <div
-        className="relative w-full sm:max-w-3xl max-h-[90vh] flex flex-col rounded-t-2xl sm:rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-2xl overflow-hidden"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="new-batch-wizard-title"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-[var(--color-border)] shrink-0">
-          <div className="flex flex-col gap-2">
-            <h2 id="new-batch-wizard-title" className="text-base font-semibold text-[var(--color-text)]">{t("wizardTitle")}</h2>
-            <StepIndicator current={state.step} t={t} />
-          </div>
-          <button
-            type="button"
-            onClick={() => !state.creating && onClose()}
-            disabled={state.creating}
-            aria-label={t("wizardClose")}
-            className="text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:opacity-40 transition-colors"
-          >
-            <span className="material-symbols-outlined">close</span>
-          </button>
-        </div>
-
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6">{stepContent}</div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-t border-[var(--color-border)] shrink-0">
-          <button
-            type="button"
-            onClick={() => !state.creating && onClose()}
-            disabled={state.creating}
-            className="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:opacity-40 transition-colors"
-          >
+    <Modal
+      isOpen
+      onClose={requestClose}
+      closeOnOverlay={!state.creating}
+      showCloseButton={!state.creating}
+      size="full"
+      className="sm:max-w-3xl"
+      title={t("wizardTitle")}
+      bodyClassName={MODAL_WIZARD_BODY_CLASS}
+    >
+      <ModalWizard
+        steps={steps}
+        activeStep={activeStep}
+        completedSteps={STEPS.slice(0, activeStep).map((step) => step.id)}
+        title={steps[activeStep].title}
+        busy={state.creating}
+        onBack={handleBack}
+        allowBack={state.step > 1}
+        onNext={handleNext}
+        showNext={state.step < 4}
+        nextBlocked={!canGoNext}
+        labels={{ progress: t("wizardTitle"), back: t("wizardBack"), next: t("wizardNext") }}
+        footerActions={
+          <Button variant="ghost" onClick={requestClose} disabled={state.creating}>
             {t("wizardCancel")}
-          </button>
-
-          <div className="flex items-center gap-3">
-            {state.step > 1 && (
-              <button
-                type="button"
-                onClick={handleBack}
-                disabled={state.creating}
-                className="rounded-lg px-4 py-2 text-sm font-medium border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-bg-alt)] disabled:opacity-40 transition-colors"
-              >
-                {t("wizardBack")}
-              </button>
-            )}
-
-            {state.step < 4 && (
-              <button
-                type="button"
-                data-wizard-next="true"
-                onClick={handleNext}
-                disabled={!canGoNext}
-                className="rounded-lg px-4 py-2 text-sm font-medium bg-[var(--color-accent)] text-white disabled:opacity-40 hover:opacity-90 transition-opacity"
-              >
-                {t("wizardNext")}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Button>
+        }
+      >
+        {stepContent}
+      </ModalWizard>
+    </Modal>
   );
 }
